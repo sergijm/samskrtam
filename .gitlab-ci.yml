@@ -1,0 +1,111 @@
+# .gitlab-ci.yml
+stages:
+  - test
+  - build
+  - push
+  - deploy
+
+variables:
+  REGISTRY: registry.gitlab.local/samskrtam
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+
+# ── TEST ──────────────────────────────────────────────
+test:backend:
+  stage: test
+  image: gradle:8-jdk21
+  script:
+    - ./gradlew test
+  artifacts:
+    reports:
+      junit: "**/build/test-results/**/*.xml"
+
+test:frontend:
+  stage: test
+  image: node:20-alpine
+  script:
+    - cd frontend && npm ci && npm test -- --watchAll=false
+
+# ── BUILD & PUSH ──────────────────────────────────────
+.build-service:
+  stage: build
+  image: docker:24
+  services: [docker:24-dind]
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - ./gradlew :services:${SERVICE}:bootJar
+    - docker build -t $REGISTRY/${SERVICE}:$IMAGE_TAG ./services/${SERVICE}
+    - docker push $REGISTRY/${SERVICE}:$IMAGE_TAG
+    - docker tag $REGISTRY/${SERVICE}:$IMAGE_TAG $REGISTRY/${SERVICE}:latest
+    - docker push $REGISTRY/${SERVICE}:latest
+
+build:api-gateway:
+  extends: .build-service
+  variables:
+    SERVICE: api-gateway
+
+build:content-service:
+  extends: .build-service
+  variables:
+    SERVICE: content-service
+
+build:quiz-declensions:
+  extends: .build-service
+  variables:
+    SERVICE: quiz-declensions-service
+
+build:quiz-conjugations:
+  extends: .build-service
+  variables:
+    SERVICE: quiz-conjugations-service
+
+build:quiz-vocabulary:
+  extends: .build-service
+  variables:
+    SERVICE: quiz-vocabulary-service
+
+build:dictionary-service:
+  extends: .build-service
+  variables:
+    SERVICE: dictionary-service
+
+build:statistics-service:
+  extends: .build-service
+  variables:
+    SERVICE: statistics-service
+
+build:frontend:
+  stage: build
+  image: node:20-alpine
+  script:
+    - cd frontend && npm ci && npm run build
+    - docker build -t $REGISTRY/frontend:$IMAGE_TAG ./frontend
+    - docker push $REGISTRY/frontend:$IMAGE_TAG
+
+# ── DEPLOY ────────────────────────────────────────────
+deploy:kubernetes:
+  stage: deploy
+  image: bitnami/kubectl:latest
+  environment:
+    name: production
+    url: http://samskrtam.local
+  when: manual                        # ← ручной запуск деплоя
+  only:
+    - main
+  script:
+    # Подставляем тег образа в манифесты
+    - find k8s/services -name "deployment.yaml"
+        -exec sed -i "s|\${IMAGE_TAG}|$IMAGE_TAG|g" {} \;
+
+    # Применяем инфраструктуру (если изменилась)
+    - kubectl apply -f k8s/namespace.yaml
+    - kubectl apply -f k8s/infrastructure/
+
+    # Применяем сервисы
+    - kubectl apply -f k8s/services/
+
+    # Ждём готовности
+    - kubectl rollout status deployment/api-gateway        -n samskrtam
+    - kubectl rollout status deployment/content-service    -n samskrtam
+    - kubectl rollout status deployment/dictionary-service -n samskrtam
+    - kubectl rollout status deployment/statistics-service -n samskrtam
