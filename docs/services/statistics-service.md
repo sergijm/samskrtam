@@ -218,11 +218,9 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "sm.selflearn.samskrtam.events"
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: ${KEYCLOAK_JWKS_URI}
+
+# JWT не валидируется — сервис доверяет заголовкам X-User-* от Gateway.
+# userId берётся из X-User-Id, переданного Gateway после валидации токена.
 ```
 
 ---

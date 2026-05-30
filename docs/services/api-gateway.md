@@ -9,12 +9,14 @@
 
 ## 1. Ответственность
 
-- Единая точка входа
-- Валидация JWT через Keycloak JWKS
+- Единая точка входа для всех клиентов
+- Валидация JWT через Keycloak JWKS (кроме публичных endpoints)
 - Добавление X-User-* заголовков для downstream сервисов
-- Маршрутизация по path
+- Маршрутизация запросов по path
 - Rate limiting через Redis
 - CORS для фронтенда
+
+Gateway **не содержит бизнес-логики** — только инфраструктурные фильтры.
 
 > **Примечание:** Spring Cloud Gateway построен на Reactor/WebFlux —
 > Virtual Threads здесь неприменимы. Это единственный Java сервис
@@ -38,7 +40,7 @@ java {
 dependencies {
     implementation(libs.spring.cloud.gateway)
     implementation(libs.spring.security.oauth2)
-    implementation(libs.spring.redis.reactive)    // Redis для rate limiting
+    implementation(libs.spring.redis.reactive)
 }
 ```
 
@@ -48,51 +50,68 @@ dependencies {
 
 | Path | Сервис | Auth |
 |---|---|---|
+| `/api/v1/auth/**` | auth-service:8087 | **Public** |
+| `/api/v1/content/public/**` | content-service:8081 | STUDENT |
 | `/api/v1/content/**` | content-service:8081 | ADMIN |
-| `/api/v1/quiz/declensions/**` | quiz-declensions-service:8082 | STUDENT |
-| `/api/v1/quiz/conjugations/**` | quiz-conjugations-service:8083 | STUDENT |
-| `/api/v1/quiz/vocabulary/**` | quiz-vocabulary-service:8084 | STUDENT |
+| `/api/v1/quiz/**` | quiz-service:8082 | STUDENT |
 | `/api/v1/dictionary/**` | dictionary-service:8085 | STUDENT |
 | `/api/v1/statistics/**` | statistics-service:8086 | STUDENT |
 | `/actuator/health` | gateway | Public |
 
+> `/api/v1/auth/**` — публичный маршрут. Сюда приходят запросы логина,
+> регистрации, восстановления пароля — до получения токена.
+> Безопасность обеспечивает сам auth-service.
+
+> `/api/v1/content/public/**` — публичный (для STUDENT) маршрут к content-service.
+> Используется для чтения списка квизов на главной странице.
+> Доступ на запись (POST/PUT/DELETE) закрыт на уровне content-service.
+
+> ⚠️ Маршруты определены в `GatewayRoutesConfig.java` через Java DSL — не в `application.yml`.
+> В `application.yml` только `default-filters` (rate limiting).
+> Если маршрут не проксируется — сначала проверяй `GatewayRoutesConfig.java`.
+
 ---
 
-## 4. GatewayRoutesConfig.java
+## 4. Правила авторизации (SecurityConfig)
 
-```java
-@Configuration
-public class GatewayRoutesConfig {
+```
+Публичные (без JWT):
+  /actuator/health/**
+  /actuator/health/liveness
+  /actuator/health/readiness
+  OPTIONS /**              ← CORS preflight
+  /api/v1/auth/**          ← вся аутентификация
 
-    @Bean
-    public RouteLocator routes(RouteLocatorBuilder builder) {
-        return builder.routes()
-            .route("content-service", r -> r
-                .path("/api/v1/content/**")
-                .uri("http://content-service:8081"))
-            .route("quiz-declensions", r -> r
-                .path("/api/v1/quiz/declensions/**")
-                .uri("http://quiz-declensions-service:8082"))
-            .route("quiz-conjugations", r -> r
-                .path("/api/v1/quiz/conjugations/**")
-                .uri("http://quiz-conjugations-service:8083"))
-            .route("quiz-vocabulary", r -> r
-                .path("/api/v1/quiz/vocabulary/**")
-                .uri("http://quiz-vocabulary-service:8084"))
-            .route("dictionary", r -> r
-                .path("/api/v1/dictionary/**")
-                .uri("http://dictionary-service:8085"))
-            .route("statistics", r -> r
-                .path("/api/v1/statistics/**")
-                .uri("http://statistics-service:8086"))
-            .build();
-    }
-}
+Только ADMIN:
+  /api/v1/content/**       ← за исключением /content/public/**
+
+Любой аутентифицированный:
+  /api/v1/content/public/**
+  /api/**
+
+Всё остальное:
+  denyAll()
 ```
 
 ---
 
-## 5. IdentityHeaderFilter.java
+## 5. Глобальные фильтры (порядок выполнения)
+
+```
+Order -3  SecurityFilter          ← валидация JWT (Spring Security)
+Order -2  IdentityHeaderFilter    ← X-User-Id, X-User-Role, X-User-Locale
+Order -1  RateLimitFilter         ← Redis rate limiting
+Order  0  RequestIdFilter         ← X-Request-Id для tracing
+Order  1  LoggingFilter           ← structured logging
+```
+
+---
+
+## 6. IdentityHeaderFilter
+
+Извлекает данные из валидного JWT и передаёт downstream сервисам как заголовки.
+Для публичных маршрутов (`/api/v1/auth/**`) principal отсутствует — фильтр
+пропускает запрос без заголовков.
 
 ```java
 @Component
@@ -101,28 +120,26 @@ public class IdentityHeaderFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         return exchange.getPrincipal()
-            .cast(JwtAuthenticationToken.class)
-            .flatMap(auth -> {
-                Jwt jwt = auth.getToken();
-                Map<String, Object> realmAccess =
-                    jwt.getClaimAsMap("realm_access");
-                List<?> roles = realmAccess != null
-                    ? (List<?>) realmAccess.get("roles")
-                    : List.of();
-                String role = roles.isEmpty()
-                    ? "STUDENT"
-                    : roles.get(0).toString();
+                .cast(JwtAuthenticationToken.class)
+                .flatMap(auth -> {
+                    Jwt jwt = auth.getToken();
+                    Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
+                    List<?> roles = realmAccess != null
+                            ? (List<?>) realmAccess.get("roles")
+                            : List.of();
+                    String role = roles.isEmpty() ? "STUDENT" : roles.get(0).toString();
 
-                ServerHttpRequest mutated = exchange.getRequest().mutate()
-                    .header("X-User-Id",     jwt.getSubject())
-                    .header("X-User-Role",   role)
-                    .header("X-User-Locale", jwt.getClaimAsString("locale") != null
-                        ? jwt.getClaimAsString("locale") : "ru")
-                    .build();
+                    ServerHttpRequest mutated = exchange.getRequest().mutate()
+                            .header("X-User-Id",     jwt.getSubject())
+                            .header("X-User-Role",   role)
+                            .header("X-User-Locale", Optional.ofNullable(
+                                    jwt.getClaimAsString("locale")).orElse("ru"))
+                            .build();
 
-                return chain.filter(exchange.mutate().request(mutated).build());
-            })
-            .switchIfEmpty(chain.filter(exchange));
+                    return chain.filter(exchange.mutate().request(mutated).build());
+                })
+                // Публичный маршрут — нет principal, пропускаем без заголовков
+                .switchIfEmpty(chain.filter(exchange));
     }
 
     @Override
@@ -132,35 +149,38 @@ public class IdentityHeaderFilter implements GlobalFilter, Ordered {
 
 ---
 
-## 6. SecurityConfig.java
+## 7. Rate Limiting
+
+```yaml
+# application.yml
+spring:
+  cloud:
+    gateway:
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 20
+            redis-rate-limiter.burstCapacity: 40
+            # "#{@userKeyResolver}" — Spring EL, ссылается на бин userKeyResolver
+            # Бин объявлен в GatewayRoutesConfig.java — оба файла обязательны
+            key-resolver: "#{@userKeyResolver}"
+```
 
 ```java
-@Configuration
-@EnableWebFluxSecurity
-public class SecurityConfig {
-
-    @Bean
-    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-        return http
-            .authorizeExchange(exchanges -> exchanges
-                .pathMatchers("/actuator/health").permitAll()
-                .pathMatchers("/api/v1/content/**").hasRole("ADMIN")
-                .anyExchange().authenticated()
-            )
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt.jwkSetUri(
-                    "${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}"
-                ))
-            )
-            .csrf(ServerHttpSecurity.CsrfSpec::disable)
-            .build();
-    }
+// GatewayRoutesConfig.java — бин на который ссылается key-resolver выше
+@Bean
+public KeyResolver userKeyResolver() {
+    return exchange -> exchange.getPrincipal()
+            .cast(JwtAuthenticationToken.class)
+            .map(auth -> auth.getToken().getSubject())
+            .onErrorReturn("anonymous")
+            .defaultIfEmpty("anonymous");
 }
 ```
 
 ---
 
-## 7. application.yml
+## 8. application.yml
 
 ```yaml
 server:
@@ -169,15 +189,18 @@ server:
 spring:
   application:
     name: api-gateway
+
   security:
     oauth2:
       resourceserver:
         jwt:
           jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://keycloak:8080/realms/samskrtam/protocol/openid-connect/certs}
+
   data:
     redis:
       host: ${REDIS_HOST:redis}
-      port: 6379
+      port: ${REDIS_PORT:6379}
+
   cloud:
     gateway:
       default-filters:
@@ -186,23 +209,47 @@ spring:
             redis-rate-limiter.replenishRate: 20
             redis-rate-limiter.burstCapacity: 40
             key-resolver: "#{@userKeyResolver}"
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+logging:
+  level:
+    root: INFO
+    sm.selflearn.samskrtam: DEBUG
+  pattern:
+    console: '{"time":"%d{ISO8601}","level":"%p","service":"api-gateway","trace":"%X{traceId}","msg":"%m"}%n'
 ```
 
 ---
 
-## 8. Acceptance Criteria
+## 9. Acceptance Criteria
 
-- [ ] Запрос без JWT → 401
-- [ ] Запрос с истёкшим JWT → 401
-- [ ] STUDENT к `/api/v1/content/**` → 403
-- [ ] ADMIN к `/api/v1/content/**` → проксируется
+- [ ] `POST /api/v1/auth/login` без токена → проксируется в auth-service (не 401)
+- [ ] `GET /api/v1/quiz/**` без токена → 401
+- [ ] `GET /api/v1/content/public/quizzes` с токеном STUDENT → проксируется
+- [ ] `GET /api/v1/content/**` с токеном STUDENT → 403
+- [ ] `GET /api/v1/content/**` с токеном ADMIN → проксируется
 - [ ] Downstream сервис получает X-User-Id, X-User-Role, X-User-Locale
 - [ ] Rate limit превышен → 429
 - [ ] `/actuator/health` без токена → 200
+- [ ] 401 и 403 возвращают JSON, не HTML
 
 ---
 
-## 9. Открытые вопросы
+## 10. Открытые вопросы
 
-- [ ] CORS origins: только localhost:3000 или через env?
+- [ ] CORS origins: только localhost:3000 или настраиваемые через env?
 - [ ] Distributed tracing: Micrometer + Zipkin?
+- [ ] Rate limiting для /api/v1/auth/** — отдельный лимит против brute force?

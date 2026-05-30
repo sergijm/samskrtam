@@ -1,6 +1,6 @@
 # Architecture — Топология и монорепозиторий
 
-> Связанные файлы: [README.md](README.md) · [keycloak.md](keycloak.md) · [api-gateway.md](services/api-gateway.md)
+> Связанные файлы: [README.md](README.md) · [conventions.md](conventions.md) · [infra/keycloak.md](infra/keycloak.md) · [api-gateway.md](services/api-gateway.md)
 > Status: **DRAFT**
 
 ---
@@ -21,10 +21,9 @@
 | Сервис | Язык | Base package |
 |---|---|---|
 | api-gateway | Java 21 | `sm.selflearn.samskrtam.gateway` |
+| auth-service | Java 21 | `sm.selflearn.samskrtam.auth` |
 | content-service | Java 21 | `sm.selflearn.samskrtam.content` |
-| quiz-declensions-service | Java 21 | `sm.selflearn.samskrtam.quiz.declensions` |
-| quiz-conjugations-service | Java 21 | `sm.selflearn.samskrtam.quiz.conjugations` |
-| quiz-vocabulary-service | Java 21 | `sm.selflearn.samskrtam.quiz.vocabulary` |
+| quiz-service | Java 21 + WebFlux | `sm.selflearn.samskrtam.quiz` |
 | dictionary-service | **Kotlin** | `sm.selflearn.samskrtam.dictionary` |
 | statistics-service | Java 21 | `sm.selflearn.samskrtam.statistics` |
 | shared/kafka-events | Java 21 | `sm.selflearn.samskrtam.events` |
@@ -87,8 +86,30 @@ samskrtam-app/
 │   │               ├── IdentityHeaderFilter.java
 │   │               ├── RateLimitFilter.java
 │   │               └── RequestIdFilter.java
-│   └── keycloak/
-│       └── realm-export.json
+│   ├── keycloak/
+│   │   └── realm-export.json
+│   ├── tempo/
+│   │   └── tempo.yaml
+│   ├── loki/
+│   │   └── loki.yaml
+│   ├── prometheus/
+│   │   └── prometheus.yaml
+│   └── grafana/
+│       ├── datasources/
+│       └── dashboards/
+│
+├── auth-service/                 ← Java 21 + Virtual Threads
+│   ├── build.gradle.kts
+│   └── src/main/java/
+│       └── sm/selflearn/samskrtam/auth/
+│           ├── Application.java
+│           ├── controller/
+│           │   └── AuthController.java
+│           ├── service/
+│           │   ├── TokenService.java
+│           │   └── KeycloakAdminService.java
+│           └── client/
+│               └── KeycloakClient.java
 │
 ├── services/
 │   ├── content-service/              ← Java 21 + Virtual Threads
@@ -101,17 +122,9 @@ samskrtam-app/
 │   │           ├── model/
 │   │           └── dto/
 │   │
-│   ├── quiz-declensions-service/     ← Java 21 + Virtual Threads
+│   ├── quiz-service/                ← Java 21 + WebFlux + R2DBC
 │   │   └── src/main/java/
-│   │       └── sm/selflearn/samskrtam/quiz/declensions/
-│   │
-│   ├── quiz-conjugations-service/    ← Java 21 + Virtual Threads
-│   │   └── src/main/java/
-│   │       └── sm/selflearn/samskrtam/quiz/conjugations/
-│   │
-│   ├── quiz-vocabulary-service/      ← Java 21 + Virtual Threads
-│   │   └── src/main/java/
-│   │       └── sm/selflearn/samskrtam/quiz/vocabulary/
+│   │       └── sm/selflearn/samskrtam/quiz/
 │   │
 │   ├── dictionary-service/           ← Kotlin + Coroutines
 │   │   ├── build.gradle.kts
@@ -157,10 +170,9 @@ samskrtam-app/
 │   │   └── keycloak/
 │   └── services/
 │       ├── api-gateway/
+│       ├── auth-service/
 │       ├── content-service/
-│       ├── quiz-declensions-service/
-│       ├── quiz-conjugations-service/
-│       ├── quiz-vocabulary-service/
+│       ├── quiz-service/
 │       ├── dictionary-service/
 │       └── statistics-service/
 │
@@ -178,10 +190,9 @@ rootProject.name = "samskrtam-app"
 
 include(
     ":infrastructure:api-gateway",
+    ":services:auth-service",
     ":services:content-service",
-    ":services:quiz-declensions-service",
-    ":services:quiz-conjugations-service",
-    ":services:quiz-vocabulary-service",
+    ":services:quiz-service",
     ":services:dictionary-service",
     ":services:statistics-service",
     ":shared:kafka-events",
@@ -193,15 +204,15 @@ include(
 
 ```toml
 [versions]
-java                   = "21"
-kotlin                 = "2.0.0"
-spring-boot            = "3.3.0"
-spring-cloud           = "2023.0.1"
-coroutines             = "1.8.1"
-kotest                 = "5.9.0"
-postgresql-jdbc        = "42.7.3"
-postgresql-r2dbc       = "1.0.4"
-flyway                 = "10.0.0"
+java = "21"
+kotlin = "2.0.0"
+spring-boot = "3.3.0"
+spring-cloud = "2023.0.1"
+coroutines = "1.8.1"
+kotest = "5.9.0"
+postgresql-jdbc = "42.7.3"
+postgresql-r2dbc = "1.0.4"
+flyway = "10.0.0"
 
 [libraries]
 # Spring Boot starters
@@ -417,9 +428,7 @@ X-Request-Id:  <uuid>    ← для distributed tracing
 ```
 PostgreSQL instance
 ├── schema: content       ← content-service      (JPA/JDBC)
-├── schema: declensions   ← quiz-declensions      (JPA/JDBC)
-├── schema: conjugations  ← quiz-conjugations     (JPA/JDBC)
-├── schema: vocabulary    ← quiz-vocabulary       (JPA/JDBC)
+├── schema: quiz          ← quiz-service         (R2DBC + Flyway/JDBC)
 ├── schema: dictionary    ← dictionary-service    (R2DBC)
 └── schema: statistics    ← statistics-service    (JPA/JDBC)
 ```
@@ -468,6 +477,25 @@ services:
     environment:
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/samskrtam/protocol/openid-connect/certs
       SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_PORT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+
+  auth-service:
+    build: ./services/auth-service
+    ports: ["8087:8087"]
+    depends_on: [keycloak]
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: samskrtam
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      SPRING_THREADS_VIRTUAL_ENABLED: "true"
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_PORT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_PORT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
 
   content-service:
     build: ./services/content-service
@@ -477,32 +505,17 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/samskrtam?currentSchema=content
       SPRING_THREADS_VIRTUAL_ENABLED: "true"
 
-  quiz-declensions-service:
-    build: ./services/quiz-declensions-service
+  quiz-service:
+    build: ./services/quiz-service
     ports: ["8082:8082"]
-    depends_on: [postgres, kafka, redis]
+    depends_on: [postgres, content-service, kafka, redis]
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/samskrtam?currentSchema=declensions
-      SPRING_THREADS_VIRTUAL_ENABLED: "true"
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/samskrtam
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/samskrtam
+      CONTENT_SERVICE_URL: http://content-service:8081
+      SPRING_DATA_REDIS_HOST: redis
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-
-  quiz-conjugations-service:
-    build: ./services/quiz-conjugations-service
-    ports: ["8083:8083"]
-    depends_on: [postgres, kafka, redis]
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/samskrtam?currentSchema=conjugations
       SPRING_THREADS_VIRTUAL_ENABLED: "true"
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-
-  quiz-vocabulary-service:
-    build: ./services/quiz-vocabulary-service
-    ports: ["8084:8084"]
-    depends_on: [postgres, kafka, redis]
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/samskrtam?currentSchema=vocabulary
-      SPRING_THREADS_VIRTUAL_ENABLED: "true"
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
 
   dictionary-service:
     build: ./services/dictionary-service
@@ -519,6 +532,39 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/samskrtam?currentSchema=statistics
       SPRING_THREADS_VIRTUAL_ENABLED: "true"
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_PORT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+
+  tempo:
+    image: grafana/tempo:latest
+    ports: ["3200:3200", "4317:4317"]
+    volumes:
+      - ./infrastructure/tempo/tempo.yaml:/etc/tempo.yaml
+    command: ["-config.file=/etc/tempo.yaml"]
+
+  loki:
+    image: grafana/loki:latest
+    ports: ["3100:3100"]
+    volumes:
+      - ./infrastructure/loki/loki.yaml:/etc/loki/local-config.yaml
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports: ["9090:9090"]
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    ports: ["3001:3000"]
+    depends_on: [tempo, loki, prometheus]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./infrastructure/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./infrastructure/grafana/dashboards:/etc/grafana/provisioning/dashboards
 
   frontend:
     build: ./frontend
@@ -534,51 +580,79 @@ services:
 | Frontend | 3000 |
 | API Gateway | 8090 |
 | Keycloak | 8080 |
+| auth-service | 8087 |
 | content-service | 8081 |
-| quiz-declensions-service | 8082 |
-| quiz-conjugations-service | 8083 |
-| quiz-vocabulary-service | 8084 |
+| quiz-service | 8082 |
 | dictionary-service | 8085 |
 | statistics-service | 8086 |
 | PostgreSQL | 5432 |
 | Kafka | 9092 |
 | Redis | 6379 |
+| Grafana Tempo | 4318 (OTLP), 3200 |
+| Prometheus | 9090 |
+| Loki | 3100 |
+| Grafana | 3001 |
+| Management (Actuator) | 8099 (все сервисы) |
+| Tempo (OTLP gRPC) | 4317 |
+| Tempo (HTTP) | 3200 |
+| Loki | 3100 |
+| Prometheus | 9090 |
+| Grafana | 3001 |
+| Actuator (все сервисы) | 9090 (management) |
 
 ---
 
 ## 9. Kubernetes манифесты
 
-### Структура k8s/
+Манифесты для развертывания всего приложения в Kubernetes кластере хранятся в директории `k8s/`. Они используют параметризацию для тегов образов (`${IMAGE_TAG}`), которые подставляются на этапе CI/CD.
+
+### Структура `k8s/`
+
+Структура директории организована для разделения инфраструктурных компонентов (БД, очереди) и бизнес-сервисов приложения.
 
 ```
 k8s/
-├── namespace.yaml
-├── infrastructure/
+├── namespace.yaml                  # Неймспейс для всего приложения
+│
+├── infrastructure/                 # Манифесты для stateful-сервисов
 │   ├── postgres/
+│   │   ├── persistentvolumeclaim.yaml
 │   │   ├── deployment.yaml
 │   │   ├── service.yaml
-│   │   ├── persistentvolumeclaim.yaml
 │   │   └── secret.yaml
 │   ├── kafka/
-│   │   ├── deployment.yaml
-│   │   └── service.yaml
 │   ├── redis/
-│   │   ├── deployment.yaml
-│   │   └── service.yaml
 │   └── keycloak/
-│       ├── deployment.yaml
-│       ├── service.yaml
-│       ├── ingress.yaml
-│       └── configmap.yaml
-└── services/
+│
+└── services/                       # Манифесты для stateless-сервисов
     └── <service-name>/
-        ├── deployment.yaml
-        ├── service.yaml
-        ├── configmap.yaml
-        └── secret.yaml
+        ├── deployment.yaml         # Описание развертывания (образ, реплики, env)
+        ├── service.yaml            # Открытие доступа к поду внутри кластера
+        ├── configmap.yaml          # Конфигурация (не-секретная)
+        └── secret.yaml             # Секреты (пароли, токены)
 ```
 
-### Шаблон Deployment — Java 21 сервис
+### Общие манифесты
+
+#### namespace.yaml
+
+Все ресурсы приложения создаются в одном неймспейсе `samskrtam` для изоляции от других приложений в кластере.
+
+```yaml
+# k8s/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: samskrtam
+```
+
+### Шаблоны манифестов для сервисов
+
+Для каждого микросервиса (`content-service`, `dictionary-service` и т.д.) используется стандартный набор манифестов.
+
+#### Шаблон Deployment
+
+Этот манифест описывает, как запустить под с контейнером приложения. Он включает в себя ссылку на Docker-образ, переменные окружения, пробы (liveness/readiness) и запросы/лимиты по ресурсам.
 
 ```yaml
 # k8s/services/content-service/deployment.yaml
@@ -600,33 +674,26 @@ spec:
       containers:
         - name: content-service
           image: registry.gitlab.local/samskrtam/content-service:${IMAGE_TAG}
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8081
-          env:
-            - name: SPRING_DATASOURCE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: content-service-secret
-                  key: datasource-url
-            - name: SPRING_THREADS_VIRTUAL_ENABLED
-              value: "true"
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
-              valueFrom:
-                configMapKeyRef:
-                  name: content-service-config
-                  key: keycloak-jwks-uri
+          envFrom:
+            - configMapRef:
+                name: content-service-config
+            - secretRef:
+                name: content-service-secret
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
               port: 8081
-            initialDelaySeconds: 30
-            periodSeconds: 10
+            initialDelaySeconds: 45 # Увеличено для Spring Boot
+            periodSeconds: 15
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: 8081
-            initialDelaySeconds: 20
-            periodSeconds: 5
+            initialDelaySeconds: 30 # Увеличено для Spring Boot
+            periodSeconds: 10
           resources:
             requests:
               memory: "256Mi"
@@ -634,6 +701,80 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
+```
+
+#### Шаблон Service
+
+`Service` предоставляет подам стабильный IP-адрес и DNS-имя внутри кластера, позволяя другим сервисам обращаться к ним по имени (например, `http://content-service:8081`).
+
+```yaml
+# k8s/services/content-service/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: content-service
+  namespace: samskrtam
+spec:
+  selector:
+    app: content-service
+  ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081
+```
+
+#### Шаблон ConfigMap
+
+`ConfigMap` используется для хранения конфигурации, которая не является секретной. Эти значения передаются в контейнер как переменные окружения.
+
+```yaml
+# k8s/services/content-service/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: content-service-config
+  namespace: samskrtam
+data:
+  SPRING_THREADS_VIRTUAL_ENABLED: "true"
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://keycloak.samskrtam:8080/realms/samskrtam/protocol/openid-connect/certs"
+  # Другие не-секретные переменные
+```
+
+#### Шаблон Secret
+
+Секреты хранятся в объекте `Secret` и так же передаются в контейнер. Манифесты секретов не хранятся в Git в открытом виде. Они создаются в кластере вручную или через CI/CD с помощью `kubectl create secret`.
+
+Пример команды для создания секрета с паролем от БД:
+
+```bash
+kubectl create secret generic content-service-secret \
+  --namespace=samskrtam \
+  --from-literal=SPRING_DATASOURCE_URL='jdbc:postgresql://postgres.samskrtam:5432/samskrtam?currentSchema=content' \
+  --from-literal=SPRING_DATASOURCE_USERNAME='samskrtam_user' \
+  --from-literal=SPRING_DATASOURCE_PASSWORD='<your-db-password>'
+```
+
+### Инфраструктурные компоненты
+
+Для stateful-сервисов, таких как PostgreSQL, используются `Deployment` вместе с `PersistentVolumeClaim` для сохранения данных. В реальном продуктовом окружении для управления такими компонентами предпочтительнее использовать **Helm-чарты** или **Операторы**, но для упрощения в данном проекте используются базовые манифесты.
+
+#### PersistentVolumeClaim для PostgreSQL
+
+Этот манифест запрашивает у кластера дисковое пространство для хранения данных PostgreSQL.
+
+```yaml
+# k8s/infrastructure/postgres/persistentvolumeclaim.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: samskrtam
+spec:
+  accessModes:
+    - ReadWriteOnce # Монопольный доступ для одного пода
+  resources:
+    requests:
+      storage: 5Gi # Запрашиваем 5 ГБ диска
 ```
 
 ---
@@ -696,25 +837,20 @@ build:api-gateway:
   variables:
     SERVICE: api-gateway
 
+build:auth-service:
+  <<: *build-java-service
+  variables:
+    SERVICE: auth-service
+
 build:content-service:
   <<: *build-java-service
   variables:
     SERVICE: content-service
 
-build:quiz-declensions:
+build:quiz-service:
   <<: *build-java-service
   variables:
-    SERVICE: quiz-declensions-service
-
-build:quiz-conjugations:
-  <<: *build-java-service
-  variables:
-    SERVICE: quiz-conjugations-service
-
-build:quiz-vocabulary:
-  <<: *build-java-service
-  variables:
-    SERVICE: quiz-vocabulary-service
+    SERVICE: quiz-service
 
 build:dictionary-service:
   <<: *build-java-service        # тот же процесс, Kotlin компилируется Gradle
@@ -765,6 +901,7 @@ deploy:kubernetes:
 | `CI_REGISTRY_PASSWORD` | Registry password | Yes |
 | `DB_PASSWORD` | PostgreSQL password | Yes |
 | `KEYCLOAK_ADMIN_PASSWORD` | Keycloak admin password | Yes |
+| `KEYCLOAK_CLIENT_SECRET` | client_secret для samskrtam-frontend (confidential) | Yes |
 
 ---
 

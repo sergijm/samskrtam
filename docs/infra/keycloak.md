@@ -23,17 +23,47 @@ API Gateway
 
 ---
 
-## 2. Realm конфигурация
+## 2. Настройка клиентов (Clients) в Keycloak
+
+Используется один клиент `samskrtam-frontend`. Все операции — логин, ROPC, OAuth2 Authorization Code, а также вызовы Admin REST API — выполняются auth-service от имени этого клиента.
+
+### `samskrtam-frontend`
+
+| Параметр | Значение |
+|---|---|
+| Client ID | `samskrtam-frontend` |
+| Client authentication | `On` (confidential) |
+| Direct Access Grants | `On` — ROPC (логин/пароль) |
+| Standard Flow | `On` — Authorization Code (Google, Mail.ru) |
+| Service accounts | `On` — для Admin REST API (регистрация, управление пользователями) |
+| Valid redirect URIs | `http://localhost:3000/auth/callback`, `http://samskrtam.local/auth/callback` |
+| Web origins | `http://localhost:3000`, `http://samskrtam.local` |
+
+**Service Account roles** (вкладка Service Account Roles в Keycloak Admin):
+```
+realm-management → manage-users
+realm-management → view-users
+```
+
+> **⚠️ После сохранения** перейдите на вкладку **Credentials** и скопируйте `Client secret`.
+> Передаётся в auth-service через переменную окружения `KEYCLOAK_CLIENT_SECRET`.
+> Ошибка `401 Unauthorized` при запросе к `/token` — почти всегда неверный секрет.
+
+> **Зачем один клиент?** Direct Access Grants + Service Account в одном confidential клиенте — стандартная практика для backend-driven auth. auth-service инкапсулирует все Keycloak вызовы, фронтенд работает только с auth-service.
+
+---
+
+## 3. Realm конфигурация
 
 | Параметр | Значение |
 |---|---|
 | Realm name | `samskrtam` |
-| Регистрация | Отключена (только Admin создаёт пользователей) |
+| Регистрация | Через auth-service (Admin REST API) — самостоятельная регистрация поддержана |
 | Язык по умолчанию | Russian |
 
 ---
 
-## 3. Identity Providers
+## 4. Identity Providers
 
 ### Google (Gmail)
 ```
@@ -69,13 +99,13 @@ Scopes:        openid email
 ### Локальный аккаунт
 ```
 Тип:     Keycloak собственная БД пользователей
-Создаёт: только ADMIN через Keycloak Admin Console
-Пароль:  задаётся при создании, смена через Keycloak Account Console
+Создаёт: пользователь через форму регистрации → auth-service → Keycloak Admin REST API
+Пароль:  задаётся при регистрации, смена через auth-service /change-password
 ```
 
 ---
 
-## 4. Роли
+## 5. Роли
 
 ```
 samskrtam realm roles:
@@ -85,7 +115,7 @@ samskrtam realm roles:
 
 ---
 
-## 5. JWT Claims
+## 6. JWT Claims
 
 Токен который Keycloak выдаёт содержит:
 
@@ -112,7 +142,7 @@ X-User-Locale: locale
 
 ---
 
-## 6. Keycloak как код (realm export)
+## 7. Keycloak как код (realm export)
 
 Конфигурация Keycloak хранится в репозитории как JSON и применяется при старте:
 
@@ -132,27 +162,27 @@ docker exec keycloak /opt/keycloak/bin/kc.sh export \
 
 ---
 
-## 7. Конфигурация микросервисов
+## 8. Конфигурация: кто валидирует JWT
 
-Каждый микросервис добавляет в `application.yml`:
+Только **API Gateway** валидирует JWT через JWKS. Остальные микросервисы JWT не видят — они получают уже проверенные данные в заголовках от Gateway.
 
-```yaml
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: http://keycloak:8080/realms/samskrtam/protocol/openid-connect/certs
+```
+API Gateway (единственный валидатор):
+  spring.security.oauth2.resourceserver.jwt.jwk-set-uri:
+    http://keycloak:8080/realms/samskrtam/protocol/openid-connect/certs
+
+Все остальные сервисы (content, quiz, statistics, dictionary):
+  # JWT не валидируется — доверяем заголовкам от Gateway
+  # X-User-Id:     sub из JWT
+  # X-User-Role:   realm_access.roles[0]
+  # X-User-Locale: locale claim
 ```
 
-И Spring Security автоматически:
-- Валидирует подпись JWT через JWKS
-- Проверяет expiration
-- Заполняет SecurityContext
+Преимущества: единая точка верификации, нет лишних сетевых запросов к Keycloak JWKS из каждого сервиса, проще горизонтальное масштабирование сервисов.
 
 ---
 
-## 8. Acceptance Criteria
+## 9. Acceptance Criteria
 
 - [ ] Пользователь входит через Google → получает JWT с ролью STUDENT
 - [ ] Пользователь входит через Mail.ru → получает JWT с ролью STUDENT
@@ -163,7 +193,7 @@ spring:
 
 ---
 
-## 9. Открытые вопросы
+## 10. Открытые вопросы
 
 - [ ] Mail.ru OIDC — проверить актуальность endpoints (могли измениться)
 - [ ] Нужен ли Keycloak Account Console для смены пароля пользователем?
