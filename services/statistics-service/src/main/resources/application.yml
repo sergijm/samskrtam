@@ -1,0 +1,22 @@
+server:
+  port: ${STATISTICS_SERVICE_PORT}
+
+spring:
+  application:
+    name: statistics-service
+  config:
+    import: "optional:file:.env[.properties]"
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}?currentSchema=statistics
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  flyway:
+    url: ${SPRING_FLYWAY_URL}
+    user: ${DB_USER}
+    password: ${DB_PASSWORD}
+    schemas: statistics
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}

@@ -50,7 +50,7 @@ dependencies {
 
 | Path | Сервис | Auth |
 |---|---|---|
-| `/api/v1/auth/**` | auth-service:8087 | **Public** |
+| `/api/v1/auth/**` | user-service:8087 | **Public** |
 | `/api/v1/content/public/**` | content-service:8081 | STUDENT |
 | `/api/v1/content/**` | content-service:8081 | ADMIN |
 | `/api/v1/quiz/**` | quiz-service:8082 | STUDENT |
@@ -60,7 +60,7 @@ dependencies {
 
 > `/api/v1/auth/**` — публичный маршрут. Сюда приходят запросы логина,
 > регистрации, восстановления пароля — до получения токена.
-> Безопасность обеспечивает сам auth-service.
+> Безопасность обеспечивает сам user-service.
 
 > `/api/v1/content/public/**` — публичный (для STUDENT) маршрут к content-service.
 > Используется для чтения списка квизов на главной странице.
@@ -236,7 +236,7 @@ logging:
 
 ## 9. Acceptance Criteria
 
-- [ ] `POST /api/v1/auth/login` без токена → проксируется в auth-service (не 401)
+- [ ] `POST /api/v1/auth/login` без токена → проксируется в user-service (не 401)
 - [ ] `GET /api/v1/quiz/**` без токена → 401
 - [ ] `GET /api/v1/content/public/quizzes` с токеном STUDENT → проксируется
 - [ ] `GET /api/v1/content/**` с токеном STUDENT → 403

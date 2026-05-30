@@ -175,7 +175,7 @@ frontend/
 - Переключатель языка (ru/en) — доступен без авторизации
 
 **Поведение:**
-- Форма логин/пароль → POST /api/v1/auth/login → ROPC через auth-service
+- Форма логин/пароль → POST /api/v1/auth/login → ROPC через user-service
 - Кнопка Google → GET /api/v1/auth/oauth2/google → редирект через Keycloak
 - Кнопка Mail.ru → GET /api/v1/auth/oauth2/mailru → редирект через Keycloak
 - После успешного входа → редирект на `/`
@@ -197,7 +197,7 @@ frontend/
 - Ссылка "Уже есть аккаунт? Войти" → `/login`
 
 **Поведение:**
-- POST /api/v1/auth/register → auth-service → Keycloak Admin API
+- POST /api/v1/auth/register → user-service → Keycloak Admin API
 - Успех → страница "Проверьте email для подтверждения"
 - Ошибка (email занят) → сообщение под полем email
 
@@ -213,7 +213,7 @@ frontend/
 - Ссылка "Вернуться к входу" → `/login`
 
 **Поведение:**
-- POST /api/v1/auth/forgot-password → auth-service → Keycloak Email Flow
+- POST /api/v1/auth/forgot-password → user-service → Keycloak Email Flow
 - Всегда показывает "Если email зарегистрирован — письмо отправлено"
   (не раскрываем существование аккаунта)
 
@@ -228,7 +228,7 @@ frontend/
 
 **Поведение:**
 - Читает `?code=...` из URL
-- POST /api/v1/auth/callback { code } → auth-service → обменивает на токены
+- POST /api/v1/auth/callback { code } → user-service → обменивает на токены
 - Успех → сохраняет токены в authStore → редирект на `/`
 - Ошибка → редирект на `/login` с сообщением об ошибке
 
@@ -625,7 +625,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 ## 8. Axios interceptors
 
 ```typescript
-// api/authApi.ts — все вызовы к auth-service
+// api/authApi.ts — все вызовы к user-service
 export const authApi = {
 
   // ROPC — логин через форму

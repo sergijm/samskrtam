@@ -25,7 +25,7 @@ API Gateway
 
 ## 2. Настройка клиентов (Clients) в Keycloak
 
-Используется один клиент `samskrtam-frontend`. Все операции — логин, ROPC, OAuth2 Authorization Code, а также вызовы Admin REST API — выполняются auth-service от имени этого клиента.
+Используется один клиент `samskrtam-frontend`. Все операции — логин, ROPC, OAuth2 Authorization Code, а также вызовы Admin REST API — выполняются user-service от имени этого клиента.
 
 ### `samskrtam-frontend`
 
@@ -46,10 +46,10 @@ realm-management → view-users
 ```
 
 > **⚠️ После сохранения** перейдите на вкладку **Credentials** и скопируйте `Client secret`.
-> Передаётся в auth-service через переменную окружения `KEYCLOAK_CLIENT_SECRET`.
+> Передаётся в user-service через переменную окружения `KEYCLOAK_CLIENT_SECRET`.
 > Ошибка `401 Unauthorized` при запросе к `/token` — почти всегда неверный секрет.
 
-> **Зачем один клиент?** Direct Access Grants + Service Account в одном confidential клиенте — стандартная практика для backend-driven auth. auth-service инкапсулирует все Keycloak вызовы, фронтенд работает только с auth-service.
+> **Зачем один клиент?** Direct Access Grants + Service Account в одном confidential клиенте — стандартная практика для backend-driven auth. user-service инкапсулирует все Keycloak вызовы, фронтенд работает только с user-service.
 
 ---
 
@@ -58,7 +58,7 @@ realm-management → view-users
 | Параметр | Значение |
 |---|---|
 | Realm name | `samskrtam` |
-| Регистрация | Через auth-service (Admin REST API) — самостоятельная регистрация поддержана |
+| Регистрация | Через user-service (Admin REST API) — самостоятельная регистрация поддержана |
 | Язык по умолчанию | Russian |
 
 ---
@@ -99,8 +99,8 @@ Scopes:        openid email
 ### Локальный аккаунт
 ```
 Тип:     Keycloak собственная БД пользователей
-Создаёт: пользователь через форму регистрации → auth-service → Keycloak Admin REST API
-Пароль:  задаётся при регистрации, смена через auth-service /change-password
+Создаёт: пользователь через форму регистрации → user-service → Keycloak Admin REST API
+Пароль:  задаётся при регистрации, смена через user-service /change-password
 ```
 
 ---

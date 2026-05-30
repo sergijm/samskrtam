@@ -1,25 +1,10 @@
-
-pluginManagement {
-    repositories {
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
-
-dependencyResolutionManagement {
-    repositories {
-        mavenCentral()
-    }
-}
-
-rootProject.name = "samskrtam-app"
+rootProject.name = "samskrtam"
 
 include(
     ":infrastructure:api-gateway",
+    ":services:auth-service", // Исправленный путь
     ":services:content-service",
-    ":services:quiz-declensions-service",
-    ":services:quiz-conjugations-service",
-    ":services:quiz-vocabulary-service",
+    ":services:quiz-service",
     ":services:dictionary-service",
     ":services:statistics-service",
     ":shared:kafka-events",

@@ -1,12 +1,15 @@
-
-// build.gradle.kts (корень монорепо)
 plugins {
-    alias(libs.plugins.kotlin.jvm)    apply false
+    // Применяем плагины к подпроектам, а не к корневому
+    alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.spring) apply false
-    alias(libs.plugins.spring.boot)   apply false
+    alias(libs.plugins.spring.boot) apply false
 }
 
-subprojects {
-    group   = "sm.selflearn"
+allprojects {
+    group = "sm.selflearn.samskrtam"
     version = "0.0.1-SNAPSHOT"
+
+    repositories {
+        mavenCentral()
+    }
 }

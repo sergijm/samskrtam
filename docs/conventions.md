@@ -40,7 +40,7 @@ DB_NAME=samskrtam
 DB_USER=samskrtam
 DB_PASSWORD=
 
-# ── JDBC (content-service, auth-service, statistics-service) ──
+# ── JDBC (content-service, user-service, statistics-service) ──
 SPRING_DATASOURCE_URL=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
 
 # ── R2DBC (quiz-service, dictionary-service) ────────────
@@ -82,6 +82,18 @@ GRACEFUL_SHUTDOWN_TIMEOUT=30s
 
 # ── Spring ──────────────────────────────────────────────
 SPRING_PROFILES_ACTIVE=default
+
+# ── MinIO ───────────────────────────────────────────────
+MINIO_URL=http://minio:9000
+MINIO_PUBLIC_URL=http://localhost:9000
+MINIO_ACCESS_KEY=
+MINIO_SECRET_KEY=
+MINIO_BUCKET_AVATARS=avatars
+MINIO_BUCKET_DOCUMENTS=documents
+
+# ── User Service ────────────────────────────────────────
+USER_SERVICE_PORT=8087
+OUTBOX_PROCESSOR_INTERVAL_MS=5000
 
 # ── Frontend ────────────────────────────────────────────
 VITE_API_URL=http://localhost:8090
@@ -241,7 +253,7 @@ management:
 
 ### Virtual Threads — MDC работает стандартно
 
-В сервисах на Virtual Threads (`content-service`, `auth-service`, `statistics-service`) `traceId` автоматически попадает в MDC через Micrometer. Дополнительных настроек не требуется.
+В сервисах на Virtual Threads (`content-service`, `user-service`, `statistics-service`) `traceId` автоматически попадает в MDC через Micrometer. Дополнительных настроек не требуется.
 
 ### WebFlux — ReactorContextAccessor
 
@@ -350,7 +362,7 @@ scrape_configs:
     static_configs:
       - targets:
           - 'api-gateway:8099'
-          - 'auth-service:8099'
+          - 'user-service:8099'
           - 'content-service:8099'
           - 'quiz-service:8099'
           - 'dictionary-service:8099'
@@ -393,7 +405,7 @@ public class SessionService {
 ### Зависимости
 
 ```kotlin
-// WebMVC (content-service, auth-service, statistics-service)
+// WebMVC (content-service, user-service, statistics-service)
 implementation(libs.springdoc.openapi.webmvc)
 
 // WebFlux (api-gateway, quiz-service)
@@ -422,7 +434,7 @@ springdoc:
   swagger-ui:
     enabled: ${SPRINGDOC_ENABLED}
     urls:
-      - { name: auth-service,       url: "http://auth-service:8087/api-docs" }
+      - { name: user-service,       url: "http://user-service:8087/api-docs" }
       - { name: content-service,    url: "http://content-service:8081/api-docs" }
       - { name: quiz-service,       url: "http://quiz-service:8082/api-docs" }
       - { name: dictionary-service, url: "http://dictionary-service:8085/api-docs" }
@@ -698,7 +710,7 @@ tasks.check { dependsOn(tasks.jacocoTestCoverageVerification) }
 |---|---|
 | quiz-service | старт сессии, верный/неверный ответ, fallback Redis→Postgres, дубликат ответа |
 | content-service | CRUD квиза, session-data, STUDENT получает 403 на write |
-| auth-service | логин (успех/неверный пароль), регистрация (дубликат email) |
+| user-service | логин (успех/неверный пароль), регистрация (дубликат email) |
 | statistics-service | Kafka consumer сохраняет AnswerRecord, лидерборд |
 | dictionary-service | cache hit, cache miss + внешний запрос, внешний API недоступен |
 | api-gateway | нет JWT → 401, STUDENT на /content → 403, rate limit → 429 |
@@ -768,7 +780,7 @@ spring:
 ### Connection Pool
 
 ```yaml
-# HikariCP (content-service, auth-service, statistics-service)
+# HikariCP (content-service, user-service, statistics-service)
 spring:
   datasource:
     hikari:
@@ -875,8 +887,8 @@ PR в `main` требует: прохождения CI + одного code revie
 dev:       ## Запустить все сервисы
 	docker compose up -d
 
-infra:     ## Только инфраструктура (БД, Kafka, Redis, Keycloak)
-	docker compose up -d postgres kafka redis keycloak
+infra:     ## Только инфраструктура (БД, Kafka, Redis, Keycloak, MinIO)
+	docker compose up -d postgres kafka redis keycloak minio
 
 observe:   ## Observability стек (Tempo, Prometheus, Loki, Grafana)
 	docker compose up -d tempo prometheus loki promtail grafana
@@ -917,3 +929,26 @@ clean:     ## Сбросить volumes (БД, Kafka)
 - [ ] ArchUnit тесты — выносить в `shared/arch-rules` или дублировать в каждом сервисе?
 - [ ] Testcontainers — использовать reuse mode для ускорения локальных тестов?
 - [ ] k8s NetworkPolicy — ограничить доступ к management порту только из namespace Prometheus?
+
+---
+
+## 14. Архитектурные решения (ADR)
+
+### ADR-001: Разделение auth между Gateway и user-service
+
+**Статус:** Принято, не реализовано в спецификациях
+
+**Контекст:** Изначально user-service проксировал все операции с токенами (login, refresh, logout, OAuth2 callback). Это избыточно — Spring Cloud Gateway нативно поддерживает OAuth2 Client на WebFlux.
+
+**Решение:**
+
+| Компонент | Ответственность |
+|---|---|
+| **Gateway** | OAuth2/OIDC протокол: login (ROPC), refresh, logout, редиректы на Google/Mail.ru, обмен `code` на токен (Authorization Code flow) |
+| **user-service** | Жизненный цикл аккаунта: регистрация, восстановление пароля, смена пароля, верификация email, invite flow |
+
+**Граница:** всё что связано с OAuth2/OIDC протоколом — Gateway (конфигурация Spring Security). Всё что связано с бизнес-логикой управления аккаунтом — user-service (Keycloak Admin REST API).
+
+**Следствие:** user-service не хранит токены и не проксирует OAuth2 запросы. Gateway не знает про бизнес-правила регистрации.
+
+**TODO:** обновить спецификации api-gateway.md и user-service.md.

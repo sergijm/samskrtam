@@ -1,0 +1,26 @@
+server:
+  port: ${CONTENT_SERVICE_PORT}
+
+spring:
+  application:
+    name: content-service
+  config:
+    import: "optional:file:.env[.properties]"
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: content
+  flyway:
+    url: ${SPRING_FLYWAY_URL}
+    user: ${DB_USER}
+    password: ${DB_PASSWORD}
+    schemas: content

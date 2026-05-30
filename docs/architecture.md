@@ -21,7 +21,7 @@
 | Сервис | Язык | Base package |
 |---|---|---|
 | api-gateway | Java 21 | `sm.selflearn.samskrtam.gateway` |
-| auth-service | Java 21 | `sm.selflearn.samskrtam.auth` |
+| user-service | Java 21 | `sm.selflearn.samskrtam.user` |
 | content-service | Java 21 | `sm.selflearn.samskrtam.content` |
 | quiz-service | Java 21 + WebFlux | `sm.selflearn.samskrtam.quiz` |
 | dictionary-service | **Kotlin** | `sm.selflearn.samskrtam.dictionary` |
@@ -98,7 +98,7 @@ samskrtam-app/
 │       ├── datasources/
 │       └── dashboards/
 │
-├── auth-service/                 ← Java 21 + Virtual Threads
+├── user-service/                 ← Java 21 + Virtual Threads
 │   ├── build.gradle.kts
 │   └── src/main/java/
 │       └── sm/selflearn/samskrtam/auth/
@@ -170,7 +170,7 @@ samskrtam-app/
 │   │   └── keycloak/
 │   └── services/
 │       ├── api-gateway/
-│       ├── auth-service/
+│       ├── user-service/
 │       ├── content-service/
 │       ├── quiz-service/
 │       ├── dictionary-service/
@@ -190,7 +190,7 @@ rootProject.name = "samskrtam-app"
 
 include(
     ":infrastructure:api-gateway",
-    ":services:auth-service",
+    ":services:user-service",
     ":services:content-service",
     ":services:quiz-service",
     ":services:dictionary-service",
@@ -427,6 +427,7 @@ X-Request-Id:  <uuid>    ← для distributed tracing
 
 ```
 PostgreSQL instance
+├── schema: users         ← user-service         (JPA/JDBC)
 ├── schema: content       ← content-service      (JPA/JDBC)
 ├── schema: quiz          ← quiz-service         (R2DBC + Flyway/JDBC)
 ├── schema: dictionary    ← dictionary-service    (R2DBC)
@@ -481,15 +482,30 @@ services:
       MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
 
-  auth-service:
-    build: ./services/auth-service
+  user-service:
+    build: ./services/user-service
     ports: ["8087:8087"]
-    depends_on: [keycloak]
+    depends_on: [postgres, keycloak, minio]
     environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/samskrtam
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: samskrtam
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
       SPRING_THREADS_VIRTUAL_ENABLED: "true"
+
+  minio:
+    image: minio/minio:RELEASE.2024-05-01T01-11-10Z
+    ports: ["9000:9000", "9001:9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
       MANAGEMENT_SERVER_PORT: ${MANAGEMENT_PORT}
       MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
@@ -580,7 +596,9 @@ services:
 | Frontend | 3000 |
 | API Gateway | 8090 |
 | Keycloak | 8080 |
-| auth-service | 8087 |
+| user-service | 8087 |
+| MinIO API | 9000 |
+| MinIO Console | 9001 |
 | content-service | 8081 |
 | quiz-service | 8082 |
 | dictionary-service | 8085 |
@@ -837,10 +855,10 @@ build:api-gateway:
   variables:
     SERVICE: api-gateway
 
-build:auth-service:
+build:user-service:
   <<: *build-java-service
   variables:
-    SERVICE: auth-service
+    SERVICE: user-service
 
 build:content-service:
   <<: *build-java-service
