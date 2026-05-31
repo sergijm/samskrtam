@@ -18,6 +18,7 @@
 | React Query (TanStack) | 5 | Server state, кэширование |
 | Zustand | 4 | Client state (auth, locale) |
 | i18next + react-i18next | latest | Интернационализация ru/en |
+| PrimeReact ThemeProvider | — | Переключение светлой/тёмной темы |
 | Axios | latest | HTTP клиент |
 | **PrimeReact** | **10.x** | **UI компоненты** |
 | **PrimeFlex** | **3.x** | **CSS утилиты (grid, spacing)** |
@@ -43,14 +44,26 @@ PrimeReact — React-версия PrimeFaces от той же компании (
 
 ### Тема
 
-PrimeReact использует систему тем. Рекомендуется `lara-light-blue` (светлая) или `lara-dark-blue` (тёмная).
+PrimeReact поддерживает динамическую смену темы через `<link id="theme-link">` без перезагрузки страницы. Используются две темы из стандартного набора:
+
+| Режим | Тема PrimeReact |
+|---|---|
+| Светлая (по умолчанию) | `lara-light-blue` |
+| Тёмная | `lara-dark-blue` |
+
+Вместо статического `import` в `main.tsx` тема подключается динамически — `themeStore` меняет `href` у тега `<link>`:
 
 ```typescript
-// main.tsx
-import 'primereact/resources/themes/lara-light-blue/theme.css';
+// main.tsx — только базовые стили, без темы
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import 'primeflex/primeflex.css';
+// Тема подключается динамически через themeStore при монтировании App
+```
+
+```html
+<!-- index.html — placeholder для динамической темы -->
+<link id="theme-link" rel="stylesheet" href="/themes/lara-light-blue/theme.css" />
 ```
 
 ---
@@ -73,7 +86,13 @@ frontend/
     │   ├── RegisterPage.tsx
     │   ├── ForgotPasswordPage.tsx
     │   ├── AuthCallbackPage.tsx
-    │   ├── ChangePasswordPage.tsx
+    │   ├── ChangePasswordPage.tsx  ← спецификация в user-frontend.md
+    │   ├── SettingsPage.tsx        ← спецификация в user-frontend.md
+    │   ├── UserProfilePage.tsx     ← спецификация в user-frontend.md
+    │   ├── GroupListPage.tsx       ← спецификация в user-frontend.md
+    │   ├── GroupPage.tsx           ← спецификация в user-frontend.md
+    │   ├── GroupCreatePage.tsx     ← спецификация в user-frontend.md
+    │   ├── GroupEditPage.tsx       ← спецификация в user-frontend.md
     │   ├── DashboardPage.tsx
     │   ├── QuizListPage.tsx
     │   ├── QuizPage.tsx
@@ -106,28 +125,40 @@ frontend/
     │   │   └── SearchInput.tsx     ← поиск с автодополнением
     │   └── common/
     │       ├── LocaleSwitcher.tsx  ← переключатель ru/en
+    │       ├── ThemeSwitcher.tsx   ← переключатель светлая/тёмная
     │       ├── LoadingSpinner.tsx
     │       └── ErrorMessage.tsx
+    │   ├── user/                   ← компоненты профиля (user-frontend.md)
+    │   │   ├── UserGroupChips.tsx
+    │   │   └── UserAvatar.tsx
+    │   └── group/                  ← компоненты групп (user-frontend.md)
+    │       ├── GroupMembersTable.tsx
+    │       ├── GroupCuratorBadge.tsx
+    │       └── AddMemberDialog.tsx
     │
     ├── api/                        ← HTTP клиенты по доменам
     │   ├── axios.ts                ← настройка axios + interceptors
     │   ├── authApi.ts
+    │   ├── userApi.ts              ← пользователи и группы (user-frontend.md)
     │   ├── quizApi.ts
     │   ├── dictionaryApi.ts
     │   └── statisticsApi.ts
     │
     ├── store/                      ← Zustand stores
     │   ├── authStore.ts            ← токены, текущий пользователь
-    │   └── localeStore.ts          ← текущий язык
+    │   ├── localeStore.ts          ← текущий язык
+    │   └── themeStore.ts           ← текущая тема
     │
     ├── hooks/                      ← React Query хуки
+    │   ├── useUser.ts              ← пользователи (user-frontend.md)
+    │   ├── useGroups.ts            ← группы (user-frontend.md)
     │   ├── useQuizzes.ts
     │   ├── useQuizSession.ts
     │   ├── useDictionary.ts
     │   └── useStatistics.ts
     │
     ├── types/                      ← TypeScript типы
-    │   ├── auth.ts
+    │   ├── user.ts                 ← User, Group, GroupMember (user-frontend.md)
     │   ├── quiz.ts
     │   ├── dictionary.ts
     │   └── statistics.ts
@@ -156,8 +187,16 @@ frontend/
 | `/dictionary` | DictionaryPage | Да | STUDENT |
 | `/statistics` | StatisticsPage | Да | STUDENT |
 | `/leaderboard` | LeaderboardPage | Да | STUDENT |
-| `/settings/password` | ChangePasswordPage | Да | STUDENT |
+| `/settings/password` | ChangePasswordPage | Да | STUDENT, ADMIN |
+| `/settings` | SettingsPage | Да | STUDENT, ADMIN |
+| `/users/:id` | UserProfilePage | Да | STUDENT, ADMIN |
+| `/groups` | GroupListPage | Да | ADMIN |
+| `/groups/new` | GroupCreatePage | Да | ADMIN |
+| `/groups/:id` | GroupPage | Да | STUDENT, ADMIN |
+| `/groups/:id/edit` | GroupEditPage | Да | ADMIN, CURATOR |
 | `/admin` | AdminPage | Да | ADMIN |
+
+Роуты `/settings`, `/users/:id`, `/groups/*` — подробная спецификация в [user-frontend.md](user-frontend.md).
 
 ---
 
@@ -173,6 +212,7 @@ frontend/
 - Кнопка "Войти через Mail.ru"
 - Форма: email + пароль + кнопка "Войти" (локальный аккаунт)
 - Переключатель языка (ru/en) — доступен без авторизации
+- Переключатель темы (светлая/тёмная) — доступен без авторизации
 
 **Поведение:**
 - Форма логин/пароль → POST /api/v1/auth/login → ROPC через user-service
@@ -234,21 +274,9 @@ frontend/
 
 ---
 
-### ChangePasswordPage (`/settings/password`)
+### ChangePasswordPage и SettingsPage
 
-**Назначение:** смена пароля для авторизованного пользователя.
-
-**Элементы:**
-- Поле "Текущий пароль"
-- Поле "Новый пароль"
-- Поле "Подтверждение нового пароля"
-- Кнопка "Изменить пароль"
-
-**Поведение:**
-- Требует авторизации (ProtectedRoute)
-- POST /api/v1/auth/change-password { currentPassword, newPassword }
-- Успех → сообщение "Пароль изменён"
-- Неверный текущий пароль → сообщение под полем
+Спецификации вынесены в [user-frontend.md](user-frontend.md) (раздел 6).
 
 ---
 
@@ -441,26 +469,15 @@ ERROR      → сообщение об ошибке (API недоступен и
 - Вкладка "Квизы" — список + создание/редактирование/удаление
 - Вкладка "Вопросы" — редактор вопросов выбранного квиза
 - Вкладка "Пользователи" — список пользователей + создание
+- Вкладка "Группы" — список групп + кнопка создания (детали в [user-frontend.md](user-frontend.md) раздел 7)
 
 ---
 
 ## 5. TypeScript типы
 
+Типы пользователей и групп (`User`, `Group`, `GroupMember`, `GroupRole`, `AuthTokens`, `Theme`, `Locale`) вынесены в [user-frontend.md](user-frontend.md) раздел 3 (`types/user.ts`).
+
 ```typescript
-// types/auth.ts
-export interface User {
-  id:       string;
-  username: string;
-  email:    string;
-  role:     'STUDENT' | 'ADMIN';
-  locale:   'ru' | 'en';
-}
-
-export interface AuthTokens {
-  accessToken:  string;
-  refreshToken: string;
-}
-
 // types/quiz.ts
 export interface QuizSummary {
   id:         string;
@@ -622,7 +639,100 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 ---
 
-## 8. Axios interceptors
+## 8. Theme Store и Locale Store (Zustand)
+
+```typescript
+// store/themeStore.ts
+type Theme = 'light' | 'dark';
+
+const THEME_HREFS: Record<Theme, string> = {
+  light: '/themes/lara-light-blue/theme.css',
+  dark:  '/themes/lara-dark-blue/theme.css',
+};
+
+interface ThemeState {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+}
+
+export const useThemeStore = create<ThemeState>((set) => ({
+  // Начальное значение: из localStorage (для неавторизованных)
+  theme: (localStorage.getItem('theme') as Theme) ?? 'light',
+
+  setTheme: (theme) => {
+    // 1. Применяем немедленно — меняем href тега <link>
+    const link = document.getElementById('theme-link') as HTMLLinkElement;
+    if (link) link.href = THEME_HREFS[theme];
+
+    // 2. Синхронизируем <html data-theme="..."> для кастомных CSS переменных
+    document.documentElement.setAttribute('data-theme', theme);
+
+    // 3. Сохраняем в localStorage для неавторизованных / до логина
+    localStorage.setItem('theme', theme);
+
+    set({ theme });
+  },
+}));
+
+// store/localeStore.ts
+type Locale = 'ru' | 'en';
+
+interface LocaleState {
+  locale: Locale;
+  setLocale: (locale: Locale) => void;
+}
+
+export const useLocaleStore = create<LocaleState>((set) => ({
+  locale: (localStorage.getItem('locale') as Locale) ?? 'ru',
+
+  setLocale: (locale) => {
+    i18next.changeLanguage(locale);       // применяется немедленно
+    localStorage.setItem('locale', locale);
+    set({ locale });
+  },
+}));
+```
+
+```typescript
+// components/common/ThemeSwitcher.tsx
+export const ThemeSwitcher = () => {
+  const { theme, setTheme } = useThemeStore();
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex align-items-center gap-2">
+      <i className="pi pi-sun" aria-hidden="true" />
+      <InputSwitch
+        checked={theme === 'dark'}
+        onChange={(e) => setTheme(e.value ? 'dark' : 'light')}
+        aria-label={t('settings.toggleTheme')}
+      />
+      <i className="pi pi-moon" aria-hidden="true" />
+    </div>
+  );
+};
+
+// components/common/LocaleSwitcher.tsx
+export const LocaleSwitcher = () => {
+  const { locale, setLocale } = useLocaleStore();
+
+  return (
+    <SelectButton
+      value={locale}
+      onChange={(e) => setLocale(e.value)}
+      options={[
+        { label: 'RU', value: 'ru' },
+        { label: 'EN', value: 'en' },
+      ]}
+      aria-label="Язык / Language"
+    />
+  );
+};
+```
+
+`ThemeSwitcher` и `LocaleSwitcher` размещаются в `Header.tsx` (для авторизованных пользователей) и на `LoginPage` (для всех остальных).
+
+---
 
 ```typescript
 // api/authApi.ts — все вызовы к user-service
@@ -704,7 +814,18 @@ api.interceptors.response.use(
     "dictionary":  "Словарь",
     "statistics":  "Статистика",
     "leaderboard": "Рейтинг",
+    "settings":    "Настройки",
     "admin":       "Администрирование"
+  },
+  "settings": {
+    "title":         "Настройки",
+    "language":      "Язык",
+    "theme":         "Тема",
+    "themeLight":    "Светлая",
+    "themeDark":     "Тёмная",
+    "toggleTheme":   "Переключить тему",
+    "save":          "Сохранить",
+    "saved":         "Настройки сохранены"
   },
   "quiz": {
     "start":       "Начать квиз",
@@ -781,16 +902,19 @@ VITE_KEYCLOAK_CLIENT_ID=samskrtam-frontend
 - [ ] Если статья запрашивается впервые — спиннер пока идёт внешний запрос
 - [ ] WordCard показывает грамматические характеристики (род, часть речи)
 
-### i18n
+### i18n и тема
 - [ ] Переключение языка работает без перезагрузки страницы
-- [ ] Выбранный язык сохраняется в профиле пользователя
+- [ ] Переключение темы применяется мгновенно (смена href у #theme-link)
 - [ ] Все тексты через i18next, нет захардкоженных строк
+- [ ] После логина тема и язык восстанавливаются из профиля
+
+Полные критерии по настройкам, профилю и группам — в [user-frontend.md](user-frontend.md) раздел 9.
 
 ---
 
 ## 13. Открытые вопросы
 
-- [ ] Тема — lara-light-blue или lara-dark-blue? Или обе с переключателем?
+- [x] Тема — обе с переключателем: `lara-light-blue` (по умолчанию) и `lara-dark-blue`, динамическое переключение через `#theme-link`
 - [ ] Шрифт для деванагари — Noto Sans Devanagari?
 - [ ] Keycloak JS adapter или самописный OAuth2 флоу?
 - [ ] PWA (оффлайн режим для словаря)?

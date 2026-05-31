@@ -3,7 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { PrimeReactProvider } from 'primereact/api';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import 'primereact/resources/themes/lara-light-blue/theme.css';
+// REMOVED: Static import of lara-light-blue theme.
+// Theme is now loaded dynamically via <link id="theme-link"> in index.html and managed by themeStore.
+// import 'primereact/resources/themes/lara-light-blue/theme.css';
+
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import 'primeflex/primeflex.css';

@@ -2,7 +2,7 @@ rootProject.name = "samskrtam"
 
 include(
     ":infrastructure:api-gateway",
-    ":services:auth-service", // Исправленный путь
+    ":services:user-service",
     ":services:content-service",
     ":services:quiz-service",
     ":services:dictionary-service",

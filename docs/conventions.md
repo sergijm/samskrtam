@@ -319,15 +319,28 @@ public class TracingConfig {
 
 ## 4. Actuator
 
-### Management порт
+### Management порты
 
-Все сервисы выносят Actuator на отдельный порт `${MANAGEMENT_PORT}` (8099). Gateway **не проксирует** management порт — он недоступен снаружи.
+Каждый сервис выносит Actuator на **свой** порт, настраиваемый через `.env`.
+Это позволяет запускать все сервисы локально без конфликтов портов.
+Gateway **не проксирует** management порты — они недоступны снаружи.
+
+| Сервис | Env переменная | Порт по умолчанию |
+|---|---|---|
+| api-gateway | `GATEWAY_MANAGEMENT_PORT` | 9090 |
+| feature-flag-service | `FEATURE_FLAG_MANAGEMENT_PORT` | 9091 |
+| user-service | `USER_MANAGEMENT_PORT` | 9092 |
+| content-service | `CONTENT_MANAGEMENT_PORT` | 9093 |
+| quiz-service | `QUIZ_MANAGEMENT_PORT` | 9094 |
+| dictionary-service | `DICTIONARY_MANAGEMENT_PORT` | 9095 |
+| statistics-service | `STATISTICS_MANAGEMENT_PORT` | 9096 |
 
 ```yaml
-# application.yml (все сервисы)
+# application.yml (шаблон для всех сервисов)
+# Значение ${SERVICE_MANAGEMENT_PORT} — своё для каждого сервиса
 management:
   server:
-    port: ${MANAGEMENT_PORT}
+    port: ${SERVICE_MANAGEMENT_PORT}
   endpoints:
     web:
       exposure:
@@ -343,6 +356,20 @@ management:
         readiness:
           include: readinessState, db, redis, kafka
 ```
+
+В `.env` (локальная разработка):
+```
+GATEWAY_MANAGEMENT_PORT=9090
+FEATURE_FLAG_MANAGEMENT_PORT=9091
+USER_MANAGEMENT_PORT=9092
+CONTENT_MANAGEMENT_PORT=9093
+QUIZ_MANAGEMENT_PORT=9094
+DICTIONARY_MANAGEMENT_PORT=9095
+STATISTICS_MANAGEMENT_PORT=9096
+```
+
+В k8s каждый Deployment объявляет `containerPort` со своим значением из ConfigMap.
+Prometheus scrape targets используют конкретные порты каждого сервиса (см. ниже).
 
 ### Health Groups
 
@@ -361,12 +388,13 @@ scrape_configs:
   - job_name: 'samskrtam-services'
     static_configs:
       - targets:
-          - 'api-gateway:8099'
-          - 'user-service:8099'
-          - 'content-service:8099'
-          - 'quiz-service:8099'
-          - 'dictionary-service:8099'
-          - 'statistics-service:8099'
+          - 'api-gateway:9090'
+          - 'feature-flag-service:9091'
+          - 'user-service:9092'
+          - 'content-service:9093'
+          - 'quiz-service:9094'
+          - 'dictionary-service:9095'
+          - 'statistics-service:9096'
     metrics_path: /actuator/prometheus
 ```
 
@@ -759,7 +787,7 @@ RUN addgroup -S app && adduser -S app -G app
 USER app
 WORKDIR /app
 COPY --from=builder /app/services/${SERVICE}/build/libs/*.jar app.jar
-EXPOSE 8080 8099
+EXPOSE 8080 ${SERVICE_MANAGEMENT_PORT}
 ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
@@ -928,7 +956,7 @@ clean:     ## Сбросить volumes (БД, Kafka)
 - [ ] Grafana дашборды — версионировать как JSON в репозитории или настраивать вручную?
 - [ ] ArchUnit тесты — выносить в `shared/arch-rules` или дублировать в каждом сервисе?
 - [ ] Testcontainers — использовать reuse mode для ускорения локальных тестов?
-- [ ] k8s NetworkPolicy — ограничить доступ к management порту только из namespace Prometheus?
+- [x] k8s NetworkPolicy — ограничить доступ к сервисам только от Gateway: реализовано, см. [api-gateway.md](services/api-gateway.md) раздел 11.
 
 ---
 
@@ -936,7 +964,7 @@ clean:     ## Сбросить volumes (БД, Kafka)
 
 ### ADR-001: Разделение auth между Gateway и user-service
 
-**Статус:** Принято, не реализовано в спецификациях
+**Статус:** Принято, реализовано в спецификациях (api-gateway.md, user-service.md)
 
 **Контекст:** Изначально user-service проксировал все операции с токенами (login, refresh, logout, OAuth2 callback). Это избыточно — Spring Cloud Gateway нативно поддерживает OAuth2 Client на WebFlux.
 
@@ -951,4 +979,4 @@ clean:     ## Сбросить volumes (БД, Kafka)
 
 **Следствие:** user-service не хранит токены и не проксирует OAuth2 запросы. Gateway не знает про бизнес-правила регистрации.
 
-**TODO:** обновить спецификации api-gateway.md и user-service.md.
+Спецификации api-gateway.md и user-service.md отражают это решение.

@@ -473,18 +473,35 @@ services:
 
   api-gateway:
     build: ./infrastructure/api-gateway
-    ports: ["8090:8090"]
+    ports:
+      - "8090:8090"
+      - "${GATEWAY_MANAGEMENT_PORT}:${GATEWAY_MANAGEMENT_PORT}"
     depends_on: [keycloak, redis]
     environment:
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/samskrtam/protocol/openid-connect/certs
       SPRING_DATA_REDIS_HOST: redis
-      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_PORT}
+      MANAGEMENT_SERVER_PORT: ${GATEWAY_MANAGEMENT_PORT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+
+  feature-flag-service:
+    build: ./services/feature-flag-service
+    ports:
+      - "8088:8088"
+      - "${FEATURE_FLAG_MANAGEMENT_PORT}:${FEATURE_FLAG_MANAGEMENT_PORT}"
+    depends_on: [redis]
+    environment:
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      MANAGEMENT_SERVER_PORT: ${FEATURE_FLAG_MANAGEMENT_PORT}
       MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
 
   user-service:
     build: ./services/user-service
-    ports: ["8087:8087"]
+    ports:
+      - "8087:8087"
+      - "${USER_MANAGEMENT_PORT}:${USER_MANAGEMENT_PORT}"
     depends_on: [postgres, keycloak, minio]
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/samskrtam
@@ -496,6 +513,9 @@ services:
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
       SPRING_THREADS_VIRTUAL_ENABLED: "true"
+      MANAGEMENT_SERVER_PORT: ${USER_MANAGEMENT_PORT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
 
   minio:
     image: minio/minio:RELEASE.2024-05-01T01-11-10Z
@@ -506,24 +526,25 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
-      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_PORT}
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
-      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_PORT}
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
 
   content-service:
     build: ./services/content-service
-    ports: ["8081:8081"]
+    ports:
+      - "8081:8081"
+      - "${CONTENT_MANAGEMENT_PORT}:${CONTENT_MANAGEMENT_PORT}"
     depends_on: [postgres]
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/samskrtam?currentSchema=content
       SPRING_THREADS_VIRTUAL_ENABLED: "true"
+      MANAGEMENT_SERVER_PORT: ${CONTENT_MANAGEMENT_PORT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
 
   quiz-service:
     build: ./services/quiz-service
-    ports: ["8082:8082"]
+    ports:
+      - "8082:8082"
+      - "${QUIZ_MANAGEMENT_PORT}:${QUIZ_MANAGEMENT_PORT}"
     depends_on: [postgres, content-service, kafka, redis]
     environment:
       SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/samskrtam
@@ -532,23 +553,33 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_THREADS_VIRTUAL_ENABLED: "true"
+      MANAGEMENT_SERVER_PORT: ${QUIZ_MANAGEMENT_PORT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
 
   dictionary-service:
     build: ./services/dictionary-service
-    ports: ["8085:8085"]
+    ports:
+      - "8085:8085"
+      - "${DICTIONARY_MANAGEMENT_PORT}:${DICTIONARY_MANAGEMENT_PORT}"
     depends_on: [postgres]
     environment:
       SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/samskrtam?schema=dictionary
+      MANAGEMENT_SERVER_PORT: ${DICTIONARY_MANAGEMENT_PORT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
 
   statistics-service:
     build: ./services/statistics-service
-    ports: ["8086:8086"]
+    ports:
+      - "8086:8086"
+      - "${STATISTICS_MANAGEMENT_PORT}:${STATISTICS_MANAGEMENT_PORT}"
     depends_on: [postgres, kafka]
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/samskrtam?currentSchema=statistics
       SPRING_THREADS_VIRTUAL_ENABLED: "true"
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_PORT}
+      MANAGEMENT_SERVER_PORT: ${STATISTICS_MANAGEMENT_PORT}
       MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
 
@@ -601,22 +632,34 @@ services:
 | MinIO Console | 9001 |
 | content-service | 8081 |
 | quiz-service | 8082 |
+| api-gateway (main) | 8090 |
+| feature-flag-service | 8088 |
+| user-service | 8087 |
+| content-service | 8081 |
+| quiz-service | 8082 |
 | dictionary-service | 8085 |
 | statistics-service | 8086 |
 | PostgreSQL | 5432 |
 | Kafka | 9092 |
 | Redis | 6379 |
-| Grafana Tempo | 4318 (OTLP), 3200 |
-| Prometheus | 9090 |
-| Loki | 3100 |
-| Grafana | 3001 |
-| Management (Actuator) | 8099 (все сервисы) |
+| Tempo (OTLP HTTP) | 4318 |
 | Tempo (OTLP gRPC) | 4317 |
-| Tempo (HTTP) | 3200 |
-| Loki | 3100 |
+| Tempo (HTTP API) | 3200 |
 | Prometheus | 9090 |
+| Loki | 3100 |
 | Grafana | 3001 |
-| Actuator (все сервисы) | 9090 (management) |
+| **Management (Actuator) порты** | |
+| api-gateway management | 9090 (`GATEWAY_MANAGEMENT_PORT`) |
+| feature-flag-service management | 9091 (`FEATURE_FLAG_MANAGEMENT_PORT`) |
+| user-service management | 9092 (`USER_MANAGEMENT_PORT`) |
+| content-service management | 9093 (`CONTENT_MANAGEMENT_PORT`) |
+| quiz-service management | 9094 (`QUIZ_MANAGEMENT_PORT`) |
+| dictionary-service management | 9095 (`DICTIONARY_MANAGEMENT_PORT`) |
+| statistics-service management | 9096 (`STATISTICS_MANAGEMENT_PORT`) |
+
+> Management порты настраиваются через `.env` — у каждого сервиса свой,
+> чтобы можно было запускать все сервисы локально без конфликтов.
+> Подробнее — conventions.md раздел 4.
 
 ---
 
@@ -695,6 +738,7 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8081
+            - containerPort: 9093   # CONTENT_MANAGEMENT_PORT — см. conventions.md
           envFrom:
             - configMapRef:
                 name: content-service-config
@@ -703,14 +747,14 @@ spec:
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
-              port: 8081
-            initialDelaySeconds: 45 # Увеличено для Spring Boot
+              port: 9093
+            initialDelaySeconds: 45
             periodSeconds: 15
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
-              port: 8081
-            initialDelaySeconds: 30 # Увеличено для Spring Boot
+              port: 9093
+            initialDelaySeconds: 30
             periodSeconds: 10
           resources:
             requests:

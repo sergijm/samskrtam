@@ -17,8 +17,12 @@ Quiz сервисы (Java 21) публикуют события в Kafka. Statis
 |---|---|---|---|---|
 | quiz.answer.submitted | все quiz-сервисы | statistics-service | userId | 7 дней |
 | quiz.session.completed | все quiz-сервисы | statistics-service | userId | 7 дней |
+| quiz.answer.submitted.dlt | — (Spring автоматически) | — (мониторинг/алерты) | userId | 30 дней |
+| quiz.session.completed.dlt | — (Spring автоматически) | — (мониторинг/алерты) | userId | 30 дней |
 
 Ключ = userId — все события одного пользователя идут в один partition (порядок гарантирован).
+
+DLT-топики (Dead Letter Topic) создаются автоматически `DefaultErrorHandler`-ом. Сообщения в DLT требуют ручного разбора или отдельного consumer для replay.
 
 ---
 
@@ -97,16 +101,86 @@ public class QuizEventPublisher {
 
 ## 5. Consumer (Statistics Service — Java 21)
 
+Consumer должен быть защищён от зависания при ошибках. Без `DefaultErrorHandler` Spring Kafka уйдёт в бесконечный retry на одном сообщении и встанет.
+
 ```java
+// sm/selflearn/samskrtam/statistics/config/KafkaConsumerConfig.java
+@Configuration
+public class KafkaConsumerConfig {
+
+    @Bean
+    public DefaultErrorHandler errorHandler(KafkaTemplate<String, Object> kafkaTemplate) {
+        // Retry: 3 попытки с экспоненциальным backoff (1s → 2s → 4s)
+        ExponentialBackOffWithMaxRetries backOff = new ExponentialBackOffWithMaxRetries(3);
+        backOff.setInitialInterval(1_000);
+        backOff.setMultiplier(2.0);
+
+        // После исчерпания retry — отправить в Dead Letter Topic (.dlt)
+        DeadLetterPublishingRecoverer recoverer =
+                new DeadLetterPublishingRecoverer(kafkaTemplate);
+
+        DefaultErrorHandler handler = new DefaultErrorHandler(recoverer, backOff);
+
+        // Не ретраить десериализационные ошибки — сразу в DLT
+        handler.addNotRetryableExceptions(DeserializationException.class);
+
+        return handler;
+    }
+}
+```
+
+```java
+// sm/selflearn/samskrtam/statistics/consumer/AnswerSubmittedConsumer.java
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class AnswerSubmittedConsumer {
+
+    private final StatisticsService statisticsService;
 
     @KafkaListener(topics = "quiz.answer.submitted", groupId = "statistics-service")
     public void handle(AnswerSubmitted event) {
+        log.debug("Processing AnswerSubmitted: eventId={}, userId={}", event.eventId(), event.userId());
         // Virtual Threads — блокирующий вызов, JVM делает его неблокирующим
         statisticsService.recordAnswer(event);
+        log.debug("AnswerSubmitted processed: eventId={}", event.eventId());
     }
 }
+
+// sm/selflearn/samskrtam/statistics/consumer/SessionCompletedConsumer.java
+@Component
+@Slf4j
+@RequiredArgsConstructor
+public class SessionCompletedConsumer {
+
+    private final StatisticsService statisticsService;
+
+    @KafkaListener(topics = "quiz.session.completed", groupId = "statistics-service")
+    public void handle(SessionCompleted event) {
+        log.debug("Processing SessionCompleted: eventId={}, userId={}", event.eventId(), event.userId());
+        statisticsService.recordSession(event);
+        log.debug("SessionCompleted processed: eventId={}", event.eventId());
+    }
+}
+```
+
+```yaml
+# application.yml (statistics-service) — регистрация errorHandler бина
+spring:
+  kafka:
+    listener:
+      # Spring подхватит бин DefaultErrorHandler автоматически
+      # если он один в контексте
+      observation-enabled: true
+    consumer:
+      group-id: statistics-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: >
+          org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.trusted.packages: sm.selflearn.samskrtam.events
 ```
 
 ---
@@ -146,6 +220,9 @@ java {
 - [ ] После завершения сессии — SessionCompleted в Kafka
 - [ ] Statistics Service обрабатывает события независимо от Quiz Service
 - [ ] При недоступности Statistics Service события ждут в Kafka
+- [ ] При ошибке обработки — 3 retry с backoff, затем сообщение уходит в DLT
+- [ ] Десериализационные ошибки идут в DLT без retry
+- [ ] Повторная доставка события не создаёт дубликат в statistics-service (идемпотентность по eventId)
 - [ ] Java Records в shared модуле совместимы с Kotlin dictionary-service
 
 ---
@@ -153,5 +230,6 @@ java {
 ## 8. Открытые вопросы
 
 - [ ] Schema Registry для версионирования схем?
-- [ ] Dead Letter Queue для событий которые не удалось обработать?
+- [x] Dead Letter Queue — реализован через `DefaultErrorHandler` + `DeadLetterPublishingRecoverer`
 - [ ] Notification Service как второй consumer тех же топиков?
+- [ ] Мониторинг DLT топиков — алерт при появлении сообщений в DLT?

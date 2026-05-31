@@ -1,0 +1,104 @@
+{
+  "nav": {
+    "dashboard": "Главная",
+    "quizzes": "Квизы",
+    "dictionary": "Словарь",
+    "statistics": "Статистика",
+    "leaderboard": "Рейтинг",
+    "settings": "Настройки",
+    "admin": "Администрирование"
+  },
+  "settings": {
+    "title": "Настройки",
+    "language": "Язык",
+    "theme": "Тема",
+    "themeLight": "Светлая",
+    "themeDark": "Тёмная",
+    "toggleTheme": "Переключить тему",
+    "save": "Сохранить",
+    "saved": "Настройки сохранены"
+  },
+  "quiz": {
+    "start": "Начать квиз",
+    "next": "Следующий вопрос",
+    "correct": "Верно!",
+    "incorrect": "Неверно",
+    "question": "Вопрос {{current}} из {{total}}",
+    "explanation": "Объяснение"
+  },
+  "auth": {
+    "login": "Войти",
+    "logout": "Выйти",
+    "email": "Email",
+    "emailOrLogin": "Email или логин",
+    "password": "Пароль",
+    "google": "Войти через Google",
+    "mailru": "Войти через Mail.ru",
+    "error": "Неверный email или пароль",
+    "register": "Регистрация",
+    "registerLink": "Зарегистрироваться",
+    "forgotPassword": "Забыли пароль?",
+    "forgotPasswordLink": "Забыли пароль?",
+    "sendResetLink": "Отправить ссылку для сброса",
+    "forgotPasswordSuccess": "Если ваш email зарегистрирован, вы получите ссылку для сброса пароля.",
+    "username": "Имя пользователя",
+    "confirmPassword": "Подтвердите пароль",
+    "changePassword": "Сменить пароль",
+    "currentPassword": "Текущий пароль",
+    "newPassword": "Новый пароль",
+    "passwordChanged": "Пароль успешно изменен"
+  },
+  "groups": {
+    "title": "Группы",
+    "createGroup": "Создать группу",
+    "editGroup": "Редактировать группу",
+    "groupName": "Название группы",
+    "noGroups": "Не состоит ни в одной группе",
+    "addMember": "Добавить участника",
+    "removeMember": "Удалить из группы",
+    "setCurator": "Назначить куратором",
+    "curator": "Куратор",
+    "member": "Участник",
+    "memberCount": "Участников",
+    "searchUser": "Поиск по имени или email",
+    "table": {
+      "name": "Имя",
+      "role": "Роль в группе",
+      "joined": "Дата вступления"
+    },
+    "confirm": {
+      "remove": "Удалить {{username}} из группы?",
+      "setCurator": "Назначить {{username}} куратором группы?"
+    }
+  },
+  "admin": {
+    "tabs": {
+      "quizzes": "Квизы",
+      "questions": "Вопросы",
+      "users": "Пользователи",
+      "groups": "Группы"
+    }
+  },
+  "common": {
+      "search": "Поиск",
+      "edit": "Редактировать",
+      "create": "Создать",
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "add": "Добавить",
+      "createdAt": "Дата создания",
+      "or": "или",
+      "go": "Перейти"
+  },
+  "validation": {
+    "usernameRequired": "Требуется Email или логин."
+  },
+  "dashboard": {
+    "quizzesDescription": "Проверьте свои знания с помощью интерактивных квизов.",
+    "dictionaryDescription": "Изучайте новые слова на санскрите.",
+    "statisticsDescription": "Отслеживайте свой прогресс и достижения.",
+    "leaderboardDescription": "Соревнуйтесь с другими и смотрите свой рейтинг.",
+    "settingsDescription": "Управляйте своим профилем и настройками приложения.",
+    "adminDescription": "Доступ к административным инструментам и функциям."
+  }
+}

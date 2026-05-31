@@ -1,38 +1,39 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { AuthResponse } from '../types/auth';
+import { User, AuthTokens } from '../types/user';
 
 interface AuthState {
-  user: AuthResponse['user'] | null;
+  user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
-  login: (authData: AuthResponse) => void;
+  login: (tokens: AuthTokens, user: User) => void;
   logout: () => void;
+  setAccessToken: (token: string) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  accessToken: null,
+  refreshToken: null,
+  isAuthenticated: false,
+
+  login: (tokens, user) => set({
+    user,
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+    isAuthenticated: true,
+  }),
+
+  logout: () => {
+    // Here you might want to call the API to invalidate the refresh token
+    // For now, just clear the state
+    set({
       user: null,
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
-      login: (authData) => set({
-        user: authData.user,
-        accessToken: authData.accessToken,
-        refreshToken: authData.refreshToken,
-        isAuthenticated: true,
-      }),
-      logout: () => set({
-        user: null,
-        accessToken: null,
-        refreshToken: null,
-        isAuthenticated: false,
-      }),
-    }),
-    {
-      name: 'auth-storage', // ключ в localStorage
-    }
-  )
-);
+    });
+  },
+
+  setAccessToken: (token) => set({ accessToken: token }),
+}));

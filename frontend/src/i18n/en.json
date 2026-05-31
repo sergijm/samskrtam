@@ -1,0 +1,104 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "quizzes": "Quizzes",
+    "dictionary": "Dictionary",
+    "statistics": "Statistics",
+    "leaderboard": "Leaderboard",
+    "settings": "Settings",
+    "admin": "Administration"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "toggleTheme": "Toggle theme",
+    "save": "Save",
+    "saved": "Settings saved"
+  },
+  "quiz": {
+    "start": "Start Quiz",
+    "next": "Next Question",
+    "correct": "Correct!",
+    "incorrect": "Incorrect",
+    "question": "Question {{current}} of {{total}}",
+    "explanation": "Explanation"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "emailOrLogin": "Email or Username",
+    "password": "Password",
+    "google": "Login with Google",
+    "mailru": "Login with Mail.ru",
+    "error": "Invalid email or password.",
+    "register": "Register",
+    "registerLink": "Register",
+    "forgotPassword": "Forgot Password?",
+    "forgotPasswordLink": "Forgot Password?",
+    "sendResetLink": "Send Reset Link",
+    "forgotPasswordSuccess": "If your email is registered, you will receive a password reset link.",
+    "username": "Username",
+    "confirmPassword": "Confirm Password",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "passwordChanged": "Password changed successfully"
+  },
+  "groups": {
+    "title": "Groups",
+    "createGroup": "Create Group",
+    "editGroup": "Edit Group",
+    "groupName": "Group Name",
+    "noGroups": "Not a member of any group",
+    "addMember": "Add Member",
+    "removeMember": "Remove from group",
+    "setCurator": "Set as Curator",
+    "curator": "Curator",
+    "member": "Member",
+    "memberCount": "Members",
+    "searchUser": "Search by username or email",
+    "table": {
+      "name": "Name",
+      "role": "Role in group",
+      "joined": "Date joined"
+    },
+    "confirm": {
+      "remove": "Remove {{username}} from the group?",
+      "setCurator": "Set {{username}} as the group curator?"
+    }
+  },
+  "admin": {
+    "tabs": {
+      "quizzes": "Quizzes",
+      "questions": "Questions",
+      "users": "Users",
+      "groups": "Groups"
+    }
+  },
+  "common": {
+      "search": "Search",
+      "edit": "Edit",
+      "create": "Create",
+      "save": "Save",
+      "cancel": "Cancel",
+      "add": "Add",
+      "createdAt": "Created At",
+      "or": "or",
+      "go": "Go"
+  },
+  "validation": {
+    "usernameRequired": "Email or Username is required."
+  },
+  "dashboard": {
+    "quizzesDescription": "Practice your knowledge with interactive quizzes.",
+    "dictionaryDescription": "Explore and learn new Sanskrit words.",
+    "statisticsDescription": "Track your progress and achievements.",
+    "leaderboardDescription": "Compete with others and see your ranking.",
+    "settingsDescription": "Manage your profile and application settings.",
+    "adminDescription": "Access administrative tools and features."
+  }
+}

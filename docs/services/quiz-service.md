@@ -307,26 +307,86 @@ public class ContentClient {
 
 ## 10. Kafka (ReactiveKafkaProducerTemplate)
 
+Публикация событий реализована через **Outbox Pattern** — запись в таблицу `quiz.outbox_events` в той же транзакции что и сохранение ответа/завершение сессии. Это гарантирует что событие не потеряется при перезапуске сервиса между сохранением и отправкой в Kafka.
+
+> **Почему не fire-and-forget `.subscribe()`:** `.subscribe()` без ожидания результата в реактивном pipeline означает, что при падении сервиса между `save(answer)` и отправкой в Kafka событие будет потеряно. Outbox атомарно решает эту проблему.
+
 ```java
-// sm/selflearn/samskrtam/quiz/event/QuizEventPublisher.java
+// sm/selflearn/samskrtam/quiz/event/OutboxEventPublisher.java
 @Component
-public class QuizEventPublisher {
+@Slf4j
+@RequiredArgsConstructor
+public class OutboxEventPublisher {
 
     private final ReactiveKafkaProducerTemplate<String, Object> kafkaTemplate;
+    private final OutboxEventRepository outboxRepository;
 
-    // fire-and-forget: подписываемся, ошибки логируем, не блокируем pipeline
-    public void publishAnswerSubmitted(AnswerSubmitted event) {
-        kafkaTemplate.send("quiz.answer.submitted", event.userId().toString(), event)
-                .doOnError(e -> log.error("Failed to publish AnswerSubmitted", e))
-                .subscribe();
-    }
-
-    public void publishSessionCompleted(SessionCompleted event) {
-        kafkaTemplate.send("quiz.session.completed", event.userId().toString(), event)
-                .doOnError(e -> log.error("Failed to publish SessionCompleted", e))
-                .subscribe();
+    /**
+     * Публикует события из таблицы outbox в Kafka.
+     * Вызывается @Scheduled процессором каждые 5 секунд.
+     */
+    public Flux<Void> publishPending() {
+        return outboxRepository.findByStatus(OutboxStatus.PENDING)
+                .flatMap(event -> kafkaTemplate
+                        .send(event.getTopic(), event.getAggregateId(), event.getPayload())
+                        .doOnSuccess(result -> log.debug(
+                                "Published outbox event: id={}, topic={}", event.getId(), event.getTopic()))
+                        .then(outboxRepository.markProcessed(event.getId()))
+                        .onErrorResume(e -> {
+                            log.error("Failed to publish outbox event: id={}", event.getId(), e);
+                            return outboxRepository.markFailed(event.getId(), e.getMessage());
+                        })
+                );
     }
 }
+```
+
+```java
+// sm/selflearn/samskrtam/quiz/model/OutboxEvent.java (R2DBC)
+@Table("quiz.outbox_events")
+public class OutboxEvent {
+    @Id
+    private UUID id;
+    private String aggregateId;   // userId — ключ партиции Kafka
+    private String topic;         // quiz.answer.submitted / quiz.session.completed
+    private String payload;       // JSON события
+    private String status;        // PENDING / PROCESSED / FAILED
+    private Instant createdAt;
+    private Instant processedAt;
+    private int retryCount;
+    private String errorMessage;
+}
+```
+
+```sql
+-- V4__create_quiz_outbox.sql
+CREATE TABLE quiz.outbox_events (
+    id            UUID        NOT NULL DEFAULT gen_random_uuid(),
+    aggregate_id  VARCHAR(36) NOT NULL,
+    topic         VARCHAR(100) NOT NULL,
+    payload       TEXT         NOT NULL,
+    status        VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    processed_at  TIMESTAMPTZ,
+    retry_count   INT          NOT NULL DEFAULT 0,
+    error_message TEXT,
+
+    CONSTRAINT pk_quiz_outbox PRIMARY KEY (id),
+    CONSTRAINT ck_outbox_status CHECK (status IN ('PENDING', 'PROCESSED', 'FAILED'))
+);
+
+CREATE INDEX idx_quiz_outbox_pending ON quiz.outbox_events (status, created_at)
+    WHERE status = 'PENDING';
+```
+
+В `AnswerService.submitAnswer()` вместо прямой публикации — атомарная запись в outbox:
+
+```java
+// Внутри flatMap в SessionService, вместо eventPublisher.publishAnswerSubmitted(...)
+return answerRepository.save(answer)
+        .then(cacheService.put(sessionId, cache))
+        .then(outboxRepository.save(OutboxEvent.forAnswerSubmitted(event)))  // атомарно
+        .thenReturn(buildResponse(q, correct, cache));
 ```
 
 ---
@@ -357,13 +417,18 @@ public Mono<AnswerResponse> submitAnswer(UUID sessionId, UUID userId, AnswerRequ
 
                 cache.markAnswered(request.questionId(), correct);
 
+                AnswerSubmitted event = new AnswerSubmitted(
+                        userId, cache.getQuizType(), cache.getQuizId(),
+                        request.questionId(), request.selectedOptionId(),
+                        correct, request.responseTimeMs());
+
+                // Атомарная запись ответа + outbox события в одном pipeline
                 return answerRepository.save(answer)            // Mono<QuizAnswer>
                         .then(cacheService.put(sessionId, cache))
+                        .then(outboxRepository.save(           // гарантия доставки
+                                OutboxEvent.forAnswerSubmitted(event)))
                         .thenReturn(buildResponse(q, correct, cache));
-            })
-            .doOnSuccess(resp -> eventPublisher.publishAnswerSubmitted(
-                    new AnswerSubmitted(userId, /*...*/ resp.isCorrect(), 0)
-            ));
+            });
 }
 ```
 
@@ -454,7 +519,8 @@ sm/selflearn/samskrtam/quiz/
 │   ├── ContentClient.java             ← WebClient к content-service
 │   └── DistractorService.java
 ├── event/
-│   └── QuizEventPublisher.java        ← ReactiveKafkaProducerTemplate
+│   ├── OutboxEventPublisher.java      ← Scheduler, публикует PENDING события в Kafka
+│   └── OutboxEventRepository.java     ← ReactiveCrudRepository для quiz.outbox_events
 ├── repository/
 │   ├── QuizSessionRepository.java     ← ReactiveCrudRepository
 │   └── QuizAnswerRepository.java      ← ReactiveCrudRepository
@@ -530,8 +596,10 @@ content:
 - [ ] Ответ сохраняется в Postgres и Redis при каждом POST /answer
 - [ ] При промахе Redis — сессия восстанавливается из Postgres без ошибки клиенту
 - [ ] GET /resume возвращает состояние незавершённой сессии через день
-- [ ] После каждого ответа — `AnswerSubmitted` в Kafka (fire-and-forget)
-- [ ] После завершения — `SessionCompleted` в Kafka, статус → COMPLETED в Postgres
+- [ ] После каждого ответа — `AnswerSubmitted` записывается в `quiz.outbox_events` атомарно с ответом
+- [ ] После завершения — `SessionCompleted` в outbox, статус → COMPLETED в Postgres
+- [ ] Outbox-процессор публикует PENDING события в Kafka и помечает их PROCESSED
+- [ ] При сбое публикации в Kafka — событие остаётся PENDING и будет опубликовано при следующем запуске процессора
 - [ ] Нельзя ответить дважды на один вопрос (UNIQUE constraint + 409 Conflict)
 - [ ] Flyway миграции применяются при старте через `FlywayConfig` (JDBC бин)
 - [ ] Дистракторы для VOCABULARY берутся из того же квиза

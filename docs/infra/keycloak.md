@@ -25,7 +25,10 @@ API Gateway
 
 ## 2. Настройка клиентов (Clients) в Keycloak
 
-Используется один клиент `samskrtam-frontend`. Все операции — логин, ROPC, OAuth2 Authorization Code, а также вызовы Admin REST API — выполняются user-service от имени этого клиента.
+Используется один клиент `samskrtam-frontend`. 
+Операции — логин, ROPC, OAuth2 Authorization Code выполняются в  api-gateway от имени этого клиента.
+вызовы Admin REST API — выполняются user-service
+
 
 ### `samskrtam-frontend`
 

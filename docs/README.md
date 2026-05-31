@@ -41,9 +41,10 @@ SamskrtamApp построен как production-grade референсная р�
 | Сервис | Язык | Async модель | Причина |
 |---|---|---|---|
 | api-gateway | Java 21 | WebFlux (Reactor) | Gateway требует реактивный стек |
+| feature-flag-service | Java 21 | Virtual Threads | Простой CRUD + Redis, нет смысла в реактивщине |
 | user-service | Java 21 | Virtual Threads | Профили, регистрация, аватарки, блокировка |
 | content-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов |
-| quiz-service | Java 21 | WebFlux + R2DBC | Единый сервис прохождения всех квизов |
+| quiz-service | Java 21 | WebFlux (Reactor) + R2DBC | Единый сервис прохождения всех квизов |
 | **dictionary-service** | **Kotlin** | **Coroutines** | Практика Kotlin, Cache-aside |
 | statistics-service | Java 21 | Virtual Threads | Kafka consumer проще на Java |
 | shared/kafka-events | Java 21 | — | Совместимость со всеми сервисами |
@@ -112,7 +113,8 @@ graph TD
 | [architecture.md](./architecture.md) | Топология, технологии, монорепо, CI/CD, Kubernetes |
 | [conventions.md](./conventions.md) | Соглашения: конфигурация, логирование, трассировка, тесты, git |
 | [infra/keycloak.md](./infra/keycloak.md) | Аутентификация, identity providers, JWT claims |
-| [services/api-gateway.md](./services/api-gateway.md) | Маршруты, фильтры, rate limiting |
+| [services/api-gateway.md](./services/api-gateway.md) | Маршруты, фильтры, rate limiting, OAuth2 flow |
+| [services/feature-flag-service.md](./services/feature-flag-service.md) | Feature flags — управление поведением без деплоя |
 
 ### Events
 | Файл | Содержание |
@@ -123,11 +125,13 @@ graph TD
 | Файл | Язык | Сервис |
 |---|---|---|
 | [services/api-gateway.md](./services/api-gateway.md) | Java 21 + WebFlux | Spring Cloud Gateway |
+| [services/feature-flag-service.md](./services/feature-flag-service.md) | Java 21 + VT | Feature Flag Service |
 | [services/user-service.md](./services/user-service.md) | Java 21 + VT | Логин, регистрация, OAuth, управление паролем |
 | [services/content-service.md](./services/content-service.md) | Java 21 + VT | Настройки и содержание всех квизов |
 | [services/quiz-service.md](./services/quiz-service.md) | Java 21 + VT | Прохождение квизов пользователем |
 | [services/dictionary-service.md](./services/dictionary-service.md) | Kotlin + Coroutines | Словарь + внешнее API |
-| [services/statistics-service.md](./services/statistics-service.md) | Java 21 + VT | Статистика и лидерборд |
+| [services/statistics-service.md](./services/statistics-service.md) | Java 21 + VT | Статистика |
+| [services/leaderboard.md](./services/leaderboard.md) | — | Алгоритмы лидерборда (XP, Elo, Skill, Composite) |
 
 ### Frontend
 | Файл | Содержание |
