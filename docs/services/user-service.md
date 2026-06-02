@@ -41,141 +41,7 @@ POST /realms/samskrtam/protocol/openid-connect/token
 
 ---
 
-## 3. Сущности
-
-```java
-// sm/selflearn/samskrtam/user/model/UserProfile.java
-@Entity
-@Table(name = "user_profiles", schema = "users")
-public class UserProfile {
-
-    @Id
-    private UUID id;                      // совпадает с Keycloak sub
-
-    @Column(unique = true, nullable = false)
-    private String username;
-
-    @Column(unique = true, nullable = false)
-    private String email;                 // только для чтения после регистрации
-
-    @Column(name = "first_name")
-    private String firstName;
-
-    @Column(name = "last_name")
-    private String lastName;
-
-    @Column(name = "avatar_url")
-    private String avatarUrl;             // публичный URL в MinIO (avatars/)
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private UserRole role;                // STUDENT, ADMIN
-
-    @Column(name = "blocked", nullable = false)
-    private boolean blocked = false;      // дублируется из Keycloak для поиска/фильтрации
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt = Instant.now();
-
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt = Instant.now();
-}
-
-// sm/selflearn/samskrtam/user/model/OutboxEvent.java
-@Entity
-@Table(name = "outbox_events", schema = "users")
-public class OutboxEvent {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-
-    @Column(name = "aggregate_id", nullable = false)
-    private UUID aggregateId;             // userId
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "event_type", nullable = false)
-    private OutboxEventType eventType;    // USER_REGISTERED, PROFILE_UPDATED, USER_BLOCKED, USER_UNBLOCKED
-
-    @Column(name = "payload", nullable = false, columnDefinition = "JSONB")
-    private String payload;               // JSON с данными для Keycloak
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private OutboxStatus status;          // PENDING, PROCESSED, FAILED
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt = Instant.now();
-
-    @Column(name = "processed_at")
-    private Instant processedAt;
-
-    @Column(name = "retry_count", nullable = false)
-    private int retryCount = 0;
-
-    @Column(name = "error_message")
-    private String errorMessage;
-}
-```
-
----
-
-## 4. Flyway Migrations
-
-```sql
--- V1__create_schema.sql
-CREATE SCHEMA IF NOT EXISTS users;
-
--- V2__create_user_profiles.sql
-CREATE TABLE users.user_profiles (
-    id          UUID         NOT NULL,
-    username    VARCHAR(50)  NOT NULL,
-    email       VARCHAR(255) NOT NULL,
-    first_name  VARCHAR(100),
-    last_name   VARCHAR(100),
-    avatar_url  VARCHAR(500),
-    role        VARCHAR(20)  NOT NULL DEFAULT 'STUDENT',
-    blocked     BOOLEAN      NOT NULL DEFAULT false,
-    created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
-
-    CONSTRAINT pk_user_profiles   PRIMARY KEY (id),
-    CONSTRAINT uq_username        UNIQUE (username),
-    CONSTRAINT uq_email           UNIQUE (email),
-    CONSTRAINT ck_role            CHECK (role IN ('STUDENT', 'ADMIN'))
-);
-
-CREATE INDEX idx_user_profiles_username ON users.user_profiles (username);
-CREATE INDEX idx_user_profiles_email    ON users.user_profiles (email);
-CREATE INDEX idx_user_profiles_blocked  ON users.user_profiles (blocked);
-CREATE INDEX idx_user_profiles_role     ON users.user_profiles (role);
-
--- V3__create_outbox_events.sql
-CREATE TABLE users.outbox_events (
-    id            UUID        NOT NULL DEFAULT gen_random_uuid(),
-    aggregate_id  UUID        NOT NULL,
-    event_type    VARCHAR(50) NOT NULL,
-    payload       JSONB       NOT NULL,
-    status        VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    processed_at  TIMESTAMPTZ,
-    retry_count   INT         NOT NULL DEFAULT 0,
-    error_message TEXT,
-
-    CONSTRAINT pk_outbox_events PRIMARY KEY (id),
-    CONSTRAINT ck_event_type    CHECK (event_type IN (
-        'USER_REGISTERED', 'PROFILE_UPDATED', 'USER_BLOCKED', 'USER_UNBLOCKED'
-    )),
-    CONSTRAINT ck_status        CHECK (status IN ('PENDING', 'PROCESSED', 'FAILED'))
-);
-
-CREATE INDEX idx_outbox_pending ON users.outbox_events (status, created_at)
-    WHERE status = 'PENDING';
-```
-
----
-
-## 5. Outbox Pattern
+## 3. Outbox Pattern
 
 Проблема: нужно атомарно сохранить изменения в своей БД **и** синхронизировать с Keycloak. Если сначала записать в БД, потом вызвать Keycloak — при сбое между операциями данные расходятся.
 
@@ -282,7 +148,7 @@ public class OutboxProcessor {
 
 ---
 
-## 6. MinIO — управление файлами
+## 4. MinIO — управление файлами
 
 ### Бакеты
 
@@ -373,7 +239,7 @@ public class AvatarService {
 
 ---
 
-## 7. API
+## 5. API
 
 ### Текущий пользователь
 
@@ -445,7 +311,7 @@ blocked  boolean фильтр по флагу блокировки
 
 ---
 
-## 8. Блокировка пользователя
+## 6. Блокировка пользователя
 
 Блокировка атомарна через тот же Outbox Pattern:
 
@@ -587,7 +453,7 @@ public class KeycloakAdminService {
 
 ---
 
-## 9. Backend структура
+## 7. Backend структура
 
 ```
 sm/selflearn/samskrtam/user/
@@ -629,7 +495,7 @@ sm/selflearn/samskrtam/user/
 
 ---
 
-## 10. application.yml
+## 8. application.yml
 
 ```yaml
 server:
@@ -682,7 +548,7 @@ outbox:
 
 ---
 
-## 11. Acceptance Criteria
+## 9. Acceptance Criteria
 
 - [ ] `GET /users/me` возвращает профиль текущего пользователя по `X-User-Id`
 - [ ] STUDENT не может изменить email
@@ -701,7 +567,7 @@ outbox:
 
 ---
 
-## 12. Открытые вопросы
+## 10. Открытые вопросы
 
 - [ ] Максимальный размер аватарки — ограничивать на уровне presigned URL или MinIO политики?
 - [ ] Удаление старой аватарки из MinIO при загрузке новой?

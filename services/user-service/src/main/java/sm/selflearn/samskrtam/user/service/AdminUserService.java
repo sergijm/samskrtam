@@ -11,9 +11,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import sm.selflearn.samskrtam.user.dto.AdminUserListResponse;
-import sm.selflearn.samskrtam.user.dto.UpdateProfileRequest;
-import sm.selflearn.samskrtam.user.dto.UserProfileResponse;
 import sm.selflearn.samskrtam.user.exception.UserNotFoundException;
 import sm.selflearn.samskrtam.user.model.OutboxEvent;
 import sm.selflearn.samskrtam.user.model.OutboxEventType;
@@ -23,9 +20,16 @@ import sm.selflearn.samskrtam.user.repository.OutboxEventRepository;
 import sm.selflearn.samskrtam.user.repository.UserProfileRepository;
 import sm.selflearn.samskrtam.user.repository.UserProfileSpecification;
 
+// Импорты DTO из нового shared модуля
+import sm.selflearn.samskrtam.user.dto.AdminUserListResponse;
+import sm.selflearn.samskrtam.user.dto.UpdateProfileRequest;
+import sm.selflearn.samskrtam.user.dto.UserProfileResponse;
+
+
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +39,8 @@ public class AdminUserService {
     private final UserProfileRepository userProfileRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
-    private final AvatarService avatarService; // Reusing AvatarService for admin avatar management
+    private final AvatarService avatarService;
+    private final UserProfileService userProfileService; // Добавлен для использования мапперов
 
     public AdminUserListResponse getAllUsers(int page, int size, String sortBy, String sortDirection,
                                              String search, UserRole role, Boolean blocked) {
@@ -47,7 +52,9 @@ public class AdminUserService {
         Page<UserProfile> userPage = userProfileRepository.findAll(spec, pageable);
 
         return new AdminUserListResponse(
-                userPage.getContent().stream().map(UserProfileResponse::from).toList(),
+                userPage.getContent().stream()
+                        .map(userProfileService::mapUserProfileToResponse) // Используем маппер из UserProfileService
+                        .collect(Collectors.toList()),
                 userPage.getTotalPages(),
                 userPage.getTotalElements(),
                 userPage.getNumber(),
@@ -58,9 +65,9 @@ public class AdminUserService {
     }
 
     public UserProfileResponse getUserProfile(UUID userId) {
-        return userProfileRepository.findById(userId)
-                .map(UserProfileResponse::from)
+        UserProfile profile = userProfileRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
+        return userProfileService.mapUserProfileToResponse(profile); // Используем маппер из UserProfileService
     }
 
     @Transactional
@@ -87,10 +94,9 @@ public class AdminUserService {
                 .build());
 
         log.debug("Admin updated profile and outbox event created: userId={}", userId);
-        return UserProfileResponse.from(profile);
+        return userProfileService.mapUserProfileToResponse(profile); // Используем маппер из UserProfileService
     }
 
-    // Reusing AvatarService for admin operations
     public String generateAvatarUploadUrl(UUID userId, String contentType) {
         return avatarService.generateUploadUrl(userId, contentType).uploadUrl();
     }

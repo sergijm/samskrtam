@@ -123,7 +123,7 @@ graph TD
 
 ### Per-Service Specifications
 | Файл | Язык | Сервис |
-|---|---|---|
+|---|---|
 | [services/api-gateway.md](./services/api-gateway.md) | Java 21 + WebFlux | Spring Cloud Gateway |
 | [services/feature-flag-service.md](./services/feature-flag-service.md) | Java 21 + VT | Feature Flag Service |
 | [services/user-service.md](./services/user-service.md) | Java 21 + VT | Логин, регистрация, OAuth, управление паролем |
@@ -132,11 +132,6 @@ graph TD
 | [services/dictionary-service.md](./services/dictionary-service.md) | Kotlin + Coroutines | Словарь + внешнее API |
 | [services/statistics-service.md](./services/statistics-service.md) | Java 21 + VT | Статистика |
 | [services/leaderboard.md](./services/leaderboard.md) | — | Алгоритмы лидерборда (XP, Elo, Skill, Composite) |
-
-### Quiz Specifications
-| Файл | Содержание |
-|---|---|
-| [quizzes/quiz-declension.md](./quizzes/quiz-declension.md) | Спецификация квиза по склонениям существительных |
 
 ### Frontend
 | Файл | Содержание |

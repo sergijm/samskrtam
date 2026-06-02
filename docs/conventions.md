@@ -124,8 +124,8 @@ VITE_API_URL=http://localhost:8090
 CONTENT_SERVICE_URL=http://localhost:8081
 USER_SERVICE_URL=http://localhost:8087
 DICTIONARY_SERVICE_URL=http://localhost:8083
-STATISTICS_SERVICE_URL=http://localhost:8084
-FEATURE_FLAG_SERVICE_URL=http://localhost:8085
+STATISTICS_SERVICE_URL=http://statistics-service:8084
+FEATURE_FLAG_SERVICE_URL=http://feature-flag-service:8085
 ```
 
 Для Kubernetes используются DNS-имена сервисов:

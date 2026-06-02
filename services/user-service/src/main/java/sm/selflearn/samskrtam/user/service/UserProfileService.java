@@ -6,16 +6,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import sm.selflearn.samskrtam.user.dto.UpdateProfileRequest;
-import sm.selflearn.samskrtam.user.dto.UserProfileResponse;
 import sm.selflearn.samskrtam.user.exception.UserNotFoundException;
 import sm.selflearn.samskrtam.user.model.OutboxEvent;
 import sm.selflearn.samskrtam.user.model.OutboxEventType;
 import sm.selflearn.samskrtam.user.model.UserProfile;
-import sm.selflearn.samskrtam.user.model.UserRole;
 import sm.selflearn.samskrtam.user.outbox.KeycloakAdminService;
 import sm.selflearn.samskrtam.user.repository.OutboxEventRepository;
 import sm.selflearn.samskrtam.user.repository.UserProfileRepository;
+
+// Импорты DTO из нового shared модуля
+import sm.selflearn.samskrtam.user.dto.UpdateProfileRequest;
+import sm.selflearn.samskrtam.user.dto.UserProfileResponse;
+import sm.selflearn.samskrtam.user.dto.PublicProfileResponse;
+import sm.selflearn.samskrtam.user.model.UserRole; // UserRole остается в модели user-service
 
 import java.time.Instant;
 import java.util.List;
@@ -31,7 +34,7 @@ public class UserProfileService {
     private final UserProfileRepository profileRepository;
     private final OutboxEventRepository outboxRepository;
     private final ObjectMapper objectMapper;
-    private final KeycloakAdminService keycloakAdminService; // Inject KeycloakAdminService
+    private final KeycloakAdminService keycloakAdminService;
 
     @Transactional
     public UserProfileResponse updateProfile(UUID userId, UpdateProfileRequest request) {
@@ -46,7 +49,6 @@ public class UserProfileService {
         profile.setUpdatedAt(Instant.now());
         profileRepository.save(profile);
 
-        // Атомарно с сохранением профиля — в одной транзакции
         outboxRepository.save(OutboxEvent.builder()
                 .aggregateId(userId)
                 .eventType(OutboxEventType.PROFILE_UPDATED)
@@ -55,21 +57,20 @@ public class UserProfileService {
                         "lastName",  request.lastName(),
                         "username",  request.username()
                 )))
-                .build()); // Status is PENDING by default in OutboxEvent @PrePersist
+                .build());
 
         log.debug("Profile updated and outbox event created: userId={}", userId);
-        return UserProfileResponse.from(profile);
+        return mapUserProfileToResponse(profile);
     }
 
-    @Transactional // Ensure this is transactional as it might save a new profile
-    public UserProfileResponse getUserProfile(UUID userId) {
+    @Transactional
+    public UserProfile getUserProfile(UUID userId) { // Изменен возвращаемый тип на UserProfile
         Optional<UserProfile> existingProfile = profileRepository.findById(userId);
 
         if (existingProfile.isPresent()) {
-            return UserProfileResponse.from(existingProfile.get());
+            return existingProfile.get(); // Возвращаем сущность
         } else {
             log.info("UserProfile not found locally for userId: {}. Attempting to provision from Keycloak.", userId);
-            // Fetch user details from Keycloak
             Map<String, Object> keycloakUser;
             try {
                 keycloakUser = keycloakAdminService.findUserById(userId);
@@ -78,29 +79,58 @@ public class UserProfileService {
                 throw new UserNotFoundException("User not found in Keycloak or failed to fetch for ID: " + userId, e);
             }
 
-            // Provision new UserProfile
             UserProfile newProfile = UserProfile.builder()
                     .id(userId)
                     .username((String) keycloakUser.get("username"))
                     .email((String) keycloakUser.get("email"))
                     .firstName((String) keycloakUser.get("firstName"))
                     .lastName((String) keycloakUser.get("lastName"))
-                    .blocked(!(Boolean) keycloakUser.getOrDefault("enabled", true)) // Keycloak 'enabled' means not blocked
-                    .role(determineUserRole(keycloakUser)) // Determine role based on Keycloak data
-                    // createdAt and updatedAt will be set by @PrePersist
+                    .blocked(!(Boolean) keycloakUser.getOrDefault("enabled", true))
+                    .role(determineUserRole(keycloakUser))
                     .build();
 
             profileRepository.save(newProfile);
             log.info("Provisioned new UserProfile from Keycloak for userId: {}", userId);
-            return UserProfileResponse.from(newProfile);
+            return newProfile; // Возвращаем сущность
         }
     }
 
-    // Helper method to determine UserRole from Keycloak data
+    // Новый метод для получения UserProfileResponse
+    public UserProfileResponse getProfileResponse(UUID userId) {
+        UserProfile userProfile = getUserProfile(userId); // Получаем сущность
+        return mapUserProfileToResponse(userProfile); // Маппим в DTO
+    }
+
+    // Метод для маппинга UserProfile в UserProfileResponse
+    public UserProfileResponse mapUserProfileToResponse(UserProfile userProfile) {
+        return new UserProfileResponse(
+                userProfile.getId(),
+                userProfile.getUsername(),
+                userProfile.getEmail(),
+                userProfile.getFirstName(),
+                userProfile.getLastName(),
+                userProfile.getAvatarUrl(),
+                userProfile.getRole(),
+                userProfile.isBlocked(),
+                userProfile.getCreatedAt()
+        );
+    }
+
+    // Метод для маппинга UserProfile в PublicProfileResponse
+    public PublicProfileResponse mapUserProfileToPublicResponse(UserProfile userProfile) {
+        return new PublicProfileResponse(
+                userProfile.getId(),
+                userProfile.getUsername(),
+                userProfile.getFirstName(),
+                userProfile.getLastName(),
+                userProfile.getAvatarUrl(),
+                userProfile.getRole(),
+                userProfile.getCreatedAt()
+        );
+    }
+
+
     private UserRole determineUserRole(Map<String, Object> keycloakUser) {
-        // Keycloak user representation might have 'realmRoles' or 'clientRoles'
-        // For simplicity, let's assume 'realmRoles' contains "ADMIN" if the user is an admin.
-        // This might need adjustment based on your actual Keycloak setup.
         List<String> realmRoles = (List<String>) keycloakUser.get("realmRoles");
         if (realmRoles != null && realmRoles.contains("ADMIN")) {
             return UserRole.ADMIN;

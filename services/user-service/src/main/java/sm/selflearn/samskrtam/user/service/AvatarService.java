@@ -10,12 +10,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import sm.selflearn.samskrtam.user.dto.AvatarConfirmResponse;
-import sm.selflearn.samskrtam.user.dto.UploadUrlResponse;
 import sm.selflearn.samskrtam.user.exception.InvalidFileTypeException;
 import sm.selflearn.samskrtam.user.exception.UserNotFoundException;
 import sm.selflearn.samskrtam.user.model.UserProfile;
 import sm.selflearn.samskrtam.user.repository.UserProfileRepository;
+
+// Импорты DTO из нового shared модуля
+import sm.selflearn.samskrtam.user.dto.AvatarConfirmResponse;
+import sm.selflearn.samskrtam.user.dto.UploadUrlResponse;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -52,7 +54,7 @@ public class AvatarService {
                             .bucket(avatarsBucket)
                             .object(objectKey)
                             .expiry(5, TimeUnit.MINUTES)
-                            .extraHeaders(Map.of("Content-Type", contentType)) // Use extraHeaders for presigned PUT
+                            .extraHeaders(Map.of("Content-Type", contentType))
                             .build()
             );
             return new UploadUrlResponse(uploadUrl, objectKey);
@@ -67,11 +69,10 @@ public class AvatarService {
         log.trace("confirmUpload: userId={}, objectKey={}", userId, objectKey);
 
         try {
-            // Проверяем что объект действительно загружен
             minioClient.statObject(StatObjectArgs.builder()
                     .bucket(avatarsBucket)
                     .object(objectKey)
-                    .build());   // бросает исключение если не существует
+                    .build());
         } catch (MinioException | InvalidKeyException | NoSuchAlgorithmException | IOException e) {
             log.error("Failed to stat object {} for userId={}: {}", objectKey, userId, e.getMessage(), e);
             throw new RuntimeException("Failed to confirm avatar upload, object not found or accessible", e);

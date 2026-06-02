@@ -9,13 +9,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import sm.selflearn.samskrtam.user.service.AdminUserService;
+import sm.selflearn.samskrtam.user.service.UserBlockService;
+
+// Импорты DTO из нового shared модуля
 import sm.selflearn.samskrtam.user.dto.AdminUserListResponse;
 import sm.selflearn.samskrtam.user.dto.BlockUserResponse;
 import sm.selflearn.samskrtam.user.dto.UpdateProfileRequest;
 import sm.selflearn.samskrtam.user.dto.UserProfileResponse;
-import sm.selflearn.samskrtam.user.model.UserRole;
-import sm.selflearn.samskrtam.user.service.AdminUserService;
-import sm.selflearn.samskrtam.user.service.UserBlockService;
+import sm.selflearn.samskrtam.user.model.UserRole; // UserRole остается в модели user-service
 
 import java.util.UUID;
 
@@ -95,7 +97,7 @@ public class AdminUserController {
     @ApiResponse(responseCode = "404", description = "User not found")
     public ResponseEntity<String> confirmAvatarUpload(
             @PathVariable UUID id,
-            @Valid @RequestBody String objectKey // Assuming objectKey is sent as plain string in body
+            @Valid @RequestBody String objectKey
     ) {
         String avatarUrl = adminUserService.confirmAvatarUpload(id, objectKey);
         return ResponseEntity.ok(avatarUrl);
@@ -109,7 +111,7 @@ public class AdminUserController {
     @ApiResponse(responseCode = "404", description = "User not found")
     @ApiResponse(responseCode = "409", description = "User already blocked")
     public ResponseEntity<BlockUserResponse> blockUser(
-            @RequestHeader("X-User-Id") UUID adminId, // Assuming adminId is passed in header
+            @RequestHeader("X-User-Id") UUID adminId,
             @PathVariable UUID id
     ) {
         BlockUserResponse response = userBlockService.blockUser(id, adminId);
@@ -124,7 +126,7 @@ public class AdminUserController {
     @ApiResponse(responseCode = "404", description = "User not found")
     @ApiResponse(responseCode = "409", description = "User not blocked")
     public ResponseEntity<BlockUserResponse> unblockUser(
-            @RequestHeader("X-User-Id") UUID adminId, // Assuming adminId is passed in header
+            @RequestHeader("X-User-Id") UUID adminId,
             @PathVariable UUID id
     ) {
         BlockUserResponse response = userBlockService.unblockUser(id, adminId);

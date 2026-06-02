@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import sm.selflearn.samskrtam.user.dto.BlockUserResponse;
 import sm.selflearn.samskrtam.user.exception.UserAlreadyBlockedException;
 import sm.selflearn.samskrtam.user.exception.UserNotFoundException;
 import sm.selflearn.samskrtam.user.model.OutboxEvent;
@@ -14,6 +13,9 @@ import sm.selflearn.samskrtam.user.model.OutboxEventType;
 import sm.selflearn.samskrtam.user.model.UserProfile;
 import sm.selflearn.samskrtam.user.repository.OutboxEventRepository;
 import sm.selflearn.samskrtam.user.repository.UserProfileRepository;
+
+// Импорты DTO из нового shared модуля
+import sm.selflearn.samskrtam.user.dto.BlockUserResponse;
 
 import java.time.Instant;
 import java.util.Map;

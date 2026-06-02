@@ -187,23 +187,19 @@ public class IdentityHeaderFilter implements GlobalFilter, Ordered {
         return exchange.getPrincipal()
                 .cast(JwtAuthenticationToken.class)
                 .flatMap(auth -> {
-                    Jwt jwt = auth.getToken();
-                    Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
+                    var jwt = auth.getToken();
+                    String userId = jwt.getSubject();
+                    String role   = extractRole(jwt.getClaimAsMap("realm_access"));
+                    String locale = Optional.ofNullable(jwt.getClaimAsString("locale"))
+                            .orElse("ru");
 
-                    // Ищем ADMIN явно — не полагаемся на порядок ролей в списке
-                    String role = "STUDENT";
-                    if (realmAccess != null) {
-                        List<?> roles = (List<?>) realmAccess.getOrDefault("roles", List.of());
-                        if (roles.stream().anyMatch(r -> "ADMIN".equals(r.toString()))) {
-                            role = "ADMIN";
-                        }
-                    }
+                    log.debug("IdentityHeaderFilter: userId={}, role={}, locale={}",
+                            userId, role, locale);
 
                     ServerHttpRequest mutated = exchange.getRequest().mutate()
-                            .header("X-User-Id",     jwt.getSubject())
+                            .header("X-User-Id",     userId)
                             .header("X-User-Role",   role)
-                            .header("X-User-Locale", Optional.ofNullable(
-                                    jwt.getClaimAsString("locale")).orElse("ru"))
+                            .header("X-User-Locale", locale)
                             .build();
 
                     return chain.filter(exchange.mutate().request(mutated).build());
@@ -213,7 +209,9 @@ public class IdentityHeaderFilter implements GlobalFilter, Ordered {
     }
 
     @Override
-    public int getOrder() { return -2; }
+    public int getOrder() {
+        return -2;
+    }
 }
 ```
 

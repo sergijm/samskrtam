@@ -14,101 +14,7 @@
 
 ---
 
-## 2. Сущности
-
-```java
-// sm/selflearn/samskrtam/statistics/model/AnswerRecord.java
-@Entity
-@Table(name = "answer_records", schema = "statistics")
-public class AnswerRecord {
-    @Id @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-
-    @Column(unique = true, nullable = false)
-    private UUID eventId;           // из AnswerSubmitted.eventId — гарантия идемпотентности
-
-    private UUID userId;
-    @Enumerated(EnumType.STRING)
-    private QuizType quizType;
-    private UUID quizId;
-    private UUID questionId;
-    private UUID selectedOptionId;
-    private boolean correct;
-    private int responseTimeMs;
-    private Instant occurredAt;
-}
-
-// sm/selflearn/samskrtam/statistics/model/SessionRecord.java
-@Entity
-@Table(name = "session_records", schema = "statistics")
-public class SessionRecord {
-    @Id @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-
-    @Column(unique = true, nullable = false)
-    private UUID eventId;           // из SessionCompleted.eventId — гарантия идемпотентности
-
-    private UUID userId;
-    @Enumerated(EnumType.STRING)
-    private QuizType quizType;
-    private UUID quizId;
-    private int score;
-    private int totalQuestions;
-    private long durationMs;
-    private Instant occurredAt;
-}
-```
-
----
-
-## 3. Flyway Migrations
-
-```sql
--- V1__create_schema.sql
-CREATE SCHEMA IF NOT EXISTS statistics;
-
--- V2__create_answer_records.sql
-CREATE TABLE statistics.answer_records (
-    id                 UUID        NOT NULL DEFAULT gen_random_uuid(),
-    event_id           UUID        NOT NULL,              -- AnswerSubmitted.eventId
-    user_id            UUID        NOT NULL,
-    quiz_type          VARCHAR(20) NOT NULL,
-    quiz_id            UUID        NOT NULL,
-    question_id        UUID        NOT NULL,
-    selected_option_id UUID        NOT NULL,
-    correct            BOOLEAN     NOT NULL,
-    response_time_ms   INT         NOT NULL,
-    occurred_at        TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_answer_records  PRIMARY KEY (id),
-    CONSTRAINT uq_answer_event_id UNIQUE (event_id)      -- идемпотентность
-);
-
-CREATE INDEX idx_answers_user_id  ON statistics.answer_records (user_id);
-CREATE INDEX idx_answers_question ON statistics.answer_records (question_id);
-CREATE INDEX idx_answers_occurred ON statistics.answer_records (occurred_at DESC);
-
--- V3__create_session_records.sql
-CREATE TABLE statistics.session_records (
-    id              UUID        NOT NULL DEFAULT gen_random_uuid(),
-    event_id        UUID        NOT NULL,                 -- SessionCompleted.eventId
-    user_id         UUID        NOT NULL,
-    quiz_type       VARCHAR(20) NOT NULL,
-    quiz_id         UUID        NOT NULL,
-    score           INT         NOT NULL,
-    total_questions INT         NOT NULL,
-    duration_ms     BIGINT      NOT NULL,
-    occurred_at     TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_session_records  PRIMARY KEY (id),
-    CONSTRAINT uq_session_event_id UNIQUE (event_id)     -- идемпотентность
-);
-
-CREATE INDEX idx_sessions_user_id ON statistics.session_records (user_id);
-CREATE INDEX idx_sessions_occurred ON statistics.session_records (occurred_at DESC);
-```
-
----
-
-## 4. Kafka Consumers
+## 2. Kafka Consumers
 
 Consumer должен быть **идемпотентным**: повторная доставка одного и того же события (rebalance, retry после DLQ) не должна создавать дублирующую запись. Идемпотентность реализована через `UNIQUE (event_id)` в БД и `INSERT ... ON CONFLICT DO NOTHING` в репозитории.
 
@@ -256,7 +162,7 @@ public interface SessionRecordRepository extends JpaRepository<SessionRecord, UU
 
 ---
 
-## 5. API
+## 3. API
 
 ```
 GET /api/v1/statistics/me              → личная статистика
@@ -298,7 +204,7 @@ GET /api/v1/leaderboard                → лидерборд (алгоритм�
 
 ---
 
-## 6. Backend структура
+## 4. Backend структура
 
 ```
 sm/selflearn/samskrtam/statistics/
@@ -339,7 +245,8 @@ sm/selflearn/samskrtam/statistics/
 │   ├── EloRating.java
 │   ├── EloHistory.java
 │   ├── UserStreak.java
-│   └── SkillRating.java
+│   ├── SkillRating.java
+│   └── CompositeScore.java
 └── dto/
     ├── PersonalStatsResponse.java
     ├── HeatmapResponse.java
@@ -350,7 +257,7 @@ sm/selflearn/samskrtam/statistics/
 
 ---
 
-## 7. application.yml
+## 5. application.yml
 
 ```yaml
 server:
@@ -386,7 +293,7 @@ spring:
 
 ---
 
-## 8. Acceptance Criteria
+## 6. Acceptance Criteria
 
 - [ ] AnswerSubmitted из Kafka → сохраняется в answer_records
 - [ ] SessionCompleted из Kafka → сохраняется в session_records
@@ -398,7 +305,7 @@ spring:
 
 ---
 
-## 9. Открытые вопросы
+## 7. Открытые вопросы
 
 - [ ] Кэшировать лидерборд в Redis?
 - [ ] Недельный/месячный рейтинг?

@@ -29,7 +29,8 @@ dependencies {
     implementation(libs.flyway.postgresql)
     implementation(libs.postgresql.jdbc)
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
-    implementation(project(":shared:common-dto"))
+    implementation(project(":shared:common-dtos")) // Обновлено на common-dtos
+    implementation(project(":shared:user-dtos"))
 
     // Keycloak Admin Client
     implementation("org.keycloak:keycloak-admin-client:24.0.4")
@@ -48,7 +49,7 @@ dependencies {
     // Logstash Encoder for JSON logging
     implementation("net.logstash.logback:logstash-logback-encoder:7.4")
 
-    // Lombok
+    // Lombok (compileOnly и annotationProcessor остаются здесь, так как они нужны для сущностей UserProfile)
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 

@@ -18,7 +18,7 @@ dependencies {
     implementation(libs.postgresql.jdbc)
     implementation(libs.flyway.core)
 
-    implementation(project(":shared:common-dto"))
+    implementation(project(":shared:common-dtos")) // Обновлено на common-dtos
     implementation(project(":shared:kafka-events"))
 
     compileOnly(libs.lombok)

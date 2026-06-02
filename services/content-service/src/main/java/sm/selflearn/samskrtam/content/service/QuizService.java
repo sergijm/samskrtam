@@ -2,11 +2,14 @@ package sm.selflearn.samskrtam.content.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import sm.selflearn.samskrtam.content.dto.QuizSummaryDto;
-import sm.selflearn.samskrtam.content.model.QuizType;
+import sm.selflearn.samskrtam.content.dto.QuizType;
 import sm.selflearn.samskrtam.content.repository.QuizRepository;
 import java.util.List;
 import java.util.stream.Collectors;
+
+// Импорт DTO из shared:quiz-content-dtos
+import sm.selflearn.samskrtam.content.dto.QuizSummaryDto;
+import sm.selflearn.samskrtam.content.model.Quiz; // Импорт Quiz из модели content-service
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +24,7 @@ public class QuizService {
                 .collect(Collectors.toList());
     }
 
-    private QuizSummaryDto toDto(sm.selflearn.samskrtam.content.model.Quiz quiz) {
+    private QuizSummaryDto toDto(Quiz quiz) { // Используем Quiz из content-service.model
         var dto = new QuizSummaryDto();
         dto.setId(quiz.getId());
         dto.setSlug(quiz.getSlug());

@@ -15,6 +15,7 @@ import sm.selflearn.samskrtam.user.model.UserRole;
 import sm.selflearn.samskrtam.user.repository.OutboxEventRepository;
 import sm.selflearn.samskrtam.user.repository.UserProfileRepository;
 
+
 import java.util.Map;
 import java.util.UUID;
 
@@ -39,18 +40,17 @@ public class RegistrationService {
         }
 
         UserProfile newUser = UserProfile.builder()
-                .id(UUID.randomUUID()) // Keycloak will assign its own sub, but we need an ID for our DB
+                .id(UUID.randomUUID())
                 .username(request.username())
                 .email(request.email())
                 .firstName(request.firstName())
                 .lastName(request.lastName())
-                .role(UserRole.STUDENT) // Default role for new registrations
+                .role(UserRole.STUDENT)
                 .blocked(false)
                 .build();
 
         userProfileRepository.save(newUser);
 
-        // Create OutboxEvent for Keycloak user creation
         outboxEventRepository.save(OutboxEvent.builder()
                 .aggregateId(newUser.getId())
                 .eventType(OutboxEventType.USER_REGISTERED)

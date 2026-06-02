@@ -970,7 +970,7 @@ deploy:kubernetes:
 ## 11. Открытые вопросы
 
 - [ ] Ingress controller — nginx-ingress или Traefik?
-- [ ] Persistent storage для PostgreSQL — local-path или NFS между нодами?
+- [ ] Persistent storage для PostgreSQL в k8s — local-path или NFS между нодами?
 - [ ] Отдельный namespace для инфраструктуры (postgres, kafka, redis)?
 - [ ] Distributed tracing — Jaeger или Zipkin?
 - [ ] Автоматический деплой на main или только ручной?

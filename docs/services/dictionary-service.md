@@ -148,74 +148,7 @@ DictionaryEntryResponse → фронт
 
 ---
 
-## 4. Сущности
-
-```kotlin
-// sm/selflearn/samskrtam/dictionary/model/DictionaryEntry.kt
-@Table("dictionary_entries")
-data class DictionaryEntry(
-    @Id val id:             UUID    = UUID.randomUUID(),
-    val key:                String,          // SLP1 ключ CSL API
-    val word:               String,          // IAST транслитерация
-    val wordDevanagari:     String? = null,
-    val meanings:           String,          // JSON array строк
-    val partOfSpeech:       String? = null,  // "noun" | "adjective" | "verb" | "particle"
-    val grammaticalGender:  String? = null,  // "masculine" | "feminine" | "neuter"
-    val feminineEnding:     String? = null,  // "ई" из mf(ई)n.
-    val verbRoot:           String? = null,  // dhātu для глаголов
-    val verbClass:          Int?    = null,  // 1, 4, 10 и т.д.
-    val cslId:              String? = null,  // первый [ID=...] из статьи
-    val rawHtml:            String? = null,  // оригинальный HTML для перепарсинга
-    val source:             String  = "MONIER_WILLIAMS",
-    val createdAt:          Instant = Instant.now(),
-    val updatedAt:          Instant = Instant.now()
-)
-
-// sm/selflearn/samskrtam/dictionary/model/SearchResult.kt
-data class SearchResult(
-    val key:    String,  // SLP1 ключ для запроса статьи
-    val word:   String,  // отображаемая форма
-    val weight: Double   // релевантность из CSL API
-)
-```
-
----
-
-## 5. Flyway Migrations
-
-```sql
--- V1__create_schema.sql
-CREATE SCHEMA IF NOT EXISTS dictionary;
-
--- V2__create_dictionary_entries.sql
-CREATE TABLE dictionary.dictionary_entries (
-    id                UUID         NOT NULL DEFAULT gen_random_uuid(),
-    key               VARCHAR(200) NOT NULL,
-    word              VARCHAR(200) NOT NULL,
-    word_devanagari   VARCHAR(200),
-    meanings          JSONB        NOT NULL,
-    part_of_speech    VARCHAR(50),
-    grammatical_gender VARCHAR(20),
-    feminine_ending   VARCHAR(20),
-    verb_root         VARCHAR(100),
-    verb_class        SMALLINT,
-    csl_id            VARCHAR(20),
-    raw_html          TEXT,
-    source            VARCHAR(30)  NOT NULL DEFAULT 'MONIER_WILLIAMS',
-    created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
-
-    CONSTRAINT pk_dictionary PRIMARY KEY (id),
-    CONSTRAINT uq_key        UNIQUE (key)
-);
-
-CREATE INDEX idx_dictionary_key  ON dictionary.dictionary_entries (key);
-CREATE INDEX idx_dictionary_word ON dictionary.dictionary_entries (word);
-```
-
----
-
-## 6. API
+## 4. API
 
 ```
 GET  /api/v1/dictionary/search?q={query}   → ранжированный список слов
@@ -299,7 +232,7 @@ POST /api/v1/dictionary/admin/reparse      → перепарсинг всех �
 
 ---
 
-## 7. Backend структура
+## 5. Backend структура
 
 ```
 sm/selflearn/samskrtam/dictionary/
@@ -331,7 +264,7 @@ sm/selflearn/samskrtam/dictionary/
 
 ---
 
-## 8. Ключевые классы
+## 6. Ключевые классы
 
 ```kotlin
 // DictionaryService.kt
@@ -390,7 +323,7 @@ class MonierWilliamsClient(private val webClient: WebClient) {
 
 ---
 
-## 9. application.yml
+## 7. application.yml
 
 ```yaml
 server:
@@ -421,7 +354,7 @@ external:
 
 ---
 
-## 10. Acceptance Criteria
+## 8. Acceptance Criteria
 
 - [ ] Поиск → ранжированный список слов из CSL API
 - [ ] Клик на слово → статья из БД или внешний запрос
@@ -433,7 +366,7 @@ external:
 
 ---
 
-## 11. Открытые вопросы
+## 9. Открытые вопросы
 
 - [ ] Конвертер IAST → SLP1 (v2)
 - [ ] Лицензия данных Monier-Williams — можно ли хранить локально?

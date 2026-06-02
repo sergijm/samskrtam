@@ -12,17 +12,20 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+// Импорты DTO из нового shared модуля
 import sm.selflearn.samskrtam.user.dto.ForgotPasswordRequest;
 import sm.selflearn.samskrtam.user.dto.RegisterRequest;
+
 import sm.selflearn.samskrtam.user.service.PasswordService;
 import sm.selflearn.samskrtam.user.service.RegistrationService;
 
 @RestController
-@RequestMapping("/api/v1/users") // Changed to /api/v1/users as per spec for registration and forgot-password
+@RequestMapping("/api/v1/users")
 @Tag(name = "Registration & Password Recovery", description = "APIs for user registration and password recovery")
 @RequiredArgsConstructor
 @Slf4j
-public class RegistrationController { // Renamed from AuthController
+public class RegistrationController {
 
     private final RegistrationService registrationService;
     private final PasswordService passwordService;

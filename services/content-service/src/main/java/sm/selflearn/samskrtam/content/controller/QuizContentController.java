@@ -8,7 +8,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
+
+// Импорт DTO из shared:quiz-content-dtos
 import sm.selflearn.samskrtam.content.dto.QuizListItemResponse;
+
 import sm.selflearn.samskrtam.content.service.QuizContentService;
 
 @RestController

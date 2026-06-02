@@ -8,10 +8,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import sm.selflearn.samskrtam.user.dto.*;
 import sm.selflearn.samskrtam.user.service.AvatarService;
 import sm.selflearn.samskrtam.user.service.PasswordService;
 import sm.selflearn.samskrtam.user.service.UserProfileService;
+
+// Импорты DTO из нового shared модуля
+import sm.selflearn.samskrtam.user.dto.UserProfileResponse;
+import sm.selflearn.samskrtam.user.dto.UpdateProfileRequest;
+import sm.selflearn.samskrtam.user.dto.PublicProfileResponse;
+import sm.selflearn.samskrtam.user.dto.UploadUrlResponse;
+import sm.selflearn.samskrtam.user.dto.AvatarConfirmRequest;
+import sm.selflearn.samskrtam.user.dto.AvatarConfirmResponse;
+import sm.selflearn.samskrtam.user.dto.ChangePasswordRequest;
 
 import java.util.UUID;
 
@@ -22,7 +30,7 @@ import java.util.UUID;
 public class UserController {
 
     private final UserProfileService userProfileService;
-    private final AvatarService avatarService; // Will be created next
+    private final AvatarService avatarService;
     private final PasswordService passwordService;
 
     // GET /api/v1/users/me
@@ -32,7 +40,7 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @ApiResponse(responseCode = "404", description = "User not found")
     public ResponseEntity<UserProfileResponse> getMe(@RequestHeader("X-User-Id") UUID userId) {
-        return ResponseEntity.ok(userProfileService.getUserProfile(userId));
+        return ResponseEntity.ok(userProfileService.getProfileResponse(userId)); // Используем новый метод
     }
 
     // PUT /api/v1/users/me
@@ -53,8 +61,8 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Public user profile found")
     @ApiResponse(responseCode = "404", description = "User not found")
     public ResponseEntity<PublicProfileResponse> getPublicProfile(@PathVariable UUID id) {
-        // Assuming userProfileService has a method to get public profile
-        return ResponseEntity.ok(userProfileService.getUserProfile(id).toPublicProfileResponse());
+        // Теперь getUserProfile(id) возвращает UserProfile, что соответствует ожидаемому типу
+        return ResponseEntity.ok(userProfileService.mapUserProfileToPublicResponse(userProfileService.getUserProfile(id)));
     }
 
     // POST /api/v1/users/me/avatar/upload-url
@@ -78,7 +86,7 @@ public class UserController {
     @ApiResponse(responseCode = "404", description = "User not found")
     public ResponseEntity<AvatarConfirmResponse> confirmAvatarUpload(
             @RequestHeader("X-User-Id") UUID userId,
-            @Valid @RequestBody AvatarConfirmRequest request) { // AvatarConfirmRequest will be created
+            @Valid @RequestBody AvatarConfirmRequest request) {
         return ResponseEntity.ok(avatarService.confirmUpload(userId, request.objectKey()));
     }
 
@@ -94,43 +102,4 @@ public class UserController {
         passwordService.changePassword(userId, request);
         return ResponseEntity.noContent().build();
     }
-
-    // --- Existing methods that are not part of the current task's scope or are inconsistent with the spec ---
-    // Commenting them out for now. They can be re-evaluated or moved later if needed.
-
-    /*
-    @PatchMapping("/me")
-    @Operation(summary = "Update current authenticated user's profile settings")
-    @ApiResponse(responseCode = "200", description = "User profile updated")
-    @ApiResponse(responseCode = "401", description = "Unauthorized")
-    public ResponseEntity<UserDto> updateMe(@RequestHeader("X-User-Id") UUID userId,
-                                            @RequestBody UserUpdateDto updateDto) {
-        return ResponseEntity.ok(userService.updateMe(userId, updateDto));
-    }
-
-    @PostMapping("/oauth2/sync")
-    @Operation(summary = "Synchronize OAuth2 user profile")
-    @ApiResponse(responseCode = "200", description = "User synchronized")
-    public ResponseEntity<Void> syncOAuth2User(@RequestBody OAuthSyncRequest request) {
-        userService.syncOAuth2User(request);
-        return ResponseEntity.ok().build();
-    }
-
-    @GetMapping("/{userId}/groups")
-    @Operation(summary = "Get groups for a specific user")
-    @ApiResponse(responseCode = "200", description = "User groups found")
-    @ApiResponse(responseCode = "404", description = "User not found")
-    public ResponseEntity<List<UserGroupSummary>> getUserGroups(@RequestHeader("X-User-Id") UUID currentUserId,
-                                                                @PathVariable UUID userId) {
-        // TODO: Add authorization logic if currentUserId is not userId and not ADMIN
-        return ResponseEntity.ok(userService.getUserGroups(userId));
-    }
-
-    @GetMapping("/search")
-    @Operation(summary = "Search users by username or email")
-    @ApiResponse(responseCode = "200", description = "List of users matching the query")
-    public ResponseEntity<List<UserDto>> searchUsers(@RequestParam String query) {
-        return ResponseEntity.ok(userService.searchUsers(query));
-    }
-    */
 }

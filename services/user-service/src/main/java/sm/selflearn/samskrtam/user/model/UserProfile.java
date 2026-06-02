@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -20,13 +21,13 @@ import java.util.UUID;
 public class UserProfile {
 
     @Id
-    private UUID id;                      // совпадает с Keycloak sub
+    private UUID id;
 
     @Column(unique = true, nullable = false)
     private String username;
 
     @Column(unique = true, nullable = false)
-    private String email;                 // только для чтения после регистрации
+    private String email;
 
     @Column(name = "first_name")
     private String firstName;
@@ -35,14 +36,14 @@ public class UserProfile {
     private String lastName;
 
     @Column(name = "avatar_url")
-    private String avatarUrl;             // публичный URL в MinIO (avatars/)
+    private String avatarUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserRole role;                // STUDENT, ADMIN
+    private UserRole role;
 
     @Column(name = "blocked", nullable = false)
-    private boolean blocked = false;      // дублируется из Keycloak для поиска/фильтрации
+    private boolean blocked = false;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -53,7 +54,7 @@ public class UserProfile {
     @PrePersist
     protected void onCreate() {
         if (id == null) {
-            id = UUID.randomUUID(); // Assign a UUID if not already set (e.g., from Keycloak sub)
+            id = UUID.randomUUID();
         }
         createdAt = Instant.now();
         updatedAt = Instant.now();

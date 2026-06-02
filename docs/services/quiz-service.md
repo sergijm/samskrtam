@@ -35,8 +35,6 @@ Postgres — источник истины. Redis — кэш поверх нег
 
 ## 2. Поддерживаемые типы квизов
 
-> Связанные файлы: [architecture.md](../../architecture.md) · [../quizzes/quiz-declension.md](../quizzes/quiz-declension.md)
-
 ---
 
 ## 3. Механика сессии
@@ -91,48 +89,7 @@ dependencies {
 
 ---
 
-## 5. Сущности (R2DBC)
-
-```java
-// sm/selflearn/samskrtam/quiz/model/QuizSession.java
-// R2DBC — нет @Entity, нет @Column(nullable), используем аннотации Spring Data R2DBC
-@Table("quiz.quiz_sessions")
-public class QuizSession {
-
-    @Id
-    private UUID id;
-    private UUID userId;
-    private UUID quizId;
-    private String quizType;      // QuizType enum → String вручную
-    private String status;        // SessionStatus enum → String вручную
-    private String questionIds;   // JSON array UUID — сериализуем вручную (нет JSONB маппера в R2DBC)
-    private int score;
-    private int totalQuestions;
-    private Instant startedAt;
-    private Instant completedAt;
-}
-
-// sm/selflearn/samskrtam/quiz/model/QuizAnswer.java
-@Table("quiz.quiz_answers")
-public class QuizAnswer {
-
-    @Id
-    private UUID id;
-    private UUID sessionId;
-    private UUID questionId;
-    private UUID selectedOptionId;
-    private UUID correctOptionId;
-    private boolean correct;
-    private int responseTimeMs;
-    private Instant answeredAt;
-}
-```
-
-> **R2DBC и JSONB:** R2DBC-postgresql поддерживает JSONB, но требует кастомного `Codec`. В v1 проще хранить `question_ids` как `TEXT` (JSON-строка) и сериализовать через ObjectMapper вручную.
-
----
-
-## 6. Репозитории (ReactiveCrudRepository)
+## 5. Репозитории (ReactiveCrudRepository)
 
 ```java
 // sm/selflearn/samskrtam/quiz/repository/QuizSessionRepository.java
@@ -156,54 +113,7 @@ public interface QuizAnswerRepository
 
 ---
 
-## 7. Flyway Migrations
-
-```sql
--- V1__create_schema.sql
-CREATE SCHEMA IF NOT EXISTS quiz;
-
--- V2__create_quiz_sessions.sql
-CREATE TABLE quiz.quiz_sessions (
-    id              UUID        NOT NULL DEFAULT gen_random_uuid(),
-    user_id         UUID        NOT NULL,
-    quiz_id         UUID        NOT NULL,
-    quiz_type       VARCHAR(20) NOT NULL,
-    status          VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
-    question_ids    TEXT        NOT NULL,   -- JSON array строк UUID
-    score           INT         NOT NULL DEFAULT 0,
-    total_questions INT         NOT NULL,
-    started_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    completed_at    TIMESTAMPTZ,
-
-    CONSTRAINT pk_quiz_sessions PRIMARY KEY (id),
-    CONSTRAINT ck_quiz_type     CHECK (quiz_type IN ('DECLENSIONS','CONJUGATIONS','VOCABULARY')),
-    CONSTRAINT ck_status        CHECK (status IN ('ACTIVE','COMPLETED','ABANDONED'))
-);
-
-CREATE INDEX idx_sessions_user_id ON quiz.quiz_sessions (user_id);
-CREATE INDEX idx_sessions_status  ON quiz.quiz_sessions (user_id, status);
-
--- V3__create_quiz_answers.sql
-CREATE TABLE quiz.quiz_answers (
-    id                 UUID        NOT NULL DEFAULT gen_random_uuid(),
-    session_id         UUID        NOT NULL REFERENCES quiz.quiz_sessions(id),
-    question_id        UUID        NOT NULL,
-    selected_option_id UUID        NOT NULL,
-    correct_option_id  UUID        NOT NULL,
-    correct            BOOLEAN     NOT NULL,
-    response_time_ms   INT,
-    answered_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-    CONSTRAINT pk_quiz_answers     PRIMARY KEY (id),
-    CONSTRAINT uq_session_question UNIQUE (session_id, question_id)
-);
-
-CREATE INDEX idx_answers_session_id ON quiz.quiz_answers (session_id);
-```
-
----
-
-## 8. Кэш в Redis (Reactive)
+## 6. Кэш в Redis (Reactive)
 
 Ключ: `quiz:session:{sessionId}`. Используется `ReactiveRedisTemplate<String, SessionCache>`.
 
@@ -273,7 +183,7 @@ public class SessionCacheService {
 
 ---
 
-## 9. ContentClient (WebClient)
+## 7. ContentClient (WebClient)
 
 ```java
 // sm/selflearn/samskrtam/quiz/service/ContentClient.java
@@ -301,7 +211,7 @@ public class ContentClient {
 
 ---
 
-## 10. Kafka (ReactiveKafkaProducerTemplate)
+## 8. Kafka (ReactiveKafkaProducerTemplate)
 
 Публикация событий реализована через **Outbox Pattern** — запись в таблицу `quiz.outbox_events` в той же транзакции что и сохранение ответа/завершение сессии. Это гарантирует что событие не потеряется при перезапуске сервиса между сохранением и отправкой в Kafka.
 

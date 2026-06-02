@@ -15,15 +15,13 @@ dependencies {
 
     implementation(libs.spring.cloud.gateway)
 
-    // The gateway acts as both a Resource Server (validates tokens) and a Client (initiates login)
-    implementation(libs.spring.security.oauth2) // spring-boot-starter-oauth2-resource-server
-    implementation("org.springframework.boot:spring-boot-starter-oauth2-client") // The correct starter for the login flow
+    implementation(libs.spring.security.oauth2)
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
 
-    // Redis for OAuth2 state management
     implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
 
     // Observability
-    implementation("org.springframework.boot:spring-boot-starter-actuator") // Added for ObservationRegistry auto-configuration
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("io.micrometer:micrometer-tracing-bridge-otel")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
     implementation("io.micrometer:micrometer-registry-prometheus")
@@ -31,6 +29,8 @@ dependencies {
 
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
+
+    implementation(project(":shared:user-dtos"))
 
     testImplementation(libs.spring.test)
 }

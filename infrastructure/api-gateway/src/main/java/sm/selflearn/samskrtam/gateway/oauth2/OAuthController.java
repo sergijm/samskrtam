@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity; // Added import
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.gateway.config.OAuth2Properties;
+
+// Импорт DTO из shared:user-dtos
 
 import java.net.URI;
 import java.util.Set;
@@ -74,7 +76,7 @@ public class OAuthController {
      * </ol>
      */
     @GetMapping("/{provider}")
-    public Mono<ResponseEntity<Void>> initiateOAuth2( // Changed return type
+    public Mono<ResponseEntity<Void>> initiateOAuth2(
             @PathVariable String provider,
             ServerWebExchange exchange) {
 
@@ -89,7 +91,6 @@ public class OAuthController {
                     String authUrl = buildAuthorizationUrl(provider, state);
                     log.debug("OAuth2 initiate: provider={}, redirectTo={}", provider, authUrl);
 
-                    // Using ResponseEntity for explicit redirect
                     return Mono.just(ResponseEntity.status(HttpStatus.FOUND)
                             .location(URI.create(authUrl))
                             .build());
@@ -114,14 +115,13 @@ public class OAuthController {
      * поэтому токен не попадает в серверные логи.
      */
     @GetMapping("/callback")
-    public Mono<ResponseEntity<Void>> handleCallback( // Changed return type
+    public Mono<ResponseEntity<Void>> handleCallback(
             @RequestParam String code,
             @RequestParam String state,
             @RequestParam(required = false) String error,
             @RequestParam(name = "error_description", required = false) String errorDescription,
             ServerWebExchange exchange) {
 
-        // Keycloak вернул ошибку (пользователь отказал в доступу и т.п.)
         if (error != null) {
             log.warn("OAuth2 callback error: error={}, description={}", error, errorDescription);
             return redirectToFrontendWithError(exchange, error);
@@ -133,7 +133,7 @@ public class OAuthController {
                 .flatMap(provider -> exchangeCodeForTokens(code)
                         .flatMap(keycloakToken -> syncProfileWithUserService(
                                 keycloakToken.accessToken(), provider)
-                                .then(Mono.just(keycloakToken.accessToken()))) // Explicitly pass accessToken
+                                .then(Mono.just(keycloakToken.accessToken())))
                         .doOnNext(finalAppToken -> log.debug("Final appToken for redirect: {}", finalAppToken))
                         .flatMap(appToken -> redirectToFrontendWithToken(exchange, appToken)))
                 .doOnSuccess(v -> log.debug("OAuth2 callback processing completed successfully."))
@@ -153,7 +153,7 @@ public class OAuthController {
                + "&response_type=code"
                + "&scope=openid+email+profile"
                + "&state=" + state
-               + "&kc_idp_hint=" + provider; // Добавляем подсказку провайдера
+               + "&kc_idp_hint=" + provider;
     }
 
     /**
@@ -166,7 +166,7 @@ public class OAuthController {
         form.add("code",          code);
         form.add("redirect_uri",  oauth2Props.getRedirectUri());
         form.add("client_id",     oauth2Props.getClientId());
-        form.add("client_secret", oauth2Props.getClientSecret()); // ← только здесь
+        form.add("client_secret", oauth2Props.getClientSecret());
 
         log.debug("Attempting to exchange code for tokens with Keycloak. Token Endpoint: {}, Client ID: {}, Redirect URI: {}",
                 oauth2Props.tokenEndpoint(), oauth2Props.getClientId(), oauth2Props.getRedirectUri());
@@ -183,7 +183,7 @@ public class OAuthController {
                                         response.statusCode(), body))
                                 .flatMap(body -> Mono.error(new ResponseStatusException(
                                         HttpStatus.UNAUTHORIZED, "Token exchange failed: " + body))))
-                .onStatus(status -> status.isError(), response -> // Catch other error statuses (5xx)
+                .onStatus(status -> status.isError(), response ->
                         response.bodyToMono(String.class)
                                 .doOnNext(body -> log.error(
                                         "Keycloak token exchange failed with error status: status={}, body={}",
@@ -199,7 +199,7 @@ public class OAuthController {
      * Шаг 3: Синхронизация профиля с user-service.
      * user-service создаёт/обновляет пользователя и возвращает собственный JWT.
      */
-    private Mono<Void> syncProfileWithUserService(String keycloakAccessToken, String provider) { // Changed return type to Mono<Void>
+    private Mono<Void> syncProfileWithUserService(String keycloakAccessToken, String provider) {
         return userServiceWebClient.post()
                 .uri("/api/v1/users/oauth2/sync")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -213,12 +213,12 @@ public class OAuthController {
                                 .flatMap(body -> Mono.error(new ResponseStatusException(
                                         HttpStatus.INTERNAL_SERVER_ERROR,
                                         "Profile sync failed"))))
-                .bodyToMono(Void.class) // Expecting no body or Void
+                .bodyToMono(Void.class)
                 .doOnSuccess(t -> log.debug("user-service oauth2 sync successful"));
     }
 
     /** Шаг 4: Редирект на фронтенд с токеном в URL fragment. */
-    private Mono<ResponseEntity<Void>> redirectToFrontendWithToken(ServerWebExchange exchange, String token) { // Changed return type
+    private Mono<ResponseEntity<Void>> redirectToFrontendWithToken(ServerWebExchange exchange, String token) {
         if (frontendUrl == null || frontendUrl.isBlank()) {
             log.error("Frontend URL is not configured. Cannot redirect after OAuth2 callback.");
             return Mono.error(new ResponseStatusException(
@@ -240,7 +240,7 @@ public class OAuthController {
     }
 
     /** Редирект на фронтенд при ошибке OAuth2. */
-    private Mono<ResponseEntity<Void>> redirectToFrontendWithError(ServerWebExchange exchange, String error) { // Changed return type
+    private Mono<ResponseEntity<Void>> redirectToFrontendWithError(ServerWebExchange exchange, String error) {
         if (frontendUrl == null || frontendUrl.isBlank()) {
             log.error("Frontend URL is not configured. Cannot redirect after OAuth2 error.");
             return Mono.error(new ResponseStatusException(
@@ -263,9 +263,4 @@ public class OAuthController {
     private String encodeUrl(String value) {
         return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8);
     }
-
-    // ── Inner DTOs ────────────────────────────────────────────────────────────
-
-    record OAuthSyncRequest(String keycloakToken, String provider) {}
-    // Removed OAuthSyncResponse
 }

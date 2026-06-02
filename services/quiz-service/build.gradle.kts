@@ -11,20 +11,20 @@ java {
 
 dependencies {
     implementation(platform("org.springframework.boot:spring-boot-dependencies:${libs.versions.spring.boot.get()}"))
-    
+
     implementation(libs.spring.webflux)
     implementation(libs.spring.r2dbc)
     implementation(libs.spring.kafka)
     implementation(libs.spring.redis.reactive)
-    
-    // Springdoc OpenAPI for WebFlux
+
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.5.0")
 
-    implementation(project(":shared:common-dto"))
+    implementation(project(":shared:common-dtos")) // Обновлено на common-dtos
     implementation(project(":shared:kafka-events"))
-    
+    implementation(project(":shared:quiz-content-dtos"))
+
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
-    
+
     testImplementation(libs.spring.test)
 }
