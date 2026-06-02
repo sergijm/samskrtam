@@ -35,11 +35,7 @@ Postgres — источник истины. Redis — кэш поверх нег
 
 ## 2. Поддерживаемые типы квизов
 
-| QuizType | URL-префикс | Механика вопроса |
-|---|---|---|
-| `DECLENSIONS` | `/quiz/declensions` | Multiple-choice из фиксированных вариантов |
-| `CONJUGATIONS` | `/quiz/conjugations` | Multiple-choice из фиксированных вариантов |
-| `VOCABULARY` | `/quiz/vocabulary` | Multiple-choice, дистракторы из того же квиза |
+> Связанные файлы: [architecture.md](../../architecture.md) · [../quizzes/quiz-declension.md](../quizzes/quiz-declension.md)
 
 ---
 
@@ -472,7 +468,6 @@ POST /api/v1/quiz/conjugations/sessions/{id}/complete
 ### Лексика (slug-based)
 
 ```
-GET  /api/v1/quiz/vocabulary                                       → список квизов (из content-service)
 GET  /api/v1/quiz/vocabulary/{slug}                                → детали квиза
 GET  /api/v1/quiz/vocabulary/{slug}/sessions/start
 GET  /api/v1/quiz/vocabulary/{slug}/sessions/{id}/resume

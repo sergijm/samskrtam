@@ -9,7 +9,8 @@ const api = axios.create({
 // Request interceptor to add the Bearer token
 api.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().accessToken;
+    // Directly read from localStorage for robustness, as useAuthStore.getState() might not be fully hydrated yet
+    const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

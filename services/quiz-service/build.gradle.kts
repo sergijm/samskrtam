@@ -17,6 +17,9 @@ dependencies {
     implementation(libs.spring.kafka)
     implementation(libs.spring.redis.reactive)
     
+    // Springdoc OpenAPI for WebFlux
+    implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.5.0")
+
     implementation(project(":shared:common-dto"))
     implementation(project(":shared:kafka-events"))
     

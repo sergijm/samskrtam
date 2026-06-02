@@ -68,11 +68,6 @@ public class GatewayRoutesConfig {
                         .path("/api/v1/content/**")
                         .uri(contentServiceUrl))
 
-                // ── Quiz ─────────────────────────────────────────────────────────
-                .route("quiz", r -> r
-                        .path("/api/v1/quiz/**")
-                        .uri(quizServiceUrl))
-
                 // ── Dictionary ───────────────────────────────────────────────────
                 .route("dictionary", r -> r
                         .path("/api/v1/dictionary/**")

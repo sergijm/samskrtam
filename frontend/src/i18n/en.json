@@ -37,7 +37,11 @@
     "correct": "Correct!",
     "incorrect": "Incorrect",
     "question": "Question {{current}} of {{total}}",
-    "explanation": "Explanation"
+    "explanation": "Explanation",
+    "title": "Quizzes",
+    "fetchError": "Failed to load quizzes: {{message}}",
+    "totalQuestions": "Total Questions: {{count}}",
+    "noQuizzesFound": "No quizzes found."
   },
   "auth": {
     "login": "Login",

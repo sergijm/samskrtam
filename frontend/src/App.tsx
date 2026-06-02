@@ -15,7 +15,8 @@ import GroupListPage from './pages/GroupListPage';
 import GroupCreatePage from './pages/GroupCreatePage';
 import GroupPage from './pages/GroupPage';
 import GroupEditPage from './pages/GroupEditPage';
-import AdminUsersPage from './pages/AdminUsersPage'; // Import AdminUsersPage
+import AdminUsersPage from './pages/AdminUsersPage';
+import QuizzesPage from './pages/QuizzesPage'; // Import QuizzesPage
 
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -46,13 +47,14 @@ export default function App() {
                 <Route path="settings/password" element={<ChangePasswordPage />} />
                 <Route path="users/:id" element={<UserProfilePage />} />
                 <Route path="groups/:id" element={<GroupPage />} />
+                <Route path="quizzes" element={<QuizzesPage />} /> {/* Added QuizzesPage route */}
                 
                 {/* Admin only routes */}
                 <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
                   <Route path="groups" element={<GroupListPage />} />
                   <Route path="groups/new" element={<GroupCreatePage />} />
                   <Route path="groups/:id/edit" element={<GroupEditPage />} />
-                  <Route path="admin/users" element={<AdminUsersPage />} /> {/* Added AdminUsersPage route */}
+                  <Route path="admin/users" element={<AdminUsersPage />} />
                 </Route>
               </Route>
             </Route>

@@ -37,7 +37,11 @@
     "correct": "Верно!",
     "incorrect": "Неверно",
     "question": "Вопрос {{current}} из {{total}}",
-    "explanation": "Объяснение"
+    "explanation": "Объяснение",
+    "title": "Квизы",
+    "fetchError": "Не удалось загрузить квизы: {{message}}",
+    "totalQuestions": "Всего вопросов: {{count}}",
+    "noQuizzesFound": "Квизы не найдены."
   },
   "auth": {
     "login": "Войти",

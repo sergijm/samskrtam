@@ -28,18 +28,35 @@ Feature Flag Service управляет булевыми флагами кото
 
 ## 2. Реестр флагов
 
-На старте — один флаг. Реестр расширяется по мере роста проекта.
+На старте — два флага. Реестр расширяется по мере роста проекта.
 
 | Флаг | Тип | По умолчанию | Потребитель | Описание |
 |---|---|---|---|---|
 | `RATE_LIMITING_ENABLED` | boolean | `true` | api-gateway | Включает Redis Rate Limiting |
+| `EMAIL_NOTIFICATIONS_ENABLED` | boolean | `false` | user-service | Включает отправку email (регистрация, смена пароля, восстановление) |
+
+> `EMAIL_NOTIFICATIONS_ENABLED` по умолчанию `false` — безопасное умолчание.
+> Email не уйдёт пока не настроен SMTP и не включён флаг явно.
+
+### Поведение EMAIL_NOTIFICATIONS_ENABLED
+
+| Событие | Флаг `true` | Флаг `false` |
+|---|---|---|
+| Регистрация | Отправляет письмо с подтверждением email | Пропускает отправку, регистрация завершается |
+| Восстановление пароля | Отправляет письмо с reset-ссылкой | Возвращает 503 с сообщением "Email недоступен" |
+| Смена email | Отправляет подтверждение на новый адрес | Пропускает, смена применяется сразу |
+| Уведомление о входе с нового устройства | Отправляет | Пропускает |
+
+> Восстановление пароля возвращает 503 (а не тихо пропускает) — потому что
+> без письма пользователь не может завершить сброс пароля. Это принципиально
+> отличается от "подтверждения регистрации" где письмо опционально.
 
 ### Добавление нового флага
 
-1. Добавить константу в enum `FeatureFlag` (shared модуль или feature-flag-service)
-2. Добавить строку в таблицу выше
-3. Описать потребителя и поведение при `false`
-4. Добавить запись в `V1__seed_flags.sql`
+1. Добавить константу в enum `FeatureFlag` (в api-gateway и user-service)
+2. Добавить строку в таблицу выше с описанием поведения при `false`
+3. Добавить `INSERT` в `V1__seed_flags.sql`
+4. Описать потребителя в спецификации соответствующего сервиса
 
 ---
 
@@ -170,7 +187,8 @@ CREATE TABLE feature_flags.flags (
 
 -- Начальные данные
 INSERT INTO feature_flags.flags (name, description) VALUES
-    ('RATE_LIMITING_ENABLED', 'Включает Redis Rate Limiting в api-gateway');
+    ('RATE_LIMITING_ENABLED',      'Включает Redis Rate Limiting в api-gateway'),
+    ('EMAIL_NOTIFICATIONS_ENABLED','Включает отправку email (регистрация, сброс пароля, смена email)');
 
 -- V2__create_flag_audit.sql
 CREATE TABLE feature_flags.flag_audit (
@@ -407,10 +425,11 @@ public class FeatureFlagClient {
 
 ```java
 // sm/selflearn/samskrtam/gateway/featureflag/FeatureFlag.java
-// Enum с реестром флагов — shared между gateway и feature-flag-service
+// Enum с реестром флагов — используется в api-gateway и других клиентах
 public enum FeatureFlag {
 
-    RATE_LIMITING_ENABLED(true);   // дефолт true — безопасное умолчание
+    RATE_LIMITING_ENABLED(true),        // дефолт true — безопасное умолчание
+    EMAIL_NOTIFICATIONS_ENABLED(false); // дефолт false — не слать письма пока SMTP не настроен
 
     private final boolean defaultValue;
 
@@ -558,9 +577,11 @@ Admin UI
 - [ ] `GET /api/v1/flags` возвращает список всех флагов с текущим состоянием
 - [ ] `PATCH /api/v1/flags/RATE_LIMITING_ENABLED { "enabled": false }` отключает rate limiting в Gateway за ≤5 секунд
 - [ ] `PATCH /api/v1/flags/RATE_LIMITING_ENABLED { "enabled": true }` включает rate limiting обратно
+- [ ] `PATCH /api/v1/flags/EMAIL_NOTIFICATIONS_ENABLED { "enabled": true }` — user-service начинает отправлять письма за ≤5 секунд
+- [ ] `PATCH /api/v1/flags/EMAIL_NOTIFICATIONS_ENABLED { "enabled": false }` — письма перестают отправляться; `POST /forgot-password` возвращает 503
 - [ ] История изменений доступна через `GET /api/v1/flags/{name}/history`
 - [ ] Изменение флага недоступно без токена ADMIN (403)
-- [ ] При недоступности Redis api-gateway использует дефолтное значение флага (`true` для RATE_LIMITING_ENABLED)
+- [ ] При недоступности Redis api-gateway использует дефолтное значение флага (`true` для RATE_LIMITING_ENABLED, `false` для EMAIL_NOTIFICATIONS_ENABLED)
 - [ ] При перезапуске feature-flag-service — флаги восстанавливаются в Redis из дефолтов (если ключ отсутствует)
 - [ ] Аудит сохраняется в PostgreSQL с changedBy (userId из X-User-Id) и меткой времени
 - [ ] `PATCH` с тем же значением (уже `true` → `true`) не создаёт аудит-запись
@@ -570,7 +591,7 @@ Admin UI
 
 ## 15. Открытые вопросы
 
-- [ ] Нужен ли UI для управления флагами (отдельная страница в AdminPage)?
+- [x] Нужен ли UI для управления флагами — да, описан в [frontend/feature-flags-frontend.md](../frontend/feature-flags-frontend.md)
 - [ ] Добавить поле `reason` в PATCH тело (зачем изменяем флаг)?
 - [ ] Процентный rollout (`enabledForPercent: 10`) — нужен для A/B тестов?
 - [ ] Уведомление в Slack/Telegram при изменении флага в production?

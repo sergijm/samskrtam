@@ -430,3 +430,13 @@ spec:
 ```
 
 > ⚠️ Без этой политики любой под в namespace может подделать `X-User-Id` и `X-User-Role` и получить доступ к данным любого пользователя.
+
+
+
+## Authentication Responsibilities
+Gateway owns login, refresh, logout, OAuth2 callback and JWT validation.
+
+Registration and forgot-password are handled by user-service.
+
+## OAuth2 Flow
+External identity providers are initiated using Keycloak Authorization Endpoint and kc_idp_hint.

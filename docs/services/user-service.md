@@ -709,3 +709,13 @@ outbox:
 - [ ] TTL для FAILED outbox событий — когда очищать?
 - [ ] При блокировке — инвалидировать уже выданные токены немедленно (Keycloak session logout) или ждать истечения TTL?
 - [ ] Поле `search` в списке пользователей — полнотекстовый поиск PostgreSQL или ILIKE достаточно?
+
+
+## Identity Mapping
+UserProfile.id == JWT.sub == Keycloak User ID.
+
+## Just-In-Time Provisioning
+If profile is absent locally, user-service loads it from Keycloak and creates a local record.
+
+## Avatar Upload Flow
+Frontend -> User Service -> Presigned URL -> MinIO -> Confirm Upload

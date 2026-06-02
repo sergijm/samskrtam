@@ -201,3 +201,16 @@ API Gateway (единственный валидатор):
 - [ ] Mail.ru OIDC — проверить актуальность endpoints (могли измениться)
 - [ ] Нужен ли Keycloak Account Console для смены пароля пользователем?
 - [ ] First Login Flow для внешних провайдеров — автосоздание или ручное подтверждение?
+
+
+
+## Internal Communication
+
+Development:
+- HTTP between services and Keycloak
+
+Production:
+- HTTPS between services and Keycloak
+
+## Service Account
+User-service uses client_credentials grant for administrative operations.

@@ -101,12 +101,12 @@ samskrtam-app/
 ├── user-service/                 ← Java 21 + Virtual Threads
 │   ├── build.gradle.kts
 │   └── src/main/java/
-│       └── sm/selflearn/samskrtam/auth/
+│       └── sm/selflearn/samskrtam/user/
 │           ├── Application.java
 │           ├── controller/
-│           │   └── AuthController.java
+│           │   └── UserProfileController.java
 │           ├── service/
-│           │   ├── TokenService.java
+│           │   ├── UserProfileService.java
 │           │   └── KeycloakAdminService.java
 │           └── client/
 │               └── KeycloakClient.java
@@ -974,3 +974,10 @@ deploy:kubernetes:
 - [ ] Отдельный namespace для инфраструктуры (postgres, kafka, redis)?
 - [ ] Distributed tracing — Jaeger или Zipkin?
 - [ ] Автоматический деплой на main или только ручной?
+
+
+
+## Event Publishing Standard
+
+All Kafka producer services must use Outbox Pattern.
+Direct publication from business transactions is prohibited.

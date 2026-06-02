@@ -32,7 +32,7 @@ export default function DashboardPage() {
                   <i className={`${item.icon} text-5xl mb-3`} />
                   <p className="text-sm text-color-secondary">{item.description}</p>
                 </div>
-                <Button label={t('common.go')} icon="pi pi-arrow-right" iconPos="right" className="p-button-text mt-3" />
+                {/* Removed the Button here */}
               </Card>
             </Link>
           </div>

@@ -82,6 +82,7 @@ frontend/
     ├── App.tsx                     ← роутер + провайдеры
     │
     ├── pages/                      ← страницы (один файл = один роут)
+    │   ├── HomePage.tsx            ← публичная landing для незалогиненных (новое)
     │   ├── LoginPage.tsx
     │   ├── RegisterPage.tsx
     │   ├── ForgotPasswordPage.tsx
@@ -104,8 +105,10 @@ frontend/
     │
     ├── components/                 ← переиспользуемые компоненты
     │   ├── layout/
-    │   │   ├── AppLayout.tsx       ← шапка + навигация + контент
-    │   │   ├── Header.tsx
+    │   │   ├── AppLayout.tsx       ← шапка + навигация + контент (только для залогиненных)
+    │   │   ├── PublicLayout.tsx    ← шапка для незалогиненных (кнопка Войти)
+    │   │   ├── Header.tsx          ← шапка залогиненного: лого + навигация + ThemeSwitcher + LocaleSwitcher + кнопка Выйти
+    │   │   ├── PublicHeader.tsx    ← шапка публичная: лого + ThemeSwitcher + LocaleSwitcher + кнопка Войти
     │   │   └── Sidebar.tsx
     │   ├── auth/
     │   │   └── ProtectedRoute.tsx  ← HOC для защищённых роутов
@@ -179,7 +182,7 @@ frontend/
 | `/register` | RegisterPage | Нет | — |
 | `/forgot-password` | ForgotPasswordPage | Нет | — |
 | `/auth/callback` | AuthCallbackPage | Нет | — |
-| `/` | DashboardPage | Да | STUDENT |
+| `/` | **HomePage** (не залогинен) / **DashboardPage** (залогинен) | Нет | — |
 | `/quizzes` | QuizListPage | Да | STUDENT |
 | `/quiz/grammar/:type` | QuizPage | Да | STUDENT |
 | `/quiz/vocabulary/:slug` | QuizPage | Да | STUDENT |
@@ -195,8 +198,14 @@ frontend/
 | `/groups/:id` | GroupPage | Да | STUDENT, ADMIN |
 | `/groups/:id/edit` | GroupEditPage | Да | ADMIN, CURATOR |
 | `/admin` | AdminPage | Да | ADMIN |
+| `/admin/flags` | FeatureFlagsPage | Да | ADMIN |
+| `/admin/flags/:name/history` | FlagHistoryPage | Да | ADMIN |
+
+> Маршрут `/` — единственный с условным рендером: `isAuthenticated ? <DashboardPage/> : <HomePage/>`.
+> HomePage не требует авторизации и доступна по прямой ссылке.
 
 Роуты `/settings`, `/users/:id`, `/groups/*` — подробная спецификация в [user-frontend.md](user-frontend.md).
+Роуты `/admin/flags/*` — подробная спецификация в [feature-flags-frontend.md](feature-flags-frontend.md).
 
 ---
 
@@ -280,12 +289,225 @@ frontend/
 
 ---
 
-### DashboardPage (`/`)
+### Header (залогиненный пользователь)
 
-**Назначение:** главная страница после входа.
+**Позиция:** фиксированная шапка, правый верхний угол.
+
+**Элементы (слева → справа):**
+- Логотип / название "Samskrtam" → ссылка на `/`
+- Навигация: Квизы / Словарь / Статистика / Лидерборд (+ Администрирование для ADMIN)
+- `ThemeSwitcher`
+- `LocaleSwitcher`
+- Имя пользователя (кликабельно → `/users/:id`)
+- **Кнопка "Выйти"** (правый верхний угол, `severity="secondary"`, иконка `pi-sign-out`)
+
+```typescript
+// components/layout/Header.tsx
+export const Header = () => {
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const handleLogout = async () => {
+    await authApi.logout(useAuthStore.getState().refreshToken!);
+    logout();          // очищает Zustand store
+    navigate('/');     // → HomePage (публичная)
+  };
+
+  return (
+    <Menubar
+      start={<Link to="/" className="font-bold text-xl">Samskrtam</Link>}
+      end={
+        <div className="flex align-items-center gap-3">
+          <ThemeSwitcher />
+          <LocaleSwitcher />
+          <span
+            className="cursor-pointer hover:underline"
+            onClick={() => navigate(`/users/${user?.id}`)}>
+            {user?.username}
+          </span>
+          <Button
+            label={t('auth.logout')}
+            icon="pi pi-sign-out"
+            severity="secondary"
+            text
+            onClick={handleLogout}
+          />
+        </div>
+      }
+    />
+  );
+};
+```
+
+---
+
+### PublicHeader (незалогиненный пользователь)
+
+**Позиция:** фиксированная шапка, правый верхний угол.
+
+**Элементы (слева → справа):**
+- Логотип / название "Samskrtam"
+- `ThemeSwitcher`
+- `LocaleSwitcher`
+- **Кнопка "Войти"** (правый верхний угол, `severity="primary"`, иконка `pi-sign-in`)
+
+```typescript
+// components/layout/PublicHeader.tsx
+export const PublicHeader = () => {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  return (
+    <Menubar
+      start={<span className="font-bold text-xl">Samskrtam</span>}
+      end={
+        <div className="flex align-items-center gap-3">
+          <ThemeSwitcher />
+          <LocaleSwitcher />
+          <Button
+            label={t('auth.login')}
+            icon="pi pi-sign-in"
+            onClick={() => navigate('/login')}
+          />
+        </div>
+      }
+    />
+  );
+};
+```
+
+---
+
+### HomePage (`/` — незалогиненный пользователь)
+
+**Назначение:** публичная landing для пользователей не прошедших авторизацию.
+Если пользователь залогинен — роут `/` отображает `DashboardPage`.
+
+```typescript
+// App.tsx
+<Route path="/" element={
+  isAuthenticated ? <DashboardPage /> : <HomePage />
+} />
+```
 
 **Элементы:**
-- Приветствие с именем пользователя
+
+**Шапка:** `PublicHeader` с кнопкой "Войти" в правом верхнем углу.
+
+**Hero секция:**
+- Изображение Панини — грамматиста санскрита
+
+  URL: `https://kulturologia.ru/files/u18172/Panini-Zagl.jpg`
+
+  Отображается как круглый аватар (`border-radius: 50%`) или прямоугольник с
+  `border-radius: 12px`, выровнен по правому краю hero-блока.
+- Заголовок: "Samskrtam — платформа для изучения санскрита"
+- Подзаголовок: "Квизы по грамматике и лексике, словарь, лидерборды"
+- Краткое описание Панини: великий санскритский грамматист (IV–III вв. до н.э.),
+  автор "Аштадхьяи" — одной из самых совершенных грамматик в истории языкознания.
+  Именно его труд лёг в основу изучения санскрита.
+- Кнопка "Начать обучение" → `/login`
+- Кнопка "Узнать больше" → скролл к секции с описанием
+
+**Секция "Что внутри":**
+- 3 карточки: Квизы по грамматике / Словарь санскрита / Лидерборд
+- Каждая карточка: иконка + заголовок + 1-2 предложения
+
+**Footer:**
+- "© Samskrtam · Платформа изучения санскрита"
+
+```typescript
+// pages/HomePage.tsx
+export const HomePage = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <PublicHeader />
+
+      {/* Hero */}
+      <section className="flex align-items-center justify-content-between
+                          px-6 py-8 gap-6" style={{ minHeight: '70vh' }}>
+        <div className="flex flex-column gap-4" style={{ maxWidth: '520px' }}>
+          <h1 className="text-5xl font-bold m-0">{t('home.title')}</h1>
+          <p className="text-xl text-color-secondary m-0">{t('home.subtitle')}</p>
+          <p className="line-height-3">{t('home.paniniDescription')}</p>
+          <div className="flex gap-3">
+            <Button
+              label={t('home.startLearning')}
+              icon="pi pi-play"
+              size="large"
+              onClick={() => navigate('/login')}
+            />
+            <Button
+              label={t('home.learnMore')}
+              icon="pi pi-arrow-down"
+              severity="secondary"
+              text
+              size="large"
+              onClick={() => document.getElementById('features')?.scrollIntoView(
+                { behavior: 'smooth' })}
+            />
+          </div>
+        </div>
+
+        {/* Изображение Панини */}
+        <img
+          src="https://kulturologia.ru/files/u18172/Panini-Zagl.jpg"
+          alt={t('home.paniniAlt')}
+          style={{
+            width: '340px',
+            height: '400px',
+            objectFit: 'cover',
+            borderRadius: '12px',
+            flexShrink: 0,
+          }}
+        />
+      </section>
+
+      {/* Features */}
+      <section id="features" className="px-6 py-6">
+        <div className="grid">
+          {[
+            { icon: 'pi-book',      key: 'quizzes'     },
+            { icon: 'pi-search',    key: 'dictionary'  },
+            { icon: 'pi-chart-bar', key: 'leaderboard' },
+          ].map(({ icon, key }) => (
+            <div key={key} className="col-12 md:col-4">
+              <Card>
+                <div className="flex flex-column align-items-center gap-3 text-center p-3">
+                  <i className={`pi ${icon} text-4xl text-primary`} />
+                  <h3 className="m-0">{t(`home.features.${key}.title`)}</h3>
+                  <p className="text-color-secondary m-0">
+                    {t(`home.features.${key}.description`)}
+                  </p>
+                </div>
+              </Card>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <footer className="text-center py-4 text-color-secondary">
+        © Samskrtam · {t('home.footerTagline')}
+      </footer>
+    </>
+  );
+};
+```
+
+---
+
+### DashboardPage (`/` — залогиненный пользователь)
+
+**Назначение:** главная страница после входа. Отображается вместо HomePage если `isAuthenticated`.
+
+**Шапка:** `Header` с кнопкой "Выйти" в правом верхнем углу.
+
+**Элементы:**
+- Приветствие с именем пользователя: "Добро пожаловать, {{name}}"
 - Карточки доступных квизов (QuizCard × N)
 - Блок "Мой прогресс" — краткая статистика (всего попыток, средний %)
 - Блок "Лидерборд" — топ-3 участников
@@ -817,6 +1039,20 @@ api.interceptors.response.use(
     "settings":    "Настройки",
     "admin":       "Администрирование"
   },
+  "home": {
+    "title":       "Samskrtam",
+    "subtitle":    "Платформа для изучения санскрита",
+    "paniniDescription": "Панини (IV–III вв. до н.э.) — великий санскритский грамматист, автор «Аштадхьяи» — одной из самых совершенных грамматик в истории языкознания. Его труд до сих пор остаётся эталоном лингвистического анализа.",
+    "paniniAlt":   "Панини — грамматист санскрита",
+    "startLearning": "Начать обучение",
+    "learnMore":   "Узнать больше",
+    "footerTagline": "Платформа изучения санскрита",
+    "features": {
+      "quizzes":     { "title": "Квизы по грамматике и лексике", "description": "Склонения, спряжения, словарный запас — всё в интерактивном формате с разбором ошибок." },
+      "dictionary":  { "title": "Словарь санскрита",              "description": "Поиск по словам, транслитерация, примеры употребления." },
+      "leaderboard": { "title": "Лидерборд",                      "description": "Соревнуйтесь с другими учащимися — глобальный рейтинг и рейтинг внутри группы." }
+    }
+  },
   "settings": {
     "title":         "Настройки",
     "language":      "Язык",
@@ -877,6 +1113,16 @@ VITE_KEYCLOAK_CLIENT_ID=samskrtam-frontend
 
 ## 12. Acceptance Criteria
 
+### Навигация и аутентификация
+- [ ] `/` для незалогиненного пользователя → HomePage с PublicHeader
+- [ ] `/` для залогиненного пользователя → DashboardPage с Header
+- [ ] PublicHeader: кнопка "Войти" в правом верхнем углу ведёт на `/login`
+- [ ] Header: кнопка "Выйти" в правом верхнем углу — очищает authStore и редиректит на `/`
+- [ ] После logout — пользователь видит HomePage (не DashboardPage)
+- [ ] Изображение Панини отображается на HomePage
+- [ ] Кнопка "Начать обучение" ведёт на `/login`
+- [ ] Кнопка "Узнать больше" плавно скроллит к секции features
+
 ### Auth
 - [ ] Логин через форму → ROPC → JWT в authStore → редирект на /
 - [ ] Кнопка Google → редирект → /auth/callback → JWT → редирект на /
@@ -918,3 +1164,17 @@ VITE_KEYCLOAK_CLIENT_ID=samskrtam-frontend
 - [ ] Шрифт для деванагари — Noto Sans Devanagari?
 - [ ] Keycloak JS adapter или самописный OAuth2 флоу?
 - [ ] PWA (оффлайн режим для словаря)?
+
+
+
+## Localization Rule
+
+All user-facing messages, validation messages and notifications must use i18n keys.
+
+## Dashboard
+
+Responsive card layout is the default navigation mechanism.
+
+## Avatar Workflow
+
+Settings -> Upload URL -> Direct MinIO Upload -> Confirm Upload

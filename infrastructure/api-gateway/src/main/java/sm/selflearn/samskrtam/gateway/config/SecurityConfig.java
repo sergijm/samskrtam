@@ -34,6 +34,7 @@ import java.util.List;
  * <p>Любой аутентифицированный:
  * <ul>
  *   <li>/api/v1/content/public/**
+ *   <li>/api/v1/content/quizzes — список квизов
  *   <li>/api/** (квизы, словарь, статистика)
  * </ul>
  *
@@ -51,24 +52,34 @@ public class SecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable) // Отключаем HTTP Basic Authentication
                 .authorizeExchange(auth -> auth
                         // k8s health probes — без JWT
                         .pathMatchers("/actuator/health/**").permitAll()
                         // CORS preflight — без JWT
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // --- PUBLIC ENDPOINTS (permitAll) ---
                         // Auth endpoints — без JWT (логин, регистрация, OAuth2 flow)
                         .pathMatchers("/api/v1/auth/**").permitAll()
                         // OAuth2 flow — без JWT (инициация + callback)
                         .pathMatchers("/api/v1/auth/oauth2/**").permitAll()
                         // Handle potential double slash in path for OAuth2
                         .pathMatchers("/api/v1/auth/oauth2/**").permitAll()
+
+                        // --- AUTHENTICATED ENDPOINTS (authenticated) ---
                         // Публичный контент — только аутентифицированные
                         .pathMatchers("/api/v1/content/public/**").authenticated()
-                        // Управление контентом — только ADMIN
-                        .pathMatchers("/api/v1/content/**").hasRole("ADMIN")
+                        // Список квизов — любой аутентифицированный
+                        .pathMatchers("/api/v1/content/quizzes").authenticated()
                         // Квизы, словарь, статистика — любой аутентифицированный
                         .pathMatchers("/api/**").authenticated()
-                        // Всё остальное запрещено
+
+                        // --- ADMIN ENDPOINTS (hasRole) ---
+                        // Управление контентом — только ADMIN
+                        .pathMatchers("/api/v1/content/**").hasRole("ADMIN")
+                        
+                        // --- DENY ALL OTHER REQUESTS ---
                         .anyExchange().denyAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

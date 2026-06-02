@@ -1,5 +1,5 @@
 server:
-  port: ${QUIZ_SERVICE_PORT}
+  port: ${QUIZ_SERVICE_PORT:8082}
 
 spring:
   application:
@@ -9,12 +9,35 @@ spring:
   threads:
     virtual:
       enabled: true
+
+  # R2DBC — основной datasource для бизнес-логики
   r2dbc:
-    url: ${SPRING_R2DBC_URL}?schema=quiz
-    username: ${DB_USER}
+    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://postgres:5432/samskrtam}
+    username: ${DB_USER:samskrtam}
+    password: ${DB_PASSWORD}
+    properties:
+      schema: quiz
+
+  # JDBC — только для Flyway (отдельный бин в FlywayConfig)
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/samskrtam}
+    username: ${DB_USER:samskrtam}
     password: ${DB_PASSWORD}
   flyway:
-    url: ${SPRING_FLYWAY_URL}
-    user: ${DB_USER}
-    password: ${DB_PASSWORD}
+    enabled: false   # отключаем auto, запускаем вручную из FlywayConfig
     schemas: quiz
+
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: 6379
+
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+content:
+  service:
+    url: ${CONTENT_SERVICE_URL:http://content-service:8081}

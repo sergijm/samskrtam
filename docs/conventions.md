@@ -62,6 +62,10 @@ KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/samskrtam/protocol/openid-connect/
 
 # ── Services ────────────────────────────────────────────
 CONTENT_SERVICE_URL=http://content-service:8081
+USER_SERVICE_URL=http://user-service:8087
+DICTIONARY_SERVICE_URL=http://dictionary-service:8083
+STATISTICS_SERVICE_URL=http://statistics-service:8084
+FEATURE_FLAG_SERVICE_URL=http://feature-flag-service:8085
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 
 # ── Observability ───────────────────────────────────────
@@ -110,6 +114,30 @@ VITE_API_URL=http://localhost:8090
 Профиль активируется через `SPRING_PROFILES_ACTIVE` в `.env`.
 
 ---
+
+
+### Адреса сервисов по окружениям
+
+Для локальной разработки (IDEA, запуск сервисов вне Docker/Kubernetes) используются localhost-адреса:
+
+```bash
+CONTENT_SERVICE_URL=http://localhost:8081
+USER_SERVICE_URL=http://localhost:8087
+DICTIONARY_SERVICE_URL=http://localhost:8083
+STATISTICS_SERVICE_URL=http://localhost:8084
+FEATURE_FLAG_SERVICE_URL=http://localhost:8085
+```
+
+Для Kubernetes используются DNS-имена сервисов:
+
+```bash
+CONTENT_SERVICE_URL=http://content-service:8081
+USER_SERVICE_URL=http://user-service:8087
+DICTIONARY_SERVICE_URL=http://dictionary-service:8083
+STATISTICS_SERVICE_URL=http://statistics-service:8084
+FEATURE_FLAG_SERVICE_URL=http://feature-flag-service:8085
+```
+
 
 ## 2. Логирование
 

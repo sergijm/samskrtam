@@ -1,7 +1,7 @@
 # content-service
 
 > Домен: Quiz Content — настройки и содержание квизов
-> Язык: **Java 21 + Virtual Threads**
+> Язык: **Java 21 + WebFlux (Reactor)**
 > Модуль: `services/content-service`
 > Порт: 8081
 > Status: **DRAFT**
@@ -20,9 +20,11 @@
 
 ## 2. Типы квизов
 
+> Связанные файлы: [README.md](../../README.md) · [architecture.md](../../architecture.md) · [../quizzes/quiz-declension.md](../quizzes/quiz-declension.md)
+
 | QuizType | Описание |
 |---|---|
-| `DECLENSIONS` | Квиз по падежным формам санскрита |
+| `DECLENSIONS` | Квиз по падежным формам санскрита (данные для этого квиза хранятся и управляются в content-service) |
 | `CONJUGATIONS` | Квиз по спряжениям глаголов |
 | `VOCABULARY` | Квиз по лексике (slug-based) |
 

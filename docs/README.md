@@ -43,7 +43,7 @@ SamskrtamApp построен как production-grade референсная р�
 | api-gateway | Java 21 | WebFlux (Reactor) | Gateway требует реактивный стек |
 | feature-flag-service | Java 21 | Virtual Threads | Простой CRUD + Redis, нет смысла в реактивщине |
 | user-service | Java 21 | Virtual Threads | Профили, регистрация, аватарки, блокировка |
-| content-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов |
+| content-service | Java 21 | Java 21 | WebFlux (Reactor) + R2DBC  | CRUD настроек квизов и вопросов |
 | quiz-service | Java 21 | WebFlux (Reactor) + R2DBC | Единый сервис прохождения всех квизов |
 | **dictionary-service** | **Kotlin** | **Coroutines** | Практика Kotlin, Cache-aside |
 | statistics-service | Java 21 | Virtual Threads | Kafka consumer проще на Java |
@@ -68,7 +68,7 @@ graph TD
     GW[Spring Cloud Gateway\nJava 21 + WebFlux]
   end
 
-  subgraph Auth ["🔑 Auth — Java 21 + Virtual Threads"]
+  subgraph IdentityUsers ["👤 Users & Identity — Java 21 + Virtual Threads"]
     AS[user-service\nKeycloak proxy]
   end
 
@@ -76,7 +76,7 @@ graph TD
     CS[content-service\nнастройки и содержание квизов]
   end
 
-  subgraph Quiz ["📚 Quiz Service — Java 21 + Virtual Threads"]
+  subgraph Quiz ["📚 Quiz Service — Java 21 + WebFlux (Reactor)"]
     QS[quiz-service\nпрохождение квизов]
   end
 
@@ -133,9 +133,17 @@ graph TD
 | [services/statistics-service.md](./services/statistics-service.md) | Java 21 + VT | Статистика |
 | [services/leaderboard.md](./services/leaderboard.md) | — | Алгоритмы лидерборда (XP, Elo, Skill, Composite) |
 
+### Quiz Specifications
+| Файл | Содержание |
+|---|---|
+| [quizzes/quiz-declension.md](./quizzes/quiz-declension.md) | Спецификация квиза по склонениям существительных |
+
 ### Frontend
 | Файл | Содержание |
 |---|---|
+| [frontend/frontend.md](./frontend/frontend.md) | Стек, роуты, компоненты, тема, i18n |
+| [frontend/user-frontend.md](./frontend/user-frontend.md) | Пользователи, группы, настройки |
+| [frontend/feature-flags-frontend.md](./frontend/feature-flags-frontend.md) | UI управления feature flags (только ADMIN) |
 | [frontend/frontend.md](./frontend/frontend.md) | React/TypeScript — страницы, компоненты, типы, хуки, i18n |
 
 ---
