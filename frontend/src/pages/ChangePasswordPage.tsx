@@ -24,7 +24,7 @@ const ChangePasswordPage = () => {
         reset();
       },
       onError: (error: any) => {
-        toast.current?.show({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Failed to change password.', life: 3000 });
+        toast.current?.show({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || t('auth.changePasswordError'), life: 3000 }); // Use translation key
       }
     });
   };
@@ -37,7 +37,7 @@ const ChangePasswordPage = () => {
           <div className="field">
             <span className="p-float-label">
               <Controller name="currentPassword" control={control}
-                rules={{ required: 'Current password is required.' }}
+                rules={{ required: t('validation.currentPasswordRequired') }} // Use translation key
                 render={({ field, fieldState }) => <Password id={field.name} {...field} toggleMask className={fieldState.error ? 'p-invalid' : ''} />} />
               <label htmlFor="currentPassword">{t('auth.currentPassword')}</label>
             </span>
@@ -47,7 +47,7 @@ const ChangePasswordPage = () => {
           <div className="field">
             <span className="p-float-label">
               <Controller name="newPassword" control={control}
-                rules={{ required: 'New password is required.' }}
+                rules={{ required: t('validation.newPasswordRequired') }} // Use translation key
                 render={({ field, fieldState }) => <Password id={field.name} {...field} toggleMask className={fieldState.error ? 'p-invalid' : ''} />} />
               <label htmlFor="newPassword">{t('auth.newPassword')}</label>
             </span>
@@ -57,7 +57,7 @@ const ChangePasswordPage = () => {
           <div className="field">
             <span className="p-float-label">
               <Controller name="confirmPassword" control={control}
-                rules={{ required: 'Please confirm your new password.', validate: value => value === newPassword || 'Passwords do not match.' }}
+                rules={{ required: t('validation.confirmNewPasswordRequired'), validate: value => value === newPassword || t('validation.passwordsDoNotMatch') }} // Use translation key
                 render={({ field, fieldState }) => <Password id={field.name} {...field} feedback={false} toggleMask className={fieldState.error ? 'p-invalid' : ''} />} />
               <label htmlFor="confirmPassword">{t('auth.confirmPassword')}</label>
             </span>

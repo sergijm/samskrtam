@@ -16,7 +16,20 @@
     "themeDark": "Тёмная",
     "toggleTheme": "Переключить тему",
     "save": "Сохранить",
-    "saved": "Настройки сохранены"
+    "saved": "Настройки сохранены",
+    "saveError": "Не удалось сохранить настройки.",
+    "languageRu": "Русский",
+    "languageEn": "Английский",
+    "username": "Имя пользователя",
+    "firstName": "Имя",
+    "lastName": "Фамилия",
+    "avatar": {
+      "title": "Аватар",
+      "upload": "Загрузить новый аватар",
+      "uploaded": "Аватар успешно загружен!",
+      "invalidFileType": "Недопустимый тип файла. Разрешены только изображения JPEG, PNG, WEBP.",
+      "uploadError": "Не удалось загрузить аватар."
+    }
   },
   "quiz": {
     "start": "Начать квиз",
@@ -46,7 +59,8 @@
     "changePassword": "Сменить пароль",
     "currentPassword": "Текущий пароль",
     "newPassword": "Новый пароль",
-    "passwordChanged": "Пароль успешно изменен"
+    "passwordChanged": "Пароль успешно изменен",
+    "registerError": "Ошибка регистрации."
   },
   "groups": {
     "title": "Группы",
@@ -77,6 +91,28 @@
       "questions": "Вопросы",
       "users": "Пользователи",
       "groups": "Группы"
+    },
+    "users": {
+      "title": "Управление пользователями",
+      "fetchError": "Не удалось получить список пользователей.",
+      "searchPlaceholder": "Поиск по логину, email, имени...",
+      "filterByRole": "Фильтр по роли",
+      "filterByStatus": "Фильтр по статусу",
+      "noUsersFound": "Пользователи не найдены.",
+      "role": "Роль",
+      "status": "Статус",
+      "blocked": "Заблокирован",
+      "active": "Активен",
+      "role": {
+        "all": "Все роли",
+        "student": "Студент",
+        "admin": "Администратор"
+      },
+      "blocked": {
+        "all": "Все статусы",
+        "true": "Заблокирован",
+        "false": "Активен"
+      }
     }
   },
   "common": {
@@ -91,7 +127,15 @@
       "go": "Перейти"
   },
   "validation": {
-    "usernameRequired": "Требуется Email или логин."
+    "usernameRequired": "Требуется Email или логин.",
+    "emailRequired": "Требуется Email.",
+    "invalidEmail": "Неверный формат Email.",
+    "passwordRequired": "Требуется пароль.",
+    "confirmPasswordRequired": "Пожалуйста, подтвердите пароль.",
+    "passwordsDoNotMatch": "Пароли не совпадают.",
+    "currentPasswordRequired": "Требуется текущий пароль.",
+    "newPasswordRequired": "Требуется новый пароль.",
+    "confirmNewPasswordRequired": "Пожалуйста, подтвердите новый пароль."
   },
   "dashboard": {
     "quizzesDescription": "Проверьте свои знания с помощью интерактивных квизов.",

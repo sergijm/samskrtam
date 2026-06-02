@@ -34,6 +34,12 @@ dependencies {
     // Keycloak Admin Client
     implementation("org.keycloak:keycloak-admin-client:24.0.4")
 
+    // MinIO Client
+    implementation("io.minio:minio:8.5.1")
+
+    // TOML configuration support
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-toml")
+
     // Micrometer Tracing (versions managed by Spring Boot BOM)
     implementation("io.micrometer:micrometer-tracing-bridge-otel")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")

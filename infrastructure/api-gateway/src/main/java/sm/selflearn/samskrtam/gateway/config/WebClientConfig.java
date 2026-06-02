@@ -26,7 +26,6 @@ public class WebClientConfig {
     public WebClient keycloakWebClient(
             OAuth2Properties props,
             ObservationRegistry observationRegistry) {
-        // Use internalBaseUrl for backend-to-backend communication with Keycloak
         return WebClient.builder()
                 .baseUrl(props.getInternalBaseUrl())
                 .observationRegistry(observationRegistry)

@@ -11,22 +11,47 @@ interface AuthState {
   setAccessToken: (token: string) => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  accessToken: null,
-  refreshToken: null,
-  isAuthenticated: false,
+const getInitialState = () => {
+  const accessToken = localStorage.getItem('accessToken');
+  const refreshToken = localStorage.getItem('refreshToken');
+  const userString = localStorage.getItem('user');
+  let user: User | null = null;
+  try {
+    if (userString) {
+      user = JSON.parse(userString);
+    }
+  } catch (e) {
+    console.error("Failed to parse user from localStorage", e);
+    localStorage.removeItem('user');
+  }
 
-  login: (tokens, user) => set({
+  return {
     user,
-    accessToken: tokens.accessToken,
-    refreshToken: tokens.refreshToken,
-    isAuthenticated: true,
-  }),
+    accessToken,
+    refreshToken,
+    isAuthenticated: !!accessToken && !!refreshToken,
+  };
+};
+
+export const useAuthStore = create<AuthState>((set) => ({
+  ...getInitialState(),
+
+  login: (tokens, user) => {
+    localStorage.setItem('accessToken', tokens.accessToken);
+    localStorage.setItem('refreshToken', tokens.refreshToken);
+    localStorage.setItem('user', JSON.stringify(user));
+    set({
+      user,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      isAuthenticated: true,
+    });
+  },
 
   logout: () => {
-    // Here you might want to call the API to invalidate the refresh token
-    // For now, just clear the state
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
     set({
       user: null,
       accessToken: null,
@@ -35,5 +60,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
   },
 
-  setAccessToken: (token) => set({ accessToken: token }),
+  setAccessToken: (token) => {
+    localStorage.setItem('accessToken', token);
+    set({ accessToken: token });
+  },
 }));

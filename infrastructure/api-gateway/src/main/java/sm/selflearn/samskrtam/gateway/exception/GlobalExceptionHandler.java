@@ -4,10 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.HttpMessageWriter;
 import org.springframework.http.codec.ServerCodecConfigurer;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.reactive.result.view.ViewResolver;
@@ -15,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -52,11 +56,14 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler, ServerR
         String requestId = exchange.getRequest().getHeaders().getFirst("X-Request-Id");
         String jsonBody = buildJsonError(status, message, requestId);
 
-        // Use ServerResponse to build the error response and write it to the exchange
-        return ServerResponse.status(status)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(jsonBody)
-                .flatMap(response -> response.writeTo(exchange, this)); // Pass 'this' as ServerResponse.Context
+        ServerHttpResponse response = exchange.getResponse();
+        response.setStatusCode(status);
+        response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+
+        DataBufferFactory bufferFactory = response.bufferFactory();
+        DataBuffer dataBuffer = bufferFactory.wrap(jsonBody.getBytes(StandardCharsets.UTF_8));
+
+        return response.writeWith(Mono.just(dataBuffer));
     }
 
     private HttpStatus resolveStatus(Throwable ex) {

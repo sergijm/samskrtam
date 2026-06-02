@@ -35,15 +35,21 @@ server:
   shutdown: graceful
 
 keycloak:
-  server-url: ${KEYCLOAK_URL}
+  url: ${KEYCLOAK_INTERNAL_URL} # Renamed from server-url
   realm: ${KEYCLOAK_REALM}
   client-id-admin: ${KEYCLOAK_CLIENT_ID_ADMIN} # Client for admin operations
   client-secret-admin: ${KEYCLOAK_CLIENT_SECRET_ADMIN}
-  admin-user: ${KEYCLOAK_ADMIN_USER}
-  admin-password: ${KEYCLOAK_ADMIN_PASSWORD}
+
+minio:
+  url:        ${MINIO_URL}
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
+  public-url: ${MINIO_PUBLIC_URL}
+  bucket:
+    avatars:    ${MINIO_BUCKET_AVATARS}
+    documents:  ${MINIO_BUCKET_DOCUMENTS}
 
 springdoc:
   api-docs:
     enabled: ${SPRINGDOC_ENABLED:true}
     path: /api-docs
-

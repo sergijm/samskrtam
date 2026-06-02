@@ -13,24 +13,24 @@ export default function DashboardPage() {
     { title: t('nav.statistics'), description: t('dashboard.statisticsDescription'), icon: 'pi pi-chart-line', link: '/statistics' },
     { title: t('nav.leaderboard'), description: t('dashboard.leaderboardDescription'), icon: 'pi pi-trophy', link: '/leaderboard' },
     { title: t('nav.settings'), description: t('dashboard.settingsDescription'), icon: 'pi pi-cog', link: '/settings' },
-    { title: t('nav.admin'), description: t('dashboard.adminDescription'), icon: 'pi pi-shield', link: '/admin' },
+    { title: t('nav.admin'), description: t('dashboard.adminDescription'), icon: 'pi pi-shield', link: '/admin/users' }, // Updated link to /admin/users
   ];
 
   return (
-    <div className="flex flex-column align-items-center justify-content-center min-h-screen p-4"> {/* Adjusted main container */}
+    <div className="flex flex-column align-items-center justify-content-center min-h-screen p-4">
       <h1 className="text-center mb-5">{t('nav.dashboard')}</h1>
-      <div className="grid justify-content-center w-full" style={{ maxWidth: '1200px' }}> {/* Using PrimeFlex grid */}
+      <div className="grid justify-content-center w-full" style={{ maxWidth: '1200px' }}>
         {dashboardItems.map((item, index) => (
-          <div key={index} className="col-12 sm:col-6 md:col-4 lg:col-3 p-2"> {/* Responsive columns */}
-            <Link to={item.link} className="no-underline h-full flex"> {/* Ensure Link takes full height */}
+          <div key={index} className="col-12 sm:col-6 md:col-4 lg:col-3 p-2">
+            <Link to={item.link} className="no-underline h-full flex">
               <Card
                 title={item.title}
                 subTitle={item.description}
                 className="dashboard-card flex flex-column align-items-center justify-content-between text-center h-full cursor-pointer hover:shadow-8 transition-all transition-duration-200"
               >
-                <div className="flex flex-column align-items-center justify-content-center flex-grow-1"> {/* Content takes available space */}
+                <div className="flex flex-column align-items-center justify-content-center flex-grow-1">
                   <i className={`${item.icon} text-5xl mb-3`} />
-                  <p className="text-sm text-color-secondary">{item.description}</p> {/* Moved description here */}
+                  <p className="text-sm text-color-secondary">{item.description}</p>
                 </div>
                 <Button label={t('common.go')} icon="pi pi-arrow-right" iconPos="right" className="p-button-text mt-3" />
               </Card>

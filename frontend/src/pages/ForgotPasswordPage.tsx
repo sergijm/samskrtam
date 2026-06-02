@@ -35,7 +35,7 @@ const ForgotPasswordPage = () => {
             <div className="field">
               <span className="p-float-label">
                 <Controller name="email" control={control}
-                  rules={{ required: 'Email is required.', pattern: { value: /\\S+@\\S+\\.\\S+/, message: 'Invalid email.' } }}
+                  rules={{ required: t('validation.emailRequired'), pattern: { value: /^\S+@\S+\.\S+$/, message: t('validation.invalidEmail') } }} // Use translation key and corrected regex
                   render={({ field, fieldState }) => <InputText id={field.name} {...field} autoFocus className={fieldState.error ? 'p-invalid' : ''} />} />
                 <label htmlFor="email">{t('auth.email')}</label>
               </span>

@@ -2,7 +2,12 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  firstName?: string; // Added
+  lastName?: string;  // Added
+  avatarUrl?: string; // Added
   role: 'STUDENT' | 'ADMIN';
+  blocked: boolean;   // Added
+  createdAt: string;  // Added (ISO 8601 string)
   locale: 'ru' | 'en';
   theme: 'light' | 'dark';
 }
@@ -42,4 +47,38 @@ export interface UserGroupSummary {
   groupId: string;
   groupName: string;
   groupRole: GroupRole;
+}
+
+// New type for updating user profile (matching backend's UpdateProfileRequest)
+export interface UpdateProfilePayload {
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  // locale and theme are handled separately for now, or backend PUT /me needs to accept them
+}
+
+// New types for avatar upload
+export interface UploadUrlResponse {
+  uploadUrl: string;
+  objectKey: string;
+}
+
+export interface AvatarConfirmResponse {
+  avatarUrl: string;
+}
+
+// New type for admin user list response
+export interface AdminUserListResponse {
+  users: User[];
+  totalPages: number;
+  totalElements: number;
+  currentPage: number;
+  pageSize: number;
+  isFirst: boolean;
+  isLast: boolean;
+}
+
+export enum UserRole {
+  STUDENT = 'STUDENT',
+  ADMIN = 'ADMIN',
 }

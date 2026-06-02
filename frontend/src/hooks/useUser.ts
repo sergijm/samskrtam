@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userApi } from '../api/userApi';
-import { Locale, Theme } from '../types/user';
+import { UpdateProfilePayload } from '../types/user'; // Import the new payload type
 
 export const useMe = () =>
   useQuery({
@@ -24,10 +24,10 @@ export const useUserGroups = (userId: string) =>
     enabled: !!userId,
   });
 
-export const useUpdateMe = () => {
+export const useUpdateProfileDetails = () => { // Renamed hook
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { locale?: Locale; theme?: Theme }) => userApi.updateMe(data),
+    mutationFn: (data: UpdateProfilePayload) => userApi.updateProfileDetails(data), // Use new API method and payload
     onSuccess: (updatedUser) => {
       // Update the 'me' query data immediately
       queryClient.setQueryData(['users', 'me'], updatedUser);
@@ -35,9 +35,26 @@ export const useUpdateMe = () => {
   });
 };
 
+export const useGenerateAvatarUploadUrl = () => {
+  return useMutation({
+    mutationFn: (contentType: string) => userApi.generateUploadUrl(contentType),
+  });
+};
+
+export const useConfirmAvatarUpload = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (objectKey: string) => userApi.confirmAvatarUpload(objectKey),
+    onSuccess: (data) => {
+      // Invalidate 'me' query to refetch updated avatarUrl
+      queryClient.invalidateQueries(['users', 'me']);
+    },
+  });
+};
+
 export const useChangePassword = () => {
     return useMutation({
-        mutationFn: ({ currentPassword, newPassword }: any) => 
+        mutationFn: ({ currentPassword, newPassword }: any) =>
             userApi.changePassword(currentPassword, newPassword),
     });
 };

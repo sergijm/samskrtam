@@ -18,9 +18,19 @@ export const useThemeStore = create<ThemeState>()(
     (set) => ({
       theme: (localStorage.getItem('theme') as Theme) ?? 'light',
       setTheme: (theme) => {
-        const link = document.getElementById('theme-link') as HTMLLinkElement;
-        if (link) {
-          link.href = THEME_HREFS[theme];
+        // Ensure the theme is valid before trying to set the href
+        if (theme && THEME_HREFS[theme]) {
+          const link = document.getElementById('theme-link') as HTMLLinkElement;
+          if (link) {
+            link.href = THEME_HREFS[theme];
+          }
+        } else {
+          console.warn(`Attempted to set an invalid theme: ${theme}. Defaulting to 'light'.`);
+          theme = 'light'; // Fallback to a default valid theme
+          const link = document.getElementById('theme-link') as HTMLLinkElement;
+          if (link) {
+            link.href = THEME_HREFS[theme];
+          }
         }
         document.documentElement.setAttribute('data-theme', theme);
         set({ theme });

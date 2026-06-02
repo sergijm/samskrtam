@@ -15,6 +15,7 @@ import GroupListPage from './pages/GroupListPage';
 import GroupCreatePage from './pages/GroupCreatePage';
 import GroupPage from './pages/GroupPage';
 import GroupEditPage from './pages/GroupEditPage';
+import AdminUsersPage from './pages/AdminUsersPage'; // Import AdminUsersPage
 
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -51,7 +52,7 @@ export default function App() {
                   <Route path="groups" element={<GroupListPage />} />
                   <Route path="groups/new" element={<GroupCreatePage />} />
                   <Route path="groups/:id/edit" element={<GroupEditPage />} />
-                  {/* <Route path="admin" element={<AdminPage />} /> */}
+                  <Route path="admin/users" element={<AdminUsersPage />} /> {/* Added AdminUsersPage route */}
                 </Route>
               </Route>
             </Route>

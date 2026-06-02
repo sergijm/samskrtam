@@ -3,8 +3,9 @@ import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 import { AutoComplete } from 'primereact/autocomplete';
 import { useTranslation } from 'react-i18next';
-import { userApi } from '../../api/userApi'; // Assuming a general user search endpoint exists
+import { userApi } from '../../api/userApi';
 import { useAddMember } from '../../hooks/useGroups';
+import { User } from '../../types/user'; // Added import for User type
 
 interface AddMemberDialogProps {
   groupId: string;
@@ -15,20 +16,18 @@ interface AddMemberDialogProps {
 const AddMemberDialog = ({ groupId, visible, onHide }: AddMemberDialogProps) => {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [suggestions, setSuggestions] = useState<User[]>([]); // Changed type to User[]
+  const [selectedUser, setSelectedUser] = useState<User | null>(null); // Changed type to User
   const addMemberMutation = useAddMember(groupId);
 
-  const searchUsers = async (event) => {
-    // This endpoint is not in the spec, assuming it exists for the dialog
-    // GET /api/v1/users?search=...
-    // const results = await userApi.searchUsers(event.query);
-    // setSuggestions(results);
-    // Mocking for now
-    setSuggestions([
-        { id: 'mock-user-1', username: 'testuser1' },
-        { id: 'mock-user-2', username: 'testuser2' },
-    ]);
+  const searchUsers = async (event: { query: string }) => {
+    try {
+      const response = await userApi.searchUsers(event.query);
+      setSuggestions(response.data);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      setSuggestions([]);
+    }
   };
 
   const handleAdd = () => {
@@ -47,13 +46,14 @@ const AddMemberDialog = ({ groupId, visible, onHide }: AddMemberDialogProps) => 
     <Dialog header={t('groups.addMember')} visible={visible} onHide={onHide} modal>
       <div className="p-fluid">
         <AutoComplete
-          value={query}
+          value={selectedUser ? selectedUser.username : query} // Display selected username or current query
           suggestions={suggestions}
           completeMethod={searchUsers}
           field="username"
           onChange={(e) => setQuery(e.value)}
           onSelect={(e) => setSelectedUser(e.value)}
           placeholder={t('groups.searchUser')}
+          itemTemplate={(item: User) => <div>{item.username} ({item.email})</div>} // Custom template for suggestions
         />
       </div>
       <div className="p-dialog-footer mt-4">

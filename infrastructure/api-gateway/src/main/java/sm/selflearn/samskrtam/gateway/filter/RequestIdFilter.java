@@ -5,6 +5,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -32,17 +33,19 @@ public class RequestIdFilter implements GlobalFilter, Ordered {
                 ? existingId
                 : UUID.randomUUID().toString();
 
-        ServerHttpRequest mutated = exchange.getRequest().mutate()
+        ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
                 .header(REQUEST_ID_HEADER, requestId)
                 .build();
 
-        // Добавляем requestId и в response headers — удобно для дебага в браузере
-        exchange.getResponse().getHeaders().add(REQUEST_ID_HEADER, requestId);
-
-        log.debug("RequestIdFilter: requestId={}, path={}",
-                requestId, exchange.getRequest().getPath());
-
-        return chain.filter(exchange.mutate().request(mutated).build());
+        // Continue the filter chain with the mutated request.
+        // Then, after the chain has processed, add the X-Request-Id to the response headers.
+        return chain.filter(exchange.mutate().request(mutatedRequest).build())
+                .then(Mono.fromRunnable(() -> {
+                    ServerHttpResponse response = exchange.getResponse();
+                    //response.getHeaders().add(REQUEST_ID_HEADER, requestId);
+                    log.debug("RequestIdFilter: requestId={}, path={} (response header added)",
+                            requestId, exchange.getRequest().getPath());
+                }));
     }
 
     @Override
