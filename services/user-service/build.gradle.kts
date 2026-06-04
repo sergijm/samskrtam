@@ -24,37 +24,37 @@ dependencies {
     implementation(libs.spring.web)
     implementation(libs.spring.data.jpa)
     implementation(libs.spring.security.oauth2)
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation(libs.spring.boot.starter.actuator)
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgresql)
     implementation(libs.postgresql.jdbc)
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
-    implementation(project(":shared:common-dtos")) // Обновлено на common-dtos
+    implementation(libs.springdoc.openapi.webmvc.ui)
+    implementation(project(":shared:common-dtos"))
     implementation(project(":shared:user-dtos"))
 
     // Keycloak Admin Client
-    implementation("org.keycloak:keycloak-admin-client:24.0.4")
+    implementation(libs.keycloak.admin.client)
 
     // MinIO Client
-    implementation("io.minio:minio:8.5.1")
+    implementation(libs.minio)
 
     // TOML configuration support
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-toml")
+    implementation(libs.jackson.dataformat.toml)
 
-    // Micrometer Tracing (versions managed by Spring Boot BOM)
-    implementation("io.micrometer:micrometer-tracing-bridge-otel")
-    implementation("io.opentelemetry:opentelemetry-exporter-otlp")
-    implementation("io.micrometer:micrometer-registry-prometheus")
+    // Micrometer Tracing
+    implementation(libs.micrometer.tracing.bridge.otel)
+    implementation(libs.opentelemetry.exporter.otlp)
+    implementation(libs.micrometer.registry.prometheus)
 
     // Logstash Encoder for JSON logging
-    implementation("net.logstash.logback:logstash-logback-encoder:7.4")
+    implementation(libs.logstash.logback.encoder)
 
-    // Lombok (compileOnly и annotationProcessor остаются здесь, так как они нужны для сущностей UserProfile)
+    // Lombok
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 
     testImplementation(libs.spring.test)
-    testImplementation("org.springframework.security:spring-security-test")
+    testImplementation(libs.spring.security.test)
 }
 
 tasks.withType<Test> {

@@ -61,7 +61,7 @@ GET /api/v1/content/quizzes/{id}/session-data           → всё необхо�
 {
   "quizId": "uuid",
   "quizType": "DECLENSIONS",
-  "questionsPerSession": 10,
+  "questionsPerSession": 20,
   "questions": [
     {
       "id": "uuid",
@@ -82,7 +82,25 @@ GET /api/v1/content/quizzes/{id}/session-data           → всё необхо�
 
 ---
 
-## 4. Backend структура
+## 4. Схема БД (content.quizzes)
+
+Ключевые колонки таблицы `content.quizzes`:
+
+| Колонка | Тип | Описание |
+|---|---|---|
+| `id` | UUID | PK |
+| `quiz_type` | VARCHAR | `DECLENSIONS`, `CONJUGATIONS`, `VOCABULARY` |
+| `slug` | VARCHAR | Уникальный идентификатор (`^[a-z0-9][a-z0-9-]*$`) |
+| `title_ru` / `title_en` | VARCHAR | Название квиза |
+| `difficulty` | VARCHAR | Уровень сложности |
+| `questions_per_session` | INT | Количество вопросов в одной сессии. Действует для всех типов квизов. **По умолчанию: 20** |
+| `deleted_at` | TIMESTAMPTZ | Soft delete — `NULL` если активен |
+
+`questions_per_session` передаётся в `session-data` и используется quiz-service при старте сессии для случайной выборки вопросов.
+
+---
+
+## 5. Backend структура
 
 ```
 sm/selflearn/samskrtam/content/
@@ -119,7 +137,7 @@ sm/selflearn/samskrtam/content/
 
 ---
 
-## 5. application.yml
+## 6. application.yml
 
 ```yaml
 server:
@@ -147,7 +165,7 @@ spring:
 
 ---
 
-## 6. Acceptance Criteria
+## 7. Acceptance Criteria
 
 - [ ] Только ADMIN получает доступ к write-операциям (403 для STUDENT)
 - [ ] `GET /session-data` доступен без роли ADMIN (для quiz-service)
@@ -155,10 +173,11 @@ spring:
 - [ ] Удаление квиза и вопроса — soft delete
 - [ ] `vocabulary_words` возвращаются только для квизов с `quiz_type = VOCABULARY`
 - [ ] Slug уникален и соответствует паттерну `^[a-z0-9][a-z0-9-]*$`
+- [ ] `questions_per_session` не может быть меньше 1
 
 ---
 
-## 7. Открытые вопросы
+## 8. Открытые вопросы
 
 - [ ] Импорт вопросов и слов из CSV для массового добавления?
 - [ ] Кэшировать ли session-data в quiz-service (Redis)?

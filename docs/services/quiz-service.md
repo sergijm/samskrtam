@@ -417,6 +417,7 @@ sm/selflearn/samskrtam/quiz/
 │   ├── DeclensionsSessionController.java
 │   ├── ConjugationsSessionController.java
 │   └── VocabularyController.java
+│   └── HistoryController.java
 ├── service/
 │   ├── SessionService.java            ← старт, resume, завершение (Mono/Flux)
 │   ├── AnswerService.java             ← проверка ответов, сохранение
@@ -429,6 +430,7 @@ sm/selflearn/samskrtam/quiz/
 ├── repository/
 │   ├── QuizSessionRepository.java     ← ReactiveCrudRepository
 │   └── QuizAnswerRepository.java      ← ReactiveCrudRepository
+│   └── SessionHistoryRepository.java   ← ReactiveCrudRepository
 ├── model/
 │   ├── QuizSession.java               ← R2DBC @Table
 │   ├── QuizAnswer.java                ← R2DBC @Table
@@ -436,6 +438,7 @@ sm/selflearn/samskrtam/quiz/
 │   ├── CachedQuestion.java
 │   ├── SessionStatus.java
 │   └── QuizType.java
+│   └── SessionHistory.java            ← R2DBC @Table
 └── dto/
     ├── StartSessionResponse.java
     ├── ResumeSessionResponse.java
@@ -493,7 +496,67 @@ content:
 
 ---
 
-## 16. Acceptance Criteria
+## 16. История прохождений (quiz.session_history)
+
+### Таблица quiz.session_history
+
+Хранит агрегированный итог каждой завершённой сессии. Заполняется в момент `POST /sessions/{id}/complete` в той же транзакции, что и обновление статуса сессии.
+
+Это отдельная от `quiz_sessions` таблица: `quiz_sessions` — рабочая таблица активных и завершённых сессий, `session_history` — иммутабельная история результатов для отображения пользователю.
+
+**Состав полей:**
+
+| Поле | Тип | Описание |
+|---|---|---|
+| `id` | UUID | PK |
+| `session_id` | UUID | Ссылка на `quiz_sessions.id` |
+| `user_id` | UUID | Из заголовка `X-User-Id` |
+| `quiz_id` | UUID | ID квиза из content-service |
+| `quiz_type` | VARCHAR | `DECLENSIONS`, `CONJUGATIONS`, `VOCABULARY` |
+| `score` | INT | Количество правильных ответов |
+| `total_questions` | INT | Общее количество вопросов в сессии |
+| `duration_ms` | BIGINT | Время от старта до завершения сессии |
+| `completed_at` | TIMESTAMPTZ | Момент завершения |
+
+`score` / `total_questions` позволяют вычислить процент без обращения к `quiz_answers`. `session_id` даёт возможность при необходимости подтянуть детальные ответы.
+
+### API истории
+
+```
+GET /api/v1/quiz/history                        → история всех квизов текущего пользователя
+GET /api/v1/quiz/history?quizType=DECLENSIONS   → фильтр по типу квиза
+GET /api/v1/quiz/history?quizId={uuid}          → история по конкретному квизу
+```
+
+Ответ — список записей, отсортированных по `completed_at DESC`, с пагинацией (`page`, `size`).
+
+```json
+{
+  "content": [
+    {
+      "sessionId": "uuid",
+      "quizId": "uuid",
+      "quizType": "DECLENSIONS",
+      "score": 17,
+      "totalQuestions": 20,
+      "percentage": 85,
+      "durationMs": 142000,
+      "completedAt": "2025-06-01T14:32:00Z"
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 43,
+  "totalPages": 3,
+  "last": false
+}
+```
+
+Пользователь видит только свою историю — `userId` берётся из заголовка `X-User-Id`, не из параметров запроса.
+
+---
+
+## 17. Acceptance Criteria
 
 - [ ] Все эндпоинты возвращают `Mono<T>` / `Flux<T>` — нет блокирующих вызовов
 - [ ] Сессия сохраняется в Postgres (R2DBC) при старте
@@ -508,10 +571,13 @@ content:
 - [ ] Нельзя ответить дважды на один вопрос (UNIQUE constraint + 409 Conflict)
 - [ ] Flyway миграции применяются при старте через `FlywayConfig` (JDBC бин)
 - [ ] Дистракторы для VOCABULARY берутся из того же квиза
+- [ ] При завершении сессии запись создаётся в `quiz.session_history` атомарно со статусом COMPLETED
+- [ ] `GET /history` возвращает только записи текущего пользователя
+- [ ] Фильтрация по `quizType` и `quizId` работает независимо и в комбинации
 
 ---
 
-## 17. Открытые вопросы
+## 18. Открытые вопросы
 
 - [ ] Сколько хранить завершённые сессии в `quiz.quiz_sessions`? (для истории достаточно statistics-service)
 - [ ] Кэшировать ли session-data от content-service в Redis (снижение latency)?

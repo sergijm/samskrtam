@@ -6,7 +6,9 @@
     "statistics": "Statistics",
     "leaderboard": "Leaderboard",
     "settings": "Settings",
-    "admin": "Administration"
+    "admin": "Administration",
+    "grammar": "Grammar",
+    "vocabulary": "Vocabulary"
   },
   "settings": {
     "title": "Settings",
@@ -42,6 +44,9 @@
     "fetchError": "Failed to load quizzes: {{message}}",
     "totalQuestions": "Total Questions: {{count}}",
     "noQuizzesFound": "No quizzes found."
+  },
+  "quizzes": {
+    "title": "List of Quizzes"
   },
   "auth": {
     "login": "Login",
@@ -148,6 +153,8 @@
     "statisticsDescription": "Track your progress and achievements.",
     "leaderboardDescription": "Compete with others and see your ranking.",
     "settingsDescription": "Manage your profile and application settings.",
-    "adminDescription": "Access administrative tools and features."
+    "adminDescription": "Access administrative tools and features.",
+    "grammarDescription": "Grammar quizzes: declensions and conjugations.",
+    "vocabularyDescription": "Quizzes on vocabulary knowledge."
   }
 }

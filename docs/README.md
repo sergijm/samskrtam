@@ -116,10 +116,6 @@ graph TD
 | [services/api-gateway.md](./services/api-gateway.md) | Маршруты, фильтры, rate limiting, OAuth2 flow |
 | [services/feature-flag-service.md](./services/feature-flag-service.md) | Feature flags — управление поведением без деплоя |
 
-### Events
-| Файл | Содержание |
-|---|---|
-| [events/events.md](./events/events.md) | Kafka топики, схемы событий |
 
 ### Per-Service Specifications
 | Файл | Язык | Сервис |

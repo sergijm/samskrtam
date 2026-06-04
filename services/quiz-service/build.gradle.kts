@@ -14,10 +14,15 @@ dependencies {
 
     implementation(libs.spring.webflux)
     implementation(libs.spring.r2dbc)
+    implementation(libs.postgresql.r2dbc) // Added postgresql-r2dbc dependency
+    implementation(libs.postgresql.jdbc) // Added postgresql-jdbc dependency for Flyway
+    implementation(libs.flyway.core) // Added Flyway core dependency
+    implementation(libs.flyway.postgresql) // Added Flyway PostgreSQL dependency
     implementation(libs.spring.kafka)
-    implementation(libs.spring.redis.reactive)
+    implementation(libs.reactor.kafka) // Added reactor-kafka dependency
+    implementation(libs.spring.redis.reactive) // Added spring-redis-reactive dependency
 
-    implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.5.0")
+    implementation(libs.springdoc.openapi.webflux.ui) // Changed to libs alias
 
     implementation(project(":shared:common-dtos")) // Обновлено на common-dtos
     implementation(project(":shared:kafka-events"))

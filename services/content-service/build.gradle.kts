@@ -15,7 +15,7 @@ dependencies {
     implementation(libs.spring.webflux)
     implementation(libs.spring.data.jpa)
 
-    implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.5.0")
+    implementation(libs.springdoc.openapi.webflux.ui) // Changed to libs alias
 
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgresql)

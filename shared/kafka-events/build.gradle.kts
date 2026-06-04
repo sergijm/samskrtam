@@ -10,4 +10,5 @@ java {
 
 dependencies {
     // Зависимости для событий Kafka, если они понадобятся
+    implementation(project(":shared:quiz-content-dtos"))
 }

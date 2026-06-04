@@ -7,18 +7,19 @@ CREATE SCHEMA IF NOT EXISTS content;
 -- 2. Создание таблицы quizzes
 CREATE TABLE content.quizzes (
     id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    slug                  VARCHAR(50)  UNIQUE,
+    slug                  VARCHAR(50)  NOT NULL UNIQUE, -- Added NOT NULL
     title_ru              VARCHAR(255) NOT NULL,
     title_en              VARCHAR(255) NOT NULL,
     description_ru        VARCHAR(500),
     description_en        VARCHAR(500),
-    quiz_type             VARCHAR(20)  NOT NULL,
+    quiz_type             VARCHAR(50)  NOT NULL, -- Increased VARCHAR size
     difficulty            VARCHAR(20)  NOT NULL DEFAULT 'BEGINNER',
     questions_per_session INT          NOT NULL DEFAULT 10,
     created_at            TIMESTAMPTZ  NOT NULL DEFAULT now(),
     deleted_at            TIMESTAMPTZ,
-    CONSTRAINT ck_quiz_type    CHECK (quiz_type IN ('DECLENSIONS','CONJUGATIONS','VOCABULARY')),
-    CONSTRAINT ck_difficulty   CHECK (difficulty IN ('BEGINNER','INTERMEDIATE','ADVANCED'))
+    CONSTRAINT ck_quiz_type    CHECK (quiz_type IN ('DECLENSIONS','A_STEM_DECLENSIONS','AA_STEM_DECLENSIONS','I_STEM_DECLENSIONS','II_STEM_DECLENSIONS','U_STEM_DECLENSIONS','UU_STEM_DECLENSIONS','R_STEM_DECLENSIONS','CONJUGATIONS','VOCABULARY')),
+    CONSTRAINT ck_difficulty   CHECK (difficulty IN ('BEGINNER','INTERMEDIATE','ADVANCED')),
+    CONSTRAINT ck_slug_format  CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$')
 );
 
 -- 3. Создание таблицы questions (без FK к declension_stems и question_options пока)

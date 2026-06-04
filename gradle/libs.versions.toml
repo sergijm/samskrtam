@@ -11,6 +11,14 @@ postgresql-r2dbc = "1.0.4"
 flyway = "10.0.0"
 lombok = "1.18.32"
 logstash-logback = "7.4"
+spring-kafka = "3.1.5" # Explicitly define spring-kafka version to match spring-boot 3.3.0
+reactor-kafka = "1.3.23.RELEASE" # Added reactor-kafka version
+springdoc = "2.5.0" # Added springdoc version
+jsoup = "1.17.2" # Added jsoup version
+keycloak = "24.0.4" # Added keycloak version
+minio = "8.5.1" # Added minio version
+micrometer-tracing = "1.3.0" # Added micrometer-tracing version
+opentelemetry = "1.38.0" # Added opentelemetry version
 
 [libraries]
 # Spring Boot starters
@@ -19,7 +27,8 @@ spring-webflux = { module = "org.springframework.boot:spring-boot-starter-webflu
 spring-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
 spring-r2dbc = { module = "org.springframework.boot:spring-boot-starter-data-r2dbc" }
 spring-security-oauth2 = { module = "org.springframework.boot:spring-boot-starter-oauth2-resource-server" }
-spring-kafka = { module = "org.springframework.kafka:spring-kafka" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-kafka = { module = "org.springframework.kafka:spring-kafka", version.ref = "spring-kafka" } # Use version reference
 spring-redis = { module = "org.springframework.boot:spring-boot-starter-data-redis" }
 spring-redis-reactive = { module = "org.springframework.boot:spring-boot-starter-data-redis-reactive" }
 spring-cloud-gateway = { module = "org.springframework.cloud:spring-cloud-starter-gateway" }
@@ -39,11 +48,37 @@ flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
 
 # Kotlin (только для dictionary-service)
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" } # Added kotlin-reflect
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "coroutines" }
 
+# Reactor Kafka
+reactor-kafka = { module = "io.projectreactor.kafka:reactor-kafka", version.ref = "reactor-kafka" } # Added reactor-kafka
+
+# Springdoc
+springdoc-openapi-webflux-ui = { module = "org.springdoc:springdoc-openapi-starter-webflux-ui", version.ref = "springdoc" } # Added springdoc
+springdoc-openapi-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" } # Added springdoc
+
+# Jsoup
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" } # Added jsoup
+
+# Keycloak
+keycloak-admin-client = { module = "org.keycloak:keycloak-admin-client", version.ref = "keycloak" } # Added keycloak
+
+# MinIO
+minio = { module = "io.minio:minio", version.ref = "minio" } # Added minio
+
+# Micrometer Tracing
+micrometer-tracing-bridge-otel = { module = "io.micrometer:micrometer-tracing-bridge-otel", version.ref = "micrometer-tracing" }
+opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version.ref = "opentelemetry" }
+micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer-tracing" }
+
+# TOML
+jackson-dataformat-toml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-toml" }
+
 # Testing
 spring-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-security-test = { module = "org.springframework.security:spring-security-test" }
 kotest-runner = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
 kotest-spring = { module = "io.kotest.extensions:kotest-extensions-spring", version.ref = "kotest" }
 

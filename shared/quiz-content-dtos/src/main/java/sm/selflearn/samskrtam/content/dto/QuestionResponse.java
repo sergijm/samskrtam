@@ -15,9 +15,11 @@ import java.util.UUID;
 public class QuestionResponse {
     UUID id;
     String text;
-    String explanation;
+    String explanationRu; // Changed from explanation
+    String explanationEn; // Added explanationEn
     UUID declensionStemId; // For quiz-service to generate distractors
     Case targetCase;       // For quiz-service to generate distractors
     Number targetNumber;   // For quiz-service to generate distractors
-    QuestionOptionResponse correctOption; // Only the correct option is sent
+    String correctFormIast; // The correct form in IAST
+    String correctFormDevanagari; // The correct form in Devanagari
 }

@@ -48,8 +48,8 @@ PrimeReact поддерживает динамическую смену темы
 
 | Режим | Тема PrimeReact |
 |---|---|
-| Светлая (по умолчанию) | `lara-light-blue` |
-| Тёмная | `lara-dark-blue` |
+| Светлая (по умолчанию) | `lara-light-amber` |
+| Тёмная | `lara-dark-amber` |
 
 Вместо статического `import` в `main.tsx` тема подключается динамически — `themeStore` меняет `href` у тега `<link>`:
 
@@ -63,7 +63,7 @@ import 'primeflex/primeflex.css';
 
 ```html
 <!-- index.html — placeholder для динамической темы -->
-<link id="theme-link" rel="stylesheet" href="/themes/lara-light-blue/theme.css" />
+<link id="theme-link" rel="stylesheet" href="/themes/lara-light-amber/theme.css" />
 ```
 
 ---
@@ -183,8 +183,8 @@ frontend/
 | `/forgot-password` | ForgotPasswordPage | Нет | — |
 | `/auth/callback` | AuthCallbackPage | Нет | — |
 | `/` | **HomePage** (не залогинен) / **DashboardPage** (залогинен) | Нет | — |
-| `/quizzes` | QuizListPage | Да | STUDENT |
-| `/quiz/grammar/:type` | QuizPage | Да | STUDENT |
+| `/quizzes/:category` | QuizListPage | Да | STUDENT |
+| `/quiz/grammar/:slug` | QuizPage | Да | STUDENT |
 | `/quiz/vocabulary/:slug` | QuizPage | Да | STUDENT |
 | `/quiz/*/result/:attemptId` | ResultPage | Да | STUDENT |
 | `/dictionary` | DictionaryPage | Да | STUDENT |
@@ -508,10 +508,12 @@ export const HomePage = () => {
 
 **Элементы:**
 - Приветствие с именем пользователя: "Добро пожаловать, {{name}}"
-- Карточки доступных квизов (QuizCard × N)
-- Блок "Мой прогресс" — краткая статистика (всего попыток, средний %)
-- Блок "Лидерборд" — топ-3 участников
-- Кнопка "Словарь"
+- Плитка "Грамматика" (ведет на `/quizzes/grammar`)
+- Плитка "Лексика" (ведет на `/quizzes/vocabulary`)
+- Плитка "Словарь" (ведет на `/dictionary`)
+- Плитка "Статистика" (ведет на `/statistics`)
+- Плитка "Лидерборд" (ведет на `/leaderboard`)
+- Плитка "Настройки" (ведет на `/settings`)
 
 ---
 

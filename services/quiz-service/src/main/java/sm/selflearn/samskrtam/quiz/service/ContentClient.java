@@ -1,0 +1,44 @@
+package sm.selflearn.samskrtam.quiz.service;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
+import sm.selflearn.samskrtam.common.SamskrtamException;
+import sm.selflearn.samskrtam.content.dto.DeclensionFormDto; // Import DeclensionFormDto
+import sm.selflearn.samskrtam.content.dto.SessionDataResponse;
+
+import java.util.List;
+import java.util.UUID;
+
+@Component
+public class ContentClient {
+
+    private final WebClient webClient;
+    private final String contentBaseUrl;
+
+    public ContentClient(WebClient webClient, @Value("${content.service.url}") String contentBaseUrl) {
+        this.webClient = webClient;
+        this.contentBaseUrl = contentBaseUrl;
+    }
+
+    public Mono<SessionDataResponse> getSessionData(UUID quizId) {
+        return webClient.get()
+                .uri(contentBaseUrl + "/api/v1/content/quizzes/{id}/session-data", quizId)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("QUIZ_NOT_FOUND", "Quiz not found in content-service: " + quizId)))
+                .bodyToMono(SessionDataResponse.class);
+    }
+
+    public Mono<List<DeclensionFormDto>> getDeclensionForms(UUID declensionStemId) {
+        return webClient.get()
+                .uri(contentBaseUrl + "/api/v1/content/declension-stems/{id}/forms", declensionStemId)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("DECLENSION_STEM_NOT_FOUND", "Declension stem not found in content-service: " + declensionStemId)))
+                .bodyToFlux(DeclensionFormDto.class)
+                .collectList();
+    }
+}

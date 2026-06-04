@@ -18,14 +18,14 @@ dependencies {
     implementation(libs.spring.security.oauth2)
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
 
-    implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
+    implementation(libs.spring.redis.reactive)
 
     // Observability
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("io.micrometer:micrometer-tracing-bridge-otel")
-    implementation("io.opentelemetry:opentelemetry-exporter-otlp")
-    implementation("io.micrometer:micrometer-registry-prometheus")
-    runtimeOnly("net.logstash.logback:logstash-logback-encoder:7.4")
+    implementation(libs.spring.boot.starter.actuator)
+    implementation(libs.micrometer.tracing.bridge.otel)
+    implementation(libs.opentelemetry.exporter.otlp)
+    implementation(libs.micrometer.registry.prometheus)
+    runtimeOnly(libs.logstash.logback.encoder)
 
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)

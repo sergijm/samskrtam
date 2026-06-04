@@ -1,14 +1,14 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from 'primereact/card';
-import { Button } from 'primereact/button';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom'; // Import useParams
 import { useQuizList } from '../hooks/useQuiz';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
 
 const QuizzesPage = () => {
   const { t } = useTranslation();
+  const { category } = useParams<{ category?: string }>(); // Get category from URL
   const { data: quizList, isLoading, isError, error } = useQuizList();
 
   if (isLoading) {
@@ -27,29 +27,48 @@ const QuizzesPage = () => {
     );
   }
 
+  const filteredQuizzes = quizList?.filter(quiz => {
+    if (category === 'grammar') {
+      return quiz.quizType !== 'VOCABULARY';
+    }
+    if (category === 'vocabulary') {
+      return quiz.quizType === 'VOCABULARY';
+    }
+    return true; // Show all if no category is specified
+  });
+
   return (
     <div className="flex flex-column align-items-center justify-content-center p-4">
       <h1 className="text-center mb-5">{t('quizzes.title')}</h1>
       <div className="grid justify-content-center w-full" style={{ maxWidth: '1200px' }}>
-        {quizList?.map((quiz) => (
-          <div key={quiz.id} className="col-12 sm:col-6 md:col-4 lg:col-3 p-2">
-            <Link to={`/quiz/${quiz.quizType.toLowerCase()}/${quiz.slug}/start`} className="no-underline h-full flex"> {/* Link now wraps the entire card */}
-              <Card
-                title={quiz.title}
-                subTitle={quiz.description}
-                className="quiz-card flex flex-column align-items-center justify-content-between text-center h-full cursor-pointer hover:shadow-8 transition-all transition-duration-200"
-              >
-                <div className="flex flex-column align-items-center justify-content-center flex-grow-1">
-                  <i className="pi pi-question-circle text-5xl mb-3" /> {/* Generic icon for now */}
-                  <p className="text-sm text-color-secondary">{quiz.description}</p>
-                  <p className="text-xs text-color-secondary mt-2">{t('quizzes.totalQuestions', { count: quiz.totalQuestions })}</p>
-                </div>
-                {/* Removed the Button here */}
-              </Card>
-            </Link>
-          </div>
-        ))}
-        {quizList?.length === 0 && (
+        {filteredQuizzes?.map((quiz) => {
+          let quizLink = '';
+          if (quiz.quizType === 'VOCABULARY') {
+            quizLink = `/quiz/vocabulary/${quiz.slug}`;
+          } else {
+            // For grammar-related quizzes, use quiz.slug in the URL
+            quizLink = `/quiz/grammar/${quiz.slug}`;
+          }
+
+          return (
+            <div key={quiz.id} className="col-12 sm:col-6 md:col-4 lg:col-3 p-2 flex"> {/* Added flex to make items align */}
+              <Link to={quizLink} className="no-underline h-full flex w-full"> {/* Added w-full to make link take full width */}
+                <Card
+                  title={quiz.title}
+                  subTitle={quiz.description}
+                  className="quiz-card flex flex-column align-items-center justify-content-between text-center h-full cursor-pointer hover:shadow-8 transition-all transition-duration-200 w-full" // Added w-full
+                >
+                  <div className="flex flex-column align-items-center justify-content-center flex-grow-1">
+                    <i className="pi pi-question-circle text-5xl mb-3" /> {/* Generic icon for now */}
+                    <p className="text-sm text-color-secondary">{quiz.description}</p>
+                    <p className="text-xs text-color-secondary mt-2">{t('quizzes.totalQuestions', { count: quiz.totalQuestions })}</p>
+                  </div>
+                </Card>
+              </Link>
+            </div>
+          );
+        })}
+        {filteredQuizzes?.length === 0 && (
           <div className="col-12 text-center">
             <Message severity="info" text={t('quizzes.noQuizzesFound')} />
           </div>

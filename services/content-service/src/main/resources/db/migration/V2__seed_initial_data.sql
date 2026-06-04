@@ -7,28 +7,29 @@ VALUES
     ('10000000-0000-0000-0000-000000000001', 'animals',    'Животные',        'Animals',          'Квиз по лексике на тему животных.', 'Quiz on animal vocabulary.', 'VOCABULARY', 'BEGINNER', 10),
     ('10000000-0000-0000-0000-000000000002', 'numbers',    'Числа',           'Numbers',          'Квиз по лексике на тему чисел.', 'Quiz on number vocabulary.', 'VOCABULARY', 'BEGINNER', 10),
     ('10000000-0000-0000-0000-000000000003', 'body-parts', 'Тело',            'Body Parts',       'Квиз по лексике на тему частей тела.', 'Quiz on body parts vocabulary.', 'VOCABULARY', 'BEGINNER', 10),
-    ('10000000-0000-0000-0000-000000000004', 'nature',     'Природа',         'Nature',           'Квиз по лексике на тему природы.', 'Quiz on nature vocabulary.', 'VOCABULARY', 'BEGINNER', 10), -- Исправлено description_en
-    ('10000000-0000-0000-0000-000000000005', 'basic-vocabulary', 'Базовая лексика', 'Basic Vocabulary', 'Квиз по базовой санскритской лексике.', 'Quiz on basic Sanskrit vocabulary.', 'VOCABULARY', 'BEGINNER', 10), -- Изменено slug
-    ('10000000-0000-0000-0000-000000000006', 'intermediate-vocabulary', 'Средний уровень', 'Intermediate',     'Квиз по санскритской лексике среднего уровня.', 'Quiz on intermediate Sanskrit vocabulary.', 'VOCABULARY', 'INTERMEDIATE', 10); -- Изменено slug
+    ('10000000-0000-0000-0000-000000000004', 'nature',     'Природа',         'Nature',           'Квиз по лексике на тему природы.', 'Quiz on nature vocabulary.', 'VOCABULARY', 'BEGINNER', 10),
+    ('10000000-0000-0000-0000-000000000005', 'basic-vocabulary', 'Базовая лексика', 'Basic Vocabulary', 'Квиз по базовой санскритской лексике.', 'Quiz on basic Sanskrit vocabulary.', 'VOCABULARY', 'BEGINNER', 10),
+    ('10000000-0000-0000-0000-000000000006', 'intermediate-vocabulary', 'Средний уровень', 'Intermediate',     'Квиз по санскритской лексике среднего уровня.', 'Quiz on intermediate Sanskrit vocabulary.', 'VOCABULARY', 'INTERMEDIATE', 10);
 
--- 2. Начальные квизы по склонениям (из V4__seed_declensions_quizzes.sql)
+-- 2. Начальные квизы по склонениям (обновлено для HK-слагов и специфичных QuizType)
 INSERT INTO content.quizzes (id, slug, title_ru, title_en, description_ru, description_en, quiz_type, difficulty, questions_per_session)
 VALUES
-    ('20000000-0000-0000-0000-000000000001', 'declensions-a-masc', 'Склонения: Основы на -a (мужской род)', 'Declensions: A-stems (masculine)', 'Квиз по склонению существительных мужского рода на -a. Включает существительные типа "deva-".', 'Quiz on declension of masculine nouns ending in -a. Includes nouns like "deva-".', 'DECLENSIONS', 'BEGINNER', 10),
-    ('20000000-0000-0000-0000-000000000002', 'declensions-a-neut', 'Склонения: Основы на -a (средний род)', 'Declensions: A-stems (neuter)', 'Квиз по склонению существительных среднего рода на -a. Включает существительные типа "agāra-".', 'Quiz on declension of neuter nouns ending in -a. Includes nouns like "agāra-".', 'DECLENSIONS', 'BEGINNER', 10),
-    ('20000000-0000-0000-0000-000000000003', 'declensions-a-fem', 'Склонения: Основы на -ā (женский род)', 'Declensions: Ā-stems (feminine)', 'Квиз по склонению существительных женского рода на -ā.', 'Quiz on declension of feminine nouns ending in -ā.', 'DECLENSIONS', 'BEGINNER', 10),
-    ('20000000-0000-0000-0000-000000000004', 'declensions-i', 'Склонения: Основы на -i', 'Declensions: I-stems', 'Квиз по склонению существительных на -i.', 'Quiz on declension of nouns ending in -i.', 'DECLENSIONS', 'INTERMEDIATE', 10),
-    ('20000000-0000-0000-0000-000000000005', 'declensions-ī', 'Declensions: Основы на -ī', 'Declensions: Ī-stems', 'Квиз по склонению существительных на -ī.', 'Quiz on declension of nouns ending in -ī.', 'DECLENSIONS', 'INTERMEDIATE', 10),
-    ('20000000-0000-0000-0000-000000000006', 'declensions-u', 'Склонения: Основы на -u', 'Declensions: U-stems', 'Квиз по склонению существительных на -u.', 'Quiz on declension of nouns ending in -u.', 'DECLENSIONS', 'INTERMEDIATE', 10),
-    ('20000000-0000-0000-0000-000000000007', 'declensions-ū', 'Склонения: Основы на -ū', 'Declensions: Ū-stems', 'Квиз по склонению существительных на -ū.', 'Quiz on declension of nouns ending in -ū.', 'DECLENSIONS', 'ADVANCED', 10),
-    ('20000000-0000-0000-0000-000000000008', 'declensions-ṛ', 'Склонения: Основы на -ṛ', 'Declensions: Ṛ-stems', 'Квиз по склонению существительных на -ṛ.', 'Quiz on declension of nouns ending in -ṛ.', 'DECLENSIONS', 'ADVANCED', 10),
+    ('20000000-0000-0000-0000-000000000001', 'declensions-a-masc', 'Склонения: Основы на -a (мужской род)', 'Declensions: A-stems (masculine)', 'Квиз по склонению существительных мужского рода на -a. Включает существительные типа "deva-".', 'Quiz on declension of masculine nouns ending in -a. Includes nouns like "deva-".', 'A_STEM_DECLENSIONS', 'BEGINNER', 10),
+    ('20000000-0000-0000-0000-000000000002', 'declensions-a-neut', 'Склонения: Основы на -a (средний род)', 'Declensions: A-stems (neuter)', 'Квиз по склонению существительных среднего рода на -a. Включает существительные типа "agāra-".', 'Quiz on declension of neuter nouns ending in -a. Includes nouns like "agāra-".', 'A_STEM_DECLENSIONS', 'BEGINNER', 10),
+    ('20000000-0000-0000-0000-000000000003', 'declensions-aa-fem', 'Склонения: Основы на -ā (женский род)', 'Declensions: Ā-stems (feminine)', 'Квиз по склонению существительных женского рода на -ā.', 'Quiz on declension of feminine nouns ending in -ā.', 'AA_STEM_DECLENSIONS', 'BEGINNER', 10),
+    ('20000000-0000-0000-0000-000000000004', 'declensions-i', 'Склонения: Основы на -i', 'Declensions: I-stems', 'Квиз по склонению существительных на -i.', 'Quiz on declension of nouns ending in -i.', 'I_STEM_DECLENSIONS', 'INTERMEDIATE', 10),
+    ('20000000-0000-0000-0000-000000000005', 'declensions-ii', 'Declensions: Основы на -ī', 'Declensions: Ī-stems', 'Квиз по склонению существительных на -ī.', 'Quiz on declension of nouns ending in -ī.', 'II_STEM_DECLENSIONS', 'INTERMEDIATE', 10),
+    ('20000000-0000-0000-0000-000000000006', 'declensions-u', 'Склонения: Основы на -u', 'Declensions: U-stems', 'Квиз по склонению существительных на -u.', 'Quiz on declension of nouns ending in -u.', 'U_STEM_DECLENSIONS', 'INTERMEDIATE', 10),
+    ('20000000-0000-0000-0000-000000000007', 'declensions-uu', 'Склонения: Основы на -ū', 'Declensions: Ū-stems', 'Квиз по склонению существительных на -ū.', 'Quiz on declension of nouns ending in -ū.', 'UU_STEM_DECLENSIONS', 'ADVANCED', 10),
+    ('20000000-0000-0000-0000-000000000008', 'declensions-r', 'Склонения: Основы на -ṛ', 'Declensions: Ṛ-stems', 'Квиз по склонению существительных на -ṛ.', 'Quiz on declension of nouns ending in -ṛ.', 'R_STEM_DECLENSIONS', 'ADVANCED', 10),
     ('20000000-0000-0000-0000-000000000009', 'declensions-all', 'Склонения: Все основы', 'Declensions: All Stems', 'Квиз по склонению существительных всех типов основ.', 'Quiz on declension of nouns of all stem types.', 'DECLENSIONS', 'ADVANCED', 15);
 
 -- 3. Добавление DeclensionStems
 INSERT INTO content.declension_stems (id, stem_name_iast, stem_name_devanagari, vowel_type, gender) VALUES
                                                                                                         ('30000000-0000-0000-0000-000000000001', 'deva', 'देव', 'A_STEM', 'MASCULINE'),
                                                                                                         ('30000000-0000-0000-0000-000000000002', 'agāra', 'अगार', 'A_STEM', 'NEUTER'),
-                                                                                                        ('30000000-0000-0000-0000-000000000003', 'dhenu', 'धेनु', 'U_STEM', 'FEMININE');
+                                                                                                        ('30000000-0000-0000-0000-000000000003', 'dhenu', 'धेनु', 'U_STEM', 'FEMININE'),
+                                                                                                        ('30000000-0000-0000-0000-000000000004', 'mālā', 'माला', 'AA_STEM', 'FEMININE'); -- Added mālā
 
 -- 4. Добавление DeclensionForms для 'deva' (мужской род, a-основа)
 INSERT INTO content.declension_forms (declension_stem_id, case_type, number_type, form_iast, form_devanagari) VALUES

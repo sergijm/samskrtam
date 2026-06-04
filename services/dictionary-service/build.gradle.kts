@@ -13,13 +13,13 @@ dependencies {
 
     implementation(libs.spring.webflux)
     implementation(libs.spring.r2dbc)
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation(libs.kotlin.reflect) // Changed to libs alias
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.reactor)
     implementation(libs.postgresql.r2dbc)
     implementation(libs.flyway.core)
     implementation(libs.postgresql.jdbc)
-    implementation("org.jsoup:jsoup:1.17.2")
+    implementation(libs.jsoup) // Changed to libs alias
 
     implementation(project(":shared:common-dtos")) // Обновлено на common-dtos
     implementation(project(":shared:dictionary-dtos"))

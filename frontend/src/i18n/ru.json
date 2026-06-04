@@ -6,7 +6,9 @@
     "statistics": "Статистика",
     "leaderboard": "Рейтинг",
     "settings": "Настройки",
-    "admin": "Администрирование"
+    "admin": "Администрирование",
+    "grammar": "Грамматика",
+    "vocabulary": "Лексика"
   },
   "settings": {
     "title": "Настройки",
@@ -42,6 +44,9 @@
     "fetchError": "Не удалось загрузить квизы: {{message}}",
     "totalQuestions": "Всего вопросов: {{count}}",
     "noQuizzesFound": "Квизы не найдены."
+  },
+  "quizzes": {
+    "title": "Список квизов"
   },
   "auth": {
     "login": "Войти",
@@ -147,6 +152,8 @@
     "statisticsDescription": "Отслеживайте свой прогресс и достижения.",
     "leaderboardDescription": "Соревнуйтесь с другими и смотрите свой рейтинг.",
     "settingsDescription": "Управляйте своим профилем и настройками приложения.",
-    "adminDescription": "Доступ к административным инструментам и функциям."
+    "adminDescription": "Доступ к административным инструментам и функциям.",
+    "grammarDescription": "Квизы по грамматике: склонения и спряжения.",
+    "vocabularyDescription": "Квизы на знание лексики."
   }
 }

@@ -4,8 +4,8 @@ import { persist } from 'zustand/middleware';
 type Theme = 'light' | 'dark';
 
 const THEME_HREFS: Record<Theme, string> = {
-  light: '/themes/lara-light-blue/theme.css',
-  dark: '/themes/lara-dark-blue/theme.css',
+  light: '/themes/lara-light-amber/theme.css', // Changed to orange theme
+  dark: '/themes/lara-dark-amber/theme.css',   // Changed to orange theme
 };
 
 interface ThemeState {
