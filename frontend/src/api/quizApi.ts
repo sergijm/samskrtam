@@ -1,9 +1,5 @@
 import api from './axios';
-import { QuizListItem } from '../types/quiz'; // Assuming this type exists
-import { StartSessionResponse } from '../../shared/quiz-dtos/src/main/java/sm/selflearn/samskrtam/quiz/dto/StartSessionResponse';
-import { AnswerRequest } from '../../shared/quiz-dtos/src/main/java/sm/selflearn/samskrtam/quiz/dto/AnswerRequest';
-import { AnswerResponse } from '../../shared/quiz-dtos/src/main/java/sm/selflearn/samskrtam/quiz/dto/AnswerResponse';
-import { QuizSummaryDto } from '../../shared/quiz-content-dtos/src/main/java/sm/selflearn/samskrtam/content/dto/QuizSummaryDto'; // Import QuizSummaryDto
+import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, QuizType } from '../types/quiz';
 
 export const quizApi = {
   getQuizList: (category?: string) => {
@@ -16,26 +12,28 @@ export const quizApi = {
 
   getQuizBySlug: (slug: string) => api.get<QuizSummaryDto>(`/api/v1/content/quizzes/by-slug/${slug}`),
 
-  startSession: (quizId: string, quizType: string, userLocale: string) => {
+  startSession: (quizIdentifier: string, quizType: QuizType, userLocale: string) => {
     let url = '';
+    let params: { quizId?: string } = {};
+
     if (quizType === 'VOCABULARY') {
-      url = `/api/v1/quiz/vocabulary/${quizId}/sessions/start`; // quizId is slug for vocabulary
-    } else {
-      url = `/api/v1/quiz/declensions/sessions/start`; // quizId is actual quizId for grammar
+      url = `/api/v1/quiz/vocabulary/${quizIdentifier}/sessions/start`;
+    } else { // DECLENSIONS or CONJUGATIONS
+      url = `/api/v1/quiz/${quizType.toLowerCase()}/sessions/start`;
+      params = { quizId: quizIdentifier }; // quizIdentifier is the actual UUID for grammar quizzes
     }
     return api.post<StartSessionResponse>(url, null, {
-      params: { quizId },
+      params: params,
       headers: { 'X-User-Locale': userLocale },
     });
   },
 
-  submitAnswer: (sessionId: string, quizType: string, answer: AnswerRequest, userLocale: string) => {
+  submitAnswer: (sessionId: string, quizIdentifier: string, quizType: QuizType, answer: AnswerRequest, userLocale: string) => {
     let url = '';
     if (quizType === 'VOCABULARY') {
-      // Assuming slug is not needed in submitAnswer for vocabulary, or needs to be passed
-      url = `/api/v1/quiz/vocabulary/any-slug/sessions/${sessionId}/answer`; // Placeholder for slug
-    } else {
-      url = `/api/v1/quiz/declensions/sessions/${sessionId}/answer`;
+      url = `/api/v1/quiz/vocabulary/${quizIdentifier}/sessions/${sessionId}/answer`;
+    } else { // DECLENSIONS or CONJUGATIONS
+      url = `/api/v1/quiz/${quizType.toLowerCase()}/sessions/${sessionId}/answer`;
     }
     return api.post<AnswerResponse>(url, answer, {
       headers: { 'X-User-Locale': userLocale },

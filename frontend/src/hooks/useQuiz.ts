@@ -1,50 +1,54 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { quizApi } from '../api/quizApi';
-import { StartSessionResponse } from '../../shared/quiz-dtos/src/main/java/sm/selflearn/samskrtam/quiz/dto/StartSessionResponse';
-import { AnswerRequest } from '../../shared/quiz-dtos/src/main/java/sm/selflearn/samskrtam/quiz/dto/AnswerRequest';
-import { AnswerResponse } from '../../shared/quiz-dtos/src/main/java/sm/selflearn/samskrtam/quiz/dto/AnswerResponse';
-import { QuizSummaryDto } from '../../shared/quiz-content-dtos/src/main/java/sm/selflearn/samskrtam/content/dto/QuizSummaryDto';
+import { StartSessionResponse, AnswerRequest, AnswerResponse, QuizSummaryDto, QuizListItem, QuizType } from '../types/quiz';
+import { useLocaleStore } from '../store/localeStore'; // Import useLocaleStore
 
-export const useQuizList = (category?: string) =>
-  useQuery({
-    queryKey: ['quizzes', 'list', category],
+export const useQuizList = (category?: string) => {
+  const { locale } = useLocaleStore(); // Get current locale
+  return useQuery<QuizListItem[], Error>({
+    queryKey: ['quizzes', 'list', category, locale], // Add locale to queryKey
     queryFn: async () => {
       const response = await quizApi.getQuizList(category);
       return response.data;
     },
   });
+};
 
-export const useQuizBySlug = (slug: string) =>
-  useQuery<QuizSummaryDto, Error>({
-    queryKey: ['quizzes', slug],
+export const useQuizBySlug = (slug: string) => {
+  const { locale } = useLocaleStore(); // Get current locale
+  return useQuery<QuizSummaryDto, Error>({
+    queryKey: ['quizzes', slug, locale], // Add locale to queryKey
     queryFn: async () => {
       const response = await quizApi.getQuizBySlug(slug);
       return response.data;
     },
     enabled: !!slug, // Only run the query if slug is provided
   });
+};
 
 export const useStartQuizSession = () => {
+  const { locale } = useLocaleStore(); // Get current locale
   return useMutation<
     StartSessionResponse,
     Error,
-    { quizId: string; quizType: string; userLocale: string }
+    { quizIdentifier: string; quizType: QuizType }
   >({
-    mutationFn: async ({ quizId, quizType, userLocale }) => {
-      const response = await quizApi.startSession(quizId, quizType, userLocale);
+    mutationFn: async ({ quizIdentifier, quizType }) => {
+      const response = await quizApi.startSession(quizIdentifier, quizType, locale);
       return response.data;
     },
   });
 };
 
 export const useSubmitQuizAnswer = () => {
+  const { locale } = useLocaleStore(); // Get current locale
   return useMutation<
     AnswerResponse,
     Error,
-    { sessionId: string; quizType: string; answerRequest: AnswerRequest; userLocale: string }
+    { sessionId: string; quizIdentifier: string; quizType: QuizType; answerRequest: AnswerRequest }
   >({
-    mutationFn: async ({ sessionId, quizType, answerRequest, userLocale }) => {
-      const response = await quizApi.submitAnswer(sessionId, quizType, answerRequest, userLocale);
+    mutationFn: async ({ sessionId, quizIdentifier, quizType, answerRequest }) => {
+      const response = await quizApi.submitAnswer(sessionId, quizIdentifier, quizType, answerRequest, locale);
       return response.data;
     },
   });

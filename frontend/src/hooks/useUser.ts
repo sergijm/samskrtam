@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userApi } from '../api/userApi';
+import { authApi } from '../api/authApi'; // Import authApi for changePassword
 import { UpdateProfilePayload } from '../types/user'; // Import the new payload type
 
 export const useMe = () =>
@@ -47,14 +48,14 @@ export const useConfirmAvatarUpload = () => {
     mutationFn: (objectKey: string) => userApi.confirmAvatarUpload(objectKey),
     onSuccess: (data) => {
       // Invalidate 'me' query to refetch updated avatarUrl
-      queryClient.invalidateQueries(['users', 'me']);
+      queryClient.invalidateQueries({ queryKey: ['users', 'me'] });
     },
   });
 };
 
 export const useChangePassword = () => {
     return useMutation({
-        mutationFn: ({ currentPassword, newPassword }: any) =>
-            userApi.changePassword(currentPassword, newPassword),
+        mutationFn: ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) =>
+            authApi.changePassword(currentPassword, newPassword),
     });
 };

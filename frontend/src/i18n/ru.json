@@ -43,7 +43,10 @@
     "title": "Квизы",
     "fetchError": "Не удалось загрузить квизы: {{message}}",
     "totalQuestions": "Всего вопросов: {{count}}",
-    "noQuizzesFound": "Квизы не найдены."
+    "noQuizzesFound": "Квизы не найдены.",
+    "startError": "Не удалось начать сессию квиза: {{message}}",
+    "submitAnswer": "Ответить",
+    "noQuestions": "В этом квизе нет вопросов."
   },
   "quizzes": {
     "title": "Список квизов"
@@ -69,7 +72,10 @@
     "currentPassword": "Текущий пароль",
     "newPassword": "Новый пароль",
     "passwordChanged": "Пароль успешно изменен",
-    "registerError": "Ошибка регистрации."
+    "registerError": "Ошибка регистрации.",
+    "registerSuccessTitle": "Регистрация прошла успешно",
+    "registerSuccessMessage": "Пожалуйста, проверьте свою электронную почту для подтверждения аккаунта.",
+    "backToLogin": "Вернуться ко входу"
   },
   "groups": {
     "title": "Группы",
@@ -144,7 +150,8 @@
     "passwordsDoNotMatch": "Пароли не совпадают.",
     "currentPasswordRequired": "Требуется текущий пароль.",
     "newPasswordRequired": "Требуется новый пароль.",
-    "confirmNewPasswordRequired": "Пожалуйста, подтвердите новый пароль."
+    "confirmNewPasswordRequired": "Пожалуйста, подтвердите новый пароль.",
+    "groupNameRequired": "Требуется название группы."
   },
   "dashboard": {
     "quizzesDescription": "Проверьте свои знания с помощью интерактивных квизов.",

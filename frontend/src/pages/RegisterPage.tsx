@@ -18,12 +18,12 @@ const RegisterPage = () => {
   });
   const password = watch('password');
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: any) => { // Use 'any' for now, or define a specific type for registration form data
     try {
       await authApi.register(data.username, data.email, data.password);
       setSuccess(true);
-    } catch (err) {
-      setError(err.response?.data?.message || t('auth.registerError')); // Use translation key for error
+    } catch (err: any) { // Use 'any' for error, or define a specific error type
+      setError(err.response?.data?.message || t('auth.registerError'));
     }
   };
 
@@ -45,7 +45,7 @@ const RegisterPage = () => {
           <div className="field">
             <span className="p-float-label">
               <Controller name="username" control={control}
-                rules={{ required: t('validation.usernameRequired') }} // Use translation key
+                rules={{ required: t('validation.usernameRequired') }}
                 render={({ field, fieldState }) => <InputText id={field.name} {...field} className={fieldState.error ? 'p-invalid' : ''} />} />
               <label htmlFor="username">{t('auth.username')}</label>
             </span>
@@ -55,7 +55,7 @@ const RegisterPage = () => {
           <div className="field">
             <span className="p-float-label">
               <Controller name="email" control={control}
-                rules={{ required: t('validation.emailRequired'), pattern: { value: /^\S+@\S+\.\S+$/, message: t('validation.invalidEmail') } }} // Use translation key and corrected regex
+                rules={{ required: t('validation.emailRequired'), pattern: { value: /^\S+@\S+\.\S+$/, message: t('validation.invalidEmail') } }}
                 render={({ field, fieldState }) => <InputText id={field.name} {...field} className={fieldState.error ? 'p-invalid' : ''} />} />
               <label htmlFor="email">{t('auth.email')}</label>
             </span>
@@ -65,7 +65,7 @@ const RegisterPage = () => {
           <div className="field">
             <span className="p-float-label">
               <Controller name="password" control={control}
-                rules={{ required: t('validation.passwordRequired') }} // Use translation key
+                rules={{ required: t('validation.passwordRequired') }}
                 render={({ field, fieldState }) => <Password id={field.name} {...field} toggleMask className={fieldState.error ? 'p-invalid' : ''} />} />
               <label htmlFor="password">{t('auth.password')}</label>
             </span>
@@ -75,7 +75,7 @@ const RegisterPage = () => {
           <div className="field">
             <span className="p-float-label">
               <Controller name="confirmPassword" control={control}
-                rules={{ required: t('validation.confirmPasswordRequired'), validate: value => value === password || t('validation.passwordsDoNotMatch') }} // Use translation key
+                rules={{ required: t('validation.confirmPasswordRequired'), validate: value => value === password || t('validation.passwordsDoNotMatch') }}
                 render={({ field, fieldState }) => <Password id={field.name} {...field} feedback={false} toggleMask className={fieldState.error ? 'p-invalid' : ''} />} />
               <label htmlFor="confirmPassword">{t('auth.confirmPassword')}</label>
             </span>

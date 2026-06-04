@@ -1,5 +1,5 @@
 import api from './axios';
-import { User, Group, GroupDetail, UserGroupSummary, UpdateProfilePayload, UploadUrlResponse, AvatarConfirmResponse, AdminUserListResponse, UserRole } from '../types/user'; // Import UserRole
+import { User, Group, GroupDetail, UserGroupSummary, UpdateProfilePayload, UploadUrlResponse, AvatarConfirmResponse, AdminUserListResponse, UserRole } from '../types/user';
 
 export const userApi = {
   // Profile
@@ -19,7 +19,7 @@ export const userApi = {
     sortBy: string,
     sortDirection: string,
     search?: string,
-    role?: UserRole, // Corrected to UserRole
+    role?: UserRole,
     blocked?: boolean
   ) => api.get<AdminUserListResponse>('/api/v1/admin/users', {
     params: {
@@ -40,7 +40,7 @@ export const userApi = {
   getGroups: () => api.get<Group[]>('/api/v1/groups'),
   getGroup: (groupId: string) => api.get<GroupDetail>(`/api/v1/groups/${groupId}`),
   createGroup: (name: string) => api.post<Group>('/api/v1/groups', { name }),
-  renameGroup: (groupId: string, name: string) => api.patch<Group>('/api/v1/groups/${groupId}', { name }),
+  renameGroup: (groupId: string, name: string) => api.patch<Group>(`/api/v1/groups/${groupId}`, { name }),
 
   // Members
   addMember: (groupId: string, userId: string) => api.post(`/api/v1/groups/${groupId}/members`, { userId }),

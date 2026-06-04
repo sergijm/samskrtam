@@ -19,13 +19,8 @@ const SettingsPage = () => {
   const toast = useRef<Toast>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: userResponse, refetch: refetchUser } = useMe(); // Renamed 'user' to 'userResponse' for clarity
-  const user = userResponse?.data; // Extract the actual user data from the Axios response
-
-  // Log the user object to see what's being received
-  console.log("User data from useMe():", userResponse);
-  console.log("Extracted user data:", user);
-
+  const { data: userResponse, refetch: refetchUser } = useMe();
+  const user = userResponse?.data;
 
   const updateProfileDetailsMutation = useUpdateProfileDetails();
   const generateUploadUrlMutation = useGenerateAvatarUploadUrl();
@@ -46,7 +41,7 @@ const SettingsPage = () => {
   const { locale, setLocale } = useLocaleStore();
 
   useEffect(() => {
-    if (user) { // Now 'user' is the actual user data
+    if (user) {
       const valuesToReset = {
         username: user.username,
         firstName: user.firstName || '',
@@ -54,7 +49,6 @@ const SettingsPage = () => {
         theme: user.theme || 'light',
         locale: user.locale || 'ru'
       };
-      console.log("Resetting form with values:", valuesToReset);
       reset(valuesToReset);
       setTheme(user.theme || 'light');
       setLocale(user.locale || 'ru');
@@ -78,6 +72,8 @@ const SettingsPage = () => {
       }
     });
 
+    // These are handled by Zustand stores and applied immediately, no need to send to backend via this form
+    // The backend will update these via separate API calls if needed, or they are part of the user profile fetched on login
     setTheme(data.theme);
     setLocale(data.locale);
   };
@@ -161,7 +157,7 @@ const SettingsPage = () => {
                 <Controller
                   name="username"
                   control={control}
-                  rules={{ required: t('validation.required', { field: t('settings.username') }) }}
+                  rules={{ required: t('validation.usernameRequired') }}
                   render={({ field, fieldState }) => (
                     <>
                       <InputText id={field.name} {...field} className={fieldState.invalid ? 'p-invalid' : ''} />

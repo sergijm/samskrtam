@@ -14,11 +14,15 @@ const GroupCreatePage = () => {
 
   const { control, handleSubmit, formState: { errors } } = useForm({ defaultValues: { name: '' } });
 
-  const onSubmit = (data) => {
+  const onSubmit = (data: { name: string }) => {
     createGroupMutation.mutate(data.name, {
       onSuccess: (newGroup) => {
         navigate(`/groups/${newGroup.id}`);
       },
+      onError: (error) => {
+        console.error("Failed to create group:", error);
+        // Optionally show a toast or message for the error
+      }
     });
   };
 
@@ -28,7 +32,7 @@ const GroupCreatePage = () => {
         <div className="field">
           <span className="p-float-label">
             <Controller name="name" control={control}
-              rules={{ required: 'Group name is required.' }}
+              rules={{ required: t('validation.groupNameRequired') }}
               render={({ field, fieldState }) => <InputText id={field.name} {...field} autoFocus className={fieldState.error ? 'p-invalid' : ''} />} />
             <label htmlFor="name">{t('groups.groupName')}</label>
           </span>
@@ -37,7 +41,7 @@ const GroupCreatePage = () => {
 
         <div className="mt-4">
           <Button type="submit" label={t('common.create')} loading={createGroupMutation.isLoading} />
-          <Button label={t('common.cancel')} className="p-button-text" onClick={() => navigate('/groups')} />
+          <Button label={t('common.cancel')} className="p-button-text ml-2" onClick={() => navigate('/groups')} />
         </div>
       </form>
     </Card>

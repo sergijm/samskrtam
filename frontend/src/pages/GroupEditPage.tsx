@@ -7,12 +7,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useGroup, useRenameGroup } from '../hooks/useGroups';
 import { useTranslation } from 'react-i18next';
 import { ProgressSpinner } from 'primereact/progressspinner';
+import { Message } from 'primereact/message';
 
 const GroupEditPage = () => {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { data: group, isLoading: isLoadingGroup } = useGroup(id!);
+  const { data: group, isLoading: isLoadingGroup, isError: isErrorGroup, error: errorGroup } = useGroup(id!);
   const renameGroupMutation = useRenameGroup(id!);
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm({ defaultValues: { name: '' } });
@@ -23,16 +24,28 @@ const GroupEditPage = () => {
     }
   }, [group, reset]);
 
-  const onSubmit = (data) => {
+  const onSubmit = (data: { name: string }) => {
     renameGroupMutation.mutate(data.name, {
       onSuccess: () => {
         navigate(`/groups/${id}`);
       },
+      onError: (error) => {
+        console.error("Failed to rename group:", error);
+        // Optionally show a toast or message for the error
+      }
     });
   };
 
   if (isLoadingGroup) {
     return <ProgressSpinner />;
+  }
+
+  if (isErrorGroup) {
+    return <Message severity="error" text={`Error loading group: ${errorGroup?.message}`} />;
+  }
+
+  if (!group) {
+    return <Message severity="info" text="Group not found." />;
   }
 
   return (
@@ -41,7 +54,7 @@ const GroupEditPage = () => {
         <div className="field">
           <span className="p-float-label">
             <Controller name="name" control={control}
-              rules={{ required: 'Group name is required.' }}
+              rules={{ required: t('validation.groupNameRequired') }}
               render={({ field, fieldState }) => <InputText id={field.name} {...field} autoFocus className={fieldState.error ? 'p-invalid' : ''} />} />
             <label htmlFor="name">{t('groups.groupName')}</label>
           </span>
@@ -50,7 +63,7 @@ const GroupEditPage = () => {
 
         <div className="mt-4">
           <Button type="submit" label={t('common.save')} loading={renameGroupMutation.isLoading} />
-          <Button label={t('common.cancel')} className="p-button-text" onClick={() => navigate(`/groups/${id}`)} />
+          <Button label={t('common.cancel')} className="p-button-text ml-2" onClick={() => navigate(`/groups/${id}`)} />
         </div>
       </form>
     </Card>

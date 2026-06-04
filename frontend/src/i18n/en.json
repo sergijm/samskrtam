@@ -43,7 +43,10 @@
     "title": "Quizzes",
     "fetchError": "Failed to load quizzes: {{message}}",
     "totalQuestions": "Total Questions: {{count}}",
-    "noQuizzesFound": "No quizzes found."
+    "noQuizzesFound": "No quizzes found.",
+    "startError": "Failed to start quiz session: {{message}}",
+    "submitAnswer": "Submit Answer",
+    "noQuestions": "This quiz has no questions."
   },
   "quizzes": {
     "title": "List of Quizzes"
@@ -70,7 +73,10 @@
     "newPassword": "New Password",
     "passwordChanged": "Password changed successfully",
     "registerError": "Registration failed.",
-    "changePasswordError": "Failed to change password."
+    "changePasswordError": "Failed to change password.",
+    "registerSuccessTitle": "Registration Successful",
+    "registerSuccessMessage": "Please check your email to verify your account.",
+    "backToLogin": "Back to Login"
   },
   "groups": {
     "title": "Groups",
@@ -145,7 +151,8 @@
     "passwordsDoNotMatch": "Passwords do not match.",
     "currentPasswordRequired": "Current password is required.",
     "newPasswordRequired": "New password is required.",
-    "confirmNewPasswordRequired": "Please confirm your new password."
+    "confirmNewPasswordRequired": "Please confirm your new password.",
+    "groupNameRequired": "Group name is required."
   },
   "dashboard": {
     "quizzesDescription": "Practice your knowledge with interactive quizzes.",

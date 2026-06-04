@@ -2,12 +2,12 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  firstName?: string; // Added
-  lastName?: string;  // Added
-  avatarUrl?: string; // Added
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
   role: 'STUDENT' | 'ADMIN';
-  blocked: boolean;   // Added
-  createdAt: string;  // Added (ISO 8601 string)
+  blocked: boolean;
+  createdAt: string; // ISO 8601 string
   locale: 'ru' | 'en';
   theme: 'light' | 'dark';
 }
@@ -17,7 +17,7 @@ export type Locale = 'ru' | 'en';
 
 export interface AuthTokens {
   accessToken: string;
-  refreshToken: string;
+  refreshToken: string | null; // Changed to allow null
 }
 
 export type GroupRole = 'CURATOR' | 'MEMBER';
@@ -54,7 +54,6 @@ export interface UpdateProfilePayload {
   username: string;
   firstName?: string;
   lastName?: string;
-  // locale and theme are handled separately for now, or backend PUT /me needs to accept them
 }
 
 // New types for avatar upload
