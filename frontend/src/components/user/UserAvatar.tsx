@@ -2,15 +2,18 @@ import React from 'react';
 import { Avatar } from 'primereact/avatar';
 
 interface UserAvatarProps {
-  username: string;
+  username: string; // Keep username for initial if firstName/lastName are not available
+  firstName?: string; // Added firstName
+  lastName?: string;  // Added lastName
   email?: string;
   avatarUrl?: string;
   size?: 'normal' | 'large' | 'xlarge';
   shape?: 'square' | 'circle';
 }
 
-const UserAvatar = ({ username, email, avatarUrl, size = 'normal', shape = 'circle' }: UserAvatarProps) => {
-  const initial = username ? username.charAt(0).toUpperCase() : '?';
+const UserAvatar = ({ username, firstName, lastName, email, avatarUrl, size = 'normal', shape = 'circle' }: UserAvatarProps) => {
+  const displayName = (firstName && lastName) ? `${firstName} ${lastName}` : username;
+  const initial = displayName ? displayName.charAt(0).toUpperCase() : '?';
 
   return (
     <div className="flex align-items-center">
@@ -22,8 +25,8 @@ const UserAvatar = ({ username, email, avatarUrl, size = 'normal', shape = 'circ
         className="p-mr-2"
       />
       <div>
-        <div className="font-bold">{username}</div>
-        {email && <div className="text-sm text-color-secondary">{email}</div>}
+        <div className="font-bold">{displayName}</div> {/* Display firstName + lastName or username */}
+        {email && <div className="text-sm text-color-secondary">{email}</div>} {/* Display email */}
       </div>
     </div>
   );

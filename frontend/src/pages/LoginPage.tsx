@@ -7,6 +7,7 @@ import { Card } from 'primereact/card';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../api/authApi';
+import { userApi } from '../api/userApi'; // Import userApi
 import { useTranslation } from 'react-i18next';
 import { LocaleSwitcher } from '../components/common/LocaleSwitcher';
 import { ThemeSwitcher } from '../components/common/ThemeSwitcher';
@@ -19,17 +20,28 @@ const LoginPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const { control, handleSubmit, formState: { errors } } = useForm({
-    defaultValues: { username: '', password: '' } // Changed 'email' to 'username'
+    defaultValues: { username: '', password: '' }
   });
 
   const onSubmit = async (data) => {
     try {
-      const response = await authApi.login(data.username, data.password); // Changed 'data.email' to 'data.username'
-      // The user object should be part of the login response
-      const user = response.data.user; // This is an assumption based on the spec
-      login(response.data, user);
-      navigate('/');
+      // 1. Authenticate and get tokens
+      const authResponse = await authApi.login(data.username, data.password);
+      const tokens = {
+        accessToken: authResponse.data.access_token, // Assuming access_token from response
+        refreshToken: authResponse.data.refresh_token, // Assuming refresh_token from response
+      };
+
+      // 2. Fetch user details using the new access token
+      // The axios interceptor should automatically attach the new access token for this request
+      const userResponse = await userApi.getMe();
+      const user = userResponse.data;
+
+      // 3. Log in the user with tokens and full user object
+      login(tokens, user);
+      navigate('/dashboard'); // Navigate to dashboard after successful login
     } catch (err) {
+      console.error("Login error:", err);
       setError(t('auth.error'));
     }
   };
@@ -44,14 +56,14 @@ const LoginPage = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="p-fluid">
           <div className="field">
             <span className="p-float-label">
-              <Controller name="username" control={control} // Changed 'name="email"' to 'name="username"'
-                rules={{ required: t('validation.usernameRequired') }} // Changed validation message key
+              <Controller name="username" control={control}
+                rules={{ required: t('validation.usernameRequired') }}
                 render={({ field, fieldState }) => (
                   <InputText id={field.name} {...field} autoFocus className={fieldState.error ? 'p-invalid' : ''} />
                 )} />
-              <label htmlFor="username">{t('auth.emailOrLogin')}</label> {/* Changed label text and htmlFor */}
+              <label htmlFor="username">{t('auth.emailOrLogin')}</label>
             </span>
-            {errors.username && <small className="p-error">{errors.username.message}</small>} {/* Changed 'errors.email' to 'errors.username' */}
+            {errors.username && <small className="p-error">{errors.username.message}</small>}
           </div>
 
           <div className="field">

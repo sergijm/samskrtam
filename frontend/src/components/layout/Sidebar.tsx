@@ -8,16 +8,17 @@ const Sidebar = () => {
   const user = useAuthStore((state) => state.user);
 
   const navItems = [
-    { to: '/', label: t('nav.dashboard'), icon: 'pi-home' },
+    { to: '/dashboard', label: t('nav.dashboard'), icon: 'pi-home' }, // Changed '/' to '/dashboard'
     { to: '/quizzes', label: t('nav.quizzes'), icon: 'pi-question-circle' },
     { to: '/dictionary', label: t('nav.dictionary'), icon: 'pi-book' },
     { to: '/statistics', label: t('nav.statistics'), icon: 'pi-chart-bar' },
     { to: '/leaderboard', label: t('nav.leaderboard'), icon: 'pi-sitemap' },
-    { to: '/settings', label: t('nav.settings'), icon: 'pi-cog' },
+    // Removed the settings item from here
+    // { to: '/settings', label: t('nav.settings'), icon: 'pi-cog' },
   ];
 
   if (user?.role === 'ADMIN') {
-    navItems.push({ to: '/admin', label: t('nav.admin'), icon: 'pi-shield' });
+    navItems.push({ to: '/admin/users', label: t('nav.admin'), icon: 'pi-shield' }); // Updated link to /admin/users
   }
 
   return (

@@ -18,7 +18,9 @@ const getInitialState = () => {
   let user: User | null = null;
   try {
     if (userString) {
+      console.log('authStore: getInitialState - userString from localStorage:', userString); // Debug log
       user = JSON.parse(userString);
+      console.log('authStore: getInitialState - parsed user:', user); // Debug log
     }
   } catch (e) {
     console.error("Failed to parse user from localStorage", e);
@@ -37,6 +39,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   ...getInitialState(),
 
   login: (tokens, user) => {
+    console.log('authStore: login - received user:', user); // Debug log
     localStorage.setItem('accessToken', tokens.accessToken);
     localStorage.setItem('refreshToken', tokens.refreshToken);
     localStorage.setItem('user', JSON.stringify(user));
@@ -46,6 +49,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       refreshToken: tokens.refreshToken,
       isAuthenticated: true,
     });
+    console.log('authStore: login - user after set:', user); // Debug log
   },
 
   logout: () => {

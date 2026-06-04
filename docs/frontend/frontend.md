@@ -82,7 +82,7 @@ frontend/
     ├── App.tsx                     ← роутер + провайдеры
     │
     ├── pages/                      ← страницы (один файл = один роут)
-    │   ├── HomePage.tsx            ← публичная landing для незалогиненных (новое)
+    │   ├── HomePage.tsx            ← публичная landing для незалогиненных
     │   ├── LoginPage.tsx
     │   ├── RegisterPage.tsx
     │   ├── ForgotPasswordPage.tsx
@@ -106,9 +106,7 @@ frontend/
     ├── components/                 ← переиспользуемые компоненты
     │   ├── layout/
     │   │   ├── AppLayout.tsx       ← шапка + навигация + контент (только для залогиненных)
-    │   │   ├── PublicLayout.tsx    ← шапка для незалогиненных (кнопка Войти)
     │   │   ├── Header.tsx          ← шапка залогиненного: лого + навигация + ThemeSwitcher + LocaleSwitcher + кнопка Выйти
-    │   │   ├── PublicHeader.tsx    ← шапка публичная: лого + ThemeSwitcher + LocaleSwitcher + кнопка Войти
     │   │   └── Sidebar.tsx
     │   ├── auth/
     │   │   └── ProtectedRoute.tsx  ← HOC для защищённых роутов
@@ -178,11 +176,12 @@ frontend/
 
 | Path | Компонент | Auth | Role |
 |---|---|---|---|
+| `/` | HomePage | Нет | — |
 | `/login` | LoginPage | Нет | — |
 | `/register` | RegisterPage | Нет | — |
 | `/forgot-password` | ForgotPasswordPage | Нет | — |
 | `/auth/callback` | AuthCallbackPage | Нет | — |
-| `/` | **HomePage** (не залогинен) / **DashboardPage** (залогинен) | Нет | — |
+| `/dashboard` | DashboardPage | Да | STUDENT, ADMIN |
 | `/quizzes/:category` | QuizListPage | Да | STUDENT |
 | `/quiz/grammar/:slug` | QuizPage | Да | STUDENT |
 | `/quiz/vocabulary/:slug` | QuizPage | Да | STUDENT |
@@ -201,8 +200,7 @@ frontend/
 | `/admin/flags` | FeatureFlagsPage | Да | ADMIN |
 | `/admin/flags/:name/history` | FlagHistoryPage | Да | ADMIN |
 
-> Маршрут `/` — единственный с условным рендером: `isAuthenticated ? <DashboardPage/> : <HomePage/>`.
-> HomePage не требует авторизации и доступна по прямой ссылке.
+> Маршрут `/` отображает `HomePage` для неаутентифицированных пользователей и перенаправляет на `/dashboard` для аутентифицированных.
 
 Роуты `/settings`, `/users/:id`, `/groups/*` — подробная спецификация в [user-frontend.md](user-frontend.md).
 Роуты `/admin/flags/*` — подробная спецификация в [feature-flags-frontend.md](feature-flags-frontend.md).
@@ -224,12 +222,12 @@ frontend/
 - Переключатель темы (светлая/тёмная) — доступен без авторизации
 
 **Поведение:**
-- Форма логин/пароль → POST /api/v1/auth/login → ROPC через user-service
+- Форма логин/пароль → POST /api/v1/auth/login → user-service. После получения токенов, вызывается GET /api/v1/users/me для получения полных данных пользователя.
 - Кнопка Google → GET /api/v1/auth/oauth2/google → редирект через Keycloak
 - Кнопка Mail.ru → GET /api/v1/auth/oauth2/mailru → редирект через Keycloak
-- После успешного входа → редирект на `/`
+- После успешного входа → редирект на `/dashboard`
 - Ошибка входа → сообщение под формой, без уточнения что именно неверно
-- Токены сохраняются в `authStore` (не в localStorage)
+- Токены и объект пользователя сохраняются в `authStore` (не в localStorage)
 - Ссылки: "Зарегистрироваться" → `/register`, "Забыли пароль?" → `/forgot-password`
 
 ---
@@ -276,9 +274,10 @@ frontend/
 - Только спиннер загрузки — пользователь видит эту страницу долю секунды
 
 **Поведение:**
-- Читает `?code=...` из URL
-- POST /api/v1/auth/callback { code } → user-service → обменивает на токены
-- Успех → сохраняет токены в authStore → редирект на `/`
+- Читает `access_token` и `refresh_token` из URL-фрагмента.
+- Временно сохраняет токены в localStorage.
+- Вызывает GET /api/v1/users/me для получения полных данных пользователя.
+- Успех → сохраняет токены и объект пользователя в authStore → редирект на `/dashboard`
 - Ошибка → редирект на `/login` с сообщением об ошибке
 
 ---
@@ -294,87 +293,65 @@ frontend/
 **Позиция:** фиксированная шапка, правый верхний угол.
 
 **Элементы (слева → справа):**
-- Логотип / название "Samskrtam" → ссылка на `/`
-- Навигация: Квизы / Словарь / Статистика / Лидерборд (+ Администрирование для ADMIN)
+- Логотип / название "SamskrtamApp" → ссылка на `/`
 - `ThemeSwitcher`
 - `LocaleSwitcher`
-- Имя пользователя (кликабельно → `/users/:id`)
-- **Кнопка "Выйти"** (правый верхний угол, `severity="secondary"`, иконка `pi-sign-out`)
+- **Поле пользователя (аватар с именем):**
+    - **Кликабельно:** При клике перенаправляет на страницу настроек (`/settings`).
+    - **Отображение:**
+        - Первая строка: `firstName` + `lastName` (если доступны, иначе `username`).
+        - Вторая строка: `email`.
+- **Кнопка "Выйти"** (крайняя справа, иконка `pi-sign-out`)
 
 ```typescript
 // components/layout/Header.tsx
-export const Header = () => {
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/authStore';
+import { Button } from 'primereact/button';
+import { LocaleSwitcher } from '../common/LocaleSwitcher';
+import { ThemeSwitcher } from '../common/ThemeSwitcher';
+import UserAvatar from '../user/UserAvatar';
+import { useTranslation } from 'react-i18next';
+
+const Header = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const handleLogout = async () => {
-    await authApi.logout(useAuthStore.getState().refreshToken!);
-    logout();          // очищает Zustand store
-    navigate('/');     // → HomePage (публичная)
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
 
   return (
-    <Menubar
-      start={<Link to="/" className="font-bold text-xl">Samskrtam</Link>}
-      end={
-        <div className="flex align-items-center gap-3">
-          <ThemeSwitcher />
-          <LocaleSwitcher />
-          <span
-            className="cursor-pointer hover:underline"
-            onClick={() => navigate(`/users/${user?.id}`)}>
-            {user?.username}
-          </span>
-          <Button
-            label={t('auth.logout')}
-            icon="pi pi-sign-out"
-            severity="secondary"
-            text
-            onClick={handleLogout}
-          />
-        </div>
-      }
-    />
+    <div className="layout-topbar flex justify-content-between align-items-center px-4 py-2">
+      <Link to="/" className="layout-topbar-logo no-underline text-xl font-bold">
+        <span>SamskrtamApp</span>
+      </Link>
+      <div className="layout-topbar-menu flex align-items-center gap-3">
+        <ThemeSwitcher />
+        <LocaleSwitcher />
+        {user && (
+          <Link to="/settings" className="no-underline text-color">
+            <UserAvatar
+              username={user.username}
+              firstName={user.firstName}
+              lastName={user.lastName}
+              email={user.email}
+              avatarUrl={user.avatarUrl}
+            />
+          </Link>
+        )}
+        {user && (
+          <Button icon="pi pi-sign-out" className="p-button-text" onClick={handleLogout} label={t('auth.logout')} />
+        )}
+      </div>
+    </div>
   );
 };
-```
 
----
-
-### PublicHeader (незалогиненный пользователь)
-
-**Позиция:** фиксированная шапка, правый верхний угол.
-
-**Элементы (слева → справа):**
-- Логотип / название "Samskrtam"
-- `ThemeSwitcher`
-- `LocaleSwitcher`
-- **Кнопка "Войти"** (правый верхний угол, `severity="primary"`, иконка `pi-sign-in`)
-
-```typescript
-// components/layout/PublicHeader.tsx
-export const PublicHeader = () => {
-  const navigate = useNavigate();
-  const { t } = useTranslation();
-
-  return (
-    <Menubar
-      start={<span className="font-bold text-xl">Samskrtam</span>}
-      end={
-        <div className="flex align-items-center gap-3">
-          <ThemeSwitcher />
-          <LocaleSwitcher />
-          <Button
-            label={t('auth.login')}
-            icon="pi pi-sign-in"
-            onClick={() => navigate('/login')}
-          />
-        </div>
-      }
-    />
-  );
-};
+export default Header;
 ```
 
 ---
@@ -382,127 +359,72 @@ export const PublicHeader = () => {
 ### HomePage (`/` — незалогиненный пользователь)
 
 **Назначение:** публичная landing для пользователей не прошедших авторизацию.
-Если пользователь залогинен — роут `/` отображает `DashboardPage`.
+Если пользователь залогинен — роут `/` перенаправляет на `/dashboard`.
 
 ```typescript
 // App.tsx
-<Route path="/" element={
-  isAuthenticated ? <DashboardPage /> : <HomePage />
-} />
+<Route path="/" element={<HomePage />} />
 ```
 
 **Элементы:**
 
-**Шапка:** `PublicHeader` с кнопкой "Войти" в правом верхнем углу.
+**Шапка:** Встроенная в `HomePage` кнопка "Вход" в правом верхнем углу.
 
 **Hero секция:**
-- Изображение Панини — грамматиста санскрита
-
-  URL: `https://kulturologia.ru/files/u18172/Panini-Zagl.jpg`
-
-  Отображается как круглый аватар (`border-radius: 50%`) или прямоугольник с
-  `border-radius: 12px`, выровнен по правому краю hero-блока.
-- Заголовок: "Samskrtam — платформа для изучения санскрита"
-- Подзаголовок: "Квизы по грамматике и лексике, словарь, лидерборды"
-- Краткое описание Панини: великий санскритский грамматист (IV–III вв. до н.э.),
-  автор "Аштадхьяи" — одной из самых совершенных грамматик в истории языкознания.
-  Именно его труд лёг в основу изучения санскрита.
-- Кнопка "Начать обучение" → `/login`
-- Кнопка "Узнать больше" → скролл к секции с описанием
-
-**Секция "Что внутри":**
-- 3 карточки: Квизы по грамматике / Словарь санскрита / Лидерборд
-- Каждая карточка: иконка + заголовок + 1-2 предложения
-
-**Footer:**
-- "© Samskrtam · Платформа изучения санскрита"
+- Фоновое изображение: `/bk-samskrtam.jpg`
+- В правом верхнем углу кнопка "Вход" (ведет на `/login`).
+- Заголовок: "SamskrtamApp"
+- Подзаголовок: "Learn Sanskrit with interactive quizzes and tools."
 
 ```typescript
 // pages/HomePage.tsx
-export const HomePage = () => {
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Button } from 'primereact/button';
+import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../store/authStore';
+
+const HomePage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  if (isAuthenticated) {
+    return null; // Render nothing while redirecting
+  }
 
   return (
-    <>
-      <PublicHeader />
-
-      {/* Hero */}
-      <section className="flex align-items-center justify-content-between
-                          px-6 py-8 gap-6" style={{ minHeight: '70vh' }}>
-        <div className="flex flex-column gap-4" style={{ maxWidth: '520px' }}>
-          <h1 className="text-5xl font-bold m-0">{t('home.title')}</h1>
-          <p className="text-xl text-color-secondary m-0">{t('home.subtitle')}</p>
-          <p className="line-height-3">{t('home.paniniDescription')}</p>
-          <div className="flex gap-3">
-            <Button
-              label={t('home.startLearning')}
-              icon="pi pi-play"
-              size="large"
-              onClick={() => navigate('/login')}
-            />
-            <Button
-              label={t('home.learnMore')}
-              icon="pi pi-arrow-down"
-              severity="secondary"
-              text
-              size="large"
-              onClick={() => document.getElementById('features')?.scrollIntoView(
-                { behavior: 'smooth' })}
-            />
-          </div>
-        </div>
-
-        {/* Изображение Панини */}
-        <img
-          src="https://kulturologia.ru/files/u18172/Panini-Zagl.jpg"
-          alt={t('home.paniniAlt')}
-          style={{
-            width: '340px',
-            height: '400px',
-            objectFit: 'cover',
-            borderRadius: '12px',
-            flexShrink: 0,
-          }}
-        />
-      </section>
-
-      {/* Features */}
-      <section id="features" className="px-6 py-6">
-        <div className="grid">
-          {[
-            { icon: 'pi-book',      key: 'quizzes'     },
-            { icon: 'pi-search',    key: 'dictionary'  },
-            { icon: 'pi-chart-bar', key: 'leaderboard' },
-          ].map(({ icon, key }) => (
-            <div key={key} className="col-12 md:col-4">
-              <Card>
-                <div className="flex flex-column align-items-center gap-3 text-center p-3">
-                  <i className={`pi ${icon} text-4xl text-primary`} />
-                  <h3 className="m-0">{t(`home.features.${key}.title`)}</h3>
-                  <p className="text-color-secondary m-0">
-                    {t(`home.features.${key}.description`)}
-                  </p>
-                </div>
-              </Card>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <footer className="text-center py-4 text-color-secondary">
-        © Samskrtam · {t('home.footerTagline')}
-      </footer>
-    </>
+    <div
+      className="relative min-h-screen bg-cover bg-center"
+      style={{ backgroundImage: 'url(/bk-samskrtam.jpg)' }}
+    >
+      <div className="absolute top-0 right-0 p-4">
+        <Link to="/login">
+          <Button label={t('auth.login')} className="p-button-primary" />
+        </Link>
+      </div>
+      <div className="flex flex-column align-items-center justify-content-center min-h-screen text-white">
+        <h1 className="text-6xl font-bold mb-3">SamskrtamApp</h1>
+        <p className="text-xl mb-5">Learn Sanskrit with interactive quizzes and tools.</p>
+      </div>
+    </div>
   );
 };
+
+export default HomePage;
 ```
 
 ---
 
-### DashboardPage (`/` — залогиненный пользователь)
+### DashboardPage (`/dashboard` — залогиненный пользователь)
 
-**Назначение:** главная страница после входа. Отображается вместо HomePage если `isAuthenticated`.
+**Назначение:** главная страница после входа.
 
 **Шапка:** `Header` с кнопкой "Выйти" в правом верхнем углу.
 
@@ -513,7 +435,7 @@ export const HomePage = () => {
 - Плитка "Словарь" (ведет на `/dictionary`)
 - Плитка "Статистика" (ведет на `/statistics`)
 - Плитка "Лидерборд" (ведет на `/leaderboard`)
-- Плитка "Настройки" (ведет на `/settings`)
+- Плитка "Администрирование" (ведет на `/admin/users`, только для ADMIN)
 
 ---
 
@@ -829,6 +751,9 @@ export const useDictionaryEntry = (key: string | null) =>
 
 ```typescript
 // store/authStore.ts
+import { create } from 'zustand';
+import { User, AuthTokens } from '../types/user';
+
 interface AuthState {
   user:         User | null;
   accessToken:  string | null;
@@ -840,24 +765,59 @@ interface AuthState {
   setAccessToken: (token: string) => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user:            null,
-  accessToken:     null,
-  refreshToken:    null,
-  isAuthenticated: false,
+const getInitialState = () => {
+  const accessToken = localStorage.getItem('accessToken');
+  const refreshToken = localStorage.getItem('refreshToken');
+  const userString = localStorage.getItem('user');
+  let user: User | null = null;
+  try {
+    if (userString) {
+      user = JSON.parse(userString);
+    }
+  } catch (e) {
+    console.error("Failed to parse user from localStorage", e);
+    localStorage.removeItem('user');
+  }
 
-  login: (tokens, user) => set({
-    ...tokens,
+  return {
     user,
-    isAuthenticated: true,
-  }),
+    accessToken,
+    refreshToken,
+    isAuthenticated: !!accessToken && !!refreshToken,
+  };
+};
 
-  logout: () => set({
-    user: null, accessToken: null,
-    refreshToken: null, isAuthenticated: false,
-  }),
+export const useAuthStore = create<AuthState>((set) => ({
+  ...getInitialState(),
 
-  setAccessToken: (token) => set({ accessToken: token }),
+  login: (tokens, user) => {
+    localStorage.setItem('accessToken', tokens.accessToken);
+    localStorage.setItem('refreshToken', tokens.refreshToken);
+    localStorage.setItem('user', JSON.stringify(user));
+    set({
+      user,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      isAuthenticated: true,
+    });
+  },
+
+  logout: () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    set({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      isAuthenticated: false,
+    });
+  },
+
+  setAccessToken: (token) => {
+    localStorage.setItem('accessToken', token);
+    set({ accessToken: token });
+  },
 }));
 ```
 
@@ -870,8 +830,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 type Theme = 'light' | 'dark';
 
 const THEME_HREFS: Record<Theme, string> = {
-  light: '/themes/lara-light-blue/theme.css',
-  dark:  '/themes/lara-dark-blue/theme.css',
+  light: '/themes/lara-light-amber/theme.css',
+  dark:  '/themes/lara-dark-amber/theme.css',
 };
 
 interface ThemeState {
@@ -879,24 +839,34 @@ interface ThemeState {
   setTheme: (theme: Theme) => void;
 }
 
-export const useThemeStore = create<ThemeState>((set) => ({
-  // Начальное значение: из localStorage (для неавторизованных)
-  theme: (localStorage.getItem('theme') as Theme) ?? 'light',
+export const useThemeStore = create<ThemeState>()(
+  persist(
+    (set) => ({
+      theme: (localStorage.getItem('theme') as Theme) ?? 'light',
 
-  setTheme: (theme) => {
-    // 1. Применяем немедленно — меняем href тега <link>
-    const link = document.getElementById('theme-link') as HTMLLinkElement;
-    if (link) link.href = THEME_HREFS[theme];
-
-    // 2. Синхронизируем <html data-theme="..."> для кастомных CSS переменных
-    document.documentElement.setAttribute('data-theme', theme);
-
-    // 3. Сохраняем в localStorage для неавторизованных / до логина
-    localStorage.setItem('theme', theme);
-
-    set({ theme });
-  },
-}));
+      setTheme: (theme) => {
+        if (theme && THEME_HREFS[theme]) {
+          const link = document.getElementById('theme-link') as HTMLLinkElement;
+          if (link) {
+            link.href = THEME_HREFS[theme];
+          }
+        } else {
+          console.warn(`Attempted to set an invalid theme: ${theme}. Defaulting to 'light'.`);
+          theme = 'light';
+          const link = document.getElementById('theme-link') as HTMLLinkElement;
+          if (link) {
+            link.href = THEME_HREFS[theme];
+          }
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+        set({ theme });
+      },
+    }),
+    {
+      name: 'theme-storage',
+    }
+  )
+);
 
 // store/localeStore.ts
 type Locale = 'ru' | 'en';
@@ -906,65 +876,93 @@ interface LocaleState {
   setLocale: (locale: Locale) => void;
 }
 
-export const useLocaleStore = create<LocaleState>((set) => ({
-  locale: (localStorage.getItem('locale') as Locale) ?? 'ru',
+export const useLocaleStore = create<LocaleState>()(
+  persist(
+    (set) => ({
+      locale: (localStorage.getItem('locale') as Locale) ?? 'ru',
 
-  setLocale: (locale) => {
-    i18next.changeLanguage(locale);       // применяется немедленно
-    localStorage.setItem('locale', locale);
-    set({ locale });
-  },
-}));
+      setLocale: (locale) => {
+        i18next.changeLanguage(locale);
+        set({ locale });
+      },
+    }),
+    {
+      name: 'locale-storage',
+    }
+  )
+);
 ```
 
 ```typescript
 // components/common/ThemeSwitcher.tsx
+import React from 'react';
+import { InputSwitch } from 'primereact/inputswitch';
+import { useThemeStore } from '../../store/themeStore';
+import { useTranslation } from 'react-i18next';
+
 export const ThemeSwitcher = () => {
   const { theme, setTheme } = useThemeStore();
   const { t } = useTranslation();
 
   return (
     <div className="flex align-items-center gap-2">
-      <i className="pi pi-sun" aria-hidden="true" />
+      <i className="pi pi-sun" />
       <InputSwitch
         checked={theme === 'dark'}
         onChange={(e) => setTheme(e.value ? 'dark' : 'light')}
         aria-label={t('settings.toggleTheme')}
       />
-      <i className="pi pi-moon" aria-hidden="true" />
+      <i className="pi pi-moon" />
     </div>
   );
 };
 
 // components/common/LocaleSwitcher.tsx
+import React from 'react';
+import { SelectButton } from 'primereact/selectbutton';
+import { useLocaleStore } from '../../store/localeStore';
+
 export const LocaleSwitcher = () => {
   const { locale, setLocale } = useLocaleStore();
+
+  const options = [
+    { label: 'RU', value: 'ru' },
+    { label: 'EN', value: 'en' },
+  ];
 
   return (
     <SelectButton
       value={locale}
-      onChange={(e) => setLocale(e.value)}
-      options={[
-        { label: 'RU', value: 'ru' },
-        { label: 'EN', value: 'en' },
-      ]}
-      aria-label="Язык / Language"
+      onChange={(e) => e.value && setLocale(e.value)}
+      options={options}
+      aria-label="Language"
     />
   );
 };
 ```
 
-`ThemeSwitcher` и `LocaleSwitcher` размещаются в `Header.tsx` (для авторизованных пользователей) и на `LoginPage` (для всех остальных).
+`ThemeSwitcher` и `LocaleSwitcher` размещаются в `Header.tsx` (для авторизованных пользователей) и на `LoginPage` и `HomePage` (для всех остальных).
 
 ---
 
 ```typescript
 // api/authApi.ts — все вызовы к user-service
+import api from './axios';
+import { AuthTokens, User } from '../types/user';
+
+const API_URL = import.meta.env.VITE_API_URL;
+
+interface AuthResponse extends AuthTokens {
+  // The user object is now fetched via getMe, but AuthResponse still defines tokens
+  access_token: string; // Keycloak specific
+  refresh_token: string; // Keycloak specific
+}
+
 export const authApi = {
 
   // ROPC — логин через форму
-  login: (email: string, password: string) =>
-    api.post<AuthResponse>('/api/v1/auth/login', { email, password }),
+  login: (username: string, password: string) =>
+    api.post<AuthResponse>('/api/v1/auth/login', { username, password }),
 
   // OAuth2 редиректы — просто открываем URL в браузере
   loginWithGoogle: () => {
@@ -1001,28 +999,54 @@ export const authApi = {
 };
 
 // api/axios.ts
-// Request interceptor — добавляет Bearer токен
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
+import axios from 'axios';
+import { useAuthStore } from '../store/authStore';
+import { authApi } from './authApi';
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
-// Response interceptor — автоматический refresh при 401
+// Request interceptor to add the Bearer token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor for automatic token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
-      const { refreshToken } = useAuthStore.getState();
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/refresh')) {
+      originalRequest._retry = true;
+      const { refreshToken, setAccessToken, logout } = useAuthStore.getState();
+
       if (refreshToken) {
-        const { data } = await authApi.refresh(refreshToken);
-        useAuthStore.getState().setAccessToken(data.accessToken);
-        return api.request(error.config);   // повторяем запрос
+        try {
+          const { data } = await authApi.refresh(refreshToken);
+          setAccessToken(data.accessToken);
+          originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+          return api(originalRequest);
+        } catch (refreshError) {
+          logout();
+          return Promise.reject(refreshError);
+        }
+      } else {
+        logout();
       }
     }
     return Promise.reject(error);
   }
 );
+
+export default api;
 ```
 
 ---
@@ -1033,54 +1057,174 @@ api.interceptors.response.use(
 // i18n/ru.json
 {
   "nav": {
-    "dashboard":   "Главная",
-    "quizzes":     "Квизы",
-    "dictionary":  "Словарь",
-    "statistics":  "Статистика",
+    "dashboard": "Главная",
+    "quizzes": "Квизы",
+    "dictionary": "Словарь",
+    "statistics": "Статистика",
     "leaderboard": "Рейтинг",
-    "settings":    "Настройки",
-    "admin":       "Администрирование"
-  },
-  "home": {
-    "title":       "Samskrtam",
-    "subtitle":    "Платформа для изучения санскрита",
-    "paniniDescription": "Панини (IV–III вв. до н.э.) — великий санскритский грамматист, автор «Аштадхьяи» — одной из самых совершенных грамматик в истории языкознания. Его труд до сих пор остаётся эталоном лингвистического анализа.",
-    "paniniAlt":   "Панини — грамматист санскрита",
-    "startLearning": "Начать обучение",
-    "learnMore":   "Узнать больше",
-    "footerTagline": "Платформа изучения санскрита",
-    "features": {
-      "quizzes":     { "title": "Квизы по грамматике и лексике", "description": "Склонения, спряжения, словарный запас — всё в интерактивном формате с разбором ошибок." },
-      "dictionary":  { "title": "Словарь санскрита",              "description": "Поиск по словам, транслитерация, примеры употребления." },
-      "leaderboard": { "title": "Лидерборд",                      "description": "Соревнуйтесь с другими учащимися — глобальный рейтинг и рейтинг внутри группы." }
-    }
+    "admin": "Администрирование",
+    "grammar": "Грамматика",
+    "vocabulary": "Лексика"
   },
   "settings": {
-    "title":         "Настройки",
-    "language":      "Язык",
-    "theme":         "Тема",
-    "themeLight":    "Светлая",
-    "themeDark":     "Тёмная",
-    "toggleTheme":   "Переключить тему",
-    "save":          "Сохранить",
-    "saved":         "Настройки сохранены"
+    "title": "Настройки",
+    "language": "Язык",
+    "theme": "Тема",
+    "themeLight": "Светлая",
+    "themeDark": "Тёмная",
+    "toggleTheme": "Переключить тему",
+    "save": "Сохранить",
+    "saved": "Настройки сохранены",
+    "saveError": "Не удалось сохранить настройки.",
+    "languageRu": "Русский",
+    "languageEn": "Английский",
+    "username": "Имя пользователя",
+    "firstName": "Имя",
+    "lastName": "Фамилия",
+    "avatar": {
+      "title": "Аватар",
+      "upload": "Загрузить новый аватар",
+      "uploaded": "Аватар успешно загружен!",
+      "invalidFileType": "Недопустимый тип файла. Разрешены только изображения JPEG, PNG, WEBP.",
+      "uploadError": "Не удалось загрузить аватар."
+    }
   },
   "quiz": {
-    "start":       "Начать квиз",
-    "next":        "Следующий вопрос",
-    "correct":     "Верно!",
-    "incorrect":   "Неверно",
-    "question":    "Вопрос {{current}} из {{total}}",
-    "explanation": "Объяснение"
+    "start": "Начать квиз",
+    "next": "Следующий вопрос",
+    "correct": "Верно!",
+    "incorrect": "Неверно",
+    "question": "Вопрос {{current}} из {{total}}",
+    "explanation": "Объяснение",
+    "title": "Квизы",
+    "fetchError": "Не удалось загрузить квизы: {{message}}",
+    "totalQuestions": "Всего вопросов: {{count}}",
+    "noQuizzesFound": "Квизы не найдены."
+  },
+  "quizzes": {
+    "title": "Список квизов"
   },
   "auth": {
-    "login":       "Войти",
-    "logout":      "Выйти",
-    "email":       "Email",
-    "password":    "Пароль",
-    "google":      "Войти через Google",
-    "mailru":      "Войти через Mail.ru",
-    "error":       "Неверный email или пароль"
+    "login": "Войти",
+    "logout": "Выйти",
+    "email": "Email",
+    "emailOrLogin": "Email или логин",
+    "password": "Пароль",
+    "google": "Войти через Google",
+    "mailru": "Войти через Mail.ru",
+    "error": "Неверный email или пароль",
+    "register": "Регистрация",
+    "registerLink": "Зарегистрироваться",
+    "forgotPassword": "Забыли пароль?",
+    "forgotPasswordLink": "Забыли пароль?",
+    "sendResetLink": "Отправить ссылку для сброса",
+    "forgotPasswordSuccess": "Если ваш email зарегистрирован, вы получите ссылку для сброса пароля.",
+    "username": "Имя пользователя",
+    "confirmPassword": "Подтвердите пароль",
+    "changePassword": "Сменить пароль",
+    "currentPassword": "Текущий пароль",
+    "newPassword": "Новый пароль",
+    "passwordChanged": "Пароль успешно изменен",
+    "registerError": "Ошибка регистрации."
+  },
+  "groups": {
+    "title": "Группы",
+    "createGroup": "Создать группу",
+    "editGroup": "Редактировать группу",
+    "groupName": "Название группы",
+    "noGroups": "Не состоит ни в одной группе",
+    "addMember": "Добавить участника",
+    "removeMember": "Удалить из группы",
+    "setCurator": "Назначить куратором",
+    "curator": "Куратор",
+    "member": "Участник",
+    "memberCount": "Участников",
+    "searchUser": "Поиск по имени или email",
+    "table": {
+      "name": "Имя",
+      "role": "Роль в группе",
+      "joined": "Дата вступления"
+    },
+    "confirm": {
+      "remove": "Удалить {{username}} из группы?",
+      "setCurator": "Назначить {{username}} куратором группы?"
+    }
+  },
+  "admin": {
+    "tabs": {
+      "quizzes": "Квизы",
+      "questions": "Вопросы",
+      "users": "Пользователи",
+      "groups": "Группы"
+    },
+    "users": {
+      "title": "Управление пользователями",
+      "fetchError": "Не удалось получить список пользователей.",
+      "searchPlaceholder": "Поиск по логину, email, имени...",
+      "filterByRole": "Фильтр по роли",
+      "filterByStatus": "Фильтр по статусу",
+      "noUsersFound": "Пользователи не найдены.",
+      "role": "Роль",
+      "status": "Статус",
+      "blocked": "Заблокирован",
+      "active": "Активен",
+      "role": {
+        "all": "Все роли",
+        "student": "Студент",
+        "admin": "Администратор"
+      },
+      "blocked": {
+        "all": "Все статусы",
+        "true": "Заблокирован",
+        "false": "Активен"
+      }
+    }
+  },
+  "common": {
+      "search": "Поиск",
+      "edit": "Редактировать",
+      "create": "Создать",
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "add": "Добавить",
+      "createdAt": "Дата создания",
+      "or": "или",
+      "go": "Перейти"
+  },
+  "validation": {
+    "usernameRequired": "Требуется Email или логин.",
+    "emailRequired": "Требуется Email.",
+    "invalidEmail": "Неверный формат Email.",
+    "passwordRequired": "Требуется пароль.",
+    "confirmPasswordRequired": "Пожалуйста, подтвердите пароль.",
+    "passwordsDoNotMatch": "Пароли не совпадают.",
+    "currentPasswordRequired": "Требуется текущий пароль.",
+    "newPasswordRequired": "Требуется новый пароль.",
+    "confirmNewPasswordRequired": "Пожалуйста, подтвердите новый пароль."
+  },
+  "dashboard": {
+    "quizzesDescription": "Проверьте свои знания с помощью интерактивных квизов.",
+    "dictionaryDescription": "Изучайте новые слова на санскрите.",
+    "statisticsDescription": "Отслеживайте свой прогресс и достижения.",
+    "leaderboardDescription": "Соревнуйтесь с другими и смотрите свой рейтинг.",
+    "settingsDescription": "Управляйте своим профилем и настройками приложения.",
+    "adminDescription": "Доступ к административным инструментам и функциям.",
+    "grammarDescription": "Квизы по грамматике: склонения и спряжения.",
+    "vocabularyDescription": "Квизы на знание лексики."
+  },
+  "home": {
+    "title": "SamskrtamApp",
+    "subtitle": "Learn Sanskrit with interactive quizzes and tools.",
+    "paniniDescription": "Панини (IV–III вв. до н.э.) — великий санскритский грамматист, автор «Аштадхьяи» — одной из самых совершенных грамматик в истории языкознания. Его труд до сих пор остаётся эталоном лингвистического анализа.",
+    "paniniAlt": "Панини — грамматист санскрита",
+    "startLearning": "Начать обучение",
+    "learnMore": "Узнать больше",
+    "footerTagline": "Платформа изучения санскрита",
+    "features": {
+      "quizzes": { "title": "Квизы по грамматике и лексике", "description": "Склонения, спряжения, словарный запас — всё в интерактивном формате с разбором ошибок." },
+      "dictionary": { "title": "Словарь санскрита", "description": "Поиск по словам, транслитерация, примеры употребления." },
+      "leaderboard": { "title": "Лидерборд", "description": "Соревнуйтесь с другими учащимися — глобальный рейтинг и рейтинг внутри группы." }
+    }
   }
 }
 ```
@@ -1116,19 +1260,19 @@ VITE_KEYCLOAK_CLIENT_ID=samskrtam-frontend
 ## 12. Acceptance Criteria
 
 ### Навигация и аутентификация
-- [ ] `/` для незалогиненного пользователя → HomePage с PublicHeader
-- [ ] `/` для залогиненного пользователя → DashboardPage с Header
-- [ ] PublicHeader: кнопка "Войти" в правом верхнем углу ведёт на `/login`
+- [ ] `/` для незалогиненного пользователя → HomePage с кнопкой "Вход"
+- [ ] `/` для залогиненного пользователя → автоматический редирект на `/dashboard`
 - [ ] Header: кнопка "Выйти" в правом верхнем углу — очищает authStore и редиректит на `/`
+- [ ] Header: при клике на поле пользователя (аватар/имя) происходит переход на `/settings`
 - [ ] После logout — пользователь видит HomePage (не DashboardPage)
-- [ ] Изображение Панини отображается на HomePage
-- [ ] Кнопка "Начать обучение" ведёт на `/login`
-- [ ] Кнопка "Узнать больше" плавно скроллит к секции features
+- [ ] Кнопка "Вход" на HomePage ведёт на `/login`
+- [ ] Плитка "Настройки" удалена с DashboardPage.
+- [ ] Пункт "Настройки" удален из Sidebar.
 
 ### Auth
-- [ ] Логин через форму → ROPC → JWT в authStore → редирект на /
-- [ ] Кнопка Google → редирект → /auth/callback → JWT → редирект на /
-- [ ] Кнопка Mail.ru → редирект → /auth/callback → JWT → редирект на /
+- [ ] Логин через форму → ROPC → получение токенов → вызов `/api/v1/users/me` → сохранение токенов и User в authStore → редирект на /dashboard
+- [ ] Кнопка Google → редирект → /auth/callback → получение токенов → вызов `/api/v1/users/me` → сохранение токенов и User в authStore → редирект на /dashboard
+- [ ] Кнопка Mail.ru → редирект → /auth/callback → получение токенов → вызов `/api/v1/users/me` → сохранение токенов и User в authStore → редирект на /dashboard
 - [ ] Регистрация → письмо верификации → страница подтверждения
 - [ ] Восстановление пароля → всегда показывает одно сообщение (без раскрытия)
 - [ ] Смена пароля → требует текущий пароль → успех/ошибка
@@ -1162,7 +1306,7 @@ VITE_KEYCLOAK_CLIENT_ID=samskrtam-frontend
 
 ## 13. Открытые вопросы
 
-- [x] Тема — обе с переключателем: `lara-light-blue` (по умолчанию) и `lara-dark-blue`, динамическое переключение через `#theme-link`
+- [x] Тема — обе с переключателем: `lara-light-amber` (по умолчанию) и `lara-dark-amber`, динамическое переключение через `#theme-link`
 - [ ] Шрифт для деванагари — Noto Sans Devanagari?
 - [ ] Keycloak JS adapter или самописный OAuth2 флоу?
 - [ ] PWA (оффлайн режим для словаря)?
