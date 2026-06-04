@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Глобальный фильтр Order -2.
@@ -20,15 +21,12 @@ import java.util.Optional;
  * <p>Извлекает данные из валидного JWT и добавляет downstream-заголовки:
  * <ul>
  *   <li>{@code X-User-Id} — UUID пользователя (JWT subject)
- *   <li>{@code X-User-Role} — ADMIN | STUDENT (из realm_access.roles)
+ *   <li>{@code X-User-Roles} — список ролей через запятую (из realm_access.roles)
  *   <li>{@code X-User-Locale} — ru | en (из claim "locale", по умолчанию "ru")
  * </ul>
  *
  * <p>Для публичных маршрутов (/api/v1/auth/**) principal отсутствует —
  * запрос пропускается без заголовков.
- *
- * <p>Роль определяется явным поиском "ADMIN" в списке ролей,
- * а не по индексу — пользователь может иметь несколько ролей.
  */
 @Slf4j
 @Component
@@ -43,16 +41,16 @@ public class IdentityHeaderFilter implements GlobalFilter, Ordered {
                 .flatMap(auth -> {
                     var jwt = auth.getToken();
                     String userId = jwt.getSubject();
-                    String role   = extractRole(jwt.getClaimAsMap("realm_access"));
+                    String roles  = extractRoles(jwt.getClaimAsMap("realm_access")); // Changed to extractRoles
                     String locale = Optional.ofNullable(jwt.getClaimAsString("locale"))
                             .orElse("ru");
 
-                    log.debug("IdentityHeaderFilter: userId={}, role={}, locale={}",
-                            userId, role, locale);
+                    log.debug("IdentityHeaderFilter: userId={}, roles={}, locale={}",
+                            userId, roles, locale);
 
                     ServerHttpRequest mutated = exchange.getRequest().mutate()
                             .header("X-User-Id",     userId)
-                            .header("X-User-Role",   role)
+                            .header("X-User-Roles",  roles) // Changed header name
                             .header("X-User-Locale", locale)
                             .build();
 
@@ -63,18 +61,17 @@ public class IdentityHeaderFilter implements GlobalFilter, Ordered {
     }
 
     /**
-     * Ищет роль "ADMIN" явно в списке realm_access.roles.
-     * Не полагается на порядок ролей — у пользователя может быть несколько.
+     * Извлекает все роли из realm_access.roles и возвращает их как строку, разделенную запятыми.
      */
-    private String extractRole(Map<String, Object> realmAccess) {
+    private String extractRoles(Map<String, Object> realmAccess) {
         if (realmAccess == null) {
-            return "STUDENT";
+            return "STUDENT"; // Default role if no realm_access
         }
         @SuppressWarnings("unchecked")
-        List<Object> roles = (List<Object>) realmAccess.getOrDefault("roles", List.of());
-        boolean isAdmin = roles.stream()
-                .anyMatch(r -> "ADMIN".equals(r.toString()));
-        return isAdmin ? "ADMIN" : "STUDENT";
+        List<String> roles = (List<String>) realmAccess.getOrDefault("roles", List.of("STUDENT")); // Default to STUDENT
+        return roles.stream()
+                .map(String::toUpperCase) // Ensure roles are uppercase
+                .collect(Collectors.joining(","));
     }
 
     @Override

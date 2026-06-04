@@ -32,7 +32,7 @@ AdminPage получает только **пункт в сайдбаре** с и
 | `/admin/flags` | FeatureFlagsPage | Да | ADMIN |
 | `/admin/flags/:name/history` | FlagHistoryPage | Да | ADMIN |
 
-Оба роута защищены `ProtectedRoute role="ADMIN"`. STUDENT при попытке доступа получает редирект на `/`.
+Оба роута защищены `ProtectedRoute allowedRoles={['ADMIN']}`. STUDENT при попытке доступа получает редирект на `/`.
 
 ---
 

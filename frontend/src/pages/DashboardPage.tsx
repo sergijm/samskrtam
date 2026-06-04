@@ -3,20 +3,27 @@ import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../store/authStore'; // Import useAuthStore
 
 export default function DashboardPage() {
   const { t } = useTranslation();
+  const { user } = useAuthStore(); // Get user from auth store
 
-  const dashboardItems = [
+  const baseDashboardItems = [
     { title: t('nav.grammar'), description: t('dashboard.grammarDescription'), icon: 'pi pi-book', link: '/quizzes/grammar' },
     { title: t('nav.vocabulary'), description: t('dashboard.vocabularyDescription'), icon: 'pi pi-book', link: '/quizzes/vocabulary' },
     { title: t('nav.dictionary'), description: t('dashboard.dictionaryDescription'), icon: 'pi pi-book', link: '/dictionary' },
     { title: t('nav.statistics'), description: t('dashboard.statisticsDescription'), icon: 'pi pi-chart-line', link: '/statistics' },
     { title: t('nav.leaderboard'), description: t('dashboard.leaderboardDescription'), icon: 'pi pi-trophy', link: '/leaderboard' },
-    // Removed the settings tile as per request
-    // { title: t('nav.settings'), description: t('dashboard.settingsDescription'), icon: 'pi pi-cog', link: '/settings' },
-    { title: t('nav.admin'), description: t('dashboard.adminDescription'), icon: 'pi pi-shield', link: '/admin/users' }, // Updated link to /admin/users
   ];
+
+  // Admin tile now links to /admin, which will be the AdminHomePage
+  const adminDashboardItem = { title: t('nav.admin'), description: t('dashboard.adminDescription'), icon: 'pi pi-shield', link: '/admin' };
+
+  // Filter dashboard items based on user roles
+  const dashboardItems = user?.roles.includes('ADMIN')
+    ? [...baseDashboardItems, adminDashboardItem]
+    : baseDashboardItems;
 
   return (
     <div className="flex flex-column align-items-center p-4">

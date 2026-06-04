@@ -18,13 +18,16 @@ import sm.selflearn.samskrtam.user.repository.UserProfileRepository;
 import sm.selflearn.samskrtam.user.dto.UpdateProfileRequest;
 import sm.selflearn.samskrtam.user.dto.UserProfileResponse;
 import sm.selflearn.samskrtam.user.dto.PublicProfileResponse;
-import sm.selflearn.samskrtam.user.model.UserRole; // UserRole остается в модели user-service
+import sm.selflearn.samskrtam.user.model.UserRole;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -64,11 +67,11 @@ public class UserProfileService {
     }
 
     @Transactional
-    public UserProfile getUserProfile(UUID userId) { // Изменен возвращаемый тип на UserProfile
+    public UserProfile getUserProfile(UUID userId) {
         Optional<UserProfile> existingProfile = profileRepository.findById(userId);
 
         if (existingProfile.isPresent()) {
-            return existingProfile.get(); // Возвращаем сущность
+            return existingProfile.get();
         } else {
             log.info("UserProfile not found locally for userId: {}. Attempting to provision from Keycloak.", userId);
             Map<String, Object> keycloakUser;
@@ -86,22 +89,20 @@ public class UserProfileService {
                     .firstName((String) keycloakUser.get("firstName"))
                     .lastName((String) keycloakUser.get("lastName"))
                     .blocked(!(Boolean) keycloakUser.getOrDefault("enabled", true))
-                    .role(determineUserRole(keycloakUser))
+                    .roles(determineUserRoles(keycloakUser)) // Changed to roles
                     .build();
 
             profileRepository.save(newProfile);
             log.info("Provisioned new UserProfile from Keycloak for userId: {}", userId);
-            return newProfile; // Возвращаем сущность
+            return newProfile;
         }
     }
 
-    // Новый метод для получения UserProfileResponse
     public UserProfileResponse getProfileResponse(UUID userId) {
-        UserProfile userProfile = getUserProfile(userId); // Получаем сущность
-        return mapUserProfileToResponse(userProfile); // Маппим в DTO
+        UserProfile userProfile = getUserProfile(userId);
+        return mapUserProfileToResponse(userProfile);
     }
 
-    // Метод для маппинга UserProfile в UserProfileResponse
     public UserProfileResponse mapUserProfileToResponse(UserProfile userProfile) {
         return new UserProfileResponse(
                 userProfile.getId(),
@@ -110,13 +111,12 @@ public class UserProfileService {
                 userProfile.getFirstName(),
                 userProfile.getLastName(),
                 userProfile.getAvatarUrl(),
-                userProfile.getRole(),
+                userProfile.getRoles(), // Changed to getRoles
                 userProfile.isBlocked(),
                 userProfile.getCreatedAt()
         );
     }
 
-    // Метод для маппинга UserProfile в PublicProfileResponse
     public PublicProfileResponse mapUserProfileToPublicResponse(UserProfile userProfile) {
         return new PublicProfileResponse(
                 userProfile.getId(),
@@ -124,18 +124,26 @@ public class UserProfileService {
                 userProfile.getFirstName(),
                 userProfile.getLastName(),
                 userProfile.getAvatarUrl(),
-                userProfile.getRole(),
+                userProfile.getRoles(), // Changed to getRoles
                 userProfile.getCreatedAt()
         );
     }
 
-
-    private UserRole determineUserRole(Map<String, Object> keycloakUser) {
+    private Set<UserRole> determineUserRoles(Map<String, Object> keycloakUser) {
+        Set<UserRole> roles = new HashSet<>();
+        @SuppressWarnings("unchecked")
         List<String> realmRoles = (List<String>) keycloakUser.get("realmRoles");
-        if (realmRoles != null && realmRoles.contains("ADMIN")) {
-            return UserRole.ADMIN;
+        if (realmRoles != null) {
+            if (realmRoles.contains("ADMIN")) {
+                roles.add(UserRole.ADMIN);
+            }
+            // Add other roles as needed, for now, all users are at least STUDENT
+            roles.add(UserRole.STUDENT);
+        } else {
+            // Default to STUDENT if no roles are found
+            roles.add(UserRole.STUDENT);
         }
-        return UserRole.STUDENT;
+        return roles;
     }
 
     private String toJson(Object object) {

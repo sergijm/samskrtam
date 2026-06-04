@@ -7,8 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 
-
 import java.time.Instant;
+import java.util.Set; // Import Set
 import java.util.UUID;
 
 @Entity
@@ -38,9 +38,11 @@ public class UserProfile {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    @ElementCollection(targetClass = UserRole.class, fetch = FetchType.EAGER) // Use ElementCollection for Set of enums
+    @CollectionTable(name = "user_roles", schema = "users", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private UserRole role;
+    @Column(name = "role", nullable = false)
+    private Set<UserRole> roles; // Changed from UserRole role to Set<UserRole> roles
 
     @Column(name = "blocked", nullable = false)
     private boolean blocked = false;

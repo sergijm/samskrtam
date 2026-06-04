@@ -26,16 +26,24 @@ const LoginPage = () => {
   const onSubmit = async (data) => {
     try {
       // 1. Authenticate and get tokens
+      console.log("LoginPage: Attempting ROPC login...");
       const authResponse = await authApi.login(data.username, data.password);
+      console.log("LoginPage: authApi.login response:", authResponse);
+
       const tokens = {
-        accessToken: authResponse.data.access_token, // Assuming access_token from response
-        refreshToken: authResponse.data.refresh_token, // Assuming refresh_token from response
+        accessToken: authResponse.accessToken,
+        refreshToken: authResponse.refreshToken,
       };
 
+      console.log("LoginPage: Tokens received:", tokens);
+      localStorage.setItem('accessToken', tokens.accessToken || ''); // Ensure it's stored for the next call
+      localStorage.setItem('refreshToken', tokens.refreshToken || ''); // Ensure it's stored
+
       // 2. Fetch user details using the new access token
-      // The axios interceptor should automatically attach the new access token for this request
+      console.log("LoginPage: Fetching user details with accessToken:", localStorage.getItem('accessToken'));
       const userResponse = await userApi.getMe();
       const user = userResponse.data;
+      console.log("LoginPage: User details received:", user);
 
       // 3. Log in the user with tokens and full user object
       login(tokens, user);

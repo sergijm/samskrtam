@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PrimeReactProvider } from 'primereact/api';
 
 // Pages
-import HomePage from './pages/HomePage'; // Import HomePage
+import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -17,6 +17,8 @@ import GroupCreatePage from './pages/GroupCreatePage';
 import GroupPage from './pages/GroupPage';
 import GroupEditPage from './pages/GroupEditPage';
 import AdminUsersPage from './pages/AdminUsersPage';
+import AdminHomePage from './pages/AdminHomePage'; // Import AdminHomePage
+import AdminGroupsPage from './pages/AdminGroupsPage'; // Import AdminGroupsPage
 import QuizzesPage from './pages/QuizzesPage';
 import QuizPage from './pages/QuizPage';
 
@@ -47,7 +49,7 @@ export default function App() {
             {/* Protected routes */}
             <Route path="/" element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
-                <Route path="dashboard" element={<DashboardPage />} /> {/* Dashboard is now at /dashboard */}
+                <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="settings/password" element={<ChangePasswordPage />} />
                 <Route path="users/:id" element={<UserProfilePage />} />
@@ -58,10 +60,12 @@ export default function App() {
                 
                 {/* Admin only routes */}
                 <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+                  <Route path="admin" element={<AdminHomePage />} /> {/* New Admin Home Page */}
+                  <Route path="admin/users" element={<AdminUsersPage />} />
+                  <Route path="admin/groups" element={<AdminGroupsPage />} /> {/* New Admin Groups Page */}
                   <Route path="groups" element={<GroupListPage />} />
                   <Route path="groups/new" element={<GroupCreatePage />} />
                   <Route path="groups/:id/edit" element={<GroupEditPage />} />
-                  <Route path="admin/users" element={<AdminUsersPage />} />
                 </Route>
               </Route>
             </Route>

@@ -5,7 +5,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
-  role: 'STUDENT' | 'ADMIN';
+  roles: ('STUDENT' | 'ADMIN')[]; // Changed from 'role' to 'roles' and made it an array of roles
   blocked: boolean;
   createdAt: string; // ISO 8601 string
   locale: 'ru' | 'en';

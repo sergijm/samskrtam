@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -90,22 +91,50 @@ public class KeycloakAdminService {
     }
 
     /**
-     * Fetches user details from Keycloak by user ID (sub).
+     * Fetches user details from Keycloak by user ID (sub), including realm roles.
      *
      * @param userId The UUID of the user in Keycloak.
-     * @return A Map containing user details from Keycloak.
+     * @return A Map containing user details from Keycloak, including a "realmRoles" list.
      */
     public Map<String, Object> findUserById(UUID userId) {
-        log.debug("Fetching user from Keycloak: userId={}", userId);
+        log.debug("KeycloakAdminService: Fetching user from Keycloak: userId={}", userId);
         try {
-            return restClient.get()
+            // 1. Fetch basic user representation
+            Map<String, Object> userRepresentation = restClient.get()
                     .uri(adminUrl() + "/users/" + userId)
                     .header("Authorization", "Bearer " + tokenProvider.getToken())
                     .retrieve()
-                    .body(Map.class); // Keycloak returns a JSON object for the user
+                    .body(Map.class);
+
+            if (userRepresentation == null) {
+                log.warn("KeycloakAdminService: User {} not found in Keycloak.", userId);
+                return null;
+            }
+            log.debug("KeycloakAdminService: User representation for {}: {}", userId, userRepresentation);
+
+            // 2. Fetch realm role mappings
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> roleMappings = restClient.get()
+                    .uri(adminUrl() + "/users/" + userId + "/role-mappings/realm")
+                    .header("Authorization", "Bearer " + tokenProvider.getToken())
+                    .retrieve()
+                    .body(List.class);
+
+            // 3. Extract role names and add to userRepresentation
+            List<String> realmRoles = roleMappings.stream()
+                    .map(role -> (String) role.get("name"))
+                    .collect(Collectors.toList());
+
+            userRepresentation.put("realmRoles", realmRoles);
+            log.debug("KeycloakAdminService: Realm roles for {}: {}", userId, realmRoles);
+
+            return userRepresentation;
         } catch (HttpClientErrorException.NotFound e) {
-            log.warn("User {} not found in Keycloak.", userId);
+            log.warn("KeycloakAdminService: User {} not found in Keycloak.", userId);
             return null; // Return null if user not found
+        } catch (Exception e) {
+            log.error("KeycloakAdminService: Failed to fetch user {} or their roles from Keycloak: {}", userId, e.getMessage(), e);
+            throw new OutboxProcessingException("Failed to fetch user or roles from Keycloak: " + userId, e);
         }
     }
 

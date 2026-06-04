@@ -13,10 +13,12 @@ const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    // User is authenticated but does not have the required role
-    // You might want to redirect to a '403 Forbidden' page
-    return <Navigate to="/" replace />;
+  if (allowedRoles && user) {
+    const userHasRequiredRole = allowedRoles.some(role => user.roles.includes(role));
+    if (!userHasRequiredRole) {
+      // User is authenticated but does not have any of the required roles
+      return <Navigate to="/" replace />;
+    }
   }
 
   return <Outlet />;

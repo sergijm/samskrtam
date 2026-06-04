@@ -27,7 +27,8 @@ public class UserProfileSpecification {
             }
 
             if (role != null) {
-                predicates.add(criteriaBuilder.equal(root.get("role"), role));
+                // To filter by a role within a Set<UserRole>
+                predicates.add(criteriaBuilder.isMember(role, root.get("roles")));
             }
 
             if (blocked != null) {

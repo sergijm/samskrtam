@@ -90,10 +90,10 @@ frontend/
     │   ├── ChangePasswordPage.tsx  ← спецификация в user-frontend.md
     │   ├── SettingsPage.tsx        ← спецификация в user-frontend.md
     │   ├── UserProfilePage.tsx     ← спецификация в user-frontend.md
-    │   ├── GroupListPage.tsx       ← спецификация в user-frontend.md
-    │   ├── GroupPage.tsx           ← спецификация в user-frontend.md
-    │   ├── GroupCreatePage.tsx     ← спецификация в user-frontend.md
-    │   ├── GroupEditPage.tsx       ← спецификация в user-frontend.md
+    │   ├── GroupListPage.tsx       ← список групп (только ADMIN)
+    │   ├── GroupPage.tsx           ← страница группы
+    │   ├── GroupCreatePage.tsx     ← создание группы (только ADMIN)
+    │   ├── GroupEditPage.tsx       ← редактирование названия (ADMIN / CURATOR)
     │   ├── DashboardPage.tsx
     │   ├── QuizListPage.tsx
     │   ├── QuizPage.tsx
@@ -101,7 +101,9 @@ frontend/
     │   ├── DictionaryPage.tsx
     │   ├── StatisticsPage.tsx
     │   ├── LeaderboardPage.tsx
-    │   └── AdminPage.tsx
+    │   ├── AdminHomePage.tsx       // Новая страница для админки
+    │   ├── AdminUsersPage.tsx
+    │   └── AdminGroupsPage.tsx     // Новая страница для управления группами
     │
     ├── components/                 ← переиспользуемые компоненты
     │   ├── layout/
@@ -196,7 +198,9 @@ frontend/
 | `/groups/new` | GroupCreatePage | Да | ADMIN |
 | `/groups/:id` | GroupPage | Да | STUDENT, ADMIN |
 | `/groups/:id/edit` | GroupEditPage | Да | ADMIN, CURATOR |
-| `/admin` | AdminPage | Да | ADMIN |
+| `/admin` | AdminHomePage | Да | ADMIN | // Изменено: теперь ведет на AdminHomePage
+| `/admin/users` | AdminUsersPage | Да | ADMIN |
+| `/admin/groups` | AdminGroupsPage | Да | ADMIN | // Новый роут для управления группами
 | `/admin/flags` | FeatureFlagsPage | Да | ADMIN |
 | `/admin/flags/:name/history` | FlagHistoryPage | Да | ADMIN |
 
@@ -435,7 +439,7 @@ export default HomePage;
 - Плитка "Словарь" (ведет на `/dictionary`)
 - Плитка "Статистика" (ведет на `/statistics`)
 - Плитка "Лидерборд" (ведет на `/leaderboard`)
-- Плитка "Администрирование" (ведет на `/admin/users`, только для ADMIN)
+- Плитка "Администрирование" (ведет на `/admin`, только для ADMIN)
 
 ---
 
@@ -604,6 +608,29 @@ ERROR      → сообщение об ошибке (API недоступен и
 - LeaderboardTable: место, имя, очки, сессии
 - Текущий пользователь выделен
 - Время последнего обновления
+
+---
+
+### AdminHomePage (`/admin`)
+
+**Назначение:** стартовая страница для административных функций.
+
+**Элементы:**
+- Плитка "Управление пользователями" (ведет на `/admin/users`)
+- Плитка "Управление группами" (ведет на `/admin/groups`)
+- Плитка "Feature Flags" (ведет на `/admin/flags`)
+
+---
+
+### AdminUsersPage (`/admin/users`)
+
+**Назначение:** управление пользователями.
+
+---
+
+### AdminGroupsPage (`/admin/groups`)
+
+**Назначение:** управление группами.
 
 ---
 
@@ -891,54 +918,6 @@ export const useLocaleStore = create<LocaleState>()(
     }
   )
 );
-```
-
-```typescript
-// components/common/ThemeSwitcher.tsx
-import React from 'react';
-import { InputSwitch } from 'primereact/inputswitch';
-import { useThemeStore } from '../../store/themeStore';
-import { useTranslation } from 'react-i18next';
-
-export const ThemeSwitcher = () => {
-  const { theme, setTheme } = useThemeStore();
-  const { t } = useTranslation();
-
-  return (
-    <div className="flex align-items-center gap-2">
-      <i className="pi pi-sun" />
-      <InputSwitch
-        checked={theme === 'dark'}
-        onChange={(e) => setTheme(e.value ? 'dark' : 'light')}
-        aria-label={t('settings.toggleTheme')}
-      />
-      <i className="pi pi-moon" />
-    </div>
-  );
-};
-
-// components/common/LocaleSwitcher.tsx
-import React from 'react';
-import { SelectButton } from 'primereact/selectbutton';
-import { useLocaleStore } from '../../store/localeStore';
-
-export const LocaleSwitcher = () => {
-  const { locale, setLocale } = useLocaleStore();
-
-  const options = [
-    { label: 'RU', value: 'ru' },
-    { label: 'EN', value: 'en' },
-  ];
-
-  return (
-    <SelectButton
-      value={locale}
-      onChange={(e) => e.value && setLocale(e.value)}
-      options={options}
-      aria-label="Language"
-    />
-  );
-};
 ```
 
 `ThemeSwitcher` и `LocaleSwitcher` размещаются в `Header.tsx` (для авторизованных пользователей) и на `LoginPage` и `HomePage` (для всех остальных).

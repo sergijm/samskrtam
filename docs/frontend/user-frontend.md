@@ -71,7 +71,7 @@ export interface User {
   id:       string;
   username: string;
   email:    string;
-  role:     'STUDENT' | 'ADMIN';
+  roles:    ('STUDENT' | 'ADMIN')[]; // Изменено: теперь массив ролей
   locale:   'ru' | 'en';
   theme:    'light' | 'dark';
 }
@@ -333,7 +333,7 @@ useEffect(() => {
 
 **Элементы:**
 - `UserAvatar` — имя + email
-- Глобальная роль (бейдж STUDENT / ADMIN)
+- Глобальные роли (бейджи STUDENT / ADMIN)
 - **Секция "Группы"**: горизонтальный ряд `UserGroupChips`
   - Каждый чип — название группы
   - Чип куратора — с иконкой `pi-star` и другим цветом (`severity="warning"`)
@@ -544,7 +544,7 @@ export const UserGroupChips = ({ userId }: { userId: string }) => {
 ## 9. Acceptance Criteria
 
 ### Пользователи
-- [ ] UserProfilePage показывает имя, email, глобальную роль
+- [ ] UserProfilePage показывает имя, email, глобальные роли
 - [ ] Секция "Группы" отображает горизонтальные чипсы групп пользователя
 - [ ] Чип куратора отличается визуально (иконка `pi-star`, другой цвет)
 - [ ] Клик на чип открывает `/groups/:groupId`
@@ -562,7 +562,7 @@ export const UserGroupChips = ({ userId }: { userId: string }) => {
 - [ ] CURATOR может назначить куратором другого участника (себя заменяет)
 - [ ] После смены куратора — старый куратор становится MEMBER, новый — CURATOR
 - [ ] Кнопки управления скрыты для MEMBER
-- [ ] GroupListPage доступна только ADMIN (`ProtectedRoute role="ADMIN"`)
+- [ ] GroupListPage доступна только ADMIN (`ProtectedRoute allowedRoles={['ADMIN']}`)
 - [ ] GroupPage доступна STUDENT только если он является участником или куратором
 
 ### Настройки

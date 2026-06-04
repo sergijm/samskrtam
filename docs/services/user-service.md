@@ -99,7 +99,7 @@ public class UserProfileService {
                 .build());
 
         log.debug("Profile updated and outbox event created: userId={}", userId);
-        return UserProfileResponse.from(profile);
+        return UserProfileResponse.from(profile); // TODO: Update to use mapUserProfileToResponse
     }
 }
 
@@ -286,7 +286,7 @@ POST   /api/v1/admin/users/{id}/unblock      → разблокировать п
   "firstName": "Иван",
   "lastName":  "Петров",
   "avatarUrl": "http://minio:9000/avatars/uuid/uuid",
-  "role":      "STUDENT",
+  "roles":     ["STUDENT", "ADMIN"], // Изменено: теперь массив ролей
   "blocked":   false,
   "createdAt": "2025-01-01T00:00:00Z"
 }

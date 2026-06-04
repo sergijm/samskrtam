@@ -15,8 +15,10 @@ import sm.selflearn.samskrtam.user.model.UserRole;
 import sm.selflearn.samskrtam.user.repository.OutboxEventRepository;
 import sm.selflearn.samskrtam.user.repository.UserProfileRepository;
 
-
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -39,13 +41,15 @@ public class RegistrationService {
             throw new UserAlreadyExistsException("User with email '" + request.email() + "' already exists.");
         }
 
+        Set<UserRole> defaultRoles = new HashSet<>(Collections.singletonList(UserRole.STUDENT));
+
         UserProfile newUser = UserProfile.builder()
                 .id(UUID.randomUUID())
                 .username(request.username())
                 .email(request.email())
                 .firstName(request.firstName())
                 .lastName(request.lastName())
-                .role(UserRole.STUDENT)
+                .roles(defaultRoles) // Changed to roles
                 .blocked(false)
                 .build();
 

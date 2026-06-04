@@ -1,7 +1,8 @@
 package sm.selflearn.samskrtam.user.dto;
 
-import sm.selflearn.samskrtam.user.model.UserRole; // Исправлен импорт на sm.selflearn.samskrtam.user.model.UserRole
+import sm.selflearn.samskrtam.user.model.UserRole;
 import java.time.Instant;
+import java.util.Set; // Import Set
 import java.util.UUID;
 
 public record PublicProfileResponse(
@@ -10,10 +11,10 @@ public record PublicProfileResponse(
         String firstName,
         String lastName,
         String avatarUrl,
-        UserRole role,
+        Set<UserRole> roles, // Changed from UserRole role to Set<UserRole> roles
         Instant createdAt
 ) {
-    // Метод from(UserProfile) удален, так как он зависит от UserProfile,
-    // которая не должна быть здесь.
-    // Логика конвертации будет реализована в user-service.
+    // Method from(UserProfile) removed, as it depends on UserProfile,
+    // which should not be here.
+    // Conversion logic will be implemented in user-service.
 }
