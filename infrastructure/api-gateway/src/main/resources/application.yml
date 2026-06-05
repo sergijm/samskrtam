@@ -52,4 +52,5 @@ logging:
     root: INFO
     sm.selflearn.samskrtam: DEBUG
     org.springframework.security: DEBUG
-    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway: TRACE
+    org.springframework.web: TRACE

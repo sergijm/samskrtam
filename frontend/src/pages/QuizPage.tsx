@@ -143,7 +143,7 @@ const QuizPage = () => {
           {currentQuestion.options.map((option) => (
             <div key={option.id} className="col-12 md:col-6">
               <Button
-                label={option.text} // Use option.text
+                label={option.formIast} // Use option.formIast instead of option.text
                 className={`w-full text-xl p-3 mb-3 ${selectedOptionId === option.id ? 'p-button-primary' : 'p-button-outlined'} ${
                   feedback && option.id === feedback.correctOptionId ? 'p-button-success' : ''
                 } ${feedback && selectedOptionId === option.id && !feedback.isCorrect ? 'p-button-danger' : ''}`}

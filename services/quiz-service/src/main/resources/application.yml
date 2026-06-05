@@ -1,5 +1,8 @@
 server:
   port: ${QUIZ_SERVICE_PORT:8082}
+  error:
+    include-stacktrace: always
+    include-exception: true
 
 spring:
   application:
@@ -33,7 +36,7 @@ spring:
       port: 6379
 
   kafka:
-    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -41,3 +44,12 @@ spring:
 content:
   service:
     url: ${CONTENT_SERVICE_URL:http://content-service:8081}
+
+logging:
+  level:
+    root: INFO
+    sm.selflearn.samskrtam: DEBUG
+    org.springframework.kafka: DEBUG
+    org.apache.kafka: DEBUG
+    org.apache.kafka.clients: INFO
+    org.springframework.web: TRACE

@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.spring.kafka)
     implementation(libs.postgresql.jdbc)
     implementation(libs.flyway.core)
+    implementation(libs.flyway.postgresql) // Добавлена зависимость для поддержки PostgreSQL
 
     implementation(project(":shared:common-dtos")) // Обновлено на common-dtos
     implementation(project(":shared:kafka-events"))

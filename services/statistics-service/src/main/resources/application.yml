@@ -14,9 +14,18 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASSWORD}
   flyway:
-    url: ${SPRING_FLYWAY_URL}
+    enabled: true # Включаем автоматическую конфигурацию Flyway
+    url: ${SPRING_DATASOURCE_URL} # Используем SPRING_DATASOURCE_URL для Flyway
     user: ${DB_USER}
     password: ${DB_PASSWORD}
     schemas: statistics
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+
+logging:
+  level:
+    root: INFO
+    sm.selflearn.samskrtam: DEBUG
+    org.springframework.kafka: DEBUG
+    org.apache.kafka: DEBUG
+    org.apache.kafka.clients: INFO
