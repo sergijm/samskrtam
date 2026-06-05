@@ -3,15 +3,17 @@ package sm.selflearn.samskrtam.user.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import sm.selflearn.samskrtam.user.dto.CreateGroupRequest;
 import sm.selflearn.samskrtam.user.dto.Group;
 import sm.selflearn.samskrtam.user.service.GroupService;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/groups")
@@ -27,5 +29,18 @@ public class GroupController {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     public ResponseEntity<List<Group>> getGroups() {
         return ResponseEntity.ok(groupService.getAllGroups());
+    }
+
+    @PostMapping
+    @Operation(summary = "Create a new group")
+    @ApiResponse(responseCode = "201", description = "Group created successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid group data")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "Forbidden (requires ADMIN role)")
+    public ResponseEntity<Group> createGroup(
+            @RequestHeader("X-User-Id") UUID userId, // Curator ID
+            @Valid @RequestBody CreateGroupRequest request) {
+        Group newGroup = groupService.createGroup(request, userId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(newGroup);
     }
 }

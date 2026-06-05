@@ -114,15 +114,15 @@
       "filterByRole": "Фильтр по роли",
       "filterByStatus": "Фильтр по статусу",
       "noUsersFound": "Пользователи не найдены.",
-      "role": "Роль",
-      "status": "Статус",
-      "blocked": "Заблокирован",
-      "active": "Активен",
       "role": {
+        "column-title": "Роль",
         "all": "Все роли",
         "student": "Студент",
         "admin": "Администратор"
       },
+      "status": "Статус",
+      "blocked": "Заблокирован",
+      "active": "Активен",
       "blocked": {
         "all": "Все статусы",
         "true": "Заблокирован",

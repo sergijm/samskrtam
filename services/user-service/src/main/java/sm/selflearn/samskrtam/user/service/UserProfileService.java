@@ -71,6 +71,7 @@ public class UserProfileService {
         Optional<UserProfile> existingProfile = profileRepository.findById(userId);
 
         if (existingProfile.isPresent()) {
+            log.debug("UserProfile found locally for userId: {}. Roles: {}", userId, existingProfile.get().getRoles());
             return existingProfile.get();
         } else {
             log.info("UserProfile not found locally for userId: {}. Attempting to provision from Keycloak.", userId);
@@ -89,11 +90,11 @@ public class UserProfileService {
                     .firstName((String) keycloakUser.get("firstName"))
                     .lastName((String) keycloakUser.get("lastName"))
                     .blocked(!(Boolean) keycloakUser.getOrDefault("enabled", true))
-                    .roles(determineUserRoles(keycloakUser)) // Changed to roles
+                    .roles(determineUserRoles(keycloakUser))
                     .build();
 
             profileRepository.save(newProfile);
-            log.info("Provisioned new UserProfile from Keycloak for userId: {}", userId);
+            log.info("Provisioned new UserProfile from Keycloak for userId: {}. Roles: {}", userId, newProfile.getRoles());
             return newProfile;
         }
     }
@@ -111,7 +112,7 @@ public class UserProfileService {
                 userProfile.getFirstName(),
                 userProfile.getLastName(),
                 userProfile.getAvatarUrl(),
-                userProfile.getRoles(), // Changed to getRoles
+                userProfile.getRoles(),
                 userProfile.isBlocked(),
                 userProfile.getCreatedAt()
         );
@@ -124,7 +125,7 @@ public class UserProfileService {
                 userProfile.getFirstName(),
                 userProfile.getLastName(),
                 userProfile.getAvatarUrl(),
-                userProfile.getRoles(), // Changed to getRoles
+                userProfile.getRoles(),
                 userProfile.getCreatedAt()
         );
     }
@@ -133,16 +134,20 @@ public class UserProfileService {
         Set<UserRole> roles = new HashSet<>();
         @SuppressWarnings("unchecked")
         List<String> realmRoles = (List<String>) keycloakUser.get("realmRoles");
+
+        log.debug("UserProfileService: Keycloak realmRoles received for user: {}", realmRoles);
+
         if (realmRoles != null) {
             if (realmRoles.contains("ADMIN")) {
                 roles.add(UserRole.ADMIN);
             }
-            // Add other roles as needed, for now, all users are at least STUDENT
+            // Always add STUDENT role if no specific roles are found or if ADMIN is present
             roles.add(UserRole.STUDENT);
         } else {
-            // Default to STUDENT if no roles are found
+            // Default to STUDENT if no roles are found at all
             roles.add(UserRole.STUDENT);
         }
+        log.debug("UserProfileService: Determined roles for user: {}", roles);
         return roles;
     }
 

@@ -115,15 +115,15 @@
       "filterByRole": "Filter by Role",
       "filterByStatus": "Filter by Status",
       "noUsersFound": "No users found.",
-      "role": "Role",
-      "status": "Status",
-      "blocked": "Blocked",
-      "active": "Active",
       "role": {
+        "column-title": "Role",
         "all": "All Roles",
         "student": "Student",
         "admin": "Admin"
       },
+      "status": "Status",
+      "blocked": "Blocked",
+      "active": "Active",
       "blocked": {
         "all": "All Statuses",
         "true": "Blocked",

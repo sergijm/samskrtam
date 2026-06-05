@@ -47,13 +47,17 @@ public class GatewayRoutesConfig {
                         .and().not(p -> p.path("/api/v1/auth/oauth2/**").or().path("/api/v1/auth/login"))
                         .uri(userServiceUrl))
 
+                // ── Admin Users (требует JWT и ADMIN роль) ──────────────────────────────────────────
+                .route("admin-users", r -> r
+                        .path("/api/v1/admin/users/**")
+                        .uri(userServiceUrl))
+
                 // ── Users (требует JWT) ──────────────────────────────────────────
                 .route("users", r -> r
                         .path("/api/v1/users/**")
                         .uri(userServiceUrl))
 
                 // ── Groups (требует JWT) ─────────────────────────────────────────
-                // Выносим маршруты групп из ADMIN-блока, чтобы они могли быть доступны для других ролей
                 .route("groups", r -> r
                         .path("/api/v1/groups/**")
                         .uri(userServiceUrl))

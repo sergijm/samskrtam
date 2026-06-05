@@ -126,7 +126,7 @@ const AdminUsersPage = () => {
           <Column field="email" header={t('auth.email')} sortable />
           <Column field="firstName" header={t('settings.firstName')} sortable />
           <Column field="lastName" header={t('settings.lastName')} sortable />
-          <Column field="role" header={t('admin.users.role')} sortable />
+          <Column field="roles" header={t('admin.users.role.column-title')} sortable /> {/* Changed header key */}
           <Column field="blocked" header={t('admin.users.status')} body={statusBodyTemplate} sortable />
           <Column field="createdAt" header={t('common.createdAt')} sortable />
           <Column body={actionsBodyTemplate} header={t('common.actions')} style={{ width: '10rem' }} />
