@@ -6,7 +6,10 @@ import { UpdateProfilePayload } from '../types/user'; // Import the new payload 
 export const useMe = () =>
   useQuery({
     queryKey: ['users', 'me'],
-    queryFn: userApi.getMe,
+    queryFn: async () => {
+      const response = await userApi.getMe();
+      return response.data; // Return response.data
+    },
     // Keep the user data fresh for a while, but refetch in the background
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
@@ -14,21 +17,30 @@ export const useMe = () =>
 export const useUser = (userId: string) =>
   useQuery({
     queryKey: ['users', userId],
-    queryFn: () => userApi.getUser(userId),
+    queryFn: async () => {
+      const response = await userApi.getUser(userId);
+      return response.data; // Return response.data
+    },
     enabled: !!userId,
   });
 
 export const useUserGroups = (userId: string) =>
   useQuery({
     queryKey: ['users', userId, 'groups'],
-    queryFn: () => userApi.getUserGroups(userId),
+    queryFn: async () => {
+      const response = await userApi.getUserGroups(userId);
+      return response.data; // Return response.data
+    },
     enabled: !!userId,
   });
 
 export const useUpdateProfileDetails = () => { // Renamed hook
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: UpdateProfilePayload) => userApi.updateProfileDetails(data), // Use new API method and payload
+    mutationFn: async (data: UpdateProfilePayload) => {
+      const response = await userApi.updateProfileDetails(data);
+      return response.data; // Return response.data
+    },
     onSuccess: (updatedUser) => {
       // Update the 'me' query data immediately
       queryClient.setQueryData(['users', 'me'], updatedUser);
@@ -38,14 +50,20 @@ export const useUpdateProfileDetails = () => { // Renamed hook
 
 export const useGenerateAvatarUploadUrl = () => {
   return useMutation({
-    mutationFn: (contentType: string) => userApi.generateUploadUrl(contentType),
+    mutationFn: async (contentType: string) => {
+      const response = await userApi.generateUploadUrl(contentType);
+      return response.data; // Return response.data
+    },
   });
 };
 
 export const useConfirmAvatarUpload = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (objectKey: string) => userApi.confirmAvatarUpload(objectKey),
+    mutationFn: async (objectKey: string) => {
+      const response = await userApi.confirmAvatarUpload(objectKey);
+      return response.data; // Return response.data
+    },
     onSuccess: (data) => {
       // Invalidate 'me' query to refetch updated avatarUrl
       queryClient.invalidateQueries({ queryKey: ['users', 'me'] });

@@ -461,13 +461,15 @@ sm/selflearn/samskrtam/user/
 ├── controller/
 │   ├── UserController.java          ← /users/me, /users/{id}
 │   ├── RegistrationController.java  ← /users/register, /users/forgot-password
-│   └── AdminUserController.java     ← /admin/users/**
+│   ├── AdminUserController.java     ← /admin/users/**
+│   └── GroupController.java         // Новый контроллер для групп
 ├── service/
 │   ├── UserProfileService.java      ← CRUD профиля + Outbox
 │   ├── RegistrationService.java     ← регистрация через Keycloak Admin API
 │   ├── PasswordService.java         ← смена/восстановление пароля
 │   ├── UserBlockService.java        ← блокировка/разблокировка + Outbox
-│   └── AvatarService.java           ← MinIO presigned URL, confirm
+│   ├── AvatarService.java           ← MinIO presigned URL, confirm
+│   └── GroupService.java            // Новый сервис для групп
 ├── outbox/
 │   ├── OutboxProcessor.java         ← @Scheduled, читает PENDING события
 │   └── KeycloakAdminService.java    ← применяет события к Keycloak Admin API
@@ -490,7 +492,8 @@ sm/selflearn/samskrtam/user/
     ├── UploadUrlResponse.java
     ├── AvatarConfirmResponse.java
     ├── BlockUserResponse.java
-    └── AdminUserListResponse.java
+    ├── AdminUserListResponse.java
+    └── Group.java                   // DTO для группы
 ```
 
 ---

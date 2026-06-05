@@ -4,20 +4,29 @@ import { userApi } from '../api/userApi';
 export const useGroups = () =>
   useQuery({
     queryKey: ['groups'],
-    queryFn: userApi.getGroups,
+    queryFn: async () => {
+      const response = await userApi.getGroups();
+      return response.data; // Return response.data
+    },
   });
 
 export const useGroup = (groupId: string) =>
   useQuery({
     queryKey: ['groups', groupId],
-    queryFn: () => userApi.getGroup(groupId),
+    queryFn: async () => {
+      const response = await userApi.getGroup(groupId);
+      return response.data; // Return response.data
+    },
     enabled: !!groupId,
   });
 
 export const useCreateGroup = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (name: string) => userApi.createGroup(name),
+    mutationFn: async (name: string) => {
+      const response = await userApi.createGroup(name);
+      return response.data; // Return response.data
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['groups'] });
     },
@@ -27,7 +36,10 @@ export const useCreateGroup = () => {
 export const useRenameGroup = (groupId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (name: string) => userApi.renameGroup(groupId, name),
+    mutationFn: async (name: string) => {
+      const response = await userApi.renameGroup(groupId, name);
+      return response.data; // Return response.data
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['groups', groupId] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });

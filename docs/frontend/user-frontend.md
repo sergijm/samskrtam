@@ -17,7 +17,7 @@
 | `/settings` | SettingsPage | Да | STUDENT, ADMIN |
 | `/settings/password` | ChangePasswordPage | Да | STUDENT, ADMIN |
 | `/users/:id` | UserProfilePage | Да | STUDENT, ADMIN |
-| `/groups` | GroupListPage | Да | ADMIN |
+| `/groups` | AdminGroupsPage | Да | ADMIN | // Изменено: теперь ведет на AdminGroupsPage
 | `/groups/new` | GroupCreatePage | Да | ADMIN |
 | `/groups/:id` | GroupPage | Да | STUDENT, ADMIN |
 | `/groups/:id/edit` | GroupEditPage | Да | ADMIN, CURATOR |
@@ -35,7 +35,7 @@ src/
 │   ├── SettingsPage.tsx
 │   ├── ChangePasswordPage.tsx
 │   ├── UserProfilePage.tsx         ← профиль любого пользователя
-│   ├── GroupListPage.tsx           ← список групп (только ADMIN)
+│   ├── AdminGroupsPage.tsx         // Новая страница для списка групп
 │   ├── GroupPage.tsx               ← страница группы
 │   ├── GroupCreatePage.tsx         ← создание группы (только ADMIN)
 │   └── GroupEditPage.tsx           ← редактирование названия (ADMIN / CURATOR)
@@ -368,7 +368,7 @@ export const UserGroupChips = ({ userId }: { userId: string }) => {
 
 ---
 
-### GroupListPage (`/groups`)
+### AdminGroupsPage (`/admin/groups`)
 
 **Назначение:** список всех групп. Только для ADMIN.
 
@@ -530,10 +530,13 @@ export const UserGroupChips = ({ userId }: { userId: string }) => {
   },
   "admin": {
     "tabs": {
-      "quizzes":   "Квизы",
+      "quizzes":  "Квизы",
       "questions": "Вопросы",
-      "users":     "Пользователи",
-      "groups":    "Группы"
+      "users":    "Пользователи",
+      "groups":   "Группы"
+    },
+    "groups": { // Добавлен раздел для описания плитки групп
+      "description": "Управление группами пользователей."
     }
   }
 }
@@ -562,7 +565,7 @@ export const UserGroupChips = ({ userId }: { userId: string }) => {
 - [ ] CURATOR может назначить куратором другого участника (себя заменяет)
 - [ ] После смены куратора — старый куратор становится MEMBER, новый — CURATOR
 - [ ] Кнопки управления скрыты для MEMBER
-- [ ] GroupListPage доступна только ADMIN (`ProtectedRoute allowedRoles={['ADMIN']}`)
+- [ ] AdminGroupsPage доступна только ADMIN (`ProtectedRoute allowedRoles={['ADMIN']}`)
 - [ ] GroupPage доступна STUDENT только если он является участником или куратором
 
 ### Настройки

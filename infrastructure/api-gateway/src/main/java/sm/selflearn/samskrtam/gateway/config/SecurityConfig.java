@@ -72,6 +72,8 @@ public class SecurityConfig {
                         .pathMatchers("/api/v1/content/public/**").authenticated()
                         // Список квизов — любой аутентифицированный
                         .pathMatchers("/api/v1/content/quizzes").authenticated()
+                        // Группы - любой аутентифицированный пользователь
+                        .pathMatchers("/api/v1/groups/**").authenticated() // Added for authenticated access to groups
                         // Квизы, словарь, статистика — любой аутентифицированный
                         .pathMatchers("/api/**").authenticated()
 

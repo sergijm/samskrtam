@@ -194,7 +194,7 @@ frontend/
 | `/settings/password` | ChangePasswordPage | Да | STUDENT, ADMIN |
 | `/settings` | SettingsPage | Да | STUDENT, ADMIN |
 | `/users/:id` | UserProfilePage | Да | STUDENT, ADMIN |
-| `/groups` | GroupListPage | Да | ADMIN |
+| `/groups` | AdminGroupsPage | Да | ADMIN | // Изменено: теперь ведет на AdminGroupsPage
 | `/groups/new` | GroupCreatePage | Да | ADMIN |
 | `/groups/:id` | GroupPage | Да | STUDENT, ADMIN |
 | `/groups/:id/edit` | GroupEditPage | Да | ADMIN, CURATOR |

@@ -1,85 +1,92 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
-import { InputText } from 'primereact/inputtext';
+import { Tag } from 'primereact/tag';
 import { useTranslation } from 'react-i18next';
-import { GroupMember } from '../../types/user';
-import GroupCuratorBadge from './GroupCuratorBadge';
-import { useAuthStore } from '../../store/authStore';
+import { UserGroupSummary, GroupMember } from '../../types/user'; // Import GroupMember
 import { useRemoveMember, useSetCurator } from '../../hooks/useGroups';
-import { confirmDialog } from 'primereact/confirmdialog';
+import { confirmDialog } from 'primereact/confirmdialog'; // Import confirmDialog
 
 interface GroupMembersTableProps {
   groupId: string;
   members: GroupMember[];
   curatorId: string;
+  canManage: boolean;
+  isCurator: boolean;
 }
 
-const GroupMembersTable = ({ groupId, members, curatorId }: GroupMembersTableProps) => {
+const GroupMembersTable = ({ groupId, members, curatorId, canManage, isCurator }: GroupMembersTableProps) => {
   const { t } = useTranslation();
-  const [globalFilter, setGlobalFilter] = useState('');
-  const currentUser = useAuthStore((state) => state.user);
   const removeMemberMutation = useRemoveMember(groupId);
   const setCuratorMutation = useSetCurator(groupId);
 
-  const canManage = currentUser?.role === 'ADMIN' || currentUser?.id === curatorId;
+  const roleBodyTemplate = (rowData: GroupMember) => {
+    return rowData.userId === curatorId ? (
+      <Tag value={t('groups.curator')} severity="warning" />
+    ) : (
+      <Tag value={t('groups.member')} severity="info" />
+    );
+  };
 
-  const confirmRemove = (member: GroupMember) => {
+  const dateBodyTemplate = (rowData: GroupMember) => {
+    return new Date(rowData.joinedAt).toLocaleDateString();
+  };
+
+  const confirmRemoveMember = (member: GroupMember) => {
     confirmDialog({
       message: t('groups.confirm.remove', { username: member.username }),
-      header: 'Confirmation',
+      header: t('common.confirm'),
       icon: 'pi pi-exclamation-triangle',
+      acceptClassName: 'p-button-danger',
       accept: () => removeMemberMutation.mutate(member.userId),
     });
   };
 
   const confirmSetCurator = (member: GroupMember) => {
     confirmDialog({
-        message: t('groups.confirm.setCurator', { username: member.username }),
-        header: 'Confirmation',
-        icon: 'pi pi-question-circle',
-        accept: () => setCuratorMutation.mutate(member.userId),
+      message: t('groups.confirm.setCurator', { username: member.username }),
+      header: t('common.confirm'),
+      icon: 'pi pi-info-circle',
+      accept: () => setCuratorMutation.mutate(member.userId),
     });
   };
 
-  const roleTemplate = (rowData: GroupMember) => {
-    return rowData.groupRole === 'CURATOR' ? <GroupCuratorBadge /> : t('groups.member');
-  };
-
-  const actionsTemplate = (rowData: GroupMember) => {
-    if (!canManage) return null;
-    // Cannot remove self if curator, cannot make self curator again
-    const isSelf = rowData.userId === currentUser?.id;
-    const isCurator = rowData.groupRole === 'CURATOR';
+  const actionBodyTemplate = (rowData: GroupMember) => {
+    const isCurrentUser = rowData.userId === curatorId; // Check if the member is the current curator
 
     return (
-      <div className="flex gap-2">
-        <Button icon="pi pi-user-plus" className="p-button-rounded p-button-success" tooltip={t('groups.setCurator')}
-            onClick={() => confirmSetCurator(rowData)} disabled={isCurator || setCuratorMutation.isLoading} />
-        <Button icon="pi pi-trash" className="p-button-rounded p-button-danger" tooltip={t('groups.removeMember')}
-            onClick={() => confirmRemove(rowData)} disabled={(isSelf && isCurator) || removeMemberMutation.isLoading} />
+      <div className="flex flex-wrap gap-2">
+        {canManage && !isCurrentUser && ( // Only show remove button if canManage and not the current curator
+          <Button
+            icon="pi pi-trash"
+            className="p-button-rounded p-button-text p-button-danger"
+            onClick={() => confirmRemoveMember(rowData)}
+            tooltip={t('common.remove')}
+          />
+        )}
+        {canManage && rowData.userId !== curatorId && ( // Only show set curator if canManage and not already curator
+          <Button
+            label={t('groups.setCurator')}
+            className="p-button-text"
+            onClick={() => confirmSetCurator(rowData)}
+          />
+        )}
       </div>
     );
   };
 
-  const header = (
-    <div className="flex justify-content-end">
-      <span className="p-input-icon-left">
-        <i className="pi pi-search" />
-        <InputText type="search" onInput={(e) => setGlobalFilter((e.target as HTMLInputElement).value)} placeholder={t('common.search')} />
-      </span>
-    </div>
-  );
-
   return (
-    <DataTable value={members} paginator rows={20} sortField="username" sortOrder={1}
-      globalFilter={globalFilter} header={header} responsiveLayout="scroll">
-      <Column field="username" header={t('groups.table.name')} sortable />
-      <Column field="email" header="Email" sortable />
-      <Column field="groupRole" header={t('groups.table.role')} body={roleTemplate} sortable />
-      <Column field="joinedAt" header={t('groups.table.joined')} sortable body={(rowData) => new Date(rowData.joinedAt).toLocaleDateString()} />
-      {canManage && <Column body={actionsTemplate} style={{ textAlign: 'center', width: '8rem' }} />}
+    <DataTable value={members} paginator rows={10}
+      sortField="username" sortOrder={1}
+      responsiveLayout="scroll"
+      emptyMessage={t('groups.noMembers')} // Assuming a translation key for no members
+    >
+      <Column field="username" header={t('settings.username')} sortable filter />
+      <Column field="email" header={t('auth.email')} sortable filter />
+      <Column field="groupRole" header={t('groups.table.role')} body={roleBodyTemplate} />
+      <Column field="joinedAt" header={t('groups.table.joined')} body={dateBodyTemplate} sortable />
+      {canManage && <Column body={actionBodyTemplate} header={t('common.actions')} style={{ width: '10rem' }} />}
     </DataTable>
   );
 };

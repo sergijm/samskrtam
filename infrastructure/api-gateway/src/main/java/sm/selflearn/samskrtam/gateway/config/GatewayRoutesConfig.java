@@ -44,7 +44,7 @@ public class GatewayRoutesConfig {
                 // /api/v1/auth/login НЕ проксируется — обрабатывается AuthController.
                 .route("auth", r -> r
                         .path("/api/v1/auth/**")
-                        .and().not(p -> p.path("/api/v1/auth/oauth2/**").or().path("/api/v1/auth/login")) // Modified to exclude /api/v1/auth/login
+                        .and().not(p -> p.path("/api/v1/auth/oauth2/**").or().path("/api/v1/auth/login"))
                         .uri(userServiceUrl))
 
                 // ── Users (требует JWT) ──────────────────────────────────────────
@@ -53,6 +53,7 @@ public class GatewayRoutesConfig {
                         .uri(userServiceUrl))
 
                 // ── Groups (требует JWT) ─────────────────────────────────────────
+                // Выносим маршруты групп из ADMIN-блока, чтобы они могли быть доступны для других ролей
                 .route("groups", r -> r
                         .path("/api/v1/groups/**")
                         .uri(userServiceUrl))
