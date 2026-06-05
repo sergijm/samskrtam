@@ -6,13 +6,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sm.selflearn.samskrtam.user.dto.UserGroupSummary;
+import sm.selflearn.samskrtam.user.dto.UserSearchResponse;
 import sm.selflearn.samskrtam.user.exception.UserNotFoundException;
 import sm.selflearn.samskrtam.user.model.OutboxEvent;
 import sm.selflearn.samskrtam.user.model.OutboxEventType;
 import sm.selflearn.samskrtam.user.model.UserProfile;
 import sm.selflearn.samskrtam.user.outbox.KeycloakAdminService;
+import sm.selflearn.samskrtam.user.repository.GroupMemberRepository;
 import sm.selflearn.samskrtam.user.repository.OutboxEventRepository;
 import sm.selflearn.samskrtam.user.repository.UserProfileRepository;
+import sm.selflearn.samskrtam.user.repository.UserProfileSpecification; // Import UserProfileSpecification
+import org.springframework.data.jpa.domain.Specification; // Import Specification
 
 // Импорты DTO из нового shared модуля
 import sm.selflearn.samskrtam.user.dto.UpdateProfileRequest;
@@ -38,6 +43,7 @@ public class UserProfileService {
     private final OutboxEventRepository outboxRepository;
     private final ObjectMapper objectMapper;
     private final KeycloakAdminService keycloakAdminService;
+    private final GroupMemberRepository groupMemberRepository;
 
     @Transactional
     public UserProfileResponse updateProfile(UUID userId, UpdateProfileRequest request) {
@@ -97,6 +103,32 @@ public class UserProfileService {
             log.info("Provisioned new UserProfile from Keycloak for userId: {}. Roles: {}", userId, newProfile.getRoles());
             return newProfile;
         }
+    }
+
+    public List<UserGroupSummary> getUserGroups(UUID userId) {
+        log.debug("Fetching groups for user: {}", userId);
+        return groupMemberRepository.findByUserId(userId).stream()
+                .map(groupMember -> UserGroupSummary.builder()
+                        .groupId(groupMember.getGroup().getId())
+                        .groupName(groupMember.getGroup().getName())
+                        .groupRole(groupMember.getGroup().getCurator().getId().equals(userId) ? "CURATOR" : "MEMBER")
+                        .joinedAt(groupMember.getJoinedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    public List<UserSearchResponse> searchUsers(String query) {
+        log.debug("Searching users with query: {}", query);
+        Specification<UserProfile> spec = UserProfileSpecification.filterBy(query, null, null); // Use existing spec
+        return profileRepository.findAll(spec).stream()
+                .map(userProfile -> UserSearchResponse.builder()
+                        .id(userProfile.getId())
+                        .username(userProfile.getUsername())
+                        .firstName(userProfile.getFirstName())
+                        .lastName(userProfile.getLastName())
+                        .email(userProfile.getEmail())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     public UserProfileResponse getProfileResponse(UUID userId) {

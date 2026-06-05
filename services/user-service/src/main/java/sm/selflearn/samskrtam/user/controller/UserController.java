@@ -20,7 +20,10 @@ import sm.selflearn.samskrtam.user.dto.UploadUrlResponse;
 import sm.selflearn.samskrtam.user.dto.AvatarConfirmRequest;
 import sm.selflearn.samskrtam.user.dto.AvatarConfirmResponse;
 import sm.selflearn.samskrtam.user.dto.ChangePasswordRequest;
+import sm.selflearn.samskrtam.user.dto.UserGroupSummary;
+import sm.selflearn.samskrtam.user.dto.UserSearchResponse; // Import UserSearchResponse
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -40,7 +43,7 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @ApiResponse(responseCode = "404", description = "User not found")
     public ResponseEntity<UserProfileResponse> getMe(@RequestHeader("X-User-Id") UUID userId) {
-        return ResponseEntity.ok(userProfileService.getProfileResponse(userId)); // Используем новый метод
+        return ResponseEntity.ok(userProfileService.getProfileResponse(userId));
     }
 
     // PUT /api/v1/users/me
@@ -61,8 +64,26 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Public user profile found")
     @ApiResponse(responseCode = "404", description = "User not found")
     public ResponseEntity<PublicProfileResponse> getPublicProfile(@PathVariable UUID id) {
-        // Теперь getUserProfile(id) возвращает UserProfile, что соответствует ожидаемому типу
         return ResponseEntity.ok(userProfileService.mapUserProfileToPublicResponse(userProfileService.getUserProfile(id)));
+    }
+
+    // GET /api/v1/users/{id}/groups
+    @GetMapping("/{id}/groups")
+    @Operation(summary = "Get groups a user is a member of")
+    @ApiResponse(responseCode = "200", description = "List of user's groups retrieved successfully")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "404", description = "User not found")
+    public ResponseEntity<List<UserGroupSummary>> getUserGroups(@PathVariable UUID id) {
+        return ResponseEntity.ok(userProfileService.getUserGroups(id));
+    }
+
+    // GET /api/v1/users/search
+    @GetMapping("/search")
+    @Operation(summary = "Search for users by username, first name, last name, or email")
+    @ApiResponse(responseCode = "200", description = "List of matching users retrieved successfully")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    public ResponseEntity<List<UserSearchResponse>> searchUsers(@RequestParam String query) {
+        return ResponseEntity.ok(userProfileService.searchUsers(query));
     }
 
     // POST /api/v1/users/me/avatar/upload-url

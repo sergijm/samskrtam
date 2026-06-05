@@ -8,14 +8,15 @@ import { Dropdown } from 'primereact/dropdown';
 import { Button } from 'primereact/button';
 import { Tag } from 'primereact/tag';
 import { Paginator, PaginatorPageChangeEvent } from 'primereact/paginator';
-import { useAdminUsers } from '../hooks/useAdmin'; // Will create this hook
-import { UserRole } from '../types/user'; // Assuming UserRole is defined here
+import { useAdminUsers } from '../hooks/useAdmin';
+import { UserRole } from '../types/user';
 import { Toast } from 'primereact/toast';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const AdminUsersPage = () => {
   const { t } = useTranslation();
   const toast = useRef<Toast>(null);
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
@@ -61,6 +62,13 @@ const AdminUsersPage = () => {
     return <Tag value={rowData.blocked ? t('admin.users.blocked') : t('admin.users.active')} severity={rowData.blocked ? 'danger' : 'success'} />;
   };
 
+  const rolesBodyTemplate = (rowData: any) => {
+    // Assuming rowData.roles is an array of strings like ["STUDENT", "ADMIN"]
+    return rowData.roles.map((role: string) => (
+      <Tag key={role} value={t(`admin.users.role.${role.toLowerCase()}`)} className="mr-1" severity={role === 'ADMIN' ? 'danger' : 'info'} />
+    ));
+  };
+
   const actionsBodyTemplate = (rowData: any) => {
     return (
       <div className="flex gap-2">
@@ -70,6 +78,10 @@ const AdminUsersPage = () => {
         {/* Block/Unblock buttons will be added here later */}
       </div>
     );
+  };
+
+  const onRowSelect = (event: any) => {
+    navigate(`/users/${event.data.id}`);
   };
 
   if (isError) {
@@ -120,13 +132,17 @@ const AdminUsersPage = () => {
           sortOrder={sortDirection === 'asc' ? 1 : -1}
           loading={isLoading}
           emptyMessage={t('admin.users.noUsersFound')}
+          selectionMode="single" // Enable single row selection
+          onRowSelect={onRowSelect} // Handle row click
+          onRowUnselect={onRowSelect} // Also handle unselect to navigate
+          className="p-datatable-clickable" // Add a class for cursor pointer
         >
           <Column field="id" header="ID" sortable />
           <Column field="username" header={t('settings.username')} sortable />
           <Column field="email" header={t('auth.email')} sortable />
           <Column field="firstName" header={t('settings.firstName')} sortable />
           <Column field="lastName" header={t('settings.lastName')} sortable />
-          <Column field="roles" header={t('admin.users.role.column-title')} sortable /> {/* Changed header key */}
+          <Column field="roles" header={t('admin.users.role.column-title')} body={rolesBodyTemplate} sortable /> {/* Use rolesBodyTemplate */}
           <Column field="blocked" header={t('admin.users.status')} body={statusBodyTemplate} sortable />
           <Column field="createdAt" header={t('common.createdAt')} sortable />
           <Column body={actionsBodyTemplate} header={t('common.actions')} style={{ width: '10rem' }} />

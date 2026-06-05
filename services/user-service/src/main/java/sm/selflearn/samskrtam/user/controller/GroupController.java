@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import sm.selflearn.samskrtam.user.dto.CreateGroupRequest;
 import sm.selflearn.samskrtam.user.dto.Group;
+import sm.selflearn.samskrtam.user.dto.GroupDetail;
 import sm.selflearn.samskrtam.user.service.GroupService;
 
 import java.util.List;
@@ -29,6 +30,15 @@ public class GroupController {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     public ResponseEntity<List<Group>> getGroups() {
         return ResponseEntity.ok(groupService.getAllGroups());
+    }
+
+    @GetMapping("/{groupId}")
+    @Operation(summary = "Get group details by ID")
+    @ApiResponse(responseCode = "200", description = "Group details retrieved successfully")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "404", description = "Group not found")
+    public ResponseEntity<GroupDetail> getGroupById(@PathVariable UUID groupId) {
+        return ResponseEntity.ok(groupService.getGroupDetail(groupId));
     }
 
     @PostMapping
