@@ -1,7 +1,6 @@
 package sm.selflearn.samskrtam.kafka.serialization;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.header.Headers;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
@@ -9,14 +8,10 @@ import org.springframework.kafka.support.serializer.JsonDeserializer;
 @Slf4j
 public class SamskrtamJsonDeserializer<T> extends JsonDeserializer<T> {
 
-    public SamskrtamJsonDeserializer() {
-        super(buildObjectMapper());
-    }
-
-    private static ObjectMapper buildObjectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        return objectMapper;
+    // Конструктор, принимающий ObjectMapper
+    public SamskrtamJsonDeserializer(ObjectMapper objectMapper) {
+        super(objectMapper);
+        // setUseTypeHeaders(true) и addTrustedPackages будут установлены в KafkaConsumerConfig
     }
 
     @Override

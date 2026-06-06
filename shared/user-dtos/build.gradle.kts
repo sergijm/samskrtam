@@ -14,6 +14,9 @@ repositories {
 }
 
 dependencies {
+    // Управление версиями Spring Boot через BOM
+    implementation(platform("org.springframework.boot:spring-boot-dependencies:${libs.versions.spring.boot.get()}"))
+
     implementation("jakarta.validation:jakarta.validation-api:3.0.2")
     compileOnly("org.projectlombok:lombok:1.18.32")
     annotationProcessor("org.projectlombok:lombok:1.18.32")

@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.statistics.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,29 +17,22 @@ import java.util.Map;
 public class KafkaConsumerConfig {
 
     @Bean
-    public ConsumerFactory<String, Object> consumerFactory(KafkaProperties kafkaProperties) {
+    public SamskrtamJsonDeserializer<Object> samskrtamJsonDeserializer(ObjectMapper objectMapper) {
+        SamskrtamJsonDeserializer<Object> deserializer = new SamskrtamJsonDeserializer<>(objectMapper);
+        deserializer.setUseTypeHeaders(true);
+        deserializer.addTrustedPackages("sm.selflearn.samskrtam.events");
+        // Если нужны явные маппинги типов для @JsonTypeInfo, их можно добавить здесь
+        // deserializer.setTypeMappings(Map.of("AnswerSubmitted", sm.selflearn.samskrtam.events.AnswerSubmitted.class));
+        return deserializer;
+    }
+
+    @Bean
+    public ConsumerFactory<String, Object> consumerFactory(
+            KafkaProperties kafkaProperties,
+            SamskrtamJsonDeserializer<Object> samskrtamJsonDeserializer) { // Инжектируем наш бин десериализатора
         Map<String, Object> props = new HashMap<>(kafkaProperties.buildConsumerProperties());
-
-        // Create an instance of your custom SamskrtamJsonDeserializer
-        SamskrtamJsonDeserializer<Object> jsonDeserializer = new SamskrtamJsonDeserializer<>();
-        
-        // Explicitly configure the deserializer properties
-        jsonDeserializer.setUseTypeHeaders(true);
-        jsonDeserializer.addTrustedPackages("sm.selflearn.samskrtam.events");
-        
-        // If you need specific type mappings for @JsonTypeInfo, you can set them here.
-        // However, with @JsonTypeInfo and @JsonSubTypes on AbstractEvent,
-        // the deserializer should automatically handle it if type headers are present.
-        // For robustness, you might still want to add explicit type mappings if the header
-        // doesn't contain the full class name or if you use aliases.
-        // For example:
-        // Map<String, Class<?>> typeMappings = new HashMap<>();
-        // typeMappings.put("AnswerSubmitted", sm.selflearn.samskrtam.events.AnswerSubmitted.class);
-        // typeMappings.put("SessionCompleted", sm.selflearn.samskrtam.events.SessionCompleted.class);
-        // jsonDeserializer.setTypeMappings(typeMappings);
-
-
-        return new DefaultKafkaConsumerFactory<>(props, new org.apache.kafka.common.serialization.StringDeserializer(), jsonDeserializer);
+        // Вместо указания класса, передаем экземпляр десериализатора
+        return new DefaultKafkaConsumerFactory<>(props, new org.apache.kafka.common.serialization.StringDeserializer(), samskrtamJsonDeserializer);
     }
 
     @Bean

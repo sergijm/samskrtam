@@ -1,22 +1,16 @@
 package sm.selflearn.samskrtam.kafka.serialization;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
 @Slf4j
 public class SamskrtamJsonSerializer extends JsonSerializer<Object> {
 
-    public SamskrtamJsonSerializer() {
-        super(buildObjectMapper());
-    }
-
-    private static ObjectMapper buildObjectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        return objectMapper;
+    // Конструктор, принимающий ObjectMapper
+    public SamskrtamJsonSerializer(ObjectMapper objectMapper) {
+        super(objectMapper);
+        // setAddTypeInfo(true) будет установлено в KafkaConfig
     }
 
     @Override

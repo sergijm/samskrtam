@@ -19,6 +19,7 @@ keycloak = "24.0.4" # Added keycloak version
 minio = "8.5.1" # Added minio version
 micrometer-tracing = "1.3.0" # Added micrometer-tracing version
 opentelemetry = "1.38.0" # Added opentelemetry version
+jackson = "2.17.0" # Added Jackson version
 
 [libraries]
 # Spring Boot starters
@@ -75,6 +76,13 @@ micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-p
 
 # TOML
 jackson-dataformat-toml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-toml" }
+
+# Jackson
+jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
+jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
+
 
 # Testing
 spring-test = { module = "org.springframework.boot:spring-boot-starter-test" }

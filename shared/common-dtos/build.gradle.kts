@@ -13,8 +13,17 @@ repositories {
 }
 
 dependencies {
-    // Instant и UUID являются частью стандартной Java, spring-boot-starter не нужен.
-    // Если потребуются другие общие зависимости, их можно добавить здесь.
+    // Управление версиями Spring Boot через BOM
+    implementation(platform("org.springframework.boot:spring-boot-dependencies:${libs.versions.spring.boot.get()}"))
+
+    // Зависимости для Jackson
+    api(libs.jackson.datatype.jsr310)
+    api(libs.jackson.databind)
+    api(libs.jackson.annotations)
+    api(libs.jackson.core)
+
+    // Зависимость для Spring Context, чтобы использовать @Configuration и @Bean
+    api("org.springframework:spring-context")
 }
 
 group = "sm.selflearn.samskrtam.common"
