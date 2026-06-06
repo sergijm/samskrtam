@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react'; // Import useEffect
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PrimeReactProvider } from 'primereact/api';
@@ -27,12 +28,22 @@ import UserStatisticsPage from './pages/UserStatisticsPage'; // Import UserStati
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
 
+// Stores
+import { useThemeStore } from './store/themeStore'; // Import useThemeStore
+
 // i18n
 import './i18n';
 
 const queryClient = new QueryClient();
 
 export default function App() {
+  const { theme, setTheme } = useThemeStore(); // Get theme and setTheme from store
+
+  useEffect(() => {
+    // Apply the theme from the store on initial load
+    setTheme(theme);
+  }, [theme, setTheme]); // Rerun if theme or setTheme changes (though setTheme is stable)
+
   return (
     <PrimeReactProvider>
       <QueryClientProvider client={queryClient}>

@@ -8,7 +8,7 @@ import { AuthTokens } from '../types/user'; // Import AuthTokens
 const AuthCallbackPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const login = useAuthStore((state) => state.login);
+  const { login, redirectPath, setRedirectPath } = useAuthStore(); // Get redirectPath and setRedirectPath
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -39,25 +39,32 @@ const AuthCallbackPage = () => {
           };
 
           login(tokens, user);
-          navigate('/dashboard', { replace: true }); // Redirect to dashboard after successful login
+
+          // Redirect to the saved path or dashboard
+          const targetPath = redirectPath || '/dashboard';
+          setRedirectPath(null); // Clear the redirect path
+          navigate(targetPath, { replace: true });
         } catch (err) {
           console.error('OAuth callback error:', err);
           // Clear any partially stored tokens on error
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
+          setRedirectPath(null); // Clear redirect path on error
           navigate('/login', { state: { error: 'Authentication failed.' } });
         }
       } else if (error) {
         console.error('OAuth callback error from fragment:', error);
+        setRedirectPath(null); // Clear redirect path on error
         navigate('/login', { state: { error: error || 'Authentication failed.' } });
       } else {
         // Fallback if no token or error in fragment
+        setRedirectPath(null); // Clear redirect path on error
         navigate('/login', { state: { error: 'Invalid authentication callback.' } });
       }
     };
 
     handleCallback();
-  }, [location, navigate, login]);
+  }, [location, navigate, login, redirectPath, setRedirectPath]); // Add redirectPath and setRedirectPath to dependencies
 
   return (
     <div className="flex justify-content-center align-items-center h-screen">

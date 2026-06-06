@@ -16,7 +16,7 @@ import { Divider } from 'primereact/divider';
 const LoginPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
+  const { login, redirectPath, setRedirectPath } = useAuthStore(); // Get redirectPath and setRedirectPath
   const [error, setError] = useState<string | null>(null);
 
   const { control, handleSubmit, formState: { errors } } = useForm({
@@ -47,7 +47,11 @@ const LoginPage = () => {
 
       // 3. Log in the user with tokens and full user object
       login(tokens, user);
-      navigate('/dashboard'); // Navigate to dashboard after successful login
+
+      // Redirect to the saved path or dashboard
+      const targetPath = redirectPath || '/dashboard';
+      setRedirectPath(null); // Clear the redirect path
+      navigate(targetPath);
     } catch (err) {
       console.error("Login error:", err);
       setError(t('auth.error'));

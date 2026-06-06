@@ -6,15 +6,19 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
+  redirectPath: string | null; // New state for redirect path
+
   login: (tokens: AuthTokens, user: User) => void;
   logout: () => void;
   setAccessToken: (token: string) => void;
+  setRedirectPath: (path: string | null) => void; // New action to set redirect path
 }
 
 const getInitialState = () => {
   const accessToken = localStorage.getItem('accessToken');
   const refreshToken = localStorage.getItem('refreshToken');
   const userString = localStorage.getItem('user');
+  const redirectPath = localStorage.getItem('redirectPath'); // Get redirect path from localStorage
   let user: User | null = null;
   try {
     if (userString) {
@@ -30,6 +34,7 @@ const getInitialState = () => {
     accessToken,
     refreshToken,
     isAuthenticated: !!accessToken && !!refreshToken,
+    redirectPath, // Include redirectPath in initial state
   };
 };
 
@@ -52,16 +57,27 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+    // Do NOT clear redirectPath here. It should only be cleared after successful login.
     set({
       user: null,
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
+      // Do NOT clear redirectPath in state here.
     });
   },
 
   setAccessToken: (token) => {
     localStorage.setItem('accessToken', token);
     set({ accessToken: token });
+  },
+
+  setRedirectPath: (path) => {
+    if (path) {
+      localStorage.setItem('redirectPath', path);
+    } else {
+      localStorage.removeItem('redirectPath');
+    }
+    set({ redirectPath: path });
   },
 }));
