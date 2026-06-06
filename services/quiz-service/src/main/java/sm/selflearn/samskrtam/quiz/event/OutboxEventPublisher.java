@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import sm.selflearn.samskrtam.events.AbstractEvent;
 import sm.selflearn.samskrtam.quiz.model.OutboxEvent;
 import sm.selflearn.samskrtam.quiz.model.OutboxStatus;
 import sm.selflearn.samskrtam.quiz.repository.OutboxEventRepository;
@@ -35,7 +36,7 @@ public class OutboxEventPublisher {
         return outboxRepository.findByStatus(OutboxStatus.PENDING)
                 .flatMap(event -> {
                     try {
-                        Object payload = objectMapper.readValue(event.getPayload(), Object.class); // Deserialize to Object
+                        AbstractEvent payload = objectMapper.readValue(event.getPayload(), AbstractEvent.class); // Deserialize to Object
                         return kafkaTemplate
                                 .send(event.getTopic(), event.getAggregateId(), payload)
                                 .doOnSuccess(result -> log.debug(

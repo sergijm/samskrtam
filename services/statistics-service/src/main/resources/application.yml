@@ -14,18 +14,39 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASSWORD}
   flyway:
-    enabled: true # Включаем автоматическую конфигурацию Flyway
-    url: ${SPRING_DATASOURCE_URL} # Используем SPRING_DATASOURCE_URL для Flyway
+    enabled: true
+    url: ${SPRING_DATASOURCE_URL}
     user: ${DB_USER}
     password: ${DB_PASSWORD}
     schemas: statistics
+
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: sm.selflearn.samskrtam.kafka.serialization.SamskrtamJsonSerializer
+      properties:
+        spring.json.add.type.headers: true # Добавляем информацию о типе в заголовки
+        security.protocol: PLAINTEXT
+        listener.name: EXTERNAL
+    consumer: # Добавляем конфигурацию потребителя для консистентности
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: sm.selflearn.samskrtam.kafka.serialization.SamskrtamJsonDeserializer
+      properties:
+        security.protocol: PLAINTEXT
+        listener.name: EXTERNAL
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ""
+  tracing:
+    enabled: false
 
 logging:
   level:
-    root: INFO
-    sm.selflearn.samskrtam: DEBUG
-    org.springframework.kafka: DEBUG
-    org.apache.kafka: DEBUG
-    org.apache.kafka.clients: INFO
+    root: WARN
+    sm.selflearn.samskrtam: WARN
+    org.springframework.kafka: WARN
+    org.apache.kafka: WARN

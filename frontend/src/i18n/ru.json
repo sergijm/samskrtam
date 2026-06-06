@@ -162,5 +162,24 @@
     "adminDescription": "Доступ к административным инструментам и функциям.",
     "grammarDescription": "Квизы по грамматике: склонения и спряжения.",
     "vocabularyDescription": "Квизы на знание лексики."
+  },
+  "userProfile": {
+    "errorLoadingUser": "Ошибка загрузки профиля пользователя.",
+    "quizStatistics": "Статистика квизов",
+    "errorLoadingStatistics": "Ошибка загрузки статистики квизов.",
+    "noStatistics": "Статистика квизов недоступна.",
+    "quizId": "ID квиза",
+    "quizType": "Тип квиза",
+    "totalSessions": "Всего сессий",
+    "totalQuestionsAnswered": "Отвечено вопросов",
+    "totalCorrectAnswers": "Правильных ответов",
+    "totalScore": "Общий балл",
+    "averageScore": "Средний балл",
+    "lastCompletedAt": "Последнее завершение"
+  },
+  "quizType": {
+    "VOCABULARY": "Лексика",
+    "DECLENSIONS": "Склонения",
+    "CONJUGATIONS": "Спряжения"
   }
 }

@@ -1,23 +1,22 @@
 package sm.selflearn.samskrtam.events;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import sm.selflearn.samskrtam.content.dto.QuizType;
 
-import java.time.Instant;
 import java.util.UUID;
 
-public record SessionCompleted(
-    UUID    eventId,
-    Instant occurredAt,
-    UUID    userId,
-    QuizType quizType,
-    UUID    quizId,
-    int     score,
-    int     totalQuestions,
-    long    durationMs
-) {
-    public SessionCompleted(UUID userId, QuizType quizType, UUID quizId,
-                            int score, int totalQuestions, long durationMs) {
-        this(UUID.randomUUID(), Instant.now(), userId, quizType,
-             quizId, score, totalQuestions, durationMs);
-    }
+@Data
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
+public class SessionCompleted extends AbstractEvent {
+    UUID    userId;
+    QuizType quizType;
+    UUID    quizId;
+    int     score;
+    int     totalQuestions;
+    long    durationMs;
 }

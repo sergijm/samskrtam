@@ -2,9 +2,10 @@ package sm.selflearn.samskrtam.statistics;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration; // Import FlywayAutoConfiguration
+import org.springframework.kafka.annotation.EnableKafka;
 
-@SpringBootApplication(exclude = {FlywayAutoConfiguration.class}) // Исключаем автоконфигурацию Flyway
+@SpringBootApplication
+@EnableKafka
 public class Application {
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);

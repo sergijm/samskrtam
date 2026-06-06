@@ -121,12 +121,24 @@ public class SessionService {
                             .build();
 
                     // Publish AnswerSubmitted event to outbox
-                    AnswerSubmitted event = new AnswerSubmitted(
-                            userId, cache.getQuizType(), cache.getQuizId(),
-                            request.getQuestionId(), request.getSelectedOptionId(),
-                            isCorrect, request.getResponseTimeMs()
-                    );
-                    Mono<Void> outboxMono = Mono.fromCallable(() -> objectMapper.writeValueAsString(event))
+                    AnswerSubmitted event = AnswerSubmitted.builder()
+                            .userId(userId)
+                            .quizType(cache.getQuizType())
+                            .quizId(cache.getQuizId())
+                            .questionId(request.getQuestionId())
+                            .selectedOptionId(request.getSelectedOptionId())
+                            .isCorrect(isCorrect)
+                            .responseTimeMs(request.getResponseTimeMs())
+                            .build();
+
+                    Mono<Void> outboxMono = Mono.fromCallable(() -> {
+                        try {
+                            return objectMapper.writeValueAsString(event);
+                        } catch (JsonProcessingException e) {
+                            log.error("Error serializing AnswerSubmitted event: {}", event, e);
+                            throw new SamskrtamException("JSON_SERIALIZATION_ERROR", "Failed to serialize AnswerSubmitted event", e);
+                        }
+                    })
                             .flatMap(payload -> outboxEventRepository.save(OutboxEvent.builder()
                                     .id(null) // Let DB generate ID
                                     .aggregateId(userId.toString())
@@ -164,12 +176,23 @@ public class SessionService {
                             session.setAnsweredQuestions(cache.getAnsweredQuestionIds().size());
 
                             // Publish SessionCompleted event to outbox
-                            SessionCompleted event = new SessionCompleted(
-                                    userId, cache.getQuizType(), cache.getQuizId(),
-                                    cache.getScore(), cache.getQuestions().size(),
-                                    Duration.between(session.getStartedAt(), session.getCompletedAt()).toMillis()
-                            );
-                            Mono<Void> outboxMono = Mono.fromCallable(() -> objectMapper.writeValueAsString(event))
+                            SessionCompleted event = SessionCompleted.builder()
+                                    .userId(userId)
+                                    .quizType(cache.getQuizType())
+                                    .quizId(cache.getQuizId())
+                                    .score(cache.getScore())
+                                    .totalQuestions(cache.getQuestions().size())
+                                    .durationMs(Duration.between(session.getStartedAt(), session.getCompletedAt()).toMillis())
+                                    .build();
+
+                            Mono<Void> outboxMono = Mono.fromCallable(() -> {
+                                try {
+                                    return objectMapper.writeValueAsString(event);
+                                } catch (JsonProcessingException e) {
+                                    log.error("Error serializing SessionCompleted event: {}", event, e);
+                                    throw new SamskrtamException("JSON_SERIALIZATION_ERROR", "Failed to serialize SessionCompleted event", e);
+                                }
+                            })
                                     .flatMap(payload -> outboxEventRepository.save(OutboxEvent.builder()
                                             .id(null) // Let DB generate ID
                                             .aggregateId(userId.toString())

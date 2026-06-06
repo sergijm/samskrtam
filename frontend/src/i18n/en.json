@@ -163,5 +163,24 @@
     "adminDescription": "Access administrative tools and features.",
     "grammarDescription": "Grammar quizzes: declensions and conjugations.",
     "vocabularyDescription": "Quizzes on vocabulary knowledge."
+  },
+  "userProfile": {
+    "errorLoadingUser": "Error loading user profile.",
+    "quizStatistics": "Quiz Statistics",
+    "errorLoadingStatistics": "Error loading quiz statistics.",
+    "noStatistics": "No quiz statistics available.",
+    "quizId": "Quiz ID",
+    "quizType": "Quiz Type",
+    "totalSessions": "Total Sessions",
+    "totalQuestionsAnswered": "Questions Answered",
+    "totalCorrectAnswers": "Correct Answers",
+    "totalScore": "Total Score",
+    "averageScore": "Average Score",
+    "lastCompletedAt": "Last Completed"
+  },
+  "quizType": {
+    "VOCABULARY": "Vocabulary",
+    "DECLENSIONS": "Declensions",
+    "CONJUGATIONS": "Conjugations"
   }
 }
