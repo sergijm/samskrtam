@@ -9,7 +9,6 @@ import sm.selflearn.samskrtam.content.model.*;
 import sm.selflearn.samskrtam.content.model.Number;
 import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
 import sm.selflearn.samskrtam.content.repository.DeclensionStemRepository;
-import reactor.core.publisher.Mono;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,36 +23,34 @@ public class DeclensionQuizGeneratorService {
 
     private static final Random random = new Random();
 
-    public Mono<List<QuestionResponse>> generateDeclensionQuestions(Quiz quiz, Locale locale) {
-        return Mono.fromCallable(() -> {
-            List<DeclensionStem> availableStems;
+    public List<QuestionResponse> generateDeclensionQuestions(Quiz quiz, Locale locale) {
+        List<DeclensionStem> availableStems;
 
-            // Filter stems by vowel type if the quiz is specific (e.g., A_STEM quiz)
-            if (quiz.getQuizType() != QuizType.DECLENSIONS) { // Assuming DECLENSIONS is the combined type
-                VowelType requiredVowelType = mapQuizTypeToVowelType(quiz.getQuizType());
-                availableStems = declensionStemRepository.findAll().stream()
-                        .filter(stem -> stem.getVowelType() == requiredVowelType)
-                        .collect(Collectors.toList());
-            } else {
-                // For combined DECLENSIONS quiz, use all available stems
-                availableStems = declensionStemRepository.findAll();
-            }
+        // Filter stems by vowel type if the quiz is specific (e.g., A_STEM quiz)
+        if (quiz.getQuizType() != QuizType.DECLENSIONS) { // Assuming DECLENSIONS is the combined type
+            VowelType requiredVowelType = mapQuizTypeToVowelType(quiz.getQuizType());
+            availableStems = declensionStemRepository.findAll().stream()
+                    .filter(stem -> stem.getVowelType() == requiredVowelType)
+                    .collect(Collectors.toList());
+        } else {
+            // For combined DECLENSIONS quiz, use all available stems
+            availableStems = declensionStemRepository.findAll();
+        }
 
-            if (availableStems.isEmpty()) {
-                throw new SamskrtamException("NO_DECLENSION_STEMS", "No declension stems found for quiz type: " + quiz.getQuizType());
-            }
+        if (availableStems.isEmpty()) {
+            throw new SamskrtamException("NO_DECLENSION_STEMS", "No declension stems found for quiz type: " + quiz.getQuizType());
+        }
 
-            // Select N random stems for the session
-            int questionsToGenerate = Math.min(quiz.getQuestionsPerSession(), availableStems.size());
-            Collections.shuffle(availableStems);
-            List<DeclensionStem> selectedStems = availableStems.subList(0, questionsToGenerate);
+        // Select N random stems for the session
+        int questionsToGenerate = Math.min(quiz.getQuestionsPerSession(), availableStems.size());
+        Collections.shuffle(availableStems);
+        List<DeclensionStem> selectedStems = availableStems.subList(0, questionsToGenerate);
 
-            List<QuestionResponse> generatedQuestions = new ArrayList<>();
-            for (DeclensionStem stem : selectedStems) {
-                generatedQuestions.add(generateSingleQuestion(stem, locale));
-            }
-            return generatedQuestions;
-        });
+        List<QuestionResponse> generatedQuestions = new ArrayList<>();
+        for (DeclensionStem stem : selectedStems) {
+            generatedQuestions.add(generateSingleQuestion(stem, locale));
+        }
+        return generatedQuestions;
     }
 
     private QuestionResponse generateSingleQuestion(DeclensionStem stem, Locale locale) {

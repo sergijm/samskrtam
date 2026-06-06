@@ -1,4 +1,4 @@
-package sm.selflearn.samskrtam.content.model;
+package sm.selflearn.samskrtam.content.dto;
 
 public enum Gender {
     MASCULINE,

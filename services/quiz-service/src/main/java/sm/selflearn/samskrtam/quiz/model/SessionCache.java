@@ -1,10 +1,11 @@
 package sm.selflearn.samskrtam.quiz.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator; // Import JsonCreator
-import com.fasterxml.jackson.annotation.JsonProperty; // Import JsonProperty
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
-import sm.selflearn.samskrtam.content.dto.QuizType;
+import sm.selflearn.samskrtam.content.dto.QuizType; // Corrected import
+import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // Corrected import
 
 import java.util.List;
 import java.util.Set;
@@ -19,6 +20,7 @@ public class SessionCache {
     private List<CachedQuestion> questions;
     private Set<UUID> answeredQuestionIds;
     private int score;
+    private List<VocabularyWordDto> allVocabularyWords; // New field for vocabulary quizzes
 
     @JsonCreator
     @Builder // Keep @Builder for convenience in creating instances
@@ -29,7 +31,8 @@ public class SessionCache {
             @JsonProperty("quizType") QuizType quizType,
             @JsonProperty("questions") List<CachedQuestion> questions,
             @JsonProperty("answeredQuestionIds") Set<UUID> answeredQuestionIds,
-            @JsonProperty("score") int score) {
+            @JsonProperty("score") int score,
+            @JsonProperty("allVocabularyWords") List<VocabularyWordDto> allVocabularyWords) { // Updated constructor
         this.sessionId = sessionId;
         this.userId = userId;
         this.quizId = quizId;
@@ -37,6 +40,7 @@ public class SessionCache {
         this.questions = questions;
         this.answeredQuestionIds = answeredQuestionIds;
         this.score = score;
+        this.allVocabularyWords = allVocabularyWords;
     }
 
     public CachedQuestion findQuestion(UUID questionId) {

@@ -2,7 +2,7 @@ package sm.selflearn.samskrtam.statistics.dto;
 
 import lombok.Builder;
 import lombok.Value;
-import sm.selflearn.samskrtam.content.dto.QuizType;
+import sm.selflearn.samskrtam.content.dto.QuizType; // Corrected import
 
 import java.time.Instant;
 import java.util.UUID;

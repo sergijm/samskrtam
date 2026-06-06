@@ -1,7 +1,7 @@
 # content-service
 
 > Домен: Quiz Content — настройки и содержание квизов
-> Язык: **Java 21 + WebFlux (Reactor)**
+> Язык: **Java 21 + Virtual Threads (JPA/JDBC)**
 > Модуль: `services/content-service`
 > Порт: 8081
 > Status: **DRAFT**
@@ -10,7 +10,7 @@
 
 ## 1. Описание
 
-Хранит **настройки и содержание всех квизов**: метаданные квизов (тип, сложность, slug), вопросы, варианты ответов, а также лексику для словарных квизов. Доступен только для роли `ADMIN` (запись) и внутренне для `quiz-service` (чтение). Virtual Threads позволяют использовать обычный JPA/JDBC без WebFlux.
+Хранит **настройки и содержание всех квизов**: метаданные квизов (тип, сложность, slug), вопросы, варианты ответов, а также лексику для словарных квизов. Доступен только для роли `ADMIN` (запись) и внутренне для `quiz-service` (чтение). Использует JPA/JDBC с Virtual Threads.
 
 Разделение ответственности:
 - **content-service** — что есть в квизах (данные, настройки)
@@ -54,6 +54,7 @@ DELETE /api/v1/content/vocabulary/{wordId}              → удалить сл�
 
 ```
 GET /api/v1/content/quizzes/{id}/session-data           → всё необходимое для старта сессии
+GET /api/v1/content/quizzes/{quizId}/vocabulary-words   → получить словарные слова для квиза (для LexicalOptionGeneratorService)
 ```
 
 Ответ `GET /session-data`:
@@ -76,13 +77,27 @@ GET /api/v1/content/quizzes/{id}/session-data           → всё необхо�
       ]
     }
   ],
-  "vocabularyWords": null   // заполняется только для VOCABULARY квизов
+  "vocabularyWords": [ // НОВОЕ ПОЛЕ: заполняется только для VOCABULARY квизов
+    {
+      "id": "uuid",
+      "wordIast": "deva",
+      "wordDevanagari": "देव",
+      "translationEn": "god",
+      "translationRu": "бог",
+      "gender": "MASCULINE",
+      "stem": "deva",
+      "root": null,
+      "dictionaryEntry": "..."
+    }
+  ]
 }
 ```
 
 ---
 
-## 4. Схема БД (content.quizzes)
+## 4. Схема БД
+
+### Таблица `content.quizzes`:
 
 Ключевые колонки таблицы `content.quizzes`:
 
@@ -98,6 +113,22 @@ GET /api/v1/content/quizzes/{id}/session-data           → всё необхо�
 
 `questions_per_session` передаётся в `session-data` и используется quiz-service при старте сессии для случайной выборки вопросов.
 
+### Таблица `content.vocabulary_words`:
+
+| Поле | Тип | Описание |
+|---|---|---|
+| `id` | UUID | PK |
+| `word_iast` | VARCHAR(255) | Слово в IAST |
+| `word_devanagari` | VARCHAR(255) | Слово в Деванагари |
+| `translation_en` | VARCHAR(500) | Перевод на английский |
+| `translation_ru` | VARCHAR(500) | Перевод на русский |
+| `gender` | VARCHAR(20) | Род слова (`MASCULINE`, `FEMININE`, `NEUTER`, `UNKNOWN`) |
+| `stem` | VARCHAR(255) | Основа слова |
+| `root` | VARCHAR(255) | Корень слова |
+| `dictionary_entry` | TEXT | Полная словарная статья |
+| `created_at` | TIMESTAMPTZ | Время создания записи |
+| `updated_at` | TIMESTAMPTZ | Время последнего обновления записи |
+
 ---
 
 ## 5. Backend структура
@@ -106,33 +137,45 @@ GET /api/v1/content/quizzes/{id}/session-data           → всё необхо�
 sm/selflearn/samskrtam/content/
 ├── Application.java
 ├── controller/
-│   ├── QuizController.java
-│   ├── QuestionController.java
-│   ├── VocabularyController.java
+│   ├── QuizContentController.java
+│   ├── QuizManagementController.java
+│   ├── VocabularyController.java       ← НОВЫЙ контроллер для словарных слов
 │   └── internal/
 │       └── SessionDataController.java    ← /session-data для quiz-service
 ├── service/
 │   ├── QuizService.java
 │   ├── QuestionService.java
-│   └── VocabularyService.java
+│   └── VocabularyService.java          ← НОВЫЙ сервис для словарных слов
 ├── repository/
 │   ├── QuizRepository.java
 │   ├── QuestionRepository.java
 │   ├── QuestionOptionRepository.java
-│   └── VocabularyWordRepository.java
+│   └── VocabularyWordRepository.java   ← НОВЫЙ репозиторий для словарных слов
 ├── model/
 │   ├── Quiz.java
 │   ├── Question.java
 │   ├── QuestionOption.java
-│   ├── VocabularyWord.java
-│   ├── QuizType.java
-│   └── Difficulty.java
+│   ├── VocabularyWord.java             ← НОВАЯ сущность для словарных слов
+│   ├── Case.java
+│   ├── Number.java
+│   ├── VowelType.java
+│   ├── DeclensionForm.java
+│   ├── DeclensionStem.java
+│   └── DeclensionFormId.java
 └── dto/
     ├── CreateQuizRequest.java
     ├── CreateQuestionRequest.java
     ├── QuizDetailResponse.java
     ├── SessionDataResponse.java
-    └── VocabularyWordRequest.java
+    ├── VocabularyWordRequest.java
+    ├── VocabularyWordDto.java          ← НОВЫЙ DTO для словарных слов
+```
+
+```
+sm/selflearn/samskrtam/content/dto/
+├── Gender.java                         ← Перемещен сюда
+├── QuizType.java
+├── Difficulty.java
 ```
 
 ---
@@ -171,7 +214,7 @@ spring:
 - [ ] `GET /session-data` доступен без роли ADMIN (для quiz-service)
 - [ ] Нельзя сохранить вопрос без ровно 1 правильного варианта
 - [ ] Удаление квиза и вопроса — soft delete
-- [ ] `vocabulary_words` возвращаются только для квизов с `quiz_type = VOCABULARY`
+- [ ] `vocabularyWords` возвращаются только для квизов с `quiz_type = VOCABULARY`
 - [ ] Slug уникален и соответствует паттерну `^[a-z0-9][a-z0-9-]*$`
 - [ ] `questions_per_session` не может быть меньше 1
 

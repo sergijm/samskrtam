@@ -11,7 +11,7 @@ import sm.selflearn.samskrtam.quiz.dto.AnswerResponse;
 import sm.selflearn.samskrtam.quiz.dto.CompleteSessionResponse;
 import sm.selflearn.samskrtam.quiz.dto.ResumeSessionResponse;
 import sm.selflearn.samskrtam.quiz.dto.StartSessionResponse;
-import sm.selflearn.samskrtam.quiz.service.SessionService;
+import sm.selflearn.samskrtam.quiz.service.GrammarSessionService; // Updated import
 
 import java.util.UUID;
 
@@ -21,7 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class QuizSessionController {
 
-    private final SessionService sessionService;
+    private final GrammarSessionService grammarSessionService; // Updated field name
 
     @PostMapping("/start")
     @Operation(summary = "Start a new quiz session")
@@ -33,7 +33,7 @@ public class QuizSessionController {
             @RequestHeader("X-User-Id") UUID userId,
             @RequestHeader("X-User-Locale") String userLocale) {
         // The 'slug' is used for descriptive URLs but the business logic uses quizId.
-        return sessionService.startSession(quizId, userId, userLocale);
+        return grammarSessionService.startSession(quizId, userId, userLocale);
     }
 
     @GetMapping("/{sessionId}/resume")
@@ -45,7 +45,7 @@ public class QuizSessionController {
             @PathVariable UUID sessionId,
             @RequestHeader("X-User-Id") UUID userId,
             @RequestHeader("X-User-Locale") String userLocale) {
-        return sessionService.resumeSession(sessionId, userId, userLocale);
+        return grammarSessionService.resumeSession(sessionId, userId, userLocale);
     }
 
     @PostMapping("/{sessionId}/answer")
@@ -59,7 +59,7 @@ public class QuizSessionController {
             @RequestHeader("X-User-Id") UUID userId,
             @RequestHeader("X-User-Locale") String userLocale,
             @RequestBody AnswerRequest request) {
-        return sessionService.submitAnswer(sessionId, userId, request, userLocale);
+        return grammarSessionService.submitAnswer(sessionId, userId, request, userLocale);
     }
 
     @PostMapping("/{sessionId}/complete")
@@ -70,6 +70,6 @@ public class QuizSessionController {
             @PathVariable String slug,
             @PathVariable UUID sessionId,
             @RequestHeader("X-User-Id") UUID userId) {
-        return sessionService.completeSession(sessionId, userId);
+        return grammarSessionService.completeSession(sessionId, userId);
     }
 }

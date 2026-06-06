@@ -10,7 +10,7 @@
 
 ## 1. Описание
 
-Единый сервис для прохождения квизов всех типов: склонения, спряжения, лексика. Обрабатывает жизненный цикл сессии: старт, ответы, завершение. После каждого ответа публикует событие в Kafka. Данные (вопросы, варианты, слова) получает от `content-service` через реактивный HTTP-клиент.
+Единый сервис для прохождения квизов всех типов: склонения, спряжения, лексика. Обрабатывает жизненный цикл сессии: старт, ответы, завершение. Детальная история ответов сохраняется в базе данных `quiz-service`. После завершения сессии публикует обогащенное событие в Kafka. Данные (вопросы, варианты, слова) получает от `content-service` через реактивный HTTP-клиент.
 
 Разделение ответственности:
 - **content-service** — что есть в квизах (данные, настройки)
@@ -42,8 +42,8 @@ Postgres — источник истины. Redis — кэш поверх нег
 ```
 GET /api/v1/quiz/{type}/sessions/start[?quizId=uuid]
   ↓ WebClient → content-service /session-data (реактивно)
-  ↓ случайно выбирает N вопросов
-  ↓ для VOCABULARY — генерирует дистракторы
+  ↓ для DECLENSIONS/CONJUGATIONS: случайно выбирает N вопросов из sessionData.questions
+  ↓ для VOCABULARY: случайно выбирает N слов из sessionData.vocabularyWords, генерирует вопросы (Sanskrit->Translation или Translation->Sanskrit)
   ↓ flatMap: сохраняет сессию в Postgres (R2DBC) + кладёт в Redis (Reactive)
   → Mono<StartSessionResponse>
 
@@ -54,15 +54,15 @@ GET /api/v1/quiz/{type}/sessions/{id}/resume
 
 POST /api/v1/quiz/{type}/sessions/{id}/answer
   ↓ Redis.get → correctOptionId
-  ↓ проверяет ответ
+  ↓ проверяет ответ (для VOCABULARY учитывает targetLanguage)
   ↓ flatMap: R2DBC сохраняет QuizAnswer + Redis обновляет SessionCache
-  ↓ Kafka publishAnswerSubmitted (fire-and-forget через subscribe)
   → Mono<AnswerResponse>
 
 POST /api/v1/quiz/{type}/sessions/{id}/complete
+  ↓ R2DBC получает все QuizAnswer для сессии
   ↓ R2DBC обновляет статус → COMPLETED
   ↓ Redis.delete (сессия закрыта)
-  ↓ Kafka publishSessionCompleted
+  ↓ Kafka publishSessionCompleted (с полной историей ответов)
   → Mono<CompleteSessionResponse>
 ```
 
@@ -82,6 +82,7 @@ dependencies {
     implementation(libs.postgresql)                 // JDBC driver — только для Flyway
     implementation(libs.jackson.module.kotlin)
     implementation(project(":shared:kafka-events"))
+    implementation(project(":shared:quiz-content-dtos")) // Добавлено для VocabularyWordDto, Gender, QuizType, Difficulty
 }
 ```
 
@@ -128,13 +129,36 @@ public class SessionCache {
     private List<CachedQuestion> questions;   // включая correctOptionId
     private Set<UUID> answeredQuestionIds;
     private int score;
+    private List<VocabularyWordDto> allVocabularyWords; // НОВОЕ ПОЛЕ: для лексических квизов
 }
 
 public class CachedQuestion {
     private UUID questionId;
-    private UUID correctOptionId;   // не передаётся клиенту
+    private String text;
     private String explanationRu;
     private String explanationEn;
+
+    // Для квизов на склонения
+    private UUID declensionStemId;
+    private Case targetCase;
+    private Number targetNumber;
+
+    // Для лексических квизов
+    private UUID vocabularyWordId;
+    private QuestionLanguage questionSourceLanguage; // e.g., SANSKRIT, ENGLISH, RUSSIAN
+    private QuestionLanguage questionTargetLanguage; // e.g., SANSKRIT, ENGLISH, RUSSIAN
+    private String correctTranslationRu; // Правильный перевод на русский
+    private String correctTranslationEn; // Правильный перевод на английский
+
+    private String correctFormIast; // Правильная форма в IAST (для склонений или лексики)
+    private String correctFormDevanagari; // Правильная форма в Деванагари (для склонений или лексики)
+}
+
+// sm/selflearn/samskrtam/quiz/model/QuestionLanguage.java
+public enum QuestionLanguage {
+    SANSKRIT,
+    ENGLISH,
+    RUSSIAN
 }
 ```
 
@@ -191,20 +215,43 @@ public class SessionCacheService {
 public class ContentClient {
 
     private final WebClient webClient;
+    private final String contentBaseUrl;
 
-    public ContentClient(@Value("${content.service.url}") String baseUrl) {
-        this.webClient = WebClient.builder()
-                .baseUrl(baseUrl)
-                .build();
+    public ContentClient(WebClient webClient, @Value("${content.service.url}") String contentBaseUrl) {
+        this.webClient = webClient;
+        this.contentBaseUrl = contentBaseUrl;
     }
 
     public Mono<SessionDataResponse> getSessionData(UUID quizId) {
         return webClient.get()
-                .uri("/api/v1/content/quizzes/{id}/session-data", quizId)
+                .uri(contentBaseUrl + "/api/v1/content/quizzes/{id}/session-data", quizId)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError,
-                        r -> Mono.error(new QuizNotFoundException(quizId)))
+                        r -> Mono.error(new SamskrtamException("QUIZ_NOT_FOUND", "Quiz not found in content-service: " + quizId)))
                 .bodyToMono(SessionDataResponse.class);
+    }
+
+    public Mono<List<DeclensionFormDto>> getDeclensionForms(UUID declensionStemId) {
+        return webClient.get()
+                .uri(contentBaseUrl + "/api/v1/content/declension-stems/{id}/forms", declensionStemId)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("DECLENSION_STEM_NOT_FOUND", "Declension stem not found in content-service: " + declensionStemId)))
+                .bodyToFlux(DeclensionFormDto.class)
+                .collectList();
+    }
+
+    public Mono<List<VocabularyWordDto>> getVocabularyWordsForQuiz(UUID quizId, int limit) {
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path(contentBaseUrl + "/api/v1/content/quizzes/{quizId}/vocabulary-words")
+                        .queryParam("limit", limit)
+                        .build(quizId))
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("VOCABULARY_WORDS_NOT_FOUND", "Vocabulary words not found for quiz: " + quizId)))
+                .bodyToFlux(VocabularyWordDto.class)
+                .collectList();
     }
 }
 ```
@@ -285,302 +332,352 @@ CREATE INDEX idx_quiz_outbox_pending ON quiz.outbox_events (status, created_at)
     WHERE status = 'PENDING';
 ```
 
-В `AnswerService.submitAnswer()` вместо прямой публикации — атомарная запись в outbox:
+В `GrammarSessionService.submitAnswer()` теперь только сохранение ответа:
 
 ```java
-// Внутри flatMap в SessionService, вместо eventPublisher.publishAnswerSubmitted(...)
-return answerRepository.save(answer)
-        .then(cacheService.put(sessionId, cache))
-        .then(outboxRepository.save(OutboxEvent.forAnswerSubmitted(event)))  // атомарно
-        .thenReturn(buildResponse(q, correct, cache));
+// Внутри flatMap в GrammarSessionService.submitAnswer()
+return quizAnswerRepository.save(newAnswer)
+        .then(sessionCacheService.put(sessionId, cache))
+        .thenReturn(AnswerResponse.builder()
+                .isCorrect(isCorrect)
+                .correctOptionId(request.getSelectedOptionId())
+                .explanationRu(cachedQuestion.getExplanationRu())
+                .explanationEn(cachedQuestion.getExplanationEn())
+                .questionNumber(cache.getAnsweredQuestionIds().size())
+                .totalQuestions(cache.getQuestions().size())
+                .build());
 ```
 
 ---
 
-## 11. Пример реактивного pipeline (SessionService)
+## 11. Пример реактивного pipeline (GrammarSessionService)
 
 ```java
-// sm/selflearn/samskrtam/quiz/service/SessionService.java
-public Mono<AnswerResponse> submitAnswer(UUID sessionId, UUID userId, AnswerRequest request) {
-    return cacheService.get(sessionId)                          // Mono<SessionCache>
-            .filter(cache -> cache.getUserId().equals(userId))
-            .switchIfEmpty(Mono.error(new SessionNotFoundException(sessionId)))
-            .filter(cache -> !cache.getAnsweredQuestionIds().contains(request.questionId()))
-            .switchIfEmpty(Mono.error(new AlreadyAnsweredException(request.questionId())))
-            .flatMap(cache -> {
-                CachedQuestion q = cache.findQuestion(request.questionId());
-                boolean correct = q.getCorrectOptionId().equals(request.selectedOptionId());
+// sm/selflearn/samskrtam/quiz/service/GrammarSessionService.java
+public Mono<StartSessionResponse> startSession(UUID quizId, UUID userId, String userLocale) {
+    return contentClient.getSessionData(quizId)
+            .flatMap(sessionData -> {
+                List<CachedQuestion> cachedQuestions;
+                List<VocabularyWordDto> allVocabularyWords = null;
 
-                QuizAnswer answer = QuizAnswer.builder()
+                if (sessionData.getQuizType() == QuizType.VOCABULARY) {
+                    if (sessionData.getVocabularyWords() == null || sessionData.getVocabularyWords().isEmpty()) {
+                        return Mono.error(new SamskrtamException("NO_VOCABULARY_WORDS", "No vocabulary words found for quiz: " + quizId));
+                    }
+                    allVocabularyWords = sessionData.getVocabularyWords();
+                    cachedQuestions = generateVocabularyQuestions(sessionData, userLocale);
+                } else {
+                    cachedQuestions = sessionData.getQuestions().stream()
+                            .map(qr -> CachedQuestion.builder()
+                                    .questionId(qr.getId())
+                                    .text(qr.getText())
+                                    .explanationRu(qr.getExplanationRu())
+                                    .explanationEn(qr.getExplanationEn())
+                                    .declensionStemId(qr.getDeclensionStemId())
+                                    .targetCase(qr.getTargetCase())
+                                    .targetNumber(qr.getTargetNumber())
+                                    .correctFormIast(qr.getCorrectFormIast())
+                                    .correctFormDevanagari(qr.getCorrectFormDevanagari())
+                                    .build())
+                            .collect(Collectors.toList());
+                }
+
+                Collections.shuffle(cachedQuestions);
+
+                QuizSession newSession = QuizSession.builder()
+                        .id(null)
+                        .userId(userId)
+                        .quizId(quizId)
+                        .quizType(sessionData.getQuizType())
+                        .totalQuestions(sessionData.getQuestionsPerSession())
+                        .answeredQuestions(0)
+                        .score(0)
+                        .status(SessionStatus.IN_PROGRESS)
+                        .startedAt(Instant.now())
+                        .build();
+
+                return quizSessionRepository.save(newSession)
+                        .flatMap(savedSession -> {
+                            SessionCache sessionCache = SessionCache.builder()
+                                    .sessionId(savedSession.getId())
+                                    .userId(userId)
+                                    .quizId(quizId)
+                                    .quizType(sessionData.getQuizType())
+                                    .questions(cachedQuestions)
+                                    .answeredQuestionIds(new HashSet<>())
+                                    .score(0)
+                                    .allVocabularyWords(allVocabularyWords)
+                                    .build();
+                            return sessionCacheService.put(savedSession.getId(), sessionCache)
+                                    .then(buildStartSessionResponse(sessionCache, userLocale));
+                        });
+            });
+}
+
+public Mono<ResumeSessionResponse> resumeSession(UUID sessionId, UUID userId, String userLocale) {
+    return sessionCacheService.get(sessionId)
+            .filter(cache -> cache.getUserId().equals(userId))
+            .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Session not found or does not belong to user: " + sessionId)))
+            .flatMap(cache -> buildResumeSessionResponse(cache, userLocale));
+}
+
+public Mono<AnswerResponse> submitAnswer(UUID sessionId, UUID userId, AnswerRequest request, String userLocale) {
+    return sessionCacheService.get(sessionId)
+            .filter(cache -> cache.getUserId().equals(userId))
+            .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Session not found or does not belong to user: " + sessionId)))
+            .filter(cache -> !cache.getAnsweredQuestionIds().contains(request.getQuestionId()))
+            .switchIfEmpty(Mono.error(new SamskrtamException("ALREADY_ANSWERED", "Question already answered: " + request.getQuestionId())))
+            .flatMap(cache -> {
+                CachedQuestion cachedQuestion = cache.findQuestion(request.getQuestionId());
+                boolean isCorrect = cachedQuestion.getCorrectFormIast().equals(getOptionIast(request.getSelectedOptionId(), cachedQuestion, userLocale, cache.getAllVocabularyWords()));
+
+                QuizAnswer newAnswer = QuizAnswer.builder()
+                        .id(null)
                         .sessionId(sessionId)
-                        .questionId(request.questionId())
-                        .selectedOptionId(request.selectedOptionId())
-                        .correctOptionId(q.getCorrectOptionId())
-                        .correct(correct)
-                        .responseTimeMs(request.responseTimeMs())
+                        .questionId(request.getQuestionId())
+                        .selectedOptionId(request.getSelectedOptionId())
+                        .correctFormIast(cachedQuestion.getCorrectFormIast())
+                        .correct(isCorrect)
+                        .responseTimeMs(request.getResponseTimeMs())
                         .answeredAt(Instant.now())
                         .build();
 
-                cache.markAnswered(request.questionId(), correct);
-
-                AnswerSubmitted event = new AnswerSubmitted(
-                        userId, cache.getQuizType(), cache.getQuizId(),
-                        request.questionId(), request.selectedOptionId(),
-                        correct, request.responseTimeMs());
-
-                // Атомарная запись ответа + outbox события в одном pipeline
-                return answerRepository.save(answer)            // Mono<QuizAnswer>
-                        .then(cacheService.put(sessionId, cache))
-                        .then(outboxRepository.save(           // гарантия доставки
-                                OutboxEvent.forAnswerSubmitted(event)))
-                        .thenReturn(buildResponse(q, correct, cache));
+                return quizAnswerRepository.save(newAnswer)
+                        .then(sessionCacheService.put(sessionId, cache))
+                        .thenReturn(AnswerResponse.builder()
+                                .isCorrect(isCorrect)
+                                .correctOptionId(request.getSelectedOptionId())
+                                .explanationRu(cachedQuestion.getExplanationRu())
+                                .explanationEn(cachedQuestion.getExplanationEn())
+                                .questionNumber(cache.getAnsweredQuestionIds().size())
+                                .totalQuestions(cache.getQuestions().size())
+                                .build());
             });
 }
-```
 
----
+public Mono<CompleteSessionResponse> completeSession(UUID sessionId, UUID userId) {
+    return sessionCacheService.get(sessionId)
+            .filter(cache -> cache.getUserId().equals(userId))
+            .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Session not found or does not belong to user: " + sessionId)))
+            .flatMap(cache -> quizSessionRepository.findById(sessionId)
+                    .flatMap(session ->
+                            quizAnswerRepository.findBySessionId(sessionId)
+                                    .collectList()
+                                    .flatMap(quizAnswers -> {
+                                        List<AnswerData> answerDataList = quizAnswers.stream()
+                                                .map(qa -> AnswerData.builder()
+                                                        .questionId(qa.getQuestionId())
+                                                        .selectedOptionId(qa.getSelectedOptionId())
+                                                        .correctFormIast(qa.getCorrectFormIast())
+                                                        .correct(qa.isCorrect())
+                                                        .responseTimeMs(qa.getResponseTimeMs())
+                                                        .answeredAt(Instant.now())
+                                                        .build())
+                                                .collect(Collectors.toList());
 
-## 12. Генерация дистракторов (VOCABULARY)
+                                        session.setStatus(SessionStatus.COMPLETED);
+                                        session.setCompletedAt(Instant.now());
+                                        session.setScore(cache.getScore());
+                                        session.setAnsweredQuestions(cache.getAnsweredQuestionIds().size());
 
-```java
-// sm/selflearn/samskrtam/quiz/service/DistractorService.java
-public List<VocabularyWord> getDistractors(
-        List<VocabularyWord> allWords,
-        UUID correctWordId,
-        int count   // обычно 3
-) {
-    List<VocabularyWord> pool = allWords.stream()
-            .filter(w -> !w.getId().equals(correctWordId))
-            .collect(Collectors.toCollection(ArrayList::new));
-    Collections.shuffle(pool);
-    return pool.stream().limit(count).toList();
+                                        SessionCompleted event = SessionCompleted.builder()
+                                                .userId(userId)
+                                                .quizType(cache.getQuizType())
+                                                .quizId(cache.getQuizId())
+                                                .score(cache.getScore())
+                                                .totalQuestions(cache.getQuestions().size())
+                                                .durationMs(Duration.between(session.getStartedAt(), session.getCompletedAt()).toMillis())
+                                                .answers(answerDataList)
+                                                .build();
+
+                                        Mono<Void> outboxMono = Mono.fromCallable(() -> {
+                                            try {
+                                                return objectMapper.writeValueAsString(event);
+                                            } catch (JsonProcessingException e) {
+                                                log.error("Error serializing SessionCompleted event: {}", event, e);
+                                                throw new SamskrtamException("JSON_SERIALIZATION_ERROR", "Failed to serialize SessionCompleted event", e);
+                                            }
+                                        })
+                                                .flatMap(payload -> outboxEventRepository.save(OutboxEvent.builder()
+                                                        .id(null)
+                                                        .aggregateId(userId.toString())
+                                                        .topic("quiz.session.completed")
+                                                        .payload(payload)
+                                                        .status(OutboxStatus.PENDING)
+                                                        .eventType(OutboxEventType.SESSION_COMPLETED)
+                                                        .build()))
+                                                .then();
+
+                                        return quizSessionRepository.save(session)
+                                                .then(sessionCacheService.evict(sessionId))
+                                                .then(outboxMono)
+                                                .thenReturn(CompleteSessionResponse.builder()
+                                                        .sessionId(sessionId)
+                                                        .score(cache.getScore())
+                                                        .totalQuestions(cache.getQuestions().size())
+                                                        .durationMs(Duration.between(session.getStartedAt(), session.getCompletedAt()).toMillis())
+                                                        .build());
+                                    })
+                    ));
 }
-```
 
----
+private Mono<StartSessionResponse> buildStartSessionResponse(SessionCache cache, String userLocale) {
+    return Flux.fromIterable(cache.getQuestions())
+            .flatMap(cachedQuestion -> {
+                if (cache.getQuizType() == QuizType.VOCABULARY) {
+                    VocabularyWordDto correctWord = cache.getAllVocabularyWords().stream()
+                            .filter(w -> w.getId().equals(cachedQuestion.getVocabularyWordId()))
+                            .findFirst()
+                            .orElseThrow(() -> new SamskrtamException("VOCABULARY_WORD_NOT_FOUND", "Vocabulary word not found in cache for ID: " + cachedQuestion.getVocabularyWordId()));
 
-## 13. API
-
-### Склонения и спряжения
-
-```
-GET  /api/v1/quiz/declensions/sessions/start
-GET  /api/v1/quiz/declensions/sessions/{id}/resume
-POST /api/v1/quiz/declensions/sessions/{id}/answer
-POST /api/v1/quiz/declensions/sessions/{id}/complete
-
-GET  /api/v1/quiz/conjugations/sessions/start
-GET  /api/v1/quiz/conjugations/sessions/{id}/resume
-POST /api/v1/quiz/conjugations/sessions/{id}/answer
-POST /api/v1/quiz/conjugations/sessions/{id}/complete
-```
-
-### Лексика (slug-based)
-
-```
-GET  /api/v1/quiz/vocabulary/{slug}                                → детали квиза
-GET  /api/v1/quiz/vocabulary/{slug}/sessions/start
-GET  /api/v1/quiz/vocabulary/{slug}/sessions/{id}/resume
-POST /api/v1/quiz/vocabulary/{slug}/sessions/{id}/answer
-POST /api/v1/quiz/vocabulary/{slug}/sessions/{id}/complete
-```
-
-### POST /sessions/{id}/answer — Request / Response
-
-```json
-// Request
-{ "questionId": "uuid", "selectedOptionId": "uuid", "responseTimeMs": 4200 }
-
-// Response
-{
-  "isCorrect": true,
-  "correctOptionId": "uuid",
-  "explanationRu": "Дательный ед.ч. основ на -a — окончание -āya",
-  "explanationEn": "Dative singular of -a stems takes ending -āya",
-  "questionNumber": 3,
-  "totalQuestions": 10
+                    return lexicalOptionGeneratorService.generateOptions(
+                            correctWord,
+                            cache.getAllVocabularyWords(),
+                            cachedQuestion.questionSourceLanguage,
+                            cachedQuestion.questionTargetLanguage,
+                            userLocale
+                    ).map(options -> QuestionDto.builder()
+                            .id(cachedQuestion.getQuestionId())
+                            .text(cachedQuestion.getText())
+                            .options(options)
+                            .build());
+                } else {
+                    return declensionOptionGeneratorService.generateOptions(
+                            cachedQuestion.getDeclensionStemId(),
+                            cachedQuestion.getTargetCase(),
+                            cachedQuestion.getTargetNumber(),
+                            cachedQuestion.getCorrectFormIast()
+                    ).map(options -> QuestionDto.builder()
+                            .id(cachedQuestion.getQuestionId())
+                            .text(cachedQuestion.getText())
+                            .options(options)
+                            .build());
+                }
+            })
+            .collectList()
+            .map(questions -> StartSessionResponse.builder()
+                    .sessionId(cache.getSessionId())
+                    .quizId(cache.getQuizId())
+                    .quizType(cache.getQuizType())
+                    .questions(questions)
+                    .totalQuestions(cache.getQuestions().size())
+                    .build());
 }
-```
 
----
+private Mono<ResumeSessionResponse> buildResumeSessionResponse(SessionCache cache, String userLocale) {
+    return Flux.fromIterable(cache.getQuestions())
+            .flatMap(cachedQuestion -> {
+                if (cache.getQuizType() == QuizType.VOCABULARY) {
+                    VocabularyWordDto correctWord = cache.getAllVocabularyWords().stream()
+                            .filter(w -> w.getId().equals(cachedQuestion.getVocabularyWordId()))
+                            .findFirst()
+                            .orElseThrow(() -> new SamskrtamException("VOCABULARY_WORD_NOT_FOUND", "Vocabulary word not found in cache for ID: " + cachedQuestion.getVocabularyWordId()));
 
-## 14. Backend структура
+                    return lexicalOptionGeneratorService.generateOptions(
+                            correctWord,
+                            cache.getAllVocabularyWords(),
+                            cachedQuestion.questionSourceLanguage,
+                            cachedQuestion.questionTargetLanguage,
+                            userLocale
+                    ).map(options -> QuestionDto.builder()
+                            .id(cachedQuestion.getQuestionId())
+                            .text(cachedQuestion.getText())
+                            .options(options)
+                            .build());
+                } else {
+                    return declensionOptionGeneratorService.generateOptions(
+                            cachedQuestion.getDeclensionStemId(),
+                            cachedQuestion.getTargetCase(),
+                            cachedQuestion.getTargetNumber(),
+                            cachedQuestion.getCorrectFormIast()
+                    ).map(options -> QuestionDto.builder()
+                            .id(cachedQuestion.getQuestionId())
+                            .text(cachedQuestion.getText())
+                            .options(options)
+                            .build());
+                }
+            })
+            .collectList()
+            .map(questions -> ResumeSessionResponse.builder()
+                    .sessionId(cache.getSessionId())
+                    .quizId(cache.getQuizId())
+                    .quizType(cache.getQuizType())
+                    .questions(questions)
+                    .totalQuestions(cache.getQuestions().size())
+                    .answeredQuestions(cache.getAnsweredQuestionIds().size())
+                    .score(cache.getScore())
+                    .currentQuestionIndex(cache.getAnsweredQuestionIds().size())
+                    .build());
+}
 
-```
-sm/selflearn/samskrtam/quiz/
-├── Application.java
-├── config/
-│   ├── FlywayConfig.java              ← JDBC бин только для Flyway
-│   ├── RedisConfig.java               ← ReactiveRedisTemplate<String, SessionCache>
-│   └── WebClientConfig.java           ← WebClient бины
-├── controller/
-│   ├── DeclensionsSessionController.java
-│   ├── ConjugationsSessionController.java
-│   └── VocabularyController.java
-│   └── HistoryController.java
-├── service/
-│   ├── SessionService.java            ← старт, resume, завершение (Mono/Flux)
-│   ├── AnswerService.java             ← проверка ответов, сохранение
-│   ├── SessionCacheService.java       ← ReactiveRedis + fallback к Postgres
-│   ├── ContentClient.java             ← WebClient к content-service
-│   └── DistractorService.java
-├── event/
-│   ├── OutboxEventPublisher.java      ← Scheduler, публикует PENDING события в Kafka
-│   └── OutboxEventRepository.java     ← ReactiveCrudRepository для quiz.outbox_events
-├── repository/
-│   ├── QuizSessionRepository.java     ← ReactiveCrudRepository
-│   └── QuizAnswerRepository.java      ← ReactiveCrudRepository
-│   └── SessionHistoryRepository.java   ← ReactiveCrudRepository
-├── model/
-│   ├── QuizSession.java               ← R2DBC @Table
-│   ├── QuizAnswer.java                ← R2DBC @Table
-│   ├── SessionCache.java              ← Redis DTO
-│   ├── CachedQuestion.java
-│   ├── SessionStatus.java
-│   └── QuizType.java
-│   └── SessionHistory.java            ← R2DBC @Table
-└── dto/
-    ├── StartSessionResponse.java
-    ├── ResumeSessionResponse.java
-    ├── AnswerRequest.java
-    ├── AnswerResponse.java
-    └── CompleteSessionResponse.java
-```
+private List<CachedQuestion> generateVocabularyQuestions(SessionDataResponse sessionData, String userLocale) {
+    List<VocabularyWordDto> availableWords = new ArrayList<>(sessionData.getVocabularyWords());
+    Collections.shuffle(availableWords);
 
----
+    int questionsToGenerate = Math.min(sessionData.getQuestionsPerSession(), availableWords.size());
+    List<CachedQuestion> generatedQuestions = new ArrayList<>();
 
-## 15. application.yml
+    for (int i = 0; i < questionsToGenerate; i++) {
+        VocabularyWordDto word = availableWords.get(i);
+        UUID questionId = UUID.randomUUID();
+        QuestionLanguage sourceLang;
+        QuestionLanguage targetLang;
+        String questionText;
+        String correctFormIast;
+        String correctFormDevanagari = null;
 
-```yaml
-server:
-  port: 8082
+        if (random.nextBoolean()) { // Sanskrit -> Translation
+            sourceLang = QuestionLanguage.SANSKRIT;
+            targetLang = userLocale.equals("ru") ? QuestionLanguage.RUSSIAN : QuestionLanguage.ENGLISH;
+            questionText = String.format(
+                    userLocale.equals("ru") ? "Как переводится слово '%s'?" : "How is the word '%s' translated?",
+                    userLocale.equals("ru") ? word.getWordDevanagari() : word.getWordIast()
+            );
+            correctFormIast = targetLang == QuestionLanguage.RUSSIAN ? word.getTranslationRu() : word.getTranslationEn();
+        } else { // Translation -> Sanskrit
+            sourceLang = userLocale.equals("ru") ? QuestionLanguage.RUSSIAN : QuestionLanguage.ENGLISH;
+            targetLang = QuestionLanguage.SANSKRIT;
+            questionText = String.format(
+                    userLocale.equals("ru") ? "Как будет '%s' на санскрите?" : "How is '%s' in Sanskrit?",
+                    sourceLang == QuestionLanguage.RUSSIAN ? word.getTranslationRu() : word.getTranslationEn()
+            );
+            correctFormIast = word.getWordIast();
+            correctFormDevanagari = word.getWordDevanagari();
+        }
 
-spring:
-  application:
-    name: quiz-service
-
-  # R2DBC — основной datasource для бизнес-логики
-  r2dbc:
-    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://postgres:5432/samskrtam}
-    username: ${DB_USER:samskrtam}
-    password: ${DB_PASSWORD}
-    properties:
-      schema: quiz
-
-  # JDBC — только для Flyway (отдельный бин в FlywayConfig)
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/samskrtam}
-    username: ${DB_USER:samskrtam}
-    password: ${DB_PASSWORD}
-  flyway:
-    enabled: false   # отключаем auto, запускаем вручную из FlywayConfig
-    schemas: quiz
-
-  data:
-    redis:
-      host: ${REDIS_HOST:redis}
-      port: 6379
-
-  kafka:
-    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-
-content:
-  service:
-    url: ${CONTENT_SERVICE_URL:http://content-service:8081}
-
-# JWT не валидируется — сервис доверяет заголовкам X-User-* от Gateway.
-```
-
----
-
-## 16. История прохождений (quiz.session_history)
-
-### Таблица quiz.session_history
-
-Хранит агрегированный итог каждой завершённой сессии. Заполняется в момент `POST /sessions/{id}/complete` в той же транзакции, что и обновление статуса сессии.
-
-Это отдельная от `quiz_sessions` таблица: `quiz_sessions` — рабочая таблица активных и завершённых сессий, `session_history` — иммутабельная история результатов для отображения пользователю.
-
-**Состав полей:**
-
-| Поле | Тип | Описание |
-|---|---|---|
-| `id` | UUID | PK |
-| `session_id` | UUID | Ссылка на `quiz_sessions.id` |
-| `user_id` | UUID | Из заголовка `X-User-Id` |
-| `quiz_id` | UUID | ID квиза из content-service |
-| `quiz_type` | VARCHAR | `DECLENSIONS`, `CONJUGATIONS`, `VOCABULARY` |
-| `score` | INT | Количество правильных ответов |
-| `total_questions` | INT | Общее количество вопросов в сессии |
-| `duration_ms` | BIGINT | Время от старта до завершения сессии |
-| `completed_at` | TIMESTAMPTZ | Момент завершения |
-
-`score` / `total_questions` позволяют вычислить процент без обращения к `quiz_answers`. `session_id` даёт возможность при необходимости подтянуть детальные ответы.
-
-### API истории
-
-```
-GET /api/v1/quiz/history                        → история всех квизов текущего пользователя
-GET /api/v1/quiz/history?quizType=DECLENSIONS   → фильтр по типу квиза
-GET /api/v1/quiz/history?quizId={uuid}          → история по конкретному квизу
-```
-
-Ответ — список записей, отсортированных по `completed_at DESC`, с пагинацией (`page`, `size`).
-
-```json
-{
-  "content": [
-    {
-      "sessionId": "uuid",
-      "quizId": "uuid",
-      "quizType": "DECLENSIONS",
-      "score": 17,
-      "totalQuestions": 20,
-      "percentage": 85,
-      "durationMs": 142000,
-      "completedAt": "2025-06-01T14:32:00Z"
+        generatedQuestions.add(CachedQuestion.builder()
+                .questionId(questionId)
+                .text(questionText)
+                .explanationRu(word.getDictionaryEntry())
+                .explanationEn(word.getDictionaryEntry())
+                .vocabularyWordId(word.getId())
+                .questionSourceLanguage(sourceLang)
+                .questionTargetLanguage(targetLang)
+                .correctTranslationRu(word.getTranslationRu())
+                .correctTranslationEn(word.getTranslationEn())
+                .correctFormIast(correctFormIast)
+                .correctFormDevanagari(correctFormDevanagari)
+                .build());
     }
-  ],
-  "page": 0,
-  "size": 20,
-  "totalElements": 43,
-  "totalPages": 3,
-  "last": false
+    return generatedQuestions;
 }
-```
 
-Пользователь видит только свою историю — `userId` берётся из заголовка `X-User-Id`, не из параметров запроса.
+private String getOptionIast(UUID selectedOptionId, CachedQuestion cachedQuestion, String userLocale, List<VocabularyWordDto> allVocabularyWords) {
+    if (cachedQuestion.getQuizType() == QuizType.VOCABULARY) {
+        VocabularyWordDto selectedWord = allVocabularyWords.stream()
+                .filter(w -> w.getId().equals(selectedOptionId))
+                .findFirst()
+                .orElseThrow(() -> new SamskrtamException("VOCABULARY_WORD_NOT_FOUND", "Selected vocabulary word not found: " + selectedOptionId));
 
----
-
-## 17. Acceptance Criteria
-
-- [ ] Все эндпоинты возвращают `Mono<T>` / `Flux<T>` — нет блокирующих вызовов
-- [ ] Сессия сохраняется в Postgres (R2DBC) при старте
-- [ ] `correctOptionId` не передаётся клиенту до POST /answer
-- [ ] Ответ сохраняется в Postgres и Redis при каждом POST /answer
-- [ ] При промахе Redis — сессия восстанавливается из Postgres без ошибки клиенту
-- [ ] GET /resume возвращает состояние незавершённой сессии через день
-- [ ] После каждого ответа — `AnswerSubmitted` записывается в `quiz.outbox_events` атомарно с ответом
-- [ ] После завершения — `SessionCompleted` в outbox, статус → COMPLETED в Postgres
-- [ ] Outbox-процессор публикует PENDING события в Kafka и помечает их PROCESSED
-- [ ] При сбое публикации в Kafka — событие остаётся PENDING и будет опубликовано при следующем запуске процессора
-- [ ] Нельзя ответить дважды на один вопрос (UNIQUE constraint + 409 Conflict)
-- [ ] Flyway миграции применяются при старте через `FlywayConfig` (JDBC бин)
-- [ ] Дистракторы для VOCABULARY берутся из того же квиза
-- [ ] При завершении сессии запись создаётся в `quiz.session_history` атомарно со статусом COMPLETED
-- [ ] `GET /history` возвращает только записи текущего пользователя
-- [ ] Фильтрация по `quizType` и `quizId` работает независимо и в комбинации
-
----
-
-## 18. Открытые вопросы
-
-- [ ] Сколько хранить завершённые сессии в `quiz.quiz_sessions`? (для истории достаточно statistics-service)
-- [ ] Кэшировать ли session-data от content-service в Redis (снижение latency)?
-- [ ] Деванагари или только IAST в вопросах?
-- [ ] Режим «только ошибки» — повторить неправильные ответы?
-- [ ] Обратный режим VOCABULARY — «Как будет по-санскритски слон»?
+        if (cachedQuestion.getQuestionTargetLanguage() == QuestionLanguage.SANSKRIT) {
+            return selectedWord.getWordIast();
+        } else if (cachedQuestion.getQuestionTargetLanguage() == QuestionLanguage.RUSSIAN) {
+            return selectedWord.getTranslationRu();
+        } else if (cachedQuestion.getQuestionTargetLanguage() == QuestionLanguage.ENGLISH) {
+            return selectedWord.getTranslationEn();
+        }
+        return null;
+    } else {
+        return cachedQuestion.getCorrectFormIast();
+    }
+}

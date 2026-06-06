@@ -12,10 +12,10 @@ java {
 dependencies {
     implementation(platform("org.springframework.boot:spring-boot-dependencies:${libs.versions.spring.boot.get()}"))
 
-    implementation(libs.spring.webflux)
+    implementation(libs.spring.web) // Corrected alias
     implementation(libs.spring.data.jpa)
 
-    implementation(libs.springdoc.openapi.webflux.ui) // Changed to libs alias
+    implementation(libs.springdoc.openapi.webmvc.ui) // Corrected alias
 
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgresql)
@@ -25,7 +25,7 @@ dependencies {
     annotationProcessor(libs.lombok)
 
     implementation(project(":shared:quiz-content-dtos"))
-    implementation(project(":shared:common-dtos")) // Обновлено на common-dtos
+    implementation(project(":shared:common-dtos"))
 
     testImplementation(libs.spring.test)
 }

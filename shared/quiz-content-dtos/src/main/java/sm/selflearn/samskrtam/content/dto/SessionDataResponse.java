@@ -15,4 +15,5 @@ public class SessionDataResponse {
     QuizType quizType;
     int questionsPerSession;
     List<QuestionResponse> questions;
+    List<VocabularyWordDto> vocabularyWords; // New field for vocabulary quizzes
 }

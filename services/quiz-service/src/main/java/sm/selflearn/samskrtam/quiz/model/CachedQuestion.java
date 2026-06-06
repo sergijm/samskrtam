@@ -1,7 +1,7 @@
 package sm.selflearn.samskrtam.quiz.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator; // Import JsonCreator
-import com.fasterxml.jackson.annotation.JsonProperty; // Import JsonProperty
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 import sm.selflearn.samskrtam.content.model.Case;
@@ -13,24 +13,39 @@ import java.util.UUID;
 public class CachedQuestion {
     private UUID questionId;
     private String text;
-    private String explanationRu; // Changed from explanation
-    private String explanationEn; // Added explanationEn
-    private UUID declensionStemId; // For declension quizzes
-    private Case targetCase;       // For declension quizzes
-    private Number targetNumber;   // For declension quizzes
-    private String correctFormIast; // The correct form in IAST
-    private String correctFormDevanagari; // The correct form in Devanagari
+    private String explanationRu;
+    private String explanationEn;
+
+    // For declension quizzes
+    private UUID declensionStemId;
+    private Case targetCase;
+    private Number targetNumber;
+
+    // For vocabulary quizzes
+    private UUID vocabularyWordId;
+    private QuestionLanguage questionSourceLanguage; // e.g., SANSKRIT, ENGLISH, RUSSIAN
+    private QuestionLanguage questionTargetLanguage; // e.g., SANSKRIT, ENGLISH, RUSSIAN
+    private String correctTranslationRu; // Correct translation in Russian
+    private String correctTranslationEn; // Correct translation in English
+
+    private String correctFormIast; // The correct form in IAST (can be declension or vocabulary)
+    private String correctFormDevanagari; // The correct form in Devanagari (can be declension or vocabulary)
 
     @JsonCreator
-    @Builder // Keep @Builder for convenience in creating instances
+    @Builder
     public CachedQuestion(
             @JsonProperty("questionId") UUID questionId,
             @JsonProperty("text") String text,
-            @JsonProperty("explanationRu") String explanationRu, // Changed from explanation
-            @JsonProperty("explanationEn") String explanationEn, // Added explanationEn
+            @JsonProperty("explanationRu") String explanationRu,
+            @JsonProperty("explanationEn") String explanationEn,
             @JsonProperty("declensionStemId") UUID declensionStemId,
             @JsonProperty("targetCase") Case targetCase,
             @JsonProperty("targetNumber") Number targetNumber,
+            @JsonProperty("vocabularyWordId") UUID vocabularyWordId,
+            @JsonProperty("questionSourceLanguage") QuestionLanguage questionSourceLanguage,
+            @JsonProperty("questionTargetLanguage") QuestionLanguage questionTargetLanguage,
+            @JsonProperty("correctTranslationRu") String correctTranslationRu,
+            @JsonProperty("correctTranslationEn") String correctTranslationEn,
             @JsonProperty("correctFormIast") String correctFormIast,
             @JsonProperty("correctFormDevanagari") String correctFormDevanagari) {
         this.questionId = questionId;
@@ -40,6 +55,11 @@ public class CachedQuestion {
         this.declensionStemId = declensionStemId;
         this.targetCase = targetCase;
         this.targetNumber = targetNumber;
+        this.vocabularyWordId = vocabularyWordId;
+        this.questionSourceLanguage = questionSourceLanguage;
+        this.questionTargetLanguage = questionTargetLanguage;
+        this.correctTranslationRu = correctTranslationRu;
+        this.correctTranslationEn = correctTranslationEn;
         this.correctFormIast = correctFormIast;
         this.correctFormDevanagari = correctFormDevanagari;
     }
