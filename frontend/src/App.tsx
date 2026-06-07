@@ -23,6 +23,8 @@ import AdminGroupsPage from './pages/AdminGroupsPage'; // Import AdminGroupsPage
 import QuizzesPage from './pages/QuizzesPage';
 import QuizPage from './pages/QuizPage';
 import UserStatisticsPage from './pages/UserStatisticsPage'; // Import UserStatisticsPage
+import UserQuizSessionsPage from './pages/UserQuizSessionsPage'; // Import UserQuizSessionsPage
+import SessionHistoryPage from './pages/SessionHistoryPage'; // Import SessionHistoryPage
 
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -65,6 +67,8 @@ export default function App() {
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="settings/password" element={<ChangePasswordPage />} />
                 <Route path="users/:id" element={<UserProfilePage />} />
+                <Route path="quiz-sessions" element={<UserQuizSessionsPage />} /> {/* New route for user quiz sessions */}
+                <Route path="quiz-sessions/:sessionId/history" element={<SessionHistoryPage />} /> {/* New route for session history */}
                 <Route path="statistics" element={<UserStatisticsPage />} /> {/* New route for user statistics */}
                 <Route path="groups/:id" element={<GroupPage />} />
                 <Route path="quizzes/:category" element={<QuizzesPage />} />

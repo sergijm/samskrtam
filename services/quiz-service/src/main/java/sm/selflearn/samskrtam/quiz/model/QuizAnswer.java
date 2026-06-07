@@ -17,6 +17,7 @@ public class QuizAnswer {
     private UUID sessionId;
     private UUID questionId;
     private UUID selectedOptionId;
+    private String selectedFormIast; // New field to store the IAST of the selected option
     private String correctFormIast; // Store the correct form IAST
     private boolean correct;
     private int responseTimeMs;

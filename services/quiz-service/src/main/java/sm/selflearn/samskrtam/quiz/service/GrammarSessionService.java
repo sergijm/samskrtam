@@ -118,13 +118,15 @@ public class GrammarSessionService {
                 .switchIfEmpty(Mono.error(new SamskrtamException("ALREADY_ANSWERED", "Question already answered: " + request.getQuestionId())))
                 .flatMap(cache -> {
                     CachedQuestion cachedQuestion = cache.findQuestion(request.getQuestionId());
-                    boolean isCorrect = cachedQuestion.getCorrectFormIast().equals(getOptionIast(request.getSelectedOptionId(), cachedQuestion, userLocale, cache.getAllVocabularyWords(), cache.getQuizType()));
+                    String selectedOptionIast = getOptionIast(request.getSelectedOptionId(), cachedQuestion, userLocale, cache.getAllVocabularyWords(), cache.getQuizType());
+                    boolean isCorrect = cachedQuestion.getCorrectFormIast().equals(selectedOptionIast);
 
                     QuizAnswer newAnswer = QuizAnswer.builder()
                             .id(null)
                             .sessionId(sessionId)
                             .questionId(request.getQuestionId())
                             .selectedOptionId(request.getSelectedOptionId())
+                            .selectedFormIast(selectedOptionIast) // NEW: Store selected option's IAST
                             .correctFormIast(cachedQuestion.getCorrectFormIast())
                             .correct(isCorrect)
                             .responseTimeMs(request.getResponseTimeMs())

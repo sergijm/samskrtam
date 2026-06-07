@@ -18,6 +18,7 @@ CREATE TABLE quiz.quiz_answers (
     session_id UUID NOT NULL,
     question_id UUID NOT NULL,
     selected_option_id UUID,
+    selected_form_iast VARCHAR(255), -- NEW FIELD
     correct_form_iast VARCHAR(255) NOT NULL,
     correct BOOLEAN NOT NULL,
     response_time_ms INT NOT NULL,

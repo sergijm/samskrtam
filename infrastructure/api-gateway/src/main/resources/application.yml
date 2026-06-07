@@ -51,8 +51,8 @@ services:
 
 logging:
   level:
-    root: INFO
+    root: WARN
     sm.selflearn.samskrtam: DEBUG
     org.springframework.security: DEBUG
-    org.springframework.cloud.gateway: TRACE
-    org.springframework.web: TRACE
+    org.springframework.cloud.gateway: DEBUG # Изменено с TRACE на DEBUG
+    org.springframework.web: DEBUG # Изменено с TRACE на DEBUG

@@ -1,0 +1,21 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: common-ingress
+  namespace: default
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host(`kafka-ui.sm.home`)
+      services:
+        - name: kafka-ui
+          namespace: kafka
+          port: 80
+    - kind: Rule
+      match: Host(`mailpit.sm.home`)
+      services:
+        - name: mailpit
+          namespace: mail-system
+          port: 8025

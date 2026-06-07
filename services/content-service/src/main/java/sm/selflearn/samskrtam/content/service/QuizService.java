@@ -7,6 +7,7 @@ import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.QuizType;
 import sm.selflearn.samskrtam.content.repository.QuizRepository;
 import java.util.List;
+import java.util.UUID; // Import UUID
 import java.util.stream.Collectors;
 
 // Импорт DTO из shared:quiz-content-dtos
@@ -33,6 +34,13 @@ public class QuizService {
         return quizRepository.findBySlug(slug)
                 .map(this::toDto)
                 .orElseThrow(() -> new SamskrtamException("QUIZ_NOT_FOUND", "Quiz not found with slug: " + slug));
+    }
+
+    public QuizSummaryDto getQuizSummaryById(UUID quizId) {
+        log.debug("getQuizSummaryById called with quizId: {}", quizId);
+        return quizRepository.findById(quizId)
+                .map(this::toDto)
+                .orElseThrow(() -> new SamskrtamException("QUIZ_NOT_FOUND", "Quiz not found with ID: " + quizId));
     }
 
     private QuizSummaryDto toDto(Quiz quiz) { // Используем Quiz из content-service.model

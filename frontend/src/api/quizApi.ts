@@ -1,5 +1,5 @@
 import api from './axios';
-import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, QuizType } from '../types/quiz';
+import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, QuizType, QuizSessionSummary, AnswerHistory } from '../types/quiz'; // Import AnswerHistory
 
 export const quizApi = {
   getQuizList: (category?: string) => {
@@ -31,4 +31,41 @@ export const quizApi = {
       headers: { 'X-User-Locale': userLocale },
     });
   },
+
+  getUserQuizSessions: (userId: string, page: number, size: number, sortBy: string, sortDirection: string, quizType?: QuizType, status?: string) => {
+    return api.get<PaginatedResponse<QuizSessionSummary>>(`/api/v1/quiz-sessions`, {
+      params: {
+        userId, // Передаем userId как параметр запроса
+        page,
+        size,
+        sortBy,
+        sortDirection,
+        quizType,
+        status,
+      },
+    });
+  },
+
+  getSessionAnswerHistory: (sessionId: string, userId: string, page: number, size: number, sortBy: string, sortDirection: string) => {
+    return api.get<PaginatedResponse<AnswerHistory>>(`/api/v1/quiz-sessions/${sessionId}/answers`, {
+      params: {
+        userId,
+        page,
+        size,
+        sortBy,
+        sortDirection,
+      },
+    });
+  },
 };
+
+// Define a generic PaginatedResponse interface
+interface PaginatedResponse<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  currentPage: number;
+  pageSize: number;
+  isFirst: boolean;
+  isLast: boolean;
+}

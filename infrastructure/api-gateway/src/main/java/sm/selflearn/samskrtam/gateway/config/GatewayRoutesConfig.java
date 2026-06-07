@@ -92,6 +92,12 @@ public class GatewayRoutesConfig {
                         .path("/api/v1/quiz/**")
                         .uri(quizServiceUrl))
 
+                // --- New route for user quiz sessions ---
+                .route("user-quiz-sessions", r -> r
+                        .path("/api/v1/quiz-sessions") // Изменено
+                        .uri(quizServiceUrl))
+                // --- End new route ---
+
                 // ── Dictionary ───────────────────────────────────────────────────
                 .route("dictionary", r -> r
                         .path("/api/v1/dictionary/**")

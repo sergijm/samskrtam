@@ -1,0 +1,62 @@
+# Основные настройки
+deployment:
+  enabled: true
+  kind: Deployment
+  replicas: 1
+
+# ВКЛЮЧАЕМ КРОСС-НЕЙМСПЕЙСНЫЙ ДОСТУП (ВАЖНО ДЛЯ ВАШЕЙ ЗАДАЧИ!)
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true      # <-- Разрешает ссылаться на сервисы из других namespace
+    allowExternalNameServices: true # <-- Разрешает ExternalName сервисы
+    allowEmptyServices: false
+
+  kubernetesIngress:
+    enabled: true
+    allowExternalNameServices: true
+
+# Настройка entrypoints (портов) - ИСПРАВЛЕННЫЙ ФОРМАТ
+ports:
+  web:
+    port: 8000
+    expose:
+      default: true    # <-- Теперь это объект, а не булево значение
+    exposedPort: 80
+    protocol: TCP
+  websecure:
+    port: 8443
+    expose:
+      default: true    # <-- Теперь это объект, а не булево значение
+    exposedPort: 443
+    protocol: TCP
+
+# Для доступа к дашборду Traefik (опционально)
+api:
+  dashboard: true
+  debug: false
+
+ingressRoute:
+  dashboard:
+    enabled: true
+    entryPoints: ["traefik"]
+
+# Настройка сервиса Traefik
+service:
+  enabled: true
+  type: LoadBalancer
+  ports:
+    web:
+      port: 80
+      targetPort: 8000
+    websecure:
+      port: 443
+      targetPort: 8443
+
+# Логи
+logs:
+  general:
+    level: DEBUG
+  access:
+    enabled: true  # Включите access логи для отладки
+    level: DEBUG

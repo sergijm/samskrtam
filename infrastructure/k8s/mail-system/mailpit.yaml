@@ -1,0 +1,144 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mail-system
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mailpit-config
+  namespace: mail-system
+data:
+  SMTP_AUTH: "false"          # Отключаем аутентификацию для тестов
+  MP_MAX_MESSAGES: "5000"     # Максимальное количество сообщений
+  MP_DATABASE: "/data/mailpit.db"
+  MP_SMTP_AUTH_ACCEPT_ANY: "false"
+  MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mailpit
+  namespace: mail-system
+  labels:
+    app: mailpit
+    component: smtp-server
+spec:
+  serviceName: mailpit-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailpit
+  template:
+    metadata:
+      labels:
+        app: mailpit
+    spec:
+      containers:
+        - name: mailpit
+          image: axllent/mailpit:latest
+          ports:
+            - name: smtp
+              containerPort: 1025
+              protocol: TCP
+            - name: http
+              containerPort: 8025
+              protocol: TCP
+          env:
+            - name: MP_SMTP_AUTH
+              valueFrom:
+                configMapKeyRef:
+                  name: mailpit-config
+                  key: SMTP_AUTH
+            - name: MP_MAX_MESSAGES
+              valueFrom:
+                configMapKeyRef:
+                  name: mailpit-config
+                  key: MP_MAX_MESSAGES
+            - name: MP_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: mailpit-config
+                  key: MP_DATABASE
+            - name: MP_SMTP_AUTH_ACCEPT_ANY
+              valueFrom:
+                configMapKeyRef:
+                  name: mailpit-config
+                  key: MP_SMTP_AUTH_ACCEPT_ANY
+            - name: MP_SMTP_AUTH_ALLOW_INSECURE
+              valueFrom:
+                configMapKeyRef:
+                  name: mailpit-config
+                  key: MP_SMTP_AUTH_ALLOW_INSECURE
+          volumeMounts:
+            - name: mailpit-data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8025
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8025
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: mailpit-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+---
+# Headless service для StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailpit-headless
+  namespace: mail-system
+  labels:
+    app: mailpit
+spec:
+  clusterIP: None
+  selector:
+    app: mailpit
+  ports:
+    - name: smtp
+      port: 1025
+      targetPort: 1025
+    - name: http
+      port: 8025
+      targetPort: 8025
+---
+# Основной сервис для доступа
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailpit
+  namespace: mail-system
+  labels:
+    app: mailpit
+spec:
+  type: ClusterIP
+  selector:
+    app: mailpit
+  ports:
+    - name: smtp
+      port: 1025
+      targetPort: 1025
+      protocol: TCP
+    - name: http
+      port: 8025
+      targetPort: 8025
+      protocol: TCP

@@ -1,5 +1,6 @@
-export type QuizType = 'DECLENSIONS' | 'CONJUGATIONS' | 'VOCABULARY';
+export type QuizType = 'DECLENSIONS' | 'CONJUGATIONS' | 'VOCABULARY' | 'A_STEM_DECLENSIONS' | 'AA_STEM_DECLENSIONS' | 'I_STEM_DECLENSIONS' | 'II_STEM_DECLENSIONS' | 'U_STEM_DECLENSIONS' | 'UU_STEM_DECLENSIONS' | 'R_STEM_DECLENSIONS';
 export type Difficulty = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+export type SessionStatus = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED'; // Add SessionStatus
 
 export interface QuizListItem {
   id: string;
@@ -51,4 +52,39 @@ export interface AnswerResponse {
   explanation: string; // Localized explanation
   questionNumber: number;
   totalQuestions: number;
+}
+
+// New interfaces for user quiz sessions
+export interface QuizSessionSummary {
+  sessionId: string;
+  quizId: string;
+  quizTitle: string;
+  quizType: QuizType;
+  score: number;
+  totalQuestions: number;
+  status: SessionStatus;
+  startedAt: string; // ISO string
+  completedAt?: string; // ISO string, optional
+  durationMs?: number; // optional
+}
+
+export interface AnswerHistory {
+  questionId: string;
+  questionText: string;
+  selectedAnswerIast: string;
+  correctOptionIast: string;
+  isCorrect: boolean;
+  responseTimeMs: number;
+  answeredAt: string; // ISO string
+  explanation: string; // Localized explanation
+}
+
+export interface PaginatedResponse<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  currentPage: number;
+  pageSize: number;
+  isFirst: boolean;
+  isLast: boolean;
 }

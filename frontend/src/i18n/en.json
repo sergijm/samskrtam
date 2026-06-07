@@ -140,7 +140,15 @@
       "add": "Add",
       "createdAt": "Created At",
       "or": "or",
-      "go": "Go"
+      "go": "Go",
+      "all": "All",
+      "inProgress": "In Progress",
+      "filterByQuizType": "Filter by Quiz Type",
+      "filterByStatus": "Filter by Status",
+      "viewDetails": "View Details",
+      "correct": "Correct",
+      "incorrect": "Incorrect",
+      "actions": "Actions"
   },
   "validation": {
     "usernameRequired": "Email or Username is required.",
@@ -162,7 +170,8 @@
     "settingsDescription": "Manage your profile and application settings.",
     "adminDescription": "Access administrative tools and features.",
     "grammarDescription": "Grammar quizzes: declensions and conjugations.",
-    "vocabularyDescription": "Quizzes on vocabulary knowledge."
+    "vocabularyDescription": "Quizzes on vocabulary knowledge.",
+    "quizSessionsDescription": "View your past and ongoing quiz sessions."
   },
   "userProfile": {
     "errorLoadingUser": "Error loading user profile.",
@@ -176,11 +185,44 @@
     "totalCorrectAnswers": "Correct Answers",
     "totalScore": "Total Score",
     "averageScore": "Average Score",
-    "lastCompletedAt": "Last Completed"
+    "lastCompletedAt": "Last Completed",
+    "quizSessions": "Quiz Sessions",
+    "noQuizSessionsFound": "No quiz sessions found.",
+    "quizTitle": "Quiz Title",
+    "score": "Score",
+    "totalQuestions": "Total Questions",
+    "status": "Status",
+    "startedAt": "Started At",
+    "completedAt": "Completed At",
+    "duration": "Duration"
   },
   "quizType": {
     "VOCABULARY": "Vocabulary",
     "DECLENSIONS": "Declensions",
-    "CONJUGATIONS": "Conjugations"
+    "CONJUGATIONS": "Conjugations",
+    "A_STEM_DECLENSIONS": "A-Stem Declensions",
+    "AA_STEM_DECLENSIONS": "Ā-Stem Declensions",
+    "I_STEM_DECLENSIONS": "I-Stem Declensions",
+    "II_STEM_DECLENSIONS": "Ī-Stem Declensions",
+    "U_STEM_DECLENSIONS": "U-Stem Declensions",
+    "UU_STEM_DECLENSIONS": "Ū-Stem Declensions",
+    "R_STEM_DECLENSIONS": "Ṛ-Stem Declensions"
+  },
+  "sessionStatus": {
+    "IN_PROGRESS": "In Progress",
+    "COMPLETED": "Completed",
+    "ABANDONED": "Abandoned"
+  },
+  "sessionHistory": {
+    "title": "Session History ({{sessionId}})",
+    "errorLoadingHistory": "Error loading session history.",
+    "noAnswersFound": "No answers found for this session.",
+    "question": "Question",
+    "yourAnswer": "Your Answer",
+    "correctAnswer": "Correct Answer",
+    "result": "Result",
+    "responseTime": "Response Time (ms)",
+    "answeredAt": "Answered At",
+    "explanation": "Explanation"
   }
 }

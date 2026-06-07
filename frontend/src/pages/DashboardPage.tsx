@@ -15,6 +15,7 @@ export default function DashboardPage() {
     { title: t('nav.dictionary'), description: t('dashboard.dictionaryDescription'), icon: 'pi pi-book', link: '/dictionary' },
     { title: t('nav.statistics'), description: t('dashboard.statisticsDescription'), icon: 'pi pi-chart-line', link: '/statistics' }, // Updated link to /statistics
     { title: t('nav.leaderboard'), description: t('dashboard.leaderboardDescription'), icon: 'pi pi-trophy', link: '/leaderboard' },
+    { title: t('userProfile.quizSessions'), description: t('dashboard.quizSessionsDescription'), icon: 'pi pi-history', link: `/quiz-sessions` }, // New tile, updated link
   ];
 
   // Admin tile now links to /admin, which will be the AdminHomePage

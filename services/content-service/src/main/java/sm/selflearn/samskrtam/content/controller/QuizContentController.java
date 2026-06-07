@@ -55,6 +55,14 @@ public class QuizContentController {
         return quizService.getQuizBySlug(slug);
     }
 
+    @GetMapping("/quizzes/{id}/summary") // Новый эндпоинт
+    @Operation(summary = "Get quiz summary by ID")
+    @ApiResponse(responseCode = "200", description = "Quiz summary retrieved successfully")
+    @ApiResponse(responseCode = "404", description = "Quiz not found")
+    public QuizSummaryDto getQuizSummaryById(@PathVariable UUID id) {
+        return quizService.getQuizSummaryById(id);
+    }
+
     @GetMapping("/declension-stems/{stemId}/forms")
     @Operation(summary = "Get all declension forms for a specific stem")
     @ApiResponse(responseCode = "200", description = "List of declension forms retrieved successfully")

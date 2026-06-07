@@ -24,3 +24,8 @@ spring:
     user: ${DB_USER}
     password: ${DB_PASSWORD}
     schemas: content
+
+logging:
+  level:
+    root: WARN
+    sm.selflearn.samskrtam: DEBUG

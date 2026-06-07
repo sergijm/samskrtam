@@ -7,6 +7,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.DeclensionFormDto; // Import DeclensionFormDto
+import sm.selflearn.samskrtam.content.dto.QuizSummaryDto; // Import QuizSummaryDto
 import sm.selflearn.samskrtam.content.dto.SessionDataResponse;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // New import
 
@@ -54,5 +55,14 @@ public class ContentClient {
                         r -> Mono.error(new SamskrtamException("VOCABULARY_WORDS_NOT_FOUND", "Vocabulary words not found for quiz: " + quizId)))
                 .bodyToFlux(VocabularyWordDto.class)
                 .collectList();
+    }
+
+    public Mono<QuizSummaryDto> getQuizSummary(UUID quizId) {
+        return webClient.get()
+                .uri(contentBaseUrl + "/api/v1/content/quizzes/{id}/summary", quizId) // Новый эндпоинт в content-service
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("QUIZ_NOT_FOUND", "Quiz summary not found in content-service: " + quizId)))
+                .bodyToMono(QuizSummaryDto.class);
     }
 }

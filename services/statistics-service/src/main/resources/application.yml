@@ -47,6 +47,6 @@ management:
 logging:
   level:
     root: WARN
-    sm.selflearn.samskrtam: WARN
-    org.springframework.kafka: WARN
-    org.apache.kafka: WARN
+    sm.selflearn.samskrtam: DEBUG # Изменено с WARN на DEBUG
+    org.springframework.kafka: DEBUG # Изменено с WARN на DEBUG
+    org.apache.kafka: DEBUG # Изменено с WARN на DEBUG
