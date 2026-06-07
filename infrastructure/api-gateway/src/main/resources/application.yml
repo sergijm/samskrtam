@@ -27,6 +27,8 @@ spring:
             redis-rate-limiter.replenishRate: 20
             redis-rate-limiter.burstCapacity: 40
             key-resolver: "#{@userKeyResolver}"
+      # Маршруты перенесены в GatewayRoutesConfig.java
+      routes: [] # Оставляем пустой список, чтобы не было ошибок конфигурации
 
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS}

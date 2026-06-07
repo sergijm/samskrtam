@@ -37,14 +37,28 @@ public class GatewayRoutesConfig {
     @Bean
     public RouteLocator routes(RouteLocatorBuilder builder) {
         return builder.routes()
+                // --- New routes for user-service auth endpoints with path rewriting ---
+                .route("user-service-register-route", r -> r
+                        .path("/api/v1/auth/register")
+                        .filters(f -> f.rewritePath("/api/v1/auth/register", "/api/v1/users/register"))
+                        .uri(userServiceUrl))
+                .route("user-service-forgot-password-route", r -> r
+                        .path("/api/v1/auth/forgot-password")
+                        .filters(f -> f.rewritePath("/api/v1/auth/forgot-password", "/api/v1/users/forgot-password"))
+                        .uri(userServiceUrl))
+                // --- End new routes ---
 
                 // ── Auth (публичный) — исключая OAuth2 пути которые обрабатывает Gateway ──
                 // Логин/пароль, регистрация, refresh, logout — проксируем в user-service.
                 // /api/v1/auth/oauth2/** НЕ проксируется — обрабатывается OAuthController.
                 // /api/v1/auth/login НЕ проксируется — обрабатывается AuthController.
+                // Now also exclude register and forgot-password as they are handled by specific routes above
                 .route("auth", r -> r
                         .path("/api/v1/auth/**")
-                        .and().not(p -> p.path("/api/v1/auth/oauth2/**").or().path("/api/v1/auth/login"))
+                        .and().not(p -> p.path("/api/v1/auth/oauth2/**")
+                                .or().path("/api/v1/auth/login")
+                                .or().path("/api/v1/auth/register") // Exclude specific register path
+                                .or().path("/api/v1/auth/forgot-password")) // Exclude specific forgot-password path
                         .uri(userServiceUrl))
 
                 // ── Admin Users (требует JWT и ADMIN роль) ──────────────────────────────────────────

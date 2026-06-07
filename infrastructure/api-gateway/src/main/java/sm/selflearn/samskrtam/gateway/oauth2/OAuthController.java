@@ -20,8 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.gateway.config.OAuth2Properties;
-
-// Импорт DTO из shared:user-dtos
+import sm.selflearn.samskrtam.user.dto.OAuthSyncRequest; // Import OAuthSyncRequest from shared module
 
 import java.net.URI;
 import java.util.Set;
@@ -256,7 +255,7 @@ public class OAuthController {
             log.error("Failed to create URI for frontend error redirect. Frontend URL: {}, Location: {}. Error: {}",
                     frontendUrl, location, e.getMessage());
             return Mono.error(new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR, "Invalid frontend error redirect URL"));
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Invalid frontend redirect URL"));
         }
     }
 

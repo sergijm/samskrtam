@@ -53,3 +53,12 @@ springdoc:
   api-docs:
     enabled: ${SPRINGDOC_ENABLED:true}
     path: /api-docs
+
+logging:
+  level:
+    root: INFO
+    sm.selflearn.samskrtam: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.keycloak: DEBUG
+    org.hibernate: DEBUG

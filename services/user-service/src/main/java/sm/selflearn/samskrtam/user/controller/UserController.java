@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import sm.selflearn.samskrtam.user.dto.OAuthSyncRequest; // Import OAuthSyncRequest
 import sm.selflearn.samskrtam.user.service.AvatarService;
 import sm.selflearn.samskrtam.user.service.PasswordService;
 import sm.selflearn.samskrtam.user.service.UserProfileService;
@@ -84,6 +85,16 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     public ResponseEntity<List<UserSearchResponse>> searchUsers(@RequestParam String query) {
         return ResponseEntity.ok(userProfileService.searchUsers(query));
+    }
+
+    // POST /api/v1/users/oauth2/sync
+    @PostMapping("/oauth2/sync")
+    @Operation(summary = "Synchronize user profile after OAuth2 login (internal API Gateway call)")
+    @ApiResponse(responseCode = "200", description = "User profile synchronized successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request or token")
+    public ResponseEntity<UserProfileResponse> syncOAuth2Profile(@Valid @RequestBody OAuthSyncRequest request) {
+        UserProfileResponse response = userProfileService.syncOAuth2Profile(request.getKeycloakAccessToken(), request.getProvider());
+        return ResponseEntity.ok(response);
     }
 
     // POST /api/v1/users/me/avatar/upload-url
