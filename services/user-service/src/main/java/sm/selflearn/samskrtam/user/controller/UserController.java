@@ -12,6 +12,7 @@ import sm.selflearn.samskrtam.user.dto.OAuthSyncRequest; // Import OAuthSyncRequ
 import sm.selflearn.samskrtam.user.service.AvatarService;
 import sm.selflearn.samskrtam.user.service.PasswordService;
 import sm.selflearn.samskrtam.user.service.UserProfileService;
+import sm.selflearn.samskrtam.user.service.RegistrationService; // Import RegistrationService
 
 // Импорты DTO из нового shared модуля
 import sm.selflearn.samskrtam.user.dto.UserProfileResponse;
@@ -23,6 +24,9 @@ import sm.selflearn.samskrtam.user.dto.AvatarConfirmResponse;
 import sm.selflearn.samskrtam.user.dto.ChangePasswordRequest;
 import sm.selflearn.samskrtam.user.dto.UserGroupSummary;
 import sm.selflearn.samskrtam.user.dto.UserSearchResponse; // Import UserSearchResponse
+import sm.selflearn.samskrtam.user.dto.ForgotPasswordRequest; // Import ForgotPasswordRequest
+import sm.selflearn.samskrtam.user.dto.ResetPasswordRequest; // Import ResetPasswordRequest
+import sm.selflearn.samskrtam.user.dto.RegisterRequest; // Import RegisterRequest
 
 import java.util.List;
 import java.util.UUID;
@@ -36,6 +40,19 @@ public class UserController {
     private final UserProfileService userProfileService;
     private final AvatarService avatarService;
     private final PasswordService passwordService;
+    private final RegistrationService registrationService; // Add RegistrationService
+
+    // POST /api/v1/users/register
+    @PostMapping("/register")
+    @Operation(summary = "Register a new user")
+    @ApiResponse(responseCode = "201", description = "User registered successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid registration data")
+    @ApiResponse(responseCode = "409", description = "Username or email already exists")
+    public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
+        // log.info("Attempting to register new user: {}", request.username()); // Logger is not available here, consider adding @Slf4j if needed
+        registrationService.registerNewUser(request);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
 
     // GET /api/v1/users/me
     @GetMapping("/me")
@@ -132,6 +149,27 @@ public class UserController {
     public ResponseEntity<Void> changePassword(@RequestHeader("X-User-Id") UUID userId,
                                                @Valid @RequestBody ChangePasswordRequest request) {
         passwordService.changePassword(userId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    // POST /api/v1/users/forgot-password
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Initiate password reset process by sending a reset email")
+    @ApiResponse(responseCode = "204", description = "Password reset email sent (if user exists)")
+    @ApiResponse(responseCode = "400", description = "Invalid email format")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordService.forgotPassword(request.email());
+        return ResponseEntity.noContent().build();
+    }
+
+    // POST /api/v1/users/reset-password
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset user password using a valid token")
+    @ApiResponse(responseCode = "204", description = "Password reset successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid token or new password format")
+    @ApiResponse(responseCode = "404", description = "User not found or token expired")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordService.resetPassword(request);
         return ResponseEntity.noContent().build();
     }
 }

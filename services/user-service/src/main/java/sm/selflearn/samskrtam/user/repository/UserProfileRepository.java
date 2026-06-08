@@ -17,5 +17,6 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, UUID>,
     Optional<UserProfile> findByUsername(String username);
     Optional<UserProfile> findByEmail(String email);
     boolean existsByUsername(String username);
-    boolean existsByEmail(String email); // Corrected back to String email
+    boolean existsByEmail(String email);
+    Optional<UserProfile> findByPasswordResetToken(String passwordResetToken); // Added this line
 }

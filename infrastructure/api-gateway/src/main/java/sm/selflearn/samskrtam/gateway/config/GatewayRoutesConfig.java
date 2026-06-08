@@ -94,7 +94,7 @@ public class GatewayRoutesConfig {
 
                 // --- New route for user quiz sessions ---
                 .route("user-quiz-sessions", r -> r
-                        .path("/api/v1/quiz-sessions") // Изменено
+                        .path("/api/v1/quiz-sessions/**") // Изменено для включения подпутей
                         .uri(quizServiceUrl))
                 // --- End new route ---
 

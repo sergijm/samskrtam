@@ -19,4 +19,6 @@ public class AnswerData {
     private boolean correct;
     private int responseTimeMs;
     private Instant answeredAt;
+    private String explanationRu; // New field
+    private String explanationEn; // New field
 }

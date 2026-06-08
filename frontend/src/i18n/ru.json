@@ -44,7 +44,7 @@
     "fetchError": "Не удалось загрузить квизы: {{message}}",
     "totalQuestions": "Всего вопросов: {{count}}",
     "noQuizzesFound": "Квизы не найдены.",
-    "startError": "Не удалось начать сессию квиза: {{message}}",
+    "startError": "Не удалось начать сессию квиза: {{message}",
     "submitAnswer": "Ответить",
     "noQuestions": "В этом квизе нет вопросов."
   },
@@ -169,7 +169,10 @@
     "settingsDescription": "Управляйте своим профилем и настройками приложения.",
     "adminDescription": "Доступ к административным инструментам и функциям.",
     "grammarDescription": "Квизы по грамматике: склонения и спряжения.",
-    "vocabularyDescription": "Квизы на знание лексики."
+    "vocabularyDescription": "Квизы на знание лексики.",
+    "quizSessionsDescription": "Просмотр прошлых и текущих сессий квизов.",
+    "quizProgress": "Прогресс: {{answered}}/{{total}}",
+    "noQuizInProgress": ""
   },
   "userProfile": {
     "errorLoadingUser": "Ошибка загрузки профиля пользователя.",

@@ -6,45 +6,68 @@ import { Message } from 'primereact/message';
 import { Button } from 'primereact/button';
 import { ProgressBar } from 'primereact/progressbar';
 import { Card } from 'primereact/card';
-import { useStartQuizSession, useSubmitQuizAnswer, useQuizBySlug } from '../hooks/useQuiz';
+import { useStartQuizSession, useSubmitQuizAnswer, useQuizBySlug, useResumeQuizSession } from '../hooks/useQuiz'; // Import useResumeQuizSession
 import { AnswerRequest, SessionQuestion, QuizType } from '../types/quiz'; // Import types from local types file
 
 const QuizPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { slug } = useParams<{ slug?: string }>();
+  const { slug, sessionId: sessionIdFromParams } = useParams<{ slug?: string; sessionId?: string }>(); // Get sessionId from params
 
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(sessionIdFromParams || null); // Initialize with sessionId from params
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<SessionQuestion[]>([]);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ isCorrect: boolean; correctOptionId: string; explanation: string } | null>(null);
   const [startTime, setStartTime] = useState<number>(Date.now());
-  const [hasAttemptedStart, setHasAttemptedStart] = useState(false);
+  const [hasAttemptedSessionLoad, setHasAttemptedSessionLoad] = useState(false); // Renamed from hasAttemptedStart
 
   const { data: quizSummary, isLoading: isQuizSummaryLoading, isError: isQuizSummaryError, error: quizSummaryError } = useQuizBySlug(slug || '');
 
   const startSessionMutation = useStartQuizSession();
+  const resumeSessionMutation = useResumeQuizSession(); // New mutation for resuming
   const submitAnswerMutation = useSubmitQuizAnswer();
 
   useEffect(() => {
-    if (quizSummary && !sessionId && !hasAttemptedStart) {
-      setHasAttemptedStart(true);
-      startSessionMutation.mutate(
-        { quizIdentifier: quizSummary.id, quizType: quizSummary.quizType }, // Use quizSummary.id and quizSummary.quizType
-        {
-          onSuccess: (data) => {
-            setSessionId(data.sessionId);
-            setQuestions(data.questions);
-            setStartTime(Date.now());
-          },
-          onError: (err) => {
-            console.error('Failed to start quiz session:', err);
-          },
-        }
-      );
+    if (quizSummary && !hasAttemptedSessionLoad) {
+      setHasAttemptedSessionLoad(true);
+
+      if (sessionIdFromParams) {
+        // Attempt to resume session
+        resumeSessionMutation.mutate(
+          { sessionId: sessionIdFromParams, quizType: quizSummary.quizType },
+          {
+            onSuccess: (data) => {
+              setSessionId(data.sessionId);
+              setQuestions(data.questions);
+              setCurrentQuestionIndex(data.currentQuestionIndex); // Set current question index
+              setStartTime(Date.now());
+            },
+            onError: (err) => {
+              console.error('Failed to resume quiz session:', err);
+              // Optionally, navigate to an error page or try to start a new session
+              // For now, we'll just log the error.
+            },
+          }
+        );
+      } else {
+        // Start a new session
+        startSessionMutation.mutate(
+          { quizIdentifier: quizSummary.id, quizType: quizSummary.quizType },
+          {
+            onSuccess: (data) => {
+              setSessionId(data.sessionId);
+              setQuestions(data.questions);
+              setStartTime(Date.now());
+            },
+            onError: (err) => {
+              console.error('Failed to start quiz session:', err);
+            },
+          }
+        );
+      }
     }
-  }, [quizSummary, sessionId, startSessionMutation, hasAttemptedStart]);
+  }, [quizSummary, sessionIdFromParams, startSessionMutation, resumeSessionMutation, hasAttemptedSessionLoad]);
 
   const handleOptionSelect = (optionId: string) => {
     setSelectedOptionId(optionId);
@@ -97,7 +120,7 @@ const QuizPage = () => {
     }
   };
 
-  if (isQuizSummaryLoading || startSessionMutation.isLoading || !sessionId) {
+  if (isQuizSummaryLoading || startSessionMutation.isLoading || resumeSessionMutation.isLoading || !sessionId) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
         <ProgressSpinner />
@@ -113,10 +136,10 @@ const QuizPage = () => {
     );
   }
 
-  if (startSessionMutation.isError) {
+  if (startSessionMutation.isError || resumeSessionMutation.isError) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
-        <Message severity="error" text={t('quiz.startError', { message: startSessionMutation.error?.message })} />
+        <Message severity="error" text={t('quiz.startError', { message: startSessionMutation.error?.message || resumeSessionMutation.error?.message })} />
       </div>
     );
   }

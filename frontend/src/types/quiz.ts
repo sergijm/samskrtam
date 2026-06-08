@@ -40,6 +40,18 @@ export interface StartSessionResponse {
   totalQuestions: number;
 }
 
+// New interface for resuming a session
+export interface ResumeSessionResponse {
+  sessionId: string;
+  quizId: string;
+  quizType: QuizType;
+  questions: SessionQuestion[];
+  totalQuestions: number;
+  answeredQuestions: number;
+  score: number;
+  currentQuestionIndex: number;
+}
+
 export interface AnswerRequest {
   questionId: string;
   selectedOptionId: string;
@@ -77,6 +89,14 @@ export interface AnswerHistory {
   responseTimeMs: number;
   answeredAt: string; // ISO string
   explanation: string; // Localized explanation
+}
+
+// New interface for quiz progress
+export interface QuizProgress {
+  sessionId?: string; // New field to store the session ID, optional as it might not be found
+  answeredQuestions: number;
+  totalQuestions: number;
+  found: boolean;
 }
 
 export interface PaginatedResponse<T> {

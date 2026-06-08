@@ -49,6 +49,9 @@ dependencies {
     // Logstash Encoder for JSON logging
     implementation(libs.logstash.logback.encoder)
 
+    // Spring Boot Starter Mail for EmailService
+    implementation(libs.spring.boot.starter.mail)
+
     // Lombok
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)

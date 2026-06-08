@@ -19,3 +19,9 @@ spec:
         - name: mailpit
           namespace: mail-system
           port: 8025
+    - kind: Rule
+      match: Host(`minio.sm.home`)
+      services:
+        - name: minio
+          namespace: file-system
+          port: 9001

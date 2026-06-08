@@ -47,9 +47,13 @@ export const authApi = {
   register: (username: string, email: string, password: string) =>
     api.post('/api/v1/auth/register', { username, email, password }),
 
-  // Password recovery
+  // Password recovery - corrected endpoint
   forgotPassword: (email: string) =>
-    api.post('/api/v1/auth/forgot-password', { email }),
+    api.post('/api/v1/users/forgot-password', { email }),
+
+  // Reset password with token - new function
+  resetPassword: (token: string, newPassword: string) =>
+    api.post('/api/v1/users/reset-password', { token, newPassword }),
 
   // Change password (requires JWT)
   changePassword: (currentPassword: string, newPassword: string) =>

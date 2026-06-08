@@ -8,6 +8,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage'; // Import ResetPasswordPage
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import DashboardPage from './pages/DashboardPage';
 import SettingsPage from './pages/SettingsPage';
@@ -58,6 +59,7 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* New route for reset password */}
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
             {/* Protected routes */}
@@ -72,8 +74,8 @@ export default function App() {
                 <Route path="statistics" element={<UserStatisticsPage />} /> {/* New route for user statistics */}
                 <Route path="groups/:id" element={<GroupPage />} />
                 <Route path="quizzes/:category" element={<QuizzesPage />} />
-                <Route path="quiz/grammar/:slug" element={<QuizPage />} />
-                <Route path="quiz/vocabulary/:slug" element={<QuizPage />} />
+                {/* Unified QuizPage route with optional sessionId */}
+                <Route path="quiz/:quizCategory/:slug/:sessionId?" element={<QuizPage />} />
                 
                 {/* Admin only routes */}
                 <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>

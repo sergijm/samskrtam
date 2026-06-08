@@ -5,13 +5,32 @@ import { Link, useParams } from 'react-router-dom';
 import { useQuizList } from '../hooks/useQuiz';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
+import { useQueries } from '@tanstack/react-query'; // Import useQueries
+import { useAuthStore } from '../store/authStore'; // Import useAuthStore
+import { quizApi } from '../api/quizApi'; // Import quizApi
+import { QuizProgress } from '../types/quiz'; // Import QuizProgress
 
 const QuizzesPage = () => {
   const { t } = useTranslation();
   const { category } = useParams<{ category?: string }>(); // Get category from URL
   const { data: quizList, isLoading, isError, error } = useQuizList(category); // Pass category to the hook
+  const { user } = useAuthStore(); // Get user from auth store
+  const userId = user?.id;
 
-  if (isLoading) {
+  // Define queries for quiz progress using useQueries
+  const quizProgressQueries = useQueries({
+    queries: (quizList || []).map(quiz => ({
+      queryKey: ['quizProgress', quiz.id, userId], // queryKey already uses quiz.id for uniqueness
+      queryFn: () => userId ? quizApi.getLatestUnfinishedQuizProgress(userId, quiz.id).then(res => res.data) : Promise.reject('User ID not available'), // Pass quiz.id instead of quiz.quizType
+      enabled: !!userId, // Only run query if userId is available
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    })),
+  });
+
+  // Check if any of the progress queries are loading
+  const isProgressLoading = quizProgressQueries.some(query => query.isLoading);
+
+  if (isLoading || isProgressLoading) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
         <ProgressSpinner />
@@ -31,13 +50,17 @@ const QuizzesPage = () => {
     <div className="flex flex-column align-items-center justify-content-center p-4">
       <h1 className="text-center mb-5">{t('quizzes.title')}</h1>
       <div className="grid justify-content-center w-full" style={{ maxWidth: '1200px' }}>
-        {quizList?.map((quiz) => {
+        {quizList?.map((quiz, index) => {
+          const quizCategory = quiz.quizType === 'VOCABULARY' ? 'vocabulary' : 'grammar';
           let quizLink = '';
-          if (quiz.quizType === 'VOCABULARY') {
-            quizLink = `/quiz/vocabulary/${quiz.slug}`;
+          const quizProgress = quizProgressQueries[index]?.data as QuizProgress | undefined;
+
+          if (quizProgress && quizProgress.found && quizProgress.sessionId) {
+            // If an unfinished quiz is found, link to resume it
+            quizLink = `/quiz/${quizCategory}/${quiz.slug}/${quizProgress.sessionId}`;
           } else {
-            // For grammar-related quizzes, use quiz.slug in the URL
-            quizLink = `/quiz/grammar/${quiz.slug}`;
+            // Otherwise, link to start a new quiz
+            quizLink = `/quiz/${quizCategory}/${quiz.slug}`;
           }
 
           return (
@@ -50,8 +73,12 @@ const QuizzesPage = () => {
                 >
                   <div className="flex flex-column align-items-center justify-content-center flex-grow-1">
                     <i className="pi pi-question-circle text-5xl mb-3" />
-                    <p className="text-sm text-color-secondary">{quiz.description}</p>
-                    <p className="text-xs text-color-secondary mt-2">{t('quiz.totalQuestions', { count: quiz.totalQuestions })}</p>
+                    {/* Removed duplicate quiz.description */}
+                    {quizProgress && quizProgress.found && ( // Only render if progress is found
+                      <p className="text-xs text-color-secondary mt-2">
+                        {t('dashboard.quizProgress', { answered: quizProgress.answeredQuestions, total: quizProgress.totalQuestions })}
+                      </p>
+                    )}
                   </div>
                 </Card>
               </Link>

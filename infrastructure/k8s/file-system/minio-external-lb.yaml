@@ -1,0 +1,17 @@
+# Сервис MinIO для внешнего доступа (браузер, API клиенты)
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-external
+  namespace: file-system
+spec:
+  type: LoadBalancer
+  ports:
+    - name: api
+      port: 9000
+      targetPort: 9000
+    - name: console
+      port: 9001
+      targetPort: 9001
+  selector:
+    app: minio

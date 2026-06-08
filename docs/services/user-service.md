@@ -12,11 +12,11 @@
 
 ## 1. Описание
 
-Управляет жизненным циклом аккаунта и профилем пользователя. Хранит профили в собственной схеме БД, синхронизирует изменения с Keycloak через Outbox Pattern. Управляет файлами (аватарки) через MinIO.
+Управляет жизненным циклом аккаунта и профилем пользователя. Хранит профили в собственной схеме БД, синхронизирует изменения с Keycloak через Outbox Pattern. Управляет файлами (аватарки) через MinIO. **Реализован механизм восстановления пароля с отправкой ссылки по SMTP из приложения.**
 
 Разделение ответственности:
 - **api-gateway** — OAuth2/OIDC протокол (токены, редиректы, сессии)
-- **user-service** — бизнес-логика аккаунта (регистрация, профиль, пароль, блокировка)
+- **user-service** — бизнес-логика аккаунта (регистрация, профиль, пароль, блокировка, восстановление пароля)
 
 ---
 
@@ -261,7 +261,8 @@ GET    /api/v1/users/{id}                    → публичный профил
 
 ```
 POST   /api/v1/users/register                → регистрация нового пользователя
-POST   /api/v1/users/forgot-password         → запрос восстановления пароля (email)
+POST   /api/v1/users/forgot-password         → запрос восстановления пароля (email), отправка ссылки по SMTP
+POST   /api/v1/users/reset-password          → сброс пароля по токену
 ```
 
 ### Административные (только ADMIN)
@@ -401,7 +402,7 @@ public class KeycloakAdminService {
     }
 
     // PROFILE_UPDATED — синхронизация имени, фамилии, username
-    private void updateKeycloakUser(String userId, Map<String, Object> payload) {
+    private void void updateKeycloakUser(String userId, Map<String, Object> payload) {
         // payload: { firstName, lastName, username }
         // Keycloak PATCH не поддерживается — используем PUT с частичными полями
         Map<String, Object> representation = new HashMap<>();
@@ -432,18 +433,8 @@ public class KeycloakAdminService {
         log.debug("Keycloak user enabled={}: userId={}", enabled, userId);
     }
 
-    private String adminUrl() {
-        return keycloakUrl + "/admin/realms/" + realm;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> parsePayload(String json) {
-        try {
-            return objectMapper.readValue(json, Map.class);
-        } catch (Exception e) {
-            throw new OutboxProcessingException("Failed to parse payload: " + json, e);
-        }
-    }
+    // sendPasswordResetEmail - теперь не используется, т.к. отправка идет из приложения
+    // updateUserPassword - используется для сброса пароля через токен
 }
 ```
 
@@ -459,14 +450,14 @@ public class KeycloakAdminService {
 sm/selflearn/samskrtam/user/
 ├── Application.java
 ├── controller/
-│   ├── UserController.java          ← /users/me, /users/{id}
-│   ├── RegistrationController.java  ← /users/register, /users/forgot-password
+│   ├── UserController.java          ← /users/me, /users/{id}, /users/register, /users/forgot-password, /users/reset-password
 │   ├── AdminUserController.java     ← /admin/users/**
 │   └── GroupController.java         // Новый контроллер для групп
 ├── service/
 │   ├── UserProfileService.java      ← CRUD профиля + Outbox
 │   ├── RegistrationService.java     ← регистрация через Keycloak Admin API
-│   ├── PasswordService.java         ← смена/восстановление пароля
+│   ├── PasswordService.java         ← смена/восстановление пароля (теперь с генерацией токена и отправкой email)
+│   ├── EmailService.java            ← новый сервис для отправки email
 │   ├── UserBlockService.java        ← блокировка/разблокировка + Outbox
 │   ├── AvatarService.java           ← MinIO presigned URL, confirm
 │   └── GroupService.java            // Новый сервис для групп
@@ -474,10 +465,10 @@ sm/selflearn/samskrtam/user/
 │   ├── OutboxProcessor.java         ← @Scheduled, читает PENDING события
 │   └── KeycloakAdminService.java    ← применяет события к Keycloak Admin API
 ├── repository/
-│   ├── UserProfileRepository.java
+│   ├── UserProfileRepository.java   ← добавлен findByPasswordResetToken
 │   └── OutboxEventRepository.java
 ├── model/
-│   ├── UserProfile.java
+│   ├── UserProfile.java             ← добавлены passwordResetToken, passwordResetTokenExpiry
 │   ├── OutboxEvent.java
 │   ├── OutboxEventType.java
 │   ├── OutboxStatus.java
@@ -488,7 +479,8 @@ sm/selflearn/samskrtam/user/
     ├── UpdateProfileRequest.java
     ├── RegisterRequest.java
     ├── ChangePasswordRequest.java
-    ├── ForgotPasswordRequest.java
+    ├── ForgotPasswordRequest.java   ← DTO для запроса сброса пароля
+    ├── ResetPasswordRequest.java    ← DTO для сброса пароля по токену
     ├── UploadUrlResponse.java
     ├── AvatarConfirmResponse.java
     ├── BlockUserResponse.java
@@ -526,6 +518,20 @@ spring:
         default_schema: users
   flyway:
     schemas: users
+  mail: # Mail configuration for EmailService
+    host: ${SPRING_MAIL_HOST}
+    port: ${SPRING_MAIL_PORT}
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 keycloak:
   url:           ${KEYCLOAK_URL}
@@ -545,6 +551,9 @@ minio:
 outbox:
   processor:
     interval-ms: ${OUTBOX_PROCESSOR_INTERVAL_MS}
+
+app: # Application specific properties
+  base-url: ${APP_BASE_URL} # Base URL for the frontend, used for password reset links
 
 # JWT не валидируется — сервис доверяет заголовкам X-User-* от Gateway.
 ```
@@ -567,6 +576,9 @@ outbox:
 - [ ] Логин возможен по email и по username (настройка Keycloak realm)
 - [ ] Смена username — синхронизируется в Keycloak через Outbox
 - [ ] `GET /users/me` вызывается после логина — содержит avatarUrl, firstName, lastName для header
+- [ ] **Восстановление пароля:** `POST /api/v1/users/forgot-password` генерирует токен, сохраняет его в БД и отправляет email со ссылкой на фронтенд.
+- [ ] **Восстановление пароля:** `POST /api/v1/users/reset-password` с валидным токеном сбрасывает пароль в Keycloak и очищает токен в БД.
+- [ ] **Восстановление пароля:** Использование невалидного или просроченного токена возвращает ошибку.
 
 ---
 
@@ -578,7 +590,7 @@ outbox:
 - [ ] TTL для FAILED outbox событий — когда очищать?
 - [ ] При блокировке — инвалидировать уже выданные токены немедленно (Keycloak session logout) или ждать истечения TTL?
 - [ ] Поле `search` в списке пользователей — полнотекстовый поиск PostgreSQL или ILIKE достаточно?
-
+- [ ] **Email-шаблоны:** Нужны ли отдельные шаблоны для разных языков для писем восстановления пароля?
 
 ## Identity Mapping
 UserProfile.id == JWT.sub == Keycloak User ID.

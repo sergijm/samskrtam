@@ -1,5 +1,5 @@
 import api from './axios';
-import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, QuizType, QuizSessionSummary, AnswerHistory } from '../types/quiz'; // Import AnswerHistory
+import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, QuizType, QuizSessionSummary, AnswerHistory, QuizProgress, ResumeSessionResponse } from '../types/quiz'; // Import ResumeSessionResponse
 
 export const quizApi = {
   getQuizList: (category?: string) => {
@@ -19,6 +19,14 @@ export const quizApi = {
 
     return api.post<StartSessionResponse>(url, null, {
       params: params,
+      headers: { 'X-User-Locale': userLocale },
+    });
+  },
+
+  resumeSession: (sessionId: string, quizType: QuizType, userLocale: string) => {
+    const slug = quizType.toLowerCase();
+    const url = `/api/v1/quiz/${slug}/sessions/${sessionId}/resume`;
+    return api.get<ResumeSessionResponse>(url, {
       headers: { 'X-User-Locale': userLocale },
     });
   },
@@ -55,6 +63,13 @@ export const quizApi = {
         sortBy,
         sortDirection,
       },
+    });
+  },
+
+  // New function to get the progress of the latest unfinished quiz
+  getLatestUnfinishedQuizProgress: (userId: string, quizId: string) => { // Changed quizType to quizId
+    return api.get<QuizProgress>(`/api/v1/quiz-sessions/progress`, {
+      params: { userId, quizId }, // Pass quizId as a query parameter
     });
   },
 };

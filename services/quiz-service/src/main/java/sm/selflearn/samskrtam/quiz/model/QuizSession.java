@@ -24,4 +24,5 @@ public class QuizSession {
     private SessionStatus status;
     private Instant startedAt;
     private Instant completedAt;
+    private String vocabularyWordsJson; // New field to store JSON representation of vocabulary words
 }

@@ -14,40 +14,28 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 // Импорты DTO из нового shared модуля
-import sm.selflearn.samskrtam.user.dto.ForgotPasswordRequest;
 import sm.selflearn.samskrtam.user.dto.RegisterRequest;
 
-import sm.selflearn.samskrtam.user.service.PasswordService;
 import sm.selflearn.samskrtam.user.service.RegistrationService;
 
-@RestController
-@RequestMapping("/api/v1/users")
-@Tag(name = "Registration & Password Recovery", description = "APIs for user registration and password recovery")
-@RequiredArgsConstructor
-@Slf4j
-public class RegistrationController {
+// This controller will be removed as its functionality is moved to UserController
+// @RestController
+// @RequestMapping("/api/v1/users")
+// @Tag(name = "Registration & Password Recovery", description = "APIs for user registration and password recovery")
+// @RequiredArgsConstructor
+// @Slf4j
+// public class RegistrationController {
 
-    private final RegistrationService registrationService;
-    private final PasswordService passwordService;
+//     private final RegistrationService registrationService;
 
-    @PostMapping("/register")
-    @Operation(summary = "Register a new user")
-    @ApiResponse(responseCode = "201", description = "User registered successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid registration data")
-    @ApiResponse(responseCode = "409", description = "Username or email already exists")
-    public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
-        log.info("Attempting to register new user: {}", request.username());
-        registrationService.registerNewUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
-
-    @PostMapping("/forgot-password")
-    @Operation(summary = "Request password reset")
-    @ApiResponse(responseCode = "204", description = "Password reset process initiated")
-    @ApiResponse(responseCode = "404", description = "User with email not found")
-    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        log.info("Attempting to send password reset link for email: {}", request.getEmail());
-        passwordService.forgotPassword(request.getEmail());
-        return ResponseEntity.noContent().build();
-    }
-}
+//     @PostMapping("/register")
+//     @Operation(summary = "Register a new user")
+//     @ApiResponse(responseCode = "201", description = "User registered successfully")
+//     @ApiResponse(responseCode = "400", description = "Invalid registration data")
+//     @ApiResponse(responseCode = "409", description = "Username or email already exists")
+//     public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
+//         log.info("Attempting to register new user: {}", request.username());
+//         registrationService.registerNewUser(request);
+//         return ResponseEntity.status(HttpStatus.CREATED).build();
+//     }
+// }

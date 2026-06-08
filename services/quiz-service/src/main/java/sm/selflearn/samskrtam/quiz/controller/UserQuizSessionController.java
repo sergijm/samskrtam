@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.content.dto.QuizType;
 import sm.selflearn.samskrtam.quiz.dto.AnswerHistoryDto; // Import AnswerHistoryDto
+import sm.selflearn.samskrtam.quiz.dto.QuizProgressDto; // Import QuizProgressDto
 import sm.selflearn.samskrtam.quiz.dto.QuizSessionSummaryDto;
 import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 import sm.selflearn.samskrtam.quiz.service.UserSessionService;
@@ -67,5 +68,17 @@ public class UserQuizSessionController {
 
         return userSessionService.getSessionAnswerHistory(sessionId, userId, pageable, locale)
                 .map(ResponseEntity::ok);
+    }
+
+    @GetMapping("/progress")
+    @Operation(summary = "Get progress of the latest unfinished quiz session for a user and specific quiz ID")
+    @ApiResponse(responseCode = "200", description = "Quiz progress retrieved successfully")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    public Mono<ResponseEntity<QuizProgressDto>> getLatestUnfinishedQuizProgress(
+            @RequestParam UUID userId,
+            @RequestParam UUID quizId // Changed from quizType to quizId
+    ) {
+        return userSessionService.getLatestUnfinishedQuizProgress(userId, quizId) // Pass quizId to service
+                .map(ResponseEntity::ok); // Always return 200 OK, QuizProgressDto will indicate if found
     }
 }

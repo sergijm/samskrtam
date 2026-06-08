@@ -95,10 +95,6 @@
       "name": "Name",
       "role": "Role in group",
       "joined": "Date joined"
-    },
-    "confirm": {
-      "remove": "Remove {{username}} from the group?",
-      "setCurator": "Set {{username}} as the group curator?"
     }
   },
   "admin": {
@@ -171,7 +167,9 @@
     "adminDescription": "Access administrative tools and features.",
     "grammarDescription": "Grammar quizzes: declensions and conjugations.",
     "vocabularyDescription": "Quizzes on vocabulary knowledge.",
-    "quizSessionsDescription": "View your past and ongoing quiz sessions."
+    "quizSessionsDescription": "View your past and ongoing quiz sessions.",
+    "quizProgress": "Progress: {{answered}}/{{total}} questions",
+    "noQuizInProgress": ""
   },
   "userProfile": {
     "errorLoadingUser": "Error loading user profile.",

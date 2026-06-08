@@ -29,6 +29,7 @@ spring-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-
 spring-r2dbc = { module = "org.springframework.boot:spring-boot-starter-data-r2dbc" }
 spring-security-oauth2 = { module = "org.springframework.boot:spring-boot-starter-oauth2-resource-server" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-mail = { module = "org.springframework.boot:spring-boot-starter-mail" } # Added for EmailService
 spring-kafka = { module = "org.springframework.kafka:spring-kafka", version.ref = "spring-kafka" } # Use version reference
 spring-redis = { module = "org.springframework.boot:spring-boot-starter-data-redis" }
 spring-redis-reactive = { module = "org.springframework.boot:spring-boot-starter-data-redis-reactive" }
