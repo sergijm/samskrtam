@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { quizApi } from '../api/quizApi';
-import { QuizType, SessionStatus, QuizSessionSummary, PaginatedResponse } from '../types/quiz';
+import { QuizType, SessionStatus, QuizSessionSummary, PaginatedResponse, AnswerHistory } from '../types/quiz';
 
 export const useUserQuizSessions = (
   userId: string, // userId is now passed as a query parameter
@@ -19,5 +19,19 @@ export const useUserQuizSessions = (
     },
     enabled: !!userId, // Only run the query if userId is available
     keepPreviousData: true, // Keep previous data while fetching new data for pagination/filters
+  });
+};
+
+export const useSessionAnswerHistory = (
+  sessionId: string,
+  userId: string,
+) => { // Removed pagination parameters
+  return useQuery<AnswerHistory[], Error>({ // Expects List<AnswerHistory>
+    queryKey: ['sessionAnswerHistory', { sessionId, userId }], // Removed pagination parameters from queryKey
+    queryFn: async () => {
+      const response = await quizApi.getSessionAnswerHistory(sessionId, userId); // Removed pagination parameters
+      return response.data;
+    },
+    enabled: !!sessionId && !!userId, // Only run the query if sessionId and userId are available
   });
 };

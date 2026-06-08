@@ -14,9 +14,10 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AnswerData {
     private UUID questionId;
+    private String questionText; // NEW: Add question text for statistics service
     private UUID selectedOptionId;
     private String correctFormIast;
-    private boolean correct;
+    private boolean isCorrect; // Changed from 'correct' to 'isCorrect'
     private int responseTimeMs;
     private Instant answeredAt;
     private String explanationRu; // New field

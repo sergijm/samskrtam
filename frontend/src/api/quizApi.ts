@@ -54,14 +54,10 @@ export const quizApi = {
     });
   },
 
-  getSessionAnswerHistory: (sessionId: string, userId: string, page: number, size: number, sortBy: string, sortDirection: string) => {
-    return api.get<PaginatedResponse<AnswerHistory>>(`/api/v1/quiz-sessions/${sessionId}/answers`, {
+  getSessionAnswerHistory: (sessionId: string, userId: string) => { // Removed pagination parameters
+    return api.get<AnswerHistory[]>(`/api/v1/quiz-sessions/${sessionId}/answers`, { // Expects List<AnswerHistory>
       params: {
         userId,
-        page,
-        size,
-        sortBy,
-        sortDirection,
       },
     });
   },

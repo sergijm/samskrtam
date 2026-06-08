@@ -59,7 +59,7 @@ export interface AnswerRequest {
 }
 
 export interface AnswerResponse {
-  correct: boolean; // Changed from isCorrect to correct
+  isCorrect: boolean; // Changed from isCorrect to correct
   correctOptionId: string;
   explanationRu: string; // Russian explanation
   explanationEn: string; // English explanation
@@ -84,12 +84,12 @@ export interface QuizSessionSummary {
 export interface AnswerHistory {
   questionId: string;
   questionText: string;
-  selectedAnswerIast: string;
-  correctOptionIast: string;
-  isCorrect: boolean;
-  responseTimeMs: number;
-  answeredAt: string; // ISO string
-  explanation: string; // Localized explanation
+  selectedAnswerIast?: string; // Made optional
+  correctOptionIast?: string; // Made optional
+  isCorrect?: boolean; // Made optional
+  responseTimeMs?: number; // Made optional
+  answeredAt?: string; // Made optional
+  explanation?: string; // Made optional
 }
 
 // New interface for quiz progress

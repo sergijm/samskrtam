@@ -118,7 +118,7 @@ graph TD
 
 
 ### Per-Service Specifications
-| Файл | Язык | Сервис |
+| Файл | Содержание |
 |---|---|
 | [services/api-gateway.md](./services/api-gateway.md) | Java 21 + WebFlux | Spring Cloud Gateway |
 | [services/feature-flag-service.md](./services/feature-flag-service.md) | Java 21 + VT | Feature Flag Service |

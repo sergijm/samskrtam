@@ -207,7 +207,7 @@ public class GrammarSessionService {
                                                     .selectedOptionId(request.getSelectedOptionId())
                                                     .selectedFormIast(selectedOptionIast)
                                                     .correctFormIast(cachedQuestion.getCorrectFormIast())
-                                                    .correct(isCorrect)
+                                                    .isCorrect(isCorrect) // Changed to isCorrect
                                                     .responseTimeMs(request.getResponseTimeMs())
                                                     .answeredAt(Instant.now())
                                                     .build();
@@ -251,9 +251,10 @@ public class GrammarSessionService {
 
                                         return AnswerData.builder()
                                                 .questionId(qa.getSessionQuestionId())
+                                                .questionText((sq != null) ? sq.getText() : null) // Populate questionText
                                                 .selectedOptionId(qa.getSelectedOptionId())
                                                 .correctFormIast(qa.getCorrectFormIast())
-                                                .correct(qa.isCorrect())
+                                                .isCorrect(qa.isCorrect()) // Changed to isCorrect
                                                 .responseTimeMs(qa.getResponseTimeMs())
                                                 .answeredAt(qa.getAnsweredAt())
                                                 .explanationRu(explanationRu) // Add explanations to AnswerData

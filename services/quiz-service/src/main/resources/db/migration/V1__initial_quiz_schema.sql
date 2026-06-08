@@ -22,7 +22,7 @@ CREATE TABLE quiz.quiz_answers (
     session_id UUID NOT NULL,
     session_question_id UUID NOT NULL,
     selected_option_id UUID,
-    correct BOOLEAN NOT NULL,
+    is_correct BOOLEAN NOT NULL,
     response_time_ms INT NOT NULL,
     answered_at TIMESTAMP WITH TIME ZONE NOT NULL,
     selected_form_iast VARCHAR(255),

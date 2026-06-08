@@ -13,9 +13,10 @@ import java.util.UUID;
 @Repository
 public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer, UUID> {
     Flux<QuizAnswer> findBySessionId(UUID sessionId);
-    Mono<Boolean> existsBySessionIdAndSessionQuestionId(UUID sessionId, UUID sessionQuestionId); // Corrected field name
+    Mono<Boolean> existsBySessionIdAndSessionQuestionId(UUID sessionId, UUID sessionQuestionId);
 
-    @Query("SELECT * FROM quiz.quiz_answers WHERE session_id = :sessionId ORDER BY :#{#pageable.sort} LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}")
+    // Removed ORDER BY :#{#pageable.sort} to avoid null binding issue
+    @Query("SELECT * FROM quiz.quiz_answers WHERE session_id = :sessionId LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}")
     Flux<QuizAnswer> findSessionAnswers(UUID sessionId, Pageable pageable);
 
     @Query("SELECT COUNT(*) FROM quiz.quiz_answers WHERE session_id = :sessionId")

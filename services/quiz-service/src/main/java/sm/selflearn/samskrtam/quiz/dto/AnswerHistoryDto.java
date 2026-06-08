@@ -13,8 +13,8 @@ public class AnswerHistoryDto {
     String questionText;
     String selectedAnswerIast; // Changed from selectedOptionId and selectedOptionText
     String correctOptionIast; // Changed from correctOptionId and correctOptionText
-    boolean isCorrect;
-    int responseTimeMs;
+    Boolean isCorrect;
+    Integer responseTimeMs;
     Instant answeredAt;
     String explanation; // Localized explanation
 }

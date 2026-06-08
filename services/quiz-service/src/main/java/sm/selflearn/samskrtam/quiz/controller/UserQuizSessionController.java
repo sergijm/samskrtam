@@ -18,6 +18,7 @@ import sm.selflearn.samskrtam.quiz.dto.QuizSessionSummaryDto;
 import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 import sm.selflearn.samskrtam.quiz.service.UserSessionService;
 
+import java.util.List; // Import List
 import java.util.Locale; // Import Locale
 import java.util.UUID;
 
@@ -50,23 +51,16 @@ public class UserQuizSessionController {
     }
 
     @GetMapping("/{sessionId}/answers")
-    @Operation(summary = "Get a paginated list of answers for a specific quiz session")
+    @Operation(summary = "Get a list of all questions and answers for a specific quiz session") // Updated summary
     @ApiResponse(responseCode = "200", description = "List of answers retrieved successfully")
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @ApiResponse(responseCode = "404", description = "Session not found")
-    public Mono<ResponseEntity<Page<AnswerHistoryDto>>> getSessionAnswerHistory(
+    public Mono<ResponseEntity<List<AnswerHistoryDto>>> getSessionAnswerHistory( // Changed return type to List
             @PathVariable UUID sessionId,
             @RequestParam UUID userId, // Получаем userId как параметр запроса
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "answeredAt") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDirection,
             @RequestHeader(value = "X-User-Locale", defaultValue = "en") Locale locale
     ) {
-        Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        return userSessionService.getSessionAnswerHistory(sessionId, userId, pageable, locale)
+        return userSessionService.getSessionAnswerHistory(sessionId, userId, locale) // Removed Pageable
                 .map(ResponseEntity::ok);
     }
 

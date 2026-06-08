@@ -12,6 +12,8 @@ import java.util.UUID;
 
 @Repository
 public interface OutboxEventRepository extends ReactiveCrudRepository<OutboxEvent, UUID> {
+    // Explicitly convert OutboxStatus enum to String for the query
+    @Query("SELECT * FROM quiz.outbox_events WHERE status = :#{#status.name()}")
     Flux<OutboxEvent> findByStatus(OutboxStatus status);
 
     @Query("UPDATE quiz.outbox_events SET status = 'PROCESSED', processed_at = NOW() WHERE id = :id")

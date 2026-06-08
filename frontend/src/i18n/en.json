@@ -224,6 +224,8 @@
     "result": "Result",
     "responseTime": "Response Time (ms)",
     "answeredAt": "Answered At",
-    "explanation": "Explanation"
+    "explanation": "Explanation",
+    "notAnswered": "Not Answered",
+    "notApplicable": "N/A"
   }
 }

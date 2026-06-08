@@ -97,27 +97,22 @@ const UserQuizSessionsPage = () => {
   };
 
   const actionBodyTemplate = (rowData: QuizSessionSummary) => {
-    if (rowData.status === 'COMPLETED') {
-      return (
-        <Button
-          icon="pi pi-info-circle"
-          className="p-button-rounded p-button-text"
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent row click from firing
-            navigate(`/quiz-sessions/${rowData.sessionId}/history`);
-          }}
-          tooltip={t('common.viewDetails')}
-        />
-      );
-    }
-    return null;
+    return (
+      <Button
+        icon="pi pi-info-circle"
+        className="p-button-rounded p-button-text"
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent row click from firing
+          navigate(`/quiz-sessions/${rowData.sessionId}/history`);
+        }}
+        tooltip={t('common.viewDetails')}
+      />
+    );
   };
 
   const onRowClick = (event: any) => {
     const rowData: QuizSessionSummary = event.data;
-    if (rowData.status === 'COMPLETED') {
-      navigate(`/quiz-sessions/${rowData.sessionId}/history`);
-    }
+    navigate(`/quiz-sessions/${rowData.sessionId}/history`);
   };
 
   if (!currentUserId) {
@@ -184,7 +179,7 @@ const UserQuizSessionsPage = () => {
           emptyMessage={t('userProfile.noQuizSessionsFound')}
           selectionMode="single" // Enable row selection
           onRowClick={onRowClick} // Handle row click
-          rowClassName={(rowData) => rowData.status === 'COMPLETED' ? 'cursor-pointer' : ''} // Add cursor pointer for clickable rows
+          rowClassName={() => 'cursor-pointer'} // Always add cursor pointer
         >
           <Column field="quizTitle" header={t('userProfile.quizTitle')} sortable />
           <Column field="quizType" header={t('userProfile.quizType')} body={quizTypeBodyTemplate} sortable />
