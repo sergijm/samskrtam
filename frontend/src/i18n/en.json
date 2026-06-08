@@ -46,7 +46,8 @@
     "noQuizzesFound": "No quizzes found.",
     "startError": "Failed to start quiz session: {{message}}",
     "submitAnswer": "Submit Answer",
-    "noQuestions": "This quiz has no questions."
+    "noQuestions": "This quiz has no questions.",
+    "noExplanation": "No explanation available."
   },
   "quizzes": {
     "title": "List of Quizzes"
@@ -76,7 +77,8 @@
     "changePasswordError": "Failed to change password.",
     "registerSuccessTitle": "Registration Successful",
     "registerSuccessMessage": "Please check your email to verify your account.",
-    "backToLogin": "Back to Login"
+    "backToLogin": "Back to Login",
+    "loginWithPassword": "Login with Password"
   },
   "groups": {
     "title": "Groups",
@@ -144,7 +146,8 @@
       "viewDetails": "View Details",
       "correct": "Correct",
       "incorrect": "Incorrect",
-      "actions": "Actions"
+      "actions": "Actions",
+      "back": "Back"
   },
   "validation": {
     "usernameRequired": "Email or Username is required.",

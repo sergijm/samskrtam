@@ -59,9 +59,10 @@ export interface AnswerRequest {
 }
 
 export interface AnswerResponse {
-  isCorrect: boolean;
+  correct: boolean; // Changed from isCorrect to correct
   correctOptionId: string;
-  explanation: string; // Localized explanation
+  explanationRu: string; // Russian explanation
+  explanationEn: string; // English explanation
   questionNumber: number;
   totalQuestions: number;
 }

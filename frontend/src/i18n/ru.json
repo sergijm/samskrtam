@@ -46,7 +46,8 @@
     "noQuizzesFound": "Квизы не найдены.",
     "startError": "Не удалось начать сессию квиза: {{message}",
     "submitAnswer": "Ответить",
-    "noQuestions": "В этом квизе нет вопросов."
+    "noQuestions": "В этом квизе нет вопросов.",
+    "noExplanation": "Объяснение недоступно."
   },
   "quizzes": {
     "title": "Список квизов"
@@ -75,7 +76,8 @@
     "registerError": "Ошибка регистрации.",
     "registerSuccessTitle": "Регистрация прошла успешно",
     "registerSuccessMessage": "Пожалуйста, проверьте свою электронную почту для подтверждения аккаунта.",
-    "backToLogin": "Вернуться ко входу"
+    "backToLogin": "Вернуться ко входу",
+    "loginWithPassword": "Войти с паролем"
   },
   "groups": {
     "title": "Группы",
@@ -147,7 +149,8 @@
       "viewDetails": "Посмотреть детали",
       "correct": "Верно",
       "incorrect": "Неверно",
-      "actions": "Действия"
+      "actions": "Действия",
+      "back": "Назад"
   },
   "validation": {
     "usernameRequired": "Требуется Email или логин.",

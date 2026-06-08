@@ -6,26 +6,27 @@ import { Message } from 'primereact/message';
 import { Button } from 'primereact/button';
 import { ProgressBar } from 'primereact/progressbar';
 import { Card } from 'primereact/card';
-import { useStartQuizSession, useSubmitQuizAnswer, useQuizBySlug, useResumeQuizSession } from '../hooks/useQuiz'; // Import useResumeQuizSession
-import { AnswerRequest, SessionQuestion, QuizType } from '../types/quiz'; // Import types from local types file
+import { useStartQuizSession, useSubmitQuizAnswer, useQuizBySlug, useResumeQuizSession } from '../hooks/useQuiz';
+import { AnswerRequest, SessionQuestion, QuizType } from '../types/quiz';
+import { useLocaleStore } from '../store/localeStore'; // Import useLocaleStore
 
 const QuizPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation(); // Get i18n instance for current language
   const navigate = useNavigate();
-  const { slug, sessionId: sessionIdFromParams } = useParams<{ slug?: string; sessionId?: string }>(); // Get sessionId from params
+  const { slug, sessionId: sessionIdFromParams } = useParams<{ slug?: string; sessionId?: string }>();
 
-  const [sessionId, setSessionId] = useState<string | null>(sessionIdFromParams || null); // Initialize with sessionId from params
+  const [sessionId, setSessionId] = useState<string | null>(sessionIdFromParams || null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<SessionQuestion[]>([]);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ isCorrect: boolean; correctOptionId: string; explanation: string } | null>(null);
   const [startTime, setStartTime] = useState<number>(Date.now());
-  const [hasAttemptedSessionLoad, setHasAttemptedSessionLoad] = useState(false); // Renamed from hasAttemptedStart
+  const [hasAttemptedSessionLoad, setHasAttemptedSessionLoad] = useState(false);
 
   const { data: quizSummary, isLoading: isQuizSummaryLoading, isError: isQuizSummaryError, error: quizSummaryError } = useQuizBySlug(slug || '');
 
   const startSessionMutation = useStartQuizSession();
-  const resumeSessionMutation = useResumeQuizSession(); // New mutation for resuming
+  const resumeSessionMutation = useResumeQuizSession();
   const submitAnswerMutation = useSubmitQuizAnswer();
 
   useEffect(() => {
@@ -33,25 +34,21 @@ const QuizPage = () => {
       setHasAttemptedSessionLoad(true);
 
       if (sessionIdFromParams) {
-        // Attempt to resume session
         resumeSessionMutation.mutate(
           { sessionId: sessionIdFromParams, quizType: quizSummary.quizType },
           {
             onSuccess: (data) => {
               setSessionId(data.sessionId);
               setQuestions(data.questions);
-              setCurrentQuestionIndex(data.currentQuestionIndex); // Set current question index
+              setCurrentQuestionIndex(data.currentQuestionIndex);
               setStartTime(Date.now());
             },
             onError: (err) => {
               console.error('Failed to resume quiz session:', err);
-              // Optionally, navigate to an error page or try to start a new session
-              // For now, we'll just log the error.
             },
           }
         );
       } else {
-        // Start a new session
         startSessionMutation.mutate(
           { quizIdentifier: quizSummary.id, quizType: quizSummary.quizType },
           {
@@ -90,18 +87,23 @@ const QuizPage = () => {
     submitAnswerMutation.mutate(
       {
         sessionId: sessionId,
-        quizIdentifier: quizSummary.id, // Pass quizSummary.id as quizIdentifier
+        quizIdentifier: quizSummary.id,
         quizType: quizSummary.quizType,
         answerRequest: answerRequest,
       },
       {
         onSuccess: (data) => {
-          setFeedback({
-            isCorrect: data.isCorrect,
-            correctOptionId: data.correctOptionId,
-            explanation: data.explanation,
-          });
-          setStartTime(Date.now());
+          if (data.correct) { // If correct, immediately move to the next question
+            handleNextQuestion();
+          } else { // If incorrect, show feedback
+            const explanation = i18n.language === 'ru' ? data.explanationRu : data.explanationEn;
+            setFeedback({
+              isCorrect: data.correct,
+              correctOptionId: data.correctOptionId,
+              explanation: explanation || t('quiz.noExplanation'),
+            });
+            setStartTime(Date.now());
+          }
         },
         onError: (err) => {
           console.error('Failed to submit answer:', err);
@@ -166,7 +168,7 @@ const QuizPage = () => {
           {currentQuestion.options.map((option) => (
             <div key={option.id} className="col-12 md:col-6">
               <Button
-                label={option.formIast} // Use option.formIast instead of option.text
+                label={option.formIast}
                 className={`w-full text-xl p-3 mb-3 ${selectedOptionId === option.id ? 'p-button-primary' : 'p-button-outlined'} ${
                   feedback && option.id === feedback.correctOptionId ? 'p-button-success' : ''
                 } ${feedback && selectedOptionId === option.id && !feedback.isCorrect ? 'p-button-danger' : ''}`}
@@ -182,7 +184,7 @@ const QuizPage = () => {
             <h3 className="text-xl font-bold mb-2" style={{ color: feedback.isCorrect ? '#28a745' : '#dc3545' }}>
               {feedback.isCorrect ? t('quiz.correct') : t('quiz.incorrect')}
             </h3>
-            <p className="text-lg">{feedback.explanation}</p> {/* Use single explanation field */}
+            <p className="text-lg">{feedback.explanation}</p>
             <Button label={t('quiz.next')} icon="pi pi-arrow-right" iconPos="right" className="mt-3 w-full" onClick={handleNextQuestion} />
           </div>
         )}
