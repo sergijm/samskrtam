@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.common.SamskrtamException;
-import sm.selflearn.samskrtam.content.model.Question;
 import sm.selflearn.samskrtam.content.model.QuestionOption;
 import sm.selflearn.samskrtam.content.model.Quiz;
 import sm.selflearn.samskrtam.content.repository.QuestionOptionRepository;
@@ -57,8 +56,12 @@ public class QuizContentService {
     private QuizListItemResponse mapToQuizListItemResponse(Quiz quiz) {
         return QuizListItemResponse.builder()
                 .id(quiz.getId())
-                .title(quiz.getTitleEn())
-                .description(quiz.getDescriptionEn())
+                .title(quiz.getTitleEn()) // Default to English title
+                .titleRu(quiz.getTitleRu()) // Set Russian title
+                .titleEn(quiz.getTitleEn()) // Set English title
+                .description(quiz.getDescriptionEn()) // Default to English description
+                .descriptionRu(quiz.getDescriptionRu()) // Set Russian description
+                .descriptionEn(quiz.getDescriptionEn()) // Set English description
                 .quizType(quiz.getQuizType())
                 .slug(quiz.getSlug())
                 .totalQuestions(quiz.getQuestionsPerSession())

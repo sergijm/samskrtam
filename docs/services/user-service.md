@@ -87,15 +87,15 @@ public class UserProfileService {
         profileRepository.save(profile);
 
         // Атомарно с сохранением профиля — в одной транзакции
-        outboxRepository.save(OutboxEvent.builder()
+        outboxRepository.save(sm.selflearn.samskrtam.quiz.event.OutboxEvent.builder() // Updated path
                 .aggregateId(userId)
-                .eventType(OutboxEventType.PROFILE_UPDATED)
+                .eventType(sm.selflearn.samskrtam.quiz.event.OutboxEventType.PROFILE_UPDATED) // Updated path
                 .payload(toJson(Map.of(
                         "firstName", request.firstName(),
                         "lastName",  request.lastName(),
                         "username",  request.username()
                 )))
-                .status(OutboxStatus.PENDING)
+                .status(sm.selflearn.samskrtam.quiz.event.OutboxStatus.PENDING) // Updated path
                 .build());
 
         log.debug("Profile updated and outbox event created: userId={}", userId);
@@ -117,22 +117,22 @@ public class OutboxProcessor {
     @Scheduled(fixedDelayString = "${outbox.processor.interval-ms}")
     @Transactional
     public void process() {
-        List<OutboxEvent> pending = outboxRepository.findPendingEvents();
+        List<sm.selflearn.samskrtam.quiz.event.OutboxEvent> pending = outboxRepository.findPendingEvents(); // Updated path
         if (pending.isEmpty()) return;
 
         log.debug("Processing {} outbox events", pending.size());
 
-        for (OutboxEvent event : pending) {
+        for (sm.selflearn.samskrtam.quiz.event.OutboxEvent event : pending) { // Updated path
             try {
                 keycloakAdminService.apply(event);
-                event.setStatus(OutboxStatus.PROCESSED);
+                event.setStatus(sm.selflearn.samskrtam.quiz.event.OutboxStatus.PROCESSED); // Updated path
                 event.setProcessedAt(Instant.now());
                 log.debug("Outbox event processed: id={}, type={}", event.getId(), event.getEventType());
             } catch (Exception e) {
                 event.setRetryCount(event.getRetryCount() + 1);
                 event.setErrorMessage(e.getMessage());
                 if (event.getRetryCount() >= MAX_RETRIES) {
-                    event.setStatus(OutboxStatus.FAILED);
+                    event.setStatus(sm.selflearn.samskrtam.quiz.event.OutboxStatus.FAILED); // Updated path
                     log.error("Outbox event failed after {} retries: id={}, type={}",
                             MAX_RETRIES, event.getId(), event.getEventType(), e);
                 } else {
@@ -223,7 +223,7 @@ public class AvatarService {
         UserProfile profile = profileRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
         profile.setAvatarUrl(avatarUrl);
-        profileRepository.save(profile);
+        profile.save(profile);
 
         log.debug("Avatar confirmed: userId={}, url={}", userId, avatarUrl);
         return new AvatarConfirmResponse(avatarUrl);
@@ -332,11 +332,11 @@ public void blockUser(UUID targetId, UUID adminId) {
     profile.setUpdatedAt(Instant.now());
     profileRepository.save(profile);
 
-    outboxRepository.save(OutboxEvent.builder()
+    outboxRepository.save(sm.selflearn.samskrtam.quiz.event.OutboxEvent.builder() // Updated path
             .aggregateId(targetId)
-            .eventType(OutboxEventType.USER_BLOCKED)
+            .eventType(sm.selflearn.samskrtam.quiz.event.OutboxEventType.USER_BLOCKED) // Updated path
             .payload(toJson(Map.of("enabled", false)))
-            .status(OutboxStatus.PENDING)
+            .status(sm.selflearn.samskrtam.quiz.event.OutboxStatus.PENDING) // Updated path
             .build());
 
     log.debug("User blocked: targetId={}, by adminId={}", targetId, adminId);
@@ -362,7 +362,7 @@ public class KeycloakAdminService {
     @Value("${keycloak.realm}")
     private String realm;
 
-    public void apply(OutboxEvent event) {
+    public void apply(sm.selflearn.samskrtam.quiz.event.OutboxEvent event) { // Updated path
         log.trace("apply: eventType={}, aggregateId={}", event.getEventType(), event.getAggregateId());
 
         String userId = event.getAggregateId().toString();
@@ -469,9 +469,9 @@ sm/selflearn/samskrtam/user/
 │   └── OutboxEventRepository.java
 ├── model/
 │   ├── UserProfile.java             ← добавлены passwordResetToken, passwordResetTokenExpiry
-│   ├── OutboxEvent.java
-│   ├── OutboxEventType.java
-│   ├── OutboxStatus.java
+│   ├── OutboxEvent.java             // Updated path
+│   ├── OutboxEventType.java         // Updated path
+│   ├── OutboxStatus.java            // Updated path
 │   └── UserRole.java
 └── dto/
     ├── UserProfileResponse.java

@@ -548,7 +548,7 @@ public class SkillRatingService {
 
         int delta    = eloCalculator.delta(skill.getRating(),
                 event.difficulty(), event.correctAnswers(), event.totalQuestions());
-        int newRating = Math.max(100, skill.getRating() + delta);
+        int newRating = Math.max(100, userRating + delta);
 
         double newAccuracy = ((skill.getAccuracy() * skill.getTotalSessions())
                 + ((double) event.correctAnswers() / event.totalQuestions()))

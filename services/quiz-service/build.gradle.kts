@@ -25,8 +25,7 @@ dependencies {
     implementation(libs.springdoc.openapi.webflux.ui) // Changed to libs alias
 
     implementation(project(":shared:common-dtos")) // Обновлено на common-dtos
-    implementation(project(":shared:kafka-events"))
-    implementation(project(":shared:quiz-content-dtos"))
+    implementation(project(":shared:quiz-dtos")) // Обновлено на common-dtos
 
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)

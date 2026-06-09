@@ -84,13 +84,13 @@ Monier-Williams (CSL API). Является отдельным компонен�
 ## 5. Модели данных парсера
 
 ```kotlin
-// sm/selflearn/samskrtam/dictionary/model/Gender.kt
+// sm/selflearn/samskrtam/quiz/content/model/Gender.kt
 enum class Gender { MASCULINE, FEMININE, NEUTER }
 
-// sm/selflearn/samskrtam/dictionary/model/WordClass.kt
+// sm/selflearn/samskrtam/quiz/content/model/WordClass.kt
 enum class WordClass { NOUN, ADJECTIVE, VERB, PARTICLE, UNKNOWN }
 
-// sm/selflearn/samskrtam/dictionary/model/VerbPada.kt
+// sm/selflearn/samskrtam/quiz/content/model/VerbPada.kt
 enum class VerbPada { PARASMAIPADA, ATMANEPADA, UBHAYAPADA }
 
 // sm/selflearn/samskrtam/dictionary/parser/ParsedEntry.kt

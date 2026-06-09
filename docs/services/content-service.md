@@ -108,7 +108,7 @@ GET /api/v1/content/quizzes/{quizId}/vocabulary-words   → получить с�
 | `slug` | VARCHAR | Уникальный идентификатор (`^[a-z0-9][a-z0-9-]*$`) |
 | `title_ru` / `title_en` | VARCHAR | Название квиза |
 | `difficulty` | VARCHAR | Уровень сложности |
-| `questions_per_session` | INT | Количество вопросов в одной сессии. Действует для всех типов квизов. **По умолчанию: 20** |
+| `questions_per_session` | INT | Количество вопросов в одной сессии. Действует для всех типов квизов — см. [content-service.md](content-service.md) раздел 4. **По умолчанию: 20** |
 | `deleted_at` | TIMESTAMPTZ | Soft delete — `NULL` если активен |
 
 `questions_per_session` передаётся в `session-data` и используется quiz-service при старте сессии для случайной выборки вопросов.
@@ -172,8 +172,8 @@ sm/selflearn/samskrtam/content/
 ```
 
 ```
-sm/selflearn/samskrtam/content/dto/
-├── Gender.java                         ← Перемещен сюда
+sm/selflearn/samskrtam/quiz/content/dto/ // Обновленный путь для DTO, ранее находившихся в content/dto
+├── Gender.java
 ├── QuizType.java
 ├── Difficulty.java
 ```

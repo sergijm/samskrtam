@@ -6,7 +6,6 @@ import lombok.extern.jackson.Jacksonized;
 import sm.selflearn.samskrtam.content.model.Case;
 import sm.selflearn.samskrtam.content.model.Number;
 
-import java.util.List;
 import java.util.UUID;
 
 @Value

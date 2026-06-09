@@ -1,4 +1,5 @@
-import { QuizType } from './quiz'; // Assuming QuizType is defined here or in a shared types file
+import { QuizType, AnswerHistory } from './quiz'; // Assuming QuizType is defined here or in a shared types file
+import { PaginatedResponse } from './common'; // Import PaginatedResponse
 
 export interface UserQuizStatisticDto {
   quizId: string;
@@ -9,4 +10,5 @@ export interface UserQuizStatisticDto {
   totalScore: number;
   averageScore: number;
   lastCompletedAt: string; // ISO string date
+  answerHistoryJson?: string; // New field for storing answer history as JSON string
 }

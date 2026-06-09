@@ -15,11 +15,11 @@ public class KafkaEventListener {
 
     private final StatisticService statisticService;
 
-//    @KafkaListener(topics = "quiz.session.completed", groupId = "statistics-service")
-//    public void listenSessionCompleted(SessionCompleted event) {
-//        log.info("Received SessionCompleted event: {}", event);
-//        statisticService.processSessionCompleted(event);
-//    }
+    @KafkaListener(topics = "quiz.session.completed", groupId = "statistics-service")
+    public void listenSessionCompleted(SessionCompleted event) {
+        log.info("Received SessionCompleted event: {}", event);
+        statisticService.processSessionCompleted(event);
+    }
 
     @KafkaListener(topics = "quiz.answer.submitted", groupId = "statistics-service")
     public void listenAnswerSubmitted(AnswerSubmitted event) {

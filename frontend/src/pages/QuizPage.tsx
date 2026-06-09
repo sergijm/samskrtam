@@ -118,7 +118,8 @@ const QuizPage = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      navigate(`/quiz/result/${sessionId}`);
+      // Redirect to SessionHistoryPage after the last question, passing quizType
+      navigate(`/quiz-sessions/${sessionId}/history`, { state: { quizType: quizSummary?.quizType } });
     }
   };
 
@@ -148,6 +149,11 @@ const QuizPage = () => {
 
   const currentQuestion = questions[currentQuestionIndex];
   if (!currentQuestion) {
+    // If there are no questions or we've somehow gone past the end, redirect to session history
+    if (sessionId && quizSummary?.quizType) {
+      navigate(`/quiz-sessions/${sessionId}/history`, { state: { quizType: quizSummary.quizType } });
+      return null; // Return null to prevent rendering anything else
+    }
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
         <Message severity="info" text={t('quiz.noQuestions')} />
@@ -157,9 +163,15 @@ const QuizPage = () => {
 
   const progress = Math.round(((currentQuestionIndex + (feedback ? 1 : 0)) / questions.length) * 100);
 
+  // Determine localized title and description
+  const localizedQuizTitle = i18n.language === 'ru' ? quizSummary?.titleRu : quizSummary?.titleEn;
+  const localizedQuizDescription = i18n.language === 'ru' ? quizSummary?.descriptionRu : quizSummary?.descriptionEn;
+
   return (
     <div className="flex flex-column align-items-center justify-content-center p-4">
       <Card className="quiz-container" style={{ maxWidth: '800px', width: '100%' }}>
+        {localizedQuizTitle && <h1 className="text-center mb-3">{localizedQuizTitle}</h1>}
+        {localizedQuizDescription && <p className="text-center text-color-secondary mb-4">{localizedQuizDescription}</p>}
         <ProgressBar value={progress} className="mb-4" />
         <h2 className="text-center mb-4">{t('quiz.question', { current: currentQuestionIndex + 1, total: questions.length })}</h2>
         <div className="text-2xl font-bold text-center mb-5">{currentQuestion.text}</div>

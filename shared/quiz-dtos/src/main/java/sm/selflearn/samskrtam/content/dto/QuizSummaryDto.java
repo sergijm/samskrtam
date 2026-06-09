@@ -15,6 +15,8 @@ public class QuizSummaryDto {
     private String slug;
     private String titleRu;
     private String titleEn;
+    private String descriptionRu; // New field
+    private String descriptionEn; // New field
     private QuizType quizType;
     private Difficulty difficulty;
 }

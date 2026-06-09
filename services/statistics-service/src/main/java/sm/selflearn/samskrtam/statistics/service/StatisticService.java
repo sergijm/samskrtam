@@ -1,16 +1,19 @@
 package sm.selflearn.samskrtam.statistics.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import sm.selflearn.samskrtam.events.AnswerSubmitted; // Import AnswerSubmitted event
+import sm.selflearn.samskrtam.events.AnswerSubmitted;
 import sm.selflearn.samskrtam.events.SessionCompleted;
 import sm.selflearn.samskrtam.statistics.model.UserQuizSessionStatistic;
 import sm.selflearn.samskrtam.statistics.repository.UserQuizSessionStatisticRepository;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -19,10 +22,21 @@ import java.util.UUID;
 public class StatisticService {
 
     private final UserQuizSessionStatisticRepository userQuizSessionStatisticRepository;
+    private final ObjectMapper objectMapper; // Inject ObjectMapper
 
     @Transactional
     public void processSessionCompleted(SessionCompleted event) {
         log.info("Processing SessionCompleted event: {}", event);
+
+        String answerHistoryJson = null;
+        try {
+            answerHistoryJson = objectMapper.writeValueAsString(event.getAnswers());
+        } catch (JsonProcessingException e) {
+            log.error("Error serializing answer history for quiz {}: {}", event.getQuizId(), e.getMessage()); // Changed to event.getQuizId()
+            // Decide how to handle this error: throw, return, or proceed without history
+        }
+
+        final String finalAnswerHistoryJson = answerHistoryJson; // For use in lambda
 
         userQuizSessionStatisticRepository.findByUserIdAndQuizId(event.getUserId(), event.getQuizId())
                 .ifPresentOrElse(
@@ -33,8 +47,8 @@ public class StatisticService {
                             statistic.setTotalCorrectAnswers(statistic.getTotalCorrectAnswers() + event.getScore());
                             statistic.setTotalScore(statistic.getTotalScore() + event.getScore());
                             statistic.setLastCompletedAt(Instant.now());
-                            // Recalculate average score
                             statistic.setAverageScore((double) statistic.getTotalCorrectAnswers() / statistic.getTotalQuestionsAnswered());
+                            statistic.setAnswerHistoryJson(finalAnswerHistoryJson); // Set the new field
                             userQuizSessionStatisticRepository.save(statistic);
                             log.debug("Updated statistic for user {} and quiz {}: {}", event.getUserId(), event.getQuizId(), statistic);
                         },
@@ -50,6 +64,7 @@ public class StatisticService {
                                     .totalScore(event.getScore())
                                     .averageScore((double) event.getScore() / event.getTotalQuestions())
                                     .lastCompletedAt(Instant.now())
+                                    .answerHistoryJson(finalAnswerHistoryJson) // Set the new field
                                     .build();
                             userQuizSessionStatisticRepository.save(newStatistic);
                             log.debug("Created new statistic for user {} and quiz {}: {}", event.getUserId(), event.getQuizId(), newStatistic);
@@ -95,7 +110,7 @@ public class StatisticService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserQuizSessionStatistic> getUserQuizStatistics(UUID userId) {
-        return userQuizSessionStatisticRepository.findByUserId(userId);
+    public Page<UserQuizSessionStatistic> getUserQuizStatistics(UUID userId, Pageable pageable) {
+        return userQuizSessionStatisticRepository.findByUserId(userId, pageable);
     }
 }

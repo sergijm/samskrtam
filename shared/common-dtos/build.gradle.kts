@@ -24,6 +24,10 @@ dependencies {
 
     // Зависимость для Spring Context, чтобы использовать @Configuration и @Bean
     api("org.springframework:spring-context")
+
+    // Lombok
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
 }
 
 group = "sm.selflearn.samskrtam.common"

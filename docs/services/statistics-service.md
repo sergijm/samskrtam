@@ -28,8 +28,8 @@ public class AnswerSubmittedConsumer {
     private final StatisticsService statisticsService;
 
     @KafkaListener(topics = "quiz.answer.submitted", groupId = "statistics-service")
-    public void handle(AnswerSubmitted event) {
-        log.debug("Received AnswerSubmitted: eventId={}, userId={}", event.eventId(), event.userId());
+    public void handle(sm.selflearn.samskrtam.quiz.event.AnswerSubmitted event) { // Updated path
+        log.debug("Received AnswerSubmitted: eventId={}, userId={}", event.getEventId(), event.getUserId());
         // Virtual Threads — обычный блокирующий код, никакого Mono/Flux
         statisticsService.recordAnswer(event);
     }
@@ -44,8 +44,8 @@ public class SessionCompletedConsumer {
     private final StatisticsService statisticsService;
 
     @KafkaListener(topics = "quiz.session.completed", groupId = "statistics-service")
-    public void handle(SessionCompleted event) {
-        log.debug("Received SessionCompleted: eventId={}, userId={}", event.eventId(), event.userId());
+    public void handle(sm.selflearn.samskrtam.quiz.event.SessionCompleted event) { // Updated path
+        log.debug("Received SessionCompleted: eventId={}, userId={}", event.getEventId(), event.getUserId());
         statisticsService.recordSession(event);
     }
 }
@@ -62,39 +62,39 @@ public class StatisticsService {
     private final SessionRecordRepository sessionRepository;
 
     @Transactional
-    public void recordAnswer(AnswerSubmitted event) {
+    public void recordAnswer(sm.selflearn.samskrtam.quiz.event.AnswerSubmitted event) { // Updated path
         // INSERT ... ON CONFLICT (event_id) DO NOTHING
         // Повторная доставка события игнорируется — дубликат не создаётся
         int inserted = answerRepository.insertIfNotExists(
-                event.eventId(),
-                event.userId(),
-                event.quizType(),
-                event.quizId(),
-                event.questionId(),
-                event.selectedOptionId(),
+                event.getEventId(),
+                event.getUserId(),
+                event.getQuizType().name(), // Assuming QuizType is an enum and needs .name()
+                event.getQuizId(),
+                event.getQuestionId(),
+                event.getSelectedOptionId(),
                 event.isCorrect(),
-                event.responseTimeMs(),
-                event.occurredAt()
+                event.getResponseTimeMs(),
+                event.getOccurredAt()
         );
         if (inserted == 0) {
-            log.warn("Duplicate AnswerSubmitted ignored: eventId={}", event.eventId());
+            log.warn("Duplicate AnswerSubmitted ignored: eventId={}", event.getEventId());
         }
     }
 
     @Transactional
-    public void recordSession(SessionCompleted event) {
+    public void recordSession(sm.selflearn.samskrtam.quiz.event.SessionCompleted event) { // Updated path
         int inserted = sessionRepository.insertIfNotExists(
-                event.eventId(),
-                event.userId(),
-                event.quizType(),
-                event.quizId(),
-                event.score(),
-                event.totalQuestions(),
-                event.durationMs(),
-                event.occurredAt()
+                event.getEventId(),
+                event.getUserId(),
+                event.getQuizType().name(), // Assuming QuizType is an enum and needs .name()
+                event.getQuizId(),
+                event.getScore(),
+                event.getTotalQuestions(),
+                event.getDurationMs(),
+                event.getOccurredAt()
         );
         if (inserted == 0) {
-            log.warn("Duplicate SessionCompleted ignored: eventId={}", event.eventId());
+            log.warn("Duplicate SessionCompleted ignored: eventId={}", event.getEventId());
         }
     }
 }
@@ -285,7 +285,7 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "sm.selflearn.samskrtam.events"
+        spring.json.trusted.packages: "sm.selflearn.samskrtam.quiz.event" # Updated path
 
 # JWT не валидируется — сервис доверяет заголовкам X-User-* от Gateway.
 # userId берётся из X-User-Id, переданного Gateway после валидации токена.

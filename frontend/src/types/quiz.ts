@@ -1,11 +1,17 @@
+import { PaginatedResponse } from './common';
+
 export type QuizType = 'DECLENSIONS' | 'CONJUGATIONS' | 'VOCABULARY' | 'A_STEM_DECLENSIONS' | 'AA_STEM_DECLENSIONS' | 'I_STEM_DECLENSIONS' | 'II_STEM_DECLENSIONS' | 'U_STEM_DECLENSIONS' | 'UU_STEM_DECLENSIONS' | 'R_STEM_DECLENSIONS';
 export type Difficulty = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
 export type SessionStatus = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED'; // Add SessionStatus
 
 export interface QuizListItem {
   id: string;
-  title: string; // Localized title
-  description: string;
+  title: string; // Keep existing title for backward compatibility or default
+  titleRu: string; // New field for Russian title
+  titleEn: string; // New field for English title
+  description: string; // Keep existing description for backward compatibility or default
+  descriptionRu: string; // New field for Russian description
+  descriptionEn: string; // New field for English description
   quizType: QuizType;
   slug: string;
   totalQuestions: number;
@@ -15,7 +21,11 @@ export interface QuizListItem {
 
 export interface QuizSummaryDto {
   id: string;
-  title: string; // Localized title
+  title: string; // Keep existing title for backward compatibility or default
+  titleRu: string; // New field for Russian title
+  titleEn: string; // New field for English title
+  descriptionRu: string; // New field for Russian description
+  descriptionEn: string; // New field for English description
   quizType: QuizType;
   difficulty: Difficulty;
   bestScore?: number;
@@ -98,14 +108,4 @@ export interface QuizProgress {
   answeredQuestions: number;
   totalQuestions: number;
   found: boolean;
-}
-
-export interface PaginatedResponse<T> {
-  content: T[];
-  totalPages: number;
-  totalElements: number;
-  currentPage: number;
-  pageSize: number;
-  isFirst: boolean;
-  isLast: boolean;
 }

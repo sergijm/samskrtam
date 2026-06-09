@@ -24,7 +24,7 @@ dependencies {
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 
-    implementation(project(":shared:quiz-content-dtos"))
+    implementation(project(":shared:quiz-dtos"))
     implementation(project(":shared:common-dtos"))
 
     testImplementation(libs.spring.test)

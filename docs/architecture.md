@@ -26,7 +26,7 @@
 | quiz-service | Java 21 + WebFlux | `sm.selflearn.samskrtam.quiz` |
 | dictionary-service | **Kotlin** | `sm.selflearn.samskrtam.dictionary` |
 | statistics-service | Java 21 | `sm.selflearn.samskrtam.statistics` |
-| shared/kafka-events | Java 21 | `sm.selflearn.samskrtam.events` |
+| shared/quiz-dtos | Java 21 | `sm.selflearn.samskrtam.quiz` (включает content, events, statistics DTOs) |
 | shared/common-dto | Java 21 | `sm.selflearn.samskrtam.common` |
 
 ---
@@ -105,12 +105,12 @@ samskrtam-app/
 │           ├── Application.java
 │           ├── controller/
 │           │   └── UserProfileController.java
-│           ├── service/
-│           │   ├── UserProfileService.java
-│           │   └── KeycloakAdminService.java
-│           └── client/
-│               └── KeycloakClient.java
-│
+│   │       ├── service/
+│   │       │   ├── UserProfileService.java
+│   │       │   └── KeycloakAdminService.java
+│   │       └── client/
+│   │           └── KeycloakClient.java
+│   │
 ├── services/
 │   ├── content-service/              ← Java 21 + Virtual Threads
 │   │   ├── build.gradle.kts
@@ -147,12 +147,13 @@ samskrtam-app/
 │               └── dto/
 │
 ├── shared/
-│   ├── kafka-events/                 ← Java 21 (совместимость со всеми)
+│   ├── quiz-dtos/                    ← Java 21 (объединенные DTO для квизов, контента, статистики и событий Kafka)
 │   │   └── src/main/java/
-│   │       └── sm/selflearn/samskrtam/events/
-│   │           ├── AnswerSubmitted.java
-│   │           ├── SessionCompleted.java
-│   │           └── QuizType.java
+│   │       └── sm/selflearn/samskrtam/quiz/
+│   │           ├── content/
+│   │           ├── dto/
+│   │           ├── event/
+│   │           └── statistics/
 │   └── common-dto/                   ← Java 21
 │       └── src/main/java/
 │           └── sm/selflearn/samskrtam/common/
@@ -174,6 +175,7 @@ samskrtam-app/
 │       ├── content-service/
 │       ├── quiz-service/
 │       ├── dictionary-service/
+│       ├── feature-flag-service/
 │       └── statistics-service/
 │
 └── .gitlab-ci.yml
@@ -195,7 +197,7 @@ include(
     ":services:quiz-service",
     ":services:dictionary-service",
     ":services:statistics-service",
-    ":shared:kafka-events",
+    ":shared:quiz-dtos", // Объединенный модуль
     ":shared:common-dto"
 )
 ```

@@ -67,3 +67,16 @@ export const useSubmitQuizAnswer = () => {
     },
   });
 };
+
+export const useCompleteQuizSession = () => {
+  const { locale } = useLocaleStore();
+  return useMutation<
+    void, // The completeSession API returns void
+    Error,
+    { sessionId: string; quizType: QuizType }
+  >({
+    mutationFn: async ({ sessionId, quizType }) => {
+      await quizApi.completeSession(sessionId, quizType, locale);
+    },
+  });
+};

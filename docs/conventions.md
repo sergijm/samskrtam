@@ -388,7 +388,7 @@ management:
 В `.env` (локальная разработка):
 ```
 GATEWAY_MANAGEMENT_PORT=9090
-FEATURE_FLAG_MANAGEMENT_PORT=9091
+FEATURE_FLAG_SERVICE_PORT=9091
 USER_MANAGEMENT_PORT=9092
 CONTENT_MANAGEMENT_PORT=9093
 QUIZ_MANAGEMENT_PORT=9094
@@ -525,7 +525,7 @@ public class DeclensionsSessionController {
 ### Кастомные исключения
 
 ```java
-// shared/common-dto — базовое исключение
+// shared/common-dto
 public abstract class SamskrtamException extends RuntimeException {
     private final String errorCode;
 
@@ -806,9 +806,9 @@ FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /app
 COPY gradlew settings.gradle.kts gradle/ ./
 COPY services/${SERVICE}/build.gradle.kts services/${SERVICE}/
-RUN ./gradlew :services:${SERVICE}:dependencies --no-daemon
+RUN ./gradlew :services/${SERVICE}:dependencies --no-daemon
 COPY services/${SERVICE}/src services/${SERVICE}/src
-RUN ./gradlew :services:${SERVICE}:bootJar --no-daemon
+RUN ./gradlew :services/${SERVICE}:bootJar --no-daemon
 
 FROM eclipse-temurin:21-jre-alpine AS runtime
 RUN addgroup -S app && adduser -S app -G app

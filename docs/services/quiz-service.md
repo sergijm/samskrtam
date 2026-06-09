@@ -85,8 +85,7 @@ dependencies {
     implementation(libs.flyway.core)                // Flyway — только для миграций (JDBC)
     implementation(libs.postgresql)                 // JDBC driver — только для Flyway
     implementation(libs.jackson.module.kotlin)
-    implementation(project(":shared:kafka-events"))
-    implementation(project(":shared:quiz-content-dtos")) // Добавлено для VocabularyWordDto, Gender, QuizType, Difficulty
+    implementation(project(":shared:quiz-dtos")) // Объединенный модуль
 }
 ```
 
@@ -198,7 +197,7 @@ public class OutboxEventPublisher {
 ```
 
 ```java
-// sm/selflearn/samskrtam/quiz/model/OutboxEvent.java (R2DBC)
+// sm/selflearn/samskrtam/quiz/event/OutboxEvent.java (R2DBC)
 @Table("quiz.outbox_events") // Схема "quiz"
 public class OutboxEvent {
     @Id

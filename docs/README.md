@@ -43,11 +43,11 @@ SamskrtamApp построен как production-grade референсная р�
 | api-gateway | Java 21 | WebFlux (Reactor) | Gateway требует реактивный стек |
 | feature-flag-service | Java 21 | Virtual Threads | Простой CRUD + Redis, нет смысла в реактивщине |
 | user-service | Java 21 | Virtual Threads | Профили, регистрация, аватарки, блокировка |
-| content-service | Java 21 | Java 21 | WebFlux (Reactor) + R2DBC  | CRUD настроек квизов и вопросов |
+| content-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов |
 | quiz-service | Java 21 | WebFlux (Reactor) + R2DBC | Единый сервис прохождения всех квизов |
 | **dictionary-service** | **Kotlin** | **Coroutines** | Практика Kotlin, Cache-aside |
 | statistics-service | Java 21 | Virtual Threads | Kafka consumer проще на Java |
-| shared/kafka-events | Java 21 | — | Совместимость со всеми сервисами |
+| shared/quiz-dtos | Java 21 | — | Объединенный модуль для всех DTO и событий квизов, контента и статистики |
 | shared/common-dto | Java 21 | — | Совместимость со всеми сервисами |
 
 > **Ключевое решение:** Java 21 Virtual Threads позволяют писать блокирующий

@@ -47,7 +47,9 @@
     "startError": "Не удалось начать сессию квиза: {{message}",
     "submitAnswer": "Ответить",
     "noQuestions": "В этом квизе нет вопросов.",
-    "noExplanation": "Объяснение недоступно."
+    "noExplanation": "Объяснение недоступно.",
+    "completeQuiz": "Завершить квиз",
+    "completeSessionError": "Не удалось завершить сессию квиза: {{message}}"
   },
   "quizzes": {
     "title": "Список квизов"
@@ -160,7 +162,7 @@
     "confirmPasswordRequired": "Пожалуйста, подтвердите пароль.",
     "passwordsDoNotMatch": "Пароли не совпадают.",
     "currentPasswordRequired": "Требуется текущий пароль.",
-    "newPasswordRequired": "Требуется новый пароль.",
+    "newPasswordRequired": "Новый пароль.",
     "confirmNewPasswordRequired": "Пожалуйста, подтвердите новый пароль.",
     "groupNameRequired": "Требуется название группы."
   },
@@ -198,7 +200,10 @@
     "status": "Статус",
     "startedAt": "Начато",
     "completedAt": "Завершено",
-    "duration": "Длительность"
+    "duration": "Длительность",
+    "noAnswerHistory": "История ответов для этой сессии квиза недоступна.",
+    "errorParsingAnswerHistory": "Ошибка при разборе истории ответов.",
+    "answerHistoryForQuiz": "История ответов для квиза {{quizId}}"
   },
   "quizType": {
     "VOCABULARY": "Лексика",
@@ -227,6 +232,8 @@
     "result": "Результат",
     "responseTime": "Время ответа (мс)",
     "answeredAt": "Отвечено",
-    "explanation": "Объяснение"
+    "explanation": "Объяснение",
+    "notAnswered": "Нет ответа",
+    "notApplicable": "Н/Д"
   }
 }

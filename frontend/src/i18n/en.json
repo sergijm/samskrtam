@@ -47,7 +47,9 @@
     "startError": "Failed to start quiz session: {{message}}",
     "submitAnswer": "Submit Answer",
     "noQuestions": "This quiz has no questions.",
-    "noExplanation": "No explanation available."
+    "noExplanation": "No explanation available.",
+    "completeQuiz": "Complete Quiz",
+    "completeSessionError": "Failed to complete quiz session: {{message}}"
   },
   "quizzes": {
     "title": "List of Quizzes"
@@ -154,7 +156,7 @@
     "emailRequired": "Email is required.",
     "invalidEmail": "Invalid email address.",
     "passwordRequired": "Password is required.",
-    "confirmPasswordRequired": "Please confirm your password.",
+    "confirmPasswordRequired": "Passwords do not match.",
     "passwordsDoNotMatch": "Passwords do not match.",
     "currentPasswordRequired": "Current password is required.",
     "newPasswordRequired": "New password is required.",
@@ -195,7 +197,10 @@
     "status": "Status",
     "startedAt": "Started At",
     "completedAt": "Completed At",
-    "duration": "Duration"
+    "duration": "Duration",
+    "noAnswerHistory": "No answer history available for this quiz session.",
+    "errorParsingAnswerHistory": "Error parsing answer history.",
+    "answerHistoryForQuiz": "Answer History for Quiz {{quizId}}"
   },
   "quizType": {
     "VOCABULARY": "Vocabulary",

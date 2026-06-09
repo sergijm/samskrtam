@@ -1,6 +1,5 @@
 package sm.selflearn.samskrtam.quiz.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +27,6 @@ import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
 import sm.selflearn.samskrtam.quiz.repository.SessionQuestionRepository;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;

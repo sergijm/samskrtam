@@ -4,7 +4,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor; // New import
 import lombok.AllArgsConstructor; // New import
-import sm.selflearn.samskrtam.content.dto.Gender;
 
 import java.util.UUID;
 

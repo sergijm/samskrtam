@@ -254,9 +254,9 @@ sm/selflearn/samskrtam/dictionary/
 ├── model/
 │   ├── DictionaryEntry.kt
 │   ├── SearchResult.kt
-│   ├── Gender.kt
-│   ├── WordClass.kt
-│   └── VerbPada.kt
+│   ├── Gender.kt                    // Updated path
+│   ├── WordClass.kt                 // Updated path
+│   └── VerbPada.kt                  // Updated path
 └── dto/
     ├── SearchResponse.kt
     └── DictionaryEntryResponse.kt
