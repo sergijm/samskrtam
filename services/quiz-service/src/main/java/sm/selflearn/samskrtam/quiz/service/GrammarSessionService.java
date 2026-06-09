@@ -13,11 +13,14 @@ import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.events.AnswerData;
 import sm.selflearn.samskrtam.events.SessionCompleted;
 import sm.selflearn.samskrtam.quiz.dto.*;
+import sm.selflearn.samskrtam.quiz.event.OutboxEvent;
+import sm.selflearn.samskrtam.quiz.event.OutboxEventType;
+import sm.selflearn.samskrtam.quiz.event.OutboxStatus;
 import sm.selflearn.samskrtam.quiz.model.*;
 import sm.selflearn.samskrtam.quiz.repository.OutboxEventRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
-import sm.selflearn.samskrtam.quiz.repository.SessionQuestionRepository; // Import SessionQuestionRepository
+import sm.selflearn.samskrtam.quiz.repository.SessionQuestionRepository;
 import sm.selflearn.samskrtam.content.dto.QuizType;
 
 import java.time.Duration;
@@ -32,7 +35,7 @@ public class GrammarSessionService {
 
     private final QuizSessionRepository quizSessionRepository;
     private final QuizAnswerRepository quizAnswerRepository;
-    private final SessionQuestionRepository sessionQuestionRepository; // Inject SessionQuestionRepository
+    private final SessionQuestionRepository sessionQuestionRepository;
     private final ContentClient contentClient;
     private final DeclensionOptionGeneratorService declensionOptionGeneratorService;
     private final LexicalOptionGeneratorService lexicalOptionGeneratorService;
@@ -41,119 +44,48 @@ public class GrammarSessionService {
 
     private static final Random random = new Random();
 
+    // =================================================================================================================
+    // Public API Methods
+    // =================================================================================================================
+
+    /**
+     * Starts a brand new quiz session, regardless of any existing in-progress sessions.
+     */
     public Mono<StartSessionResponse> startSession(UUID quizId, UUID userId, String userLocale) {
-        return contentClient.getSessionData(quizId)
-                .flatMap(sessionData -> {
-                    List<CachedQuestion> cachedQuestions;
-                    final List<VocabularyWordDto> allVocabularyWords = new ArrayList<>();
-                    String vocabularyWordsJson = null;
-
-                    if (sessionData.getQuizType() == QuizType.VOCABULARY) {
-                        if (sessionData.getVocabularyWords() == null || sessionData.getVocabularyWords().isEmpty()) {
-                            return Mono.error(new SamskrtamException("NO_VOCABULARY_WORDS", "No vocabulary words found for quiz: " + quizId));
-                        }
-                        allVocabularyWords.addAll(sessionData.getVocabularyWords());
-                        cachedQuestions = generateVocabularyQuestions(sessionData, userLocale);
-                        try {
-                            vocabularyWordsJson = objectMapper.writeValueAsString(allVocabularyWords);
-                        } catch (JsonProcessingException e) {
-                            return Mono.error(new SamskrtamException("JSON_PROCESSING_ERROR", "Failed to serialize vocabulary words", e));
-                        }
-                    } else {
-                        cachedQuestions = sessionData.getQuestions().stream()
-                                .map(qr -> CachedQuestion.builder()
-                                        .questionId(qr.getId())
-                                        .text(qr.getText())
-                                        .explanationRu(qr.getExplanationRu())
-                                        .explanationEn(qr.getExplanationEn())
-                                        .declensionStemId(qr.getDeclensionStemId())
-                                        .targetCase(qr.getTargetCase())
-                                        .targetNumber(qr.getTargetNumber())
-                                        .correctFormIast(qr.getCorrectFormIast())
-                                        .correctFormDevanagari(qr.getCorrectFormDevanagari())
-                                        .build())
-                                .collect(Collectors.toList());
-                    }
-
-                    Collections.shuffle(cachedQuestions);
-
-                    QuizSession newSession = QuizSession.builder()
-                            .id(null)
-                            .userId(userId)
-                            .quizId(quizId)
-                            .quizType(sessionData.getQuizType())
-                            .totalQuestions(sessionData.getQuestionsPerSession())
-                            .answeredQuestions(0)
-                            .score(0)
-                            .status(SessionStatus.IN_PROGRESS)
-                            .startedAt(Instant.now())
-                            .vocabularyWordsJson(vocabularyWordsJson) // Save vocabulary words JSON
-                            .build();
-
-                    return quizSessionRepository.save(newSession)
-                            .flatMap(savedSession -> {
-                                List<SessionQuestion> sessionQuestions = cachedQuestions.stream()
-                                        .map(cq -> SessionQuestion.builder()
-                                                .sessionId(savedSession.getId())
-                                                .questionId(cq.getQuestionId())
-                                                .text(cq.getText())
-                                                .explanationRu(cq.getExplanationRu())
-                                                .explanationEn(cq.getExplanationEn())
-                                                .declensionStemId(cq.getDeclensionStemId())
-                                                .targetCase(cq.getTargetCase())
-                                                .targetNumber(cq.getTargetNumber())
-                                                .correctFormIast(cq.getCorrectFormIast())
-                                                .correctFormDevanagari(cq.getCorrectFormDevanagari())
-                                                .vocabularyWordId(cq.getVocabularyWordId())
-                                                .questionSourceLanguage(cq.getQuestionSourceLanguage())
-                                                .questionTargetLanguage(cq.getQuestionTargetLanguage())
-                                                .correctTranslationRu(cq.getCorrectTranslationRu())
-                                                .correctTranslationEn(cq.getCorrectTranslationEn())
-                                                .build())
-                                        .collect(Collectors.toList());
-                                return sessionQuestionRepository.saveAll(sessionQuestions)
-                                        .then(buildStartSessionResponse(savedSession, cachedQuestions, allVocabularyWords, userLocale));
-                            });
-                });
+        return createNewSessionAndBuildStartOrResumeResponse(quizId, userId, userLocale)
+                .map(startOrResumeResponse -> StartSessionResponse.builder()
+                        .sessionId(startOrResumeResponse.getSessionId())
+                        .quizId(startOrResumeResponse.getQuizId())
+                        .quizType(startOrResumeResponse.getQuizType())
+                        .questions(startOrResumeResponse.getQuestions())
+                        .totalQuestions(startOrResumeResponse.getTotalQuestions())
+                        .build());
     }
 
-    public Mono<ResumeSessionResponse> resumeSession(UUID sessionId, UUID userId, String userLocale) {
-        return quizSessionRepository.findById(sessionId)
-                .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Session not found: " + sessionId)))
-                .filter(session -> session.getUserId().equals(userId))
-                .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Session not found or does not belong to user: " + sessionId)))
-                .flatMap(session -> sessionQuestionRepository.findBySessionId(sessionId).collectList() // Fetch session questions
-                        .flatMap(sessionQuestions -> {
-                            List<CachedQuestion> cachedQuestions = sessionQuestions.stream()
-                                    .map(sq -> CachedQuestion.builder()
-                                            .questionId(sq.getQuestionId())
-                                            .text(sq.getText())
-                                            .explanationRu(sq.getExplanationRu())
-                                            .explanationEn(sq.getExplanationEn())
-                                            .declensionStemId(sq.getDeclensionStemId())
-                                            .targetCase(sq.getTargetCase())
-                                            .targetNumber(sq.getTargetNumber())
-                                            .correctFormIast(sq.getCorrectFormIast())
-                                            .correctFormDevanagari(sq.getCorrectFormDevanagari())
-                                            .vocabularyWordId(sq.getVocabularyWordId())
-                                            .questionSourceLanguage(sq.getQuestionSourceLanguage())
-                                            .questionTargetLanguage(sq.getQuestionTargetLanguage())
-                                            .correctTranslationRu(sq.getCorrectTranslationRu())
-                                            .correctTranslationEn(sq.getCorrectTranslationEn())
-                                            .build())
-                                    .collect(Collectors.toList());
+    /**
+     * Starts a new quiz session or resumes the latest in-progress session for a given quiz and user.
+     */
+    public Mono<StartOrResumeResponse> startOrResumeSession(UUID quizId, UUID userId, String userLocale) {
+        return quizSessionRepository.findTopByUserIdAndQuizIdAndStatusOrderByStartedAtDesc(userId, quizId, SessionStatus.IN_PROGRESS)
+                .flatMap(session -> resume(session.getId(), userId, userLocale)) // Found in-progress, resume it
+                .switchIfEmpty(Mono.defer(() -> createNewSessionAndBuildStartOrResumeResponse(quizId, userId, userLocale))); // No in-progress, create new
+    }
 
-                            List<VocabularyWordDto> allVocabularyWords = new ArrayList<>();
-                            if (session.getQuizType() == QuizType.VOCABULARY && session.getVocabularyWordsJson() != null) {
-                                try {
-                                    allVocabularyWords.addAll(objectMapper.readValue(session.getVocabularyWordsJson(),
-                                            objectMapper.getTypeFactory().constructCollectionType(List.class, VocabularyWordDto.class)));
-                                } catch (JsonProcessingException e) {
-                                    return Mono.error(new SamskrtamException("JSON_PROCESSING_ERROR", "Failed to deserialize vocabulary words", e));
-                                }
-                            }
-                            return buildResumeSessionResponse(session, cachedQuestions, allVocabularyWords, userLocale);
-                        }));
+    /**
+     * Resumes a specific quiz session by its ID.
+     */
+    public Mono<ResumeSessionResponse> resumeSession(UUID sessionId, UUID userId, String userLocale) {
+        return resume(sessionId, userId, userLocale)
+                .map(startOrResumeResponse -> ResumeSessionResponse.builder()
+                        .sessionId(startOrResumeResponse.getSessionId())
+                        .quizId(startOrResumeResponse.getQuizId())
+                        .quizType(startOrResumeResponse.getQuizType())
+                        .questions(startOrResumeResponse.getQuestions())
+                        .totalQuestions(startOrResumeResponse.getTotalQuestions())
+                        .answeredQuestions(startOrResumeResponse.getAnsweredQuestions())
+                        .score(startOrResumeResponse.getScore())
+                        .currentQuestionIndex(startOrResumeResponse.getCurrentQuestionIndex())
+                        .build());
     }
 
     public Mono<AnswerResponse> submitAnswer(UUID sessionId, UUID userId, AnswerRequest request, String userLocale) {
@@ -166,7 +98,7 @@ public class GrammarSessionService {
                             if (alreadyAnswered) {
                                 return Mono.error(new SamskrtamException("ALREADY_ANSWERED", "Question already answered: " + request.getQuestionId()));
                             } else {
-                                return sessionQuestionRepository.findBySessionIdAndQuestionId(sessionId, request.getQuestionId()) // Fetch specific session question
+                                return sessionQuestionRepository.findBySessionIdAndQuestionId(sessionId, request.getQuestionId())
                                         .switchIfEmpty(Mono.error(new SamskrtamException("QUESTION_NOT_FOUND", "Question not found in session: " + request.getQuestionId())))
                                         .flatMap(sessionQuestion -> {
                                             List<VocabularyWordDto> allVocabularyWords = new ArrayList<>();
@@ -179,9 +111,9 @@ public class GrammarSessionService {
                                                 }
                                             }
 
-                                            // Convert SessionQuestion to CachedQuestion for existing logic compatibility
                                             CachedQuestion cachedQuestion = CachedQuestion.builder()
                                                     .questionId(sessionQuestion.getQuestionId())
+                                                    .questionNumber(sessionQuestion.getQuestionNumber())
                                                     .text(sessionQuestion.getText())
                                                     .explanationRu(sessionQuestion.getExplanationRu())
                                                     .explanationEn(sessionQuestion.getExplanationEn())
@@ -197,7 +129,26 @@ public class GrammarSessionService {
                                                     .correctTranslationEn(sessionQuestion.getCorrectTranslationEn())
                                                     .build();
 
-                                            String selectedOptionIast = getOptionIast(request.getSelectedOptionId(), cachedQuestion, userLocale, allVocabularyWords, session.getQuizType());
+                                            String selectedOptionIast;
+                                            if (session.getQuizType() == QuizType.VOCABULARY) {
+                                                VocabularyWordDto selectedWord = allVocabularyWords.stream()
+                                                        .filter(w -> w.getId().equals(request.getSelectedOptionId()))
+                                                        .findFirst()
+                                                        .orElseThrow(() -> new SamskrtamException("VOCABULARY_WORD_NOT_FOUND", "Selected vocabulary word not found: " + request.getSelectedOptionId()));
+
+                                                if (cachedQuestion.getQuestionTargetLanguage() == QuestionLanguage.SANSKRIT) {
+                                                    selectedOptionIast = selectedWord.getWordIast();
+                                                } else if (cachedQuestion.getQuestionTargetLanguage() == QuestionLanguage.RUSSIAN) {
+                                                    selectedOptionIast = selectedWord.getTranslationRu();
+                                                } else if (cachedQuestion.getQuestionTargetLanguage() == QuestionLanguage.ENGLISH) {
+                                                    selectedOptionIast = selectedWord.getTranslationEn();
+                                                } else {
+                                                    selectedOptionIast = null;
+                                                }
+                                            } else {
+                                                selectedOptionIast = request.getSelectedFormIast();
+                                            }
+
                                             boolean isCorrect = cachedQuestion.getCorrectFormIast().equals(selectedOptionIast);
 
                                             QuizAnswer newAnswer = QuizAnswer.builder()
@@ -207,7 +158,7 @@ public class GrammarSessionService {
                                                     .selectedOptionId(request.getSelectedOptionId())
                                                     .selectedFormIast(selectedOptionIast)
                                                     .correctFormIast(cachedQuestion.getCorrectFormIast())
-                                                    .isCorrect(isCorrect) // Changed to isCorrect
+                                                    .isCorrect(isCorrect)
                                                     .responseTimeMs(request.getResponseTimeMs())
                                                     .answeredAt(Instant.now())
                                                     .build();
@@ -235,7 +186,7 @@ public class GrammarSessionService {
                 .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Session not found or does not belong to user: " + sessionId)))
                 .flatMap(session -> Mono.zip(
                                 quizAnswerRepository.findBySessionId(sessionId).collectList(),
-                                sessionQuestionRepository.findBySessionId(sessionId).collectList() // Fetch all session questions
+                                sessionQuestionRepository.findBySessionId(sessionId).collectList()
                         )
                         .flatMap(tuple -> {
                             List<QuizAnswer> quizAnswers = tuple.getT1();
@@ -251,13 +202,13 @@ public class GrammarSessionService {
 
                                         return AnswerData.builder()
                                                 .questionId(qa.getSessionQuestionId())
-                                                .questionText((sq != null) ? sq.getText() : null) // Populate questionText
+                                                .questionText((sq != null) ? sq.getText() : null)
                                                 .selectedOptionId(qa.getSelectedOptionId())
                                                 .correctFormIast(qa.getCorrectFormIast())
-                                                .isCorrect(qa.isCorrect()) // Changed to isCorrect
+                                                .isCorrect(qa.getIsCorrect())
                                                 .responseTimeMs(qa.getResponseTimeMs())
                                                 .answeredAt(qa.getAnsweredAt())
-                                                .explanationRu(explanationRu) // Add explanations to AnswerData
+                                                .explanationRu(explanationRu)
                                                 .explanationEn(explanationEn)
                                                 .build();
                                     })
@@ -305,50 +256,147 @@ public class GrammarSessionService {
                         }));
     }
 
-    private Mono<StartSessionResponse> buildStartSessionResponse(QuizSession session, List<CachedQuestion> cachedQuestions, List<VocabularyWordDto> allVocabularyWords, String userLocale) {
-        return Flux.fromIterable(cachedQuestions)
-                .flatMap(cachedQuestion -> {
-                    if (session.getQuizType() == QuizType.VOCABULARY) {
-                        VocabularyWordDto correctWord = allVocabularyWords.stream()
-                                .filter(w -> w.getId().equals(cachedQuestion.getVocabularyWordId()))
-                                .findFirst()
-                                .orElseThrow(() -> new SamskrtamException("VOCABULARY_WORD_NOT_FOUND", "Vocabulary word not found in cache for ID: " + cachedQuestion.getVocabularyWordId()));
+    // =================================================================================================================
+    // Private Helper Methods
+    // =================================================================================================================
 
-                        return lexicalOptionGeneratorService.generateOptions(
-                                correctWord,
-                                allVocabularyWords,
-                                cachedQuestion.getQuestionSourceLanguage(),
-                                cachedQuestion.getQuestionTargetLanguage(),
-                                userLocale
-                        ).map(options -> QuestionDto.builder()
-                                .id(cachedQuestion.getQuestionId())
-                                .text(cachedQuestion.getText())
-                                .options(options)
-                                .build());
+    /**
+     * Core logic for creating a new quiz session and building the initial response.
+     * Returns StartOrResumeResponse as it's the most comprehensive DTO for session data.
+     */
+    private Mono<StartOrResumeResponse> createNewSessionAndBuildStartOrResumeResponse(UUID quizId, UUID userId, String userLocale) {
+        return contentClient.getSessionData(quizId)
+                .flatMap(sessionData -> {
+                    List<CachedQuestion> cachedQuestions;
+                    final List<VocabularyWordDto> allVocabularyWords = new ArrayList<>();
+                    String vocabularyWordsJson = null;
+
+                    if (sessionData.getQuizType() == QuizType.VOCABULARY) {
+                        if (sessionData.getVocabularyWords() == null || sessionData.getVocabularyWords().isEmpty()) {
+                            return Mono.error(new SamskrtamException("NO_VOCABULARY_WORDS", "No vocabulary words found for quiz: " + quizId));
+                        }
+                        allVocabularyWords.addAll(sessionData.getVocabularyWords());
+                        cachedQuestions = generateVocabularyQuestions(sessionData, userLocale);
+                        try {
+                            vocabularyWordsJson = objectMapper.writeValueAsString(allVocabularyWords);
+                        } catch (JsonProcessingException e) {
+                            return Mono.error(new SamskrtamException("JSON_PROCESSING_ERROR", "Failed to serialize vocabulary words", e));
+                        }
                     } else {
-                        return declensionOptionGeneratorService.generateOptions(
-                                cachedQuestion.getDeclensionStemId(),
-                                cachedQuestion.getTargetCase(),
-                                cachedQuestion.getTargetNumber(),
-                                cachedQuestion.getCorrectFormIast()
-                        ).map(options -> QuestionDto.builder()
-                                .id(cachedQuestion.getQuestionId())
-                                .text(cachedQuestion.getText())
-                                .options(options)
+                        cachedQuestions = sessionData.getQuestions().stream()
+                                .map(qr -> CachedQuestion.builder()
+                                        .questionId(qr.getId())
+                                        .questionNumber(qr.getQuestionNumber())
+                                        .text(qr.getText())
+                                        .explanationRu(qr.getExplanationRu())
+                                        .explanationEn(qr.getExplanationEn())
+                                        .declensionStemId(qr.getDeclensionStemId())
+                                        .targetCase(qr.getTargetCase())
+                                        .targetNumber(qr.getTargetNumber())
+                                        .correctFormIast(qr.getCorrectFormIast())
+                                        .correctFormDevanagari(qr.getCorrectFormDevanagari())
+                                        .build())
+                                .collect(Collectors.toList());
+                    }
+
+                    Collections.shuffle(cachedQuestions);
+
+                    List<SessionQuestion> sessionQuestionsToSave = new ArrayList<>();
+                    for (int i = 0; i < cachedQuestions.size(); i++) {
+                        CachedQuestion cq = cachedQuestions.get(i);
+                        sessionQuestionsToSave.add(SessionQuestion.builder()
+                                .sessionId(null)
+                                .questionId(cq.getQuestionId())
+                                .questionNumber(i + 1)
+                                .text(cq.getText())
+                                .explanationRu(cq.getExplanationRu())
+                                .explanationEn(cq.getExplanationEn())
+                                .declensionStemId(cq.getDeclensionStemId())
+                                .targetCase(cq.getTargetCase())
+                                .targetNumber(cq.getTargetNumber())
+                                .correctFormIast(cq.getCorrectFormIast())
+                                .correctFormDevanagari(cq.getCorrectFormDevanagari())
+                                .vocabularyWordId(cq.getVocabularyWordId())
+                                .questionSourceLanguage(cq.getQuestionSourceLanguage())
+                                .questionTargetLanguage(cq.getQuestionTargetLanguage())
+                                .correctTranslationRu(cq.getCorrectTranslationRu())
+                                .correctTranslationEn(cq.getCorrectTranslationEn())
                                 .build());
                     }
-                })
-                .collectList()
-                .map(questions -> StartSessionResponse.builder()
-                        .sessionId(session.getId())
-                        .quizId(session.getQuizId())
-                        .quizType(session.getQuizType())
-                        .questions(questions)
-                        .totalQuestions(session.getTotalQuestions())
-                        .build());
+
+                    QuizSession newSession = QuizSession.builder()
+                            .id(null)
+                            .userId(userId)
+                            .quizId(quizId)
+                            .quizType(sessionData.getQuizType())
+                            .totalQuestions(sessionData.getQuestionsPerSession())
+                            .answeredQuestions(0)
+                            .score(0)
+                            .status(SessionStatus.IN_PROGRESS)
+                            .startedAt(Instant.now())
+                            .vocabularyWordsJson(vocabularyWordsJson)
+                            .build();
+
+                    return quizSessionRepository.save(newSession)
+                            .flatMap(savedSession -> {
+                                sessionQuestionsToSave.forEach(sq -> sq.setSessionId(savedSession.getId()));
+                                return sessionQuestionRepository.saveAll(sessionQuestionsToSave)
+                                        .then(buildStartOrResumeResponse(savedSession, cachedQuestions, allVocabularyWords, userLocale));
+                            });
+                });
     }
 
-    private Mono<ResumeSessionResponse> buildResumeSessionResponse(QuizSession session, List<CachedQuestion> cachedQuestions, List<VocabularyWordDto> allVocabularyWords, String userLocale) {
+    /**
+     * Core logic for resuming an existing quiz session and building the response.
+     * Returns StartOrResumeResponse as it's the most comprehensive DTO for session data.
+     */
+    private Mono<StartOrResumeResponse> resume(UUID sessionId, UUID userId, String userLocale) {
+        return quizSessionRepository.findById(sessionId)
+                .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Session not found: " + sessionId)))
+                .filter(session -> session.getUserId().equals(userId))
+                .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Session not found or does not belong to user: " + sessionId)))
+                .flatMap(session -> sessionQuestionRepository.findBySessionId(sessionId)
+                        .sort(Comparator.comparing(SessionQuestion::getQuestionNumber))
+                        .collectList()
+                        .flatMap(sessionQuestions -> {
+                            List<CachedQuestion> cachedQuestions = sessionQuestions.stream()
+                                    .map(sq -> CachedQuestion.builder()
+                                            .questionId(sq.getQuestionId())
+                                            .questionNumber(sq.getQuestionNumber())
+                                            .text(sq.getText())
+                                            .explanationRu(sq.getExplanationRu())
+                                            .explanationEn(sq.getExplanationEn())
+                                            .declensionStemId(sq.getDeclensionStemId())
+                                            .targetCase(sq.getTargetCase())
+                                            .targetNumber(sq.getTargetNumber())
+                                            .correctFormIast(sq.getCorrectFormIast())
+                                            .correctFormDevanagari(sq.getCorrectFormDevanagari())
+                                            .vocabularyWordId(sq.getVocabularyWordId())
+                                            .questionSourceLanguage(sq.getQuestionSourceLanguage())
+                                            .questionTargetLanguage(sq.getQuestionTargetLanguage())
+                                            .correctTranslationRu(sq.getCorrectTranslationRu())
+                                            .correctTranslationEn(sq.getCorrectTranslationEn())
+                                            .build())
+                                    .collect(Collectors.toList());
+
+                            List<VocabularyWordDto> allVocabularyWords = new ArrayList<>();
+                            if (session.getQuizType() == QuizType.VOCABULARY && session.getVocabularyWordsJson() != null) {
+                                try {
+                                    allVocabularyWords.addAll(objectMapper.readValue(session.getVocabularyWordsJson(),
+                                            objectMapper.getTypeFactory().constructCollectionType(List.class, VocabularyWordDto.class)));
+                                } catch (JsonProcessingException e) {
+                                    return Mono.error(new SamskrtamException("JSON_PROCESSING_ERROR", "Failed to deserialize vocabulary words", e));
+                                }
+                            }
+                            return buildStartOrResumeResponse(session, cachedQuestions, allVocabularyWords, userLocale);
+                        }));
+    }
+
+    /**
+     * Builds a StartOrResumeResponse from a QuizSession and its associated questions/vocabulary.
+     * This is a common helper for both starting and resuming sessions.
+     */
+    private Mono<StartOrResumeResponse> buildStartOrResumeResponse(QuizSession session, List<CachedQuestion> cachedQuestions, List<VocabularyWordDto> allVocabularyWords, String userLocale) {
         return quizAnswerRepository.findBySessionId(session.getId())
                 .collectList()
                 .flatMap(answeredQuestions -> {
@@ -389,7 +437,7 @@ public class GrammarSessionService {
                                 }
                             })
                             .collectList()
-                            .map(questions -> ResumeSessionResponse.builder()
+                            .map(questions -> StartOrResumeResponse.builder()
                                     .sessionId(session.getId())
                                     .quizId(session.getQuizId())
                                     .quizType(session.getQuizType())
@@ -419,9 +467,9 @@ public class GrammarSessionService {
             String wordIast = Optional.ofNullable(word.getWordIast()).orElse("");
             String translationRu = Optional.ofNullable(word.getTranslationRu()).orElse("");
             String translationEn = Optional.ofNullable(word.getTranslationEn()).orElse("");
-            String dictionaryEntry = Optional.ofNullable(word.getDictionaryEntry()).orElse("");
+            String explanationRu = Optional.ofNullable(word.getExplanationRu()).orElse("");
+            String explanationEn = Optional.ofNullable(word.getExplanationEn()).orElse("");
 
-            // Generate Sanskrit -> Translation question
             String questionTextSanskritToTranslation = String.format(
                     userLocale.equals("ru") ? "Как переводится слово '%s'?" : "How is the word '%s' translated?",
                     userLocale.equals("ru") ? wordDevanagari : wordIast
@@ -432,8 +480,8 @@ public class GrammarSessionService {
             allPossibleQuestions.add(CachedQuestion.builder()
                     .questionId(questionIdSanskritToTranslation)
                     .text(questionTextSanskritToTranslation)
-                    .explanationRu(dictionaryEntry)
-                    .explanationEn(dictionaryEntry)
+                    .explanationRu(explanationRu)
+                    .explanationEn(explanationEn)
                     .vocabularyWordId(word.getId())
                     .questionSourceLanguage(QuestionLanguage.SANSKRIT)
                     .questionTargetLanguage(userLocale.equals("ru") ? QuestionLanguage.RUSSIAN : QuestionLanguage.ENGLISH)
@@ -443,7 +491,6 @@ public class GrammarSessionService {
                     .correctFormDevanagari(wordDevanagari)
                     .build());
 
-            // Generate Translation -> Sanskrit question
             String questionTextTranslationToSanskrit = String.format(
                     userLocale.equals("ru") ? "Как будет '%s' на санскрите?" : "How is '%s' in Sanskrit?",
                     userLocale.equals("ru") ? translationRu : translationEn
@@ -454,8 +501,8 @@ public class GrammarSessionService {
             allPossibleQuestions.add(CachedQuestion.builder()
                     .questionId(questionIdTranslationToSanskrit)
                     .text(questionTextTranslationToSanskrit)
-                    .explanationRu(dictionaryEntry)
-                    .explanationEn(dictionaryEntry)
+                    .explanationRu(explanationRu)
+                    .explanationEn(explanationEn)
                     .vocabularyWordId(word.getId())
                     .questionSourceLanguage(userLocale.equals("ru") ? QuestionLanguage.RUSSIAN : QuestionLanguage.ENGLISH)
                     .questionTargetLanguage(QuestionLanguage.SANSKRIT)
@@ -467,35 +514,7 @@ public class GrammarSessionService {
         }
 
         Collections.shuffle(allPossibleQuestions);
-        // Select the required number of questions
         int questionsToSelect = Math.min(sessionData.getQuestionsPerSession(), allPossibleQuestions.size());
         return allPossibleQuestions.subList(0, questionsToSelect);
-    }
-
-    private CachedQuestion findQuestion(UUID questionId, List<CachedQuestion> cachedQuestions) {
-        return cachedQuestions.stream()
-                .filter(q -> q.getQuestionId().equals(questionId))
-                .findFirst()
-                .orElseThrow(() -> new SamskrtamException("QUESTION_NOT_FOUND", "Question not found in session: " + questionId));
-    }
-
-    private String getOptionIast(UUID selectedOptionId, CachedQuestion cachedQuestion, String userLocale, List<VocabularyWordDto> allVocabularyWords, QuizType quizType) {
-        if (quizType == QuizType.VOCABULARY) {
-            VocabularyWordDto selectedWord = allVocabularyWords.stream()
-                    .filter(w -> w.getId().equals(selectedOptionId))
-                    .findFirst()
-                    .orElseThrow(() -> new SamskrtamException("VOCABULARY_WORD_NOT_FOUND", "Selected vocabulary word not found: " + selectedOptionId));
-
-            if (cachedQuestion.getQuestionTargetLanguage() == QuestionLanguage.SANSKRIT) {
-                return selectedWord.getWordIast();
-            } else if (cachedQuestion.getQuestionTargetLanguage() == QuestionLanguage.RUSSIAN) {
-                return selectedWord.getTranslationRu();
-            } else if (cachedQuestion.getQuestionTargetLanguage() == QuestionLanguage.ENGLISH) {
-                return selectedWord.getTranslationEn();
-            }
-            return null;
-        } else {
-            return cachedQuestion.getCorrectFormIast();
-        }
     }
 }

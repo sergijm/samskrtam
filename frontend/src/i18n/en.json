@@ -149,7 +149,8 @@
       "correct": "Correct",
       "incorrect": "Incorrect",
       "actions": "Actions",
-      "back": "Back"
+      "back": "Back",
+      "continue": "Continue"
   },
   "validation": {
     "usernameRequired": "Email or Username is required.",

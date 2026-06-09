@@ -19,6 +19,6 @@ public class AnswerSubmitted extends AbstractEvent {
     UUID    quizId;
     UUID    questionId;
     UUID    selectedOptionId;
-    boolean isCorrect;
+    Boolean isCorrect;
     int     responseTimeMs;
 }

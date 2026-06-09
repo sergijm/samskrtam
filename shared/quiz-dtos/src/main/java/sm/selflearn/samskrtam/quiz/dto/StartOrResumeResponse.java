@@ -2,14 +2,14 @@ package sm.selflearn.samskrtam.quiz.dto;
 
 import lombok.Builder;
 import lombok.Value;
-import sm.selflearn.samskrtam.content.dto.QuizType; // Corrected import
+import sm.selflearn.samskrtam.content.dto.QuizType;
 
 import java.util.List;
 import java.util.UUID;
 
 @Value
 @Builder
-public class ResumeSessionResponse {
+public class StartOrResumeResponse {
     UUID sessionId;
     UUID quizId;
     QuizType quizType;

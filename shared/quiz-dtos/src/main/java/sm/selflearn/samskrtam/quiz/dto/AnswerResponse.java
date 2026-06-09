@@ -8,7 +8,7 @@ import java.util.UUID;
 @Value
 @Builder
 public class AnswerResponse {
-    boolean isCorrect;
+    Boolean isCorrect;
     UUID correctOptionId;
     String explanationRu;
     String explanationEn;

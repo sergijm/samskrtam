@@ -10,8 +10,9 @@ import sm.selflearn.samskrtam.quiz.dto.AnswerRequest;
 import sm.selflearn.samskrtam.quiz.dto.AnswerResponse;
 import sm.selflearn.samskrtam.quiz.dto.CompleteSessionResponse;
 import sm.selflearn.samskrtam.quiz.dto.ResumeSessionResponse;
+import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse; // Import new DTO
 import sm.selflearn.samskrtam.quiz.dto.StartSessionResponse;
-import sm.selflearn.samskrtam.quiz.service.GrammarSessionService; // Updated import
+import sm.selflearn.samskrtam.quiz.service.GrammarSessionService;
 
 import java.util.UUID;
 
@@ -21,19 +22,31 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class QuizSessionController {
 
-    private final GrammarSessionService grammarSessionService; // Updated field name
+    private final GrammarSessionService grammarSessionService;
 
     @PostMapping("/start")
-    @Operation(summary = "Start a new quiz session")
-    @ApiResponse(responseCode = "200", description = "Session started successfully")
+    @Operation(summary = "Start a new quiz session (or resume if in progress)")
+    @ApiResponse(responseCode = "200", description = "Session started or resumed successfully")
     @ApiResponse(responseCode = "404", description = "Quiz not found")
-    public Mono<StartSessionResponse> startSession(
+    public Mono<StartOrResumeResponse> startSession( // Changed return type to StartOrResumeResponse
             @PathVariable String slug,
             @RequestParam UUID quizId,
             @RequestHeader("X-User-Id") UUID userId,
             @RequestHeader("X-User-Locale") String userLocale) {
-        // The 'slug' is used for descriptive URLs but the business logic uses quizId.
-        return grammarSessionService.startSession(quizId, userId, userLocale);
+        // This endpoint now behaves like start-or-resume to simplify client logic
+        return grammarSessionService.startOrResumeSession(quizId, userId, userLocale);
+    }
+
+    @PostMapping("/start-or-resume")
+    @Operation(summary = "Start a new quiz session or resume the latest in-progress session for a given quiz")
+    @ApiResponse(responseCode = "200", description = "Session started or resumed successfully")
+    @ApiResponse(responseCode = "404", description = "Quiz not found")
+    public Mono<StartOrResumeResponse> startOrResumeSession(
+            @PathVariable String slug,
+            @RequestParam UUID quizId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-User-Locale") String userLocale) {
+        return grammarSessionService.startOrResumeSession(quizId, userId, userLocale);
     }
 
     @GetMapping("/{sessionId}/resume")
@@ -45,6 +58,9 @@ public class QuizSessionController {
             @PathVariable UUID sessionId,
             @RequestHeader("X-User-Id") UUID userId,
             @RequestHeader("X-User-Locale") String userLocale) {
+        // This method is now primarily for direct resume by sessionId,
+        // while start-or-resume handles the logic of finding the latest in-progress session.
+        // It's kept for backward compatibility or specific use cases.
         return grammarSessionService.resumeSession(sessionId, userId, userLocale);
     }
 

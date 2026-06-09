@@ -11,10 +11,11 @@ import java.util.UUID;
 public class AnswerHistoryDto {
     UUID questionId;
     String questionText;
-    String selectedAnswerIast; // Changed from selectedOptionId and selectedOptionText
-    String correctOptionIast; // Changed from correctOptionId and correctOptionText
+    String selectedAnswerIast;
+    String correctOptionIast;
     Boolean isCorrect;
     Integer responseTimeMs;
     Instant answeredAt;
-    String explanation; // Localized explanation
+    String explanationRu; // New field
+    String explanationEn; // New field
 }

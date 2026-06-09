@@ -27,14 +27,14 @@ api.interceptors.response.use(
     // Check for 401, that it's not a retry, and not the refresh token endpoint itself
     if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/refresh')) {
       originalRequest._retry = true;
-      const { refreshToken, setAccessToken, logout } = useAuthStore.getState();
+      const { refreshToken, setTokens, logout } = useAuthStore.getState();
 
       if (refreshToken) {
         try {
-          const { data } = await authApi.refresh(refreshToken);
-          setAccessToken(data.accessToken);
+          const newTokens = await authApi.refresh(refreshToken);
+          setTokens(newTokens.accessToken, newTokens.refreshToken);
           // Update the authorization header of the original request
-          originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+          originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
           // Retry the original request
           return api(originalRequest);
         } catch (refreshError) {

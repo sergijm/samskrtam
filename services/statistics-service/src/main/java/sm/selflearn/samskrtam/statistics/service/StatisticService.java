@@ -81,7 +81,7 @@ public class StatisticService {
                         statistic -> {
                             // Update existing statistic
                             statistic.setTotalQuestionsAnswered(statistic.getTotalQuestionsAnswered() + 1);
-                            if (event.isCorrect()) {
+                            if (event.getIsCorrect()) {
                                 statistic.setTotalCorrectAnswers(statistic.getTotalCorrectAnswers() + 1);
                                 statistic.setTotalScore(statistic.getTotalScore() + 1); // Assuming 1 point per correct answer
                             }
@@ -98,9 +98,9 @@ public class StatisticService {
                                     .quizType(event.getQuizType())
                                     .totalSessions(0) // Session not completed yet
                                     .totalQuestionsAnswered(1)
-                                    .totalCorrectAnswers(event.isCorrect() ? 1 : 0)
-                                    .totalScore(event.isCorrect() ? 1 : 0)
-                                    .averageScore(event.isCorrect() ? 1.0 : 0.0)
+                                    .totalCorrectAnswers(event.getIsCorrect() ? 1 : 0)
+                                    .totalScore(event.getIsCorrect() ? 1 : 0)
+                                    .averageScore(event.getIsCorrect() ? 1.0 : 0.0)
                                     .lastCompletedAt(Instant.now()) // Update on first answer
                                     .build();
                             userQuizSessionStatisticRepository.save(newStatistic);

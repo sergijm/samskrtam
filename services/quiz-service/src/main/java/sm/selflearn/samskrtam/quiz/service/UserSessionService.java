@@ -13,7 +13,7 @@ import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.QuizSummaryDto;
 import sm.selflearn.samskrtam.content.dto.QuizType;
 import sm.selflearn.samskrtam.content.dto.SessionDataResponse;
-import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
+import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // Updated import
 import sm.selflearn.samskrtam.quiz.dto.AnswerHistoryDto;
 import sm.selflearn.samskrtam.quiz.dto.QuizProgressDto;
 import sm.selflearn.samskrtam.quiz.dto.QuizSessionSummaryDto;
@@ -73,7 +73,12 @@ public class UserSessionService {
 
                     List<QuizSessionSummaryDto> dtoList = sessions.stream()
                             .map(session -> {
-                                String quizTitle = quizSummariesMap.getOrDefault(session.getQuizId(), QuizSummaryDto.builder().titleEn("Unknown Quiz").build()).getTitleEn();
+                                QuizSummaryDto summary = quizSummariesMap.get(session.getQuizId());
+                                String quizTitle = (summary != null) ? summary.getTitleEn() : "Unknown Quiz";
+                                String quizTitleRu = (summary != null) ? summary.getTitleRu() : "Неизвестный квиз";
+                                String quizTitleEn = (summary != null) ? summary.getTitleEn() : "Unknown Quiz";
+                                String slug = (summary != null) ? summary.getSlug() : "";
+
                                 Long durationMs = null;
                                 if (session.getStartedAt() != null && session.getCompletedAt() != null) {
                                     durationMs = Duration.between(session.getStartedAt(), session.getCompletedAt()).toMillis();
@@ -83,6 +88,9 @@ public class UserSessionService {
                                         .sessionId(session.getId())
                                         .quizId(session.getQuizId())
                                         .quizTitle(quizTitle)
+                                        .quizTitleRu(quizTitleRu)
+                                        .quizTitleEn(quizTitleEn)
+                                        .slug(slug)
                                         .quizType(session.getQuizType())
                                         .score(session.getScore())
                                         .totalQuestions(session.getTotalQuestions())
@@ -96,6 +104,33 @@ public class UserSessionService {
 
                     return new PageImpl<>(dtoList, pageable, totalElements);
                 });
+    }
+
+    public Mono<QuizSessionSummaryDto> getQuizSessionSummary(UUID sessionId, UUID userId) {
+        return quizSessionRepository.findByIdAndUserId(sessionId, userId)
+                .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Quiz session not found or does not belong to user: " + sessionId)))
+                .flatMap(session -> contentClient.getQuizSummary(session.getQuizId())
+                        .map(quizSummary -> {
+                            Long durationMs = null;
+                            if (session.getStartedAt() != null && session.getCompletedAt() != null) {
+                                durationMs = Duration.between(session.getStartedAt(), session.getCompletedAt()).toMillis();
+                            }
+                            return QuizSessionSummaryDto.builder()
+                                    .sessionId(session.getId())
+                                    .quizId(session.getQuizId())
+                                    .quizTitle(quizSummary.getTitleEn()) // Assuming English title for summary
+                                    .quizTitleRu(quizSummary.getTitleRu())
+                                    .quizTitleEn(quizSummary.getTitleEn())
+                                    .slug(quizSummary.getSlug())
+                                    .quizType(session.getQuizType())
+                                    .score(session.getScore())
+                                    .totalQuestions(session.getTotalQuestions())
+                                    .status(session.getStatus())
+                                    .startedAt(session.getStartedAt())
+                                    .completedAt(session.getCompletedAt())
+                                    .durationMs(durationMs)
+                                    .build();
+                        }));
     }
 
     public Mono<List<AnswerHistoryDto>> getSessionAnswerHistory( // Changed return type to List
@@ -119,17 +154,20 @@ public class UserSessionService {
                                     .sorted(Comparator.comparing(SessionQuestion::getQuestionId)) // Ensure consistent order
                                     .map(sq -> {
                                         sm.selflearn.samskrtam.quiz.model.QuizAnswer answer = answersMap.get(sq.getQuestionId());
-                                        String explanation = locale.getLanguage().equals("ru") ? sq.getExplanationRu() : sq.getExplanationEn();
+                                        // Use explanationRu and explanationEn directly
+                                        String explanationRu = sq.getExplanationRu();
+                                        String explanationEn = sq.getExplanationEn();
 
                                         return AnswerHistoryDto.builder()
                                                 .questionId(sq.getQuestionId())
                                                 .questionText(sq.getText())
                                                 .selectedAnswerIast(answer != null ? answer.getSelectedFormIast() : null)
                                                 .correctOptionIast(sq.getCorrectFormIast()) // Always from SessionQuestion
-                                                .isCorrect(answer != null ? answer.isCorrect() : null) // Use null for unanswered
+                                                .isCorrect(answer != null ? answer.getIsCorrect() : null) // Use null for unanswered
                                                 .responseTimeMs(answer != null ? answer.getResponseTimeMs() : null)
                                                 .answeredAt(answer != null ? answer.getAnsweredAt() : null)
-                                                .explanation(explanation)
+                                                .explanationRu(explanationRu) // Use new field
+                                                .explanationEn(explanationEn) // Use new field
                                                 .build();
                                     })
                                     .collect(Collectors.toList());
@@ -146,6 +184,8 @@ public class UserSessionService {
                 .defaultIfEmpty(new QuizProgressDto(null, 0, 0, false));
     }
 
+    // This private method is not called from anywhere in UserSessionService,
+    // but if it were, it would need to be updated.
     private List<CachedQuestion> generateVocabularyQuestions(SessionDataResponse sessionData, String userLocale) {
         List<CachedQuestion> allPossibleQuestions = new ArrayList<>();
 
@@ -163,7 +203,9 @@ public class UserSessionService {
             String wordIast = Optional.ofNullable(word.getWordIast()).orElse("");
             String translationRu = Optional.ofNullable(word.getTranslationRu()).orElse("");
             String translationEn = Optional.ofNullable(word.getTranslationEn()).orElse("");
-            String dictionaryEntry = Optional.ofNullable(word.getDictionaryEntry()).orElse("");
+            // Use new explanation fields
+            String explanationRu = Optional.ofNullable(word.getExplanationRu()).orElse("");
+            String explanationEn = Optional.ofNullable(word.getExplanationEn()).orElse("");
 
             String questionTextSanskritToTranslation = String.format(
                     userLocale.equals("ru") ? "Как переводится слово '%s'?" : "How is the word '%s' translated?",
@@ -175,8 +217,8 @@ public class UserSessionService {
             allPossibleQuestions.add(CachedQuestion.builder()
                     .questionId(questionIdSanskritToTranslation)
                     .text(questionTextSanskritToTranslation)
-                    .explanationRu(dictionaryEntry)
-                    .explanationEn(dictionaryEntry)
+                    .explanationRu(explanationRu) // Use new field
+                    .explanationEn(explanationEn) // Use new field
                     .vocabularyWordId(word.getId())
                     .questionSourceLanguage(QuestionLanguage.SANSKRIT)
                     .questionTargetLanguage(userLocale.equals("ru") ? QuestionLanguage.RUSSIAN : QuestionLanguage.ENGLISH)
@@ -196,8 +238,8 @@ public class UserSessionService {
             allPossibleQuestions.add(CachedQuestion.builder()
                     .questionId(questionIdTranslationToSanskrit)
                     .text(questionTextTranslationToSanskrit)
-                    .explanationRu(dictionaryEntry)
-                    .explanationEn(dictionaryEntry)
+                    .explanationRu(explanationRu) // Use new field
+                    .explanationEn(explanationEn) // Use new field
                     .vocabularyWordId(word.getId())
                     .questionSourceLanguage(QuestionLanguage.RUSSIAN)
                     .questionTargetLanguage(QuestionLanguage.SANSKRIT)

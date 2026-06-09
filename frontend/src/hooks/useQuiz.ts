@@ -1,12 +1,12 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { quizApi } from '../api/quizApi';
-import { StartSessionResponse, AnswerRequest, AnswerResponse, QuizSummaryDto, QuizListItem, QuizType, ResumeSessionResponse } from '../types/quiz'; // Import ResumeSessionResponse
-import { useLocaleStore } from '../store/localeStore'; // Import useLocaleStore
+import { StartSessionResponse, AnswerRequest, AnswerResponse, QuizSummaryDto, QuizListItem, QuizType, ResumeSessionResponse, StartOrResumeResponse } from '../types/quiz';
+import { useLocaleStore } from '../store/localeStore';
 
 export const useQuizList = (category?: string) => {
-  const { locale } = useLocaleStore(); // Get current locale
+  const { locale } = useLocaleStore();
   return useQuery<QuizListItem[], Error>({
-    queryKey: ['quizzes', 'list', category, locale], // Add locale to queryKey
+    queryKey: ['quizzes', 'list', category, locale],
     queryFn: async () => {
       const response = await quizApi.getQuizList(category);
       return response.data;
@@ -15,19 +15,19 @@ export const useQuizList = (category?: string) => {
 };
 
 export const useQuizBySlug = (slug: string) => {
-  const { locale } = useLocaleStore(); // Get current locale
+  const { locale } = useLocaleStore();
   return useQuery<QuizSummaryDto, Error>({
-    queryKey: ['quizzes', slug, locale], // Add locale to queryKey
+    queryKey: ['quizzes', slug, locale],
     queryFn: async () => {
       const response = await quizApi.getQuizBySlug(slug);
       return response.data;
     },
-    enabled: !!slug, // Only run the query if slug is provided
+    enabled: !!slug,
   });
 };
 
 export const useStartQuizSession = () => {
-  const { locale } = useLocaleStore(); // Get current locale
+  const { locale } = useLocaleStore();
   return useMutation<
     StartSessionResponse,
     Error,
@@ -40,8 +40,22 @@ export const useStartQuizSession = () => {
   });
 };
 
+export const useStartOrResumeQuizSession = () => {
+  const { locale } = useLocaleStore();
+  return useMutation<
+    StartOrResumeResponse,
+    Error,
+    { quizId: string; quizType: QuizType }
+  >({
+    mutationFn: async ({ quizId, quizType }) => {
+      const response = await quizApi.startOrResumeSession(quizId, quizType, locale);
+      return response.data;
+    },
+  });
+};
+
 export const useResumeQuizSession = () => {
-  const { locale } = useLocaleStore(); // Get current locale
+  const { locale } = useLocaleStore();
   return useMutation<
     ResumeSessionResponse,
     Error,
@@ -55,7 +69,7 @@ export const useResumeQuizSession = () => {
 };
 
 export const useSubmitQuizAnswer = () => {
-  const { locale } = useLocaleStore(); // Get current locale
+  const { locale } = useLocaleStore();
   return useMutation<
     AnswerResponse,
     Error,
@@ -71,7 +85,7 @@ export const useSubmitQuizAnswer = () => {
 export const useCompleteQuizSession = () => {
   const { locale } = useLocaleStore();
   return useMutation<
-    void, // The completeSession API returns void
+    void,
     Error,
     { sessionId: string; quizType: QuizType }
   >({

@@ -16,11 +16,12 @@ import sm.selflearn.samskrtam.content.dto.QuestionResponse;
 import sm.selflearn.samskrtam.content.dto.QuizListItemResponse;
 import sm.selflearn.samskrtam.content.dto.SessionDataResponse;
 import sm.selflearn.samskrtam.content.dto.QuizType; // Import QuizType
-import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // Import VocabularyWordDto
+import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // Updated import
 
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger; // Import AtomicInteger
 import java.util.stream.Collectors;
 
 @Service
@@ -88,6 +89,7 @@ public class QuizContentService {
                 questions = declensionQuizGeneratorService.generateDeclensionQuestions(quiz, locale);
                 break;
             case CONJUGATIONS:
+                AtomicInteger questionCounter = new AtomicInteger(0); // Initialize counter
                 // Existing logic for pre-defined questions
                 questions = questionRepository.findByQuizId(quizId).stream()
                         .map(question -> {
@@ -96,6 +98,7 @@ public class QuizContentService {
 
                             return QuestionResponse.builder()
                                     .id(question.getId())
+                                    .questionNumber(questionCounter.incrementAndGet()) // Set question number
                                     .text(locale.getLanguage().equals("ru") ? question.getTextRu() : question.getTextEn())
                                     .explanationRu(question.getExplanationRu())
                                     .explanationEn(question.getExplanationEn())

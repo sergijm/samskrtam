@@ -1,24 +1,26 @@
 package sm.selflearn.samskrtam.content.dto;
 
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor; // New import
-import lombok.AllArgsConstructor; // New import
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized; // Import Jacksonized
+import sm.selflearn.samskrtam.content.model.Gender; // Assuming Gender is in shared:dictionary-dtos
 
+import java.util.List; // Import List
 import java.util.UUID;
 
-@Data
+@Value
 @Builder
-@NoArgsConstructor // Added for Jackson deserialization
-@AllArgsConstructor // Added for Jackson deserialization
+@Jacksonized // Add Jacksonized annotation
 public class VocabularyWordDto {
-    private UUID id;
-    private String wordIast;
-    private String wordDevanagari;
-    private String translationEn;
-    private String translationRu;
-    private Gender gender;
-    private String stem;
-    private String root;
-    private String dictionaryEntry;
+    UUID id;
+    String wordIast;
+    String wordDevanagari;
+    String translationEn;
+    String translationRu;
+    Gender gender;
+    String stem;
+    String root;
+    String explanationRu;
+    String explanationEn;
+    List<String> tags; // New field
 }

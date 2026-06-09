@@ -35,3 +35,15 @@ export const useSessionAnswerHistory = (
     enabled: !!sessionId && !!userId, // Only run the query if sessionId and userId are available
   });
 };
+
+// New hook to fetch a single QuizSessionSummary by sessionId and userId
+export const useQuizSessionSummary = (sessionId: string, userId: string) => {
+  return useQuery<QuizSessionSummary, Error>({
+    queryKey: ['quizSessionSummary', { sessionId, userId }],
+    queryFn: async () => {
+      const response = await quizApi.getQuizSessionSummary(sessionId); // Use new API method
+      return response.data;
+    },
+    enabled: !!sessionId && !!userId,
+  });
+};

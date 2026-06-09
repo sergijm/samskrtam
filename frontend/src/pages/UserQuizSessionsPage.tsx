@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from 'primereact/card';
 import { DataTable } from 'primereact/datatable';
@@ -16,10 +16,10 @@ import { QuizType, SessionStatus, QuizSessionSummary } from '../types/quiz';
 
 const UserQuizSessionsPage = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
   const { user } = useAuthStore();
 
-  const currentUserId = user?.id; // Get current user's ID directly from auth store
+  const currentUserId = user?.id;
 
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
@@ -29,7 +29,7 @@ const UserQuizSessionsPage = () => {
   const [statusFilter, setStatusFilter] = useState<SessionStatus | undefined>(undefined);
 
   const { data, isLoading, isError, error } = useUserQuizSessions(
-    currentUserId || '', // Pass currentUserId directly
+    currentUserId || '',
     page,
     size,
     sortBy,
@@ -53,7 +53,6 @@ const UserQuizSessionsPage = () => {
     { label: t('quizType.VOCABULARY'), value: 'VOCABULARY' },
     { label: t('quizType.DECLENSIONS'), value: 'DECLENSIONS' },
     { label: t('quizType.CONJUGATIONS'), value: 'CONJUGATIONS' },
-    // Add other specific declension types if needed
     { label: t('quizType.A_STEM_DECLENSIONS'), value: 'A_STEM_DECLENSIONS' },
     { label: t('quizType.AA_STEM_DECLENSIONS'), value: 'AA_STEM_DECLENSIONS' },
     { label: t('quizType.I_STEM_DECLENSIONS'), value: 'I_STEM_DECLENSIONS' },
@@ -97,16 +96,32 @@ const UserQuizSessionsPage = () => {
   };
 
   const actionBodyTemplate = (rowData: QuizSessionSummary) => {
+    const isCompleted = rowData.status === SessionStatus.COMPLETED;
+    const quizCategory = rowData.quizType.toLowerCase();
+
     return (
-      <Button
-        icon="pi pi-info-circle"
-        className="p-button-rounded p-button-text"
-        onClick={(e) => {
-          e.stopPropagation(); // Prevent row click from firing
-          navigate(`/quiz-sessions/${rowData.sessionId}/history`);
-        }}
-        tooltip={t('common.viewDetails')}
-      />
+      <div className="flex gap-2">
+        <Button
+          icon="pi pi-info-circle"
+          className="p-button-rounded p-button-text"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/quiz-sessions/${rowData.sessionId}/history`);
+          }}
+          tooltip={t('common.viewDetails')}
+        />
+        {!isCompleted && (
+          <Button
+            icon="pi pi-play"
+            className="p-button-rounded p-button-text p-button-success"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/quiz/${quizCategory}/${rowData.slug}/${rowData.sessionId}`);
+            }}
+            tooltip={t('common.continue')}
+          />
+        )}
+      </div>
     );
   };
 
@@ -177,9 +192,9 @@ const UserQuizSessionsPage = () => {
           sortOrder={sortDirection === 'asc' ? 1 : -1}
           loading={isLoading}
           emptyMessage={t('userProfile.noQuizSessionsFound')}
-          selectionMode="single" // Enable row selection
-          onRowClick={onRowClick} // Handle row click
-          rowClassName={() => 'cursor-pointer'} // Always add cursor pointer
+          selectionMode="single"
+          onRowClick={onRowClick}
+          rowClassName={() => 'cursor-pointer'}
         >
           <Column field="quizTitle" header={t('userProfile.quizTitle')} sortable />
           <Column field="quizType" header={t('userProfile.quizType')} body={quizTypeBodyTemplate} sortable />
@@ -189,7 +204,7 @@ const UserQuizSessionsPage = () => {
           <Column field="startedAt" header={t('userProfile.startedAt')} body={startedAtBodyTemplate} sortable />
           <Column field="completedAt" header={t('userProfile.completedAt')} body={completedAtBodyTemplate} sortable />
           <Column field="durationMs" header={t('userProfile.duration')} body={durationBodyTemplate} sortable />
-          <Column body={actionBodyTemplate} header={t('common.actions')} style={{ width: '6rem' }} />
+          <Column body={actionBodyTemplate} header={t('common.actions')} style={{ width: '8rem' }} />
         </DataTable>
 
         <Paginator

@@ -1,5 +1,5 @@
 import api from './axios';
-import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, QuizType, QuizSessionSummary, AnswerHistory, QuizProgress, ResumeSessionResponse } from '../types/quiz';
+import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, QuizType, QuizSessionSummary, AnswerHistory, QuizProgress, ResumeSessionResponse, StartOrResumeResponse } from '../types/quiz';
 import { PaginatedResponse } from '../types/common';
 
 export const quizApi = {
@@ -14,13 +14,24 @@ export const quizApi = {
   getQuizBySlug: (slug: string) => api.get<QuizSummaryDto>(`/api/v1/content/quizzes/by-slug/${slug}`),
 
   startSession: (quizId: string, quizType: QuizType, userLocale: string) => {
-    const slug = quizType.toLowerCase(); // Use quizType as the slug in the path
+    const slug = quizType.toLowerCase();
     const url = `/api/v1/quiz/${slug}/sessions/start`;
-    const params = { quizId: quizId }; // Always pass the actual quizId as a query parameter
+    const params = { quizId: quizId };
 
     return api.post<StartSessionResponse>(url, null, {
       params: params,
       headers: { 'X-User-Locale': userLocale },
+    });
+  },
+
+  startOrResumeSession: (quizId: string, quizType: QuizType, userLocale: string) => {
+    const slug = quizType.toLowerCase();
+    const url = `/api/v1/quiz/${slug}/sessions/start-or-resume`;
+    const params = { quizId: quizId };
+
+    return api.post<StartOrResumeResponse>(url, null, {
+        params: params,
+        headers: { 'X-User-Locale': userLocale },
     });
   },
 
@@ -33,7 +44,7 @@ export const quizApi = {
   },
 
   submitAnswer: (sessionId: string, quizId: string, quizType: QuizType, answer: AnswerRequest, userLocale: string) => {
-    const slug = quizType.toLowerCase(); // Use quizType as the slug in the path
+    const slug = quizType.toLowerCase();
     const url = `/api/v1/quiz/${slug}/sessions/${sessionId}/answer`;
 
     return api.post<AnswerResponse>(url, answer, {
@@ -52,7 +63,7 @@ export const quizApi = {
   getUserQuizSessions: (userId: string, page: number, size: number, sortBy: string, sortDirection: string, quizType?: QuizType, status?: string) => {
     return api.get<PaginatedResponse<QuizSessionSummary>>(`/api/v1/quiz-sessions`, {
       params: {
-        userId, // Передаем userId как параметр запроса
+        userId,
         page,
         size,
         sortBy,
@@ -63,18 +74,21 @@ export const quizApi = {
     });
   },
 
-  getSessionAnswerHistory: (sessionId: string, userId: string) => { // Removed pagination parameters
-    return api.get<AnswerHistory[]>(`/api/v1/quiz-sessions/${sessionId}/answers`, { // Expects List<AnswerHistory>
+  getQuizSessionSummary: (sessionId: string) => {
+    return api.get<QuizSessionSummary>(`/api/v1/quiz-sessions/${sessionId}/summary`);
+  },
+
+  getSessionAnswerHistory: (sessionId: string, userId: string) => {
+    return api.get<AnswerHistory[]>(`/api/v1/quiz-sessions/${sessionId}/answers`, {
       params: {
         userId,
       },
     });
   },
 
-  // New function to get the progress of the latest unfinished quiz
-  getLatestUnfinishedQuizProgress: (userId: string, quizId: string) => { // Changed quizType to quizId
+  getLatestUnfinishedQuizProgress: (userId: string, quizId: string) => {
     return api.get<QuizProgress>(`/api/v1/quiz-sessions/progress`, {
-      params: { userId, quizId }, // Pass quizId as a query parameter
+      params: { userId, quizId },
     });
   },
 };

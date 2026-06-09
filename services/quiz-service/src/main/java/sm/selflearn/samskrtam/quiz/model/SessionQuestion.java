@@ -17,8 +17,7 @@ public class SessionQuestion {
     private UUID id; // Primary key for this session question record
     private UUID sessionId; // Foreign key to QuizSession
     private UUID questionId; // Original ID of the question from content service
-
-    // Fields from CachedQuestion
+    private int questionNumber; // New field for the order of the question in the session
     private String text;
     private String explanationRu;
     private String explanationEn;

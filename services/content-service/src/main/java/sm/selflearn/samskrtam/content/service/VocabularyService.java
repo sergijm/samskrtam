@@ -2,7 +2,7 @@ package sm.selflearn.samskrtam.content.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
+import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // Updated import
 import sm.selflearn.samskrtam.content.model.VocabularyWord;
 import sm.selflearn.samskrtam.content.repository.VocabularyWordRepository;
 
@@ -44,7 +44,9 @@ public class VocabularyService {
                 .gender(word.getGender())
                 .stem(word.getStem())
                 .root(word.getRoot())
-                .dictionaryEntry(word.getDictionaryEntry())
+                .explanationRu(word.getExplanationRu())
+                .explanationEn(word.getExplanationEn())
+                .tags(word.getTags()) // Map new field
                 .build();
     }
 }

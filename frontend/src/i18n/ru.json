@@ -152,7 +152,8 @@
       "correct": "Верно",
       "incorrect": "Неверно",
       "actions": "Действия",
-      "back": "Назад"
+      "back": "Назад",
+      "continue": "Продолжить"
   },
   "validation": {
     "usernameRequired": "Требуется Email или логин.",

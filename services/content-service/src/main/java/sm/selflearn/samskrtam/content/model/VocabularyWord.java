@@ -14,9 +14,11 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import sm.selflearn.samskrtam.content.dto.Gender; // Corrected import for Gender
+import org.hibernate.annotations.JdbcTypeCode; // Import for JdbcTypeCode
+import org.hibernate.type.SqlTypes; // Import for SqlTypes
 
 import java.time.Instant;
+import java.util.List; // Import List
 import java.util.UUID;
 
 @Data
@@ -52,8 +54,15 @@ public class VocabularyWord {
     @Column
     private String root; // Корень слова
 
-    @Column(name = "dictionary_entry", columnDefinition = "TEXT") // Use TEXT for potentially long dictionary entries
-    private String dictionaryEntry; // Словарная статья целиком
+    @Column(name = "explanation_ru", columnDefinition = "TEXT", nullable = false) // New field
+    private String explanationRu;
+
+    @Column(name = "explanation_en", columnDefinition = "TEXT", nullable = false) // New field
+    private String explanationEn;
+
+    @JdbcTypeCode(SqlTypes.ARRAY) // Map PostgreSQL TEXT[] to Java List<String>
+    @Column(name = "tags", columnDefinition = "TEXT[]", nullable = false)
+    private List<String> tags; // New field for thematic tags
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

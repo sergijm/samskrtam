@@ -9,7 +9,7 @@ import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.DeclensionFormDto; // Import DeclensionFormDto
 import sm.selflearn.samskrtam.content.dto.QuizSummaryDto; // Import QuizSummaryDto
 import sm.selflearn.samskrtam.content.dto.SessionDataResponse;
-import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // New import
+import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // Updated import
 
 import java.util.List;
 import java.util.UUID;

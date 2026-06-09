@@ -1,4 +1,4 @@
-package sm.selflearn.samskrtam.quiz.model;
+package sm.selflearn.samskrtam.quiz.event;
 
 public enum OutboxStatus {
     PENDING,

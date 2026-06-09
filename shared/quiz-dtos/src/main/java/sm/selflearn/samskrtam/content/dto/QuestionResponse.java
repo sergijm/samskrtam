@@ -13,6 +13,7 @@ import java.util.UUID;
 @Jacksonized
 public class QuestionResponse {
     UUID id;
+    int questionNumber; // New field
     String text;
     String explanationRu; // Changed from explanation
     String explanationEn; // Added explanationEn

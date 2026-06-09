@@ -1,8 +1,25 @@
 import { PaginatedResponse } from './common';
 
-export type QuizType = 'DECLENSIONS' | 'CONJUGATIONS' | 'VOCABULARY' | 'A_STEM_DECLENSIONS' | 'AA_STEM_DECLENSIONS' | 'I_STEM_DECLENSIONS' | 'II_STEM_DECLENSIONS' | 'U_STEM_DECLENSIONS' | 'UU_STEM_DECLENSIONS' | 'R_STEM_DECLENSIONS';
+// Changed from type to enum for better import compatibility
+export enum QuizType {
+  DECLENSIONS = 'DECLENSIONS',
+  CONJUGATIONS = 'CONJUGATIONS',
+  VOCABULARY = 'VOCABULARY',
+  A_STEM_DECLENSIONS = 'A_STEM_DECLENSIONS',
+  AA_STEM_DECLENSIONS = 'AA_STEM_DECLENSIONS',
+  I_STEM_DECLENSIONS = 'I_STEM_DECLENSIONS',
+  II_STEM_DECLENSIONS = 'II_STEM_DECLENSIONS',
+  U_STEM_DECLENSIONS = 'U_STEM_DECLENSIONS',
+  UU_STEM_DECLENSIONS = 'UU_STEM_DECLENSIONS',
+  R_STEM_DECLENSIONS = 'R_STEM_DECLENSIONS',
+}
 export type Difficulty = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
-export type SessionStatus = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED'; // Add SessionStatus
+// Changed from type to enum for better import compatibility
+export enum SessionStatus {
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  ABANDONED = 'ABANDONED',
+}
 
 export interface QuizListItem {
   id: string;
@@ -69,7 +86,7 @@ export interface AnswerRequest {
 }
 
 export interface AnswerResponse {
-  isCorrect: boolean; // Changed from isCorrect to correct
+  isCorrect: boolean;
   correctOptionId: string;
   explanationRu: string; // Russian explanation
   explanationEn: string; // English explanation
@@ -99,7 +116,8 @@ export interface AnswerHistory {
   isCorrect?: boolean; // Made optional
   responseTimeMs?: number; // Made optional
   answeredAt?: string; // Made optional
-  explanation?: string; // Made optional
+  explanationRu?: string; // New field for Russian explanation
+  explanationEn?: string; // New field for English explanation
 }
 
 // New interface for quiz progress

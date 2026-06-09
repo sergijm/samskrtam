@@ -9,7 +9,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import sm.selflearn.samskrtam.events.AbstractEvent;
-import sm.selflearn.samskrtam.quiz.model.OutboxStatus;
 import sm.selflearn.samskrtam.quiz.repository.OutboxEventRepository;
 
 @Component

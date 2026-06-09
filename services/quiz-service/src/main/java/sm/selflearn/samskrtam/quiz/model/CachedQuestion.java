@@ -12,6 +12,7 @@ import java.util.UUID;
 @Data
 public class CachedQuestion {
     private UUID questionId;
+    private int questionNumber; // New field
     private String text;
     private String explanationRu;
     private String explanationEn;
@@ -35,6 +36,7 @@ public class CachedQuestion {
     @Builder
     public CachedQuestion(
             @JsonProperty("questionId") UUID questionId,
+            @JsonProperty("questionNumber") int questionNumber, // Add to constructor
             @JsonProperty("text") String text,
             @JsonProperty("explanationRu") String explanationRu,
             @JsonProperty("explanationEn") String explanationEn,
@@ -49,6 +51,7 @@ public class CachedQuestion {
             @JsonProperty("correctFormIast") String correctFormIast,
             @JsonProperty("correctFormDevanagari") String correctFormDevanagari) {
         this.questionId = questionId;
+        this.questionNumber = questionNumber; // Assign
         this.text = text;
         this.explanationRu = explanationRu;
         this.explanationEn = explanationEn;

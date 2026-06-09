@@ -1,34 +1,43 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from 'primereact/card';
-import { Link, useParams } from 'react-router-dom';
-import { useQuizList } from '../hooks/useQuiz';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useQuizList, useStartOrResumeQuizSession } from '../hooks/useQuiz';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
-import { useQueries } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
-import { quizApi } from '../api/quizApi';
-import { QuizProgress } from '../types/quiz';
+import { QuizListItem } from '../types/quiz';
 
 const QuizzesPage = () => {
-  const { t, i18n } = useTranslation(); // Get i18n instance for current language
+  const { t, i18n } = useTranslation();
   const { category } = useParams<{ category?: string }>();
+  const navigate = useNavigate();
   const { data: quizList, isLoading, isError, error } = useQuizList(category);
   const { user } = useAuthStore();
-  const userId = user?.id;
+  const startOrResumeMutation = useStartOrResumeQuizSession();
 
-  const quizProgressQueries = useQueries({
-    queries: (quizList || []).map(quiz => ({
-      queryKey: ['quizProgress', quiz.id, userId],
-      queryFn: () => userId ? quizApi.getLatestUnfinishedQuizProgress(userId, quiz.id).then(res => res.data) : Promise.reject('User ID not available'),
-      enabled: !!userId,
-      staleTime: 5 * 60 * 1000,
-    })),
-  });
+  const handleQuizClick = (quiz: QuizListItem) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
 
-  const isProgressLoading = quizProgressQueries.some(query => query.isLoading);
+    startOrResumeMutation.mutate(
+      { quizId: quiz.id, quizType: quiz.quizType },
+      {
+        onSuccess: (data) => {
+          const quizCategory = data.quizType.toLowerCase();
+          navigate(`/quiz/${quizCategory}/${quiz.slug}/${data.sessionId}`);
+        },
+        onError: (err) => {
+          console.error('Failed to start or resume quiz session:', err);
+          // Optionally, show an error message to the user
+        },
+      }
+    );
+  };
 
-  if (isLoading || isProgressLoading) {
+  if (isLoading) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
         <ProgressSpinner />
@@ -48,24 +57,13 @@ const QuizzesPage = () => {
     <div className="flex flex-column align-items-center justify-content-center p-4">
       <h1 className="text-center mb-5">{t('quizzes.title')}</h1>
       <div className="grid justify-content-center w-full" style={{ maxWidth: '1200px' }}>
-        {quizList?.map((quiz, index) => {
-          const quizCategory = quiz.quizType === 'VOCABULARY' ? 'vocabulary' : 'grammar';
-          let quizLink = '';
-          const quizProgress = quizProgressQueries[index]?.data as QuizProgress | undefined;
-
-          // Determine localized title and description
+        {quizList?.map((quiz) => {
           const localizedTitle = i18n.language === 'ru' ? quiz.titleRu : quiz.titleEn;
           const localizedDescription = i18n.language === 'ru' ? quiz.descriptionRu : quiz.descriptionEn;
 
-          if (quizProgress && quizProgress.found && quizProgress.sessionId) {
-            quizLink = `/quiz/${quizCategory}/${quiz.slug}/${quizProgress.sessionId}`;
-          } else {
-            quizLink = `/quiz/${quizCategory}/${quiz.slug}`;
-          }
-
           return (
             <div key={quiz.id} className="col-12 sm:col-6 md:col-4 lg:col-3 p-2 flex">
-              <Link to={quizLink} className="no-underline h-full flex w-full">
+              <div onClick={() => handleQuizClick(quiz)} className="w-full">
                 <Card
                   title={localizedTitle}
                   subTitle={localizedDescription}
@@ -73,14 +71,9 @@ const QuizzesPage = () => {
                 >
                   <div className="flex flex-column align-items-center justify-content-center flex-grow-1">
                     <i className="pi pi-question-circle text-5xl mb-3" />
-                    {quizProgress && quizProgress.found && (
-                      <p className="text-xs text-color-secondary mt-2">
-                        {t('dashboard.quizProgress', { answered: quizProgress.answeredQuestions, total: quizProgress.totalQuestions })}
-                      </p>
-                    )}
                   </div>
                 </Card>
-              </Link>
+              </div>
             </div>
           );
         })}

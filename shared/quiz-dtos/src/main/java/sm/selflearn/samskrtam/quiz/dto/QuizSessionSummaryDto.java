@@ -13,12 +13,15 @@ import java.util.UUID;
 public class QuizSessionSummaryDto {
     UUID sessionId;
     UUID quizId;
-    String quizTitle; // Название квиза
+    String quizTitle;
+    String quizTitleRu;
+    String quizTitleEn;
+    String slug;
     QuizType quizType;
     int score;
     int totalQuestions;
     SessionStatus status;
     Instant startedAt;
-    Instant completedAt; // Будет null, если сессия не завершена
-    Long durationMs; // Длительность сессии в миллисекундах
+    Instant completedAt;
+    Long durationMs;
 }

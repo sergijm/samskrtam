@@ -17,7 +17,7 @@ public class AnswerData {
     private String questionText; // NEW: Add question text for statistics service
     private UUID selectedOptionId;
     private String correctFormIast;
-    private boolean isCorrect; // Changed from 'correct' to 'isCorrect'
+    private Boolean isCorrect; // Changed from 'correct' to 'isCorrect'
     private int responseTimeMs;
     private Instant answeredAt;
     private String explanationRu; // New field

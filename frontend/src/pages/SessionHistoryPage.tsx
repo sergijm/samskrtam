@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useParams, useLocation, useNavigate } from 'react-router-dom'; // Import useLocation and useNavigate
+import React from 'react';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from 'primereact/card';
 import { ProgressSpinner } from 'primereact/progressspinner';
@@ -7,43 +7,52 @@ import { Message } from 'primereact/message';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Tag } from 'primereact/tag';
-import { Button } from 'primereact/button'; // Import Button
+import { Button } from 'primereact/button';
 import { useAuthStore } from '../store/authStore';
-import { useSessionAnswerHistory } from '../hooks/useUserQuizSessions';
-import { useCompleteQuizSession } from '../hooks/useQuiz'; // Import useCompleteQuizSession
-import { AnswerHistory, QuizType } from '../types/quiz'; // Import QuizType
+import { useSessionAnswerHistory, useQuizSessionSummary } from '../hooks/useUserQuizSessions';
+import { useCompleteQuizSession } from '../hooks/useQuiz';
+import { AnswerHistory, SessionStatus } from '../types/quiz';
 
 const SessionHistoryPage = () => {
-  const { t } = useTranslation();
-  const navigate = useNavigate(); // Initialize useNavigate
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const { sessionId } = useParams<{ sessionId: string }>();
-  const location = useLocation(); // Get location object
-  const { quizType } = (location.state || {}) as { quizType?: QuizType }; // Extract quizType from location.state
+  const location = useLocation();
   const { user } = useAuthStore();
   const userId = user?.id;
 
-  const { data: answers, isLoading, isError, error } = useSessionAnswerHistory(
+  const { data: answers, isLoading: isAnswersLoading, isError: isAnswersError, error: answersError } = useSessionAnswerHistory(
     sessionId || '',
     userId || ''
   );
 
-  const completeSessionMutation = useCompleteQuizSession(); // Initialize the mutation
+  const { data: sessionSummary, isLoading: isSummaryLoading, isError: isSummaryError, error: summaryError } = useQuizSessionSummary(
+    sessionId || '',
+    userId || ''
+  );
+
+  const completeSessionMutation = useCompleteQuizSession();
 
   const handleCompleteQuiz = () => {
-    if (sessionId && quizType) {
+    if (sessionId && sessionSummary?.quizType) {
       completeSessionMutation.mutate(
-        { sessionId, quizType },
+        { sessionId, quizType: sessionSummary.quizType },
         {
           onSuccess: () => {
-            // Optionally, navigate to another page or show a success message
-            navigate('/dashboard'); // Example: navigate to dashboard
+            navigate('/dashboard', { replace: true });
           },
           onError: (err) => {
             console.error('Failed to complete quiz session:', err);
-            // Show an error message to the user
           },
         }
       );
+    }
+  };
+
+  const handleResumeQuiz = () => {
+    if (sessionSummary) {
+      const { quizType, slug, sessionId } = sessionSummary;
+      navigate(`/quiz/${quizType.toLowerCase()}/${slug}/${sessionId}`);
     }
   };
 
@@ -55,7 +64,7 @@ const SessionHistoryPage = () => {
     );
   }
 
-  if (isLoading || completeSessionMutation.isLoading) { // Add mutation loading state
+  if (isAnswersLoading || isSummaryLoading || completeSessionMutation.isLoading) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
         <ProgressSpinner />
@@ -63,19 +72,20 @@ const SessionHistoryPage = () => {
     );
   }
 
-  if (isError) {
+  if (isAnswersError || isSummaryError) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
-        <Message severity="error" text={t('sessionHistory.errorLoadingHistory', { message: error?.message })} />
+        <Message severity="error" text={t('sessionHistory.errorLoadingHistory', { message: answersError?.message || summaryError?.message })} />
       </div>
     );
   }
 
   const sessionAnswers = answers || [];
+  const isSessionCompleted = sessionSummary?.status === SessionStatus.COMPLETED;
 
   const resultBodyTemplate = (rowData: AnswerHistory) => {
-    if (rowData.isCorrect === undefined || rowData.isCorrect === null) { // Changed from 'correct' to 'isCorrect'
-      return null; // Or a specific indicator for unanswered
+    if (rowData.isCorrect === undefined || rowData.isCorrect === null) {
+      return null;
     }
     return (
       <Tag
@@ -90,7 +100,7 @@ const SessionHistoryPage = () => {
   };
 
   const explanationBodyTemplate = (rowData: AnswerHistory) => {
-    return rowData.explanation || t('quiz.noExplanation');
+    return i18n.language === 'ru' ? rowData.explanationRu : rowData.explanationEn || t('quiz.noExplanation');
   };
 
   const selectedAnswerBodyTemplate = (rowData: AnswerHistory) => {
@@ -112,23 +122,30 @@ const SessionHistoryPage = () => {
           <Column field="questionText" header={t('sessionHistory.question')} sortable />
           <Column field="selectedAnswerIast" header={t('sessionHistory.yourAnswer')} body={selectedAnswerBodyTemplate} sortable />
           <Column field="correctOptionIast" header={t('sessionHistory.correctAnswer')} body={correctOptionBodyTemplate} sortable />
-          <Column field="isCorrect" header={t('sessionHistory.result')} body={resultBodyTemplate} sortable /> {/* Changed field to 'isCorrect' */}
+          <Column field="isCorrect" header={t('sessionHistory.result')} body={resultBodyTemplate} sortable />
           <Column field="responseTimeMs" header={t('sessionHistory.responseTime')} sortable />
           <Column field="answeredAt" header={t('sessionHistory.answeredAt')} body={answeredAtBodyTemplate} sortable />
           <Column field="explanation" header={t('sessionHistory.explanation')} body={explanationBodyTemplate} sortable />
         </DataTable>
 
-        {completeSessionMutation.isError && ( // Display error message if mutation fails
+        {completeSessionMutation.isError && (
           <Message severity="error" text={t('quiz.completeSessionError', { message: completeSessionMutation.error?.message })} className="mt-3" />
         )}
 
-        {quizType && ( // Only show button if quizType is available
-          <div className="flex justify-content-end mt-4">
+        {!isSessionCompleted && (
+          <div className="flex justify-content-end mt-4 gap-2">
+            <Button
+              label={t('common.continue')}
+              icon="pi pi-play"
+              className="p-button-success"
+              onClick={handleResumeQuiz}
+            />
             <Button
               label={t('quiz.completeQuiz')}
               icon="pi pi-check"
               onClick={handleCompleteQuiz}
-              disabled={completeSessionMutation.isLoading}
+              loading={completeSessionMutation.isLoading}
+              className="p-button-warning"
             />
           </div>
         )}

@@ -1,9 +1,9 @@
 package sm.selflearn.samskrtam.quiz.dto;
 
-import java.util.UUID; // Import UUID
+import java.util.UUID;
 
 public record QuizProgressDto(
-        UUID sessionId, // New field to store the session ID
+        UUID sessionId,
         int answeredQuestions,
         int totalQuestions,
         boolean found

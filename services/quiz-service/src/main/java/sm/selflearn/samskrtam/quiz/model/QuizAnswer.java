@@ -19,7 +19,7 @@ public class QuizAnswer {
     private UUID selectedOptionId;
     private String selectedFormIast; // New field to store the IAST of the selected option
     private String correctFormIast; // Store the correct form IAST
-    private boolean isCorrect; // Changed from 'correct' to 'isCorrect'
+    private Boolean isCorrect; // Changed from 'correct' to 'isCorrect'
     private int responseTimeMs;
     private Instant answeredAt;
 }

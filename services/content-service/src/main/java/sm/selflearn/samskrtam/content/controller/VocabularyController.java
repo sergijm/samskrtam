@@ -2,7 +2,7 @@ package sm.selflearn.samskrtam.content.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
+import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // Updated import
 import sm.selflearn.samskrtam.content.service.VocabularyService;
 
 import java.util.List;

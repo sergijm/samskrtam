@@ -38,6 +38,7 @@ CREATE TABLE quiz.session_questions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id UUID NOT NULL,
     question_id UUID,
+    question_number INT NOT NULL, -- New column
     text TEXT NOT NULL,
     explanation_ru TEXT,
     explanation_en TEXT,
@@ -55,6 +56,7 @@ CREATE TABLE quiz.session_questions (
 );
 
 CREATE INDEX idx_session_questions_session_id ON quiz.session_questions (session_id);
+CREATE INDEX idx_session_questions_question_number ON quiz.session_questions (session_id, question_number); -- New index for sorting
 
 -- Create outbox_events table for quiz schema
 CREATE TABLE quiz.outbox_events (

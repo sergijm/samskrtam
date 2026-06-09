@@ -16,17 +16,17 @@ dependencies {
     // Project Dependencies
     implementation(project(":shared:common-dtos"))
 
-    // External Dependencies
-    implementation("jakarta.validation:jakarta.validation-api:3.0.2")
-    implementation("com.fasterxml.jackson.core:jackson-annotations:2.17.0")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.0")
+    // External Dependencies (DTOs, Validation, Kafka Events)
+    api("jakarta.validation:jakarta.validation-api:3.0.2") // Used in DTOs
+    api("com.fasterxml.jackson.core:jackson-annotations") // Managed by BOM
+    api("com.fasterxml.jackson.core:jackson-databind")    // Managed by BOM
     api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310") // For Java 8 Date/Time support
-    api(libs.spring.kafka) // Spring Kafka
-    api("org.slf4j:slf4j-api") // Logging
+    api(libs.spring.kafka) // Spring Kafka for event classes
+    api("org.slf4j:slf4j-api") // Logging for event classes
 
     // Lombok
-    compileOnly("org.projectlombok:lombok:1.18.32")
-    annotationProcessor("org.projectlombok:lombok:1.18.32")
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
 }
 
 group = "sm.selflearn.samskrtam.quiz"
