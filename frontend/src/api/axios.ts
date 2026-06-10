@@ -27,24 +27,34 @@ api.interceptors.response.use(
     // Check for 401, that it's not a retry, and not the refresh token endpoint itself
     if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/refresh')) {
       originalRequest._retry = true;
-      const { refreshToken, setAuthTokens, logout } = useAuthStore.getState(); // Changed to setAuthTokens
+      const { refreshToken, setAuthTokens, logout, setRedirectPath } = useAuthStore.getState();
 
       if (refreshToken) {
         try {
           const newTokens = await authApi.refresh(refreshToken);
-          setAuthTokens(newTokens); // Use setAuthTokens to update both tokens
+          setAuthTokens(newTokens);
           // Update the authorization header of the original request
           originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
           // Retry the original request
           return api(originalRequest);
         } catch (refreshError) {
-          // If refresh fails, log the user out
+          // If refresh fails, log the user out and redirect to login, saving the current path
+          console.error('axios.ts: Token refresh failed, logging out and redirecting to login.', refreshError);
+          const currentPath = window.location.pathname + window.location.search;
+          console.log('axios.ts: Saving redirect path:', currentPath);
+          setRedirectPath(currentPath); // Save current path
           logout();
+          window.location.href = '/login'; // Redirect to login page
           return Promise.reject(refreshError);
         }
       } else {
-        // No refresh token available, logout
+        // No refresh token available, logout and redirect to login, saving the current path
+        console.warn('axios.ts: No refresh token available, logging out and redirecting to login.');
+        const currentPath = window.location.pathname + window.location.search;
+        console.log('axios.ts: Saving redirect path:', currentPath);
+        setRedirectPath(currentPath); // Save current path
         logout();
+        window.location.href = '/login'; // Redirect to login page
       }
     }
     return Promise.reject(error);

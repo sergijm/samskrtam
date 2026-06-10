@@ -35,6 +35,7 @@ const getInitialState = () => {
     localStorage.removeItem('user');
   }
 
+  console.log('authStore.ts: Initializing state. redirectPath from localStorage:', redirectPath); // Added log
   return {
     user,
     accessToken,
@@ -61,8 +62,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       user,
       accessToken: tokens.accessToken,
       refreshToken: normalizedRefreshToken,
-      isAuthenticated: !!tokens.accessToken, // Changed: Only depend on accessToken for isAuthenticated
+      isAuthenticated: !!tokens.accessToken,
     });
+    console.log('authStore.ts: User logged in. redirectPath in store:', useAuthStore.getState().redirectPath); // Added log
   },
 
   logout: () => {
@@ -75,11 +77,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
-      // Do NOT clear redirectPath in state here.
     });
+    console.log('authStore.ts: User logged out. redirectPath in store (should not be cleared):', useAuthStore.getState().redirectPath); // Added log
   },
 
-  setAuthTokens: (tokens) => { // New action implementation
+  setAuthTokens: (tokens) => {
     const normalizedRefreshToken = tokens.refreshToken === "null" ? null : tokens.refreshToken;
 
     localStorage.setItem('accessToken', tokens.accessToken);
@@ -91,15 +93,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({
       accessToken: tokens.accessToken,
       refreshToken: normalizedRefreshToken,
-      isAuthenticated: !!tokens.accessToken, // Changed: Only depend on accessToken for isAuthenticated
+      isAuthenticated: !!tokens.accessToken,
     });
+    console.log('authStore.ts: Auth tokens set. redirectPath in store:', useAuthStore.getState().redirectPath); // Added log
   },
 
   setRedirectPath: (path) => {
     if (path) {
       localStorage.setItem('redirectPath', path);
+      console.log('authStore.ts: Setting redirectPath in localStorage and store:', path); // Added log
     } else {
       localStorage.removeItem('redirectPath');
+      console.log('authStore.ts: Clearing redirectPath in localStorage and store.'); // Added log
     }
     set({ redirectPath: path });
   },
