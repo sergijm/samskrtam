@@ -70,9 +70,9 @@ const QuizzesPage = () => {
                   subTitle={localizedDescription}
                   className="quiz-card flex flex-column align-items-center justify-content-between text-center h-full cursor-pointer hover:shadow-8 transition-all transition-duration-200 w-full"
                 >
-                  <div className="flex flex-column align-items-center justify-content-center flex-grow-1">
-                    <i className="pi pi-question-circle text-5xl mb-3" />
-                  </div>
+                  {/*<div className="flex flex-column align-items-center justify-content-center flex-grow-1">*/}
+                  {/*  <i className="pi pi-question-circle text-5xl mb-3" />*/}
+                  {/*</div>*/}
                 </Card>
               </div>
             </div>

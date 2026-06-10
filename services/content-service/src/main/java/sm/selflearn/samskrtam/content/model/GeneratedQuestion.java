@@ -26,6 +26,9 @@ public class GeneratedQuestion {
     @Column(nullable = false)
     private UUID quizId;
 
+    @Column(nullable = false) // questionNumber cannot be null
+    private int questionNumber; // New field to store the order of the question
+
     @Column(columnDefinition = "TEXT")
     private String text;
 
@@ -56,4 +59,14 @@ public class GeneratedQuestion {
     private String correctTranslationRu;
     private String correctTranslationEn;
     private String userLocale;
+
+    // New fields for structured question data
+    @Column
+    private String stem;
+    @Enumerated(EnumType.STRING) // Added annotation
+    @Column
+    private Case caseType; // Changed type to Case enum
+    @Enumerated(EnumType.STRING) // Added annotation
+    @Column
+    private Number numberType; // Changed type to Number enum
 }

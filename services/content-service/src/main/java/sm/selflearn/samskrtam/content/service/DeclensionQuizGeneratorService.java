@@ -3,10 +3,10 @@ package sm.selflearn.samskrtam.content.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.common.SamskrtamException;
+import sm.selflearn.samskrtam.content.dto.QuestionResponse; // Corrected import
 import sm.selflearn.samskrtam.content.model.*;
 import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
 import sm.selflearn.samskrtam.content.repository.DeclensionStemRepository;
-import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto; // Corrected import
 import sm.selflearn.samskrtam.content.dto.QuizType; // Corrected import
 import sm.selflearn.samskrtam.content.model.Case; // Corrected import
 import sm.selflearn.samskrtam.content.model.Number; // Corrected import
@@ -23,7 +23,7 @@ public class DeclensionQuizGeneratorService {
 
     private static final Random random = new Random();
 
-    public List<GeneratedQuizQuestionDto> generateDeclensionQuestions(Quiz quiz, Locale locale) {
+    public List<QuestionResponse> generateDeclensionQuestions(Quiz quiz, Locale locale) { // Changed return type to QuestionResponse
         List<DeclensionStem> availableStems;
 
         // Filter stems by vowel type if the quiz is specific (e.g., A_STEM quiz)
@@ -46,14 +46,15 @@ public class DeclensionQuizGeneratorService {
         Collections.shuffle(availableStems);
         List<DeclensionStem> selectedStems = availableStems.subList(0, questionsToGenerate);
 
-        List<GeneratedQuizQuestionDto> generatedQuestions = new ArrayList<>();
-        for (DeclensionStem stem : selectedStems) {
-            generatedQuestions.add(generateSingleQuestion(stem, locale));
+        List<QuestionResponse> generatedQuestions = new ArrayList<>(); // Changed type to QuestionResponse
+        for (int i = 0; i < selectedStems.size(); i++) { // Loop to assign questionNumber
+            DeclensionStem stem = selectedStems.get(i);
+            generatedQuestions.add(generateSingleQuestion(stem, locale, i + 1)); // Pass questionNumber
         }
         return generatedQuestions;
     }
 
-    private GeneratedQuizQuestionDto generateSingleQuestion(DeclensionStem stem, Locale locale) {
+    private QuestionResponse generateSingleQuestion(DeclensionStem stem, Locale locale, int questionNumber) { // Added questionNumber
         // Randomly select a Case and Number for the target form
         Case targetCase = Case.values()[random.nextInt(Case.values().length)];
         Number targetNumber = Number.values()[random.nextInt(Number.values().length)];
@@ -89,8 +90,9 @@ public class DeclensionQuizGeneratorService {
         );
 
 
-        return GeneratedQuizQuestionDto.builder()
+        return QuestionResponse.builder() // Changed to QuestionResponse.builder()
                 .id(UUID.randomUUID()) // Generate a new UUID for the question
+                .questionNumber(questionNumber) // Set questionNumber
                 .text(questionText)
                 .explanationRu(explanationTextRu) // Changed to explanationRu
                 .explanationEn(explanationTextEn) // Added explanationEn
@@ -99,6 +101,7 @@ public class DeclensionQuizGeneratorService {
                 .targetNumber(targetNumber)
                 .correctFormIast(correctForm.getFormIast())
                 .correctFormDevanagari(correctForm.getFormDevanagari())
+                .stem(stem.getStemNameIast()) // Populate new field
                 .build();
     }
 

@@ -22,5 +22,4 @@ public class VocabularyWordDto {
     String root;
     String explanationRu;
     String explanationEn;
-    List<String> tags; // New field
 }

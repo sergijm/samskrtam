@@ -223,6 +223,21 @@ const QuizPage = () => {
   const localizedQuizTitle = i18n.language === 'ru' ? quizSummaryData?.quizTitleRu : quizSummaryData?.quizTitleEn;
   const localizedQuizDescription = i18n.language === 'ru' ? quizSummaryData?.quizDescriptionRu : quizSummaryData?.quizDescriptionEn;
 
+  // Function to parse the question text (no longer needed if data is structured)
+  // const parseQuestionText = (text: string) => {
+  //   const stemMatch = text.match(/Stem:\s*([^,]+),/);
+  //   const caseMatch = text.match(/Case:\s*([^,]+),/);
+  //   const numberMatch = text.match(/Number:\s*([^,]+)/);
+
+  //   const stem = stemMatch ? stemMatch[1].trim() : '';
+  //   const caseType = caseMatch ? caseMatch[1].trim() : '';
+  //   const numberType = numberMatch ? numberMatch[1].trim() : '';
+
+  //   return { stem, caseType, numberType };
+  // };
+
+  // const { stem, caseType, numberType } = parseQuestionText(currentQuestion.text); // No longer needed
+
   return (
     <div className="flex flex-column align-items-center justify-content-center p-4">
       <Card className="quiz-container" style={{ maxWidth: '800px', width: '100%' }}>
@@ -230,7 +245,19 @@ const QuizPage = () => {
         {localizedQuizDescription && <p className="text-center text-color-secondary mb-4">{localizedQuizDescription}</p>}
         <ProgressBar value={progress} className="mb-4" />
         <h2 className="text-center mb-4">{t('quiz.question', { current: currentQuestionIndex + 1, total: questions.length })}</h2>
-        <div className="text-2xl font-bold text-center mb-5">{currentQuestion.text}</div>
+        <div className="text-2xl font-bold text-center mb-5">
+          {currentQuestion.stem && (
+            <>
+              <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>{currentQuestion.stem}</span>
+              <br style={{ lineHeight: '1.5' }} /> {/* Increased line height */}
+            </>
+          )}
+          {currentQuestion.caseType && currentQuestion.numberType && (
+            <span style={{ fontSize: '1.5rem', fontStyle: 'italic' }}>
+              {currentQuestion.caseType}, {currentQuestion.numberType}
+            </span>
+          )}
+        </div>
 
         <div className="grid">
           {currentQuestion.options.map((option) => (

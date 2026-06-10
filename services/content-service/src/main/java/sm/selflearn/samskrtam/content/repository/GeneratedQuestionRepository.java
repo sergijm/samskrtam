@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface GeneratedQuestionRepository extends JpaRepository<GeneratedQuestion, UUID> {
     List<GeneratedQuestion> findByQuizIdAndUserLocale(UUID quizId, String userLocale);
     List<GeneratedQuestion> findByGeneratedQuizDataId(UUID generatedQuizDataId); // New method
+
+    List<GeneratedQuestion> findByGeneratedQuizDataIdOrderByQuestionNumberAsc(UUID generatedQuizDataId);
 }

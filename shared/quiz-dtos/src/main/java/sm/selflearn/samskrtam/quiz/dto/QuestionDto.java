@@ -10,6 +10,12 @@ import java.util.UUID;
 @Builder
 public class QuestionDto {
     UUID id;
-    String text;
+    int questionNumber; // New field for the order of the question
+    String text; // This will be a more general question text, not containing stem/case/number
     List<QuestionOptionDto> options;
+
+    // New fields for structured question data
+    String stem;
+    String caseType;
+    String numberType;
 }

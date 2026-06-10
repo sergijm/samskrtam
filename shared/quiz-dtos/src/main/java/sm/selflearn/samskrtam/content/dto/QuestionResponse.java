@@ -22,4 +22,5 @@ public class QuestionResponse {
     Number targetNumber;   // For quiz-service to generate distractors
     String correctFormIast; // The correct form in IAST
     String correctFormDevanagari; // The correct form in Devanagari
+    String stem; // New field
 }

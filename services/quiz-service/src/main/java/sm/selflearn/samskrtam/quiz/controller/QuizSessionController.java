@@ -9,9 +9,7 @@ import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.quiz.dto.AnswerRequest;
 import sm.selflearn.samskrtam.quiz.dto.AnswerResponse;
 import sm.selflearn.samskrtam.quiz.dto.CompleteSessionResponse;
-import sm.selflearn.samskrtam.quiz.dto.ResumeSessionResponse;
 import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse; // Import new DTO
-import sm.selflearn.samskrtam.quiz.dto.StartSessionResponse;
 import sm.selflearn.samskrtam.quiz.service.QuizSessionService; // Changed from GrammarSessionService
 
 import java.util.UUID;
@@ -53,7 +51,7 @@ public class QuizSessionController {
     @Operation(summary = "Resume an existing quiz session")
     @ApiResponse(responseCode = "200", description = "Session resumed successfully")
     @ApiResponse(responseCode = "404", description = "Session not found")
-    public Mono<ResumeSessionResponse> resumeSession(
+    public Mono<StartOrResumeResponse> resumeSession( // Changed return type to StartOrResumeResponse
             @PathVariable String slug,
             @PathVariable UUID sessionId,
             @RequestHeader("X-User-Id") UUID userId,
@@ -87,5 +85,29 @@ public class QuizSessionController {
             @PathVariable UUID sessionId,
             @RequestHeader("X-User-Id") UUID userId) {
         return quizSessionService.completeSession(sessionId, userId); // Changed service call
+    }
+
+    @PostMapping("/{sessionId}/retake")
+    @Operation(summary = "Retake an existing quiz session, clearing answers and resetting progress")
+    @ApiResponse(responseCode = "200", description = "Session reset for retake")
+    @ApiResponse(responseCode = "404", description = "Session not found")
+    public Mono<StartOrResumeResponse> retakeSession(
+            @PathVariable String slug,
+            @PathVariable UUID sessionId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-User-Locale") String userLocale) {
+        return quizSessionService.retakeSession(sessionId, userId, userLocale);
+    }
+
+    @PostMapping("/{sessionId}/new-quiz")
+    @Operation(summary = "Complete current session and start a new quiz session of the same type")
+    @ApiResponse(responseCode = "200", description = "New quiz session started")
+    @ApiResponse(responseCode = "404", description = "Session not found")
+    public Mono<StartOrResumeResponse> startNewQuizFromExistingSession(
+            @PathVariable String slug,
+            @PathVariable UUID sessionId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-User-Locale") String userLocale) {
+        return quizSessionService.startNewQuizFromExistingSession(sessionId, userId, userLocale);
     }
 }

@@ -18,6 +18,7 @@ public class StartOrResumeResponse {
     int answeredQuestions;
     int score;
     int currentQuestionIndex;
+    int currentQuestionNumber; // New field
     String quizTitleRu; // New field
     String quizTitleEn; // New field
     String quizDescriptionRu; // New field

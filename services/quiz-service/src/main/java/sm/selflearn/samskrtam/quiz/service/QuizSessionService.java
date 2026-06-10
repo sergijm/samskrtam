@@ -52,15 +52,8 @@ public class QuizSessionService { // Renamed from GrammarSessionService
     /**
      * Starts a brand new quiz session, regardless of any existing in-progress sessions.
      */
-    public Mono<StartSessionResponse> startSession(UUID quizId, UUID userId, String userLocale) {
-        return createNewSessionAndBuildStartOrResumeResponse(quizId, userId, userLocale)
-                .map(startOrResumeResponse -> StartSessionResponse.builder()
-                        .sessionId(startOrResumeResponse.getSessionId())
-                        .quizId(startOrResumeResponse.getQuizId())
-                        .quizType(startOrResumeResponse.getQuizType())
-                        .questions(startOrResumeResponse.getQuestions())
-                        .totalQuestions(startOrResumeResponse.getTotalQuestions())
-                        .build());
+    public Mono<StartOrResumeResponse> startSession(UUID quizId, UUID userId, String userLocale) { // Changed return type
+        return createNewSessionAndBuildStartOrResumeResponse(quizId, userId, userLocale);
     }
 
     /**
@@ -75,18 +68,8 @@ public class QuizSessionService { // Renamed from GrammarSessionService
     /**
      * Resumes a specific quiz session by its ID.
      */
-    public Mono<ResumeSessionResponse> resumeSession(UUID sessionId, UUID userId, String userLocale) {
-        return resume(sessionId, userId, userLocale)
-                .map(startOrResumeResponse -> ResumeSessionResponse.builder()
-                        .sessionId(startOrResumeResponse.getSessionId())
-                        .quizId(startOrResumeResponse.getQuizId())
-                        .quizType(startOrResumeResponse.getQuizType())
-                        .questions(startOrResumeResponse.getQuestions())
-                        .totalQuestions(startOrResumeResponse.getTotalQuestions())
-                        .answeredQuestions(startOrResumeResponse.getAnsweredQuestions())
-                        .score(startOrResumeResponse.getScore())
-                        .currentQuestionIndex(startOrResumeResponse.getCurrentQuestionIndex())
-                        .build());
+    public Mono<StartOrResumeResponse> resumeSession(UUID sessionId, UUID userId, String userLocale) { // Changed return type
+        return resume(sessionId, userId, userLocale);
     }
 
     public Mono<AnswerResponse> submitAnswer(UUID sessionId, UUID userId, AnswerRequest request, String userLocale) {
@@ -303,7 +286,12 @@ public class QuizSessionService { // Renamed from GrammarSessionService
                                     .map(QuizAnswer::getQuestionId)
                                     .collect(Collectors.toSet());
 
-                            return Flux.fromIterable(generatedQuestions)
+                            // Sort questions by questionNumber before mapping to QuestionDto
+                            List<GeneratedQuizQuestionDto> sortedQuestions = generatedQuestions.stream()
+                                    .sorted(Comparator.comparing(GeneratedQuizQuestionDto::getQuestionNumber))
+                                    .collect(Collectors.toList());
+
+                            return Flux.fromIterable(sortedQuestions) // Use sorted questions
                                     .flatMap(generatedQuestion -> {
                                         if (session.getQuizType() == QuizType.VOCABULARY) {
                                             VocabularyWordDto correctWord = allVocabularyWords.stream()
@@ -319,8 +307,12 @@ public class QuizSessionService { // Renamed from GrammarSessionService
                                                     userLocale
                                             ).map(options -> QuestionDto.builder()
                                                     .id(generatedQuestion.getId())
+                                                    .questionNumber(generatedQuestion.getQuestionNumber()) // Map questionNumber
                                                     .text(generatedQuestion.getText())
                                                     .options(options)
+                                                    .stem(generatedQuestion.getStem()) // Map new field
+                                                    .caseType(generatedQuestion.getCaseType()) // Map new field
+                                                    .numberType(generatedQuestion.getNumberType()) // Map new field
                                                     .build());
                                         } else {
                                             return declensionOptionGeneratorService.generateOptions(
@@ -330,8 +322,12 @@ public class QuizSessionService { // Renamed from GrammarSessionService
                                                     generatedQuestion.getCorrectFormIast()
                                             ).map(options -> QuestionDto.builder()
                                                     .id(generatedQuestion.getId())
+                                                    .questionNumber(generatedQuestion.getQuestionNumber()) // Map questionNumber
                                                     .text(generatedQuestion.getText())
                                                     .options(options)
+                                                    .stem(generatedQuestion.getStem()) // Map new field
+                                                    .caseType(generatedQuestion.getCaseType()) // Map new field
+                                                    .numberType(generatedQuestion.getNumberType()) // Map new field
                                                     .build());
                                         }
                                     })
@@ -345,6 +341,7 @@ public class QuizSessionService { // Renamed from GrammarSessionService
                                             .answeredQuestions(answeredQuestionIds.size())
                                             .score(session.getScore())
                                             .currentQuestionIndex(answeredQuestionIds.size())
+                                            .currentQuestionNumber(answeredQuestionIds.size() > 0 ? sortedQuestions.get(answeredQuestionIds.size()).getQuestionNumber() : 1) // Set currentQuestionNumber
                                             .quizTitleRu(quizSummary.getTitleRu()) // Populate new fields
                                             .quizTitleEn(quizSummary.getTitleEn()) // Populate new fields
                                             .quizDescriptionRu(quizSummary.getDescriptionRu()) // Populate new fields
@@ -352,5 +349,45 @@ public class QuizSessionService { // Renamed from GrammarSessionService
                                             .slug(quizSummary.getSlug()) // Populate new fields
                                             .build());
                         }));
+    }
+
+    public Mono<StartOrResumeResponse> retakeSession(UUID sessionId, UUID userId, String userLocale) {
+        return quizSessionRepository.findByIdAndUserId(sessionId, userId)
+                .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Session not found or does not belong to user: " + sessionId)))
+                .flatMap(session -> quizAnswerRepository.deleteBySessionId(sessionId) // Delete all answers for this session
+                        .then(Mono.just(session)))
+                .flatMap(session -> {
+                    session.setScore(0);
+                    session.setAnsweredQuestions(0);
+                    session.setStartedAt(Instant.now()); // Reset start time
+                    session.setStatus(SessionStatus.IN_PROGRESS); // Ensure status is IN_PROGRESS
+                    session.setCompletedAt(null); // Clear completed at
+                    return quizSessionRepository.save(session);
+                })
+                .flatMap(updatedSession -> contentClient.getGeneratedQuizData(updatedSession.getGeneratedQuizDataId())
+                        .flatMap(generatedQuizData -> {
+                            List<VocabularyWordDto> allVocabularyWords = new ArrayList<>();
+                            if (updatedSession.getQuizType() == QuizType.VOCABULARY && updatedSession.getVocabularyWordsJson() != null) {
+                                try {
+                                    allVocabularyWords.addAll(objectMapper.readValue(updatedSession.getVocabularyWordsJson(),
+                                            objectMapper.getTypeFactory().constructCollectionType(List.class, VocabularyWordDto.class)));
+                                } catch (JsonProcessingException e) {
+                                    return Mono.error(new SamskrtamException("JSON_PROCESSING_ERROR", "Failed to deserialize vocabulary words", e));
+                                }
+                            }
+                            return buildStartOrResumeResponse(updatedSession, generatedQuizData.getGeneratedQuestions(), allVocabularyWords, userLocale);
+                        }));
+    }
+
+    public Mono<StartOrResumeResponse> startNewQuizFromExistingSession(UUID sessionId, UUID userId, String userLocale) {
+        return quizSessionRepository.findByIdAndUserId(sessionId, userId)
+                .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Session not found or does not belong to user: " + sessionId)))
+                .flatMap(session -> {
+                    // Complete the existing session
+                    session.setStatus(SessionStatus.COMPLETED);
+                    session.setCompletedAt(Instant.now());
+                    return quizSessionRepository.save(session);
+                })
+                .flatMap(completedSession -> createNewSessionAndBuildStartOrResumeResponse(completedSession.getQuizId(), userId, userLocale)); // Start a new session
     }
 }

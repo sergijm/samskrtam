@@ -14,8 +14,10 @@ import java.util.UUID;
 @Jacksonized
 public class GeneratedQuizQuestionDto {
     UUID id; // Unique ID for this generated question
+    UUID generatedQuizDataId; // New field to link to GeneratedQuizDataRecord
     UUID quizId; // The quiz this question belongs to
-    String text;
+    int questionNumber; // New field for the order of the question
+    String text; // This will be a more general question text, not containing stem/case/number
     String explanationRu;
     String explanationEn;
     UUID declensionStemId;
@@ -29,4 +31,9 @@ public class GeneratedQuizQuestionDto {
     String correctTranslationRu;
     String correctTranslationEn;
     String userLocale; // The locale for which this question was generated
+
+    // New fields for structured question data
+    String stem;
+    String caseType;
+    String numberType;
 }

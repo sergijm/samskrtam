@@ -60,10 +60,6 @@ public class VocabularyWord {
     @Column(name = "explanation_en", columnDefinition = "TEXT", nullable = false) // New field
     private String explanationEn;
 
-    @JdbcTypeCode(SqlTypes.ARRAY) // Map PostgreSQL TEXT[] to Java List<String>
-    @Column(name = "tags", columnDefinition = "TEXT[]", nullable = false)
-    private List<String> tags; // New field for thematic tags
-
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

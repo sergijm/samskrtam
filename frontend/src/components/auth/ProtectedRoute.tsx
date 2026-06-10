@@ -1,5 +1,5 @@
-import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom'; // Import useLocation
+import React, { useEffect } from 'react';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 
 interface ProtectedRouteProps {
@@ -7,12 +7,17 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
-  const { isAuthenticated, user, setRedirectPath } = useAuthStore(); // Get setRedirectPath
-  const location = useLocation(); // Get current location
+  const { isAuthenticated, user, setRedirectPath } = useAuthStore();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      // Save the current path before redirecting to login
+      setRedirectPath(location.pathname + location.search);
+    }
+  }, [isAuthenticated, location.pathname, location.search, setRedirectPath]);
 
   if (!isAuthenticated) {
-    // Save the current path before redirecting to login
-    setRedirectPath(location.pathname + location.search);
     return <Navigate to="/login" replace />;
   }
 

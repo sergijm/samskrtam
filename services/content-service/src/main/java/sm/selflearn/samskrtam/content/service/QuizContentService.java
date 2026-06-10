@@ -105,6 +105,35 @@ public class QuizContentService {
                 generatedQuizDataId,
                 quiz, locale.getLanguage());
 
+        // Save GeneratedQuestions and link them to generatedQuizDataId
+        List<GeneratedQuestion> generatedQuestionEntities = questions.stream()
+                .map(dto -> GeneratedQuestion.builder()
+                        .id(dto.getId())
+                        .generatedQuizDataId(dto.getGeneratedQuizDataId()) // Get from DTO
+                        .quizId(dto.getQuizId())
+                        .questionNumber(dto.getQuestionNumber()) // Map questionNumber
+                        .text(dto.getText())
+                        .explanationRu(dto.getExplanationRu())
+                        .explanationEn(dto.getExplanationEn())
+                        .declensionStemId(dto.getDeclensionStemId())
+                        .targetCase(dto.getTargetCase())
+                        .targetNumber(dto.getTargetNumber())
+                        .correctFormIast(dto.getCorrectFormIast())
+                        .correctFormDevanagari(dto.getCorrectFormDevanagari())
+                        .vocabularyWordId(dto.getVocabularyWordId())
+                        .questionSourceLanguage(dto.getQuestionSourceLanguage())
+                        .questionTargetLanguage(dto.getQuestionTargetLanguage())
+                        .correctTranslationRu(dto.getCorrectTranslationRu())
+                        .correctTranslationEn(dto.getCorrectTranslationEn())
+                        .userLocale(dto.getUserLocale()) // Get from DTO
+                        // Map new fields
+                        .stem(dto.getStem())
+                        .caseType(dto.getTargetCase()) // Map Case enum
+                        .numberType(dto.getTargetNumber()) // Map Number enum
+                        .build())
+                .collect(Collectors.toList());
+        generatedQuestionRepository.saveAll(generatedQuestionEntities);
+
 
         return GeneratedQuizData.builder()
                 .generatedQuizDataId(generatedQuizDataId)
@@ -120,11 +149,13 @@ public class QuizContentService {
         GeneratedQuizDataRecord record = generatedQuizDataRecordRepository.findById(generatedQuizDataId)
                 .orElseThrow(() -> new SamskrtamException("GENERATED_QUIZ_DATA_NOT_FOUND", "Generated quiz data not found with ID: " + generatedQuizDataId));
 
-        List<GeneratedQuestion> questionEntities = generatedQuestionRepository.findByGeneratedQuizDataId(generatedQuizDataId);
+        List<GeneratedQuestion> questionEntities = generatedQuestionRepository.findByGeneratedQuizDataIdOrderByQuestionNumberAsc(generatedQuizDataId); // Sort by questionNumber
         List<GeneratedQuizQuestionDto> questions = questionEntities.stream()
                 .map(entity -> GeneratedQuizQuestionDto.builder()
                         .id(entity.getId())
+                        .generatedQuizDataId(entity.getGeneratedQuizDataId()) // Map generatedQuizDataId
                         .quizId(entity.getQuizId())
+                        .questionNumber(entity.getQuestionNumber()) // Map questionNumber
                         .text(entity.getText())
                         .explanationRu(entity.getExplanationRu())
                         .explanationEn(entity.getExplanationEn())
@@ -138,6 +169,11 @@ public class QuizContentService {
                         .questionTargetLanguage(entity.getQuestionTargetLanguage())
                         .correctTranslationRu(entity.getCorrectTranslationRu())
                         .correctTranslationEn(entity.getCorrectTranslationEn())
+                        .userLocale(entity.getUserLocale())
+                        // Map new fields
+                        .stem(entity.getStem())
+                        .caseType(entity.getTargetCase() != null ? entity.getTargetCase().getRuName() : null) // Map Case enum
+                        .numberType(entity.getTargetNumber() != null ? entity.getTargetNumber().getRuName() : null) // Map Number enum
                         .build())
                 .collect(Collectors.toList());
 

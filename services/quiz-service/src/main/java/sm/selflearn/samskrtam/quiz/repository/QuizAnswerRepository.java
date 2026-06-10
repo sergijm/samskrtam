@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.quiz.repository;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
@@ -14,6 +15,9 @@ import java.util.UUID;
 public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer, UUID> {
     Flux<QuizAnswer> findBySessionId(UUID sessionId);
     Mono<Boolean> existsBySessionIdAndQuestionId(UUID sessionId, UUID questionId); // Changed from SessionQuestionId
+
+    // New method to delete all answers for a given session
+    Mono<Void> deleteBySessionId(UUID sessionId);
 
     // Removed ORDER BY :#{#pageable.sort} to avoid null binding issue
     @Query("SELECT * FROM quiz.quiz_answers WHERE session_id = :sessionId LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}")

@@ -50,13 +50,19 @@ export interface QuizSummaryDto {
 
 export interface SessionOption {
   id: string;
-  text: string;
+  formIast: string; // Changed from text to formIast
+  formDevanagari: string; // New field
 }
 
 export interface SessionQuestion {
   id: string;
+  questionNumber: number; // New field for the order of the question
   text: string;
   options: SessionOption[];
+  // New fields for structured question data
+  stem?: string;
+  caseType?: string;
+  numberType?: string;
 }
 
 export interface StartSessionResponse {
@@ -82,6 +88,7 @@ export interface ResumeSessionResponse {
 export interface AnswerRequest {
   questionId: string;
   selectedOptionId: string;
+  selectedFormIast?: string; // New optional field
   responseTimeMs: number;
 }
 

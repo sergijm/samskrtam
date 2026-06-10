@@ -46,7 +46,6 @@ public class VocabularyService {
                 .root(word.getRoot())
                 .explanationRu(word.getExplanationRu())
                 .explanationEn(word.getExplanationEn())
-                .tags(word.getTags()) // Map new field
                 .build();
     }
 }
