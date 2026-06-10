@@ -81,7 +81,7 @@ public class QuizContentService {
         List<VocabularyWordDto> vocabularyWords = Collections.emptyList();
         String vocabularyWordsJson = null;
         if (quiz.getQuizType() == QuizType.VOCABULARY) {
-            vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(quizId, quiz.getQuestionsPerSession() * 4);
+            vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(quiz.getSlug(), quiz.getQuestionsPerSession() * 4); // Changed to quiz.getSlug()
             try {
                 vocabularyWordsJson = objectMapper.writeValueAsString(vocabularyWords);
             } catch (JsonProcessingException e) {

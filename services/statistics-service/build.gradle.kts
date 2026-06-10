@@ -15,6 +15,7 @@ dependencies {
     implementation(libs.spring.web)
     implementation(libs.spring.data.jpa)
     implementation(libs.spring.kafka)
+    implementation(libs.spring.kafka.streams) // Use libs alias for Kafka Streams dependency
     implementation(libs.postgresql.jdbc)
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgresql)

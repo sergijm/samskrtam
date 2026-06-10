@@ -2,7 +2,8 @@ package sm.selflearn.samskrtam.content.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // Updated import
+import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
+import sm.selflearn.samskrtam.content.service.QuizService; // Import QuizService
 import sm.selflearn.samskrtam.content.service.VocabularyService;
 
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.UUID;
 public class VocabularyController {
 
     private final VocabularyService vocabularyService;
+    private final QuizService quizService; // Inject QuizService
 
     // Existing endpoints (as per documentation)
     // POST   /api/v1/content/quizzes/{id}/vocabulary
@@ -25,6 +27,8 @@ public class VocabularyController {
     public List<VocabularyWordDto> getVocabularyWordsForQuiz(
             @PathVariable UUID quizId,
             @RequestParam(required = false, defaultValue = "100") int limit) {
-        return vocabularyService.getVocabularyWordsForQuiz(quizId, limit);
+        // Get the quiz slug from the quizId
+        String quizSlug = quizService.getQuizSummaryById(quizId).getSlug();
+        return vocabularyService.getVocabularyWordsForQuiz(quizSlug, limit); // Pass quizSlug
     }
 }

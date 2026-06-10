@@ -2,11 +2,18 @@ package sm.selflearn.samskrtam.content.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import sm.selflearn.samskrtam.common.SamskrtamException;
+import sm.selflearn.samskrtam.content.model.VocabularyCategory;
 import sm.selflearn.samskrtam.content.model.VocabularyWord;
+import sm.selflearn.samskrtam.content.model.VocabularyWordCategory;
+import sm.selflearn.samskrtam.content.repository.VocabularyCategoryRepository;
+import sm.selflearn.samskrtam.content.repository.VocabularyWordCategoryRepository;
 import sm.selflearn.samskrtam.content.repository.VocabularyWordRepository;
-import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // Corrected import
+import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -15,17 +22,27 @@ import java.util.stream.Collectors;
 public class VocabularyService {
 
     private final VocabularyWordRepository vocabularyWordRepository;
+    private final VocabularyCategoryRepository vocabularyCategoryRepository;
+    private final VocabularyWordCategoryRepository vocabularyWordCategoryRepository;
 
-    public List<VocabularyWordDto> getVocabularyWordsForQuiz(UUID quizId, int limit) {
-        // For now, we'll just return a limited number of all words.
-        // In a real scenario, you'd filter by quizId if words were linked to quizzes.
-        // Or, if quizId implies a specific set of words, you'd fetch those.
-        // Assuming for now that quizId is not directly linked to VocabularyWord in DB.
-        // We might need to add a quizId field to VocabularyWord later or fetch via Quiz entity.
+    public List<VocabularyWordDto> getVocabularyWordsForQuiz(String quizSlug, int limit) {
+        // 1. Find the category by code (which matches quizSlug)
+        VocabularyCategory rootCategory = vocabularyCategoryRepository.findByCodeIgnoreCase(quizSlug)
+                .orElseThrow(() -> new SamskrtamException("VOCABULARY_CATEGORY_NOT_FOUND", "Vocabulary category not found for slug: " + quizSlug));
 
-        // For demonstration, fetch all and limit.
-        // In a real application, you'd want to fetch efficiently from the DB.
-        List<VocabularyWord> words = vocabularyWordRepository.findAll().stream()
+        // 2. Get all category IDs including the root and its children
+        List<UUID> allCategoryIds = vocabularyCategoryRepository.findAllChildrenIds(rootCategory.getId());
+
+        // 3. Find all word-category links for these categories
+        Set<UUID> vocabularyWordIds = new HashSet<>();
+        for (UUID categoryId : allCategoryIds) {
+            vocabularyWordCategoryRepository.findByCategoryId(categoryId).stream()
+                    .map(vwc -> vwc.getId().getVocabularyWordId())
+                    .forEach(vocabularyWordIds::add);
+        }
+
+        // 4. Fetch the actual vocabulary words by their IDs, limited
+        List<VocabularyWord> words = vocabularyWordRepository.findAllById(vocabularyWordIds).stream()
                 .limit(limit)
                 .collect(Collectors.toList());
 

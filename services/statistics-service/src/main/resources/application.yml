@@ -35,6 +35,15 @@ spring:
       properties:
         security.protocol: PLAINTEXT
         listener.name: EXTERNAL
+    streams:
+      application-id: statistics-service-application # Уникальный ID для Kafka Streams приложения
+      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+      properties:
+        state.dir: /tmp/kafka-streams # Директория для хранения состояния Kafka Streams
+        default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.value.serde: org.springframework.kafka.support.serializer.JsonSerde # Используем JsonSerde по умолчанию
+        spring.json.value.default.type: sm.selflearn.samskrtam.quiz.event.StatisticEvent # Указываем тип по умолчанию для десериализации
+        spring.json.trusted.packages: "sm.selflearn.samskrtam.*" # Доверяем всем пакетам приложения
 
 management:
   endpoints:

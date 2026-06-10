@@ -63,3 +63,7 @@ logging:
     org.springframework.kafka: DEBUG
     org.apache.kafka: DEBUG
     org.springframework.web: DEBUG # Изменено с TRACE на DEBUG
+
+app:
+  outbox:
+    fixed-delay-ms: 5000 # Задержка между проверками outbox-таблицы в миллисекундах

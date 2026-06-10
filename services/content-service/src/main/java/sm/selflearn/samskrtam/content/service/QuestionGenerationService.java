@@ -66,7 +66,7 @@ public class QuestionGenerationService {
                             .build())
                     .collect(Collectors.<GeneratedQuestion>toList()));
         } else if (quiz.getQuizType() == QuizType.VOCABULARY) {
-            List<VocabularyWordDto> vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(quiz.getId(), quiz.getQuestionsPerSession() * 4); // Fetch more words than needed for options
+            List<VocabularyWordDto> vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(quiz.getSlug(), quiz.getQuestionsPerSession() * 4); // Changed to quiz.getSlug()
 
             for (VocabularyWordDto word : vocabularyWords) {
                 // Sanskrit to Translation
