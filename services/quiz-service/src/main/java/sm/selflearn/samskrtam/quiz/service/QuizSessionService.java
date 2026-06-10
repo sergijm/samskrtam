@@ -188,7 +188,7 @@ public class QuizSessionService {
         try {
             String payload = objectMapper.writeValueAsString(event);
             OutboxEvent outboxEvent = OutboxEvent.builder()
-                    .id(null)
+                    .id(UUID.randomUUID())
                     .aggregateType("QuizSession")
                     .aggregateId(session.getId().toString())
                     .eventType(OutboxEventType.QUIZ_ANSWERED)
@@ -270,7 +270,7 @@ public class QuizSessionService {
                     try {
                         String payload = objectMapper.writeValueAsString(event);
                         OutboxEvent outboxEvent = OutboxEvent.builder()
-                                .id(null)
+                                .id(UUID.randomUUID())
                                 .aggregateType("QuizSession")
                                 .aggregateId(savedSession.getId().toString())
                                 .eventType(OutboxEventType.QUIZ_SESSION_STATUS_CHANGED)
@@ -365,7 +365,7 @@ public class QuizSessionService {
         try {
             String payload = objectMapper.writeValueAsString(event);
             OutboxEvent outboxEvent = OutboxEvent.builder()
-                    .id(null)
+                    .id(UUID.randomUUID())
                     .aggregateType("QuizSession")
                     .aggregateId(savedSession.getId().toString())
                     .eventType(OutboxEventType.QUIZ_SESSION_STATUS_CHANGED)
@@ -419,7 +419,7 @@ public class QuizSessionService {
                     try {
                         String payload = objectMapper.writeValueAsString(event);
                         OutboxEvent outboxEvent = OutboxEvent.builder()
-                                .id(null)
+                                .id(UUID.randomUUID())
                                 .aggregateType("QuizSession")
                                 .aggregateId(savedSession.getId().toString())
                                 .eventType(OutboxEventType.QUIZ_SESSION_STATUS_CHANGED)
@@ -430,6 +430,7 @@ public class QuizSessionService {
                                 .retryCount(0)
                                 .processedAt(null)
                                 .build();
+
                         return outboxEventRepository.save(outboxEvent)
                                 .then(fetchGeneratedQuizDataAndBuildResponse(savedSession, userLocale));
                     } catch (JsonProcessingException e) {
@@ -469,7 +470,7 @@ public class QuizSessionService {
                     try {
                         String payload = objectMapper.writeValueAsString(event);
                         OutboxEvent outboxEvent = OutboxEvent.builder()
-                                .id(null)
+                                .id(UUID.randomUUID())
                                 .aggregateType("QuizSession")
                                 .aggregateId(updatedSession.getId().toString())
                                 .eventType(OutboxEventType.QUIZ_SESSION_STATUS_CHANGED)
@@ -512,7 +513,7 @@ public class QuizSessionService {
                     try {
                         String payload = objectMapper.writeValueAsString(event);
                         OutboxEvent outboxEvent = OutboxEvent.builder()
-                                .id(null)
+                                .id(UUID.randomUUID())
                                 .aggregateType("QuizSession")
                                 .aggregateId(completedSession.getId().toString())
                                 .eventType(OutboxEventType.QUIZ_SESSION_STATUS_CHANGED)
@@ -544,29 +545,35 @@ public class QuizSessionService {
                                     .map(QuizAnswer::getQuestionId)
                                     .collect(Collectors.toSet());
 
-                            List<GeneratedQuizQuestionDto> sortedQuestions = generatedQuestions.stream()
+                            // Sort generatedQuestions by questionNumber before processing
+                            List<GeneratedQuizQuestionDto> sortedGeneratedQuestions = generatedQuestions.stream()
                                     .sorted(Comparator.comparing(GeneratedQuizQuestionDto::getQuestionNumber))
                                     .collect(Collectors.toList());
 
-                            return Flux.fromIterable(sortedQuestions)
+                            return Flux.fromIterable(sortedGeneratedQuestions) // Use sorted list here
                                     .flatMap(generatedQuestion -> generateQuestionOptions(session, generatedQuestion, allVocabularyWords, userLocale))
                                     .collectList()
-                                    .map(questions -> StartOrResumeResponse.builder()
-                                            .sessionId(session.getId())
-                                            .quizId(session.getQuizId())
-                                            .quizType(session.getQuizType())
-                                            .questions(questions)
-                                            .totalQuestions(session.getTotalQuestions())
-                                            .answeredQuestions(answeredQuestionIds.size())
-                                            .score(session.getScore())
-                                            .currentQuestionIndex(answeredQuestionIds.size())
-                                            .currentQuestionNumber(answeredQuestionIds.size() > 0 ? sortedQuestions.get(answeredQuestionIds.size()).getQuestionNumber() : 1)
-                                            .quizTitleRu(quizSummary.getTitleRu())
-                                            .quizTitleEn(quizSummary.getTitleEn())
-                                            .quizDescriptionRu(quizSummary.getDescriptionRu())
-                                            .quizDescriptionEn(quizSummary.getDescriptionEn())
-                                            .slug(quizSummary.getSlug())
-                                            .build());
+                                    .map(questions -> {
+                                        // Re-sort the questions list after flatMap to ensure final order
+                                        questions.sort(Comparator.comparing(QuestionDto::getQuestionNumber));
+
+                                        return StartOrResumeResponse.builder()
+                                                .sessionId(session.getId())
+                                                .quizId(session.getQuizId())
+                                                .quizType(session.getQuizType())
+                                                .questions(questions) // Use the re-sorted list
+                                                .totalQuestions(session.getTotalQuestions())
+                                                .answeredQuestions(answeredQuestionIds.size())
+                                                .score(session.getScore())
+                                                .currentQuestionIndex(answeredQuestionIds.size())
+                                                .currentQuestionNumber(answeredQuestionIds.size() > 0 ? questions.get(answeredQuestionIds.size()).getQuestionNumber() : 1) // Use questions.get()
+                                                .quizTitleRu(quizSummary.getTitleRu())
+                                                .quizTitleEn(quizSummary.getTitleEn())
+                                                .quizDescriptionRu(quizSummary.getDescriptionRu())
+                                                .quizDescriptionEn(quizSummary.getDescriptionEn())
+                                                .slug(quizSummary.getSlug())
+                                                .build();
+                                    });
                         }));
     }
 

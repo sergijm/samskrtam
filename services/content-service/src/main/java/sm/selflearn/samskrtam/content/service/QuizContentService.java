@@ -20,10 +20,7 @@ import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.QuizListItemResponse;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -134,13 +131,14 @@ public class QuizContentService {
                 .collect(Collectors.toList());
         generatedQuestionRepository.saveAll(generatedQuestionEntities);
 
+        List<GeneratedQuizQuestionDto> sortedQuestions = questions.stream().sorted(Comparator.comparingInt(GeneratedQuizQuestionDto::getQuestionNumber)).toList();
 
         return GeneratedQuizData.builder()
                 .generatedQuizDataId(generatedQuizDataId)
                 .quizId(quiz.getId())
                 .quizType(quiz.getQuizType()) // Get quizType from Quiz entity
                 .questionsPerSession(quiz.getQuestionsPerSession())
-                .generatedQuestions(questions)
+                .generatedQuestions(sortedQuestions)
                 .vocabularyWords(vocabularyWords)
                 .build();
     }
@@ -191,13 +189,14 @@ public class QuizContentService {
         Quiz quiz = quizRepository.findById(record.getQuizId())
                 .orElseThrow(() -> new SamskrtamException("QUIZ_NOT_FOUND", "Quiz not found with ID: " + record.getQuizId()));
 
+        List<GeneratedQuizQuestionDto> sortedQuestions = questions.stream().sorted(Comparator.comparingInt(GeneratedQuizQuestionDto::getQuestionNumber)).toList();
 
         return GeneratedQuizData.builder()
                 .generatedQuizDataId(record.getId())
                 .quizId(record.getQuizId())
                 .quizType(quiz.getQuizType()) // Get quizType from Quiz entity
                 .questionsPerSession(quiz.getQuestionsPerSession()) // Get from Quiz entity
-                .generatedQuestions(questions)
+                .generatedQuestions(sortedQuestions)
                 .vocabularyWords(vocabularyWords)
                 .build();
     }
