@@ -3,7 +3,7 @@ package sm.selflearn.samskrtam.content.dto;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized; // Import Jacksonized
-import sm.selflearn.samskrtam.content.model.Gender; // Assuming Gender is in shared:dictionary-dtos
+import sm.selflearn.samskrtam.content.model.Gender; // Corrected import
 
 import java.util.List; // Import List
 import java.util.UUID;

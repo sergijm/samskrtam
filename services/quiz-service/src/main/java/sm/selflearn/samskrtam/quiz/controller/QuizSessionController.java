@@ -12,7 +12,7 @@ import sm.selflearn.samskrtam.quiz.dto.CompleteSessionResponse;
 import sm.selflearn.samskrtam.quiz.dto.ResumeSessionResponse;
 import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse; // Import new DTO
 import sm.selflearn.samskrtam.quiz.dto.StartSessionResponse;
-import sm.selflearn.samskrtam.quiz.service.GrammarSessionService;
+import sm.selflearn.samskrtam.quiz.service.QuizSessionService; // Changed from GrammarSessionService
 
 import java.util.UUID;
 
@@ -22,7 +22,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class QuizSessionController {
 
-    private final GrammarSessionService grammarSessionService;
+    private final QuizSessionService quizSessionService; // Changed from GrammarSessionService
 
     @PostMapping("/start")
     @Operation(summary = "Start a new quiz session (or resume if in progress)")
@@ -34,7 +34,7 @@ public class QuizSessionController {
             @RequestHeader("X-User-Id") UUID userId,
             @RequestHeader("X-User-Locale") String userLocale) {
         // This endpoint now behaves like start-or-resume to simplify client logic
-        return grammarSessionService.startOrResumeSession(quizId, userId, userLocale);
+        return quizSessionService.startOrResumeSession(quizId, userId, userLocale); // Changed service call
     }
 
     @PostMapping("/start-or-resume")
@@ -46,7 +46,7 @@ public class QuizSessionController {
             @RequestParam UUID quizId,
             @RequestHeader("X-User-Id") UUID userId,
             @RequestHeader("X-User-Locale") String userLocale) {
-        return grammarSessionService.startOrResumeSession(quizId, userId, userLocale);
+        return quizSessionService.startOrResumeSession(quizId, userId, userLocale); // Changed service call
     }
 
     @GetMapping("/{sessionId}/resume")
@@ -61,7 +61,7 @@ public class QuizSessionController {
         // This method is now primarily for direct resume by sessionId,
         // while start-or-resume handles the logic of finding the latest in-progress session.
         // It's kept for backward compatibility or specific use cases.
-        return grammarSessionService.resumeSession(sessionId, userId, userLocale);
+        return quizSessionService.resumeSession(sessionId, userId, userLocale); // Changed service call
     }
 
     @PostMapping("/{sessionId}/answer")
@@ -75,7 +75,7 @@ public class QuizSessionController {
             @RequestHeader("X-User-Id") UUID userId,
             @RequestHeader("X-User-Locale") String userLocale,
             @RequestBody AnswerRequest request) {
-        return grammarSessionService.submitAnswer(sessionId, userId, request, userLocale);
+        return quizSessionService.submitAnswer(sessionId, userId, request, userLocale); // Changed service call
     }
 
     @PostMapping("/{sessionId}/complete")
@@ -86,6 +86,6 @@ public class QuizSessionController {
             @PathVariable String slug,
             @PathVariable UUID sessionId,
             @RequestHeader("X-User-Id") UUID userId) {
-        return grammarSessionService.completeSession(sessionId, userId);
+        return quizSessionService.completeSession(sessionId, userId); // Changed service call
     }
 }

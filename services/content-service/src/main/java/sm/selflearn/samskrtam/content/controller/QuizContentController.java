@@ -7,13 +7,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
-import sm.selflearn.samskrtam.content.dto.QuizListItemResponse;
 import sm.selflearn.samskrtam.content.dto.QuizSummaryDto;
-import sm.selflearn.samskrtam.content.dto.SessionDataResponse;
 import sm.selflearn.samskrtam.content.model.DeclensionForm;
 import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
+import sm.selflearn.samskrtam.content.service.QuestionGenerationService;
 import sm.selflearn.samskrtam.content.service.QuizContentService;
 import sm.selflearn.samskrtam.content.service.QuizService;
+import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
+import sm.selflearn.samskrtam.quiz.dto.QuizListItemResponse;
+import sm.selflearn.samskrtam.content.dto.GeneratedQuizData; // Corrected import
 
 import java.util.List;
 import java.util.Locale;
@@ -29,6 +31,7 @@ public class QuizContentController {
     private final QuizContentService quizContentService;
     private final DeclensionFormRepository declensionFormRepository;
     private final QuizService quizService;
+    private final QuestionGenerationService questionGenerationService; // Inject QuestionGenerationService
 
     @GetMapping("/quizzes")
     @Operation(summary = "Get a list of available quizzes")
@@ -37,14 +40,22 @@ public class QuizContentController {
         return quizContentService.getQuizList(category);
     }
 
-    @GetMapping("/quizzes/{quizId}/session-data")
-    @Operation(summary = "Get session data for a specific quiz")
-    @ApiResponse(responseCode = "200", description = "Session data retrieved successfully")
+    @PostMapping("/quizzes/{quizId}/generate-quiz-data") // Changed to PostMapping and new path
+    @Operation(summary = "Generate quiz data for a specific quiz") // Updated summary
+    @ApiResponse(responseCode = "200", description = "Quiz data generated successfully") // Updated description
     @ApiResponse(responseCode = "404", description = "Quiz not found")
-    public SessionDataResponse getSessionData(
+    public GeneratedQuizData generateQuizData( // Changed return type and method name
             @PathVariable UUID quizId,
             @RequestHeader(value = "X-User-Locale", defaultValue = "en") Locale locale) {
-        return quizContentService.getSessionData(quizId, locale);
+        return quizContentService.generateQuizData(quizId, locale); // Updated method call
+    }
+
+    @GetMapping("/generated-quiz-data/{id}") // New endpoint
+    @Operation(summary = "Get generated quiz data by ID")
+    @ApiResponse(responseCode = "200", description = "Generated quiz data retrieved successfully")
+    @ApiResponse(responseCode = "404", description = "Generated quiz data not found")
+    public GeneratedQuizData getGeneratedQuizData(@PathVariable UUID id) {
+        return quizContentService.getGeneratedQuizData(id);
     }
 
     @GetMapping("/quizzes/by-slug/{slug}")
@@ -55,7 +66,7 @@ public class QuizContentController {
         return quizService.getQuizBySlug(slug);
     }
 
-    @GetMapping("/quizzes/{id}/summary") // Новый эндпоинт
+    @GetMapping("/quizzes/{id}/summary")
     @Operation(summary = "Get quiz summary by ID")
     @ApiResponse(responseCode = "200", description = "Quiz summary retrieved successfully")
     @ApiResponse(responseCode = "404", description = "Quiz not found")
@@ -75,6 +86,14 @@ public class QuizContentController {
         return forms.stream()
                 .map(this::mapToDeclensionFormDto)
                 .collect(Collectors.toList());
+    }
+
+    @GetMapping("/generated-questions/{questionId}")
+    @Operation(summary = "Get a specific generated question by ID")
+    @ApiResponse(responseCode = "200", description = "Generated question retrieved successfully")
+    @ApiResponse(responseCode = "404", description = "Generated question not found")
+    public GeneratedQuizQuestionDto getGeneratedQuestion(@PathVariable UUID questionId) {
+        return questionGenerationService.getGeneratedQuestionById(questionId);
     }
 
     private DeclensionFormDto mapToDeclensionFormDto(DeclensionForm form) {

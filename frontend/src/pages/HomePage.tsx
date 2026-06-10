@@ -32,7 +32,7 @@ const HomePage = () => {
       {/* You can add more content here later if needed */}
       <div className="flex flex-column align-items-center justify-content-center min-h-screen text-white">
         {/* Example content */}
-        <h1 className="text-6xl font-bold mb-3">SamskrtamApp</h1>
+        <h1 className="text-6xl font-bold mb-3">Aksharamārga</h1>
         <p className="text-xl mb-5">Learn Sanskrit with interactive quizzes and tools.</p>
       </div>
     </div>

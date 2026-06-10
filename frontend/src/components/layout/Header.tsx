@@ -18,8 +18,8 @@ const Header = () => {
   return (
     <div className="layout-topbar flex justify-content-between align-items-center px-4 py-2">
       <Link to="/" className="layout-topbar-logo no-underline text-xl font-bold flex align-items-center">
-        <img src="/logo.jpg" alt="SamskrtamApp Logo" style={{ height: '2.5rem', marginRight: '0.5rem' }} />
-        <span>SamskrtamApp</span>
+        <img src="/logo.jpg" alt="Aksharamārga Logo" style={{ height: '2.5rem', marginRight: '0.5rem' }} />
+        <span className="text-3xl font-bold">Aksharamārga</span>
       </Link>
       <div className="layout-topbar-menu flex align-items-center gap-3">
         <ThemeSwitcher />

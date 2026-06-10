@@ -3,9 +3,10 @@ package sm.selflearn.samskrtam.quiz.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import sm.selflearn.samskrtam.content.dto.QuestionLanguage;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // Updated import
 import sm.selflearn.samskrtam.quiz.dto.QuestionOptionDto;
-import sm.selflearn.samskrtam.quiz.model.QuestionLanguage;
+
 
 import java.util.*;
 import java.util.stream.Collectors;

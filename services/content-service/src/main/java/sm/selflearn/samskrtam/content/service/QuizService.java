@@ -5,9 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.QuizSummaryDto;
-import sm.selflearn.samskrtam.content.dto.QuizType;
 import sm.selflearn.samskrtam.content.model.Quiz;
 import sm.selflearn.samskrtam.content.repository.QuizRepository;
+import sm.selflearn.samskrtam.content.dto.QuizType; // Corrected import
 
 import java.util.List;
 import java.util.UUID;

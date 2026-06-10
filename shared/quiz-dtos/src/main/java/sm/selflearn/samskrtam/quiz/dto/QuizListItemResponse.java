@@ -4,18 +4,19 @@ import lombok.Builder;
 import lombok.Value;
 import sm.selflearn.samskrtam.content.dto.QuizType; // Corrected import
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Value
 @Builder
-public class SessionHistoryResponse {
-    UUID sessionId;
-    UUID quizId;
+public class QuizListItemResponse {
+    UUID id;
+    String title;
+    String titleRu;
+    String titleEn;
+    String description;
+    String descriptionRu;
+    String descriptionEn;
     QuizType quizType;
-    int score;
+    String slug;
     int totalQuestions;
-    int percentage;
-    long durationMs;
-    Instant completedAt;
 }

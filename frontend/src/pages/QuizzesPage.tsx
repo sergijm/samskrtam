@@ -27,7 +27,8 @@ const QuizzesPage = () => {
       {
         onSuccess: (data) => {
           const quizCategory = data.quizType.toLowerCase();
-          navigate(`/quiz/${quizCategory}/${quiz.slug}/${data.sessionId}`);
+          // Pass the entire data object as state
+          navigate(`/quiz/${quizCategory}/${quiz.slug}/${data.sessionId}`, { state: { sessionData: data } });
         },
         onError: (err) => {
           console.error('Failed to start or resume quiz session:', err);

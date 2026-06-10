@@ -10,7 +10,9 @@ CREATE TABLE quiz.quiz_sessions (
     status VARCHAR(50) NOT NULL,
     started_at TIMESTAMP WITH TIME ZONE NOT NULL,
     completed_at TIMESTAMP WITH TIME ZONE,
-    vocabulary_words_json TEXT
+    vocabulary_words_json TEXT,
+    generated_quiz_data_id UUID NOT NULL
+
 );
 
 CREATE INDEX idx_quiz_sessions_user_id ON quiz.quiz_sessions (user_id);

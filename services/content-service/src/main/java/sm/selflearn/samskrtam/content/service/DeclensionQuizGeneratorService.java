@@ -3,12 +3,13 @@ package sm.selflearn.samskrtam.content.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.common.SamskrtamException;
-import sm.selflearn.samskrtam.content.dto.QuestionResponse;
-import sm.selflearn.samskrtam.content.dto.QuizType;
 import sm.selflearn.samskrtam.content.model.*;
-import sm.selflearn.samskrtam.content.model.Number;
 import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
 import sm.selflearn.samskrtam.content.repository.DeclensionStemRepository;
+import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto; // Corrected import
+import sm.selflearn.samskrtam.content.dto.QuizType; // Corrected import
+import sm.selflearn.samskrtam.content.model.Case; // Corrected import
+import sm.selflearn.samskrtam.content.model.Number; // Corrected import
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -22,7 +23,7 @@ public class DeclensionQuizGeneratorService {
 
     private static final Random random = new Random();
 
-    public List<QuestionResponse> generateDeclensionQuestions(Quiz quiz, Locale locale) {
+    public List<GeneratedQuizQuestionDto> generateDeclensionQuestions(Quiz quiz, Locale locale) {
         List<DeclensionStem> availableStems;
 
         // Filter stems by vowel type if the quiz is specific (e.g., A_STEM quiz)
@@ -45,14 +46,14 @@ public class DeclensionQuizGeneratorService {
         Collections.shuffle(availableStems);
         List<DeclensionStem> selectedStems = availableStems.subList(0, questionsToGenerate);
 
-        List<QuestionResponse> generatedQuestions = new ArrayList<>();
+        List<GeneratedQuizQuestionDto> generatedQuestions = new ArrayList<>();
         for (DeclensionStem stem : selectedStems) {
             generatedQuestions.add(generateSingleQuestion(stem, locale));
         }
         return generatedQuestions;
     }
 
-    private QuestionResponse generateSingleQuestion(DeclensionStem stem, Locale locale) {
+    private GeneratedQuizQuestionDto generateSingleQuestion(DeclensionStem stem, Locale locale) {
         // Randomly select a Case and Number for the target form
         Case targetCase = Case.values()[random.nextInt(Case.values().length)];
         Number targetNumber = Number.values()[random.nextInt(Number.values().length)];
@@ -88,7 +89,7 @@ public class DeclensionQuizGeneratorService {
         );
 
 
-        return QuestionResponse.builder()
+        return GeneratedQuizQuestionDto.builder()
                 .id(UUID.randomUUID()) // Generate a new UUID for the question
                 .text(questionText)
                 .explanationRu(explanationTextRu) // Changed to explanationRu

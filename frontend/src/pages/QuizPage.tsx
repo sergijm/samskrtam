@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
 import { Button } from 'primereact/button';
 import { ProgressBar } from 'primereact/progressbar';
 import { Card } from 'primereact/card';
-import { useStartQuizSession, useSubmitQuizAnswer, useQuizBySlug, useResumeQuizSession, useCompleteQuizSession } from '../hooks/useQuiz'; // Import useCompleteQuizSession
-import { AnswerRequest, SessionQuestion, QuizType } from '../types/quiz';
-import { useLocaleStore } from '../store/localeStore'; // Import useLocaleStore
+
+import { useStartQuizSession, useSubmitQuizAnswer, useQuizBySlug, useResumeQuizSession, useCompleteQuizSession } from '../hooks/useQuiz';
+import { AnswerRequest, SessionQuestion, QuizType, StartOrResumeResponse } from '../types/quiz';
+import { useLocaleStore } from '../store/localeStore';
 
 const QuizPage = () => {
-  const { t, i18n } = useTranslation(); // Get i18n instance for current language
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { slug, sessionId: sessionIdFromParams } = useParams<{ slug?: string; sessionId?: string }>();
 
   const [sessionId, setSessionId] = useState<string | null>(sessionIdFromParams || null);
@@ -22,34 +24,49 @@ const QuizPage = () => {
   const [feedback, setFeedback] = useState<{ isCorrect: boolean; correctOptionId: string; explanation: string } | null>(null);
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [hasAttemptedSessionLoad, setHasAttemptedSessionLoad] = useState(false);
-  const [sessionCompletionAttempted, setSessionCompletionAttempted] = useState(false); // New state to prevent multiple calls
+  const [sessionCompletionAttempted, setSessionCompletionAttempted] = useState(false);
 
-  const { data: quizSummary, isLoading: isQuizSummaryLoading, isError: isQuizSummaryError, error: quizSummaryError } = useQuizBySlug(slug || '');
+  // State to hold quiz summary data, either from state or fetched
+  const [quizSummaryData, setQuizSummaryData] = useState<StartOrResumeResponse | null>(null);
+
+  // Conditionally fetch quiz summary if not available from state
+  const shouldFetchQuizSummary = !quizSummaryData && !location.state?.sessionData && slug;
+  const { data: fetchedQuizSummary, isLoading: isQuizSummaryLoading, isError: isQuizSummaryError, error: quizSummaryError } = useQuizBySlug(shouldFetchQuizSummary ? slug || '' : '');
 
   const startSessionMutation = useStartQuizSession();
   const resumeSessionMutation = useResumeQuizSession();
   const submitAnswerMutation = useSubmitQuizAnswer();
-  const completeSessionMutation = useCompleteQuizSession(); // Initialize useCompleteQuizSession
+  const completeSessionMutation = useCompleteQuizSession();
 
-  // Determine current question early
   const currentQuestion = questions[currentQuestionIndex];
-  // Determine if it's the last question
   const isLastQuestion = questions.length > 0 && currentQuestionIndex === questions.length - 1;
 
-
   useEffect(() => {
-    if (quizSummary && !hasAttemptedSessionLoad) {
+
+    if (location.state?.sessionData) {
+      const sessionDataFromState = location.state.sessionData as StartOrResumeResponse;
+      setQuizSummaryData(sessionDataFromState); // Set quiz summary from state
+      setSessionId(sessionDataFromState.sessionId);
+      setQuestions(sessionDataFromState.questions);
+      setCurrentQuestionIndex(sessionDataFromState.currentQuestionIndex);
+      setStartTime(Date.now());
       setHasAttemptedSessionLoad(true);
+      navigate(location.pathname, { replace: true, state: {} }); // Clear state
+
+    } else if (fetchedQuizSummary && !hasAttemptedSessionLoad) {
+      setHasAttemptedSessionLoad(true);
+      setQuizSummaryData(fetchedQuizSummary); // Set quiz summary from fetch
 
       if (sessionIdFromParams) {
         resumeSessionMutation.mutate(
-          { sessionId: sessionIdFromParams, quizType: quizSummary.quizType },
+          { sessionId: sessionIdFromParams, quizType: fetchedQuizSummary.quizType },
           {
             onSuccess: (data) => {
               setSessionId(data.sessionId);
               setQuestions(data.questions);
               setCurrentQuestionIndex(data.currentQuestionIndex);
               setStartTime(Date.now());
+              setQuizSummaryData(data); // Update with full data from resume
             },
             onError: (err) => {
               console.error('Failed to resume quiz session:', err);
@@ -58,14 +75,14 @@ const QuizPage = () => {
         );
       } else {
         startSessionMutation.mutate(
-          { quizIdentifier: quizSummary.id, quizType: quizSummary.quizType },
+          { quizIdentifier: fetchedQuizSummary.id, quizType: fetchedQuizSummary.quizType },
           {
             onSuccess: (data) => {
               setSessionId(data.sessionId);
               setQuestions(data.questions);
               setStartTime(Date.now());
-              // !!! ДОБАВЛЕНО: Обновляем URL с новым sessionId !!!
-              navigate(`/quiz/${quizSummary.quizType.toLowerCase()}/${quizSummary.slug}/${data.sessionId}`, { replace: true });
+              setQuizSummaryData(data); // Update with full data from start
+              navigate(`/quiz/${fetchedQuizSummary.quizType.toLowerCase()}/${fetchedQuizSummary.slug}/${data.sessionId}`, { replace: true });
             },
             onError: (err) => {
               console.error('Failed to start quiz session:', err);
@@ -74,40 +91,36 @@ const QuizPage = () => {
         );
       }
     }
-  }, [quizSummary, sessionIdFromParams, startSessionMutation, resumeSessionMutation, hasAttemptedSessionLoad, navigate]);
+  }, [location.state, fetchedQuizSummary, sessionIdFromParams, startSessionMutation, resumeSessionMutation, hasAttemptedSessionLoad, navigate, location.pathname]);
 
-  // New useEffect to handle session completion when all questions are answered
   useEffect(() => {
-    // Check if all questions have been answered
     const allQuestionsAnswered = questions.length > 0 && currentQuestionIndex >= questions.length;
 
-    if (allQuestionsAnswered && sessionId && quizSummary?.quizType && !sessionCompletionAttempted) {
-      setSessionCompletionAttempted(true); // Mark that we've attempted completion
+    if (allQuestionsAnswered && sessionId && quizSummaryData?.quizType && !sessionCompletionAttempted) {
+      setSessionCompletionAttempted(true);
       completeSessionMutation.mutate(
-        { sessionId, quizType: quizSummary.quizType },
+        { sessionId, quizType: quizSummaryData.quizType },
         {
           onSuccess: () => {
-            navigate(`/quiz-sessions/${sessionId}/history`, { state: { quizType: quizSummary.quizType } });
+            navigate(`/quiz-sessions/${sessionId}/history`, { state: { quizType: quizSummaryData.quizType } });
           },
           onError: (err) => {
             console.error('Failed to complete quiz session:', err);
-            // Even if completion fails, navigate to history to show answers
-            navigate(`/quiz-sessions/${sessionId}/history`, { state: { quizType: quizSummary.quizType } });
+            navigate(`/quiz-sessions/${sessionId}/history`, { state: { quizType: quizSummaryData.quizType } });
           },
         }
       );
     }
-  }, [currentQuestionIndex, questions.length, sessionId, quizSummary?.quizType, sessionCompletionAttempted, completeSessionMutation, navigate]);
-
+  }, [currentQuestionIndex, questions.length, sessionId, quizSummaryData?.quizType, sessionCompletionAttempted, completeSessionMutation, navigate]);
 
   const handleSubmitAnswer = (optionIdToSubmit: string) => {
-    if (!sessionId || !optionIdToSubmit || !currentQuestion || !quizSummary) { // Use currentQuestion directly
+    if (!sessionId || !optionIdToSubmit || !currentQuestion || !quizSummaryData) {
       return;
     }
 
-    setSelectedOptionId(optionIdToSubmit); // For visual feedback
+    setSelectedOptionId(optionIdToSubmit);
 
-    const questionId = currentQuestion.id; // Use currentQuestion directly
+    const questionId = currentQuestion.id;
     const responseTimeMs = Date.now() - startTime;
 
     const selectedOption = currentQuestion.options.find(opt => opt.id === optionIdToSubmit);
@@ -116,22 +129,22 @@ const QuizPage = () => {
     const answerRequest: AnswerRequest = {
       questionId: questionId,
       selectedOptionId: optionIdToSubmit,
-      selectedFormIast: quizSummary.quizType !== QuizType.VOCABULARY ? selectedFormIast : undefined, // Only send for non-vocabulary quizzes
+      selectedFormIast: quizSummaryData.quizType !== QuizType.VOCABULARY ? selectedFormIast : undefined,
       responseTimeMs: responseTimeMs,
     };
 
     submitAnswerMutation.mutate(
       {
         sessionId: sessionId,
-        quizIdentifier: quizSummary.id,
-        quizType: quizSummary.quizType,
+        quizIdentifier: quizSummaryData.quizId,
+        quizType: quizSummaryData.quizType,
         answerRequest: answerRequest,
       },
       {
         onSuccess: (data) => {
-          if (data.isCorrect) { // If correct, immediately move to the next question
+          if (data.isCorrect) {
             handleNextQuestion();
-          } else { // If incorrect, show feedback
+          } else {
             const explanation = i18n.language === 'ru' ? data.explanationRu : data.explanationEn;
             setFeedback({
               isCorrect: data.isCorrect,
@@ -143,7 +156,7 @@ const QuizPage = () => {
         },
         onError: (err) => {
           console.error('Failed to submit answer:', err);
-          setSelectedOptionId(null); // Reset selection on error
+          setSelectedOptionId(null);
         },
       }
     );
@@ -155,10 +168,8 @@ const QuizPage = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      // Если это последний вопрос, мы должны увеличить currentQuestionIndex
-      // так, чтобы условие useEffect (currentQuestionIndex >= questions.length) стало истинным.
-      setCurrentQuestionIndex(questions.length); // Устанавливаем его в questions.length, чтобы запустить логику завершения
-      setSessionCompletionAttempted(false); // Сбрасываем, чтобы позволить useEffect сработать
+      setCurrentQuestionIndex(questions.length);
+      setSessionCompletionAttempted(false);
     }
   };
 
@@ -186,7 +197,6 @@ const QuizPage = () => {
     );
   }
 
-  // If there are no questions and session load was attempted, display a message
   if (questions.length === 0 && hasAttemptedSessionLoad && !isQuizSummaryLoading && !startSessionMutation.isLoading && !resumeSessionMutation.isLoading) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
@@ -195,8 +205,6 @@ const QuizPage = () => {
     );
   }
 
-  // If there are no questions and session load was NOT attempted, it means we are still loading or there's an initial state.
-  // In this case, we should show the spinner or wait for the initial load to complete.
   if (questions.length === 0 && !hasAttemptedSessionLoad) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
@@ -205,18 +213,15 @@ const QuizPage = () => {
     );
   }
 
-  // If currentQuestion is null but questions.length > 0, it means we've gone past the end of questions.
-  // The useEffect for completion should handle this. Render nothing while it processes.
   if (!currentQuestion && questions.length > 0) {
     return null;
   }
 
-
   const progress = Math.round(((currentQuestionIndex + (feedback ? 1 : 0)) / questions.length) * 100);
 
-  // Determine localized title and description
-  const localizedQuizTitle = i18n.language === 'ru' ? quizSummary?.titleRu : quizSummary?.titleEn;
-  const localizedQuizDescription = i18n.language === 'ru' ? quizSummary?.descriptionRu : quizSummary?.descriptionEn;
+  // Determine localized title and description from quizSummaryData
+  const localizedQuizTitle = i18n.language === 'ru' ? quizSummaryData?.quizTitleRu : quizSummaryData?.quizTitleEn;
+  const localizedQuizDescription = i18n.language === 'ru' ? quizSummaryData?.quizDescriptionRu : quizSummaryData?.quizDescriptionEn;
 
   return (
     <div className="flex flex-column align-items-center justify-content-center p-4">
@@ -249,7 +254,7 @@ const QuizPage = () => {
             </h3>
             <p className="text-lg">{feedback.explanation}</p>
             <Button
-              label={isLastQuestion ? t('quiz.completeQuiz') : t('quiz.next')} // Conditional label
+              label={isLastQuestion ? t('quiz.completeQuiz') : t('quiz.next')}
               icon="pi pi-arrow-right"
               iconPos="right"
               className="mt-3 w-full"

@@ -2,7 +2,7 @@ package sm.selflearn.samskrtam.quiz.dto;
 
 import lombok.Builder;
 import lombok.Value;
-import sm.selflearn.samskrtam.content.dto.QuizType;
+import sm.selflearn.samskrtam.content.dto.QuizType; // Corrected import
 
 import java.util.List;
 import java.util.UUID;
@@ -18,4 +18,9 @@ public class StartOrResumeResponse {
     int answeredQuestions;
     int score;
     int currentQuestionIndex;
+    String quizTitleRu; // New field
+    String quizTitleEn; // New field
+    String quizDescriptionRu; // New field
+    String quizDescriptionEn; // New field
+    String slug; // New field
 }

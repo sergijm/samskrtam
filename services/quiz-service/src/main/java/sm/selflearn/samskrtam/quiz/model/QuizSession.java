@@ -25,4 +25,5 @@ public class QuizSession {
     private Instant startedAt;
     private Instant completedAt;
     private String vocabularyWordsJson; // New field to store JSON representation of vocabulary words
+    private UUID generatedQuizDataId; // Renamed field
 }

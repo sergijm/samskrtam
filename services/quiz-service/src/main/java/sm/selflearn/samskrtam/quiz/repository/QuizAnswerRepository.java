@@ -13,7 +13,7 @@ import java.util.UUID;
 @Repository
 public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer, UUID> {
     Flux<QuizAnswer> findBySessionId(UUID sessionId);
-    Mono<Boolean> existsBySessionIdAndSessionQuestionId(UUID sessionId, UUID sessionQuestionId);
+    Mono<Boolean> existsBySessionIdAndQuestionId(UUID sessionId, UUID questionId); // Changed from SessionQuestionId
 
     // Removed ORDER BY :#{#pageable.sort} to avoid null binding issue
     @Query("SELECT * FROM quiz.quiz_answers WHERE session_id = :sessionId LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}")

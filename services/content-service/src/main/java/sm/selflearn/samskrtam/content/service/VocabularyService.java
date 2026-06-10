@@ -2,9 +2,9 @@ package sm.selflearn.samskrtam.content.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // Updated import
 import sm.selflearn.samskrtam.content.model.VocabularyWord;
 import sm.selflearn.samskrtam.content.repository.VocabularyWordRepository;
+import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // Corrected import
 
 import java.util.List;
 import java.util.UUID;

@@ -18,7 +18,7 @@ public class AnswerData {
     private UUID selectedOptionId;
     private String correctFormIast;
     private Boolean isCorrect; // Changed from 'correct' to 'isCorrect'
-    private int responseTimeMs;
+    private Integer responseTimeMs; // Changed from int to Integer
     private Instant answeredAt;
     private String explanationRu; // New field
     private String explanationEn; // New field

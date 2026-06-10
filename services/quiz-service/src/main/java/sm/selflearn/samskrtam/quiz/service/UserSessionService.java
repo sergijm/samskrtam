@@ -10,21 +10,14 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
-import sm.selflearn.samskrtam.content.dto.QuizSummaryDto;
-import sm.selflearn.samskrtam.content.dto.QuizType;
-import sm.selflearn.samskrtam.content.dto.SessionDataResponse;
-import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // Updated import
+import sm.selflearn.samskrtam.content.dto.*;
 import sm.selflearn.samskrtam.quiz.dto.AnswerHistoryDto;
 import sm.selflearn.samskrtam.quiz.dto.QuizProgressDto;
 import sm.selflearn.samskrtam.quiz.dto.QuizSessionSummaryDto;
-import sm.selflearn.samskrtam.quiz.model.CachedQuestion;
-import sm.selflearn.samskrtam.quiz.model.QuestionLanguage;
-import sm.selflearn.samskrtam.quiz.model.QuizSession;
-import sm.selflearn.samskrtam.quiz.model.SessionQuestion;
-import sm.selflearn.samskrtam.quiz.model.SessionStatus;
+import sm.selflearn.samskrtam.quiz.model.*;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
-import sm.selflearn.samskrtam.quiz.repository.SessionQuestionRepository;
+import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto; // Added import
 
 import java.time.Duration;
 import java.util.*;
@@ -38,7 +31,6 @@ public class UserSessionService {
 
     private final QuizSessionRepository quizSessionRepository;
     private final QuizAnswerRepository quizAnswerRepository;
-    private final SessionQuestionRepository sessionQuestionRepository;
     private final ContentClient contentClient;
     private final ObjectMapper objectMapper;
 
@@ -140,29 +132,30 @@ public class UserSessionService {
         return quizSessionRepository.findByIdAndUserId(sessionId, userId)
                 .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Session not found or does not belong to user: " + sessionId)))
                 .flatMap(session -> Mono.zip(
-                                sessionQuestionRepository.findBySessionId(sessionId).collectList(),
+                                contentClient.getGeneratedQuizData(session.getGeneratedQuizDataId()), // Changed method call
                                 quizAnswerRepository.findBySessionId(sessionId).collectList()
                         )
                         .flatMap(tuple -> {
-                            List<SessionQuestion> sessionQuestions = tuple.getT1();
+                            GeneratedQuizData generatedQuizData = tuple.getT1(); // Changed type
+                            List<GeneratedQuizQuestionDto> generatedQuestions = generatedQuizData.getGeneratedQuestions(); // Extract questions
                             List<sm.selflearn.samskrtam.quiz.model.QuizAnswer> quizAnswers = tuple.getT2();
 
                             Map<UUID, sm.selflearn.samskrtam.quiz.model.QuizAnswer> answersMap = quizAnswers.stream()
-                                    .collect(Collectors.toMap(sm.selflearn.samskrtam.quiz.model.QuizAnswer::getSessionQuestionId, Function.identity()));
+                                    .collect(Collectors.toMap(sm.selflearn.samskrtam.quiz.model.QuizAnswer::getQuestionId, Function.identity()));
 
-                            List<AnswerHistoryDto> fullHistory = sessionQuestions.stream()
-                                    .sorted(Comparator.comparing(SessionQuestion::getQuestionId)) // Ensure consistent order
-                                    .map(sq -> {
-                                        sm.selflearn.samskrtam.quiz.model.QuizAnswer answer = answersMap.get(sq.getQuestionId());
+                            List<AnswerHistoryDto> fullHistory = generatedQuestions.stream()
+                                    .sorted(Comparator.comparing(GeneratedQuizQuestionDto::getId)) // Ensure consistent order
+                                    .map(gq -> {
+                                        QuizAnswer answer = answersMap.get(gq.getId());
                                         // Use explanationRu and explanationEn directly
-                                        String explanationRu = sq.getExplanationRu();
-                                        String explanationEn = sq.getExplanationEn();
+                                        String explanationRu = gq.getExplanationRu();
+                                        String explanationEn = gq.getExplanationEn();
 
                                         return AnswerHistoryDto.builder()
-                                                .questionId(sq.getQuestionId())
-                                                .questionText(sq.getText())
+                                                .questionId(gq.getId())
+                                                .questionText(gq.getText())
                                                 .selectedAnswerIast(answer != null ? answer.getSelectedFormIast() : null)
-                                                .correctOptionIast(sq.getCorrectFormIast()) // Always from SessionQuestion
+                                                .correctOptionIast(gq.getCorrectFormIast()) // Always from GeneratedQuizQuestionDto
                                                 .isCorrect(answer != null ? answer.getIsCorrect() : null) // Use null for unanswered
                                                 .responseTimeMs(answer != null ? answer.getResponseTimeMs() : null)
                                                 .answeredAt(answer != null ? answer.getAnsweredAt() : null)
@@ -182,83 +175,5 @@ public class UserSessionService {
         return quizSessionRepository.findTopByUserIdAndQuizIdAndStatusOrderByStartedAtDesc(userId, quizId, SessionStatus.IN_PROGRESS)
                 .map(session -> new QuizProgressDto(session.getId(), session.getAnsweredQuestions(), session.getTotalQuestions(), true))
                 .defaultIfEmpty(new QuizProgressDto(null, 0, 0, false));
-    }
-
-    // This private method is not called from anywhere in UserSessionService,
-    // but if it were, it would need to be updated.
-    private List<CachedQuestion> generateVocabularyQuestions(SessionDataResponse sessionData, String userLocale) {
-        List<CachedQuestion> allPossibleQuestions = new ArrayList<>();
-
-        if (sessionData.getVocabularyWords() == null) {
-            return Collections.emptyList();
-        }
-
-        for (VocabularyWordDto word : sessionData.getVocabularyWords()) {
-            if (word == null) {
-                log.warn("Skipping null vocabulary word in session data.");
-                continue;
-            }
-
-            String wordDevanagari = Optional.ofNullable(word.getWordDevanagari()).orElse("");
-            String wordIast = Optional.ofNullable(word.getWordIast()).orElse("");
-            String translationRu = Optional.ofNullable(word.getTranslationRu()).orElse("");
-            String translationEn = Optional.ofNullable(word.getTranslationEn()).orElse("");
-            // Use new explanation fields
-            String explanationRu = Optional.ofNullable(word.getExplanationRu()).orElse("");
-            String explanationEn = Optional.ofNullable(word.getExplanationEn()).orElse("");
-
-            String questionTextSanskritToTranslation = String.format(
-                    userLocale.equals("ru") ? "Как переводится слово '%s'?" : "How is the word '%s' translated?",
-                    userLocale.equals("ru") ? wordDevanagari : wordIast
-            );
-            String correctFormIastSanskritToTranslation = userLocale.equals("ru") ? translationRu : translationEn;
-            UUID questionIdSanskritToTranslation = UUID.nameUUIDFromBytes((Optional.ofNullable(word.getId()).map(UUID::toString).orElse("") + "SANSKRIT_TO_TRANSLATION").getBytes());
-
-            allPossibleQuestions.add(CachedQuestion.builder()
-                    .questionId(questionIdSanskritToTranslation)
-                    .text(questionTextSanskritToTranslation)
-                    .explanationRu(explanationRu) // Use new field
-                    .explanationEn(explanationEn) // Use new field
-                    .vocabularyWordId(word.getId())
-                    .questionSourceLanguage(QuestionLanguage.SANSKRIT)
-                    .questionTargetLanguage(userLocale.equals("ru") ? QuestionLanguage.RUSSIAN : QuestionLanguage.ENGLISH)
-                    .correctTranslationRu(translationRu)
-                    .correctTranslationEn(translationEn)
-                    .correctFormIast(correctFormIastSanskritToTranslation)
-                    .correctFormDevanagari(wordDevanagari)
-                    .build());
-
-            String questionTextTranslationToSanskrit = String.format(
-                    userLocale.equals("ru") ? "Как будет '%s' на санскрите?" : "How is '%s' in Sanskrit?",
-                    userLocale.equals("ru") ? translationRu : translationEn
-            );
-            String correctFormIastTranslationToSanskrit = wordIast;
-            UUID questionIdTranslationToSanskrit = UUID.nameUUIDFromBytes((Optional.ofNullable(word.getId()).map(UUID::toString).orElse("") + "TRANSLATION_TO_SANSKRIT").getBytes());
-
-            allPossibleQuestions.add(CachedQuestion.builder()
-                    .questionId(questionIdTranslationToSanskrit)
-                    .text(questionTextTranslationToSanskrit)
-                    .explanationRu(explanationRu) // Use new field
-                    .explanationEn(explanationEn) // Use new field
-                    .vocabularyWordId(word.getId())
-                    .questionSourceLanguage(QuestionLanguage.RUSSIAN)
-                    .questionTargetLanguage(QuestionLanguage.SANSKRIT)
-                    .correctTranslationRu(translationRu)
-                    .correctTranslationEn(translationEn)
-                    .correctFormIast(correctFormIastTranslationToSanskrit)
-                    .correctFormDevanagari(wordDevanagari)
-                    .build());
-        }
-
-        Collections.shuffle(allPossibleQuestions);
-        int questionsToSelect = Math.min(sessionData.getQuestionsPerSession(), allPossibleQuestions.size());
-        return allPossibleQuestions.subList(0, questionsToSelect);
-    }
-
-    private CachedQuestion findQuestion(UUID questionId, List<CachedQuestion> cachedQuestions) {
-        return cachedQuestions.stream()
-                .filter(q -> q.getQuestionId().equals(questionId))
-                .findFirst()
-                .orElseThrow(() -> new SamskrtamException("QUESTION_NOT_FOUND", "Question not found in session: " + questionId));
     }
 }
