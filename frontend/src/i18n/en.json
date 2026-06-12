@@ -38,6 +38,7 @@
     "next": "Next Question",
     "correct": "Correct!",
     "incorrect": "Incorrect",
+    "correctAnswerIs": "The correct answer is",
     "question": "Question {{current}} of {{total}}",
     "explanation": "Explanation",
     "title": "Quizzes",
@@ -49,7 +50,9 @@
     "noQuestions": "This quiz has no questions.",
     "noExplanation": "No explanation available.",
     "completeQuiz": "Complete Quiz",
-    "completeSessionError": "Failed to complete quiz session: {{message}}"
+    "completeSessionError": "Failed to complete quiz session: {{message}}",
+    "retakeQuiz": "Retake Quiz",
+    "startNewQuiz": "Start New Quiz"
   },
   "quizzes": {
     "title": "List of Quizzes"

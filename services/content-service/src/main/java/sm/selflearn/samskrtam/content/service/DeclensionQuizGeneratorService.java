@@ -3,13 +3,15 @@ package sm.selflearn.samskrtam.content.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.common.SamskrtamException;
-import sm.selflearn.samskrtam.content.dto.QuestionResponse; // Corrected import
-import sm.selflearn.samskrtam.content.model.*;
+import sm.selflearn.samskrtam.content.dto.QuestionResponse;
+import sm.selflearn.samskrtam.content.dto.QuizType;
+import sm.selflearn.samskrtam.content.model.Case; // Corrected import for Case
+import sm.selflearn.samskrtam.content.model.DeclensionForm;
+import sm.selflearn.samskrtam.content.model.DeclensionStem;
+import sm.selflearn.samskrtam.content.model.Quiz;
+import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
 import sm.selflearn.samskrtam.content.repository.DeclensionStemRepository;
-import sm.selflearn.samskrtam.content.dto.QuizType; // Corrected import
-import sm.selflearn.samskrtam.content.model.Case; // Corrected import
-import sm.selflearn.samskrtam.content.model.Number; // Corrected import
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -23,17 +25,15 @@ public class DeclensionQuizGeneratorService {
 
     private static final Random random = new Random();
 
-    public List<QuestionResponse> generateDeclensionQuestions(Quiz quiz, Locale locale) { // Changed return type to QuestionResponse
+    public List<QuestionResponse> generateDeclensionQuestions(Quiz quiz, Locale locale) {
         List<DeclensionStem> availableStems;
 
-        // Filter stems by vowel type if the quiz is specific (e.g., A_STEM quiz)
-        if (quiz.getQuizType() != QuizType.DECLENSIONS) { // Assuming DECLENSIONS is the combined type
+        if (quiz.getQuizType().toString().contains("DECLENSIONS")) {
             VowelType requiredVowelType = mapQuizTypeToVowelType(quiz.getQuizType());
             availableStems = declensionStemRepository.findAll().stream()
                     .filter(stem -> stem.getVowelType() == requiredVowelType)
                     .collect(Collectors.toList());
         } else {
-            // For combined DECLENSIONS quiz, use all available stems
             availableStems = declensionStemRepository.findAll();
         }
 
@@ -41,25 +41,23 @@ public class DeclensionQuizGeneratorService {
             throw new SamskrtamException("NO_DECLENSION_STEMS", "No declension stems found for quiz type: " + quiz.getQuizType());
         }
 
-        // Select N random stems for the session
         int questionsToGenerate = Math.min(quiz.getQuestionsPerSession(), availableStems.size());
         Collections.shuffle(availableStems);
         List<DeclensionStem> selectedStems = availableStems.subList(0, questionsToGenerate);
 
-        List<QuestionResponse> generatedQuestions = new ArrayList<>(); // Changed type to QuestionResponse
-        for (int i = 0; i < selectedStems.size(); i++) { // Loop to assign questionNumber
+        List<QuestionResponse> generatedQuestions = new ArrayList<>();
+        for (int i = 0; i < selectedStems.size(); i++) {
             DeclensionStem stem = selectedStems.get(i);
-            generatedQuestions.add(generateSingleQuestion(stem, locale, i + 1)); // Pass questionNumber
+            generatedQuestions.add(generateSingleQuestion(stem, locale, i + 1));
         }
         return generatedQuestions;
     }
 
-    private QuestionResponse generateSingleQuestion(DeclensionStem stem, Locale locale, int questionNumber) { // Added questionNumber
-        // Randomly select a Case and Number for the target form
+    private QuestionResponse generateSingleQuestion(DeclensionStem stem, Locale locale, int questionNumber) {
         Case targetCase = Case.values()[random.nextInt(Case.values().length)];
-        Number targetNumber = Number.values()[random.nextInt(Number.values().length)];
+        // Assuming Number is in the same package as Case
+        sm.selflearn.samskrtam.content.model.Number targetNumber = sm.selflearn.samskrtam.content.model.Number.values()[random.nextInt(sm.selflearn.samskrtam.content.model.Number.values().length)];
 
-        // Retrieve the correct form
         DeclensionForm correctForm = declensionFormRepository
                 .findByDeclensionStemIdAndCaseTypeAndNumberType(stem.getId(), targetCase, targetNumber)
                 .orElseThrow(() -> new SamskrtamException("DECLENSION_FORM_NOT_FOUND",
@@ -69,8 +67,8 @@ public class DeclensionQuizGeneratorService {
         String questionText = String.format(
                 locale.getLanguage().equals("ru") ? "Основа: %s, Падеж: %s, Число: %s" : "Stem: %s, Case: %s, Number: %s",
                 stem.getStemNameIast(),
-                targetCase.getRuName(),
-                targetNumber.getRuName()
+                locale.getLanguage().equals("ru") ? targetCase.getRuName() : targetCase.getEnName(),
+                locale.getLanguage().equals("ru") ? targetNumber.getRuName() : targetNumber.getEnName()
         );
 
         String explanationTextRu = String.format(
@@ -89,19 +87,18 @@ public class DeclensionQuizGeneratorService {
                 correctForm.getFormIast()
         );
 
-
-        return QuestionResponse.builder() // Changed to QuestionResponse.builder()
-                .id(UUID.randomUUID()) // Generate a new UUID for the question
-                .questionNumber(questionNumber) // Set questionNumber
+        return QuestionResponse.builder()
+                .id(UUID.randomUUID())
+                .questionNumber(questionNumber)
                 .text(questionText)
-                .explanationRu(explanationTextRu) // Changed to explanationRu
-                .explanationEn(explanationTextEn) // Added explanationEn
+                .explanationRu(explanationTextRu)
+                .explanationEn(explanationTextEn)
                 .declensionStemId(stem.getId())
                 .targetCase(targetCase)
                 .targetNumber(targetNumber)
                 .correctFormIast(correctForm.getFormIast())
                 .correctFormDevanagari(correctForm.getFormDevanagari())
-                .stem(stem.getStemNameIast()) // Populate new field
+                .stem(stem.getStemNameIast())
                 .build();
     }
 

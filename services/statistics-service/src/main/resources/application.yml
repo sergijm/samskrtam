@@ -57,3 +57,5 @@ logging:
   level:
     root: WARN
     sm.selflearn.samskrtam: DEBUG
+    org.springframework.kafka: DEBUG
+    org.apache.kafka: DEBUG

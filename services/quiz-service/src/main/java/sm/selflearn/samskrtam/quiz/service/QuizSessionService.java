@@ -46,10 +46,6 @@ public class QuizSessionService {
 
     private static final Random random = new Random();
 
-    // =================================================================================================================
-    // Public API Methods
-    // =================================================================================================================
-
     public Mono<StartOrResumeResponse> startSession(UUID quizId, UUID userId, String userLocale) {
         return createNewSessionAndBuildStartOrResumeResponse(quizId, userId, userLocale);
     }
@@ -112,15 +108,14 @@ public class QuizSessionService {
                 .flatMap(completedSession -> createNewSessionAndBuildStartOrResumeResponse(completedSession.getQuizId(), userId, userLocale));
     }
 
-    // =================================================================================================================
-    // Private Helper Methods for submitAnswer
-    // =================================================================================================================
-
     private Mono<AnswerResponse> processAndSaveAnswer(QuizSession session, UUID userId, AnswerRequest request, GeneratedQuizQuestionDto generatedQuestion, String userLocale) {
         return getVocabularyWords(session)
                 .flatMap(allVocabularyWords -> {
                     String selectedOptionIast = determineSelectedOptionIast(request, generatedQuestion, allVocabularyWords);
                     boolean isCorrect = generatedQuestion.getCorrectFormIast().equals(selectedOptionIast);
+
+                    UUID correctWordId = findCorrectWordId(generatedQuestion, allVocabularyWords);
+                    String correctAnswerText = findCorrectAnswerText(generatedQuestion, allVocabularyWords, userLocale);
 
                     QuizAnswer newAnswer = QuizAnswer.builder()
                             .id(null)
@@ -136,7 +131,7 @@ public class QuizSessionService {
 
                     return quizAnswerRepository.save(newAnswer)
                             .then(quizSessionRepository.incrementAnsweredQuestionsAndScore(session.getId(), isCorrect))
-                            .flatMap(updatedCount -> publishAnsweredEventAndReturnResponse(session, userId, request, generatedQuestion, selectedOptionIast, isCorrect));
+                            .then(publishAnsweredEventAndReturnResponse(session, userId, request, generatedQuestion, selectedOptionIast, isCorrect, correctWordId, correctAnswerText));
                 });
     }
 
@@ -173,7 +168,38 @@ public class QuizSessionService {
         }
     }
 
-    private Mono<AnswerResponse> publishAnsweredEventAndReturnResponse(QuizSession session, UUID userId, AnswerRequest request, GeneratedQuizQuestionDto generatedQuestion, String selectedOptionIast, boolean isCorrect) {
+    private UUID findCorrectWordId(GeneratedQuizQuestionDto generatedQuestion, List<VocabularyWordDto> allVocabularyWords) {
+        if (generatedQuestion.getVocabularyWordId() != null) {
+            return allVocabularyWords.stream()
+                .filter(w -> w.getId().equals(generatedQuestion.getVocabularyWordId()))
+                .map(VocabularyWordDto::getId)
+                .findFirst()
+                .orElse(null);
+        }
+        return null;
+    }
+
+    private String findCorrectAnswerText(GeneratedQuizQuestionDto generatedQuestion, List<VocabularyWordDto> allVocabularyWords, String userLocale) {
+        if (generatedQuestion.getVocabularyWordId() != null) {
+            VocabularyWordDto correctWord = allVocabularyWords.stream()
+                .filter(w -> w.getId().equals(generatedQuestion.getVocabularyWordId()))
+                .findFirst()
+                .orElse(null);
+
+            if (correctWord != null) {
+                if (generatedQuestion.getQuestionTargetLanguage() == QuestionLanguage.SANSKRIT) {
+                    return correctWord.getWordIast();
+                } else if (generatedQuestion.getQuestionTargetLanguage() == QuestionLanguage.RUSSIAN) {
+                    return correctWord.getTranslationRu();
+                } else if (generatedQuestion.getQuestionTargetLanguage() == QuestionLanguage.ENGLISH) {
+                    return correctWord.getTranslationEn();
+                }
+            }
+        }
+        return generatedQuestion.getCorrectFormIast(); // Fallback for non-vocabulary quizzes
+    }
+
+    private Mono<AnswerResponse> publishAnsweredEventAndReturnResponse(QuizSession session, UUID userId, AnswerRequest request, GeneratedQuizQuestionDto generatedQuestion, String selectedOptionIast, boolean isCorrect, UUID correctWordId, String correctAnswerText) {
         QuizAnsweredEvent event = new QuizAnsweredEvent(
                 session.getId(),
                 userId,
@@ -188,7 +214,7 @@ public class QuizSessionService {
         try {
             String payload = objectMapper.writeValueAsString(event);
             OutboxEvent outboxEvent = OutboxEvent.builder()
-                    .id(UUID.randomUUID())
+                    .id(null)
                     .aggregateType("QuizSession")
                     .aggregateId(session.getId().toString())
                     .eventType(OutboxEventType.QUIZ_ANSWERED)
@@ -202,7 +228,8 @@ public class QuizSessionService {
 
             AnswerResponse answerResponse = AnswerResponse.builder()
                     .isCorrect(isCorrect)
-                    .correctOptionId(request.getSelectedOptionId())
+                    .correctOptionId(correctWordId)
+                    .correctAnswerText(correctAnswerText) // Set the correct answer text
                     .explanationRu(generatedQuestion.getExplanationRu())
                     .explanationEn(generatedQuestion.getExplanationEn())
                     .questionNumber(session.getAnsweredQuestions() + 1)
@@ -210,15 +237,11 @@ public class QuizSessionService {
                     .build();
 
             return outboxEventRepository.save(outboxEvent)
-                    .then(Mono.just(answerResponse));
+                    .thenReturn(answerResponse);
         } catch (JsonProcessingException e) {
             return Mono.error(new SamskrtamException("JSON_PROCESSING_ERROR", "Failed to serialize QuizAnsweredEvent", e));
         }
     }
-
-    // =================================================================================================================
-    // Private Helper Methods for completeSession
-    // =================================================================================================================
 
     private Mono<CompleteSessionResponse> processAndCompleteSession(QuizSession session, UUID userId, List<QuizAnswer> quizAnswers, GeneratedQuizData generatedQuizData) {
         List<GeneratedQuizQuestionDto> generatedQuestions = generatedQuizData.getGeneratedQuestions();
@@ -270,7 +293,7 @@ public class QuizSessionService {
                     try {
                         String payload = objectMapper.writeValueAsString(event);
                         OutboxEvent outboxEvent = OutboxEvent.builder()
-                                .id(UUID.randomUUID())
+                                .id(null)
                                 .aggregateType("QuizSession")
                                 .aggregateId(savedSession.getId().toString())
                                 .eventType(OutboxEventType.QUIZ_SESSION_STATUS_CHANGED)
@@ -290,19 +313,15 @@ public class QuizSessionService {
                                 .build();
 
                         return outboxEventRepository.save(outboxEvent)
-                                .then(Mono.just(completeSessionResponse));
+                                .thenReturn(completeSessionResponse);
                     } catch (JsonProcessingException e) {
                         return Mono.error(new SamskrtamException("JSON_PROCESSING_ERROR", "Failed to serialize QuizSessionStatusChangedEvent", e));
                     }
                 });
     }
 
-    // =================================================================================================================
-    // Private Helper Methods for createNewSessionAndBuildStartOrResumeResponse
-    // =================================================================================================================
-
     private Mono<StartOrResumeResponse> createNewSessionAndBuildStartOrResumeResponse(UUID quizId, UUID userId, String userLocale) {
-        return contentClient.generateQuizData(quizId)
+        return contentClient.generateQuizData(quizId, userLocale)
                 .flatMap(generatedQuizData -> {
                     List<GeneratedQuizQuestionDto> generatedQuestions = generatedQuizData.getGeneratedQuestions();
                     return getVocabularyWordsForNewSession(generatedQuizData, quizId)
@@ -365,7 +384,7 @@ public class QuizSessionService {
         try {
             String payload = objectMapper.writeValueAsString(event);
             OutboxEvent outboxEvent = OutboxEvent.builder()
-                    .id(UUID.randomUUID())
+                    .id(null)
                     .aggregateType("QuizSession")
                     .aggregateId(savedSession.getId().toString())
                     .eventType(OutboxEventType.QUIZ_SESSION_STATUS_CHANGED)
@@ -382,10 +401,6 @@ public class QuizSessionService {
             return Mono.error(new SamskrtamException("JSON_PROCESSING_ERROR", "Failed to serialize QuizSessionStatusChangedEvent", e));
         }
     }
-
-    // =================================================================================================================
-    // Private Helper Methods for resume
-    // =================================================================================================================
 
     private Mono<StartOrResumeResponse> resume(UUID sessionId, UUID userId, String userLocale) {
         return quizSessionRepository.findById(sessionId)
@@ -419,7 +434,7 @@ public class QuizSessionService {
                     try {
                         String payload = objectMapper.writeValueAsString(event);
                         OutboxEvent outboxEvent = OutboxEvent.builder()
-                                .id(UUID.randomUUID())
+                                .id(null)
                                 .aggregateType("QuizSession")
                                 .aggregateId(savedSession.getId().toString())
                                 .eventType(OutboxEventType.QUIZ_SESSION_STATUS_CHANGED)
@@ -445,10 +460,6 @@ public class QuizSessionService {
                         .flatMap(allVocabularyWords -> buildStartOrResumeResponse(session, generatedQuizData.getGeneratedQuestions(), allVocabularyWords, userLocale)));
     }
 
-    // =================================================================================================================
-    // Private Helper Methods for retakeSession
-    // =================================================================================================================
-
     private Mono<StartOrResumeResponse> resetAndPublishSessionStatus(QuizSession session, UUID userId, String userLocale) {
         SessionStatus oldStatus = session.getStatus();
         session.setScore(0);
@@ -470,7 +481,7 @@ public class QuizSessionService {
                     try {
                         String payload = objectMapper.writeValueAsString(event);
                         OutboxEvent outboxEvent = OutboxEvent.builder()
-                                .id(UUID.randomUUID())
+                                .id(null)
                                 .aggregateType("QuizSession")
                                 .aggregateId(updatedSession.getId().toString())
                                 .eventType(OutboxEventType.QUIZ_SESSION_STATUS_CHANGED)
@@ -491,10 +502,6 @@ public class QuizSessionService {
                 });
     }
 
-    // =================================================================================================================
-    // Private Helper Methods for startNewQuizFromExistingSession
-    // =================================================================================================================
-
     private Mono<QuizSession> completeAndPublishSessionStatus(QuizSession session, UUID userId) {
         SessionStatus oldStatus = session.getStatus();
         session.setStatus(SessionStatus.COMPLETED);
@@ -513,7 +520,7 @@ public class QuizSessionService {
                     try {
                         String payload = objectMapper.writeValueAsString(event);
                         OutboxEvent outboxEvent = OutboxEvent.builder()
-                                .id(UUID.randomUUID())
+                                .id(null)
                                 .aggregateType("QuizSession")
                                 .aggregateId(completedSession.getId().toString())
                                 .eventType(OutboxEventType.QUIZ_SESSION_STATUS_CHANGED)
@@ -532,10 +539,6 @@ public class QuizSessionService {
                 });
     }
 
-    // =================================================================================================================
-    // General Private Helper Methods
-    // =================================================================================================================
-
     private Mono<StartOrResumeResponse> buildStartOrResumeResponse(QuizSession session, List<GeneratedQuizQuestionDto> generatedQuestions, List<VocabularyWordDto> allVocabularyWords, String userLocale) {
         return contentClient.getQuizSummary(session.getQuizId())
                 .flatMap(quizSummary -> quizAnswerRepository.findBySessionId(session.getId())
@@ -545,28 +548,26 @@ public class QuizSessionService {
                                     .map(QuizAnswer::getQuestionId)
                                     .collect(Collectors.toSet());
 
-                            // Sort generatedQuestions by questionNumber before processing
                             List<GeneratedQuizQuestionDto> sortedGeneratedQuestions = generatedQuestions.stream()
                                     .sorted(Comparator.comparing(GeneratedQuizQuestionDto::getQuestionNumber))
                                     .collect(Collectors.toList());
 
-                            return Flux.fromIterable(sortedGeneratedQuestions) // Use sorted list here
+                            return Flux.fromIterable(sortedGeneratedQuestions)
                                     .flatMap(generatedQuestion -> generateQuestionOptions(session, generatedQuestion, allVocabularyWords, userLocale))
                                     .collectList()
                                     .map(questions -> {
-                                        // Re-sort the questions list after flatMap to ensure final order
                                         questions.sort(Comparator.comparing(QuestionDto::getQuestionNumber));
 
                                         return StartOrResumeResponse.builder()
                                                 .sessionId(session.getId())
                                                 .quizId(session.getQuizId())
                                                 .quizType(session.getQuizType())
-                                                .questions(questions) // Use the re-sorted list
+                                                .questions(questions)
                                                 .totalQuestions(session.getTotalQuestions())
                                                 .answeredQuestions(answeredQuestionIds.size())
                                                 .score(session.getScore())
                                                 .currentQuestionIndex(answeredQuestionIds.size())
-                                                .currentQuestionNumber(answeredQuestionIds.size() > 0 ? questions.get(answeredQuestionIds.size()).getQuestionNumber() : 1) // Use questions.get()
+                                                .currentQuestionNumber(answeredQuestionIds.size() > 0 ? questions.get(answeredQuestionIds.size()).getQuestionNumber() : 1)
                                                 .quizTitleRu(quizSummary.getTitleRu())
                                                 .quizTitleEn(quizSummary.getTitleEn())
                                                 .quizDescriptionRu(quizSummary.getDescriptionRu())

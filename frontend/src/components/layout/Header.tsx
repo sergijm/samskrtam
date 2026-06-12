@@ -19,7 +19,7 @@ const Header = () => {
     <div className="layout-topbar flex justify-content-between align-items-center"> {/* Removed px-4 py-2 */}
       <Link to="/" className="layout-topbar-logo no-underline text-xl font-bold flex align-items-center" style={{ padding: 0, margin: 0 }}> {/* Ensure no padding/margin */}
         <img src="/logo.png" alt="Aksharamārga Logo" style={{ height: '70px', width: '70px', marginRight: '0' }} /> {/* Set size and remove margin */}
-        <span className="text-3xl font-bold">Aksharamārga</span>
+        <span className="text-3xl font-bold">Akshara Mārga</span>
       </Link>
       <div className="layout-topbar-menu flex align-items-center gap-3">
         <ThemeSwitcher />

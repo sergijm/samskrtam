@@ -4,13 +4,13 @@
 > Язык: **Java 21 + WebFlux (Reactor)**
 > Модуль: `services/quiz-service`
 > Порт: 8082
-> Status: **DRAFT**
+> Status: **UPDATED**
 
 ---
 
 ## 1. Описание
 
-Единый сервис для прохождения квизов всех типов: склонения, спряжения, лексика. Обрабатывает жизненный цикл сессии: старт, ответы, завершение. Детальная история ответов сохраняется в базе данных `quiz-service`. После завершения сессии публикует обогащенное событие в Kafka. Данные (вопросы, варианты, слова) получает от `content-service` через реактивный HTTP-клиент.
+Единый сервис для прохождения квизов всех типов: склонения, спряжения, лексика. Обрабатывает жизненный цикл сессии: старт, ответы, завершение. Детальная история ответов сохраняется в базе данных `quiz-service`. После завершения сессии публикует обогащенное событие в Kafka **с использованием Outbox Pattern**. Данные (вопросы, варианты, слова) получает от `content-service` через реактивный HTTP-клиент.
 
 Разделение ответственности:
 - **content-service** — что есть в квизах (данные, настройки)
@@ -26,7 +26,7 @@ WebFlux выбран осознанно: quiz-service интенсивно ра�
 
 | Хранилище | Что хранит | Зачем |
 |---|---|---|
-| PostgreSQL/R2DBC (схема `quiz`) | активные и завершённые сессии, ответы, вопросы сессий | надёжность, возможность продолжить сессию, хранение всех данных сессии |
+| PostgreSQL/R2DBC (схема `quiz`) | активные и завершённые сессии, ответы, вопросы сессий, **события Outbox** | надёжность, возможность продолжить сессию, хранение всех данных сессии |
 
 ---
 
@@ -43,11 +43,13 @@ GET /api/v1/quiz/{type}/sessions/start[?quizId=uuid]
   ↓ для VOCABULARY: генерирует N вопросов из sessionData.vocabularyWords (Sanskrit->Translation или Translation->Sanskrit)
   ↓ flatMap: сохраняет сессию в Postgres (R2DBC) в `quiz.quiz_sessions`
   ↓ flatMap: сохраняет сгенерированные вопросы в Postgres (R2DBC) в `quiz.session_questions`
+  ↓ **Публикует QuizSessionStatusChangedEvent (status=IN_PROGRESS) через Outbox Pattern**
   → Mono<StartSessionResponse>
 
 GET /api/v1/quiz/{type}/sessions/{id}/resume
   ↓ R2DBC → Postgres, восстанавливает QuizSession
   ↓ R2DBC → Postgres, получает все SessionQuestion для сессии
+  ↓ **Если статус сессии изменился на IN_PROGRESS, публикует QuizSessionStatusChangedEvent через Outbox Pattern**
   → Mono<ResumeSessionResponse>
 
 POST /api/v1/quiz/{type}/sessions/{id}/answer
@@ -55,6 +57,7 @@ POST /api/v1/quiz/{type}/sessions/{id}/answer
   ↓ R2DBC → Postgres, получает SessionQuestion для текущего вопроса
   ↓ проверяет ответ (для VOCABULARY учитывает targetLanguage, используя vocabularyWordsJson из QuizSession)
   ↓ flatMap: R2DBC сохраняет QuizAnswer + обновляет QuizSession (answered_questions, score)
+  ↓ **Публикует QuizAnsweredEvent через Outbox Pattern**
   → Mono<AnswerResponse>
 
 POST /api/v1/quiz/{type}/sessions/{id}/complete
@@ -62,7 +65,7 @@ POST /api/v1/quiz/{type}/sessions/{id}/complete
   ↓ R2DBC → Postgres, получает все QuizAnswer для сессии
   ↓ R2DBC → Postgres, получает все SessionQuestion для сессии
   ↓ R2DBC обновляет статус QuizSession → COMPLETED
-  ↓ Kafka publishSessionCompleted (с полной историей ответов и объяснениями)
+  ↓ **Публикует QuizSessionStatusChangedEvent (status=COMPLETED) через Outbox Pattern**
   → Mono<CompleteSessionResponse>
 
 GET /api/v1/quiz-sessions/progress?userId={userId}&quizId={quizId}
@@ -74,18 +77,17 @@ GET /api/v1/quiz-sessions/progress?userId={userId}&quizId={quizId}
 
 ## 4. Зависимости
 
-```kotlin
+```
 // services/quiz-service/build.gradle.kts
 dependencies {
     implementation(libs.spring.boot.webflux)
     implementation(libs.spring.boot.r2dbc)
-    implementation(libs.r2dbc.postgresql)           // io.r2dbc:r2dbc-postgresql
-    // implementation(libs.spring.boot.data.redis.reactive) // Redis caching removed
-    implementation(libs.spring.kafka)               // ReactiveKafkaProducerTemplate
-    implementation(libs.flyway.core)                // Flyway — только для миграций (JDBC)
-    implementation(libs.postgresql)                 // JDBC driver — только для Flyway
+    implementation(libs.r2dbc.postgresql)
+    implementation(libs.spring.kafka)
+    implementation(libs.flyway.core)
+    implementation(libs.postgresql)
     implementation(libs.jackson.module.kotlin)
-    implementation(project(":shared:quiz-dtos")) // Объединенный модуль
+    implementation(project(":shared:quiz-dtos"))
 }
 ```
 
@@ -95,31 +97,61 @@ dependencies {
 
 ## 5. Репозитории (ReactiveCrudRepository)
 
-```java
-// sm/selflearn/samskrtam/quiz/repository/QuizSessionRepository.java
-public interface QuizSessionRepository
-        extends ReactiveCrudRepository<QuizSession, UUID> {
+### `QuizSessionRepository`
+*   `id`: UUID
+*   `user_id`: UUID
+*   `quiz_id`: UUID
+*   `quiz_type`: VARCHAR
+*   `total_questions`: INT
+*   `answered_questions`: INT
+*   `score`: INT
+*   `status`: VARCHAR
+*   `started_at`: TIMESTAMP WITH TIME ZONE
+*   `completed_at`: TIMESTAMP WITH TIME ZONE
+*   `vocabulary_words_json`: TEXT
+*   `generated_quiz_data_id`: UUID
 
-    Flux<QuizSession> findByUserIdAndStatus(UUID userId, SessionStatus status);
-    Mono<QuizSession> findByIdAndUserId(UUID id, UUID userId);
-    Mono<QuizSession> findTopByUserIdAndQuizIdAndStatusOrderByStartedAtDesc(UUID userId, UUID quizId, SessionStatus status); // NEW: Find by specific quizId
-    // ... другие методы ...
-}
+### `QuizAnswerRepository`
+*   `id`: UUID
+*   `session_id`: UUID
+*   `question_id`: UUID
+*   `selected_option_id`: UUID
+*   `is_correct`: BOOLEAN
+*   `response_time_ms`: INT
+*   `answered_at`: TIMESTAMP WITH TIME ZONE
+*   `selected_form_iast`: VARCHAR
+*   `correct_form_iast`: VARCHAR
 
-// sm/selflearn/samskrtam/quiz/repository/QuizAnswerRepository.java
-public interface QuizAnswerRepository
-        extends ReactiveCrudRepository<QuizAnswer, UUID> {
+### `SessionQuestionRepository`
+*   `id`: UUID
+*   `session_id`: UUID
+*   `question_id`: UUID
+*   `question_number`: INT
+*   `text`: TEXT
+*   `explanation_ru`: TEXT
+*   `explanation_en`: TEXT
+*   `declension_stem_id`: UUID
+*   `target_case`: VARCHAR
+*   `target_number`: VARCHAR
+*   `correct_form_iast`: VARCHAR
+*   `correct_form_devanagari`: VARCHAR
+*   `vocabulary_word_id`: UUID
+*   `question_source_language`: VARCHAR
+*   `question_target_language`: VARCHAR
+*   `correct_translation_ru`: VARCHAR
+*   `correct_translation_en`: VARCHAR
 
-    Flux<QuizAnswer> findBySessionId(UUID sessionId);
-    Mono<Boolean> existsBySessionIdAndSessionQuestionId(UUID sessionId, UUID sessionQuestionId); // Corrected field name
-}
-
-// sm/selflearn/samskrtam/quiz/repository/SessionQuestionRepository.java // NEW
-public interface SessionQuestionRepository extends ReactiveCrudRepository<SessionQuestion, UUID> {
-    Flux<SessionQuestion> findBySessionId(UUID sessionId);
-    Mono<SessionQuestion> findBySessionIdAndQuestionId(UUID sessionId, UUID questionId);
-}
-```
+### `OutboxEventRepository`
+*   `id`: UUID
+*   `aggregate_type`: VARCHAR
+*   `aggregate_id`: VARCHAR
+*   `event_type`: VARCHAR
+*   `payload`: TEXT
+*   `created_at`: TIMESTAMP WITH TIME ZONE
+*   `status`: VARCHAR
+*   `error_message`: TEXT
+*   `retry_count`: INTEGER
+*   `processed_at`: TIMESTAMP WITH TIME ZONE
 
 ---
 
@@ -131,32 +163,14 @@ public interface SessionQuestionRepository extends ReactiveCrudRepository<Sessio
 
 ## 7. ContentClient (WebClient)
 
-```java
-// sm/selflearn/samskrtam/quiz/service/ContentClient.java
-@Component
-public class ContentClient {
+Внутренний клиент для взаимодействия с `content-service`.
 
-    private final WebClient webClient;
-    private final String contentBaseUrl;
+### `ContentClient`
+*   `webClient`: WebClient
+*   `contentBaseUrl`: String
 
-    public ContentClient(WebClient webClient, @Value("${content.service.url}") String contentBaseUrl) {
-        this.webClient = webClient;
-        this.contentBaseUrl = contentBaseUrl;
-    }
-
-    public Mono<SessionDataResponse> getSessionData(UUID quizId) {
-        return webClient.get()
-                .uri(contentBaseUrl + "/api/v1/content/quizzes/{id}/session-data", quizId)
-                .retrieve()
-                .onStatus(HttpStatusCode::is4xxClientError,
-                        r -> Mono.error(new SamskrtamException("QUIZ_NOT_FOUND", "Quiz not found in content-service: " + quizId)))
-                .bodyToMono(SessionDataResponse.class);
-    }
-
-    // getDeclensionForms и getVocabularyWordsForQuiz теперь вызываются только из content-service
-    // quiz-service получает все необходимые данные через getSessionData
-}
-```
+Методы:
+*   `getSessionData(UUID quizId)`: Mono<SessionDataResponse>
 
 ---
 
@@ -166,251 +180,124 @@ public class ContentClient {
 
 > **Почему не fire-and-forget `.subscribe()`:** `.subscribe()` без ожидания результата в реактивном pipeline означает, что при падении сервиса между `save(answer)` и отправкой в Kafka событие будет потеряно. Outbox атомарно решает эту проблему.
 
-```java
-// sm/selflearn/samskrtam/quiz/event/OutboxEventPublisher.java
-@Component
-@Slf4j
-@RequiredArgsConstructor
-public class OutboxEventPublisher {
+### Outbox Event Structure (внутренняя для quiz-service)
 
-    private final ReactiveKafkaProducerTemplate<String, Object> kafkaTemplate;
-    private final OutboxEventRepository outboxRepository;
+#### `OutboxEvent`
+*   `id`: UUID
+*   `aggregateType`: String (например, "QuizSession")
+*   `aggregateId`: String (например, quizSessionId)
+*   `eventType`: OutboxEventType (например, QUIZ_ANSWERED, QUIZ_SESSION_STATUS_CHANGED)
+*   `payload`: String (JSON события QuizAnsweredEvent, QuizSessionStatusChangedEvent)
+*   `createdAt`: Instant
+*   `status`: OutboxStatus (NEW, PUBLISHED, FAILED)
+*   `errorMessage`: String
+*   `retryCount`: Integer
+*   `processedAt`: Instant
 
-    /**
-     * Публикует события из таблицы outbox в Kafka.
-     * Вызывается @Scheduled процессором каждые 5 секунд.
-     */
-    public Flux<Void> publishPending() {
-        return outboxRepository.findByStatus(OutboxStatus.PENDING)
-                .flatMap(event -> kafkaTemplate
-                        .send(event.getTopic(), event.getAggregateId(), event.getPayload())
-                        .doOnSuccess(result -> log.debug(
-                                "Published outbox event: id={}, topic={}", event.getId(), event.getTopic()))
-                        .then(outboxRepository.markProcessed(event.getId()))
-                        .onErrorResume(e -> {
-                            log.error("Failed to publish outbox event: id={}", event.getId(), e);
-                            return outboxRepository.markFailed(event.getId(), e.getMessage());
-                        })
-                );
-    }
-}
-```
+#### `OutboxEventType` (Enum)
+*   `QUIZ_ANSWERED`
+*   `QUIZ_SESSION_STATUS_CHANGED`
 
-```java
-// sm/selflearn/samskrtam/quiz/event/OutboxEvent.java (R2DBC)
-@Table("quiz.outbox_events") // Схема "quiz"
-public class OutboxEvent {
-    @Id
-    private UUID id;
-    private String aggregateId;   // userId — ключ партиции Kafka
-    private String topic;         // quiz.answer.submitted / quiz.session.completed
-    private String payload;       // JSON события
-    private OutboxStatus status;        // PENDING / PROCESSED / FAILED
-    private OutboxEventType eventType; // Added eventType field
-    private Instant createdAt;
-    private Instant processedAt;
-    private int retryCount;
-    private String errorMessage;
-}
-```
+#### `OutboxStatus` (Enum)
+*   `NEW`
+*   `PUBLISHED`
+*   `FAILED`
 
-```sql
--- V1__initial_quiz_schema.sql (часть, относящаяся к outbox_events)
-CREATE TABLE quiz.outbox_events (
-    id            UUID        NOT NULL DEFAULT gen_random_uuid(),
-    aggregate_id  VARCHAR(255) NOT NULL,
-    topic         VARCHAR(255) NOT NULL,
-    payload       TEXT         NOT NULL,
-    status        VARCHAR(50)  NOT NULL,
-    event_type    VARCHAR(50)  NOT NULL,
-    created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    processed_at  TIMESTAMPTZ,
-    retry_count   INT          NOT NULL DEFAULT 0,
-    error_message TEXT,
+### Outbox Event Publisher Service
 
-    CONSTRAINT pk_quiz_outbox PRIMARY KEY (id)
-);
+Сервис `OutboxEventPublisherService` периодически опрашивает таблицу `quiz.outbox_events` на наличие новых событий (`status = NEW`), публикует их в Kafka и обновляет статус.
 
-CREATE INDEX idx_outbox_events_status ON quiz.outbox_events (status);
-CREATE INDEX idx_outbox_events_aggregate_id ON quiz.outbox_events (aggregate_id);
-```
+#### `OutboxEventPublisherService`
+*   `outboxEventRepository`: OutboxEventRepository
+*   `reactiveKafkaProducerTemplate`: ReactiveKafkaProducerTemplate
+*   `objectMapper`: ObjectMapper
+
+Методы:
+*   `publishOutboxEvents()`: @Scheduled метод для запуска публикации.
+*   `publishEvent(OutboxEvent event)`: Публикует одно событие в Kafka.
+*   `getTopicForEventType(OutboxEventType eventType)`: Определяет топик Kafka для типа события.
 
 ---
 
-## 11. Пример реактивного pipeline (GrammarSessionService)
+## 11. Механика реактивного pipeline (QuizSessionService)
 
-```java
-// sm/selflearn/samskrtam/quiz/service/GrammarSessionService.java
-public Mono<StartSessionResponse> startSession(UUID quizId, UUID userId, String userLocale) {
-    return contentClient.getSessionData(quizId)
-            .flatMap(sessionData -> {
-                List<CachedQuestion> cachedQuestions;
-                List<VocabularyWordDto> allVocabularyWords = new ArrayList<>();
-                String vocabularyWordsJson = null;
+Методы `QuizSessionService` используют реактивные цепочки для обработки логики сессий, включая сохранение данных и публикацию событий Outbox.
 
-                if (sessionData.getQuizType() == QuizType.VOCABULARY) {
-                    // ... генерация вопросов и сериализация vocabularyWordsJson ...
-                } else {
-                    // ... маппинг вопросов ...
-                }
+### `startSession(UUID quizId, UUID userId, String userLocale)`
+*   Получает данные квиза из `content-service`.
+*   Генерирует и сохраняет новую сессию в `quiz.quiz_sessions`.
+*   Публикует `QuizSessionStatusChangedEvent` (статус `IN_PROGRESS`) через Outbox Pattern.
 
-                Collections.shuffle(cachedQuestions);
+### `submitAnswer(UUID sessionId, UUID userId, AnswerRequest request, String userLocale)`
+*   Проверяет существование сессии и принадлежность пользователю.
+*   Проверяет, не был ли вопрос уже отвечен.
+*   Получает детали вопроса из `content-service`.
+*   Сохраняет ответ пользователя в `quiz.quiz_answers` и обновляет `quiz.quiz_sessions`.
+*   Публикует `QuizAnsweredEvent` через Outbox Pattern.
 
-                QuizSession newSession = QuizSession.builder()
-                        // ... поля ...
-                        .vocabularyWordsJson(vocabularyWordsJson) // Сохраняем JSON слов
-                        .build();
-
-                return quizSessionRepository.save(newSession)
-                        .flatMap(savedSession -> {
-                            // Сохраняем сгенерированные вопросы в session_questions
-                            List<SessionQuestion> sessionQuestions = cachedQuestions.stream()
-                                    .map(cq -> SessionQuestion.builder()
-                                            .sessionId(savedSession.getId())
-                                            .questionId(cq.getQuestionId())
-                                            // ... остальные поля из CachedQuestion ...
-                                            .build())
-                                    .collect(Collectors.toList());
-                            return sessionQuestionRepository.saveAll(sessionQuestions)
-                                    .then(buildStartSessionResponse(savedSession, cachedQuestions, allVocabularyWords, userLocale));
-                        });
-            });
-}
-
-public Mono<ResumeSessionResponse> resumeSession(UUID sessionId, UUID userId, String userLocale) {
-    return quizSessionRepository.findById(sessionId)
-            .flatMap(session -> sessionQuestionRepository.findBySessionId(sessionId).collectList() // Получаем вопросы сессии
-                    .flatMap(sessionQuestions -> {
-                        // ... десериализация vocabularyWordsJson при необходимости ...
-                        // ... маппинг SessionQuestion в CachedQuestion ...
-                        return buildResumeSessionResponse(session, cachedQuestions, allVocabularyWords, userLocale);
-                    }));
-}
-
-public Mono<AnswerResponse> submitAnswer(UUID sessionId, UUID userId, AnswerRequest request, String userLocale) {
-    return quizSessionRepository.findById(sessionId)
-            .flatMap(session -> quizAnswerRepository.existsBySessionIdAndSessionQuestionId(sessionId, request.getQuestionId())
-                    .flatMap(alreadyAnswered -> {
-                        if (alreadyAnswered) {
-                            return Mono.error(new SamskrtamException("ALREADY_ANSWERED", "Question already answered: " + request.getQuestionId()));
-                        } else {
-                            return sessionQuestionRepository.findBySessionIdAndQuestionId(sessionId, request.getQuestionId()) // Получаем конкретный вопрос сессии
-                                    .flatMap(sessionQuestion -> {
-                                        // ... десериализация vocabularyWordsJson при необходимости ...
-                                        // ... конвертация SessionQuestion в CachedQuestion ...
-                                        // ... проверка ответа ...
-                                        return quizAnswerRepository.save(newAnswer)
-                                                .then(quizSessionRepository.incrementAnsweredQuestionsAndScore(sessionId, isCorrect))
-                                                .thenReturn(AnswerResponse.builder()
-                                                        // ... поля ответа ...
-                                                        .build());
-                                    });
-                        }
-                    }));
-}
-
-public Mono<CompleteSessionResponse> completeSession(UUID sessionId, UUID userId) {
-    return quizSessionRepository.findById(sessionId)
-            .flatMap(session -> Mono.zip(
-                            quizAnswerRepository.findBySessionId(sessionId).collectList(),
-                            sessionQuestionRepository.findBySessionId(sessionId).collectList() // Получаем все вопросы сессии
-                    )
-                    .flatMap(tuple -> {
-                        // ... обработка ответов и вопросов для события Kafka ...
-                        return quizSessionRepository.save(session)
-                                .then(outboxMono)
-                                .thenReturn(CompleteSessionResponse.builder()
-                                        // ... поля ответа ...
-                                        .build());
-                    }));
-}
-```
+### `completeSession(UUID sessionId, UUID userId)`
+*   Проверяет существование сессии и принадлежность пользователю.
+*   Обновляет статус сессии в `quiz.quiz_sessions` на `COMPLETED`.
+*   Публикует `QuizSessionStatusChangedEvent` (статус `COMPLETED`) через Outbox Pattern.
 
 ---
 
 ## 12. Миграции базы данных
 
-Все миграции для `quiz-service` объединены в один файл `V1__initial_quiz_schema.sql`.
+Все миграции для `quiz-service` объединены в один файл `V1__combined_schema.sql`.
 
-```sql
--- services/quiz-service/src/main/resources/db/migration/V1__initial_quiz_schema.sql
--- Создание схемы quiz
-CREATE SCHEMA IF NOT EXISTS quiz;
+### `quiz.quiz_sessions`
+*   `id`: UUID (PK)
+*   `user_id`: UUID
+*   `quiz_id`: UUID
+*   `quiz_type`: VARCHAR(50)
+*   `total_questions`: INT
+*   `answered_questions`: INT
+*   `score`: INT
+*   `status`: VARCHAR(50)
+*   `started_at`: TIMESTAMP WITH TIME ZONE
+*   `completed_at`: TIMESTAMP WITH TIME ZONE
+*   `vocabulary_words_json`: TEXT
+*   `generated_quiz_data_id`: UUID
 
--- Создание таблицы quiz.quiz_sessions
-CREATE TABLE quiz.quiz_sessions (
-    id UUID PRIMARY KEY,
-    user_id UUID NOT NULL,
-    quiz_id UUID NOT NULL,
-    quiz_type VARCHAR(50) NOT NULL,
-    total_questions INT NOT NULL,
-    answered_questions INT NOT NULL,
-    score INT NOT NULL,
-    status VARCHAR(50) NOT NULL,
-    started_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    completed_at TIMESTAMP WITH TIME ZONE,
-    vocabulary_words_json TEXT -- Добавлено для хранения слов лексических квизов
-);
+### `quiz.quiz_answers`
+*   `id`: UUID (PK)
+*   `session_id`: UUID (FK на `quiz.quiz_sessions`)
+*   `question_id`: UUID
+*   `selected_option_id`: UUID
+*   `is_correct`: BOOLEAN
+*   `response_time_ms`: INT
+*   `answered_at`: TIMESTAMP WITH TIME ZONE
+*   `selected_form_iast`: VARCHAR(255)
+*   `correct_form_iast`: VARCHAR(255)
 
-CREATE INDEX idx_quiz_sessions_user_id ON quiz.quiz_sessions (user_id);
-CREATE INDEX idx_quiz_sessions_quiz_id ON quiz.quiz_sessions (quiz_id);
+### `quiz.session_questions`
+*   `id`: UUID (PK)
+*   `session_id`: UUID (FK на `quiz.quiz_sessions`)
+*   `question_id`: UUID
+*   `question_number`: INT
+*   `text`: TEXT
+*   `explanation_ru`: TEXT
+*   `explanation_en`: TEXT
+*   `declension_stem_id`: UUID
+*   `target_case`: VARCHAR(50)
+*   `target_number`: VARCHAR(50)
+*   `correct_form_iast`: VARCHAR(255)
+*   `correct_form_devanagari`: VARCHAR(255)
+*   `vocabulary_word_id`: UUID
+*   `question_source_language`: VARCHAR(50)
+*   `question_target_language`: VARCHAR(50)
+*   `correct_translation_ru`: VARCHAR(255)
+*   `correct_translation_en`: VARCHAR(255)
 
--- Создание таблицы quiz.quiz_answers
-CREATE TABLE quiz.quiz_answers (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_id UUID NOT NULL,
-    session_question_id UUID NOT NULL, -- Ссылка на вопрос в session_questions
-    selected_option_id UUID,
-    correct BOOLEAN NOT NULL,
-    response_time_ms INT NOT NULL,
-    answered_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    selected_form_iast VARCHAR(255),
-    correct_form_iast VARCHAR(255),
-    FOREIGN KEY (session_id) REFERENCES quiz.quiz_sessions(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_quiz_answers_session_id ON quiz.quiz_answers (session_id);
-CREATE INDEX idx_quiz_answers_session_question_id ON quiz.quiz_answers (session_question_id);
-
--- Создание таблицы quiz.session_questions
-CREATE TABLE quiz.session_questions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_id UUID NOT NULL,
-    question_id UUID, -- Оригинальный ID вопроса из content-service или сгенерированный
-    text TEXT NOT NULL,
-    explanation_ru TEXT,
-    explanation_en TEXT,
-    declension_stem_id UUID,
-    target_case VARCHAR(50),
-    target_number VARCHAR(50),
-    correct_form_iast VARCHAR(255),
-    correct_form_devanagari VARCHAR(255),
-    vocabulary_word_id UUID,
-    question_source_language VARCHAR(50),
-    question_target_language VARCHAR(50),
-    correct_translation_ru VARCHAR(255),
-    correct_translation_en VARCHAR(255),
-    FOREIGN KEY (session_id) REFERENCES quiz.quiz_sessions(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_session_questions_session_id ON quiz.session_questions (session_id);
-
--- Создание таблицы quiz.outbox_events
-CREATE TABLE quiz.outbox_events (
-    id            UUID        NOT NULL DEFAULT gen_random_uuid(),
-    aggregate_id  VARCHAR(255) NOT NULL,
-    topic         VARCHAR(255) NOT NULL,
-    payload       TEXT         NOT NULL,
-    status        VARCHAR(50)  NOT NULL,
-    event_type    VARCHAR(50)  NOT NULL,
-    created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    processed_at  TIMESTAMPTZ,
-    retry_count   INT          NOT NULL DEFAULT 0,
-    error_message TEXT,
-
-    CONSTRAINT pk_quiz_outbox PRIMARY KEY (id)
-);
-
-CREATE INDEX idx_outbox_events_status ON quiz.outbox_events (status);
-CREATE INDEX idx_outbox_events_aggregate_id ON quiz.outbox_events (aggregate_id);
-```
+### `quiz.outbox_events`
+*   `id`: UUID (PK)
+*   `aggregate_type`: VARCHAR(255)
+*   `aggregate_id`: VARCHAR(255)
+*   `event_type`: VARCHAR(255)
+*   `payload`: TEXT
+*   `created_at`: TIMESTAMP WITH TIME ZONE
+*   `status`: VARCHAR(255)
+*   `error_message`: TEXT
+*   `retry_count`: INTEGER
+*   `processed_at`: TIMESTAMP WITH TIME ZONE

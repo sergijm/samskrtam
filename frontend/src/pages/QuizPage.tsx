@@ -21,7 +21,7 @@ const QuizPage = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<SessionQuestion[]>([]);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ isCorrect: boolean; correctOptionId: string; explanation: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ isCorrect: boolean; correctOptionId: string; correctAnswerText: string; explanation: string } | null>(null);
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [hasAttemptedSessionLoad, setHasAttemptedSessionLoad] = useState(false);
   const [sessionCompletionAttempted, setSessionCompletionAttempted] = useState(false);
@@ -142,6 +142,7 @@ const QuizPage = () => {
       },
       {
         onSuccess: (data) => {
+          console.log('QuizPage: Received answer response:', data);
           if (data.isCorrect) {
             handleNextQuestion();
           } else {
@@ -149,6 +150,7 @@ const QuizPage = () => {
             setFeedback({
               isCorrect: data.isCorrect,
               correctOptionId: data.correctOptionId,
+              correctAnswerText: data.correctAnswerText,
               explanation: explanation || t('quiz.noExplanation'),
             });
             setStartTime(Date.now());
@@ -223,21 +225,6 @@ const QuizPage = () => {
   const localizedQuizTitle = i18n.language === 'ru' ? quizSummaryData?.quizTitleRu : quizSummaryData?.quizTitleEn;
   const localizedQuizDescription = i18n.language === 'ru' ? quizSummaryData?.quizDescriptionRu : quizSummaryData?.quizDescriptionEn;
 
-  // Function to parse the question text (no longer needed if data is structured)
-  // const parseQuestionText = (text: string) => {
-  //   const stemMatch = text.match(/Stem:\s*([^,]+),/);
-  //   const caseMatch = text.match(/Case:\s*([^,]+),/);
-  //   const numberMatch = text.match(/Number:\s*([^,]+)/);
-
-  //   const stem = stemMatch ? stemMatch[1].trim() : '';
-  //   const caseType = caseMatch ? caseMatch[1].trim() : '';
-  //   const numberType = numberMatch ? numberMatch[1].trim() : '';
-
-  //   return { stem, caseType, numberType };
-  // };
-
-  // const { stem, caseType, numberType } = parseQuestionText(currentQuestion.text); // No longer needed
-
   return (
     <div className="flex flex-column align-items-center justify-content-center p-4">
       <Card className="quiz-container" style={{ maxWidth: '800px', width: '100%' }}>
@@ -246,16 +233,22 @@ const QuizPage = () => {
         <ProgressBar value={progress} className="mb-4" />
         <h2 className="text-center mb-4">{t('quiz.question', { current: currentQuestionIndex + 1, total: questions.length })}</h2>
         <div className="text-2xl font-bold text-center mb-5">
-          {currentQuestion.stem && (
+          {quizSummaryData?.quizType === QuizType.VOCABULARY ? (
+            <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>{currentQuestion.text}</span>
+          ) : (
             <>
-              <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>{currentQuestion.stem}</span>
-              <br style={{ lineHeight: '1.5' }} /> {/* Increased line height */}
+              {currentQuestion.stem && (
+                <>
+                  <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>{currentQuestion.stem}</span>
+                  <br style={{ lineHeight: '1.5' }} />
+                </>
+              )}
+              {currentQuestion.caseType && currentQuestion.numberType && (
+                <span style={{ fontSize: '1.5rem', fontStyle: 'italic' }}>
+                  {currentQuestion.caseType}, {currentQuestion.numberType}
+                </span>
+              )}
             </>
-          )}
-          {currentQuestion.caseType && currentQuestion.numberType && (
-            <span style={{ fontSize: '1.5rem', fontStyle: 'italic' }}>
-              {currentQuestion.caseType}, {currentQuestion.numberType}
-            </span>
           )}
         </div>
 
@@ -279,7 +272,9 @@ const QuizPage = () => {
             <h3 className="text-xl font-bold mb-2" style={{ color: feedback.isCorrect ? '#28a745' : '#dc3545' }}>
               {feedback.isCorrect ? t('quiz.correct') : t('quiz.incorrect')}
             </h3>
-            <p className="text-lg">{feedback.explanation}</p>
+            {!feedback.isCorrect && (
+              <p className="text-lg">{t('quiz.correctAnswerIs')}: <strong>{feedback.correctAnswerText}</strong></p>
+            )}
             <Button
               label={isLastQuestion ? t('quiz.completeQuiz') : t('quiz.next')}
               icon="pi pi-arrow-right"

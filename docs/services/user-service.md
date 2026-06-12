@@ -544,6 +544,7 @@ minio:
   access-key: ${MINIO_ACCESS_KEY}
   secret-key: ${MINIO_SECRET_KEY}
   public-url: ${MINIO_PUBLIC_URL}
+  external-url: ${MINIO_EXTERNAL_URL}
   bucket:
     avatars:    ${MINIO_BUCKET_AVATARS}
     documents:  ${MINIO_BUCKET_DOCUMENTS}

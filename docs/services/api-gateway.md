@@ -3,7 +3,7 @@
 > Язык: **Java 21 + WebFlux** (Gateway требует реактивный стек)
 > Модуль: `infrastructure/api-gateway`
 > Порт: 8090
-> Status: **DRAFT**
+> Status: **UPDATED**
 
 ---
 
@@ -83,6 +83,7 @@ dependencies {
 1. Frontend
    → GET /api/v1/auth/oauth2/google
      (без параметров, без client_secret)
+     // Перед этим Frontend сохраняет текущий URL в localStorage для последующего редиректа.
 
 2. Gateway (OAuthController)
    → генерирует state, сохраняет в Redis с TTL 10 мин
@@ -102,9 +103,10 @@ dependencies {
      (user-service создаёт/обновляет профиль, возвращает собственный JWT)
    → 302 Redirect → ${FRONTEND_URL}/auth/callback#token=...
 
-6. Frontend
+6. Frontend (AuthCallbackPage)
    → читает token из URL fragment (не из query — не логируется на сервере)
    → сохраняет в memory / httpOnly cookie
+   // Frontend считывает сохраненный redirectPath из localStorage и перенаправляет пользователя на него.
 ```
 
 **Поддерживаемые провайдеры** (`{provider}`):

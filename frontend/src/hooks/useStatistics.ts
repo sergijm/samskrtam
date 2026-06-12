@@ -9,7 +9,7 @@ export const useUserStatistics = (userId: string | undefined) => {
       if (!userId) {
         throw new Error('User ID is required to fetch statistics');
       }
-      const response = await api.get(`/statistics/users/${userId}/quizzes`);
+      const response = await api.get(`/api/v1/statistics/users/${userId}/quizzes`);
       return response.data;
     },
     enabled: !!userId, // Only run the query if userId is available

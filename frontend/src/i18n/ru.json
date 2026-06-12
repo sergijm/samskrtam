@@ -38,6 +38,7 @@
     "next": "Следующий вопрос",
     "correct": "Верно!",
     "incorrect": "Неверно",
+    "correctAnswerIs": "Правильный ответ",
     "question": "Вопрос {{current}} из {{total}}",
     "explanation": "Объяснение",
     "title": "Квизы",
@@ -49,7 +50,9 @@
     "noQuestions": "В этом квизе нет вопросов.",
     "noExplanation": "Объяснение недоступно.",
     "completeQuiz": "Завершить квиз",
-    "completeSessionError": "Не удалось завершить сессию квиза: {{message}}"
+    "completeSessionError": "Не удалось завершить сессию квиза: {{message}}",
+    "retakeQuiz": "Повторить квиз",
+    "startNewQuiz": "Начать новый"
   },
   "quizzes": {
     "title": "Список квизов"

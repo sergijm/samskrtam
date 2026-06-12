@@ -60,6 +60,20 @@ export const quizApi = {
     });
   },
 
+  retakeSession: (sessionId: string, quizType: QuizType, slug: string, userLocale: string) => {
+    const url = `/api/v1/quiz/${slug}/sessions/${sessionId}/retake`;
+    return api.post<StartOrResumeResponse>(url, null, {
+      headers: { 'X-User-Locale': userLocale },
+    });
+  },
+
+  startNewQuizSession: (sessionId: string, quizType: QuizType, slug: string, userLocale: string) => {
+    const url = `/api/v1/quiz/${slug}/sessions/${sessionId}/new-quiz`;
+    return api.post<StartOrResumeResponse>(url, null, {
+      headers: { 'X-User-Locale': userLocale },
+    });
+  },
+
   getUserQuizSessions: (userId: string, page: number, size: number, sortBy: string, sortDirection: string, quizType?: QuizType, status?: string) => {
     return api.get<PaginatedResponse<QuizSessionSummary>>(`/api/v1/quiz-sessions`, {
       params: {

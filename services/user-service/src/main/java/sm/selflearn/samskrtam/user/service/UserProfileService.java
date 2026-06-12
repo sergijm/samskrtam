@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.oauth2.jwt.Jwt; // Import Jwt
-import org.springframework.security.oauth2.jwt.JwtDecoder; // Import JwtDecoder
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sm.selflearn.samskrtam.user.dto.PublicProfileResponse;
@@ -26,7 +26,6 @@ import sm.selflearn.samskrtam.user.repository.UserProfileRepository;
 import sm.selflearn.samskrtam.user.repository.UserProfileSpecification;
 
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +44,7 @@ public class UserProfileService {
     private final ObjectMapper objectMapper;
     private final KeycloakAdminService keycloakAdminService;
     private final GroupMemberRepository groupMemberRepository;
-    private final JwtDecoder jwtDecoder; // Inject JwtDecoder
+    private final JwtDecoder jwtDecoder;
 
     @Transactional
     public UserProfileResponse updateProfile(UUID userId, UpdateProfileRequest request) {
@@ -97,8 +96,9 @@ public class UserProfileService {
                     .email((String) keycloakUser.get("email"))
                     .firstName((String) keycloakUser.get("firstName"))
                     .lastName((String) keycloakUser.get("lastName"))
+                    .avatarUrl((String) keycloakUser.get("picture"))
                     .blocked(!(Boolean) keycloakUser.getOrDefault("enabled", true))
-                    .roles(determineUserRolesFromKeycloakMap(keycloakUser)) // Use new method for clarity
+                    .roles(determineUserRolesFromKeycloakMap(keycloakUser))
                     .build();
 
             profileRepository.save(newProfile);
@@ -107,14 +107,6 @@ public class UserProfileService {
         }
     }
 
-    /**
-     * Synchronizes a user's profile with the user-service based on an OAuth2 access token.
-     * If the user exists, their profile is updated. If not, a new profile is created.
-     *
-     * @param keycloakAccessToken The access token issued by Keycloak for the user.
-     * @param provider The OAuth2 provider (e.g., "google", "mailru").
-     * @return The UserProfileResponse for the synchronized user.
-     */
     @Transactional
     public UserProfileResponse syncOAuth2Profile(String keycloakAccessToken, String provider) {
         log.debug("Syncing OAuth2 profile for provider: {}", provider);
@@ -124,16 +116,15 @@ public class UserProfileService {
             throw new IllegalArgumentException("Keycloak access token cannot be null or empty for OAuth2 sync.");
         }
 
-        // 1. Decode the Keycloak access token to get user information
         Jwt jwt = jwtDecoder.decode(keycloakAccessToken);
 
-        UUID userId = UUID.fromString(jwt.getSubject()); // 'sub' claim is the user ID
+        UUID userId = UUID.fromString(jwt.getSubject());
         String username = jwt.getClaimAsString("preferred_username");
         String email = jwt.getClaimAsString("email");
         String firstName = jwt.getClaimAsString("given_name");
         String lastName = jwt.getClaimAsString("family_name");
+        String avatarUrl = jwt.getClaimAsString("picture");
 
-        // Extract roles from JWT claims
         Set<UserRole> roles = determineUserRolesFromJwt(jwt);
 
         Optional<UserProfile> existingProfile = profileRepository.findById(userId);
@@ -146,7 +137,8 @@ public class UserProfileService {
             userProfile.setEmail(email);
             userProfile.setFirstName(firstName);
             userProfile.setLastName(lastName);
-            userProfile.setRoles(roles); // Update roles
+            userProfile.setAvatarUrl(avatarUrl);
+            userProfile.setRoles(roles);
             userProfile.setUpdatedAt(Instant.now());
         } else {
             log.debug("Creating new user profile for OAuth2 sync: userId={}", userId);
@@ -156,8 +148,9 @@ public class UserProfileService {
                     .email(email)
                     .firstName(firstName)
                     .lastName(lastName)
+                    .avatarUrl(avatarUrl)
                     .roles(roles)
-                    .blocked(false) // New users are not blocked by default
+                    .blocked(false)
                     .createdAt(Instant.now())
                     .updatedAt(Instant.now())
                     .build();
@@ -167,7 +160,6 @@ public class UserProfileService {
         log.info("OAuth2 profile synced successfully for userId: {}", savedProfile.getId());
         return mapUserProfileToResponse(savedProfile);
     }
-
 
     public List<UserGroupSummary> getUserGroups(UUID userId) {
         log.debug("Fetching groups for user: {}", userId);
@@ -183,7 +175,7 @@ public class UserProfileService {
 
     public List<UserSearchResponse> searchUsers(String query) {
         log.debug("Searching users with query: {}", query);
-        Specification<UserProfile> spec = UserProfileSpecification.filterBy(query, null, null); // Use existing spec
+        Specification<UserProfile> spec = UserProfileSpecification.filterBy(query, null, null);
         return profileRepository.findAll(spec).stream()
                 .map(userProfile -> UserSearchResponse.builder()
                         .id(userProfile.getId())
@@ -201,13 +193,18 @@ public class UserProfileService {
     }
 
     public UserProfileResponse mapUserProfileToResponse(UserProfile userProfile) {
+        String avatarUrl = userProfile.getAvatarUrl();
+        if (avatarUrl != null && !avatarUrl.startsWith("http")) {
+            avatarUrl = "http://" + avatarUrl;
+        }
+
         return new UserProfileResponse(
                 userProfile.getId(),
                 userProfile.getUsername(),
                 userProfile.getEmail(),
                 userProfile.getFirstName(),
                 userProfile.getLastName(),
-                userProfile.getAvatarUrl(),
+                avatarUrl, // Use the corrected URL
                 userProfile.getRoles(),
                 userProfile.isBlocked(),
                 userProfile.getCreatedAt()
@@ -215,18 +212,22 @@ public class UserProfileService {
     }
 
     public PublicProfileResponse mapUserProfileToPublicResponse(UserProfile userProfile) {
+        String avatarUrl = userProfile.getAvatarUrl();
+        if (avatarUrl != null && !avatarUrl.startsWith("http")) {
+            avatarUrl = "http://" + avatarUrl;
+        }
+
         return new PublicProfileResponse(
                 userProfile.getId(),
                 userProfile.getUsername(),
                 userProfile.getFirstName(),
                 userProfile.getLastName(),
-                userProfile.getAvatarUrl(),
+                avatarUrl, // Use the corrected URL
                 userProfile.getRoles(),
                 userProfile.getCreatedAt()
         );
     }
 
-    // Renamed for clarity, as it takes a Keycloak Map
     private Set<UserRole> determineUserRolesFromKeycloakMap(Map<String, Object> keycloakUser) {
         Set<UserRole> roles = new HashSet<>();
         @SuppressWarnings("unchecked")
@@ -238,17 +239,14 @@ public class UserProfileService {
             if (realmRoles.contains("ADMIN")) {
                 roles.add(UserRole.ADMIN);
             }
-            // Always add STUDENT role if no specific roles are found or if ADMIN is present
             roles.add(UserRole.STUDENT);
         } else {
-            // Default to STUDENT if no roles are found at all
             roles.add(UserRole.STUDENT);
         }
         log.debug("UserProfileService: Determined roles for user: {}", roles);
         return roles;
     }
 
-    // New method to determine roles from JWT claims
     private Set<UserRole> determineUserRolesFromJwt(Jwt jwt) {
         Set<UserRole> roles = new HashSet<>();
         Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
@@ -261,10 +259,8 @@ public class UserProfileService {
             if (jwtRoles.contains("ADMIN")) {
                 roles.add(UserRole.ADMIN);
             }
-            // Always add STUDENT role if no specific roles are found or if ADMIN is present
             roles.add(UserRole.STUDENT);
         } else {
-            // Default to STUDENT if no roles are found in JWT
             roles.add(UserRole.STUDENT);
         }
         log.debug("UserProfileService: Determined roles from JWT for user: {}", roles);

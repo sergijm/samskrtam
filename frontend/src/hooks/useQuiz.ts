@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
 import { quizApi } from '../api/quizApi';
 import { StartSessionResponse, AnswerRequest, AnswerResponse, QuizSummaryDto, QuizListItem, QuizType, ResumeSessionResponse, StartOrResumeResponse } from '../types/quiz';
 import { useLocaleStore } from '../store/localeStore';
@@ -84,6 +84,7 @@ export const useSubmitQuizAnswer = () => {
 
 export const useCompleteQuizSession = () => {
   const { locale } = useLocaleStore();
+  const queryClient = useQueryClient(); // Get query client instance
   return useMutation<
     void,
     Error,
@@ -91,6 +92,38 @@ export const useCompleteQuizSession = () => {
   >({
     mutationFn: async ({ sessionId, quizType }) => {
       await quizApi.completeSession(sessionId, quizType, locale);
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate the quiz session summary query to refetch the updated status
+      queryClient.invalidateQueries(['quizSessionSummary', variables.sessionId]);
+    },
+  });
+};
+
+export const useRetakeQuizSession = () => {
+  const { locale } = useLocaleStore();
+  return useMutation<
+    StartOrResumeResponse,
+    Error,
+    { sessionId: string; quizType: QuizType; slug: string }
+  >({
+    mutationFn: async ({ sessionId, quizType, slug }) => {
+      const response = await quizApi.retakeSession(sessionId, quizType, slug, locale);
+      return response.data;
+    },
+  });
+};
+
+export const useStartNewQuizSession = () => {
+  const { locale } = useLocaleStore();
+  return useMutation<
+    StartOrResumeResponse,
+    Error,
+    { sessionId: string; quizType: QuizType; slug: string }
+  >({
+    mutationFn: async ({ sessionId, quizType, slug }) => {
+      const response = await quizApi.startNewQuizSession(sessionId, quizType, slug, locale);
+      return response.data;
     },
   });
 };

@@ -8,7 +8,7 @@ import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
 import sm.selflearn.samskrtam.content.dto.QuizSummaryDto;
-import sm.selflearn.samskrtam.content.dto.GeneratedQuizData; // Corrected import
+import sm.selflearn.samskrtam.content.dto.GeneratedQuizData;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
 
@@ -26,18 +26,19 @@ public class ContentClient {
         this.contentBaseUrl = contentBaseUrl;
     }
 
-    public Mono<GeneratedQuizData> generateQuizData(UUID quizId) { // Renamed method and changed return type
-        return webClient.post() // Changed to POST
-                .uri(contentBaseUrl + "/api/v1/content/quizzes/{id}/generate-quiz-data", quizId) // Updated URI
+    public Mono<GeneratedQuizData> generateQuizData(UUID quizId, String userLocale) {
+        return webClient.post()
+                .uri(contentBaseUrl + "/api/v1/content/quizzes/{id}/generate-quiz-data", quizId)
+                .header("X-User-Locale", userLocale) // Forward the locale
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError,
                         r -> Mono.error(new SamskrtamException("QUIZ_NOT_FOUND", "Quiz not found in content-service: " + quizId)))
-                .bodyToMono(GeneratedQuizData.class); // Updated return type
+                .bodyToMono(GeneratedQuizData.class);
     }
 
-    public Mono<GeneratedQuizData> getGeneratedQuizData(UUID generatedQuizDataId) { // New method
+    public Mono<GeneratedQuizData> getGeneratedQuizData(UUID generatedQuizDataId) {
         return webClient.get()
-                .uri(contentBaseUrl + "/api/v1/content/generated-quiz-data/{id}", generatedQuizDataId) // New URI
+                .uri(contentBaseUrl + "/api/v1/content/generated-quiz-data/{id}", generatedQuizDataId)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError,
                         r -> Mono.error(new SamskrtamException("GENERATED_QUIZ_DATA_NOT_FOUND", "Generated quiz data not found in content-service: " + generatedQuizDataId)))
@@ -52,8 +53,6 @@ public class ContentClient {
                         r -> Mono.error(new SamskrtamException("QUESTION_NOT_FOUND", "Generated question not found in content-service: " + questionId)))
                 .bodyToMono(GeneratedQuizQuestionDto.class);
     }
-
-    // Removed getGeneratedQuestionsForSession as it's replaced by getGeneratedQuizData
 
     public Mono<List<DeclensionFormDto>> getDeclensionForms(UUID declensionStemId) {
         return webClient.get()

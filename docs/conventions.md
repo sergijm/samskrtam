@@ -2,7 +2,7 @@
 
 > Соглашения, обязательные для всех сервисов проекта.
 > Связанные файлы: [architecture.md](./architecture.md) · [README.md](./README.md)
-> Status: **DRAFT**
+> Status: **UPDATED**
 
 ---
 
@@ -95,9 +95,14 @@ MINIO_SECRET_KEY=
 MINIO_BUCKET_AVATARS=avatars
 MINIO_BUCKET_DOCUMENTS=documents
 
-# ── User Service ────────────────────────────────────────
-USER_SERVICE_PORT=8087
-OUTBOX_PROCESSOR_INTERVAL_MS=5000
+# ── Quiz Service ────────────────────────────────────────
+QUIZ_SERVICE_PORT=8082
+APP_OUTBOX_FIXED_DELAY_MS=5000 # Интервал для OutboxEventPublisherService
+
+# ── Statistics Service ──────────────────────────────────
+STATISTICS_SERVICE_PORT=8086
+SPRING_KAFKA_STREAMS_APPLICATION_ID=statistics-service-application
+SPRING_KAFKA_STREAMS_STATE_DIR=/tmp/kafka-streams
 
 # ── Frontend ────────────────────────────────────────────
 VITE_API_URL=http://localhost:8090
@@ -147,6 +152,7 @@ FEATURE_FLAG_SERVICE_URL=http://feature-flag-service:8085
 - Логи только в **JSON** формате через `logstash-logback-encoder` — для интеграции с Loki.
 - Sensitive данные (email, пароли, токены, `userId` в URL) **не логируются ни на каком уровне**.
 - В реактивном стеке (quiz-service, api-gateway) использовать `doOnError` для логирования с **сохранением** ошибки в pipeline, `onErrorResume` — только для обработки с подменой.
+- Ошибки публикации в Kafka через Outbox Pattern должны логироваться с уровнем `ERROR` или `WARN` в зависимости от возможности повторной обработки.
 
 ### Уровни логирования
 
@@ -154,9 +160,9 @@ FEATURE_FLAG_SERVICE_URL=http://feature-flag-service:8085
 |---|---|
 | `TRACE` | Вход в методы сервисного слоя, вызываемые из контроллеров |
 | `DEBUG` | Результаты бизнес-решений: кэш-промах, восстановление сессии, выбор ветки логики |
-| `INFO` | Старт/стоп сервиса, применение Flyway миграций, подключение к Kafka |
-| `WARN` | Downstream сервис вернул 4xx, retry попытка, деградация функциональности |
-| `ERROR` | Downstream недоступен (5xx, timeout, connection refused), необработанное исключение, ошибка публикации в Kafka |
+| `INFO` | Старт/стоп сервиса, применение Flyway миграций, подключение к Kafka, успешная публикация Kafka-событий |
+| `WARN` | Downstream сервис вернул 4xx, retry попытка, деградация функциональности, временные ошибки Kafka |
+| `ERROR` | Downstream недоступен (5xx, timeout, connection refused), необработанное исключение, **ошибка публикации в Kafka после всех попыток**, ошибка обработки Kafka Streams |
 
 ### Шаблоны
 
@@ -710,7 +716,7 @@ api/**:   replenishRate=20, burstCapacity=40   # стандартный лими
 ```yaml
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS}
-  allowed-methods: GET, POST, PUT, DELETE, OPTIONS
+  allowed-methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
   allowed-headers: Authorization, Content-Type, X-Request-Id
   allow-credentials: true
   max-age: 3600
@@ -764,10 +770,10 @@ tasks.check { dependsOn(tasks.jacocoTestCoverageVerification) }
 
 | Сервис | Сценарий |
 |---|---|
-| quiz-service | старт сессии, верный/неверный ответ, fallback Redis→Postgres, дубликат ответа |
-| content-service | CRUD квиза, session-data, STUDENT получает 403 на write |
+| quiz-service | старт сессии, верный/неверный ответ, fallback Redis→Postgres, дубликат ответа, **сохранение события в Outbox-таблицу** |
+| content-service | CRUD квиза, session-data, STUDENT получает 403 на write, **генерация VOCABULARY квизов по иерархии категорий** |
 | user-service | логин (успех/неверный пароль), регистрация (дубликат email) |
-| statistics-service | Kafka consumer сохраняет AnswerRecord, лидерборд |
+| statistics-service | **агрегация статистики из Kafka-событий с помощью Kafka Streams** |
 | dictionary-service | cache hit, cache miss + внешний запрос, внешний API недоступен |
 | api-gateway | нет JWT → 401, STUDENT на /content → 403, rate limit → 429 |
 

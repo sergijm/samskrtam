@@ -3,14 +3,16 @@ package sm.selflearn.samskrtam.quiz.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.kafka.core.reactive.ReactiveKafkaProducerTemplate;
-import org.springframework.kafka.support.serializer.JsonSerializer; // Import Spring's JsonSerializer
+import org.springframework.kafka.support.serializer.JsonSerializer;
 import reactor.kafka.sender.SenderOptions;
-import sm.selflearn.samskrtam.kafka.serialization.SamskrtamJsonSerializer; // Import your custom serializer
+import sm.selflearn.samskrtam.quiz.event.StatisticEvent;
 
 import java.time.Duration;
 import java.util.Map;
@@ -20,32 +22,47 @@ import java.util.Map;
 public class KafkaConfig {
 
     @Bean
-    public SamskrtamJsonSerializer samskrtamJsonSerializer(ObjectMapper objectMapper) {
-        SamskrtamJsonSerializer serializer = new SamskrtamJsonSerializer(objectMapper);
-        serializer.setAddTypeInfo(true); // Устанавливаем добавление информации о типе
+    public JsonSerializer<StatisticEvent> statisticEventJsonSerializer(ObjectMapper objectMapper) {
+        JsonSerializer<StatisticEvent> serializer = new JsonSerializer<>(objectMapper);
+        serializer.setAddTypeInfo(true);
         return serializer;
     }
 
     @Bean
-    public ReactiveKafkaProducerTemplate<String, Object> reactiveKafkaProducerTemplate(
+    @Primary
+    public ReactiveKafkaProducerTemplate<String, StatisticEvent> reactiveKafkaProducerTemplate(
             KafkaProperties properties,
-            SamskrtamJsonSerializer samskrtamJsonSerializer) { // Инжектируем наш бин сериализатора
+            JsonSerializer<StatisticEvent> statisticEventJsonSerializer) {
         Map<String, Object> props = properties.buildProducerProperties();
-        // Вместо указания класса, передаем экземпляр сериализатора
-        // Spring Kafka автоматически обернет его в ProducerFactory
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class); // Указываем базовый класс
         props.put("security.protocol", "PLAINTEXT");
         props.put("listener.name", "EXTERNAL");
 
-        // Явно указываем типы для SenderOptions
-        SenderOptions<String, Object> senderOptions = SenderOptions.<String, Object>create(props)
-                .withValueSerializer(samskrtamJsonSerializer); // Передаем наш экземпляр
+        SenderOptions<String, StatisticEvent> senderOptions = SenderOptions.<String, StatisticEvent>create(props)
+                .withValueSerializer(statisticEventJsonSerializer);
 
         return new ReactiveKafkaProducerTemplate<>(senderOptions);
     }
 
     @Bean
-    public ApplicationRunner kafkaInitializer(ReactiveKafkaProducerTemplate<String, Object> kafkaTemplate) {
+    @Qualifier("outboxKafkaProducer")
+    public ReactiveKafkaProducerTemplate<String, Object> outboxKafkaProducer(
+            KafkaProperties properties,
+            ObjectMapper objectMapper) {
+        Map<String, Object> props = properties.buildProducerProperties();
+        props.put("security.protocol", "PLAINTEXT");
+        props.put("listener.name", "EXTERNAL");
+
+        JsonSerializer<Object> serializer = new JsonSerializer<>(objectMapper);
+        serializer.setAddTypeInfo(true);
+
+        SenderOptions<String, Object> senderOptions = SenderOptions.<String, Object>create(props)
+                .withValueSerializer(serializer);
+
+        return new ReactiveKafkaProducerTemplate<>(senderOptions);
+    }
+
+    @Bean
+    public ApplicationRunner kafkaInitializer(ReactiveKafkaProducerTemplate<String, StatisticEvent> kafkaTemplate) {
         return args -> kafkaTemplate.doOnProducer(producer -> {
                     log.info("Successfully initialized Kafka producer.");
                     return producer;

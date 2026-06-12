@@ -4,13 +4,15 @@
 > Язык: **Java 21 + Virtual Threads (JPA/JDBC)**
 > Модуль: `services/content-service`
 > Порт: 8081
-> Status: **DRAFT**
+> Status: **UPDATED**
 
 ---
 
 ## 1. Описание
 
 Хранит **настройки и содержание всех квизов**: метаданные квизов (тип, сложность, slug), вопросы, варианты ответов, а также лексику для словарных квизов. Доступен только для роли `ADMIN` (запись) и внутренне для `quiz-service` (чтение). Использует JPA/JDBC с Virtual Threads.
+
+**Особенность:** Генерация вопросов для `VOCABULARY` квизов теперь учитывает иерархию категорий слов, выбирая слова из родительской категории и всех ее дочерних категорий, основываясь на `quiz.slug`, который соответствует `vocabulary_categories.code` (поиск инвариантен к регистру).
 
 Разделение ответственности:
 - **content-service** — что есть в квизах (данные, настройки)
@@ -24,7 +26,7 @@
 |---|---|
 | `DECLENSIONS` | Квиз по падежным формам санскрита (данные для этого квиза хранятся и управляются в content-service) |
 | `CONJUGATIONS` | Квиз по спряжениям глаголов |
-| `VOCABULARY` | Квиз по лексике (slug-based) |
+| `VOCABULARY` | Квиз по лексике. Слова выбираются на основе `quiz.slug`, который соответствует `vocabulary_categories.code`. Поддерживается иерархия категорий: если `quiz.slug` соответствует родительской категории, включаются слова из всех ее подкатегорий. |
 
 ---
 
@@ -53,8 +55,8 @@ DELETE /api/v1/content/vocabulary/{wordId}              → удалить сл�
 ### Внутреннее API для quiz-service
 
 ```
-GET /api/v1/content/quizzes/{id}/session-data           → всё необходимое для старта сессии
-GET /api/v1/content/quizzes/{quizId}/vocabulary-words   → получить словарные слова для квиза (для LexicalOptionGeneratorService)
+GET /api/v1/content/quizzes/{quizId}/session-data           → всё необходимое для старта сессии
+GET /api/v1/content/quizzes/{quizSlug}/vocabulary-words   → получить словарные слова для квиза (для LexicalOptionGeneratorService), фильтрация по quizSlug (code категории)
 ```
 
 Ответ `GET /session-data`:
@@ -129,6 +131,26 @@ GET /api/v1/content/quizzes/{quizId}/vocabulary-words   → получить с�
 | `created_at` | TIMESTAMPTZ | Время создания записи |
 | `updated_at` | TIMESTAMPTZ | Время последнего обновления записи |
 
+### Таблица `content.vocabulary_categories`:
+
+| Поле | Тип | Описание |
+|---|---|---|
+| `id` | UUID | PK |
+| `code` | VARCHAR(100) | Уникальный код категории (например, `basic-nouns`), соответствует `quiz.slug` |
+| `parent_id` | UUID | FK на `id` этой же таблицы, для иерархии категорий |
+| `name_ru` | VARCHAR(255) | Название категории на русском |
+| `name_en` | VARCHAR(255) | Название категории на английском |
+| `description_ru` | TEXT | Описание категории на русском |
+| `description_en` | TEXT | Описание категории на английском |
+
+### Таблица `content.vocabulary_word_categories`:
+
+| Поле | Тип | Описание |
+|---|---|---|
+| `vocabulary_word_id` | UUID | FK на `content.vocabulary_words.id` |
+| `category_id` | UUID | FK на `content.vocabulary_categories.id` |
+| `created_at` | TIMESTAMPTZ | Время создания связи |
+
 ---
 
 ## 5. Backend структура
@@ -145,17 +167,23 @@ sm/selflearn/samskrtam/content/
 ├── service/
 │   ├── QuizService.java
 │   ├── QuestionService.java
-│   └── VocabularyService.java          ← НОВЫЙ сервис для словарных слов
+│   ├── VocabularyService.java          ← НОВЫЙ сервис для словарных слов (обновлен для иерархии категорий)
+│   └── QuestionGenerationService.java  ← Обновлен для использования новой логики VocabularyService
 ├── repository/
 │   ├── QuizRepository.java
 │   ├── QuestionRepository.java
 │   ├── QuestionOptionRepository.java
-│   └── VocabularyWordRepository.java   ← НОВЫЙ репозиторий для словарных слов
+│   ├── VocabularyWordRepository.java   ← НОВЫЙ репозиторий для словарных слов
+│   ├── VocabularyCategoryRepository.java (добавлено)
+│   └── VocabularyWordCategoryRepository.java (добавлено)
 ├── model/
 │   ├── Quiz.java
 │   ├── Question.java
 │   ├── QuestionOption.java
 │   ├── VocabularyWord.java             ← НОВАЯ сущность для словарных слов
+│   ├── VocabularyCategory.java         ← Добавлена сущность для категорий слов
+│   ├── VocabularyWordCategory.java     ← Добавлена сущность для связей слово-категория
+│   ├── VocabularyWordCategoryId.java   ← Добавлена сущность для составного ключа
 │   ├── Case.java
 │   ├── Number.java
 │   ├── VowelType.java
@@ -217,6 +245,7 @@ spring:
 - [ ] `vocabularyWords` возвращаются только для квизов с `quiz_type = VOCABULARY`
 - [ ] Slug уникален и соответствует паттерну `^[a-z0-9][a-z0-9-]*$`
 - [ ] `questions_per_session` не может быть меньше 1
+- [ ] **Для VOCABULARY квизов:** генерация вопросов выбирает слова из категории, соответствующей `quiz.slug`, и всех ее дочерних категорий (поиск `quiz.slug` инвариантен к регистру).
 
 ---
 

@@ -6,22 +6,22 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
-  redirectPath: string | null; // New state for redirect path
+  redirectPath: string | null;
 
   login: (tokens: AuthTokens, user: User) => void;
   logout: () => void;
-  setAuthTokens: (tokens: AuthTokens) => void; // New action to set both access and refresh tokens
-  setRedirectPath: (path: string | null) => void; // New action to set redirect path
+  setAuthTokens: (tokens: AuthTokens) => void;
+  setRedirectPath: (path: string | null) => void;
+  setUser: (user: User) => void; // New action to update user data
 }
 
 const getInitialState = () => {
   const accessToken = localStorage.getItem('accessToken');
   let refreshToken: string | null = localStorage.getItem('refreshToken');
   const userString = localStorage.getItem('user');
-  const redirectPath = localStorage.getItem('redirectPath'); // Get redirect path from localStorage
+  const redirectPath = localStorage.getItem('redirectPath');
   let user: User | null = null;
 
-  // Normalize "null" string to actual null for refreshToken
   if (refreshToken === "null") {
     refreshToken = null;
   }
@@ -35,13 +35,13 @@ const getInitialState = () => {
     localStorage.removeItem('user');
   }
 
-  console.log('authStore.ts: Initializing state. redirectPath from localStorage:', redirectPath); // Added log
+  console.log('authStore.ts: Initializing state. redirectPath from localStorage:', redirectPath);
   return {
     user,
     accessToken,
     refreshToken,
-    isAuthenticated: !!accessToken, // Changed: Only depend on accessToken for isAuthenticated
-    redirectPath, // Include redirectPath in initial state
+    isAuthenticated: !!accessToken,
+    redirectPath,
   };
 };
 
@@ -64,21 +64,20 @@ export const useAuthStore = create<AuthState>((set) => ({
       refreshToken: normalizedRefreshToken,
       isAuthenticated: !!tokens.accessToken,
     });
-    console.log('authStore.ts: User logged in. redirectPath in store:', useAuthStore.getState().redirectPath); // Added log
+    console.log('authStore.ts: User logged in. redirectPath in store:', useAuthStore.getState().redirectPath);
   },
 
   logout: () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
-    // Do NOT clear redirectPath here. It should only be cleared after successful login.
     set({
       user: null,
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
     });
-    console.log('authStore.ts: User logged out. redirectPath in store (should not be cleared):', useAuthStore.getState().redirectPath); // Added log
+    console.log('authStore.ts: User logged out. redirectPath in store (should not be cleared):', useAuthStore.getState().redirectPath);
   },
 
   setAuthTokens: (tokens) => {
@@ -95,17 +94,23 @@ export const useAuthStore = create<AuthState>((set) => ({
       refreshToken: normalizedRefreshToken,
       isAuthenticated: !!tokens.accessToken,
     });
-    console.log('authStore.ts: Auth tokens set. redirectPath in store:', useAuthStore.getState().redirectPath); // Added log
+    console.log('authStore.ts: Auth tokens set. redirectPath in store:', useAuthStore.getState().redirectPath);
   },
 
   setRedirectPath: (path) => {
     if (path) {
       localStorage.setItem('redirectPath', path);
-      console.log('authStore.ts: Setting redirectPath in localStorage and store:', path); // Added log
+      console.log('authStore.ts: Setting redirectPath in localStorage and store:', path);
     } else {
       localStorage.removeItem('redirectPath');
-      console.log('authStore.ts: Clearing redirectPath in localStorage and store.'); // Added log
+      console.log('authStore.ts: Clearing redirectPath in localStorage and store.');
     }
     set({ redirectPath: path });
+  },
+
+  setUser: (user) => { // New action implementation
+    localStorage.setItem('user', JSON.stringify(user));
+    set({ user });
+    console.log('authStore.ts: User data updated in store.');
   },
 }));

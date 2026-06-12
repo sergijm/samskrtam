@@ -2,7 +2,7 @@
 
 > Specification-Driven Development · Microservices · Monorepo
 > Stack: Java 21 + Virtual Threads · WebFlux (gateway, quiz-service) · Kotlin (dictionary-service) · React/TypeScript · PostgreSQL · Keycloak · Kafka · MinIO · Grafana Stack (Tempo · Loki · Prometheus)
-> Status: **DRAFT**
+> Status: **UPDATED**
 
 ---
 
@@ -43,10 +43,10 @@ SamskrtamApp построен как production-grade референсная р�
 | api-gateway | Java 21 | WebFlux (Reactor) | Gateway требует реактивный стек |
 | feature-flag-service | Java 21 | Virtual Threads | Простой CRUD + Redis, нет смысла в реактивщине |
 | user-service | Java 21 | Virtual Threads | Профили, регистрация, аватарки, блокировка |
-| content-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов |
-| quiz-service | Java 21 | WebFlux (Reactor) + R2DBC | Единый сервис прохождения всех квизов |
+| content-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов. Поддерживает иерархические категории для VOCABULARY квизов. |
+| quiz-service | Java 21 | WebFlux (Reactor) + R2DBC | Единый сервис прохождения всех квизов. Использует Outbox Pattern для публикации событий в Kafka. |
 | **dictionary-service** | **Kotlin** | **Coroutines** | Практика Kotlin, Cache-aside |
-| statistics-service | Java 21 | Virtual Threads | Kafka consumer проще на Java |
+| statistics-service | Java 21 | Kafka Streams | Расчет статистики с использованием Kafka Streams. |
 | shared/quiz-dtos | Java 21 | — | Объединенный модуль для всех DTO и событий квизов, контента и статистики |
 | shared/common-dto | Java 21 | — | Совместимость со всеми сервисами |
 
@@ -84,7 +84,7 @@ graph TD
     DS[dictionary-service]
   end
 
-  subgraph Stats ["📊 Statistics — Java 21 + Virtual Threads"]
+  subgraph Stats ["📊 Statistics — Java 21 + Kafka Streams"]
     ST[statistics-service]
   end
 
@@ -98,7 +98,7 @@ graph TD
   GW --> DS
   GW --> ST
   QS -->|читает квизы и вопросы| CS
-  QS -->|AnswerSubmitted / SessionCompleted| Kafka
+  QS -->|публикует QuizAnsweredEvent, QuizSessionStatusChangedEvent| Kafka
   Kafka --> ST
 ```
 

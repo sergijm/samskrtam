@@ -72,7 +72,7 @@ public class QuestionGenerationService {
                 // Sanskrit to Translation
                 String questionTextSanskritToTranslation = String.format(
                         userLocale.equals("ru") ? "Как переводится слово '%s'?" : "How is the word '%s' translated?",
-                        userLocale.equals("ru") ? word.getWordDevanagari() : word.getWordIast()
+                        word.getWordIast()
                 );
                 questionsToSave.add(GeneratedQuestion.builder()
                         .id(UUID.randomUUID())

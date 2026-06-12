@@ -25,7 +25,7 @@ public class StatisticController {
 
     private final StatisticService statisticService;
 
-    @GetMapping("/users/{userId}/quizzes")
+    @GetMapping(value = "/users/{userId}/quizzes", produces = "application/json") // Added produces
     @Operation(summary = "Get all quiz statistics for a user with pagination")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved paginated user quiz statistics")
     public PaginatedResponse<UserQuizStatisticDto> getUserQuizStatistics(

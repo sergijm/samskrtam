@@ -5,20 +5,28 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
 import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.state.KeyValueStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafkaStreams;
+import org.springframework.kafka.annotation.KafkaStreamsDefaultConfiguration;
+import org.springframework.kafka.config.KafkaStreamsConfiguration;
+import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerde;
-import sm.selflearn.samskrtam.content.dto.QuizType;
 import sm.selflearn.samskrtam.quiz.event.QuizAnsweredEvent;
 import sm.selflearn.samskrtam.quiz.event.QuizSessionStatusChangedEvent;
 import sm.selflearn.samskrtam.quiz.event.StatisticEvent;
 import sm.selflearn.samskrtam.statistics.model.UserQuizSessionStatistic;
+import org.apache.kafka.streams.StreamsConfig;
 
-import java.time.Instant;
-import java.util.Arrays; // Added import for Arrays
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Configuration
@@ -29,47 +37,70 @@ public class KafkaStreamsConfig {
 
     private final ObjectMapper objectMapper;
 
-    // Serde for StatisticEvent (interface with JsonTypeInfo)
-    @Bean
-    public Serde<StatisticEvent> statisticEventSerde() {
-        JsonSerde<StatisticEvent> serde = new JsonSerde<>(StatisticEvent.class, objectMapper);
-        // Ensure that the deserializer is configured to use type headers if they are added by the producer
-        // This is handled by SamskrtamJsonDeserializer if it's used, but JsonSerde might need explicit configuration
-        // For now, assuming default Spring Kafka JsonSerde works with JsonTypeInfo
-        return serde;
+    @Value("${spring.kafka.bootstrap-servers}")
+    private String bootstrapServers;
+
+    @Value("${spring.kafka.streams.application-id}")
+    private String applicationId;
+
+    @Bean(name = KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_CONFIG_BEAN_NAME)
+    public KafkaStreamsConfiguration kStreamsConfigs() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationId);
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, JsonSerde.class.getName());
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, StatisticEvent.class.getName());
+        props.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, LogAndContinueExceptionHandler.class);
+        return new KafkaStreamsConfiguration(props);
     }
 
-    // Serde for UserQuizSessionStatistic
     @Bean
     public Serde<UserQuizSessionStatistic> userQuizSessionStatisticSerde() {
-        return new JsonSerde<>(UserQuizSessionStatistic.class, objectMapper);
+        return new JsonSerde<>(UserQuizSessionStatistic.class, this.objectMapper);
     }
 
     @Bean
     public KTable<String, UserQuizSessionStatistic> processQuizStatistics(
             StreamsBuilder builder,
-            Serde<StatisticEvent> statisticEventSerde,
             Serde<UserQuizSessionStatistic> userQuizSessionStatisticSerde) {
 
-        // Consume both event types as a single StatisticEvent stream
         KStream<String, StatisticEvent> statisticEvents = builder.stream(
-                Arrays.asList("quiz-answered-events", "quiz-session-status-changed-events"),
-                Consumed.with(Serdes.String(), statisticEventSerde)
+                Arrays.asList("quiz-answered-events", "quiz-session-status-changed-events")
         );
 
-        // Group by userId-quizId and aggregate into a KTable
+        Materialized<String, UserQuizSessionStatistic, KeyValueStore<Bytes, byte[]>> materialized =
+                Materialized.<String, UserQuizSessionStatistic, KeyValueStore<Bytes, byte[]>>as("user-quiz-statistics-store")
+                        .withValueSerde(userQuizSessionStatisticSerde);
+
+        Produced<String, UserQuizSessionStatistic> produced = Produced.with(Serdes.String(), userQuizSessionStatisticSerde);
+
         KTable<String, UserQuizSessionStatistic> userQuizStatisticsTable = statisticEvents
-                .groupBy((key, event) -> event.userId().toString() + "-" + event.quizId().toString(),
-                        Grouped.with(Serdes.String(), statisticEventSerde))
+                .groupBy((key, event) -> {
+                    // Defensive coding to prevent NullPointerException
+                    if (event == null) {
+                        log.warn("groupBy received null event with key: {}. Grouping as invalid.", key);
+                        return "invalid-event-key";
+                    }
+                    if (event.userId() == null || event.quizId() == null) {
+                        log.warn("groupBy received event with null userId or quizId: {}. Grouping as invalid.", event);
+                        return "invalid-event-key";
+                    }
+                    return event.userId().toString() + "-" + event.quizId().toString();
+                })
                 .aggregate(
-                        UserQuizSessionStatistic::new, // Initializer
-                        (key, event, aggregate) -> { // Aggregator
-                            // Initialize aggregate if it's the first event for this key
+                        UserQuizSessionStatistic::new,
+                        (key, event, aggregate) -> {
+                            if (event == null) {
+                                log.warn("aggregate received null event with key: {}. Skipping.", key);
+                                return aggregate;
+                            }
                             if (aggregate.getUserId() == null) {
-                                aggregate.setId(UUID.randomUUID()); // Generate ID for new statistic entry
+                                aggregate.setId(UUID.randomUUID());
                                 aggregate.setUserId(event.userId());
                                 aggregate.setQuizId(event.quizId());
-                                aggregate.setQuizType(event.quizType()); // Set quizType from the event
+                                aggregate.setQuizType(event.quizType());
                                 aggregate.setTotalSessions(0);
                                 aggregate.setTotalQuestionsAnswered(0);
                                 aggregate.setTotalCorrectAnswers(0);
@@ -78,33 +109,31 @@ public class KafkaStreamsConfig {
                                 aggregate.setLastCompletedAt(null);
                             }
 
-                            // Update based on event type
                             if (event instanceof QuizAnsweredEvent answeredEvent) {
                                 aggregate.setTotalQuestionsAnswered(aggregate.getTotalQuestionsAnswered() + 1);
                                 if (answeredEvent.isCorrect()) {
                                     aggregate.setTotalCorrectAnswers(aggregate.getTotalCorrectAnswers() + 1);
                                     aggregate.setTotalScore(aggregate.getTotalScore() + 1);
                                 }
-                                aggregate.setAverageScore((double) aggregate.getTotalCorrectAnswers() / aggregate.getTotalQuestionsAnswered());
+                                if (aggregate.getTotalQuestionsAnswered() > 0) {
+                                    aggregate.setAverageScore((double) aggregate.getTotalCorrectAnswers() / aggregate.getTotalQuestionsAnswered());
+                                }
                             } else if (event instanceof QuizSessionStatusChangedEvent statusChangedEvent) {
-                                // Only update if session is completed
                                 if ("COMPLETED".equals(statusChangedEvent.newStatus())) {
                                     aggregate.setTotalSessions(aggregate.getTotalSessions() + 1);
                                     aggregate.setLastCompletedAt(statusChangedEvent.timestamp());
                                 }
-                                // Ensure quizType is set, as it's available in this event
-                                aggregate.setQuizType(statusChangedEvent.quizType());
+                                if (statusChangedEvent.quizType() != null) {
+                                    aggregate.setQuizType(statusChangedEvent.quizType());
+                                }
                             }
                             return aggregate;
                         },
-                        Materialized.<String, UserQuizSessionStatistic, org.apache.kafka.streams.state.KeyValueStore<org.apache.kafka.common.utils.Bytes, byte[]>>as("user-quiz-statistics-store")
-                                .withKeySerde(Serdes.String())
-                                .withValueSerde(userQuizSessionStatisticSerde)
+                        materialized
                 );
 
-        // Write the final aggregated statistics to an output topic
         userQuizStatisticsTable.toStream()
-                .to("user-quiz-statistics-output", Produced.with(Serdes.String(), userQuizSessionStatisticSerde));
+                .to("user-quiz-statistics-output", produced);
 
         return userQuizStatisticsTable;
     }

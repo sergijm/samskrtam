@@ -9,6 +9,7 @@ import { InputText } from 'primereact/inputtext';
 import { Avatar } from 'primereact/avatar';
 import { useThemeStore } from '../store/themeStore';
 import { useLocaleStore } from '../store/localeStore';
+import { useAuthStore } from '../store/authStore'; // Import useAuthStore
 import { useMe, useUpdateProfileDetails, useGenerateAvatarUploadUrl, useConfirmAvatarUpload } from '../hooks/useUser';
 import { Toast } from 'primereact/toast';
 import { UpdateProfilePayload } from '../types/user';
@@ -19,8 +20,8 @@ const SettingsPage = () => {
   const toast = useRef<Toast>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: userResponse, refetch: refetchUser } = useMe();
-  const user = userResponse?.data;
+  const { data: user, refetch: refetchUser } = useMe();
+  const { setUser } = useAuthStore(); // Get setUser from auth store
 
   const updateProfileDetailsMutation = useUpdateProfileDetails();
   const generateUploadUrlMutation = useGenerateAvatarUploadUrl();
@@ -72,8 +73,6 @@ const SettingsPage = () => {
       }
     });
 
-    // These are handled by Zustand stores and applied immediately, no need to send to backend via this form
-    // The backend will update these via separate API calls if needed, or they are part of the user profile fetched on login
     setTheme(data.theme);
     setLocale(data.locale);
   };
@@ -90,26 +89,27 @@ const SettingsPage = () => {
     }
 
     try {
-      // 1. Get presigned URL from backend
       const { uploadUrl, objectKey } = await generateUploadUrlMutation.mutateAsync(file.type);
 
-      // 2. Upload file directly to MinIO
       await axios.put(uploadUrl, file, {
         headers: {
           'Content-Type': file.type,
         },
       });
 
-      // 3. Confirm upload with backend
       await confirmAvatarUploadMutation.mutateAsync(objectKey);
 
       toast.current?.show({ severity: 'success', summary: 'Success', detail: t('settings.avatar.uploaded'), life: 3000 });
-      refetchUser(); // Refetch user data to update avatar URL
+      
+      // Refetch user data and then update the auth store
+      const { data: updatedUser } = await refetchUser();
+      if (updatedUser) {
+        setUser(updatedUser);
+      }
     } catch (error) {
       console.error("Avatar upload error:", error);
       toast.current?.show({ severity: 'error', summary: 'Error', detail: t('settings.avatar.uploadError'), life: 3000 });
     } finally {
-      // Reset file input to allow re-uploading the same file
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -127,7 +127,6 @@ const SettingsPage = () => {
         <div className="max-w-40rem mx-auto">
           <form onSubmit={handleSubmit(onSubmit)} className="p-fluid">
 
-            {/* Avatar Section */}
             <div className="field mb-4 flex align-items-center">
               <span className="font-bold w-10rem mr-3">{t('settings.avatar.title')}</span>
               <div className="flex-grow-1 flex align-items-center gap-3">
@@ -150,7 +149,6 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            {/* Username */}
             <div className="field mb-4 flex align-items-center">
               <label htmlFor="username" className="font-bold w-10rem mr-3">{t('settings.username')}</label>
               <div className="flex-grow-1">
@@ -168,7 +166,6 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            {/* First Name */}
             <div className="field mb-4 flex align-items-center">
               <label htmlFor="firstName" className="font-bold w-10rem mr-3">{t('settings.firstName')}</label>
               <div className="flex-grow-1">
@@ -182,7 +179,6 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            {/* Last Name */}
             <div className="field mb-4 flex align-items-center">
               <label htmlFor="lastName" className="font-bold w-10rem mr-3">{t('settings.lastName')}</label>
               <div className="flex-grow-1">
@@ -196,7 +192,6 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            {/* Theme Settings (Frontend Managed) */}
             <div className="flex align-items-center mb-4">
               <span className="font-bold w-10rem mr-3">{t('settings.theme')}</span>
               <div className="flex flex-wrap gap-3">
@@ -215,7 +210,6 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            {/* Language Settings (Frontend Managed) */}
             <div className="flex align-items-center mb-4">
               <span className="font-bold w-10rem mr-3">{t('settings.language')}</span>
               <div className="flex flex-wrap gap-3">
