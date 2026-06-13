@@ -53,9 +53,10 @@ public class UserProfileService {
         UserProfile profile = profileRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
-        profile.setFirstName(request.firstName());
-        profile.setLastName(request.lastName());
-        profile.setUsername(request.username());
+        profile.setFirstName(request.getFirstName());
+        profile.setLastName(request.getLastName());
+        profile.setUsername(request.getUsername());
+        profile.setQuizSize(request.getQuizSize());
         profile.setUpdatedAt(Instant.now());
         profileRepository.save(profile);
 
@@ -63,9 +64,10 @@ public class UserProfileService {
                 .aggregateId(userId)
                 .eventType(OutboxEventType.PROFILE_UPDATED)
                 .payload(toJson(Map.of(
-                        "firstName", request.firstName(),
-                        "lastName",  request.lastName(),
-                        "username",  request.username()
+                        "firstName", request.getFirstName(),
+                        "lastName",  request.getLastName(),
+                        "username",  request.getUsername(),
+                        "quizSize",  request.getQuizSize()
                 )))
                 .build());
 
@@ -198,17 +200,16 @@ public class UserProfileService {
             avatarUrl = "http://" + avatarUrl;
         }
 
-        return new UserProfileResponse(
-                userProfile.getId(),
-                userProfile.getUsername(),
-                userProfile.getEmail(),
-                userProfile.getFirstName(),
-                userProfile.getLastName(),
-                avatarUrl, // Use the corrected URL
-                userProfile.getRoles(),
-                userProfile.isBlocked(),
-                userProfile.getCreatedAt()
-        );
+        return UserProfileResponse.builder()
+                .id(userProfile.getId())
+                .username(userProfile.getUsername())
+                .email(userProfile.getEmail())
+                .firstName(userProfile.getFirstName())
+                .lastName(userProfile.getLastName())
+                .avatarUrl(avatarUrl)
+                .roles(userProfile.getRoles().stream().map(UserRole::name).collect(Collectors.toSet()))
+                .quizSize(userProfile.getQuizSize())
+                .build();
     }
 
     public PublicProfileResponse mapUserProfileToPublicResponse(UserProfile userProfile) {
@@ -217,15 +218,15 @@ public class UserProfileService {
             avatarUrl = "http://" + avatarUrl;
         }
 
-        return new PublicProfileResponse(
-                userProfile.getId(),
-                userProfile.getUsername(),
-                userProfile.getFirstName(),
-                userProfile.getLastName(),
-                avatarUrl, // Use the corrected URL
-                userProfile.getRoles(),
-                userProfile.getCreatedAt()
-        );
+        return PublicProfileResponse.builder()
+                .id(userProfile.getId())
+                .username(userProfile.getUsername())
+                .firstName(userProfile.getFirstName())
+                .lastName(userProfile.getLastName())
+                .avatarUrl(avatarUrl)
+                .roles(userProfile.getRoles())
+                .createdAt(userProfile.getCreatedAt())
+                .build();
     }
 
     private Set<UserRole> determineUserRolesFromKeycloakMap(Map<String, Object> keycloakUser) {

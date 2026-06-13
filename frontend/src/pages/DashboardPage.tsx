@@ -2,14 +2,18 @@ import React from 'react';
 import { Card } from 'primereact/card';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '../store/authStore'; // Import useAuthStore
+import { useMe } from '../hooks/useUser';
+import { ProgressSpinner } from 'primereact/progressspinner';
+import { Message } from 'primereact/message';
 
 export default function DashboardPage() {
   const { t } = useTranslation();
-  const { user } = useAuthStore(); // Get user from auth store
+  const { data: user, isLoading, isError, error } = useMe();
+
+  console.log('DashboardPage: Rendering...', { isLoading, isError, user });
 
   const learningModules = [
-    { title: t('nav.grammar'), description: t('dashboard.grammarDescription'), icon: 'pi pi-book', link: '/quizzes/grammar' },
+    { title: t('nav.grammar'), description: t('dashboard.grammarDescription'), icon: 'pi pi-book', link: '/grammar' }, // Changed link to /grammar
     { title: t('nav.vocabulary'), description: t('dashboard.vocabularyDescription'), icon: 'pi pi-book', link: '/quizzes/vocabulary' },
     { title: t('nav.dictionary'), description: t('dashboard.dictionaryDescription'), icon: 'pi pi-book', link: '/dictionary' },
   ];
@@ -24,7 +28,6 @@ export default function DashboardPage() {
     { title: t('nav.admin'), description: t('dashboard.adminDescription'), icon: 'pi pi-shield', link: '/admin' },
   ];
 
-  // Helper to render a row of cards
   const renderRow = (items: any[]) => (
     <div className="grid justify-content-center w-full mb-4">
       {items.map((item, index) => (
@@ -46,6 +49,25 @@ export default function DashboardPage() {
     </div>
   );
 
+  if (isLoading) {
+    console.log('DashboardPage: Showing loading spinner.');
+    return (
+      <div className="flex justify-content-center align-items-center min-h-screen">
+        <ProgressSpinner />
+      </div>
+    );
+  }
+
+  if (isError) {
+    console.log('DashboardPage: Showing error message.');
+    return (
+      <div className="flex justify-content-center align-items-center min-h-screen">
+        <Message severity="error" text={t('userProfile.errorLoadingUser', { message: error?.message })} />
+      </div>
+    );
+  }
+
+  console.log('DashboardPage: Rendering content.');
   return (
     <div className="flex flex-column align-items-center p-4">
       <h1 className="text-center mb-5">{t('nav.dashboard')}</h1>

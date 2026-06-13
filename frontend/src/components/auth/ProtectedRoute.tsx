@@ -1,35 +1,24 @@
-import React, { useEffect } from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 
 interface ProtectedRouteProps {
-  allowedRoles?: string[];
+  children: React.ReactNode;
 }
 
-const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
-  const { isAuthenticated, user, setRedirectPath } = useAuthStore();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { isAuthenticated } = useAuthStore();
   const location = useLocation();
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      // Save the current path before redirecting to login
-      setRedirectPath(location.pathname + location.search);
-    }
-  }, [isAuthenticated, location.pathname, location.search, setRedirectPath]);
-
   if (!isAuthenticated) {
+    const currentPath = location.pathname + location.search;
+    console.log('ProtectedRoute: User not authenticated. Saving redirect path:', currentPath);
+    useAuthStore.getState().setRedirectPath(currentPath);
+
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && user) {
-    const userHasRequiredRole = allowedRoles.some(role => user.roles.includes(role));
-    if (!userHasRequiredRole) {
-      // User is authenticated but does not have any of the required roles
-      return <Navigate to="/" replace />;
-    }
-  }
-
-  return <Outlet />;
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;

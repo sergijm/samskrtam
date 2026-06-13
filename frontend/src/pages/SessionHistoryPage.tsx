@@ -8,7 +8,7 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
-import { useAuthStore } from '../store/authStore';
+import { useMe } from '../hooks/useUser'; // Import useMe
 import { useSessionAnswerHistory, useQuizSessionSummary } from '../hooks/useUserQuizSessions';
 import { useCompleteQuizSession, useRetakeQuizSession, useStartNewQuizSession } from '../hooks/useQuiz';
 import { AnswerHistory, SessionStatus } from '../types/quiz';
@@ -19,18 +19,18 @@ const SessionHistoryPage = () => {
   const navigate = useNavigate();
   const { sessionId } = useParams<{ sessionId: string }>();
   const location = useLocation();
-  const { user } = useAuthStore();
+  const { data: user, isLoading: isUserLoading } = useMe(); // Get user from useMe
   const userId = user?.id;
   const queryClient = useQueryClient();
 
   const { data: answers, isLoading: isAnswersLoading, isError: isAnswersError, error: answersError } = useSessionAnswerHistory(
-      sessionId || '',
-      userId || ''
+    sessionId || '',
+    userId || ''
   );
 
   const { data: sessionSummary, isLoading: isSummaryLoading, isError: isSummaryError, error: summaryError } = useQuizSessionSummary(
-      sessionId || '',
-      userId || ''
+    sessionId || '',
+    userId || ''
   );
 
   const completeSessionMutation = useCompleteQuizSession();
@@ -40,16 +40,16 @@ const SessionHistoryPage = () => {
   const handleCompleteQuiz = () => {
     if (sessionId && sessionSummary?.quizType) {
       completeSessionMutation.mutate(
-          { sessionId, quizType: sessionSummary.quizType },
-          {
-            onSuccess: () => {
-              queryClient.invalidateQueries(['quizSessionSummary', sessionId]);
-              navigate('/dashboard', { replace: true });
-            },
-            onError: (err) => {
-              console.error('Failed to complete quiz session:', err);
-            },
-          }
+        { sessionId, quizType: sessionSummary.quizType },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries(['quizSessionSummary', sessionId]);
+            navigate('/dashboard', { replace: true });
+          },
+          onError: (err) => {
+            console.error('Failed to complete quiz session:', err);
+          },
+        }
       );
     }
   };
@@ -64,15 +64,15 @@ const SessionHistoryPage = () => {
   const handleRetakeQuiz = () => {
     if (sessionId && sessionSummary) {
       retakeSessionMutation.mutate(
-          { sessionId, quizType: sessionSummary.quizType, slug: sessionSummary.slug },
-          {
-            onSuccess: (data) => {
-              navigate(`/quiz/${data.quizType.toLowerCase()}/${data.slug}/${data.sessionId}`, { state: { sessionData: data } });
-            },
-            onError: (err) => {
-              console.error('Failed to retake quiz session:', err);
-            },
-          }
+        { sessionId, quizType: sessionSummary.quizType, slug: sessionSummary.slug },
+        {
+          onSuccess: (data) => {
+            navigate(`/quiz/${data.quizType.toLowerCase()}/${data.slug}/${data.sessionId}`, { state: { sessionData: data } });
+          },
+          onError: (err) => {
+            console.error('Failed to retake quiz session:', err);
+          },
+        }
       );
     }
   };
@@ -80,40 +80,40 @@ const SessionHistoryPage = () => {
   const handleStartNewQuiz = () => {
     if (sessionId && sessionSummary) {
       startNewQuizSessionMutation.mutate(
-          { sessionId, quizType: sessionSummary.quizType, slug: sessionSummary.slug },
-          {
-            onSuccess: (data) => {
-              navigate(`/quiz/${data.quizType.toLowerCase()}/${data.slug}/${data.sessionId}`, { state: { sessionData: data } });
-            },
-            onError: (err) => {
-              console.error('Failed to start new quiz session:', err);
-            },
-          }
+        { sessionId, quizType: sessionSummary.quizType, slug: sessionSummary.slug },
+        {
+          onSuccess: (data) => {
+            navigate(`/quiz/${data.quizType.toLowerCase()}/${data.slug}/${data.sessionId}`, { state: { sessionData: data } });
+          },
+          onError: (err) => {
+            console.error('Failed to start new quiz session:', err);
+          },
+        }
       );
     }
   };
 
-  if (!sessionId || !userId) {
+  if (!sessionId) {
     return (
-        <div className="flex justify-content-center align-items-center min-h-screen">
-          <Message severity="error" text={t('sessionHistory.errorLoadingHistory')} />
-        </div>
+      <div className="flex justify-content-center align-items-center min-h-screen">
+        <Message severity="error" text={t('sessionHistory.errorLoadingHistory')} />
+      </div>
     );
   }
 
-  if (isAnswersLoading || isSummaryLoading || completeSessionMutation.isLoading || retakeSessionMutation.isLoading || startNewQuizSessionMutation.isLoading) {
+  if (isUserLoading || isAnswersLoading || isSummaryLoading || completeSessionMutation.isLoading || retakeSessionMutation.isLoading || startNewQuizSessionMutation.isLoading) {
     return (
-        <div className="flex justify-content-center align-items-center min-h-screen">
-          <ProgressSpinner />
-        </div>
+      <div className="flex justify-content-center align-items-center min-h-screen">
+        <ProgressSpinner />
+      </div>
     );
   }
 
   if (isAnswersError || isSummaryError) {
     return (
-        <div className="flex justify-content-center align-items-center min-h-screen">
-          <Message severity="error" text={t('sessionHistory.errorLoadingHistory', { message: answersError?.message || summaryError?.message })} />
-        </div>
+      <div className="flex justify-content-center align-items-center min-h-screen">
+        <Message severity="error" text={t('sessionHistory.errorLoadingHistory', { message: answersError?.message || summaryError?.message })} />
+      </div>
     );
   }
 
@@ -125,10 +125,10 @@ const SessionHistoryPage = () => {
       return null;
     }
     return (
-        <Tag
-            value={rowData.isCorrect ? t('common.correct') : t('common.incorrect')}
-            severity={rowData.isCorrect ? 'success' : 'danger'}
-        />
+      <Tag
+        value={rowData.isCorrect ? t('common.correct') : t('common.incorrect')}
+        severity={rowData.isCorrect ? 'success' : 'danger'}
+      />
     );
   };
 
@@ -149,51 +149,51 @@ const SessionHistoryPage = () => {
   };
 
   return (
-      <div className="max-w-60rem mx-auto">
-        <Card title={t('sessionHistory.title', { sessionId: sessionId })} className="mb-4">
-          <DataTable
-              value={sessionAnswers}
-              sortMode="single"
-              emptyMessage={t('sessionHistory.noAnswersFound')}
-          >
-            <Column field="questionText" header={t('sessionHistory.question')} sortable />
-            <Column field="selectedAnswerIast" header={t('sessionHistory.yourAnswer')} body={selectedAnswerBodyTemplate} sortable />
-            <Column field="correctOptionIast" header={t('sessionHistory.correctAnswer')} body={correctOptionBodyTemplate} sortable />
-            <Column field="isCorrect" header={t('sessionHistory.result')} body={resultBodyTemplate} sortable />
-            <Column field="responseTimeMs" header={t('sessionHistory.responseTime')} sortable />
-            <Column field="answeredAt" header={t('sessionHistory.answeredAt')} body={answeredAtBodyTemplate} sortable />
-            <Column field="explanation" header={t('sessionHistory.explanation')} body={explanationBodyTemplate} sortable />
-          </DataTable>
+    <div className="max-w-60rem mx-auto">
+      <Card title={t('sessionHistory.title', { sessionId: sessionId })} className="mb-4">
+        <DataTable
+          value={sessionAnswers}
+          sortMode="single"
+          emptyMessage={t('sessionHistory.noAnswersFound')}
+        >
+          <Column field="questionText" header={t('sessionHistory.question')} sortable />
+          <Column field="selectedAnswerIast" header={t('sessionHistory.yourAnswer')} body={selectedAnswerBodyTemplate} sortable />
+          <Column field="correctOptionIast" header={t('sessionHistory.correctAnswer')} body={correctOptionBodyTemplate} sortable />
+          <Column field="isCorrect" header={t('sessionHistory.result')} body={resultBodyTemplate} sortable />
+          <Column field="responseTimeMs" header={t('sessionHistory.responseTime')} sortable />
+          <Column field="answeredAt" header={t('sessionHistory.answeredAt')} body={answeredAtBodyTemplate} sortable />
+          <Column field="explanation" header={t('sessionHistory.explanation')} body={explanationBodyTemplate} sortable />
+        </DataTable>
 
-          {completeSessionMutation.isError && (
-              <Message severity="error" text={t('quiz.completeSessionError', { message: completeSessionMutation.error?.message })} className="mt-3" />
+        {completeSessionMutation.isError && (
+          <Message severity="error" text={t('quiz.completeSessionError', { message: completeSessionMutation.error?.message })} className="mt-3" />
+        )}
+
+        <div className="flex justify-content-end mt-4 gap-2">
+          {!isSessionCompleted && (
+            <Button
+              label={t('common.continue')}
+              icon="pi pi-play"
+              className="p-button-success"
+              onClick={handleResumeQuiz}
+            />
           )}
-
-          <div className="flex justify-content-end mt-4 gap-2">
-            {!isSessionCompleted && (
-                <Button
-                    label={t('common.continue')}
-                    icon="pi pi-play"
-                    className="p-button-success"
-                    onClick={handleResumeQuiz}
-                />
-            )}
-            <Button
-                label={t('quiz.retakeQuiz')}
-                icon="pi pi-refresh"
-                className="p-button-secondary"
-                onClick={handleRetakeQuiz}
-                loading={retakeSessionMutation.isLoading}
-            />
-            <Button
-                label={t('quiz.startNewQuiz')}
-                icon="pi pi-plus"
-                onClick={handleStartNewQuiz}
-                loading={startNewQuizSessionMutation.isLoading}
-            />
-          </div>
-        </Card>
-      </div>
+          <Button
+            label={t('quiz.retakeQuiz')}
+            icon="pi pi-refresh"
+            className="p-button-secondary"
+            onClick={handleRetakeQuiz}
+            loading={retakeSessionMutation.isLoading}
+          />
+          <Button
+            label={t('quiz.startNewQuiz')}
+            icon="pi pi-plus"
+            onClick={handleStartNewQuiz}
+            loading={startNewQuizSessionMutation.isLoading}
+          />
+        </div>
+      </Card>
+    </div>
   );
 };
 

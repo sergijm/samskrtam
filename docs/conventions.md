@@ -362,7 +362,7 @@ Gateway **не проксирует** management порты — они недо�
 | Сервис | Env переменная | Порт по умолчанию |
 |---|---|---|
 | api-gateway | `GATEWAY_MANAGEMENT_PORT` | 9090 |
-| feature-flag-service | `FEATURE_FLAG_MANAGEMENT_PORT` | 9091 |
+| feature-flag-service | `FEATURE_FLAG_SERVICE_PORT` | 9091 |
 | user-service | `USER_MANAGEMENT_PORT` | 9092 |
 | content-service | `CONTENT_MANAGEMENT_PORT` | 9093 |
 | quiz-service | `QUIZ_MANAGEMENT_PORT` | 9094 |
@@ -1014,3 +1014,17 @@ clean:     ## Сбросить volumes (БД, Kafka)
 **Следствие:** user-service не хранит токены и не проксирует OAuth2 запросы. Gateway не знает про бизнес-правила регистрации.
 
 Спецификации api-gateway.md и user-service.md отражают это решение.
+
+---
+
+## 15. Kafka
+
+### Именование топиков
+
+Имена топиков должны следовать шаблону: `<domain>-<event>-events`.
+
+| Топик | Описание |
+|---|---|
+| `quiz-answered-events` | События об ответах на вопросы квизов |
+| `quiz-session-status-changed-events` | События об изменении статуса сессии квиза |
+| `user-quiz-statistics-output` | Выходной топик для агрегированной статистики |

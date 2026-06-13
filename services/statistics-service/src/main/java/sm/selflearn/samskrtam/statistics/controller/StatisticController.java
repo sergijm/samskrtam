@@ -9,7 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
-import sm.selflearn.samskrtam.common.dto.PaginatedResponse; // Import PaginatedResponse
+import sm.selflearn.samskrtam.common.dto.PaginatedResponse;
 import sm.selflearn.samskrtam.statistics.dto.UserQuizStatisticDto;
 import sm.selflearn.samskrtam.statistics.service.StatisticService;
 
@@ -25,7 +25,7 @@ public class StatisticController {
 
     private final StatisticService statisticService;
 
-    @GetMapping(value = "/users/{userId}/quizzes", produces = "application/json") // Added produces
+    @GetMapping(value = "/users/{userId}/quizzes", produces = "application/json")
     @Operation(summary = "Get all quiz statistics for a user with pagination")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved paginated user quiz statistics")
     public PaginatedResponse<UserQuizStatisticDto> getUserQuizStatistics(
@@ -63,7 +63,6 @@ public class StatisticController {
                 .totalScore(statistic.getTotalScore())
                 .averageScore(statistic.getAverageScore())
                 .lastCompletedAt(statistic.getLastCompletedAt())
-                .answerHistoryJson(statistic.getAnswerHistoryJson()) // Include the new field
                 .build();
     }
 }

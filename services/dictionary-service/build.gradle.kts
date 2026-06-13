@@ -12,11 +12,9 @@ dependencies {
     implementation(platform("org.springframework.boot:spring-boot-dependencies:${libs.versions.spring.boot.get()}"))
 
     implementation(libs.spring.webflux)
-    implementation(libs.spring.r2dbc)
     implementation(libs.kotlin.reflect) // Changed to libs alias
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.reactor)
-    implementation(libs.postgresql.r2dbc)
     implementation(libs.flyway.core)
     implementation(libs.postgresql.jdbc)
     implementation(libs.jsoup) // Changed to libs alias

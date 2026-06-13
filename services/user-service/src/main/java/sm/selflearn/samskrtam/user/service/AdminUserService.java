@@ -20,7 +20,6 @@ import sm.selflearn.samskrtam.user.repository.OutboxEventRepository;
 import sm.selflearn.samskrtam.user.repository.UserProfileRepository;
 import sm.selflearn.samskrtam.user.repository.UserProfileSpecification;
 
-// Импорты DTO из нового shared модуля
 import sm.selflearn.samskrtam.user.dto.AdminUserListResponse;
 import sm.selflearn.samskrtam.user.dto.UpdateProfileRequest;
 import sm.selflearn.samskrtam.user.dto.UserProfileResponse;
@@ -40,7 +39,7 @@ public class AdminUserService {
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
     private final AvatarService avatarService;
-    private final UserProfileService userProfileService; // Добавлен для использования мапперов
+    private final UserProfileService userProfileService;
 
     public AdminUserListResponse getAllUsers(int page, int size, String sortBy, String sortDirection,
                                              String search, UserRole role, Boolean blocked) {
@@ -53,7 +52,7 @@ public class AdminUserService {
 
         return new AdminUserListResponse(
                 userPage.getContent().stream()
-                        .map(userProfileService::mapUserProfileToResponse) // Используем маппер из UserProfileService
+                        .map(userProfileService::mapUserProfileToResponse)
                         .collect(Collectors.toList()),
                 userPage.getTotalPages(),
                 userPage.getTotalElements(),
@@ -67,7 +66,7 @@ public class AdminUserService {
     public UserProfileResponse getUserProfile(UUID userId) {
         UserProfile profile = userProfileRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
-        return userProfileService.mapUserProfileToResponse(profile); // Используем маппер из UserProfileService
+        return userProfileService.mapUserProfileToResponse(profile);
     }
 
     @Transactional
@@ -77,9 +76,10 @@ public class AdminUserService {
         UserProfile profile = userProfileRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
-        profile.setFirstName(request.firstName());
-        profile.setLastName(request.lastName());
-        profile.setUsername(request.username());
+        profile.setFirstName(request.getFirstName());
+        profile.setLastName(request.getLastName());
+        profile.setUsername(request.getUsername());
+        profile.setQuizSize(request.getQuizSize());
         profile.setUpdatedAt(Instant.now());
         userProfileRepository.save(profile);
 
@@ -87,14 +87,15 @@ public class AdminUserService {
                 .aggregateId(userId)
                 .eventType(OutboxEventType.PROFILE_UPDATED)
                 .payload(toJson(Map.of(
-                        "firstName", request.firstName(),
-                        "lastName", request.lastName(),
-                        "username", request.username()
+                        "firstName", request.getFirstName(),
+                        "lastName", request.getLastName(),
+                        "username", request.getUsername(),
+                        "quizSize", request.getQuizSize()
                 )))
                 .build());
 
         log.debug("Admin updated profile and outbox event created: userId={}", userId);
-        return userProfileService.mapUserProfileToResponse(profile); // Используем маппер из UserProfileService
+        return userProfileService.mapUserProfileToResponse(profile);
     }
 
     public String generateAvatarUploadUrl(UUID userId, String contentType) {

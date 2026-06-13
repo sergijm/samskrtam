@@ -25,6 +25,7 @@
     "username": "Имя пользователя",
     "firstName": "Имя",
     "lastName": "Фамилия",
+    "quizSize": "Размер квиза",
     "avatar": {
       "title": "Аватар",
       "upload": "Загрузить новый аватар",
@@ -55,7 +56,9 @@
     "startNewQuiz": "Начать новый"
   },
   "quizzes": {
-    "title": "Список квизов"
+    "title": "Список квизов",
+    "words": "слов",
+    "questions": "вопросов"
   },
   "auth": {
     "login": "Войти",
@@ -239,5 +242,19 @@
     "explanation": "Объяснение",
     "notAnswered": "Нет ответа",
     "notApplicable": "Н/Д"
+  },
+  "underConstruction": {
+    "title": "Страница в разработке",
+    "message": "Эта страница находится в активной разработке. Пожалуйста, зайдите позже!"
+  },
+  "grammar": {
+    "sandhiQuizzesTitle": "Сандхи - Эмено (Квизы)",
+    "sandhiQuizzesDescription": "Практикуйте правила сандхи по системе Эмено.",
+    "sandhiRulesTitle": "Сандхи - Эмено (Правила)",
+    "sandhiRulesDescription": "Изучите подробные правила сандхи по Эмено.",
+    "declensionsTitle": "Склонения",
+    "declensionsDescription": "Практикуйте склонения существительных и прилагательных.",
+    "conjugationsTitle": "Спряжения",
+    "conjugationsDescription": "Изучите спряжения глаголов."
   }
 }

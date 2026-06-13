@@ -1,24 +1,22 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '../../store/authStore';
+import { useMe } from '../../hooks/useUser'; // Import useMe
 
 const Sidebar = () => {
   const { t } = useTranslation();
-  const user = useAuthStore((state) => state.user);
+  const { data: user } = useMe(); // Get user data from react-query
 
   const navItems = [
-    { to: '/dashboard', label: t('nav.dashboard'), icon: 'pi-home' }, // Changed '/' to '/dashboard'
+    { to: '/dashboard', label: t('nav.dashboard'), icon: 'pi-home' },
     { to: '/quizzes', label: t('nav.quizzes'), icon: 'pi-question-circle' },
     { to: '/dictionary', label: t('nav.dictionary'), icon: 'pi-book' },
     { to: '/statistics', label: t('nav.statistics'), icon: 'pi-chart-bar' },
     { to: '/leaderboard', label: t('nav.leaderboard'), icon: 'pi-sitemap' },
-    // Removed the settings item from here
-    // { to: '/settings', label: t('nav.settings'), icon: 'pi-cog' },
   ];
 
-  if (user?.role === 'ADMIN') {
-    navItems.push({ to: '/admin/users', label: t('nav.admin'), icon: 'pi-shield' }); // Updated link to /admin/users
+  if (user?.roles.includes('ADMIN')) { // Check for roles array
+    navItems.push({ to: '/admin/users', label: t('nav.admin'), icon: 'pi-shield' });
   }
 
   return (

@@ -1,0 +1,33 @@
+/* src/index.css */
+
+/* Ensure quiz cards fill height and content is properly aligned */
+.quiz-card.p-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Ensure card takes full height of its parent flex item */
+}
+
+.quiz-card .p-card-body {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Allow body to grow and push footer down */
+    justify-content: space-between; /* Distribute space between title/subtitle and content */
+}
+
+.quiz-card .p-card-content {
+    flex-grow: 1; /* Allow content area to grow */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Center content vertically */
+    align-items: center; /* Center content horizontally */
+}
+
+.quiz-card .p-card-footer {
+    margin-top: auto; /* Push footer to the bottom */
+}
+
+/* Additional styling for the count text */
+.quiz-card .p-card-footer .text-lg {
+    font-size: 1.125rem; /* Equivalent to text-lg in Tailwind/PrimeFlex */
+    font-weight: bold;
+}

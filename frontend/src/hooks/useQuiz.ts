@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { quizApi } from '../api/quizApi';
 import { StartSessionResponse, AnswerRequest, AnswerResponse, QuizSummaryDto, QuizListItem, QuizType, ResumeSessionResponse, StartOrResumeResponse } from '../types/quiz';
 import { useLocaleStore } from '../store/localeStore';
@@ -8,7 +8,7 @@ export const useQuizList = (category?: string) => {
   return useQuery<QuizListItem[], Error>({
     queryKey: ['quizzes', 'list', category, locale],
     queryFn: async () => {
-      const response = await quizApi.getQuizList(category);
+      const response = await quizApi.getQuizList(category); // Pass category to API call
       return response.data;
     },
   });
@@ -84,7 +84,7 @@ export const useSubmitQuizAnswer = () => {
 
 export const useCompleteQuizSession = () => {
   const { locale } = useLocaleStore();
-  const queryClient = useQueryClient(); // Get query client instance
+  const queryClient = useQueryClient();
   return useMutation<
     void,
     Error,
@@ -94,7 +94,6 @@ export const useCompleteQuizSession = () => {
       await quizApi.completeSession(sessionId, quizType, locale);
     },
     onSuccess: (data, variables) => {
-      // Invalidate the quiz session summary query to refetch the updated status
       queryClient.invalidateQueries(['quizSessionSummary', variables.sessionId]);
     },
   });

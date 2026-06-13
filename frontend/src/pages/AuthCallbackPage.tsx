@@ -1,96 +1,73 @@
-import React, { useEffect, useRef } from 'react'; // Import useRef
+import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { useAuthStore } from '../store/authStore';
-import { userApi } from '../api/userApi';
 import { AuthTokens } from '../types/user';
 
 const AuthCallbackPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const { login, setRedirectPath } = useAuthStore();
 
-  const hasHandledCallback = useRef(false); // Ref to track if callback has been handled
+  const hasHandledCallback = useRef(false);
 
   useEffect(() => {
     const handleCallback = async () => {
-      // Only run if not already handled
       if (hasHandledCallback.current) {
-        console.log('AuthCallbackPage: Callback already handled, skipping.');
         return;
       }
-      hasHandledCallback.current = true; // Mark as handled
+      hasHandledCallback.current = true;
 
       const fragment = new URLSearchParams(location.hash.substring(1));
       const accessTokenFromFragment = fragment.get('access_token') || fragment.get('token');
       const refreshTokenFromFragment = fragment.get('refresh_token');
-
       const error = fragment.get('error');
-
-      console.log('AuthCallbackPage: Received fragment data.');
-      console.log('AuthCallbackPage: accessTokenFromFragment present:', !!accessTokenFromFragment);
-      console.log('AuthCallbackPage: refreshTokenFromFragment present:', !!refreshTokenFromFragment);
-      if (error) {
-        console.error('AuthCallbackPage: Error parameter in fragment:', error);
-      }
 
       if (accessTokenFromFragment) {
         try {
-          localStorage.setItem('accessToken', accessTokenFromFragment);
-          if (refreshTokenFromFragment) {
-            localStorage.setItem('refreshToken', refreshTokenFromFragment);
-          } else {
-            localStorage.removeItem('refreshToken');
-          }
-
-          console.log('AuthCallbackPage: Attempting to fetch user details with new access token.');
-          const userResponse = await userApi.getMe();
-          const user = userResponse.data;
-          console.log('AuthCallbackPage: User details fetched successfully:', user);
-
           const tokens: AuthTokens = {
             accessToken: accessTokenFromFragment,
             refreshToken: refreshTokenFromFragment || null,
           };
 
-          login(tokens, user);
-          console.log('AuthCallbackPage: User logged in to store.');
+          // 1. Store tokens and set authenticated state
+          login(tokens);
+          console.log('AuthCallbackPage: Tokens stored and user is authenticated.');
 
+          // 2. Invalidate 'me' query to force a refetch of user data everywhere
+          await queryClient.invalidateQueries(['me']);
+          console.log('AuthCallbackPage: "me" query invalidated.');
+
+          // 3. Handle redirection
           const storedRedirectPath = localStorage.getItem('redirectPath');
-          localStorage.removeItem('redirectPath'); // Clear from localStorage immediately
-          setRedirectPath(null); // Clear from Zustand store as well
+          localStorage.removeItem('redirectPath');
+          setRedirectPath(null);
 
-          console.log('AuthCallbackPage: Stored redirectPath from localStorage:', storedRedirectPath);
           const targetPath = storedRedirectPath || '/dashboard';
           console.log('AuthCallbackPage: Redirecting to:', targetPath);
           navigate(targetPath, { replace: true });
-        } catch (err: any) {
-          console.error('AuthCallbackPage: OAuth callback error during user fetch or login:', err);
-          if (err.response) {
-            console.error('AuthCallbackPage: Error response status:', err.response.status);
-            console.error('AuthCallbackPage: Error response data:', err.response.data);
-          }
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('redirectPath'); // Ensure cleared on error
-          setRedirectPath(null); // Clear from Zustand store on error
-          navigate('/login', { state: { error: 'Authentication failed.' } });
+
+        } catch (err) {
+          console.error('AuthCallbackPage: OAuth callback error:', err);
+          logoutAndClear();
         }
-      } else if (error) {
-        console.error('AuthCallbackPage: OAuth callback error from fragment:', error);
-        localStorage.removeItem('redirectPath'); // Ensure cleared on error
-        setRedirectPath(null); // Clear from Zustand store on error
-        navigate('/login', { state: { error: error || 'Authentication failed.' } });
       } else {
-        console.warn('AuthCallbackPage: No access token or error found in fragment.');
-        localStorage.removeItem('redirectPath'); // Ensure cleared on error
-        setRedirectPath(null); // Clear from Zustand store on error
-        navigate('/login', { state: { error: 'Invalid authentication callback.' } });
+        console.error('AuthCallbackPage: OAuth callback error from fragment:', error);
+        logoutAndClear();
       }
     };
 
+    const logoutAndClear = () => {
+        useAuthStore.getState().logout();
+        localStorage.removeItem('redirectPath');
+        setRedirectPath(null);
+        navigate('/login', { state: { error: 'Authentication failed.' } });
+    }
+
     handleCallback();
-  }, [location, navigate, login, setRedirectPath]); // Dependencies remain the same
+  }, [location, navigate, login, setRedirectPath, queryClient]);
 
   return (
     <div className="flex justify-content-center align-items-center h-screen">

@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import sm.selflearn.samskrtam.content.dto.QuizType; // Corrected import to quiz-content-dtos
+import sm.selflearn.samskrtam.content.dto.QuizType;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -48,7 +48,4 @@ public class UserQuizSessionStatistic {
 
     @Column(nullable = false)
     private Instant lastCompletedAt;
-
-    @Column(columnDefinition = "TEXT") // Store JSON as TEXT
-    private String answerHistoryJson; // New field for storing answer history as JSON
 }

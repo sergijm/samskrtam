@@ -2,24 +2,27 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userApi } from '../api/userApi';
 import { authApi } from '../api/authApi'; // Import authApi for changePassword
 import { UpdateProfilePayload } from '../types/user'; // Import the new payload type
+import { useAuthStore } from '../store/authStore'; // Import useAuthStore
 
-export const useMe = () =>
-  useQuery({
-    queryKey: ['users', 'me'],
+export const useMe = () => {
+  const { isAuthenticated } = useAuthStore(); // Get isAuthenticated from the auth store
+  return useQuery({
+    queryKey: ['me'],
     queryFn: async () => {
       const response = await userApi.getMe();
-      return response.data; // Return response.data
+      return response.data;
     },
-    // Keep the user data fresh for a while, but refetch in the background
+    enabled: !!isAuthenticated, // Only run the query if the user is authenticated
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
+};
 
 export const useUser = (userId: string) =>
   useQuery({
     queryKey: ['users', userId],
     queryFn: async () => {
       const response = await userApi.getUser(userId);
-      return response.data; // Return response.data
+      return response.data;
     },
     enabled: !!userId,
   });
@@ -29,7 +32,7 @@ export const useUserGroups = (userId: string) =>
     queryKey: ['users', userId, 'groups'],
     queryFn: async () => {
       const response = await userApi.getUserGroups(userId);
-      return response.data; // Return response.data
+      return response.data;
     },
     enabled: !!userId,
   });
@@ -39,11 +42,11 @@ export const useUpdateProfileDetails = () => { // Renamed hook
   return useMutation({
     mutationFn: async (data: UpdateProfilePayload) => {
       const response = await userApi.updateProfileDetails(data);
-      return response.data; // Return response.data
+      return response.data;
     },
     onSuccess: (updatedUser) => {
       // Update the 'me' query data immediately
-      queryClient.setQueryData(['users', 'me'], updatedUser);
+      queryClient.setQueryData(['me'], updatedUser);
     },
   });
 };
@@ -52,7 +55,7 @@ export const useGenerateAvatarUploadUrl = () => {
   return useMutation({
     mutationFn: async (contentType: string) => {
       const response = await userApi.generateUploadUrl(contentType);
-      return response.data; // Return response.data
+      return response.data;
     },
   });
 };
@@ -62,11 +65,11 @@ export const useConfirmAvatarUpload = () => {
   return useMutation({
     mutationFn: async (objectKey: string) => {
       const response = await userApi.confirmAvatarUpload(objectKey);
-      return response.data; // Return response.data
+      return response.data;
     },
     onSuccess: (data) => {
       // Invalidate 'me' query to refetch updated avatarUrl
-      queryClient.invalidateQueries({ queryKey: ['users', 'me'] });
+      queryClient.invalidateQueries({ queryKey: ['me'] });
     },
   });
 };

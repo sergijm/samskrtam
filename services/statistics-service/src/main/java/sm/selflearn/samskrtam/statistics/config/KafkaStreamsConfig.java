@@ -3,6 +3,7 @@ package sm.selflearn.samskrtam.statistics.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Bytes;
@@ -16,6 +17,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafkaStreams;
 import org.springframework.kafka.annotation.KafkaStreamsDefaultConfiguration;
 import org.springframework.kafka.config.KafkaStreamsConfiguration;
+import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerde;
 import sm.selflearn.samskrtam.quiz.event.QuizAnsweredEvent;
@@ -42,6 +44,21 @@ public class KafkaStreamsConfig {
 
     @Value("${spring.kafka.streams.application-id}")
     private String applicationId;
+
+    @Bean
+    public NewTopic quizAnsweredEventsTopic() {
+        return TopicBuilder.name("quiz-answered-events").partitions(1).replicas(1).build();
+    }
+
+    @Bean
+    public NewTopic quizSessionStatusChangedEventsTopic() {
+        return TopicBuilder.name("quiz-session-status-changed-events").partitions(1).replicas(1).build();
+    }
+
+    @Bean
+    public NewTopic userQuizStatisticsOutputTopic() {
+        return TopicBuilder.name("user-quiz-statistics-output").partitions(1).replicas(1).build();
+    }
 
     @Bean(name = KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_CONFIG_BEAN_NAME)
     public KafkaStreamsConfiguration kStreamsConfigs() {
@@ -78,7 +95,6 @@ public class KafkaStreamsConfig {
 
         KTable<String, UserQuizSessionStatistic> userQuizStatisticsTable = statisticEvents
                 .groupBy((key, event) -> {
-                    // Defensive coding to prevent NullPointerException
                     if (event == null) {
                         log.warn("groupBy received null event with key: {}. Grouping as invalid.", key);
                         return "invalid-event-key";

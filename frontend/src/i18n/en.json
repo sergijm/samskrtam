@@ -25,6 +25,7 @@
     "username": "Username",
     "firstName": "First Name",
     "lastName": "Last Name",
+    "quizSize": "Quiz Size",
     "avatar": {
       "title": "Avatar",
       "upload": "Upload New Avatar",
@@ -55,7 +56,9 @@
     "startNewQuiz": "Start New Quiz"
   },
   "quizzes": {
-    "title": "List of Quizzes"
+    "title": "List of Quizzes",
+    "words": "words",
+    "questions": "questions"
   },
   "auth": {
     "login": "Login",
@@ -236,5 +239,19 @@
     "explanation": "Explanation",
     "notAnswered": "Not Answered",
     "notApplicable": "N/A"
+  },
+  "underConstruction": {
+    "title": "Page Under Construction",
+    "message": "This page is currently under active development. Please check back later!"
+  },
+  "grammar": {
+    "sandhiQuizzesTitle": "Sandhi - Emeneau (Quizzes)",
+    "sandhiQuizzesDescription": "Practice Sandhi rules according to Emeneau's system.",
+    "sandhiRulesTitle": "Sandhi - Emeneau (Rules)",
+    "sandhiRulesDescription": "Explore the detailed Sandhi rules by Emeneau.",
+    "declensionsTitle": "Declensions",
+    "declensionsDescription": "Practice declensions of nouns and adjectives.",
+    "conjugationsTitle": "Conjugations",
+    "conjugationsDescription": "Learn and practice verb conjugations."
   }
 }

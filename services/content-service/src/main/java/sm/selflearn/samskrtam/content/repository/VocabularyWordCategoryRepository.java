@@ -11,4 +11,5 @@ import java.util.UUID;
 @Repository
 public interface VocabularyWordCategoryRepository extends JpaRepository<VocabularyWordCategory, VocabularyWordCategoryId> {
     List<VocabularyWordCategory> findByCategoryId(UUID categoryId);
+    int countByCategoryIdIn(List<UUID> categoryIds);
 }

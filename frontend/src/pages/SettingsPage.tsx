@@ -7,39 +7,50 @@ import { useForm, Controller } from 'react-hook-form';
 import { RadioButton } from 'primereact/radiobutton';
 import { InputText } from 'primereact/inputtext';
 import { Avatar } from 'primereact/avatar';
+import { Dropdown } from 'primereact/dropdown'; // Import Dropdown
 import { useThemeStore } from '../store/themeStore';
 import { useLocaleStore } from '../store/localeStore';
-import { useAuthStore } from '../store/authStore'; // Import useAuthStore
 import { useMe, useUpdateProfileDetails, useGenerateAvatarUploadUrl, useConfirmAvatarUpload } from '../hooks/useUser';
 import { Toast } from 'primereact/toast';
 import { UpdateProfilePayload } from '../types/user';
 import axios from 'axios';
+import { useQueryClient } from '@tanstack/react-query';
 
 const SettingsPage = () => {
   const { t } = useTranslation();
   const toast = useRef<Toast>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
-  const { data: user, refetch: refetchUser } = useMe();
-  const { setUser } = useAuthStore(); // Get setUser from auth store
+  const { data: user } = useMe();
 
   const updateProfileDetailsMutation = useUpdateProfileDetails();
   const generateUploadUrlMutation = useGenerateAvatarUploadUrl();
   const confirmAvatarUploadMutation = useConfirmAvatarUpload();
 
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<UpdateProfilePayload & { theme: string; locale: string }>({
+  const { control, handleSubmit, reset, formState: { errors } } = useForm<UpdateProfilePayload & { theme: string; locale: string; quizSize: number }>({
     defaultValues: {
       username: '',
       firstName: '',
       lastName: '',
       theme: 'light',
       locale: 'ru',
+      quizSize: 10,
     },
     enableReinitialize: true
   });
 
   const { theme, setTheme } = useThemeStore();
   const { locale, setLocale } = useLocaleStore();
+
+  const quizSizeOptions = [
+    { label: '5', value: 5 },
+    { label: '10', value: 10 },
+    { label: '15', value: 15 },
+    { label: '20', value: 20 },
+    { label: '30', value: 30 },
+    { label: '50', value: 50 },
+  ];
 
   useEffect(() => {
     if (user) {
@@ -48,7 +59,8 @@ const SettingsPage = () => {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         theme: user.theme || 'light',
-        locale: user.locale || 'ru'
+        locale: user.locale || 'ru',
+        quizSize: user.quizSize || 10,
       };
       reset(valuesToReset);
       setTheme(user.theme || 'light');
@@ -56,16 +68,18 @@ const SettingsPage = () => {
     }
   }, [user, reset, setTheme, setLocale]);
 
-  const onSubmit = (data: UpdateProfilePayload & { theme: string; locale: string }) => {
+  const onSubmit = (data: UpdateProfilePayload & { theme: string; locale: string; quizSize: number }) => {
     const profileUpdateData: UpdateProfilePayload = {
       username: data.username,
       firstName: data.firstName,
       lastName: data.lastName,
+      quizSize: data.quizSize,
     };
 
     updateProfileDetailsMutation.mutate(profileUpdateData, {
       onSuccess: () => {
         toast.current?.show({ severity: 'success', summary: 'Success', detail: t('settings.saved'), life: 3000 });
+        queryClient.invalidateQueries(['me']);
       },
       onError: (error) => {
         console.error("Profile update error:", error);
@@ -101,11 +115,7 @@ const SettingsPage = () => {
 
       toast.current?.show({ severity: 'success', summary: 'Success', detail: t('settings.avatar.uploaded'), life: 3000 });
       
-      // Refetch user data and then update the auth store
-      const { data: updatedUser } = await refetchUser();
-      if (updatedUser) {
-        setUser(updatedUser);
-      }
+      queryClient.invalidateQueries(['me']);
     } catch (error) {
       console.error("Avatar upload error:", error);
       toast.current?.show({ severity: 'error', summary: 'Error', detail: t('settings.avatar.uploadError'), life: 3000 });
@@ -187,6 +197,19 @@ const SettingsPage = () => {
                   control={control}
                   render={({ field }) => (
                     <InputText id={field.name} {...field} />
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="field mb-4 flex align-items-center">
+              <label htmlFor="quizSize" className="font-bold w-10rem mr-3">{t('settings.quizSize')}</label>
+              <div className="flex-grow-1">
+                <Controller
+                  name="quizSize"
+                  control={control}
+                  render={({ field }) => (
+                    <Dropdown id={field.name} {...field} options={quizSizeOptions} />
                   )}
                 />
               </div>

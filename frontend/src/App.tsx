@@ -1,14 +1,19 @@
-import React, { useEffect } from 'react'; // Import useEffect
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PrimeReactProvider } from 'primereact/api';
+
+// Components
+import ErrorBoundary from './components/common/ErrorBoundary';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import AppLayout from './components/layout/AppLayout';
 
 // Pages
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage'; // Import ResetPasswordPage
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import DashboardPage from './pages/DashboardPage';
 import SettingsPage from './pages/SettingsPage';
@@ -19,20 +24,19 @@ import GroupCreatePage from './pages/GroupCreatePage';
 import GroupPage from './pages/GroupPage';
 import GroupEditPage from './pages/GroupEditPage';
 import AdminUsersPage from './pages/AdminUsersPage';
-import AdminHomePage from './pages/AdminHomePage'; // Import AdminHomePage
-import AdminGroupsPage from './pages/AdminGroupsPage'; // Import AdminGroupsPage
+import AdminHomePage from './pages/AdminHomePage';
+import AdminGroupsPage from './pages/AdminGroupsPage';
 import QuizzesPage from './pages/QuizzesPage';
 import QuizPage from './pages/QuizPage';
-import UserStatisticsPage from './pages/UserStatisticsPage'; // Import UserStatisticsPage
-import UserQuizSessionsPage from './pages/UserQuizSessionsPage'; // Import UserQuizSessionsPage
-import SessionHistoryPage from './pages/SessionHistoryPage'; // Import SessionHistoryPage
-
-// Components
-import ProtectedRoute from './components/auth/ProtectedRoute';
-import AppLayout from './components/layout/AppLayout';
+import UserStatisticsPage from './pages/UserStatisticsPage';
+import UserQuizSessionsPage from './pages/UserQuizSessionsPage';
+import SessionHistoryPage from './pages/SessionHistoryPage';
+import GrammarPage from './pages/GrammarPage';
+import UnderConstructionPage from './pages/UnderConstructionPage';
+import EmeneauRulesPage from './pages/EmeneauRulesPage';
 
 // Stores
-import { useThemeStore } from './store/themeStore'; // Import useThemeStore
+import { useThemeStore } from './store/themeStore';
 
 // i18n
 import './i18n';
@@ -40,60 +44,250 @@ import './i18n';
 const queryClient = new QueryClient();
 
 export default function App() {
-  const { theme, setTheme } = useThemeStore(); // Get theme and setTheme from store
+  const { theme, setTheme } = useThemeStore();
 
   useEffect(() => {
-    // Apply the theme from the store on initial load
     setTheme(theme);
-  }, [theme, setTheme]); // Rerun if theme or setTheme changes (though setTheme is stable)
+  }, [theme, setTheme]);
 
   return (
-    <PrimeReactProvider>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <Routes>
-            {/* Public Home Page */}
-            <Route path="/" element={<HomePage />} />
+    <ErrorBoundary>
+      <PrimeReactProvider>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-            {/* Public authentication routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* New route for reset password */}
-            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+              {/* Protected routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <DashboardPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <SettingsPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings/password"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <ChangePasswordPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/users/:id"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <UserProfilePage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/quiz-sessions"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <UserQuizSessionsPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/quiz-sessions/:sessionId/history"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <SessionHistoryPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/statistics"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <UserStatisticsPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/groups/:id"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <GroupPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Grammar routes */}
+              <Route
+                path="/grammar"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <GrammarPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/grammar/declensions"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <QuizzesPage category="declensions" />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/grammar/conjugations"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <UnderConstructionPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/grammar/emeneau-quizzes"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <UnderConstructionPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/grammar/emeneau-rules"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <EmeneauRulesPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Protected routes */}
-            <Route path="/" element={<ProtectedRoute />}>
-              <Route element={<AppLayout />}>
-                <Route path="dashboard" element={<DashboardPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="settings/password" element={<ChangePasswordPage />} />
-                <Route path="users/:id" element={<UserProfilePage />} />
-                <Route path="quiz-sessions" element={<UserQuizSessionsPage />} /> {/* New route for user quiz sessions */}
-                <Route path="quiz-sessions/:sessionId/history" element={<SessionHistoryPage />} /> {/* New route for session history */}
-                <Route path="statistics" element={<UserStatisticsPage />} /> {/* New route for user statistics */}
-                <Route path="groups/:id" element={<GroupPage />} />
-                <Route path="quizzes/:category" element={<QuizzesPage />} />
-                {/* Unified QuizPage route with optional sessionId */}
-                <Route path="quiz/:quizCategory/:slug/:sessionId?" element={<QuizPage />} />
-                
-                {/* Admin only routes */}
-                <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-                  <Route path="admin" element={<AdminHomePage />} /> {/* New Admin Home Page */}
-                  <Route path="admin/users" element={<AdminUsersPage />} />
-                  <Route path="admin/groups" element={<AdminGroupsPage />} /> {/* New Admin Groups Page */}
-                  <Route path="groups" element={<GroupListPage />} />
-                  <Route path="groups/new" element={<GroupCreatePage />} />
-                  <Route path="groups/:id/edit" element={<GroupEditPage />} />
-                </Route>
-              </Route>
-            </Route>
+              {/* Vocabulary quizzes */}
+              <Route
+                path="/quizzes/vocabulary"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <QuizzesPage category="vocabulary" />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/quiz/:quizCategory/:slug/:sessionId?"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <QuizPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Redirect any unmatched routes to the home page or dashboard if authenticated */}
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </PrimeReactProvider>
+              {/* Admin only routes */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <AdminHomePage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <AdminUsersPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/groups"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <AdminGroupsPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/groups"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <GroupListPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/groups/new"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <GroupCreatePage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/groups/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <GroupEditPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Redirect any unmatched routes */}
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </BrowserRouter>
+        </QueryClientProvider>
+      </PrimeReactProvider>
+    </ErrorBoundary>
   );
 }

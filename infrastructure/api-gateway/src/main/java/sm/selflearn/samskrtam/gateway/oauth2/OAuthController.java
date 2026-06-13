@@ -20,27 +20,11 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.gateway.config.OAuth2Properties;
-import sm.selflearn.samskrtam.user.dto.OAuthSyncRequest; // Import OAuthSyncRequest from shared module
+import sm.selflearn.samskrtam.user.dto.OAuthSyncRequest;
 
 import java.net.URI;
 import java.util.Set;
 
-/**
- * Обрабатывает OAuth2 Authorization Code flow.
- *
- * <p>Фронтенд никогда не знает client_secret — он хранится только в env Gateway.
- *
- * <h3>Эндпоинты:</h3>
- * <ul>
- *   <li>{@code GET /api/v1/auth/oauth2/{provider}} — инициирует редирект на Keycloak
- *   <li>{@code GET /api/v1/auth/oauth2/callback} — принимает code от Keycloak,
- *       обменивает на токены, синхронизирует профиль с user-service,
- *       редиректит фронтенд с токеном в URL fragment
- * </ul>
- *
- * <p>Токен передаётся в URL fragment (#) — браузер не отправляет fragment серверу,
- * поэтому токен не попадает в серверные логи.
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/auth/oauth2")
@@ -61,19 +45,6 @@ public class OAuthController {
     @Value("${frontend.url}")
     private String frontendUrl;
 
-    // ── Step 1: Инициация OAuth2 flow ────────────────────────────────────────
-
-    /**
-     * Фронтенд вызывает этот эндпоинт для начала OAuth2 flow.
-     *
-     * <p>Gateway:
-     * <ol>
-     *   <li>Валидирует provider
-     *   <li>Генерирует cryptographically secure state, сохраняет в Redis (TTL 10 мин)
-     *   <li>Строит Authorization URL к Keycloak
-     *   <li>Возвращает 302 Redirect на Keycloak
-     * </ol>
-     */
     @GetMapping("/{provider}")
     public Mono<ResponseEntity<Void>> initiateOAuth2(
             @PathVariable String provider,
@@ -96,23 +67,6 @@ public class OAuthController {
                 });
     }
 
-    // ── Step 5: Callback от Keycloak ─────────────────────────────────────────
-
-    /**
-     * Keycloak редиректит сюда с {@code code} и {@code state} после аутентификации.
-     *
-     * <p>Gateway:
-     * <ol>
-     *   <li>Проверяет state из Redis (защита от CSRF) — одноразовый
-     *   <li>Обменивает code на токены у Keycloak (с client_secret)
-     *   <li>Передаёт Keycloak access_token в user-service для синхронизации профиля
-     *   <li>Получает собственный JWT от user-service
-     *   <li>Редиректит фронтенд: {@code ${FRONTEND_URL}/auth/callback#token=...}
-     * </ol>
-     *
-     * <p>Токен передаётся в URL fragment (#) — браузер не отправляет fragment серверу,
-     * поэтому токен не попадает в серверные логи.
-     */
     @GetMapping("/callback")
     public Mono<ResponseEntity<Void>> handleCallback(
             @RequestParam String code,
@@ -132,33 +86,23 @@ public class OAuthController {
                 .flatMap(provider -> exchangeCodeForTokens(code)
                         .flatMap(keycloakToken -> syncProfileWithUserService(
                                 keycloakToken.accessToken(), provider)
-                                .then(Mono.just(keycloakToken.accessToken())))
+                                .thenReturn(keycloakToken)) // Return the whole token response
                         .doOnNext(finalAppToken -> log.debug("Final appToken for redirect: {}", finalAppToken))
-                        .flatMap(appToken -> redirectToFrontendWithToken(exchange, appToken)))
+                        .flatMap(appToken -> redirectToFrontendWithTokens(exchange, appToken))) // Pass the whole token response
                 .doOnSuccess(v -> log.debug("OAuth2 callback processing completed successfully."))
                 .doOnError(e -> log.error("Error during OAuth2 callback processing: {}", e.getMessage(), e));
     }
 
-    // ── Вспомогательные методы ───────────────────────────────────────────────
-
-    /**
-     * Строит URL Authorization Endpoint с параметрами.
-     * Keycloak Identity Provider alias совпадает с provider slug (google, mailru).
-     */
     private String buildAuthorizationUrl(String provider, String state) {
         return oauth2Props.oidcAuthorizationEndpoint()
                + "?client_id=" + oauth2Props.getClientId()
                + "&redirect_uri=" + encodeUrl(oauth2Props.getRedirectUri())
                + "&response_type=code"
-               + "&scope=openid+email+profile"
+               + "&scope=openid+email+profile+offline_access"
                + "&state=" + state
                + "&kc_idp_hint=" + provider;
     }
 
-    /**
-     * Шаг 2: Обмен code на токены у Keycloak.
-     * client_secret передаётся только здесь — фронтенд его никогда не видит.
-     */
     private Mono<KeycloakTokenResponse> exchangeCodeForTokens(String code) {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type",    "authorization_code");
@@ -194,10 +138,6 @@ public class OAuthController {
                 .doOnError(e -> log.error("Error during Keycloak token exchange: {}", e.getMessage(), e));
     }
 
-    /**
-     * Шаг 3: Синхронизация профиля с user-service.
-     * user-service создаёт/обновляет пользователя и возвращает собственный JWT.
-     */
     private Mono<Void> syncProfileWithUserService(String keycloakAccessToken, String provider) {
         return userServiceWebClient.post()
                 .uri("/api/v1/users/oauth2/sync")
@@ -216,29 +156,27 @@ public class OAuthController {
                 .doOnSuccess(t -> log.debug("user-service oauth2 sync successful"));
     }
 
-    /** Шаг 4: Редирект на фронтенд с токеном в URL fragment. */
-    private Mono<ResponseEntity<Void>> redirectToFrontendWithToken(ServerWebExchange exchange, String token) {
+    private Mono<ResponseEntity<Void>> redirectToFrontendWithTokens(ServerWebExchange exchange, KeycloakTokenResponse tokenResponse) {
         if (frontendUrl == null || frontendUrl.isBlank()) {
             log.error("Frontend URL is not configured. Cannot redirect after OAuth2 callback.");
             return Mono.error(new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR, "Frontend URL not configured"));
         }
 
-        String location = frontendUrl + "/auth/callback#token=" + token;
-        log.debug("Redirecting to frontend with token. Frontend URL: {}, Location: {}", frontendUrl, location);
+        String location = frontendUrl + "/auth/callback#access_token=" + tokenResponse.accessToken() + "&refresh_token=" + tokenResponse.refreshToken();
+        log.debug("Redirecting to frontend with tokens. Location: {}", location);
         try {
             return Mono.just(ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create(location))
                     .build());
         } catch (IllegalArgumentException e) {
-            log.error("Failed to create URI for frontend redirect. Frontend URL: {}, Location: {}. Error: {}",
-                    frontendUrl, location, e.getMessage());
+            log.error("Failed to create URI for frontend redirect. Location: {}. Error: {}",
+                    location, e.getMessage());
             return Mono.error(new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR, "Invalid frontend redirect URL"));
         }
     }
 
-    /** Редирект на фронтенд при ошибке OAuth2. */
     private Mono<ResponseEntity<Void>> redirectToFrontendWithError(ServerWebExchange exchange, String error) {
         if (frontendUrl == null || frontendUrl.isBlank()) {
             log.error("Frontend URL is not configured. Cannot redirect after OAuth2 error.");
@@ -246,14 +184,14 @@ public class OAuthController {
                     HttpStatus.INTERNAL_SERVER_ERROR, "Frontend URL not configured for error redirect"));
         }
         String location = frontendUrl + "/auth/callback?error=" + encodeUrl(error);
-        log.debug("Redirecting to frontend with error. Frontend URL: {}, Location: {}", frontendUrl, location);
+        log.debug("Redirecting to frontend with error. Location: {}", location);
         try {
             return Mono.just(ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create(location))
                     .build());
         } catch (IllegalArgumentException e) {
-            log.error("Failed to create URI for frontend error redirect. Frontend URL: {}, Location: {}. Error: {}",
-                    frontendUrl, location, e.getMessage());
+            log.error("Failed to create URI for frontend error redirect. Location: {}. Error: {}",
+                    location, e.getMessage());
             return Mono.error(new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR, "Invalid frontend redirect URL"));
         }

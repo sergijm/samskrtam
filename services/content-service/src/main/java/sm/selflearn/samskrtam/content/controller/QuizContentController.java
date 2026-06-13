@@ -15,7 +15,7 @@ import sm.selflearn.samskrtam.content.service.QuizContentService;
 import sm.selflearn.samskrtam.content.service.QuizService;
 import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.QuizListItemResponse;
-import sm.selflearn.samskrtam.content.dto.GeneratedQuizData; // Corrected import
+import sm.selflearn.samskrtam.content.dto.GeneratedQuizData;
 
 import java.util.List;
 import java.util.Locale;
@@ -31,7 +31,7 @@ public class QuizContentController {
     private final QuizContentService quizContentService;
     private final DeclensionFormRepository declensionFormRepository;
     private final QuizService quizService;
-    private final QuestionGenerationService questionGenerationService; // Inject QuestionGenerationService
+    private final QuestionGenerationService questionGenerationService;
 
     @GetMapping("/quizzes")
     @Operation(summary = "Get a list of available quizzes")
@@ -40,17 +40,17 @@ public class QuizContentController {
         return quizContentService.getQuizList(category);
     }
 
-    @PostMapping("/quizzes/{quizId}/generate-quiz-data") // Changed to PostMapping and new path
-    @Operation(summary = "Generate quiz data for a specific quiz") // Updated summary
-    @ApiResponse(responseCode = "200", description = "Quiz data generated successfully") // Updated description
+    @PostMapping("/quizzes/{quizId}/generate-quiz-data")
+    @Operation(summary = "Generate quiz data for a specific quiz")
+    @ApiResponse(responseCode = "200", description = "Quiz data generated successfully")
     @ApiResponse(responseCode = "404", description = "Quiz not found")
-    public GeneratedQuizData generateQuizData( // Changed return type and method name
+    public GeneratedQuizData generateQuizData(
             @PathVariable UUID quizId,
             @RequestHeader(value = "X-User-Locale", defaultValue = "en") Locale locale) {
-        return quizContentService.generateQuizData(quizId, locale); // Updated method call
+        return quizContentService.generateQuizData(quizId, locale);
     }
 
-    @GetMapping("/generated-quiz-data/{id}") // New endpoint
+    @GetMapping("/generated-quiz-data/{id}")
     @Operation(summary = "Get generated quiz data by ID")
     @ApiResponse(responseCode = "200", description = "Generated quiz data retrieved successfully")
     @ApiResponse(responseCode = "404", description = "Generated quiz data not found")

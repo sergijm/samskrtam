@@ -5,10 +5,11 @@ import { PaginatedResponse } from '../types/common';
 export const quizApi = {
   getQuizList: (category?: string) => {
     let url = '/api/v1/content/quizzes';
-    if (category) {
-      url += `?category=${category}`;
+    const params: { category?: string } = {};
+    if (category && category !== '') { // Only add category if it's not null/undefined/empty
+      params.category = category;
     }
-    return api.get<QuizListItem[]>(url);
+    return api.get<QuizListItem[]>(url, { params });
   },
 
   getQuizBySlug: (slug: string) => api.get<QuizSummaryDto>(`/api/v1/content/quizzes/by-slug/${slug}`),
@@ -74,7 +75,7 @@ export const quizApi = {
     });
   },
 
-  getUserQuizSessions: (userId: string, page: number, size: number, sortBy: string, sortDirection: string, quizType?: QuizType, status?: string) => {
+  getUserQuizSessions: (userId: string, page: number, size: number, sortBy: string, sortDirection: string, quizType?: QuizType, status?: SessionStatus) => {
     return api.get<PaginatedResponse<QuizSessionSummary>>(`/api/v1/quiz-sessions`, {
       params: {
         userId,
@@ -104,5 +105,9 @@ export const quizApi = {
     return api.get<QuizProgress>(`/api/v1/quiz-sessions/progress`, {
       params: { userId, quizId },
     });
+  },
+
+  getAllSandhiRules: () => {
+    return api.get<SandhiRuleDto[]>('/api/v1/eamenau/sandhi-rules');
   },
 };

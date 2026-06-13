@@ -11,13 +11,13 @@ import { Dropdown } from 'primereact/dropdown';
 import { Button } from 'primereact/button';
 
 import { useUserQuizSessions } from '../hooks/useUserQuizSessions';
-import { useAuthStore } from '../store/authStore';
+import { useMe } from '../hooks/useUser'; // Import useMe
 import { QuizType, SessionStatus, QuizSessionSummary } from '../types/quiz';
 
 const UserQuizSessionsPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { data: user, isLoading: isUserLoading } = useMe(); // Get user from useMe
 
   const currentUserId = user?.id;
 
@@ -28,7 +28,7 @@ const UserQuizSessionsPage = () => {
   const [quizTypeFilter, setQuizTypeFilter] = useState<QuizType | undefined>(undefined);
   const [statusFilter, setStatusFilter] = useState<SessionStatus | undefined>(undefined);
 
-  const { data, isLoading, isError, error } = useUserQuizSessions(
+  const { data, isLoading: isSessionsLoading, isError, error } = useUserQuizSessions(
     currentUserId || '',
     page,
     size,
@@ -130,15 +130,7 @@ const UserQuizSessionsPage = () => {
     navigate(`/quiz-sessions/${rowData.sessionId}/history`);
   };
 
-  if (!currentUserId) {
-    return (
-      <div className="flex justify-content-center align-items-center min-h-screen">
-        <Message severity="error" text={t('userProfile.errorLoadingUser')} />
-      </div>
-    );
-  }
-
-  if (isLoading) {
+  if (isUserLoading || isSessionsLoading) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
         <ProgressSpinner />
@@ -190,7 +182,7 @@ const UserQuizSessionsPage = () => {
           onSort={onSort}
           sortField={sortBy}
           sortOrder={sortDirection === 'asc' ? 1 : -1}
-          loading={isLoading}
+          loading={isSessionsLoading}
           emptyMessage={t('userProfile.noQuizSessionsFound')}
           selectionMode="single"
           onRowClick={onRowClick}

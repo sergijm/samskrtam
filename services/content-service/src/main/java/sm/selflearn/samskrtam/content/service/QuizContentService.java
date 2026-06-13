@@ -13,9 +13,7 @@ import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.content.model.GeneratedQuizDataRecord;
 import sm.selflearn.samskrtam.content.model.GeneratedQuestion;
 import sm.selflearn.samskrtam.content.model.Quiz;
-import sm.selflearn.samskrtam.content.repository.GeneratedQuizDataRecordRepository;
-import sm.selflearn.samskrtam.content.repository.GeneratedQuestionRepository;
-import sm.selflearn.samskrtam.content.repository.QuizRepository;
+import sm.selflearn.samskrtam.content.repository.*;
 import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.QuizListItemResponse;
 
@@ -31,9 +29,11 @@ public class QuizContentService {
     private final QuizRepository quizRepository;
     private final QuestionGenerationService questionGenerationService;
     private final VocabularyService vocabularyService;
-    private final GeneratedQuizDataRecordRepository generatedQuizDataRecordRepository; // Inject new repository
-    private final GeneratedQuestionRepository generatedQuestionRepository; // Inject new repository
-    private final ObjectMapper objectMapper; // Inject ObjectMapper for JSON serialization
+    private final GeneratedQuizDataRecordRepository generatedQuizDataRecordRepository;
+    private final GeneratedQuestionRepository generatedQuestionRepository;
+    private final VocabularyCategoryRepository vocabularyCategoryRepository;
+    private final VocabularyWordCategoryRepository vocabularyWordCategoryRepository;
+    private final ObjectMapper objectMapper;
 
     public List<QuizListItemResponse> getQuizList(String category) {
         return quizRepository.findAll().stream()
@@ -41,19 +41,34 @@ public class QuizContentService {
                     if (category == null) {
                         return true;
                     }
-                    if ("grammar".equalsIgnoreCase(category)) {
-                        return quiz.getQuizType() != QuizType.VOCABULARY;
+                    switch (category.toLowerCase()) {
+                        case "declensions":
+                            return quiz.getQuizType().toString().contains("DECLENSIONS");
+                        case "conjugations":
+                            return quiz.getQuizType() == QuizType.CONJUGATIONS;
+                        case "vocabulary":
+                            return quiz.getQuizType() == QuizType.VOCABULARY;
+                        case "grammar": // Fallback for general grammar, if needed
+                            return quiz.getQuizType() != QuizType.VOCABULARY;
+                        default:
+                            return true;
                     }
-                    if ("vocabulary".equalsIgnoreCase(category)) {
-                        return quiz.getQuizType() == QuizType.VOCABULARY;
-                    }
-                    return true;
                 })
                 .map(this::mapToQuizListItemResponse)
                 .collect(Collectors.toList());
     }
 
     private QuizListItemResponse mapToQuizListItemResponse(Quiz quiz) {
+        int wordCount = 0;
+        if (quiz.getQuizType() == QuizType.VOCABULARY) {
+            wordCount = vocabularyCategoryRepository.findByCodeIgnoreCase(quiz.getSlug())
+                    .map(category -> {
+                        List<UUID> allCategoryIds = vocabularyCategoryRepository.findAllChildrenIds(category.getId());
+                        return vocabularyWordCategoryRepository.countByCategoryIdIn(allCategoryIds);
+                    })
+                    .orElse(0);
+        }
+
         return QuizListItemResponse.builder()
                 .id(quiz.getId())
                 .title(quiz.getTitleEn())
@@ -65,6 +80,7 @@ public class QuizContentService {
                 .quizType(quiz.getQuizType())
                 .slug(quiz.getSlug())
                 .totalQuestions(quiz.getQuestionsPerSession())
+                .wordCount(wordCount)
                 .build();
     }
 
@@ -78,7 +94,7 @@ public class QuizContentService {
         List<VocabularyWordDto> vocabularyWords = Collections.emptyList();
         String vocabularyWordsJson = null;
         if (quiz.getQuizType() == QuizType.VOCABULARY) {
-            vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(quiz.getSlug(), quiz.getQuestionsPerSession() * 4); // Changed to quiz.getSlug()
+            vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(quiz.getSlug(), quiz.getQuestionsPerSession() * 4);
             try {
                 vocabularyWordsJson = objectMapper.writeValueAsString(vocabularyWords);
             } catch (JsonProcessingException e) {
@@ -87,11 +103,9 @@ public class QuizContentService {
             }
         }
 
-        // Save GeneratedQuizDataRecord
         GeneratedQuizDataRecord record = GeneratedQuizDataRecord.builder()
                 .id(generatedQuizDataId)
                 .quizId(quizId)
-                // Removed quizType from here as it's no longer in GeneratedQuizDataRecord
                 .userLocale(locale.getLanguage())
                 .generatedAt(Instant.now())
                 .vocabularyWordsJson(vocabularyWordsJson)
@@ -102,13 +116,12 @@ public class QuizContentService {
                 generatedQuizDataId,
                 quiz, locale.getLanguage());
 
-        // Save GeneratedQuestions and link them to generatedQuizDataId
         List<GeneratedQuestion> generatedQuestionEntities = questions.stream()
                 .map(dto -> GeneratedQuestion.builder()
                         .id(dto.getId())
-                        .generatedQuizDataId(dto.getGeneratedQuizDataId()) // Get from DTO
+                        .generatedQuizDataId(dto.getGeneratedQuizDataId())
                         .quizId(dto.getQuizId())
-                        .questionNumber(dto.getQuestionNumber()) // Map questionNumber
+                        .questionNumber(dto.getQuestionNumber())
                         .text(dto.getText())
                         .explanationRu(dto.getExplanationRu())
                         .explanationEn(dto.getExplanationEn())
@@ -122,11 +135,10 @@ public class QuizContentService {
                         .questionTargetLanguage(dto.getQuestionTargetLanguage())
                         .correctTranslationRu(dto.getCorrectTranslationRu())
                         .correctTranslationEn(dto.getCorrectTranslationEn())
-                        .userLocale(dto.getUserLocale()) // Get from DTO
-                        // Map new fields
+                        .userLocale(dto.getUserLocale())
                         .stem(dto.getStem())
-                        .caseType(dto.getTargetCase()) // Map Case enum
-                        .numberType(dto.getTargetNumber()) // Map Number enum
+                        .caseType(dto.getTargetCase())
+                        .numberType(dto.getTargetNumber())
                         .build())
                 .collect(Collectors.toList());
         generatedQuestionRepository.saveAll(generatedQuestionEntities);
@@ -136,7 +148,7 @@ public class QuizContentService {
         return GeneratedQuizData.builder()
                 .generatedQuizDataId(generatedQuizDataId)
                 .quizId(quiz.getId())
-                .quizType(quiz.getQuizType()) // Get quizType from Quiz entity
+                .quizType(quiz.getQuizType())
                 .questionsPerSession(quiz.getQuestionsPerSession())
                 .generatedQuestions(sortedQuestions)
                 .vocabularyWords(vocabularyWords)
@@ -147,13 +159,13 @@ public class QuizContentService {
         GeneratedQuizDataRecord record = generatedQuizDataRecordRepository.findById(generatedQuizDataId)
                 .orElseThrow(() -> new SamskrtamException("GENERATED_QUIZ_DATA_NOT_FOUND", "Generated quiz data not found with ID: " + generatedQuizDataId));
 
-        List<GeneratedQuestion> questionEntities = generatedQuestionRepository.findByGeneratedQuizDataIdOrderByQuestionNumberAsc(generatedQuizDataId); // Sort by questionNumber
+        List<GeneratedQuestion> questionEntities = generatedQuestionRepository.findByGeneratedQuizDataIdOrderByQuestionNumberAsc(generatedQuizDataId);
         List<GeneratedQuizQuestionDto> questions = questionEntities.stream()
                 .map(entity -> GeneratedQuizQuestionDto.builder()
                         .id(entity.getId())
-                        .generatedQuizDataId(entity.getGeneratedQuizDataId()) // Map generatedQuizDataId
+                        .generatedQuizDataId(entity.getGeneratedQuizDataId())
                         .quizId(entity.getQuizId())
-                        .questionNumber(entity.getQuestionNumber()) // Map questionNumber
+                        .questionNumber(entity.getQuestionNumber())
                         .text(entity.getText())
                         .explanationRu(entity.getExplanationRu())
                         .explanationEn(entity.getExplanationEn())
@@ -168,15 +180,14 @@ public class QuizContentService {
                         .correctTranslationRu(entity.getCorrectTranslationRu())
                         .correctTranslationEn(entity.getCorrectTranslationEn())
                         .userLocale(entity.getUserLocale())
-                        // Map new fields
                         .stem(entity.getStem())
-                        .caseType(entity.getTargetCase() != null ? entity.getTargetCase().getRuName() : null) // Map Case enum
-                        .numberType(entity.getTargetNumber() != null ? entity.getTargetNumber().getRuName() : null) // Map Number enum
+                        .caseType(entity.getTargetCase() != null ? entity.getTargetCase().getRuName() : null)
+                        .numberType(entity.getTargetNumber() != null ? entity.getTargetNumber().getRuName() : null)
                         .build())
                 .collect(Collectors.toList());
 
         List<VocabularyWordDto> vocabularyWords = Collections.emptyList();
-        if (record.getVocabularyWordsJson() != null) { // Check if vocabularyWordsJson exists
+        if (record.getVocabularyWordsJson() != null) {
             try {
                 vocabularyWords = objectMapper.readValue(record.getVocabularyWordsJson(),
                         objectMapper.getTypeFactory().constructCollectionType(List.class, VocabularyWordDto.class));
@@ -193,9 +204,9 @@ public class QuizContentService {
 
         return GeneratedQuizData.builder()
                 .generatedQuizDataId(record.getId())
-                .quizId(record.getQuizId())
-                .quizType(quiz.getQuizType()) // Get quizType from Quiz entity
-                .questionsPerSession(quiz.getQuestionsPerSession()) // Get from Quiz entity
+                .quizId(quiz.getId())
+                .quizType(quiz.getQuizType())
+                .questionsPerSession(quiz.getQuestionsPerSession())
                 .generatedQuestions(sortedQuestions)
                 .vocabularyWords(vocabularyWords)
                 .build();

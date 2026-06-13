@@ -7,6 +7,7 @@ import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import lombok.extern.slf4j.Slf4j; // Import Slf4j
 
 /**
  * Маршрутизация объявлена через Java DSL — не в application.yml.
@@ -17,6 +18,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
  * <p>Если маршрут не проксируется — проверяй этот файл и SecurityConfig.
  */
 @Configuration
+@Slf4j // Add Slf4j annotation
 public class GatewayRoutesConfig {
 
     @Value("${USER_SERVICE_URL:http://user-service:8087}")
@@ -36,6 +38,7 @@ public class GatewayRoutesConfig {
 
     @Bean
     public RouteLocator routes(RouteLocatorBuilder builder) {
+        log.info("Configuring Gateway Routes...");
         return builder.routes()
                 // --- New routes for user-service auth endpoints with path rewriting ---
                 .route("user-service-register-route", r -> r
@@ -87,6 +90,11 @@ public class GatewayRoutesConfig {
                         .path("/api/v1/content/**")
                         .uri(contentServiceUrl))
 
+                // ── Eamenau Content ──────────────────────────────────────────────
+                .route("eamenau", r -> r
+                        .path("/api/v1/eamenau/**")
+                        .uri(contentServiceUrl))
+
                 // ── Quiz Service ─────────────────────────────────────────────────
                 .route("quiz", r -> r
                         .path("/api/v1/quiz/**")
@@ -94,7 +102,7 @@ public class GatewayRoutesConfig {
 
                 // --- New route for user quiz sessions ---
                 .route("user-quiz-sessions", r -> r
-                        .path("/api/v1/quiz-sessions/**") // Изменено для включения подпутей
+                        .path("/api/v1/quiz-sessions/**")
                         .uri(quizServiceUrl))
                 // --- End new route ---
 
