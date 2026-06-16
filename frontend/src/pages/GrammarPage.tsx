@@ -9,6 +9,12 @@ const GrammarPage = () => {
 
   const grammarSections = [
     {
+      title: t('grammar.sandhiExercisesTitle'),
+      description: t('grammar.sandhiExercisesDescription'),
+      link: '/grammar/emeneau-exercises',
+      icon: 'pi pi-pencil'
+    },
+    {
       title: t('grammar.sandhiQuizzesTitle'),
       description: t('grammar.sandhiQuizzesDescription'),
       link: '/grammar/emeneau-quizzes',

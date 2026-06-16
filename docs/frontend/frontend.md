@@ -3,7 +3,7 @@
 > Модуль: `frontend/`
 > Язык: TypeScript 5
 > Фреймворк: React 18
-> Status: **DRAFT**
+> Status: **UPDATED**
 
 ---
 
@@ -32,7 +32,7 @@ PrimeReact — React-версия PrimeFaces от той же компании (
 
 | PrimeFaces | PrimeReact | Где используется |
 |---|---|---|
-| `<p:dataTable>` | `<DataTable>` | Лидерборд, история сессий, админка |
+| `<p:dataTable>` | `<DataTable>` | Лидерборд, история сессий, админка, списки упражнений Эмено |
 | `<p:card>` | `<Card>` | QuizCard, WordCard, ScoreSummary |
 | `<p:steps>` | `<Steps>` | Прогресс квиза (1/10 ... 10/10) |
 | `<p:tabView>` | `<TabPanel>` | AdminPage вкладки |
@@ -52,14 +52,6 @@ PrimeReact поддерживает динамическую смену темы
 | Тёмная | `lara-dark-amber` |
 
 Вместо статического `import` в `main.tsx` тема подключается динамически — `themeStore` меняет `href` у тега `<link>`:
-
-```typescript
-// main.tsx — только базовые стили, без темы
-import 'primereact/resources/primereact.min.css';
-import 'primeicons/primeicons.css';
-import 'primeflex/primeflex.css';
-// Тема подключается динамически через themeStore при монтировании App
-```
 
 ```html
 <!-- index.html — placeholder для динамической темы -->
@@ -81,19 +73,19 @@ frontend/
     ├── main.tsx                    ← точка входа
     ├── App.tsx                     ← роутер + провайдеры
     │
-    ├── pages/                      ← страницы (один файл = один роут)
-    │   ├── HomePage.tsx            ← публичная landing для незалогиненных
+    ├── pages/                      ← страницы
+    │   ├── HomePage.tsx
     │   ├── LoginPage.tsx
     │   ├── RegisterPage.tsx
     │   ├── ForgotPasswordPage.tsx
     │   ├── AuthCallbackPage.tsx
-    │   ├── ChangePasswordPage.tsx  ← спецификация в user-frontend.md
-    │   ├── SettingsPage.tsx        ← спецификация в user-frontend.md
-    │   ├── UserProfilePage.tsx     ← спецификация в user-frontend.md
-    │   ├── GroupListPage.tsx       ← список групп (только ADMIN)
-    │   ├── GroupPage.tsx           ← страница группы
-    │   ├── GroupCreatePage.tsx     ← создание группы (только ADMIN)
-    │   ├── GroupEditPage.tsx       ← редактирование названия (ADMIN / CURATOR)
+    │   ├── ChangePasswordPage.tsx
+    │   ├── SettingsPage.tsx
+    │   ├── UserProfilePage.tsx
+    │   ├── GroupListPage.tsx
+    │   ├── GroupPage.tsx
+    │   ├── GroupCreatePage.tsx
+    │   ├── GroupEditPage.tsx
     │   ├── DashboardPage.tsx
     │   ├── QuizListPage.tsx
     │   ├── QuizPage.tsx
@@ -101,75 +93,85 @@ frontend/
     │   ├── DictionaryPage.tsx
     │   ├── StatisticsPage.tsx
     │   ├── LeaderboardPage.tsx
-    │   ├── AdminHomePage.tsx       // Новая страница для админки
+    │   ├── AdminHomePage.tsx
     │   ├── AdminUsersPage.tsx
-    │   └── AdminGroupsPage.tsx     // Новая страница для управления группами
+    │   ├── AdminGroupsPage.tsx
+    │   ├── GrammarPage.tsx
+    │   ├── EmeneauRulesPage.tsx
+    │   └── eamenau/                ← Функциональность по Эмено вынесена в отдельную поддиректорию
+    │       ├── EmeneauExercisesPage.tsx
+    │       └── EmeneauExerciseDetailPage.tsx
     │
     ├── components/                 ← переиспользуемые компоненты
     │   ├── layout/
-    │   │   ├── AppLayout.tsx       ← шапка + навигация + контент (только для залогиненных)
-    │   │   ├── Header.tsx          ← шапка залогиненного: лого + навигация + ThemeSwitcher + LocaleSwitcher + кнопка Выйти
+    │   │   ├── AppLayout.tsx
+    │   │   ├── Header.tsx
     │   │   └── Sidebar.tsx
     │   ├── auth/
-    │   │   └── ProtectedRoute.tsx  ← HOC для защищённых роутов
+    │   │   └── ProtectedRoute.tsx
     │   ├── quiz/
-    │   │   ├── QuizCard.tsx        ← карточка квиза в списке
-    │   │   ├── QuestionCard.tsx    ← вопрос + варианты ответа
-    │   │   ├── OptionButton.tsx    ← кнопка варианта ответа
-    │   │   ├── FeedbackPanel.tsx   ← правильно/нет + объяснение
-    │   │   └── ProgressBar.tsx     ← прогресс 3/10
+    │   │   ├── QuizCard.tsx
+    │   │   ├── QuestionCard.tsx
+    │   │   ├── OptionButton.tsx
+    │   │   ├── FeedbackPanel.tsx
+    │   │   └── ProgressBar.tsx
     │   ├── statistics/
-    │   │   ├── ScoreSummary.tsx    ← итог сессии
-    │   │   ├── AnswerReview.tsx    ← разбор вопросов
-    │   │   ├── HeatmapChart.tsx    ← тепловая карта ошибок
+    │   │   ├── ScoreSummary.tsx
+    │   │   ├── AnswerReview.tsx
+    │   │   ├── HeatmapChart.tsx
     │   │   └── LeaderboardTable.tsx
     │   ├── dictionary/
-    │   │   ├── WordCard.tsx        ← статья словаря
-    │   │   └── SearchInput.tsx     ← поиск с автодополнением
-    │   └── common/
-    │       ├── LocaleSwitcher.tsx  ← переключатель ru/en
-    │       ├── ThemeSwitcher.tsx   ← переключатель светлая/тёмная
-    │       ├── LoadingSpinner.tsx
-    │       └── ErrorMessage.tsx
-    │   ├── user/                   ← компоненты профиля (user-frontend.md)
+    │   │   ├── WordCard.tsx
+    │   │   └── SearchInput.tsx
+    │   ├── common/
+    │   │   ├── LocaleSwitcher.tsx
+    │   │   ├── ThemeSwitcher.tsx
+    │   │   ├── LoadingSpinner.tsx
+    │   │   └── ErrorMessage.tsx
+    │   ├── user/
     │   │   ├── UserGroupChips.tsx
     │   │   └── UserAvatar.tsx
-    │   └── group/                  ← компоненты групп (user-frontend.md)
-    │       ├── GroupMembersTable.tsx
-    │       ├── GroupCuratorBadge.tsx
-    │       └── AddMemberDialog.tsx
+    │   ├── group/
+    │   │   ├── GroupMembersTable.tsx
+    │   │   ├── GroupCuratorBadge.tsx
+    │   │   └── AddMemberDialog.tsx
+    │   └── eamenau/                ← Компоненты для функциональности Эмено
+    │       └── SolutionPanel.tsx
     │
     ├── api/                        ← HTTP клиенты по доменам
-    │   ├── axios.ts                ← настройка axios + interceptors
+    │   ├── axios.ts
     │   ├── authApi.ts
-    │   ├── userApi.ts              ← пользователи и группы (user-frontend.md)
+    │   ├── userApi.ts
     │   ├── quizApi.ts
     │   ├── dictionaryApi.ts
-    │   └── statisticsApi.ts
+    │   ├── statisticsApi.ts
+    │   └── contentApi.ts           ← Обновлен для работы с упражнениями Эмено
     │
     ├── store/                      ← Zustand stores
-    │   ├── authStore.ts            ← токены, текущий пользователь
-    │   ├── localeStore.ts          ← текущий язык
-    │   └── themeStore.ts           ← текущая тема
+    │   ├── authStore.ts
+    │   ├── localeStore.ts
+    │   └── themeStore.ts
     │
     ├── hooks/                      ← React Query хуки
-    │   ├── useUser.ts              ← пользователи (user-frontend.md)
-    │   ├── useGroups.ts            ← группы (user-frontend.md)
+    │   ├── useUser.ts
+    │   ├── useGroups.ts
     │   ├── useQuizzes.ts
     │   ├── useQuizSession.ts
     │   ├── useDictionary.ts
-    │   └── useStatistics.ts
+    │   ├── useStatistics.ts
+    │   └── useContent.ts           ← Обновлен для работы с упражнениями Эмено
     │
     ├── types/                      ← TypeScript типы
-    │   ├── user.ts                 ← User, Group, GroupMember (user-frontend.md)
+    │   ├── user.ts
     │   ├── quiz.ts
     │   ├── dictionary.ts
-    │   └── statistics.ts
+    │   ├── statistics.ts
+    │   └── index.ts                ← Обновлен для типов DTO Эмено
     │
     └── i18n/
-        ├── index.ts                ← настройка i18next
-        ├── ru.json                 ← русские переводы
-        └── en.json                 ← английские переводы
+        ├── index.ts
+        ├── ru.json
+        └── en.json
 ```
 
 ---
@@ -194,16 +196,23 @@ frontend/
 | `/settings/password` | ChangePasswordPage | Да | STUDENT, ADMIN |
 | `/settings` | SettingsPage | Да | STUDENT, ADMIN |
 | `/users/:id` | UserProfilePage | Да | STUDENT, ADMIN |
-| `/groups` | AdminGroupsPage | Да | ADMIN | // Изменено: теперь ведет на AdminGroupsPage
+| `/groups` | AdminGroupsPage | Да | ADMIN |
 | `/groups/new` | GroupCreatePage | Да | ADMIN |
 | `/groups/:id` | GroupPage | Да | STUDENT, ADMIN |
 | `/groups/:id/edit` | GroupEditPage | Да | ADMIN, CURATOR |
-| `/admin` | AdminHomePage | Да | ADMIN | // Изменено: теперь ведет на AdminHomePage
+| `/admin` | AdminHomePage | Да | ADMIN |
 | `/admin/users` | AdminUsersPage | Да | ADMIN |
-| `/admin/groups` | AdminGroupsPage | Да | ADMIN | // Новый роут для управления группами
+| `/admin/groups` | AdminGroupsPage | Да | ADMIN |
 | `/admin/flags` | FeatureFlagsPage | Да | ADMIN |
 | `/admin/flags/:name/history` | FlagHistoryPage | Да | ADMIN |
-| `/quiz-sessions/:sessionId/history` | SessionHistoryPage | Да | STUDENT | // NEW: Session History Page
+| `/quiz-sessions/:sessionId/history` | SessionHistoryPage | Да | STUDENT |
+| `/grammar` | GrammarPage | Да | STUDENT |
+| `/grammar/declensions` | QuizzesPage (category="declensions") | Да | STUDENT |
+| `/grammar/conjugations` | UnderConstructionPage | Да | STUDENT |
+| `/grammar/emeneau-exercises` | EmeneauExercisesPage | Да | STUDENT |
+| `/grammar/emeneau-exercises/:id` | EmeneauExerciseDetailPage | Да | STUDENT |
+| `/grammar/emeneau-quizzes` | UnderConstructionPage | Да | STUDENT |
+| `/grammar/emeneau-rules` | EmeneauRulesPage | Да | STUDENT |
 
 > Маршрут `/` отображает `HomePage` для неаутентифицированных пользователей и перенаправляет на `/dashboard` для аутентифицированных.
 
@@ -310,68 +319,12 @@ frontend/
         - Вторая строка: `email`.
 - **Кнопка "Выйти"** (крайняя справа, иконка `pi-sign-out`)
 
-```typescript
-// components/layout/Header.tsx
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../store/authStore';
-import { Button } from 'primereact/button';
-import { LocaleSwitcher } from '../common/LocaleSwitcher';
-import { ThemeSwitcher } from '../common/ThemeSwitcher';
-import UserAvatar from '../user/UserAvatar';
-import { useTranslation } from 'react-i18next';
-
-const Header = () => {
-  const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
-  const { t } = useTranslation();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
-
-  return (
-    <div className="layout-topbar flex justify-content-between align-items-center px-4 py-2">
-      <Link to="/" className="layout-topbar-logo no-underline text-xl font-bold">
-        <span>SamskrtamApp</span>
-      </Link>
-      <div className="layout-topbar-menu flex align-items-center gap-3">
-        <ThemeSwitcher />
-        <LocaleSwitcher />
-        {user && (
-          <Link to="/settings" className="no-underline text-color">
-            <UserAvatar
-              username={user.username}
-              firstName={user.firstName}
-              lastName={user.lastName}
-              email={user.email}
-              avatarUrl={user.avatarUrl}
-            />
-          </Link>
-        )}
-        {user && (
-          <Button icon="pi pi-sign-out" className="p-button-text" onClick={handleLogout} label={t('auth.logout')} />
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default Header;
-```
-
 ---
 
 ### HomePage (`/` — незалогиненный пользователь)
 
 **Назначение:** публичная landing для пользователей не прошедших авторизацию.
 Если пользователь залогинен — роут `/` перенаправляет на `/dashboard`.
-
-```typescript
-// App.tsx
-<Route path="/" element={<HomePage />} />
-```
 
 **Элементы:**
 
@@ -383,50 +336,6 @@ export default Header;
 - Заголовок: "SamskrtamApp"
 - Подзаголовок: "Learn Sanskrit with interactive quizzes and tools."
 
-```typescript
-// pages/HomePage.tsx
-import React, { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Button } from 'primereact/button';
-import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '../store/authStore';
-
-const HomePage = () => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
-
-  if (isAuthenticated) {
-    return null; // Render nothing while redirecting
-  }
-
-  return (
-    <div
-      className="relative min-h-screen bg-cover bg-center"
-      style={{ backgroundImage: 'url(/bk-samskrtam.jpg)' }}
-    >
-      <div className="absolute top-0 right-0 p-4">
-        <Link to="/login">
-          <Button label={t('auth.login')} className="p-button-primary" />
-        </Link>
-      </div>
-      <div className="flex flex-column align-items-center justify-content-center min-h-screen text-white">
-        <h1 className="text-6xl font-bold mb-3">SamskrtamApp</h1>
-        <p className="text-xl mb-5">Learn Sanskrit with interactive quizzes and tools.</p>
-      </div>
-    </div>
-  );
-};
-
-export default HomePage;
-```
-
 ---
 
 ### DashboardPage (`/dashboard` — залогиненный пользователь)
@@ -437,12 +346,77 @@ export default HomePage;
 
 **Элементы:**
 - Приветствие с именем пользователя: "Добро пожаловать, {{name}}"
-- Плитка "Грамматика" (ведет на `/quizzes/grammar`)
+- Плитка "Грамматика" (ведет на `/grammar`)
 - Плитка "Лексика" (ведет на `/quizzes/vocabulary`)
 - Плитка "Словарь" (ведет на `/dictionary`)
 - Плитка "Статистика" (ведет на `/statistics`)
 - Плитка "Лидерборд" (ведет на `/leaderboard`)
 - Плитка "Администрирование" (ведет на `/admin`, только для ADMIN)
+
+---
+
+### GrammarPage (`/grammar`)
+
+**Назначение:** страница с разделами грамматики.
+
+**Элементы:**
+- Плитка "Сандхи - Эмено (Упражнения)" (ведет на `/grammar/emeneau-exercises`)
+- Плитка "Сандхи - Эмено (Квизы)" (ведет на `/grammar/emeneau-quizzes`)
+- Плитка "Сандхи - Эмено (Правила)" (ведет на `/grammar/emeneau-rules`)
+- Плитка "Склонения" (ведет на `/grammar/declensions`)
+- Плитка "Спряжения" (ведет на `/grammar/conjugations`)
+
+---
+
+### EmeneauExercisesPage (`/grammar/emeneau-exercises`)
+
+**Назначение:** список всех упражнений Эмено.
+
+**Элементы:**
+- Заголовок "Сандхи - Эмено (Упражнения)"
+- Таблица из двух колонок без заголовков, рамок и бордеров:
+    - Колонка 1: Номер упражнения + буква (жирный шрифт)
+    - Колонка 2: Сокращенный текст инструкции (с многоточием, если длинный)
+- Сортировка по номеру упражнения.
+- При клике на строку упражнения происходит переход на страницу деталей упражнения (`/grammar/emeneau-exercises/{id}`).
+
+---
+
+### EmeneauExerciseDetailPage (`/grammar/emeneau-exercises/:id`)
+
+**Назначение:** детальный просмотр упражнения Эмено.
+
+**Элементы:**
+- Кнопки навигации "Назад" и "Вперед" для переключения между упражнениями.
+- Заголовок: "Упражнение № [номер] [буква]"
+- Полный текст инструкции.
+- Кнопка "Фильтровать правила" (отображается, если есть уникальные правила в упражнении). При клике перенаправляет на `/grammar/emeneau-rules` с параметрами `rule=N1&rule=N2...` для всех уникальных правил упражнения.
+- Таблица из двух колонок без заголовков, рамок и бордеров:
+    - Колонка 1: Номер задачи
+    - Колонка 2: Текст задачи
+- При клике на иконку-экспандер слева от задачи, под ней раскрывается панель с решением.
+
+**Панель решения (`SolutionPanel`):**
+- Текст решения (жирный шрифт).
+- Пошаговое описание (обычный текст).
+- Номера правил Сандхи (кликабельные, с тултипом). При клике на любой номер правила, происходит переход на `/grammar/emeneau-rules` с параметрами `rule=N1&rule=N2...` для *всех* правил, используемых в *данном решении*.
+- При наведении на номер правила отображается тултип с кратким описанием правила.
+
+---
+
+### EmeneauRulesPage (`/grammar/emeneau-rules`)
+
+**Назначение:** список всех правил Сандхи Эмено, с возможностью фильтрации.
+
+**Элементы:**
+- Заголовок "Сандхи - Эмено (Правила)"
+- Пагинация (если правил много).
+- Карточки для каждого правила:
+    - Заголовок: Номер правила, номер Уитни (если есть), краткое описание.
+    - Содержимое: Полный текст правила, примеры IAST (если есть).
+
+**Поведение:**
+- Если в URL присутствуют параметры `rule=N1&rule=N2...`, список правил фильтруется по этим номерам.
 
 ---
 
@@ -481,7 +455,7 @@ export default HomePage;
 
 **Роутинг по группам:**
 
-```typescript
+```
 // Грамматические квизы
 <QuizCard href={`/quiz/grammar/${quiz.type}`} />
 
@@ -498,7 +472,7 @@ export default HomePage;
 **Назначение:** прохождение квиза. Один компонент для всех типов квизов —
 параметры маршрута определяют какой сервис вызывается.
 
-```typescript
+```
 // App.tsx
 <Route path="/quiz/grammar/:type"      element={<QuizPage group="grammar" />} />
 <Route path="/quiz/vocabulary/:slug"   element={<QuizPage group="vocabulary" />} />
@@ -555,43 +529,38 @@ COMPLETED  → редирект на ResultPage
 **Элементы:**
 - `SearchInput` — поле ввода слова (латиница, SLP1 транслитерация)
 - Кнопка "Найти" — запускает поиск списка
-- `SearchResultsList` — горизонтальный кликабельный список найденных слов
-- `WordCard` — полная словарная статья выбранного слова
+- `SearchResultsList` — горизонтальный кликабельный список найденных слов (чипсы)
+- Таблица со словарными статьями:
+    - Колонка 1: `key1Display` (основное отображаемое слово)
+    - Колонка 2: `ecode` (жирным шрифтом)
+    - Колонка 3: `rawBody` (очищенный от HTML-тегов и HTML-сущностей текст)
 - `LoadingSpinner` — пока идёт запрос к внешнему API
+
+**Поведение:**
+- Состояние страницы управляется через URL-параметры:
+    - `?q=deva`: то, что показывается в строке поиска (по нему ищется список похожих слов).
+    - `&slp=deva`: по этому аргументу ищется словарная статья.
+- При загрузке страницы `searchTerm` инициализируется из параметра `q`.
+- При клике на чипс со словом, происходит редирект на эту же страницу с обновленными параметрами `q` (текущий поисковый запрос) и `slp` (значение `slp1Normalized` выбранного слова).
+- Чипс с текущим `slp` подсвечивается.
+- Спиннер отображается по центру только тогда, когда есть параметр `q` или `slp` в URL *и* при этом идет загрузка данных (`isSearching` или `isFetchingEntry`).
 
 **Двухэтапный флоу:**
 
 ```
 Этап 1 — поиск списка:
   Пользователь вводит "deva" → нажимает "Найти"
-  GET /api/v1/dictionary/search?q=deva
+  GET /api/v1/mw-dictionary/search?query=deva
   ↓
   Горизонтальный список: [deva] [devaka] [devī] [devadatta] ...
-  каждый элемент кликабелен
+  каждый элемент кликабелен, отображает slp1Normalized
 
 Этап 2 — загрузка статьи:
-  Пользователь кликает на "deva"
-  GET /api/v1/dictionary/entry?key=deva
+  Пользователь кликает на "deva" (slp1Normalized)
+  GET /api/v1/mw-dictionary/entry?slp1Spelling=deva (передается slp1Normalized в качестве slp1Spelling)
   ↓
-  WordCard с полной статьёй
+  Таблица с полной статьёй
   (индикатор загрузки если запрос к внешнему API)
-```
-
-**WordCard содержит:**
-- Слово в IAST транслитерации + деванагари (если есть)
-- Грамматические характеристики: часть речи, род, корень глагола
-- Список значений
-- Бейдж источника: LOCAL / MONIER_WILLIAMS
-- Бейдж "из кэша" если слово уже было в БД
-
-**Состояния страницы:**
-```
-IDLE       → только строка поиска и кнопка
-SEARCHING  → спиннер под кнопкой (запрос списка)
-LIST       → горизонтальный список слов
-LOADING    → спиннер под списком (запрос статьи, внешний API)
-ENTRY      → WordCard со статьёй
-ERROR      → сообщение об ошибке (API недоступен и т.д.)
 ```
 
 ---
@@ -654,7 +623,7 @@ ERROR      → сообщение об ошибке (API недоступен и
 
 ---
 
-### SessionHistoryPage (`/quiz-sessions/:sessionId/history`) // NEW
+### SessionHistoryPage (`/quiz-sessions/:sessionId/history`)
 
 **Назначение:** Просмотр детальной истории ответов для завершенной сессии квиза.
 
@@ -750,6 +719,41 @@ export interface PersonalStats {
   bestPercentage:    number;
   byQuizType:        Record<QuizType, QuizTypeStats>;
 }
+
+// types/index.ts (обновлено для Эмено)
+export interface SandhiRuleInfo {
+    ruleNumber: number;
+    shortDescription: string;
+}
+
+export interface SolutionDto {
+    id: number;
+    solutionText: string;
+    stepByStep?: string;
+    sandhiRules: SandhiRuleInfo[];
+}
+
+export interface EamenauExerciseDto {
+    id: number;
+    exerciseNumber: number;
+    exerciseLetter?: string;
+    instructionText: string;
+}
+
+export interface EamenauTaskDto {
+    id: number;
+    taskNumber: number;
+    taskText: string;
+    solution?: SolutionDto;
+}
+
+export interface EamenauExerciseDetailDto {
+    id: number;
+    exerciseNumber: number;
+    exerciseLetter?: string;
+    instructionText: string;
+    tasks: EamenauTaskDto[];
+}
 ```
 
 ---
@@ -792,18 +796,51 @@ export const useSubmitAnswer = () =>
 // hooks/useDictionary.ts
 
 // Шаг 1 — поиск списка слов (запускается по кнопке, не автоматически)
-export const useDictionarySearch = () =>
-  useMutation({
-    mutationFn: (query: string) => dictionaryApi.search(query),
+export const useMwWordSearch = (query: string | null) => {
+  return useQuery<MwWordSearchDto[], Error>({
+    queryKey: ['mw-word-search', query],
+    queryFn: () => dictionaryApi.searchMwWords(query!).then((res) => res.data),
+    enabled: !!query, // Запрос будет выполняться только если query не пустой
+    staleTime: 60 * 1000, // Кэшируем результаты на 1 минуту
   });
+};
 
 // Шаг 2 — загрузка статьи по ключу (запускается по клику на слово)
-export const useDictionaryEntry = (key: string | null) =>
+export const useMwEntry = (slp1Spelling: string | null) => {
+  return useQuery<MwEntryDto, Error>({
+    queryKey: ['mw-entry', slp1Spelling],
+    queryFn: () => dictionaryApi.getMwEntry(slp1Spelling!).then((res) => res.data),
+    enabled: !!slp1Spelling,
+    staleTime: Infinity,
+  });
+};
+
+// hooks/useContent.ts (обновлено для Эмено)
+export const useEamenauExercises = () =>
   useQuery({
-    queryKey: ['dictionary', 'entry', key],
-    queryFn:  () => dictionaryApi.getEntry(key!),
-    enabled:  key !== null,
-    staleTime: Infinity,    // статья не меняется — кэшируем навсегда
+    queryKey: ['eamenau-exercises'],
+    queryFn: () => contentApi.getAllEamenauExercises().then(res => res.data),
+  });
+
+export const useEamenauExercise = (id: string) =>
+  useQuery({
+    queryKey: ['eamenau-exercise', id],
+    queryFn: () => contentApi.getEamenauExerciseById(id).then(res => res.data),
+    enabled: !!id,
+  });
+
+export const useUniqueSandhiRulesForExercise = (exerciseId: number) =>
+  useQuery({
+    queryKey: ['unique-sandhi-rules', exerciseId],
+    queryFn: () => contentApi.getUniqueSandhiRulesForExercise(exerciseId).then(res => res.data),
+    enabled: !!exerciseId,
+  });
+
+export const useSolutionsForTask = (taskId: number) =>
+  useQuery({
+    queryKey: ['solution', taskId],
+    queryFn: () => contentApi.getSolutionsForTask(taskId).then(res => res.data),
+    enabled: !!taskId,
   });
 ```
 
@@ -1313,6 +1350,15 @@ VITE_KEYCLOAK_CLIENT_ID=samskrtam-frontend
 - [ ] Переключение темы применяется мгновенно (смена href у #theme-link)
 - [ ] Все тексты через i18next, нет захардкоженных строк
 - [ ] После логина тема и язык восстанавливаются из профиля
+
+### Функциональность Эмено
+- [ ] Страницы, связанные с Эмено, вынесены в `frontend/src/pages/eamenau/` и `frontend/src/components/eamenau/`.
+- [ ] Список упражнений отображается с номером, буквой и сокращенной инструкцией.
+- [ ] При клике на упражнение открывается страница с полной инструкцией и списком задач.
+- [ ] При клике на иконку-экспандер рядом с задачей раскрывается панель с решением (текст решения, пошаговое описание, номера правил).
+- [ ] Номера правил в решении кликабельны и ведут на страницу правил, отфильтрованных по всем правилам, используемым в данном решении (параметры `rule=N1&rule=N2...`).
+- [ ] При наведении на номер правила отображается тултип с кратким описанием правила.
+- [ ] На странице деталей упражнения есть кнопка "Фильтровать правила", которая ведет на страницу правил, отфильтрованных по всем уникальным правилам, используемым во всех задачах упражнения.
 
 Полные критерии по настройкам, профилю и группам — в [user-frontend.md](user-frontend.md) раздел 9.
 

@@ -13,7 +13,7 @@ import sm.selflearn.samskrtam.content.service.EamenauService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/eamenau")
+@RequestMapping("/eamenau")
 @Tag(name = "Eamenau", description = "APIs for Eamenau content (e.g., Sandhi Rules)")
 @RequiredArgsConstructor
 public class EamenauController {

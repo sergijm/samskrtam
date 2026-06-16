@@ -52,6 +52,7 @@ dependencies {
 |---|---|---|
 | `/api/v1/auth/oauth2/{provider}` | **Gateway (OAuth2 Client)** | Public |
 | `/api/v1/auth/oauth2/callback` | **Gateway (OAuth2 Client)** | Public |
+| `/api/v1/auth/refresh` | **Gateway (OAuth2 Client)** | Public |
 | `/api/v1/auth/**` | user-service:8087 | **Public** |
 | `/api/v1/content/public/**` | content-service:8081 | STUDENT |
 | `/api/v1/content/**` | content-service:8081 | ADMIN |
@@ -60,14 +61,14 @@ dependencies {
 | `/api/v1/statistics/**` | statistics-service:8086 | STUDENT |
 | `/actuator/health` | gateway | Public |
 
-> `/api/v1/auth/oauth2/{provider}` и `/api/v1/auth/oauth2/callback` — обрабатываются
+> `/api/v1/auth/oauth2/{provider}`, `/api/v1/auth/oauth2/callback` и `/api/v1/auth/refresh` — обрабатываются
 > самим Gateway, **не проксируются**. Gateway выступает OAuth2 Client:
 > хранит `client_secret` в env, инициирует Authorization Code flow,
 > получает code от Keycloak, обменивает на токены, передаёт в user-service.
 > Фронтенд никогда не видит `client_secret`.
-
+>
 > `/api/v1/auth/**` — остальные auth-эндпоинты (логин/пароль, регистрация,
-> refresh, logout) проксируются в user-service. Безопасность обеспечивает user-service.
+> logout, forgot-password) проксируются в user-service. Безопасность обеспечивает user-service.
 
 > ⚠️ Маршруты определены в `GatewayRoutesConfig.java` через Java DSL — не в `application.yml`.
 > В `application.yml` только `default-filters` (rate limiting).
@@ -77,7 +78,7 @@ dependencies {
 
 ## 3a. OAuth2 Authorization Code Flow (через Gateway)
 
-Фронтенд инициирует OAuth2 flow редиректом на Gateway — `client_secret` остаётся на сервере.
+Фронтенд инициирует OAuth2 flow редиреком на Gateway — `client_secret` остаётся на сервере.
 
 ```
 1. Frontend
@@ -437,6 +438,3 @@ spec:
 Gateway owns login, refresh, logout, OAuth2 callback and JWT validation.
 
 Registration and forgot-password are handled by user-service.
-
-## OAuth2 Flow
-External identity providers are initiated using Keycloak Authorization Endpoint and kc_idp_hint.

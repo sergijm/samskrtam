@@ -3,8 +3,8 @@ package sm.selflearn.samskrtam.content.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.content.dto.SandhiRuleDto;
-import sm.selflearn.samskrtam.content.eamenau.model.SandhiRule;
-import sm.selflearn.samskrtam.content.eamenau.repository.SandhiRuleRepository;
+import sm.selflearn.samskrtam.eamenau.model.SandhiRule;
+import sm.selflearn.samskrtam.eamenau.repository.SandhiRuleRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;

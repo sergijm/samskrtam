@@ -1,7 +1,7 @@
 # dictionary-service
 
 > Домен: Dictionary
-> Язык: **Kotlin + Coroutines + R2DBC**
+> Язык: **Java 21 + Virtual Threads (JPA/JDBC)**
 > Модуль: `services/dictionary-service`
 > Порт: 8085
 > Связанные файлы: [mw-parser.md](./mw-parser.md) · [architecture.md](../architecture.md)
@@ -11,319 +11,134 @@
 
 ## 1. Описание
 
-Единственный сервис на Kotlin в проекте — для практики языка. Реализует двухэтапный поиск:
+Сервис для работы с санскритскими словарями. Словари хранятся целиком в локальной базе данных PostgreSQL, каждый в своей отдельной схеме. Реализует функциональность поиска слов и получения полных словарных статей.
 
-1. **Поиск по списку** — возвращает ранжированный список похожих слов из Monier-Williams CSL API
-2. **Загрузка статьи** — по клику загружает полную статью, парсит грамматику и сохраняет в локальную БД (Cache-aside)
+## 2. Стек
 
-Спецификация парсера словарных статей: [mw-parser.md](./mw-parser.md)
+| Технология | Назначение |
+|---|---|
+| Java 21 | Язык + Virtual Threads (Project Loom) |
+| Spring Boot 3.3 | Фреймворк |
+| Spring MVC | HTTP (блокирующий стиль, VT делает его async) |
+| Spring Data JPA | Доступ к БД (обычный JDBC) |
+| PostgreSQL JDBC | Драйвер БД |
+| Flyway | Миграции |
+| Jsoup | Парсинг HTML (для импорта/обновления статей) |
 
----
+## 3. Хранение данных
 
-## 2. Внешние API (Cologne Sanskrit Lexicon)
+Словари хранятся в отдельных схемах PostgreSQL.
 
-### Поиск списка слов
+| Схема | Описание |
+|---|---|
+| `d_fri` | Словарь Фриша |
+| `d_mw` | Словарь Монье-Вильямса |
 
+Каждая схема содержит таблицы для хранения слов и их метаданных (например, `words`, `meanings`, `grammar_details`).
+
+## 4. Механика поиска
+
+### 4.1. Поиск по списку (`/search`)
+
+Пользователь вводит запрос (`query`), сервис возвращает ранжированный список похожих слов из выбранного словаря. Результаты включают `slp1Spelling` (оригинальное написание) и `slp1Normalized` (нормализованное написание без диакритики, используемое для отображения на фронтенде и для запроса статьи).
+
+### 4.2. Загрузка статьи (`/entry`)
+
+По клику на слово из списка, фронтенд передает `slp1Normalized` в качестве параметра `slp1Spelling`. Сервис загружает и возвращает полную словарную статью, используя это значение для поиска.
+
+## 5. API
+
+### 5.1. GET /api/v1/mw-dictionary/search?query={query}
+
+Возвращает ранжированный список слов, соответствующих запросу `query`, из словаря Монье-Вильямса.
+
+**Параметры:**
+*   `query`: Query Parameter (Строка поиска, может быть в любой транслитерации, бэкенд нормализует ее в SLP1)
+
+**Пример ответа 200:**
+```json
+[
+  {
+    "slp1Spelling": "deva",
+    "slp1Normalized": "deva",
+    "iastSpelling": "deva",
+    "similarity": 1.0
+  },
+  {
+    "slp1Spelling": "devaka",
+    "slp1Normalized": "devaka",
+    "iastSpelling": "devaka",
+    "similarity": 0.8
+  }
+]
 ```
-GET https://sanskrit-lexicon.uni-koeln.de/scans/csl-apidev/simple-search/v1.1/getword_list_1.0.php
-  ?input=<слово в транслитерации SLP1>
-  &dict=MW
-  &output=deva    ← деванагари в dicthwoutput
-  &accent=no
-  &limit=10
-```
 
-**Реальный ответ API:**
+### 5.2. GET /api/v1/mw-dictionary/entry?slp1Spelling={slp1Normalized}
 
+Возвращает полную словарную статью для указанного слова. Фронтенд передает `slp1Normalized` из результатов поиска в параметр `slp1Spelling`.
+
+**Параметры:**
+*   `slp1Spelling`: Query Parameter (Нормализованное SLP1 написание слова, полученное из `slp1Normalized` в результатах поиска)
+
+**Пример ответа 200:**
 ```json
 {
-  "dict":   "mw",
-  "input":  "slp1",
-  "output": "deva",
-  "accent": "no",
-  "result": [
+  "entries": [
     {
-      "key":          "ga",
-      "keyin":        "ga",
-      "xml":          "ga:AP,AP90,BEN,MW,...;gaM:SKD;gaH:AP,SKD",
-      "status":       200,
-      "user_key_flag": true,
-      "dicthw":       "ga",
-      "dicthwoutput": "ग",
-      "wf":           0
-    },
-    {
-      "key":          "gA",
-      "keyin":        "gA",
-      "xml":          "gA:AP,AP90,BEN,MW,...",
-      "status":       200,
-      "user_key_flag": false,
-      "dicthw":       "gA",
-      "dicthwoutput": "गा",
-      "wf":           49
+      "recordId": "MW_deva_1",
+      "key1": "deva",
+      "key1Display": "deva",
+      "key2": "deva",
+      "homonymNum": "1",
+      "eCode": "1",
+      "page": 492,
+      "columnNum": 3,
+      "isSupplement": false,
+      "mainTranslation": "a god, deity, divine being, celestial (opposed to man)",
+      "rawBody": "<body>...</body>",
+      "displayTitle": "deva",
+      "lexicalInfo": [],
+      "sanskritWords": [],
+      "homonyms": [],
+      "abbreviations": [],
+      "literarySources": [],
+      "infoTags": []
     }
   ]
 }
 ```
 
-**Поля ответа:**
-
-| Поле | Тип | Описание |
-|---|---|---|
-| `key` | String | SLP1 ключ для запроса статьи |
-| `keyin` | String | Введённый пользователем ключ |
-| `xml` | String | Словари содержащие это слово (MW, BEN, CAE...) |
-| `status` | Int | HTTP статус записи (200 = найдено) |
-| `user_key_flag` | Boolean | `true` = точное совпадение с запросом |
-| `dicthw` | String | Headword в SLP1 (каноническая форма) |
-| `dicthwoutput` | String | Headword в деванагари |
-| `wf` | Int | Weight factor — релевантность. `-1` = нет данных, `0` = минимум, выше = лучше |
-
-**Ранжирование результатов:**
-
-```
-user_key_flag = true  → точное совпадение, показывать первым
-wf > 0                → сортировка по убыванию wf
-wf = 0 или -1         → показывать последними
-```
-
-### Загрузка словарной статьи
-
-```
-GET https://sanskrit-lexicon.uni-koeln.de/scans/csl-apidev/listview.php
-  ?key=<ключ слова>
-  &output=deva       ← деванагари в ответе
-  &dict=MW           ← Monier-Williams словарь
-  &accent=no
-  &input=slp1        ← транслитерация входных данных
-```
-
-Возвращает HTML со словарной статьёй — требует парсинга (см. [mw-parser.md](./mw-parser.md)).
-
-### Транслитерация SLP1
-
-CSL API принимает слова в формате **SLP1** (Sanskrit Library Phonetic encoding):
-
-```
-deva  → deva   (простые слова без изменений)
-devī  → devI   (долгое ī → I)
-rāma  → rAma   (долгое ā → A)
-```
-
-В v1 принимаем ввод пользователя как есть и передаём в API напрямую.
-Конвертер IAST → SLP1 — открытый вопрос для v2.
-
----
-
-## 3. Двухэтапный флоу поиска
-
-```
-Пользователь вводит слово → нажимает "Найти"
-  ↓
-GET /api/v1/dictionary/search?q=deva
-  ↓
-MonierWilliamsClient.searchList("deva")
-  → GET csl-apidev/getword_list_1.0.php?input=deva&dict=MW&limit=10
-  → ранжированный список: ["deva", "devaka", "devakī", ...]
-  ↓
-Фронт показывает горизонтальный кликабельный список
-
-Пользователь кликает на слово "deva"
-  ↓
-GET /api/v1/dictionary/entry?key=deva
-  ↓
-Cache-aside:
-  repository.findByKey("deva")
-    → найдено  → вернуть из БД (мгновенно)
-    → не найдено
-        → MonierWilliamsClient.fetchHtml("deva")
-          → GET csl-apidev/listview.php?key=deva&output=deva&dict=MW&...
-          → HTML статья
-        → MWParser.parse(key, html)       ← см. mw-parser.md
-        → repository.save(entry)
-        → вернуть entry
-  ↓
-DictionaryEntryResponse → фронт
-```
-
----
-
-## 4. API
-
-```
-GET  /api/v1/dictionary/search?q={query}   → ранжированный список слов
-GET  /api/v1/dictionary/entry?key={key}    → полная статья (Cache-aside)
-POST /api/v1/dictionary/admin/reparse      → перепарсинг всех статей из rawHtml
-```
-
-### GET /api/v1/dictionary/search?q=ga — Response 200
-
-Реальный ответ CSL API содержит поля `key`, `dicthwoutput`, `wf`, `user_key_flag`.
-Сервис маппит их в упрощённый формат для фронтенда:
-
-```json
-{
-  "query": "ga",
-  "total": 6,
-  "results": [
-    {
-      "key":            "ga",
-      "wordDevanagari": "ग",
-      "wordSlp1":       "ga",
-      "isExactMatch":   true,
-      "isInMW":         true,
-      "weight":         0
-    },
-    {
-      "key":            "gA",
-      "wordDevanagari": "गा",
-      "wordSlp1":       "gA",
-      "isExactMatch":   false,
-      "isInMW":         true,
-      "weight":         49
-    },
-    {
-      "key":            "gf",
-      "wordDevanagari": "गृ",
-      "wordSlp1":       "gf",
-      "isExactMatch":   false,
-      "isInMW":         true,
-      "weight":         11
-    }
-  ]
-}
-```
-
-> Слова с `isInMW: false` отображаются в списке но помечаются серым —
-> полная статья MW для них может отсутствовать.
-> Слово с `isExactMatch: true` выделяется визуально в горизонтальном списке.
-
-### Поля CSL API → DTO маппинг
-
-| CSL поле | DTO поле | Примечание |
-|---|---|---|
-| `key` | `key` | SLP1 ключ для запроса статьи |
-| `dicthwoutput` | `wordDevanagari` | деванагари |
-| `dicthw` | `wordSlp1` | SLP1 транслитерация |
-| `user_key_flag` | `isExactMatch` | точное совпадение |
-| `wf` | `weight` | релевантность |
-| `xml` | `isInMW` | парсится наличие "MW" в строке |
-| `keyin` | — | не передаётся фронтенду |
-| `status` | — | фильтруем != 200, не передаём |
-
-### GET /api/v1/dictionary/entry?key=deva — Response 200
-
-```json
-{
-  "key":             "deva",
-  "word":            "deva",
-  "wordDevanagari":  "देव",
-  "meanings":        ["god, deity", "a divine being", "king (honorific)"],
-  "partOfSpeech":    "noun",
-  "grammaticalGender": "masculine",
-  "feminineEnding":  null,
-  "verbRoot":        null,
-  "verbClass":       null,
-  "cslId":           "95518",
-  "source":          "MONIER_WILLIAMS",
-  "cached":          true
-}
-```
-
----
-
-## 5. Backend структура
+## 6. Backend структура
 
 ```
 sm/selflearn/samskrtam/dictionary/
-├── Application.kt
+├── Application.java
 ├── controller/
-│   └── DictionaryController.kt
+│   └── DictionaryController.java       ← Публичные эндпоинты (поиск, статья)
 ├── service/
-│   ├── DictionaryService.kt         ← Cache-aside + оркестрация
-│   └── AdminDictionaryService.kt    ← reparse endpoint
-├── parser/
-│   ├── MWParser.kt                  ← оркестратор парсинга
-│   ├── MWPatterns.kt                ← регексы (см. mw-parser.md)
-│   ├── MWSenseExtractor.kt          ← извлечение значений
-│   └── MWGrammarExtractor.kt        ← извлечение грамматики
-├── external/
-│   └── MonierWilliamsClient.kt      ← WebClient для CSL API
+│   └── DictionaryService.java          ← Основная бизнес-логика
+│   └── TransliterationService.java     ← Сервис для транслитерации и нормализации
 ├── repository/
-│   └── DictionaryRepository.kt      ← CoroutineCrudRepository
+│   ├── MwEntryRepository.java          ← Репозиторий для основных статей Monier-Williams
+│   ├── MwSanskritWordRepository.java   ← Репозиторий для санскритских слов в статьях
+│   └── ... (другие репозитории для деталей статей)
 ├── model/
-│   ├── DictionaryEntry.kt
-│   ├── SearchResult.kt
-│   ├── Gender.kt                    // Updated path
-│   ├── WordClass.kt                 // Updated path
-│   └── VerbPada.kt                  // Updated path
+│   ├── MwEntry.java                    ← Сущность основной статьи Monier-Williams
+│   ├── MwSanskritWord.java             ← Сущность санскритского слова
+│   └── ... (другие сущности для деталей статей)
 └── dto/
-    ├── SearchResponse.kt
-    └── DictionaryEntryResponse.kt
+    ├── MwWordSearchDto.java            ← DTO для результатов поиска слов
+    └── MwEntryDto.java                 ← DTO для полной статьи (содержит List<MwDictionaryEntryDto>)
 ```
 
----
+## 7. Ключевые классы
 
-## 6. Ключевые классы
+*   **`DictionaryController`**: Обрабатывает HTTP-запросы для поиска и получения статей.
+*   **`DictionaryService`**: Содержит основную бизнес-логику, координирует работу репозиториев и сервисов.
+*   **`MwDictionaryEntryService`**: Сервис для сборки полной словарной статьи из различных сущностей.
+*   **`MwSanskritWordRepository`**: JPA репозиторий для доступа к данным санскритских слов, включая поиск по `slp1Normalized`.
 
-```kotlin
-// DictionaryService.kt
-@Service
-class DictionaryService(
-    private val repository: DictionaryRepository,
-    private val mwClient:   MonierWilliamsClient,
-    private val parser:     MWParser
-) {
-    // Шаг 1 — поиск (всегда через внешний API)
-    suspend fun search(query: String): SearchResponse =
-        mwClient.searchList(query)
-
-    // Шаг 2 — статья (Cache-aside)
-    suspend fun getEntry(key: String): DictionaryEntry =
-        repository.findByKey(key)
-            ?: mwClient.fetchHtml(key)
-                .let  { html  -> parser.parse(key, html) }
-                .also { entry -> repository.save(entry)  }
-}
-
-// MonierWilliamsClient.kt
-@Component
-class MonierWilliamsClient(private val webClient: WebClient) {
-
-    private val baseUrl = "https://sanskrit-lexicon.uni-koeln.de/scans/csl-apidev"
-
-    suspend fun searchList(query: String): SearchResponse =
-        webClient.get()
-            .uri("$baseUrl/simple-search/v1.1/getword_list_1.0.php") {
-                it.queryParam("input", query)
-                  .queryParam("dict",  "MW")
-                  .queryParam("limit", 10)
-                  .build()
-            }
-            .retrieve()
-            .awaitBody()
-
-    suspend fun fetchHtml(key: String): String =
-        webClient.get()
-            .uri("$baseUrl/listview.php") {
-                it.queryParam("key",    key)
-                  .queryParam("output", "deva")
-                  .queryParam("dict",   "MW")
-                  .queryParam("accent", "no")
-                  .queryParam("input",  "slp1")
-                  .build()
-            }
-            .retrieve()
-            .awaitBody()
-}
-```
-
-> **Зависимость:** парсер использует **Jsoup**.
-> Добавить в `build.gradle.kts`: `implementation("org.jsoup:jsoup:1.17.2")`
-
----
-
-## 7. application.yml
+## 8. application.yml
 
 ```yaml
 server:
@@ -332,44 +147,37 @@ server:
 spring:
   application:
     name: dictionary-service
-  r2dbc:
-    url: ${SPRING_R2DBC_URL}
-    username: ${DB_USER:samskrtam}
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${DB_USER}
     password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: d_mw # Схема по умолчанию, может быть переопределена
   flyway:
-    url: jdbc:postgresql://${DB_HOST:postgres}:5432/samskrtam
-    schemas: dictionary
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: ${KEYCLOAK_JWKS_URI}
-
-external:
-  dictionary:
-    csl-base-url: https://sanskrit-lexicon.uni-koeln.de/scans/csl-apidev
-    timeout-ms: 10000
-    search-limit: 10
+    url: ${SPRING_DATASOURCE_URL}
+    user: ${DB_USER}
+    password: ${DB_PASSWORD}
+    schemas: d_mw, d_fri # Flyway будет работать с обеими схемами
 ```
 
----
+## 9. Acceptance Criteria
 
-## 8. Acceptance Criteria
+*   [ ] Поиск (`/search`) возвращает список слов, отсортированный по релевантности, включая `slp1Normalized`.
+*   [ ] `GET /entry` возвращает полную статью для существующего слова по `slp1Spelling` (который фактически является `slp1Normalized` с фронтенда).
+*   [ ] `GET /entry` возвращает 404 для несуществующего слова.
+*   [ ] Сервис корректно работает с несколькими схемами БД (`d_fri`, `d_mw`).
+*   [ ] Поддерживается поиск по IAST.
 
-- [ ] Поиск → ранжированный список слов из CSL API
-- [ ] Клик на слово → статья из БД или внешний запрос
-- [ ] Статья сохраняется в БД после первого запроса (с rawHtml)
-- [ ] Повторный запрос того же слова → из БД без внешнего запроса
-- [ ] Парсер извлекает: meanings, partOfSpeech, grammaticalGender (v1)
-- [ ] CSL API недоступен → 503 с понятным сообщением
-- [ ] `POST /admin/reparse` → перепарсирует все записи из rawHtml
+## 10. Открытые вопросы
 
----
-
-## 9. Открытые вопросы
-
-- [ ] Конвертер IAST → SLP1 (v2)
-- [ ] Лицензия данных Monier-Williams — можно ли хранить локально?
-- [ ] TTL для кэшированных статей — обновлять ли устаревшие?
-- [ ] Full-text search по meanings (PostgreSQL tsvector)?
-- [ ] Деванагари в вопросах поиска — нужна ли поддержка?
+*   [ ] Как будет определяться "релевантность" для поиска (`/search`)? Полнотекстовый поиск PostgreSQL?
+*   [ ] Нужна ли поддержка поиска по частям слова (wildcard search)?
+*   [ ] Как будут обрабатываться синонимы и варианты написания?
+*   [ ] Как будет реализована связь между словами и грамматической информацией (род, склонение, спряжение)?

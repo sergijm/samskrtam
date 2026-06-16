@@ -23,7 +23,7 @@ spring:
     url: ${SPRING_FLYWAY_URL}
     user: ${DB_USER}
     password: ${DB_PASSWORD}
-    schemas: content
+    schemas: content, eamenau
 
 logging:
   level:

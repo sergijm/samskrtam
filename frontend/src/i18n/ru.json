@@ -159,7 +159,9 @@
       "incorrect": "Неверно",
       "actions": "Действия",
       "back": "Назад",
-      "continue": "Продолжить"
+      "continue": "Продолжить",
+      "previous": "Назад",
+      "next": "Вперед"
   },
   "validation": {
     "usernameRequired": "Требуется Email или логин.",
@@ -180,7 +182,7 @@
     "leaderboardDescription": "Соревнуйтесь с другими и смотрите свой рейтинг.",
     "settingsDescription": "Управляйте своим профилем и настройками приложения.",
     "adminDescription": "Доступ к административным инструментам и функциям.",
-    "grammarDescription": "Квизы по грамматике: склонения и спряжения.",
+    "grammarDescription": "Грамматика: склонения и спряжения.",
     "vocabularyDescription": "Квизы на знание лексики.",
     "quizSessionsDescription": "Просмотр прошлых и текущих сессий квизов.",
     "quizProgress": "Прогресс: {{answered}}/{{total}}",
@@ -248,6 +250,8 @@
     "message": "Эта страница находится в активной разработке. Пожалуйста, зайдите позже!"
   },
   "grammar": {
+    "sandhiExercisesTitle": "Сандхи - Эмено (Упражнения)",
+    "sandhiExercisesDescription": "Практикуйте правила сандхи с упражнениями из учебника Эмено.",
     "sandhiQuizzesTitle": "Сандхи - Эмено (Квизы)",
     "sandhiQuizzesDescription": "Практикуйте правила сандхи по системе Эмено.",
     "sandhiRulesTitle": "Сандхи - Эмено (Правила)",
@@ -256,5 +260,17 @@
     "declensionsDescription": "Практикуйте склонения существительных и прилагательных.",
     "conjugationsTitle": "Спряжения",
     "conjugationsDescription": "Изучите спряжения глаголов."
+  },
+  "eamenau": {
+    "exerciseNumber": "Упражнение №",
+    "exerciseLetter": "Буква",
+    "instructionText": "Инструкция",
+    "taskNumber": "Задание №",
+    "rules": "Правила",
+    "noSolutionFound": "Решение не найдено.",
+    "filterRules": "Фильтровать правила"
+  },
+  "dictionary": {
+    "noWordsFound": "Слова не найдены."
   }
 }

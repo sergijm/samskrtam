@@ -52,6 +52,8 @@ public class SecurityConfig {
                         .pathMatchers("/api/**").authenticated()
 
                         .pathMatchers("/api/v1/content/**").hasRole("ADMIN")
+                        // Removed Dictionary path matcher
+                        // .pathMatchers("/api/v1/dictionary/**").authenticated()
                         
                         .anyExchange().denyAll()
                 )

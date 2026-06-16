@@ -34,6 +34,9 @@ import SessionHistoryPage from './pages/SessionHistoryPage';
 import GrammarPage from './pages/GrammarPage';
 import UnderConstructionPage from './pages/UnderConstructionPage';
 import EmeneauRulesPage from './pages/EmeneauRulesPage';
+import EmeneauExercisesPage from './pages/eamenau/EmeneauExercisesPage';
+import EmeneauExerciseDetailPage from './pages/eamenau/EmeneauExerciseDetailPage';
+import DictionaryPage from './pages/DictionaryPage'; // New import
 
 // Stores
 import { useThemeStore } from './store/themeStore';
@@ -178,6 +181,26 @@ export default function App() {
                 }
               />
               <Route
+                path="/grammar/emeneau-exercises"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <EmeneauExercisesPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/grammar/emeneau-exercises/:id"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <EmeneauExerciseDetailPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/grammar/emeneau-quizzes"
                 element={
                   <ProtectedRoute>
@@ -215,6 +238,18 @@ export default function App() {
                   <ProtectedRoute>
                     <AppLayout>
                       <QuizPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Dictionary route */}
+              <Route
+                path="/dictionary"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <DictionaryPage />
                     </AppLayout>
                   </ProtectedRoute>
                 }

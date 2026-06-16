@@ -12,7 +12,7 @@
  Target Server Version : 170009 (170009)
  File Encoding         : 65001
 
- Date: 14/06/2026 09:34:31
+ Date: 15/06/2026 14:56:58
 */
 
 
@@ -87,6 +87,28 @@ CACHE 1;
 -- ----------------------------
 DROP SEQUENCE IF EXISTS "eamenau"."sandhi_rules_id_seq";
 CREATE SEQUENCE "eamenau"."sandhi_rules_id_seq" 
+INCREMENT 1
+MINVALUE  1
+MAXVALUE 2147483647
+START 1
+CACHE 1;
+
+-- ----------------------------
+-- Sequence structure for solution_sandhi_rules_id_seq
+-- ----------------------------
+DROP SEQUENCE IF EXISTS "eamenau"."solution_sandhi_rules_id_seq";
+CREATE SEQUENCE "eamenau"."solution_sandhi_rules_id_seq" 
+INCREMENT 1
+MINVALUE  1
+MAXVALUE 2147483647
+START 1
+CACHE 1;
+
+-- ----------------------------
+-- Sequence structure for solutions_id_seq
+-- ----------------------------
+DROP SEQUENCE IF EXISTS "eamenau"."solutions_id_seq";
+CREATE SEQUENCE "eamenau"."solutions_id_seq" 
 INCREMENT 1
 MINVALUE  1
 MAXVALUE 2147483647
@@ -221,6 +243,32 @@ CREATE TABLE "eamenau"."sandhi_rules" (
   "hk_example" text COLLATE "pg_catalog"."default",
   "notes" text COLLATE "pg_catalog"."default",
   "full_text" text COLLATE "pg_catalog"."default" NOT NULL
+)
+;
+
+-- ----------------------------
+-- Table structure for solution_sandhi_rules
+-- ----------------------------
+DROP TABLE IF EXISTS "eamenau"."solution_sandhi_rules";
+CREATE TABLE "eamenau"."solution_sandhi_rules" (
+  "id" int4 NOT NULL DEFAULT nextval('"eamenau".solution_sandhi_rules_id_seq'::regclass),
+  "solution_id" int4 NOT NULL,
+  "sandhi_rule_id" int4 NOT NULL,
+  "position_order" int4 DEFAULT 0
+)
+;
+
+-- ----------------------------
+-- Table structure for solutions
+-- ----------------------------
+DROP TABLE IF EXISTS "eamenau"."solutions";
+CREATE TABLE "eamenau"."solutions" (
+  "id" int4 NOT NULL DEFAULT nextval('"eamenau".solutions_id_seq'::regclass),
+  "task_id" int4 NOT NULL,
+  "solution_text" text COLLATE "pg_catalog"."default" NOT NULL,
+  "step_by_step" text COLLATE "pg_catalog"."default",
+  "created_at" timestamp(6) DEFAULT now(),
+  "is_correct" bool DEFAULT false
 )
 ;
 
@@ -390,7 +438,21 @@ SELECT setval('"eamenau"."place_of_articulation_id_seq"', 6, true);
 -- ----------------------------
 ALTER SEQUENCE "eamenau"."sandhi_rules_id_seq"
 OWNED BY "eamenau"."sandhi_rules"."id";
-SELECT setval('"eamenau"."sandhi_rules_id_seq"', 71, true);
+SELECT setval('"eamenau"."sandhi_rules_id_seq"', 182, true);
+
+-- ----------------------------
+-- Alter sequences owned by
+-- ----------------------------
+ALTER SEQUENCE "eamenau"."solution_sandhi_rules_id_seq"
+OWNED BY "eamenau"."solution_sandhi_rules"."id";
+SELECT setval('"eamenau"."solution_sandhi_rules_id_seq"', 215, true);
+
+-- ----------------------------
+-- Alter sequences owned by
+-- ----------------------------
+ALTER SEQUENCE "eamenau"."solutions_id_seq"
+OWNED BY "eamenau"."solutions"."id";
+SELECT setval('"eamenau"."solutions_id_seq"', 1127, true);
 
 -- ----------------------------
 -- Alter sequences owned by
@@ -502,6 +564,41 @@ ALTER TABLE "eamenau"."sandhi_rules" ADD CONSTRAINT "sandhi_rules_rule_number_ke
 ALTER TABLE "eamenau"."sandhi_rules" ADD CONSTRAINT "sandhi_rules_pkey" PRIMARY KEY ("id");
 
 -- ----------------------------
+-- Indexes structure for table solution_sandhi_rules
+-- ----------------------------
+CREATE INDEX "idx_solution_rules_rule_id" ON "eamenau"."solution_sandhi_rules" USING btree (
+  "sandhi_rule_id" "pg_catalog"."int4_ops" ASC NULLS LAST
+);
+CREATE INDEX "idx_solution_rules_solution_id" ON "eamenau"."solution_sandhi_rules" USING btree (
+  "solution_id" "pg_catalog"."int4_ops" ASC NULLS LAST
+);
+
+-- ----------------------------
+-- Uniques structure for table solution_sandhi_rules
+-- ----------------------------
+ALTER TABLE "eamenau"."solution_sandhi_rules" ADD CONSTRAINT "solution_sandhi_rules_solution_id_sandhi_rule_id_key" UNIQUE ("solution_id", "sandhi_rule_id");
+
+-- ----------------------------
+-- Primary Key structure for table solution_sandhi_rules
+-- ----------------------------
+ALTER TABLE "eamenau"."solution_sandhi_rules" ADD CONSTRAINT "solution_sandhi_rules_pkey" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Indexes structure for table solutions
+-- ----------------------------
+CREATE INDEX "idx_solutions_is_correct" ON "eamenau"."solutions" USING btree (
+  "is_correct" "pg_catalog"."bool_ops" ASC NULLS LAST
+);
+CREATE INDEX "idx_solutions_task_id" ON "eamenau"."solutions" USING btree (
+  "task_id" "pg_catalog"."int4_ops" ASC NULLS LAST
+);
+
+-- ----------------------------
+-- Primary Key structure for table solutions
+-- ----------------------------
+ALTER TABLE "eamenau"."solutions" ADD CONSTRAINT "solutions_pkey" PRIMARY KEY ("id");
+
+-- ----------------------------
 -- Uniques structure for table tasks
 -- ----------------------------
 ALTER TABLE "eamenau"."tasks" ADD CONSTRAINT "tasks_exercise_id_task_number_key" UNIQUE ("exercise_id", "task_number");
@@ -545,6 +642,16 @@ ALTER TABLE "eamenau"."phonemes" ADD CONSTRAINT "phonemes_manner_id_fkey" FOREIG
 ALTER TABLE "eamenau"."phonemes" ADD CONSTRAINT "phonemes_place_id_fkey" FOREIGN KEY ("place_id") REFERENCES "eamenau"."place_of_articulation" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 ALTER TABLE "eamenau"."phonemes" ADD CONSTRAINT "phonemes_varga_id_fkey" FOREIGN KEY ("varga_id") REFERENCES "eamenau"."varga" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 ALTER TABLE "eamenau"."phonemes" ADD CONSTRAINT "phonemes_voicing_id_fkey" FOREIGN KEY ("voicing_id") REFERENCES "eamenau"."voicing" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- ----------------------------
+-- Foreign Keys structure for table solution_sandhi_rules
+-- ----------------------------
+ALTER TABLE "eamenau"."solution_sandhi_rules" ADD CONSTRAINT "solution_sandhi_rules_solution_id_fkey" FOREIGN KEY ("solution_id") REFERENCES "eamenau"."solutions" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+
+-- ----------------------------
+-- Foreign Keys structure for table solutions
+-- ----------------------------
+ALTER TABLE "eamenau"."solutions" ADD CONSTRAINT "solutions_task_id_fkey" FOREIGN KEY ("task_id") REFERENCES "eamenau"."tasks" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- ----------------------------
 -- Foreign Keys structure for table tasks

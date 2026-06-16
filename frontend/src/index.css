@@ -31,3 +31,23 @@
     font-size: 1.125rem; /* Equivalent to text-lg in Tailwind/PrimeFlex */
     font-weight: bold;
 }
+
+.no-header .p-datatable-header {
+    display: none;
+}
+
+.no-border .p-datatable-wrapper {
+    border: none;
+}
+
+/* Styling for p-link and rule-number-link to make them visually distinct */
+.p-link, .rule-number-link {
+    color: var(--primary-color); /* Use PrimeReact's primary color variable */
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.p-link:hover, .rule-number-link:hover {
+    color: var(--primary-color-text); /* Adjust hover color if needed */
+    text-decoration: none;
+}

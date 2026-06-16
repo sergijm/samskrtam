@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 import sm.selflearn.samskrtam.common.dto.PaginatedResponse;
+import sm.selflearn.samskrtam.statistics.model.UserQuizSessionStatistic;
 import sm.selflearn.samskrtam.statistics.dto.UserQuizStatisticDto;
 import sm.selflearn.samskrtam.statistics.service.StatisticService;
 
@@ -36,7 +37,7 @@ public class StatisticController {
             @RequestParam(defaultValue = "DESC") Sort.Direction sortDirection
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
-        Page<sm.selflearn.samskrtam.statistics.model.UserQuizSessionStatistic> statisticsPage = statisticService.getUserQuizStatistics(userId, pageable);
+        Page<UserQuizSessionStatistic> statisticsPage = statisticService.getUserQuizStatistics(userId, pageable);
 
         List<UserQuizStatisticDto> dtoList = statisticsPage.getContent().stream()
                 .map(this::mapToDto)
@@ -53,7 +54,7 @@ public class StatisticController {
                 .build();
     }
 
-    private UserQuizStatisticDto mapToDto(sm.selflearn.samskrtam.statistics.model.UserQuizSessionStatistic statistic) {
+    private UserQuizStatisticDto mapToDto(UserQuizSessionStatistic statistic) {
         return UserQuizStatisticDto.builder()
                 .quizId(statistic.getQuizId())
                 .quizType(statistic.getQuizType())

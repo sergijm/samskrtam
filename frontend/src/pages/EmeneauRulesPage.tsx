@@ -5,16 +5,32 @@ import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
 import { Button } from 'primereact/button';
 import { useSandhiRules } from '../hooks/useContent';
+import { useLocation } from 'react-router-dom';
 
 const EmeneauRulesPage = () => {
   const { t } = useTranslation();
-  const { data: sandhiRules, isLoading, isError, error } = useSandhiRules();
+  const location = useLocation();
+  const { data: allSandhiRules, isLoading, isError, error } = useSandhiRules();
 
   const [currentPage, setCurrentPage] = useState(() => {
     const storedPage = localStorage.getItem('emeneauRulesPage');
     return storedPage ? parseInt(storedPage, 10) : 0;
   });
   const rulesPerPage = 10;
+
+  // Filter rules based on URL parameters
+  const getFilteredRules = () => {
+    const params = new URLSearchParams(location.search);
+    const ruleParams = params.getAll('rule'); // Changed to 'rule'
+
+    if (ruleParams.length > 0 && allSandhiRules) {
+      const ruleNumbersToFilter = ruleParams.map(Number);
+      return allSandhiRules.filter(rule => ruleNumbersToFilter.includes(rule.ruleNumber));
+    }
+    return allSandhiRules;
+  };
+
+  const sandhiRules = getFilteredRules();
 
   useEffect(() => {
     localStorage.setItem('emeneauRulesPage', currentPage.toString());

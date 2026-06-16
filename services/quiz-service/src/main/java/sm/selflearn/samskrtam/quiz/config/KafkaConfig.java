@@ -15,6 +15,7 @@ import reactor.kafka.sender.SenderOptions;
 import sm.selflearn.samskrtam.quiz.event.StatisticEvent;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
@@ -33,7 +34,7 @@ public class KafkaConfig {
     public ReactiveKafkaProducerTemplate<String, StatisticEvent> reactiveKafkaProducerTemplate(
             KafkaProperties properties,
             JsonSerializer<StatisticEvent> statisticEventJsonSerializer) {
-        Map<String, Object> props = properties.buildProducerProperties();
+        Map<String, Object> props = new HashMap<>(properties.buildProducerProperties()); // Use buildProducerProperties for compatibility
         props.put("security.protocol", "PLAINTEXT");
         props.put("listener.name", "EXTERNAL");
 
@@ -48,7 +49,7 @@ public class KafkaConfig {
     public ReactiveKafkaProducerTemplate<String, Object> outboxKafkaProducer(
             KafkaProperties properties,
             ObjectMapper objectMapper) {
-        Map<String, Object> props = properties.buildProducerProperties();
+        Map<String, Object> props = new HashMap<>(properties.buildProducerProperties()); // Use buildProducerProperties for compatibility
         props.put("security.protocol", "PLAINTEXT");
         props.put("listener.name", "EXTERNAL");
 

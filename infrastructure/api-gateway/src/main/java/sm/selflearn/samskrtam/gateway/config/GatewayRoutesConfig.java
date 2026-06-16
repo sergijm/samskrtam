@@ -30,7 +30,7 @@ public class GatewayRoutesConfig {
     @Value("${QUIZ_SERVICE_URL:http://quiz-service:8082}")
     private String quizServiceUrl;
 
-    @Value("${DICTIONARY_SERVICE_URL:http://dictionary-service:8085}")
+    @Value("${DICTIONARY_SERVICE_URL:http://dictionary-service:8083}")
     private String dictionaryServiceUrl;
 
     @Value("${STATISTICS_SERVICE_URL:http://statistics-service:8086}")
@@ -83,37 +83,44 @@ public class GatewayRoutesConfig {
                 // Порядок важен: этот маршрут должен стоять перед /content/**
                 .route("content-public", r -> r
                         .path("/api/v1/content/public/**")
+                        .filters(f -> f.rewritePath("/api/v1/content/(?<segment>.*)", "/content/${segment}"))
                         .uri(contentServiceUrl))
 
                 // ── Content admin (ADMIN) ────────────────────────────────────────
                 .route("content", r -> r
                         .path("/api/v1/content/**")
+                        .filters(f -> f.rewritePath("/api/v1/content/(?<segment>.*)", "/content/${segment}"))
                         .uri(contentServiceUrl))
 
                 // ── Eamenau Content ──────────────────────────────────────────────
                 .route("eamenau", r -> r
                         .path("/api/v1/eamenau/**")
+                        .filters(f -> f.rewritePath("/api/v1/eamenau/(?<segment>.*)", "/eamenau/${segment}"))
                         .uri(contentServiceUrl))
 
                 // ── Quiz Service ─────────────────────────────────────────────────
                 .route("quiz", r -> r
                         .path("/api/v1/quiz/**")
+                        .filters(f -> f.rewritePath("/api/v1/quiz/(?<segment>.*)", "/quiz/${segment}"))
                         .uri(quizServiceUrl))
 
                 // --- New route for user quiz sessions ---
                 .route("user-quiz-sessions", r -> r
                         .path("/api/v1/quiz-sessions/**")
+                        .filters(f -> f.rewritePath("/api/v1/quiz-sessions/(?<segment>.*)", "/quiz-sessions/${segment}"))
                         .uri(quizServiceUrl))
                 // --- End new route ---
 
-                // ── Dictionary ───────────────────────────────────────────────────
-                .route("dictionary", r -> r
-                        .path("/api/v1/dictionary/**")
+                // ── Dictionary Service ───────────────────────────────────────────
+                .route("mw-dictionary", r -> r
+                        .path("/api/v1/mw-dictionary/**")
+                        .filters(f -> f.rewritePath("/api/v1/mw-dictionary/(?<segment>.*)", "/mw-dictionary/${segment}"))
                         .uri(dictionaryServiceUrl))
 
                 // ── Statistics & Leaderboard ─────────────────────────────────────
                 .route("statistics", r -> r
                         .path("/api/v1/statistics/**", "/api/v1/leaderboard/**")
+                        .filters(f -> f.rewritePath("/api/v1/(?<segment>.*)", "/${segment}"))
                         .uri(statisticsServiceUrl))
 
                 .build();

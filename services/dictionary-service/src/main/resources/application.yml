@@ -4,17 +4,22 @@ server:
 spring:
   application:
     name: dictionary-service
-  config:
-    import: "optional:file:.env[.properties]"
-  r2dbc:
-    url: ${SPRING_R2DBC_URL}?schema=dictionary
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: cologne_mw
   flyway:
-    url: ${SPRING_FLYWAY_URL}
-    user: ${DB_USER}
-    password: ${DB_PASSWORD}
-    schemas: dictionary
+    enabled: false # Monier-Williams DB is static, no migrations needed
+    schemas: cologne_mw
 
 logging:
   level:

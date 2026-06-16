@@ -33,6 +33,7 @@ public abstract class QuizSessionMapper {
     @Mapping(target = "answeredQuestions", expression = "java(answeredQuestionIds.size())")
     @Mapping(target = "score", source = "session.score")
     @Mapping(target = "currentQuestionIndex", expression = "java(answeredQuestionIds.size())")
+    @Mapping(target = "currentQuestionNumber", expression = "java(answeredQuestionIds.size() + 1)") // Added mapping
     @Mapping(target = "quizTitleRu", source = "quizSummary.titleRu")
     @Mapping(target = "quizTitleEn", source = "quizSummary.titleEn")
     @Mapping(target = "quizDescriptionRu", source = "quizSummary.descriptionRu")

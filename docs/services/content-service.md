@@ -1,6 +1,6 @@
 # content-service
 
-> Домен: Quiz Content — настройки и содержание квизов
+> Домен: Quiz Content — настройки и содержание квизов, упражнения Эмено
 > Язык: **Java 21 + Virtual Threads (JPA/JDBC)**
 > Модуль: `services/content-service`
 > Порт: 8081
@@ -12,10 +12,12 @@
 
 Хранит **настройки и содержание всех квизов**: метаданные квизов (тип, сложность, slug), вопросы, варианты ответов, а также лексику для словарных квизов. Доступен только для роли `ADMIN` (запись) и внутренне для `quiz-service` (чтение). Использует JPA/JDBC с Virtual Threads.
 
+**Новая функциональность:** Упражнения по Сандхи из учебника Эмено. Сервис предоставляет список упражнений, детали каждого упражнения с задачами, а также решения для задач, включая используемые правила Сандхи.
+
 **Особенность:** Генерация вопросов для `VOCABULARY` квизов теперь учитывает иерархию категорий слов, выбирая слова из родительской категории и всех ее дочерних категорий, основываясь на `quiz.slug`, который соответствует `vocabulary_categories.code` (поиск инвариантен к регистру).
 
 Разделение ответственности:
-- **content-service** — что есть в квизах (данные, настройки)
+- **content-service** — что есть в квизах (данные, настройки), упражнения Эмено
 - **quiz-service** — как пользователь их проходит (сессии, ответы, события)
 
 ---
@@ -50,6 +52,21 @@ PUT    /api/v1/content/questions/{id}/correct-option    → задать пра�
 POST   /api/v1/content/quizzes/{id}/vocabulary          → добавить слово (только VOCABULARY квизы)
 PUT    /api/v1/content/vocabulary/{wordId}              → обновить слово
 DELETE /api/v1/content/vocabulary/{wordId}              → удалить слово
+```
+
+### API для упражнений Эмено
+
+```
+GET /api/v1/eamenau/exercises                           → Получить список всех упражнений Эмено
+GET /api/v1/eamenau/exercises/{id}                      → Получить детали конкретного упражнения Эмено (включая задачи)
+GET /api/v1/eamenau/exercises/tasks/{taskId}/solution   → Получить список решений для конкретной задачи (is_correct = true)
+GET /api/v1/eamenau/exercises/{exerciseId}/sandhi-rules → Получить список уникальных правил Сандхи, используемых во всех задачах упражнения
+```
+
+### API для правил Сандхи Эмено
+
+```
+GET /api/v1/eamenau/sandhi-rules                        → Получить список всех правил Сандхи Эмено
 ```
 
 ### Внутреннее API для quiz-service
@@ -151,6 +168,16 @@ GET /api/v1/content/quizzes/{quizSlug}/vocabulary-words   → получить �
 | `category_id` | UUID | FK на `content.vocabulary_categories.id` |
 | `created_at` | TIMESTAMPTZ | Время создания связи |
 
+### Таблицы для упражнений Эмено (схема `eamenau`)
+
+| Таблица | Описание |
+|---|---|
+| `eamenau.exercises` | Основная информация об упражнении (номер, буква, текст инструкции). |
+| `eamenau.tasks` | Задачи внутри упражнения (текст задачи, ссылка на упражнение). |
+| `eamenau.solutions` | Решения для задач (текст решения, пошаговое описание, флаг `is_correct`). |
+| `eamenau.sandhi_rules` | Правила Сандхи (номер правила, тип, краткое описание, полный текст, примеры). |
+| `eamenau.solution_sandhi_rules` | Связующая таблица между решениями и правилами Сандхи. |
+
 ---
 
 ## 5. Backend структура
@@ -161,42 +188,61 @@ sm/selflearn/samskrtam/content/
 ├── controller/
 │   ├── QuizContentController.java
 │   ├── QuizManagementController.java
-│   ├── VocabularyController.java       ← НОВЫЙ контроллер для словарных слов
+│   ├── VocabularyController.java
+│   ├── EamenauController.java          ← Контроллер для правил Сандхи Эмено
+│   ├── EamenauExerciseController.java  ← Контроллер для упражнений Эмено
 │   └── internal/
-│       └── SessionDataController.java    ← /session-data для quiz-service
+│       └── SessionDataController.java
 ├── service/
 │   ├── QuizService.java
 │   ├── QuestionService.java
-│   ├── VocabularyService.java          ← НОВЫЙ сервис для словарных слов (обновлен для иерархии категорий)
-│   └── QuestionGenerationService.java  ← Обновлен для использования новой логики VocabularyService
+│   ├── VocabularyService.java
+│   ├── QuestionGenerationService.java
+│   ├── EamenauService.java             ← Сервис для правил Сандхи Эмено
+│   └── EamenauExerciseService.java     ← Сервис для упражнений Эмено
 ├── repository/
 │   ├── QuizRepository.java
 │   ├── QuestionRepository.java
 │   ├── QuestionOptionRepository.java
-│   ├── VocabularyWordRepository.java   ← НОВЫЙ репозиторий для словарных слов
-│   ├── VocabularyCategoryRepository.java (добавлено)
-│   └── VocabularyWordCategoryRepository.java (добавлено)
+│   ├── VocabularyWordRepository.java
+│   ├── VocabularyCategoryRepository.java
+│   ├── VocabularyWordCategoryRepository.java
+│   ├── ExerciseRepository.java         ← Репозиторий для упражнений Эмено
+│   ├── TaskRepository.java             ← Репозиторий для задач Эмено
+│   ├── SolutionRepository.java         ← Репозиторий для решений Эмено
+│   ├── SolutionSandhiRuleRepository.java ← Репозиторий для связей решений и правил
+│   └── SandhiRuleRepository.java       ← Репозиторий для правил Сандхи Эмено
 ├── model/
 │   ├── Quiz.java
 │   ├── Question.java
 │   ├── QuestionOption.java
-│   ├── VocabularyWord.java             ← НОВАЯ сущность для словарных слов
-│   ├── VocabularyCategory.java         ← Добавлена сущность для категорий слов
-│   ├── VocabularyWordCategory.java     ← Добавлена сущность для связей слово-категория
-│   ├── VocabularyWordCategoryId.java   ← Добавлена сущность для составного ключа
+│   ├── VocabularyWord.java
+│   ├── VocabularyCategory.java
+│   ├── VocabularyWordCategory.java
+│   ├── VocabularyWordCategoryId.java
 │   ├── Case.java
 │   ├── Number.java
 │   ├── VowelType.java
 │   ├── DeclensionForm.java
 │   ├── DeclensionStem.java
-│   └── DeclensionFormId.java
+│   ├── DeclensionFormId.java
+│   ├── Exercise.java                   ← Сущность упражнения Эмено
+│   ├── Task.java                       ← Сущность задачи Эмено
+│   ├── Solution.java                   ← Сущность решения Эмено
+│   ├── SolutionSandhiRule.java         ← Сущность связи решения и правила
+│   └── SandhiRule.java                 ← Сущность правила Сандхи Эмено
 └── dto/
     ├── CreateQuizRequest.java
     ├── CreateQuestionRequest.java
     ├── QuizDetailResponse.java
     ├── SessionDataResponse.java
     ├── VocabularyWordRequest.java
-    ├── VocabularyWordDto.java          ← НОВЫЙ DTO для словарных слов
+    ├── VocabularyWordDto.java
+    ├── EamenauExerciseDto.java         ← DTO для упражнений Эмено
+    ├── EamenauExerciseDetailDto.java   ← DTO для деталей упражнения Эмено
+    ├── EamenauTaskDto.java             ← DTO для задач Эмено
+    ├── SolutionDto.java                ← DTO для решений Эмено
+    └── SandhiRuleInfo.java             ← DTO для информации о правиле Сандхи
 ```
 
 ```
@@ -231,7 +277,7 @@ spring:
       hibernate:
         default_schema: content
   flyway:
-    schemas: content
+    schemas: content, eamenau # Добавлена схема eamenau
 ```
 
 ---
@@ -246,6 +292,12 @@ spring:
 - [ ] Slug уникален и соответствует паттерну `^[a-z0-9][a-z0-9-]*$`
 - [ ] `questions_per_session` не может быть меньше 1
 - [ ] **Для VOCABULARY квизов:** генерация вопросов выбирает слова из категории, соответствующей `quiz.slug`, и всех ее дочерних категорий (поиск `quiz.slug` инвариантен к регистру).
+- [ ] **Для упражнений Эмено:**
+    - [ ] Список упражнений отображается с номером, буквой и сокращенной инструкцией.
+    - [ ] При клике на упражнение открывается страница с полной инструкцией и списком задач.
+    - [ ] При клике на задачу раскрывается панель с решением (текст решения, пошаговое описание, номера правил).
+    - [ ] Номера правил в решении кликабельны и ведут на страницу правил, отфильтрованных по всем правилам, используемым в данном решении.
+    - [ ] При наведении на номер правила отображается тултип с кратким описанием правила.
 
 ---
 

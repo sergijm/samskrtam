@@ -5,11 +5,10 @@ include(
     ":services:user-service",
     ":services:content-service",
     ":services:quiz-service",
-    ":services:dictionary-service",
     ":services:statistics-service",
+    ":services:dictionary-service", // Added dictionary-service
     ":shared:user-dtos",
-    ":shared:dictionary-dtos",
     ":shared:feature-flag-dtos",
-    ":shared:quiz-dtos", // Объединенный модуль
+    ":shared:quiz-dtos",
     ":shared:common-dtos"
 )
