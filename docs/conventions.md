@@ -166,71 +166,6 @@ FEATURE_FLAG_SERVICE_URL=http://feature-flag-service:8085
 
 ### Шаблоны
 
-```java
-// ✅ Вход в метод сервиса (TRACE)
-@Slf4j
-@Service
-public class SessionService {
-
-    public Mono<StartSessionResponse> startSession(UUID quizId, UUID userId) {
-        log.trace("startSession: quizId={}, userId={}", quizId, userId);
-        // ...
-    }
-}
-
-// ✅ Бизнес-решение (DEBUG)
-log.debug("Cache miss for sessionId={}, restoring from Postgres", sessionId);
-
-// ✅ Ошибка в реактивном стеке — doOnError логирует, не прерывает pipeline
-return cacheService.get(sessionId)
-        .doOnError(e -> log.error("Redis unavailable, sessionId={}", sessionId, e))
-        .onErrorResume(e -> restoreFromPostgres(sessionId));
-
-// ✅ Downstream недоступен (ERROR)
-.onStatus(HttpStatusCode::is5xxServerError, response ->
-        response.bodyToMono(String.class)
-                .doOnNext(body -> log.error(
-                        "content-service error: status={}, body={}, traceId={}",
-                        response.statusCode(), body, MDC.get("traceId")))
-                .flatMap(body -> Mono.error(new ContentServiceException(body)))
-)
-
-// ✅ Downstream вернул 4xx (WARN — штатная ситуация)
-.onStatus(HttpStatusCode::is4xxClientError, response -> {
-        log.warn("content-service 4xx: status={}, quizId={}", response.statusCode(), quizId);
-        return Mono.error(new QuizNotFoundException(quizId));
-})
-
-// ❌ Запрещено
-System.out.println("Starting session");
-log.info("User email: {}", user.getEmail());   // sensitive data
-```
-
-### Формат JSON (logback-spring.xml)
-
-```xml
-<configuration>
-  <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-      <providers>
-        <mdc/>           <!-- включает traceId, spanId из MDC -->
-        <arguments/>
-        <logLevel/>
-        <loggerName/>
-        <message/>
-        <stackTrace/>
-      </providers>
-      <customFields>{"service":"${spring.application.name}"}</customFields>
-    </encoder>
-  </appender>
-
-  <root level="INFO">
-    <appender-ref ref="JSON"/>
-  </root>
-
-  <logger name="sm.selflearn.samskrtam" level="DEBUG"/>
-</configuration>
-```
 
 ---
 
@@ -247,29 +182,6 @@ Grafana                                              (единый UI)
 
 ### Зависимости (все Java-сервисы)
 
-```kotlin
-// build.gradle.kts
-dependencies {
-    implementation(libs.micrometer.tracing.bridge.otel)
-    implementation(libs.opentelemetry.exporter.otlp)
-    implementation(libs.micrometer.registry.prometheus)
-    implementation(libs.logstash.logback.encoder)
-}
-```
-
-```toml
-# gradle/libs.versions.toml
-[versions]
-micrometer-tracing = "1.3.0"
-opentelemetry       = "1.38.0"
-logstash-logback    = "7.4"
-
-[libraries]
-micrometer-tracing-bridge-otel = { module = "io.micrometer:micrometer-tracing-bridge-otel", version.ref = "micrometer-tracing" }
-opentelemetry-exporter-otlp    = { module = "io.opentelemetry:opentelemetry-exporter-otlp",  version.ref = "opentelemetry" }
-micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus",  version.ref = "micrometer-tracing" }
-logstash-logback-encoder       = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-logback" }
-```
 
 ### application.yml (общий блок, все сервисы)
 
@@ -293,63 +205,11 @@ management:
 
 В сервисах на WebFlux (`api-gateway`, `quiz-service`) MDC не работает через ThreadLocal. Требуется `ReactorContextAccessor`:
 
-```java
-// config/TracingConfig.java (только WebFlux сервисы)
-@Configuration
-public class TracingConfig {
-
-    @Bean
-    public ReactorContextAccessor reactorContextAccessor() {
-        // Пробрасывает traceId/spanId из Reactor Context в MDC
-        return new ReactorContextAccessor();
-    }
-}
-```
-
-Без этого бина `traceId` в логах quiz-service и gateway будет `null`.
-
 ### Propagation между сервисами
 
 `WebClient` автоматически добавляет заголовок `traceparent` при наличии `micrometer-tracing-bridge-otel` в classpath. Gateway пробрасывает `traceparent` входящего запроса во все downstream — также автоматически. Ручная настройка не требуется.
 
 ### Docker Compose — Observability сервисы
-
-```yaml
-  tempo:
-    image: grafana/tempo:2.5.0
-    ports: ["3200:3200", "4318:4318"]   # 4318 = OTLP HTTP
-    command: ["-config.file=/etc/tempo.yaml"]
-    volumes:
-      - ./infrastructure/tempo/tempo.yaml:/etc/tempo.yaml
-
-  prometheus:
-    image: prom/prometheus:v2.52.0
-    ports: ["9090:9090"]
-    volumes:
-      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-
-  loki:
-    image: grafana/loki:3.0.0
-    ports: ["3100:3100"]
-
-  promtail:
-    image: grafana/promtail:3.0.0
-    volumes:
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - ./infrastructure/promtail/promtail.yaml:/etc/promtail/config.yml
-
-  grafana:
-    image: grafana/grafana:11.0.0
-    ports: ["3001:3000"]
-    environment:
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
-    volumes:
-      - ./infrastructure/grafana/datasources:/etc/grafana/provisioning/datasources
-      - ./infrastructure/grafana/dashboards:/etc/grafana/provisioning/dashboards
-```
-
----
 
 ## 4. Actuator
 
@@ -369,27 +229,6 @@ Gateway **не проксирует** management порты — они недо�
 | dictionary-service | `DICTIONARY_MANAGEMENT_PORT` | 9095 |
 | statistics-service | `STATISTICS_MANAGEMENT_PORT` | 9096 |
 
-```yaml
-# application.yml (шаблон для всех сервисов)
-# Значение ${SERVICE_MANAGEMENT_PORT} — своё для каждого сервиса
-management:
-  server:
-    port: ${SERVICE_MANAGEMENT_PORT}
-  endpoints:
-    web:
-      exposure:
-        include: health, info, prometheus, loggers
-  endpoint:
-    health:
-      probes:
-        enabled: true
-      show-details: never
-      group:
-        liveness:
-          include: livenessState, diskSpace
-        readiness:
-          include: readinessState, db, redis, kafka
-```
 
 В `.env` (локальная разработка):
 ```
@@ -442,51 +281,12 @@ scrape_configs:
 | statistics-service | `kafka.events.processed` | Counter | `topic` |
 | dictionary-service | `dictionary.cache.hit` | Counter | — |
 
-```java
-// Пример регистрации кастомной метрики
-@Service
-@RequiredArgsConstructor
-public class SessionService {
-
-    private final MeterRegistry meterRegistry;
-
-    private void recordAnswer(String quizType, boolean correct) {
-        Counter.builder("quiz.answers.total")
-                .tag("quizType", quizType)
-                .tag("correct", String.valueOf(correct))
-                .register(meterRegistry)
-                .increment();
-    }
-}
-```
 
 ---
 
 ## 5. Swagger / OpenAPI
 
 ### Зависимости
-
-```kotlin
-// WebMVC (content-service, user-service, statistics-service)
-implementation(libs.springdoc.openapi.webmvc)
-
-// WebFlux (api-gateway, quiz-service)
-implementation(libs.springdoc.openapi.webflux)
-```
-
-> ⚠️ **Критично:** `webmvc` и `webflux` варианты несовместимы. Подключение `webmvc` в WebFlux сервис вызывает `ClassCastException` при старте.
-
-### application.yml
-
-```yaml
-springdoc:
-  api-docs:
-    enabled: ${SPRINGDOC_ENABLED}
-    path: /api-docs
-  swagger-ui:
-    enabled: ${SPRINGDOC_ENABLED}
-    path: /swagger-ui.html
-```
 
 ### Агрегация в Gateway
 
@@ -507,189 +307,24 @@ Swagger UI: `http://localhost:8090/swagger-ui.html`
 
 ### Обязательные аннотации
 
-Все публичные эндпоинты аннотируются. Минимальный набор:
-
-```java
-@RestController
-@Tag(name = "Declensions Quiz", description = "Квиз по склонениям санскрита")
-public class DeclensionsSessionController {
-
-    @GetMapping("/sessions/start")
-    @Operation(summary = "Начать сессию квиза")
-    @ApiResponse(responseCode = "200", description = "Сессия создана")
-    @ApiResponse(responseCode = "401", description = "Не аутентифицирован")
-    @ApiResponse(responseCode = "404", description = "Квиз не найден",
-                 content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    public Mono<StartSessionResponse> startSession(...) { }
-}
-```
+Все публичные эндпоинты аннотируются. 
 
 ---
 
 ## 6. Обработка ошибок
 
-### Кастомные исключения
-
-```java
-// shared/common-dto
-public abstract class SamskrtamException extends RuntimeException {
-    private final String errorCode;
-
-    protected SamskrtamException(String errorCode, String message) {
-        super(message);
-        this.errorCode = errorCode;
-    }
-
-    public String getErrorCode() { return errorCode; }
-}
-
-// Примеры в quiz-service
-public class QuizNotFoundException     extends SamskrtamException {
-    public QuizNotFoundException(UUID id)     { super("QUIZ_NOT_FOUND",     "Quiz not found: " + id); }
-}
-public class SessionNotFoundException  extends SamskrtamException {
-    public SessionNotFoundException(UUID id)  { super("SESSION_NOT_FOUND",  "Session not found: " + id); }
-}
-public class AlreadyAnsweredException  extends SamskrtamException {
-    public AlreadyAnsweredException(UUID id)  { super("ALREADY_ANSWERED",   "Already answered: " + id); }
-}
-```
-
-### Единый ErrorResponse
-
-```java
-// shared/common-dto
-public record ErrorResponse(
-    String  errorCode,    // машиночитаемый код
-    String  message,      // человекочитаемое сообщение
-    String  traceId,      // для корреляции с логами
-    Instant timestamp
-) {
-    public static ErrorResponse of(String errorCode, String message) {
-        return new ErrorResponse(errorCode, message, MDC.get("traceId"), Instant.now());
-    }
-}
-```
-
-```json
-{
-  "errorCode": "QUIZ_NOT_FOUND",
-  "message": "Quiz not found: 3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
-  "timestamp": "2025-05-30T12:00:00Z"
-}
-```
-
-### GlobalExceptionHandler — WebMVC
-
-```java
-@RestControllerAdvice
-@Slf4j
-public class GlobalExceptionHandler {
-
-    @ExceptionHandler(SamskrtamException.class)
-    public ResponseEntity<ErrorResponse> handleBusiness(SamskrtamException ex) {
-        log.warn("Business exception: code={}, message={}", ex.getErrorCode(), ex.getMessage());
-        return ResponseEntity.status(resolveStatus(ex))
-                .body(ErrorResponse.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex) {
-        log.error("Unexpected error", ex);
-        return ResponseEntity.internalServerError()
-                .body(ErrorResponse.of("INTERNAL_ERROR", "Internal server error"));
-    }
-
-    private HttpStatus resolveStatus(SamskrtamException ex) {
-        return switch (ex.getErrorCode()) {
-            case "QUIZ_NOT_FOUND", "SESSION_NOT_FOUND" -> HttpStatus.NOT_FOUND;
-            case "ALREADY_ANSWERED"                    -> HttpStatus.CONFLICT;
-            default                                    -> HttpStatus.BAD_REQUEST;
-        };
-    }
-}
-```
 
 ### GlobalExceptionHandler — WebFlux (quiz-service, gateway)
 
-```java
-@ControllerAdvice
-@Slf4j
-public class GlobalExceptionHandler {
-
-    @ExceptionHandler(SamskrtamException.class)
-    public ResponseEntity<ErrorResponse> handleBusiness(SamskrtamException ex) {
-        log.warn("Business exception: code={}", ex.getErrorCode());
-        return ResponseEntity.status(resolveStatus(ex))
-                .body(ErrorResponse.of(ex.getErrorCode(), ex.getMessage()));
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex) {
-        log.error("Unexpected error", ex);
-        return ResponseEntity.internalServerError()
-                .body(ErrorResponse.of("INTERNAL_ERROR", "Internal server error"));
-    }
-}
-```
 
 ### ErrorHandlingFilter — Gateway
 
-```java
-@Component
-@Slf4j
-public class ErrorHandlingFilter implements GlobalFilter, Ordered {
-
-    @Override
-    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        return chain.filter(exchange)
-                .then(Mono.defer(() -> {
-                    HttpStatusCode status = exchange.getResponse().getStatusCode();
-                    String path    = exchange.getRequest().getPath().toString();
-                    String traceId = exchange.getRequest().getHeaders().getFirst("traceparent");
-
-                    if (status != null && status.is5xxServerError()) {
-                        log.error("Downstream 5xx: status={}, path={}, traceId={}",
-                                status, path, traceId);
-                    } else if (status != null && status.is4xxClientError()
-                            && !status.equals(HttpStatus.UNAUTHORIZED)) {
-                        log.warn("Downstream 4xx: status={}, path={}, traceId={}",
-                                status, path, traceId);
-                    }
-                    return Mono.empty();
-                }))
-                .onErrorResume(ex -> {
-                    // Downstream недоступен — connection refused, timeout
-                    log.error("Downstream unreachable: path={}, error={}",
-                            exchange.getRequest().getPath(), ex.getMessage(), ex);
-                    exchange.getResponse().setStatusCode(HttpStatus.BAD_GATEWAY);
-                    return exchange.getResponse().setComplete();
-                });
-    }
-
-    @Override
-    public int getOrder() { return Ordered.LOWEST_PRECEDENCE; }
-}
-```
 
 ---
 
 ## 7. API Design
 
 ### Пагинация
-
-```java
-// shared/common-dto
-public record PageResponse<T>(
-    List<T> content,
-    int     page,
-    int     size,
-    long    totalElements,
-    int     totalPages,
-    boolean last
-) {}
-```
 
 Параметры запроса: `page` (0-based), `size` (default 20, max 100), `sort` (`field,asc|desc`).
 
@@ -777,55 +412,11 @@ tasks.check { dependsOn(tasks.jacocoTestCoverageVerification) }
 | dictionary-service | cache hit, cache miss + внешний запрос, внешний API недоступен |
 | api-gateway | нет JWT → 401, STUDENT на /content → 403, rate limit → 429 |
 
-### ArchUnit
-
-```java
-@AnalyzeClasses(packages = "sm.selflearn.samskrtam")
-public class ArchitectureTest {
-
-    @ArchTest
-    static final ArchRule controllers_do_not_access_repositories =
-            noClasses().that().haveNameMatching(".*Controller")
-                    .should().accessClassesThat().haveNameMatching(".*Repository");
-
-    @ArchTest
-    static final ArchRule services_do_not_depend_on_controllers =
-            noClasses().that().haveNameMatching(".*Service")
-                    .should().dependOnClassesThat().haveNameMatching(".*Controller");
-
-    @ArchTest
-    static final ArchRule no_system_out =
-            noClasses().should()
-                    .callMethod(System.class, "out")
-                    .orShould().callMethod(System.class, "err");
-}
-```
-
----
 
 ## 9. Docker
 
 ### Dockerfile (все Java-сервисы)
 
-```dockerfile
-FROM eclipse-temurin:21-jdk-alpine AS builder
-WORKDIR /app
-COPY gradlew settings.gradle.kts gradle/ ./
-COPY services/${SERVICE}/build.gradle.kts services/${SERVICE}/
-RUN ./gradlew :services/${SERVICE}:dependencies --no-daemon
-COPY services/${SERVICE}/src services/${SERVICE}/src
-RUN ./gradlew :services/${SERVICE}:bootJar --no-daemon
-
-FROM eclipse-temurin:21-jre-alpine AS runtime
-RUN addgroup -S app && adduser -S app -G app
-USER app
-WORKDIR /app
-COPY --from=builder /app/services/${SERVICE}/build/libs/*.jar app.jar
-EXPOSE 8080 ${SERVICE_MANAGEMENT_PORT}
-ENTRYPOINT ["java", "-jar", "app.jar"]
-```
-
-Правила: runtime образ — `jre-alpine` (не `jdk`), запуск от non-root пользователя `app`, multi-stage build.
 
 ### Graceful Shutdown
 
@@ -841,22 +432,6 @@ spring:
 
 ### Connection Pool
 
-```yaml
-# HikariCP (content-service, user-service, statistics-service)
-spring:
-  datasource:
-    hikari:
-      maximum-pool-size: ${DB_POOL_MAX_SIZE}
-      minimum-idle: ${DB_POOL_MIN_IDLE}
-      connection-timeout: ${DB_POOL_CONNECTION_TIMEOUT_MS}
-
-# R2DBC Pool (quiz-service, dictionary-service)
-spring:
-  r2dbc:
-    pool:
-      max-size: ${DB_POOL_MAX_SIZE}
-      initial-size: ${DB_POOL_MIN_IDLE}
-```
 
 ---
 
@@ -876,7 +451,6 @@ allprojects {
 }
 ```
 
-`config/checkstyle/checkstyle.xml` — Google Java Style, отступ 4 пробела.
 
 ### SpotBugs
 
@@ -941,47 +515,6 @@ PR в `main` требует: прохождения CI + одного code revie
 
 ---
 
-## 12. Makefile
-
-```makefile
-.PHONY: dev infra observe migrate test coverage lint check build down clean
-
-dev:       ## Запустить все сервисы
-	docker compose up -d
-
-infra:     ## Только инфраструктура (БД, Kafka, Redis, Keycloak, MinIO)
-	docker compose up -d postgres kafka redis keycloak minio
-
-observe:   ## Observability стек (Tempo, Prometheus, Loki, Grafana)
-	docker compose up -d tempo prometheus loki promtail grafana
-
-migrate:   ## Применить Flyway миграции
-	./gradlew flywayMigrate
-
-test:      ## Запустить все тесты
-	./gradlew test
-
-coverage:  ## Тесты + отчёт о покрытии
-	./gradlew test jacocoTestReport
-	@echo "Report: build/reports/jacoco/test/html/index.html"
-
-lint:      ## Статический анализ
-	./gradlew checkstyleMain spotbugsMain
-
-check:     ## Полная проверка (как в CI)
-	./gradlew check
-
-build:     ## Собрать все образы
-	./gradlew bootJar && docker compose build
-
-down:      ## Остановить всё
-	docker compose down
-
-clean:     ## Сбросить volumes (БД, Kafka)
-	docker compose down -v
-```
-
----
 
 ## 13. Открытые вопросы
 

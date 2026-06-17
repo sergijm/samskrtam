@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate, Link } from 'react-router-dom'; // Added Link import
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
@@ -50,6 +50,10 @@ const EmeneauExerciseDetailPage = () => {
     }
   };
 
+  const handleGoUp = () => {
+    navigate('/grammar/emeneau-exercises');
+  };
+
   const rowExpansionTemplate = (data: EamenauTaskDto) => {
     return <SolutionPanel taskId={data.id} />;
   };
@@ -77,18 +81,24 @@ const EmeneauExerciseDetailPage = () => {
   return (
     <div className="p-4">
       <div className="flex justify-content-between align-items-center mb-5">
-        <Button icon="pi pi-chevron-left" onClick={handlePrev} disabled={currentExerciseIndex === 0} />
-        <h1 className="text-center">
+        <div className="flex-1">
+          <Button icon="pi pi-chevron-left" onClick={handlePrev} disabled={currentExerciseIndex === 0} />
+          <Button icon="pi pi-chevron-up" onClick={handleGoUp} className="ml-2" />
+          <Button icon="pi pi-chevron-right" onClick={handleNext} disabled={currentExerciseIndex === (exercises?.length ?? 0) - 1} className="ml-2" />
+        </div>
+        <h1 className="text-center flex-1 m-0">
           {t('eamenau.exerciseNumber')} {exercise.exerciseNumber}
           {exercise.exerciseLetter && ` ${exercise.exerciseLetter}`}
         </h1>
-        <Button icon="pi pi-chevron-right" iconPos="right" onClick={handleNext} disabled={currentExerciseIndex === (exercises?.length ?? 0) - 1} />
+        <div className="flex-1 text-right">
+          {/* Placeholder for alignment */}
+        </div>
       </div>
       <p className="mb-4">{exercise.instructionText}</p>
 
       {uniqueSandhiRules && uniqueSandhiRules.length > 0 && (
         <div className="flex justify-content-end mb-4">
-          <Link to={getFilterRulesLink()} className="p-link flex align-items-center"> {/* Changed span to Link */}
+          <Link to={getFilterRulesLink()} className="p-link flex align-items-center">
             {t('eamenau.rules')}:{' '}
             {uniqueSandhiRules.map((rule, index) => (
               <React.Fragment key={rule.ruleNumber}>

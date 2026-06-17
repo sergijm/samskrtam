@@ -12,7 +12,7 @@
  Target Server Version : 170009 (170009)
  File Encoding         : 65001
 
- Date: 15/06/2026 21:10:46
+ Date: 17/06/2026 16:19:22
 */
 
 
@@ -231,7 +231,7 @@ CREATE TABLE "cologne_mw"."entry" (
   "id" int4 NOT NULL DEFAULT nextval('"cologne_mw".entry_id_seq'::regclass),
   "record_id_full" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
   "page" int4 NOT NULL,
-  "column_num" int2 NOT NULL,
+  "column_num" int4 NOT NULL,
   "key1" text COLLATE "pg_catalog"."default" NOT NULL,
   "key2" text COLLATE "pg_catalog"."default" NOT NULL,
   "homonym_num" varchar(10) COLLATE "pg_catalog"."default" NOT NULL,
@@ -239,7 +239,14 @@ CREATE TABLE "cologne_mw"."entry" (
   "body" text COLLATE "pg_catalog"."default",
   "is_supplement" bool DEFAULT false,
   "created_at" timestamp(6) DEFAULT now(),
-  "record_id_numeric" int4
+  "record_id_numeric" int4,
+  "main_definition" text COLLATE "pg_catalog"."default",
+  "short_definition" varchar(300) COLLATE "pg_catalog"."default",
+  "part_of_speech" varchar(50) COLLATE "pg_catalog"."default",
+  "gender" varchar(20) COLLATE "pg_catalog"."default",
+  "key1_normalized" text COLLATE "pg_catalog"."default" GENERATED ALWAYS AS (
+regexp_replace(key1, '[^a-zA-Z]'::text, ''::text, 'g'::text)
+) STORED
 )
 ;
 COMMENT ON COLUMN "cologne_mw"."entry"."record_id_full" IS 'Оригинальный Cologne record ID (может содержать точку, например "1.1")';
@@ -377,7 +384,8 @@ CREATE TABLE "cologne_mw"."sanskrit_word" (
   "iast_spelling" text COLLATE "pg_catalog"."default",
   "is_primary_headword" bool DEFAULT false,
   "position_order" int4,
-  "created_at" timestamp(6) DEFAULT now()
+  "created_at" timestamp(6) DEFAULT now(),
+  "slp1_normalized" text COLLATE "pg_catalog"."default"
 )
 ;
 
@@ -413,7 +421,7 @@ CREATE TABLE "cologne_mw"."whitney_link" (
 -- ----------------------------
 ALTER SEQUENCE "cologne_mw"."abbreviation_id_seq"
 OWNED BY "cologne_mw"."abbreviation"."id";
-SELECT setval('"cologne_mw"."abbreviation_id_seq"', 1, false);
+SELECT setval('"cologne_mw"."abbreviation_id_seq"', 199238, true);
 
 -- ----------------------------
 -- Alter sequences owned by
@@ -434,7 +442,7 @@ SELECT setval('"cologne_mw"."div_marker_id_seq"', 1, false);
 -- ----------------------------
 ALTER SEQUENCE "cologne_mw"."entry_id_seq"
 OWNED BY "cologne_mw"."entry"."id";
-SELECT setval('"cologne_mw"."entry_id_seq"', 289169, true);
+SELECT setval('"cologne_mw"."entry_id_seq"', 575729, true);
 
 -- ----------------------------
 -- Alter sequences owned by
@@ -455,14 +463,14 @@ SELECT setval('"cologne_mw"."foreign_word_id_seq"', 1, false);
 -- ----------------------------
 ALTER SEQUENCE "cologne_mw"."homonym_id_seq"
 OWNED BY "cologne_mw"."homonym"."id";
-SELECT setval('"cologne_mw"."homonym_id_seq"', 1, false);
+SELECT setval('"cologne_mw"."homonym_id_seq"', 11703, true);
 
 -- ----------------------------
 -- Alter sequences owned by
 -- ----------------------------
 ALTER SEQUENCE "cologne_mw"."info_id_seq"
 OWNED BY "cologne_mw"."info"."id";
-SELECT setval('"cologne_mw"."info_id_seq"', 1, false);
+SELECT setval('"cologne_mw"."info_id_seq"', 278978, true);
 
 -- ----------------------------
 -- Alter sequences owned by
@@ -476,14 +484,14 @@ SELECT setval('"cologne_mw"."lexcat_info_id_seq"', 1, false);
 -- ----------------------------
 ALTER SEQUENCE "cologne_mw"."lexical_info_id_seq"
 OWNED BY "cologne_mw"."lexical_info"."id";
-SELECT setval('"cologne_mw"."lexical_info_id_seq"', 1, false);
+SELECT setval('"cologne_mw"."lexical_info_id_seq"', 457782, true);
 
 -- ----------------------------
 -- Alter sequences owned by
 -- ----------------------------
 ALTER SEQUENCE "cologne_mw"."literary_source_id_seq"
 OWNED BY "cologne_mw"."literary_source"."id";
-SELECT setval('"cologne_mw"."literary_source_id_seq"', 1, false);
+SELECT setval('"cologne_mw"."literary_source_id_seq"', 319002, true);
 
 -- ----------------------------
 -- Alter sequences owned by
@@ -497,7 +505,7 @@ SELECT setval('"cologne_mw"."page_break_id_seq"', 1, false);
 -- ----------------------------
 ALTER SEQUENCE "cologne_mw"."sanskrit_word_id_seq"
 OWNED BY "cologne_mw"."sanskrit_word"."id";
-SELECT setval('"cologne_mw"."sanskrit_word_id_seq"', 327233, true);
+SELECT setval('"cologne_mw"."sanskrit_word_id_seq"', 654466, true);
 
 -- ----------------------------
 -- Alter sequences owned by
@@ -557,11 +565,14 @@ ALTER TABLE "cologne_mw"."div_marker" ADD CONSTRAINT "div_marker_pkey" PRIMARY K
 -- ----------------------------
 -- Indexes structure for table entry
 -- ----------------------------
+CREATE INDEX "entry_key1_normalized_idx" ON "cologne_mw"."entry" USING btree (
+  "key1_normalized" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
+);
 CREATE INDEX "idx_mw_entry_key1" ON "cologne_mw"."entry" USING btree (
   "key1" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
 );
-CREATE INDEX "idx_mw_entry_key2" ON "cologne_mw"."entry" USING btree (
-  "key2" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
+CREATE INDEX "idx_mw_entry_main_definition" ON "cologne_mw"."entry" USING gin (
+  to_tsvector('english'::regconfig, main_definition) "pg_catalog"."tsvector_ops"
 );
 CREATE INDEX "idx_mw_entry_page" ON "cologne_mw"."entry" USING btree (
   "page" "pg_catalog"."int4_ops" ASC NULLS LAST
@@ -574,6 +585,9 @@ CREATE INDEX "idx_mw_entry_record_id_full" ON "cologne_mw"."entry" USING btree (
 );
 CREATE INDEX "idx_mw_entry_record_id_numeric" ON "cologne_mw"."entry" USING btree (
   "record_id_numeric" "pg_catalog"."int4_ops" ASC NULLS LAST
+);
+CREATE INDEX "idx_mw_entry_short_definition" ON "cologne_mw"."entry" USING btree (
+  to_tsvector('english'::regconfig, short_definition::text) "pg_catalog"."tsvector_ops" ASC NULLS LAST
 );
 
 -- ----------------------------
@@ -695,6 +709,9 @@ ALTER TABLE "cologne_mw"."page_break" ADD CONSTRAINT "page_break_pkey" PRIMARY K
 -- ----------------------------
 CREATE INDEX "idx_mw_sanskrit_word_entry_id" ON "cologne_mw"."sanskrit_word" USING btree (
   "entry_id" "pg_catalog"."int4_ops" ASC NULLS LAST
+);
+CREATE INDEX "idx_mw_sanskrit_word_key1_search_trgm" ON "cologne_mw"."sanskrit_word" USING gin (
+  "slp1_normalized" COLLATE "pg_catalog"."default" "public"."gin_trgm_ops"
 );
 CREATE INDEX "idx_mw_sanskrit_word_slp1" ON "cologne_mw"."sanskrit_word" USING btree (
   "slp1_spelling" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
