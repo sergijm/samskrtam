@@ -3,18 +3,14 @@ package sm.selflearn.samskrtam.content.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import sm.selflearn.samskrtam.content.dto.EamenauExerciseDetailDto;
-import sm.selflearn.samskrtam.content.dto.EamenauExerciseDto;
-import sm.selflearn.samskrtam.content.dto.EamenauTaskDto;
-import sm.selflearn.samskrtam.content.dto.SandhiRuleInfo;
-import sm.selflearn.samskrtam.content.dto.SolutionDto;
+import org.springframework.transaction.annotation.Transactional;
+import sm.selflearn.samskrtam.common.SamskrtamException;
+import sm.selflearn.samskrtam.content.dto.*;
 import sm.selflearn.samskrtam.eamenau.model.*;
 import sm.selflearn.samskrtam.eamenau.repository.*;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.ArrayList; // Import ArrayList
 
 @Service
 @RequiredArgsConstructor
@@ -57,7 +53,6 @@ public class EamenauExerciseService {
                 .map(SolutionSandhiRule::getSandhiRuleId)
                 .collect(Collectors.toSet());
 
-        // Convert Set to List for the repository method
         List<Integer> uniqueSandhiRuleNumbersList = new ArrayList<>(uniqueSandhiRuleNumbers);
 
         return sandhiRuleRepository.findByRuleNumberIn(uniqueSandhiRuleNumbersList).stream()
@@ -69,9 +64,54 @@ public class EamenauExerciseService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public void updateSolution(Integer solutionId, SolutionUpdateRequestDto requestDto) {
+        Solution solution = solutionRepository.findById(solutionId)
+                .orElseThrow(() -> new SamskrtamException("SOLUTION_NOT_FOUND", "Solution not found with id: " + solutionId));
+
+        solution.setStepByStep(requestDto.getStepByStep());
+        solutionRepository.save(solution);
+
+        // 1. Get existing and desired rule IDs
+        Set<Integer> existingRuleIds = solutionSandhiRuleRepository.findBySolutionId(solutionId).stream()
+                .map(SolutionSandhiRule::getSandhiRuleId)
+                .collect(Collectors.toSet());
+
+        Set<Integer> desiredRuleIds = new HashSet<>();
+        if (requestDto.getRuleNumbers() != null && !requestDto.getRuleNumbers().isBlank()) {
+            List<Integer> ruleNumbers = Arrays.stream(requestDto.getRuleNumbers().split("[\\s,;]+"))
+                    .filter(s -> !s.isBlank())
+                    .map(Integer::parseInt)
+                    .toList();
+            desiredRuleIds = sandhiRuleRepository.findByRuleNumberIn(ruleNumbers).stream()
+                    .map(SandhiRule::getId)
+                    .collect(Collectors.toSet());
+        }
+
+        // 2. Find rules to add
+        Set<Integer> rulesToAdd = new HashSet<>(desiredRuleIds);
+        rulesToAdd.removeAll(existingRuleIds);
+
+        List<SolutionSandhiRule> newRules = rulesToAdd.stream()
+                .map(ruleId -> new SolutionSandhiRule(null, solutionId, ruleId))
+                .collect(Collectors.toList());
+
+        // 3. Find rules to remove
+        Set<Integer> rulesToRemove = new HashSet<>(existingRuleIds);
+        rulesToRemove.removeAll(desiredRuleIds);
+
+        // 4. Perform database operations
+        if (!newRules.isEmpty()) {
+            solutionSandhiRuleRepository.saveAll(newRules);
+        }
+        if (!rulesToRemove.isEmpty()) {
+            solutionSandhiRuleRepository.deleteBySolutionIdAndSandhiRuleIdIn(solutionId, new ArrayList<>(rulesToRemove));
+        }
+    }
+
     private SolutionDto mapToSolutionDto(Solution solution) {
         List<Integer> sandhiRuleNumbersFromSolution = solutionSandhiRuleRepository.findBySolutionId(solution.getId()).stream()
-                .map(SolutionSandhiRule::getSandhiRuleId) // Assuming sandhiRuleId here is actually rule_number
+                .map(SolutionSandhiRule::getSandhiRuleId)
                 .collect(Collectors.toList());
         
         log.debug("Found sandhiRuleNumbersFromSolution: {}", sandhiRuleNumbersFromSolution);

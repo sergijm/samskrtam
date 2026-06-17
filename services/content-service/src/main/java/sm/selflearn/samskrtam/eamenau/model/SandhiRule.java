@@ -6,6 +6,9 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "sandhi_rules", schema = "eamenau")
 @Data
@@ -40,4 +43,13 @@ public class SandhiRule {
 
     @Column(name = "full_text", nullable = false)
     private String fullText;
+
+    @ManyToMany
+    @JoinTable(
+            name = "sandhi_rules_group_map",
+            schema = "eamenau",
+            joinColumns = @JoinColumn(name = "sandhi_rules_id"),
+            inverseJoinColumns = @JoinColumn(name = "sandhi_rules_group_id")
+    )
+    private Set<SandhiRuleGroup> sandhiRuleGroups = new HashSet<>();
 }

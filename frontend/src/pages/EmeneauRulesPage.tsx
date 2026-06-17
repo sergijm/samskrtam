@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from 'primereact/card';
 import { ProgressSpinner } from 'primereact/progressspinner';
@@ -6,6 +6,8 @@ import { Message } from 'primereact/message';
 import { Button } from 'primereact/button';
 import { useSandhiRules } from '../hooks/useContent';
 import { useLocation } from 'react-router-dom';
+import { OverlayPanel } from 'primereact/overlaypanel';
+import { Tooltip } from 'primereact/tooltip';
 
 const EmeneauRulesPage = () => {
   const { t } = useTranslation();
@@ -89,12 +91,28 @@ const EmeneauRulesPage = () => {
         {currentRules.map((rule) => (
           <Card
             key={rule.id}
-            className="mb-4"
+            className="mb-4 relative" // Added relative positioning for absolute child
           >
-            <div className="p-card-title">
-              <span className="text-lg font-bold">{rule.ruleNumber}</span>
-              {rule.whitneyNumber && <span className="text-lg font-bold ml-2">({rule.whitneyNumber})</span>}
-              {rule.shortDescription && <span className="text-lg font-bold ml-2">{rule.shortDescription}</span>}
+            <div className="p-card-title flex justify-content-between align-items-start">
+              <div>
+                <span className="text-lg font-bold">{rule.ruleNumber}</span>
+                {rule.whitneyNumber && <span className="text-lg font-bold ml-2">({rule.whitneyNumber})</span>}
+                {rule.shortDescription && <span className="text-lg font-bold ml-2">{rule.shortDescription}</span>}
+              </div>
+              {rule.sandhiRuleGroups && rule.sandhiRuleGroups.length > 0 && (
+                <div className="flex gap-2 absolute top-0 right-0 p-3"> {/* Positioned top-right */}
+                  {rule.sandhiRuleGroups.map((group) => (
+                    <React.Fragment key={group.id}>
+                      <i
+                        className="pi pi-tag text-xl cursor-pointer" // Example icon, adjust as needed
+                        data-pr-tooltip={group.description}
+                        data-pr-position="top"
+                      ></i>
+                      <Tooltip target=".pi-tag" />
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="p-card-content">
               <p className="m-0">{rule.fullText}</p>

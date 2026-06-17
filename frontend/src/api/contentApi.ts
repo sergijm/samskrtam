@@ -1,5 +1,5 @@
 import api from './axios';
-import { SandhiRuleDto, EamenauExerciseDto, EamenauExerciseDetailDto, SolutionDto, SandhiRuleInfo } from '../types';
+import { SandhiRuleDto, EamenauExerciseDto, EamenauExerciseDetailDto, SolutionDto, SandhiRuleInfo, SolutionUpdateRequestDto } from '../types';
 
 export const contentApi = {
   getAllSandhiRules: () => {
@@ -16,5 +16,9 @@ export const contentApi = {
   },
   getUniqueSandhiRulesForExercise: (exerciseId: number) => {
     return api.get<SandhiRuleInfo[]>(`/api/v1/eamenau/exercises/${exerciseId}/sandhi-rules`);
+  },
+  updateSolution: (solutionId: number, stepByStep: string, ruleNumbers: string) => {
+    const data: SolutionUpdateRequestDto = { stepByStep, ruleNumbers };
+    return api.put(`/api/v1/eamenau/exercises/solutions/${solutionId}`, data);
   }
 };

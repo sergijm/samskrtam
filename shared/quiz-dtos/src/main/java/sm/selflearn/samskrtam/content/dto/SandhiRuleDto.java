@@ -3,6 +3,8 @@ package sm.selflearn.samskrtam.content.dto;
 import lombok.Builder;
 import lombok.Value;
 
+import java.util.Set;
+
 @Value
 @Builder
 public class SandhiRuleDto {
@@ -15,4 +17,5 @@ public class SandhiRuleDto {
     String hkExample;
     String notes;
     String fullText;
+    Set<SandhiRuleGroupDto> sandhiRuleGroups;
 }

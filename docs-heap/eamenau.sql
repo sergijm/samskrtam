@@ -12,7 +12,7 @@
  Target Server Version : 170009 (170009)
  File Encoding         : 65001
 
- Date: 15/06/2026 14:56:58
+ Date: 18/06/2026 14:07:30
 */
 
 
@@ -247,6 +247,27 @@ CREATE TABLE "eamenau"."sandhi_rules" (
 ;
 
 -- ----------------------------
+-- Table structure for sandhi_rules_group
+-- ----------------------------
+DROP TABLE IF EXISTS "eamenau"."sandhi_rules_group";
+CREATE TABLE "eamenau"."sandhi_rules_group" (
+  "id" int4 NOT NULL,
+  "description" text COLLATE "pg_catalog"."default" NOT NULL,
+  "code" varchar(255) COLLATE "pg_catalog"."default"
+)
+;
+
+-- ----------------------------
+-- Table structure for sandhi_rules_group_map
+-- ----------------------------
+DROP TABLE IF EXISTS "eamenau"."sandhi_rules_group_map";
+CREATE TABLE "eamenau"."sandhi_rules_group_map" (
+  "sandhi_rules_id" int4 NOT NULL,
+  "sandhi_rules_group_id" int4 NOT NULL
+)
+;
+
+-- ----------------------------
 -- Table structure for solution_sandhi_rules
 -- ----------------------------
 DROP TABLE IF EXISTS "eamenau"."solution_sandhi_rules";
@@ -445,21 +466,21 @@ SELECT setval('"eamenau"."sandhi_rules_id_seq"', 182, true);
 -- ----------------------------
 ALTER SEQUENCE "eamenau"."solution_sandhi_rules_id_seq"
 OWNED BY "eamenau"."solution_sandhi_rules"."id";
-SELECT setval('"eamenau"."solution_sandhi_rules_id_seq"', 215, true);
+SELECT setval('"eamenau"."solution_sandhi_rules_id_seq"', 471, true);
 
 -- ----------------------------
 -- Alter sequences owned by
 -- ----------------------------
 ALTER SEQUENCE "eamenau"."solutions_id_seq"
 OWNED BY "eamenau"."solutions"."id";
-SELECT setval('"eamenau"."solutions_id_seq"', 1127, true);
+SELECT setval('"eamenau"."solutions_id_seq"', 3262, true);
 
 -- ----------------------------
 -- Alter sequences owned by
 -- ----------------------------
 ALTER SEQUENCE "eamenau"."tasks_id_seq"
 OWNED BY "eamenau"."tasks"."id";
-SELECT setval('"eamenau"."tasks_id_seq"', 465, true);
+SELECT setval('"eamenau"."tasks_id_seq"', 466, true);
 
 -- ----------------------------
 -- Alter sequences owned by
@@ -564,6 +585,11 @@ ALTER TABLE "eamenau"."sandhi_rules" ADD CONSTRAINT "sandhi_rules_rule_number_ke
 ALTER TABLE "eamenau"."sandhi_rules" ADD CONSTRAINT "sandhi_rules_pkey" PRIMARY KEY ("id");
 
 -- ----------------------------
+-- Primary Key structure for table sandhi_rules_group
+-- ----------------------------
+ALTER TABLE "eamenau"."sandhi_rules_group" ADD CONSTRAINT "sаndhi_rules_group_pkey" PRIMARY KEY ("id");
+
+-- ----------------------------
 -- Indexes structure for table solution_sandhi_rules
 -- ----------------------------
 CREATE INDEX "idx_solution_rules_rule_id" ON "eamenau"."solution_sandhi_rules" USING btree (
@@ -642,6 +668,12 @@ ALTER TABLE "eamenau"."phonemes" ADD CONSTRAINT "phonemes_manner_id_fkey" FOREIG
 ALTER TABLE "eamenau"."phonemes" ADD CONSTRAINT "phonemes_place_id_fkey" FOREIGN KEY ("place_id") REFERENCES "eamenau"."place_of_articulation" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 ALTER TABLE "eamenau"."phonemes" ADD CONSTRAINT "phonemes_varga_id_fkey" FOREIGN KEY ("varga_id") REFERENCES "eamenau"."varga" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 ALTER TABLE "eamenau"."phonemes" ADD CONSTRAINT "phonemes_voicing_id_fkey" FOREIGN KEY ("voicing_id") REFERENCES "eamenau"."voicing" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- ----------------------------
+-- Foreign Keys structure for table sandhi_rules_group_map
+-- ----------------------------
+ALTER TABLE "eamenau"."sandhi_rules_group_map" ADD CONSTRAINT "gandhi_rules_group_map_sandhi_rules_group_id_fkey" FOREIGN KEY ("sandhi_rules_group_id") REFERENCES "eamenau"."sandhi_rules_group" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE "eamenau"."sandhi_rules_group_map" ADD CONSTRAINT "gandhi_rules_group_map_sandhi_rules_id_fkey" FOREIGN KEY ("sandhi_rules_id") REFERENCES "eamenau"."sandhi_rules" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- ----------------------------
 -- Foreign Keys structure for table solution_sandhi_rules

@@ -1,14 +1,14 @@
 package sm.selflearn.samskrtam.content.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import sm.selflearn.samskrtam.content.dto.EamenauExerciseDetailDto;
 import sm.selflearn.samskrtam.content.dto.EamenauExerciseDto;
 import sm.selflearn.samskrtam.content.dto.SandhiRuleInfo;
 import sm.selflearn.samskrtam.content.dto.SolutionDto;
+import sm.selflearn.samskrtam.content.dto.SolutionUpdateRequestDto;
 import sm.selflearn.samskrtam.content.service.EamenauExerciseService;
 
 import java.util.List;
@@ -16,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/eamenau/exercises")
 @RequiredArgsConstructor
+@Slf4j
 public class EamenauExerciseController {
 
     private final EamenauExerciseService eamenauExerciseService;
@@ -38,5 +39,15 @@ public class EamenauExerciseController {
     @GetMapping("/{exerciseId}/sandhi-rules")
     public List<SandhiRuleInfo> getUniqueSandhiRulesForExercise(@PathVariable Integer exerciseId) {
         return eamenauExerciseService.getUniqueSandhiRulesForExercise(exerciseId);
+    }
+
+    @PutMapping("/solutions/{solutionId}")
+    public ResponseEntity updateSolution(
+            @PathVariable Integer solutionId,
+            @RequestBody SolutionUpdateRequestDto requestDto) {
+        log.info("Received update request for solutionId: {}. Data: {}", solutionId, requestDto);
+        eamenauExerciseService.updateSolution(solutionId, requestDto);
+
+        return ResponseEntity.ok().build();
     }
 }

@@ -10,6 +10,11 @@ export interface SolutionDto {
     sandhiRules: SandhiRuleInfo[];
 }
 
+export interface SolutionUpdateRequestDto {
+    stepByStep: string;
+    ruleNumbers: string;
+}
+
 export interface EamenauExerciseDto {
     id: number;
     exerciseNumber: number;

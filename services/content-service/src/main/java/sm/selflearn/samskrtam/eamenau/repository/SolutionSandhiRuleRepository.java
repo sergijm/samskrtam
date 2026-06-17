@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface SolutionSandhiRuleRepository extends JpaRepository<SolutionSandhiRule, Integer> {
     List<SolutionSandhiRule> findBySolutionId(Integer solutionId);
+    void deleteBySolutionId(Integer solutionId);
+    void deleteBySolutionIdAndSandhiRuleIdIn(Integer solutionId, List<Integer> sandhiRuleIds);
 }

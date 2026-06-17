@@ -1,11 +1,15 @@
 package sm.selflearn.samskrtam.eamenau.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "solution_sandhi_rules", schema = "eamenau")
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class SolutionSandhiRule {
 
     @Id
