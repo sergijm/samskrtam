@@ -20,23 +20,23 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DictionaryService {
 
-    private final MwSanskritWordRepository mwSanskritWordRepository;
+
     private final MwEntryRepository mwEntryRepository;
     private final TransliterationService transliterationService;
     private final MwDictionaryEntryService mwDictionaryEntryService;
 
     public List<MwWordSearchDto> searchWords(String query) {
-        String normalizedQuery = transliterationService.slp1RemoveStess(query);
+        String normalizedQuery = transliterationService.normalizeToSlp1(query,null);
 
         LevenshteinDistance ld = new LevenshteinDistance();
 
-        return mwSanskritWordRepository.findBySlp1NormalizedSimilarity(normalizedQuery).stream()
-                .map(this::mapToMwWordSearchDto)
+        return mwDictionaryEntryService.findWordsByKey1Normalized(normalizedQuery).stream()
                 .collect(Collectors.groupingBy(MwWordSearchDto::getSlp1Normalized))
                 .values().stream().map(list->
                     list.stream().max(Comparator.comparingDouble(MwWordSearchDto::getSimilarity)).orElseThrow()
 
                 ).sorted(Comparator.comparingDouble(e->ld.apply(e.getSlp1Normalized(), query)))
+                .limit(30)
                 .collect(Collectors.toList());
     }
 

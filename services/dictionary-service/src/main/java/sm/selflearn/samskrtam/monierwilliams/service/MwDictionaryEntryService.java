@@ -50,7 +50,7 @@ public class MwDictionaryEntryService {
     /**
      * Получить список слов по ключу поиска (неточное совпадение)
      */
-    public List<MwWordSearchDto> getWordsByKey1Normalized(String normalizedQuery) {
+    public List<MwWordSearchDto> findWordsByKey1Normalized(String normalizedQuery) {
         List<SanskritWordSearchResult> words = entryRepository.findWordsByKey1NormalizedSimilarity(normalizedQuery);
         return words.stream().map(this::mapToMwWordSearchDto)
                 .collect(Collectors.toUnmodifiableList());
@@ -61,16 +61,9 @@ public class MwDictionaryEntryService {
      */
     @Transactional(readOnly = true)
     public List<MwDictionaryEntryDto> getEntriesByKey1(String key1) {
-        List<Integer> entryIds = sanskritWordRepository.findBySlp1Spelling(key1).stream()
-                .map(MwSanskritWord::getEntryId)
-                .distinct()
-                .collect(Collectors.toList());
+        String slp1RemoveStess = transliterationService.slp1RemoveStress(key1);
 
-        if (entryIds.isEmpty()) {
-            return List.of();
-        }
-
-        List<MwEntry> entries = entryRepository.findAllById(entryIds);
+        List<MwEntry> entries = entryRepository.findByKey1Normalized(slp1RemoveStess);
 
         List<MwEntry> collect = entries.stream().sorted(Comparator.comparing(MwEntry::getECode))
                 .collect(Collectors.toUnmodifiableList());

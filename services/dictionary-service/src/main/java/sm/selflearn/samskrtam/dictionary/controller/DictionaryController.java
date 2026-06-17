@@ -13,7 +13,7 @@ import sm.selflearn.samskrtam.dictionary.service.DictionaryService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/mw-dictionary")
+@RequestMapping("/api/v1/dictionary")
 @RequiredArgsConstructor
 public class DictionaryController {
 

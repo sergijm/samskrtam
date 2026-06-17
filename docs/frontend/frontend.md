@@ -550,14 +550,14 @@ COMPLETED  → редирект на ResultPage
 ```
 Этап 1 — поиск списка:
   Пользователь вводит "deva" → нажимает "Найти"
-  GET /api/v1/mw-dictionary/search?query=deva
+  GET /api/v1/dictionary/search?query=deva
   ↓
   Горизонтальный список: [deva] [devaka] [devī] [devadatta] ...
   каждый элемент кликабелен, отображает slp1Normalized
 
 Этап 2 — загрузка статьи:
   Пользователь кликает на "deva" (slp1Normalized)
-  GET /api/v1/mw-dictionary/entry?slp1Spelling=deva (передается slp1Normalized в качестве slp1Spelling)
+  GET /api/v1/dictionary/entry?slp1Spelling=deva (передается slp1Normalized в качестве slp1Spelling)
   ↓
   Таблица с полной статьёй
   (индикатор загрузки если запрос к внешнему API)

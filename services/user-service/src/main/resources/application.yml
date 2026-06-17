@@ -20,6 +20,9 @@ spring:
   flyway:
     schemas: users
     default-schema: users
+    url: ${SPRING_DATASOURCE_URL}
+    user: ${DB_USER}
+    password: ${DB_PASSWORD}
     locations: classpath:db/migration
   security:
     oauth2:

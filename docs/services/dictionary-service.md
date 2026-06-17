@@ -48,7 +48,7 @@
 
 ## 5. API
 
-### 5.1. GET /api/v1/mw-dictionary/search?query={query}
+### 5.1. GET /api/v1/dictionary/search?query={query}
 
 Возвращает ранжированный список слов, соответствующих запросу `query`, из словаря Монье-Вильямса.
 
@@ -73,7 +73,7 @@
 ]
 ```
 
-### 5.2. GET /api/v1/mw-dictionary/entry?slp1Spelling={slp1Normalized}
+### 5.2. GET /api/v1/dictionary/entry?slp1Spelling={slp1Normalized}
 
 Возвращает полную словарную статью для указанного слова. Фронтенд передает `slp1Normalized` из результатов поиска в параметр `slp1Spelling`.
 

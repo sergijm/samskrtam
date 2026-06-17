@@ -21,7 +21,7 @@ public class TransliterationService {
 
         try {
             var query = sanscript.t(input, inputScheme, "slp1");
-            return query.replaceAll("[\\\\/\\^\\-—]+", "");
+            return slp1RemoveStress(query);
         } catch (Exception e) {
             // Если транслитерация не удалась, возвращаем оригинал
             return input;
@@ -31,10 +31,10 @@ public class TransliterationService {
     /**
      * удаляем ударение в SLP1
      */
-    public String slp1RemoveStess(String input) {
+    public String slp1RemoveStress(String input) {
 
         return Optional.ofNullable(input).map(
-                it->it.replaceAll("[\\\\/\\^\\-—]+", "")
+            it->it.replaceAll("[^a-zA-Z]", "")
         ).orElse(null);
     }
 

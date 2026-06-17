@@ -46,15 +46,13 @@ const DictionaryPage = () => {
 
   const stripHtmlTags = (html: string) => {
     if (!html) return '';
-
-    // Создаём временный DOM-элемент
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
     const text = doc.body.textContent || '';
-
-    // Схлопываем пробелы
     return text.replace(/\s+/g, ' ').trim();
   };
+
+  const showSpinner = (isSearching && !!query) || (isFetchingEntry && !!selectedSlp1);
 
   return (
     <div className="p-4">
@@ -74,8 +72,8 @@ const DictionaryPage = () => {
         </div>
       </div>
 
-      {((isSearching && query) || (isFetchingEntry && selectedSlp1)) && (
-        <div className="flex justify-content-center">
+      {showSpinner && (
+        <div className="flex justify-content-center my-4">
           <ProgressSpinner />
         </div>
       )}
@@ -98,9 +96,12 @@ const DictionaryPage = () => {
           ))}
         </div>
       )}
-      {searchResults && searchResults.length === 0 && !isSearching && query && (
-        <p className="text-center">{t('dictionary.noWordsFound')}</p>
-      )}
+      {searchResults &&
+        searchResults.length === 0 &&
+        !isSearching &&
+        query && (
+          <p className="text-center">{t('dictionary.noWordsFound')}</p>
+        )}
 
       {entryDetails && (
         <div className="card mt-4">
@@ -121,6 +122,7 @@ const DictionaryPage = () => {
                       width: '150px',
                       padding: '0.75rem',
                       verticalAlign: 'top',
+                      fontWeight: 'bold',
                     }}
                   >
                     {entry.key1Display}

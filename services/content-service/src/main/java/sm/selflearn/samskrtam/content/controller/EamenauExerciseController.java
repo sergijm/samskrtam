@@ -14,7 +14,7 @@ import sm.selflearn.samskrtam.content.service.EamenauExerciseService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/eamenau/exercises")
+@RequestMapping("/api/v1/eamenau/exercises")
 @RequiredArgsConstructor
 public class EamenauExerciseController {
 
