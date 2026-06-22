@@ -43,13 +43,18 @@ public class QuizContentService {
                     }
                     switch (category.toLowerCase()) {
                         case "declensions":
-                            return quiz.getQuizType().toString().contains("DECLENSIONS");
+                            return  QuizType.isDeclensions(quiz.getQuizType());
                         case "conjugations":
                             return quiz.getQuizType() == QuizType.CONJUGATIONS;
                         case "vocabulary":
-                            return quiz.getQuizType() == QuizType.VOCABULARY;
+                            return  QuizType.isVocabulary(quiz.getQuizType());
+                        case "vocabulary-basic":
+                            return quiz.getQuizType() == QuizType.VOCABULARY_BASIC;
+                        case "vocabulary-text":
+                        case "vocabulary-texts":
+                            return quiz.getQuizType() == QuizType.VOCABULARY_TEXTS;
                         case "grammar": // Fallback for general grammar, if needed
-                            return quiz.getQuizType() != QuizType.VOCABULARY;
+                            return !QuizType.isVocabulary(quiz.getQuizType());
                         default:
                             return true;
                     }
@@ -60,7 +65,7 @@ public class QuizContentService {
 
     private QuizListItemResponse mapToQuizListItemResponse(Quiz quiz) {
         int wordCount = 0;
-        if (quiz.getQuizType() == QuizType.VOCABULARY) {
+        if (QuizType.isVocabulary(quiz.getQuizType())) {
             wordCount = vocabularyCategoryRepository.findByCodeIgnoreCase(quiz.getSlug())
                     .map(category -> {
                         List<UUID> allCategoryIds = vocabularyCategoryRepository.findAllChildrenIds(category.getId());
@@ -93,7 +98,7 @@ public class QuizContentService {
 
         List<VocabularyWordDto> vocabularyWords = Collections.emptyList();
         String vocabularyWordsJson = null;
-        if (quiz.getQuizType() == QuizType.VOCABULARY) {
+        if (QuizType.isVocabulary(quiz.getQuizType())) {
             vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(quiz.getSlug(), quiz.getQuestionsPerSession() * 4);
             try {
                 vocabularyWordsJson = objectMapper.writeValueAsString(vocabularyWords);

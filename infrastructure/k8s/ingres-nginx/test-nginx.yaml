@@ -35,6 +35,11 @@ metadata:
   name: test-nginx-ingress
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - nginx.local.app
+      secretName: nginx-local-app-tls
+
   rules:
     - host: nginx.local.app
       http:

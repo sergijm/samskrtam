@@ -213,7 +213,7 @@ public class QuizSessionService {
     }
 
     private Mono<List<VocabularyWordDto>> getVocabularyWords(QuizSession session) {
-        if (session.getQuizType() == QuizType.VOCABULARY && session.getVocabularyWordsJson() != null) {
+        if (QuizType.isVocabulary(session.getQuizType()) && session.getVocabularyWordsJson() != null) {
             try {
                 return Mono.just(objectMapper.readValue(session.getVocabularyWordsJson(),
                         objectMapper.getTypeFactory().constructCollectionType(List.class, VocabularyWordDto.class)));

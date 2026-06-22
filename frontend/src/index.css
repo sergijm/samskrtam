@@ -1,5 +1,12 @@
 /* src/index.css */
 
+
+html {
+    font-size: 20px;
+
+}
+
+
 /* Ensure quiz cards fill height and content is properly aligned */
 .quiz-card.p-card {
     display: flex;

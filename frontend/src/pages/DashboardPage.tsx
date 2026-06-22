@@ -71,7 +71,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-column align-items-center p-4">
       <h1 className="text-center mb-5">{t('nav.dashboard')}</h1>
-      <div className="w-full" style={{ maxWidth: '1200px' }}>
+      <div className="w-full" style={{ maxWidth: '1600px' }}>
         {renderRow(learningModules)}
         {renderRow(progressAndActivity)}
         {user?.roles.includes('ADMIN') && renderRow(administration)}

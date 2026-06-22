@@ -72,7 +72,7 @@ const QuizzesPage: React.FC<QuizzesPageProps> = ({ category: propCategory }) => 
   return (
     <div className="flex flex-column align-items-center justify-content-center p-4">
       <h1 className="text-center mb-5">{pageTitle}</h1>
-      <div className="grid justify-content-center w-full" style={{ maxWidth: '1200px' }}>
+      <div className="grid justify-content-center w-full" style={{ maxWidth: '1600px' }}>
         {quizList?.map((quiz) => {
           const localizedTitle = i18n.language === 'ru' ? quiz.titleRu : quiz.titleEn;
           const localizedDescription = i18n.language === 'ru' ? quiz.descriptionRu : quiz.descriptionEn;

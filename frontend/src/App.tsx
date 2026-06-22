@@ -31,12 +31,15 @@ import QuizPage from './pages/QuizPage';
 import UserStatisticsPage from './pages/UserStatisticsPage';
 import UserQuizSessionsPage from './pages/UserQuizSessionsPage';
 import SessionHistoryPage from './pages/SessionHistoryPage';
-import GrammarPage from './pages/GrammarPage';
+import GrammarPage from './pages/grammar/GrammarPage';
+import VocabularyPage from './pages/vocabulary/VocabularyPage';
+import VocabularyBasicPage from './pages/vocabulary/VocabularyBasicPage';
+import VocabularyTextsPage from './pages/vocabulary/VocabularyTextsPage';
 import UnderConstructionPage from './pages/UnderConstructionPage';
 import EmeneauRulesPage from './pages/EmeneauRulesPage';
 import EmeneauExercisesPage from './pages/eamenau/EmeneauExercisesPage';
 import EmeneauExerciseDetailPage from './pages/eamenau/EmeneauExerciseDetailPage';
-import DictionaryPage from './pages/DictionaryPage'; // New import
+import DictionaryPage from './pages/dictionary/DictionaryPage'; // New import
 
 // Stores
 import { useThemeStore } from './store/themeStore';
@@ -221,17 +224,57 @@ export default function App() {
                 }
               />
 
+// ... existing code ...
+
               {/* Vocabulary quizzes */}
               <Route
                 path="/quizzes/vocabulary"
                 element={
                   <ProtectedRoute>
                     <AppLayout>
-                      <QuizzesPage category="vocabulary" />
+                      <VocabularyPage />
                     </AppLayout>
                   </ProtectedRoute>
                 }
               />
+              
+              <Route
+                path="quizzes/vocabulary/basic"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <VocabularyBasicPage/>
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="quizzes/vocabulary/texts"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <VocabularyTextsPage/>
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+
+              {/* Vocabulary main page */}
+              <Route
+                path="/vocabulary"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <VocabularyPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+
+// ... existing code ...
               <Route
                 path="/quiz/:quizCategory/:slug/:sessionId?"
                 element={

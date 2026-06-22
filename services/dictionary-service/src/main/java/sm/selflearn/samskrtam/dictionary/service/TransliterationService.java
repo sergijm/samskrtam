@@ -52,7 +52,7 @@ public class TransliterationService {
             return "iast";
         }
         // По умолчанию считаем, что это ITRANS или HK
-        return "itrans";
+        return "iast";
     }
 
     /**

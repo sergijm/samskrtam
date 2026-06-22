@@ -65,7 +65,7 @@ public class QuestionGenerationService {
                             .numberType(response.getTargetNumber()) // Assign Number enum directly
                             .build())
                     .collect(Collectors.<GeneratedQuestion>toList()));
-        } else if (quiz.getQuizType() == QuizType.VOCABULARY) {
+        } else if ( QuizType.isVocabulary(quiz.getQuizType() )) {
             List<VocabularyWordDto> vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(quiz.getSlug(), quiz.getQuestionsPerSession() * 4); // Changed to quiz.getSlug()
 
             for (VocabularyWordDto word : vocabularyWords) {

@@ -42,7 +42,7 @@ export default function AdminGroupsPage() {
 
   return (
     <div className="flex flex-column align-items-center p-4">
-      <Card title={header} className="w-full" style={{ maxWidth: '1200px' }}>
+      <Card title={header} className="w-full" style={{ maxWidth: '1600px' }}>
         <DataTable value={groupsData} responsiveLayout="scroll" // Use groupsData here
           onRowClick={(e) => navigate(`/groups/${e.data.id}`)} selectionMode="single"
           className="p-datatable-clickable">

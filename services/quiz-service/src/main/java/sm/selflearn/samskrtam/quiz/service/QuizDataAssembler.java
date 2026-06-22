@@ -109,7 +109,7 @@ public class QuizDataAssembler {
     }
 
     private Mono<QuestionDto> generateQuestionOptions(QuizSession session, GeneratedQuizQuestionDto generatedQuestion, List<VocabularyWordDto> allVocabularyWords, String userLocale) {
-        if (session.getQuizType() == QuizType.VOCABULARY) {
+        if (QuizType.isVocabulary(session.getQuizType())) {
             VocabularyWordDto correctWord = allVocabularyWords.stream()
                     .filter(w -> w.getId().equals(generatedQuestion.getVocabularyWordId()))
                     .findFirst()

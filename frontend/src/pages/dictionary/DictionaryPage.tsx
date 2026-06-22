@@ -5,7 +5,7 @@ import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
-import { useMwWordSearch, useMwEntry } from '../hooks/useDictionary';
+import { useMwWordSearch, useMwEntry } from '../../hooks/useDictionary';
 
 const DictionaryPage = () => {
   const { t } = useTranslation();
@@ -85,7 +85,7 @@ const DictionaryPage = () => {
           {searchResults.map((word) => (
             <Button
               key={word.id}
-              label={word.slp1Normalized || word.slp1Spelling}
+              label={word.iastSpelling || word.slp1Normalized || word.slp1Spelling}
               className={
                 word.slp1Normalized === selectedSlp1
                   ? 'p-button-sm'

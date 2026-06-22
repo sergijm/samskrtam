@@ -11,6 +11,7 @@ public class MwDictionaryEntryDto {
     // Основная информация
     private String recordId;
     private String key1;           // SLP1 с ударениями
+    private String key1Iast;           // Iast
     private String key1Display;    // для отображения пользователю
     private String key2;           // альтернативное написание
     private String homonymNum;     // номер омонима

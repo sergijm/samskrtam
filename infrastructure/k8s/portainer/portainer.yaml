@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portainer-ingress
+  namespace: portainer
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - portainer.local.app
+      secretName: portainer-local-app-tls   # Имя вашего секрета
+  rules:
+    - host: portainer.local.app
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: portainer
+                port:
+                  number: 9000

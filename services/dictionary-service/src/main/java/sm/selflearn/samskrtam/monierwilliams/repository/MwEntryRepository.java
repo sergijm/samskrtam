@@ -23,9 +23,10 @@ public interface MwEntryRepository extends JpaRepository<MwEntry, Integer> {
     @Query(value = "SELECT " +
             "e.key1 as slp1_spelling, " +
             "e.key1_normalized as slp1_normalized, " +
-            "similarity(e.key1_normalized, ?1) as similarity " +
+            "e.key1_iast as iast_spelling, " +
+            "GREATEST (similarity(e.key1_normalized, ?1), similarity(e.key1_iast_plain, ?1)) as similarity " +
             "FROM cologne_mw.entry e " +
-            "WHERE similarity(e.key1_normalized, ?1) > 0.5 "
+            "WHERE similarity(e.key1_normalized, ?1) > 0.5  or similarity(e.key1_iast_plain, ?1) > 0.5 "
             , nativeQuery = true)
     List<SanskritWordSearchResult> findWordsByKey1NormalizedSimilarity(String normalizedQuery);
 }

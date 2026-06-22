@@ -15,7 +15,7 @@ export default function AdminHomePage() {
   return (
     <div className="flex flex-column align-items-center p-4">
       <h1 className="text-center mb-5">{t('nav.admin')}</h1>
-      <div className="grid justify-content-center w-full" style={{ maxWidth: '1200px' }}>
+      <div className="grid justify-content-center w-full" style={{ maxWidth: '1600px' }}>
         {adminItems.map((item, index) => (
           <div key={index} className="col-12 sm:col-6 md:col-4 lg:col-3 p-2 flex">
             <Link to={item.link} className="no-underline h-full flex w-full">

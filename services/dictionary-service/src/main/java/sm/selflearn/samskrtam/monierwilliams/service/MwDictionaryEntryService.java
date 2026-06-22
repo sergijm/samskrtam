@@ -97,6 +97,7 @@ public class MwDictionaryEntryService {
                 .recordId(entry.getRecordIdFull())
                 .key1(entry.getKey1())
                 .key1Display(displayTitle)
+                .key1Iast(entry.getKey1Iast())
                 .key2(entry.getKey2())
                 .homonymNum(entry.getHomonymNum())
                 .eCode(entry.getECode())

@@ -21,6 +21,12 @@ public class MwEntry {
     @Column(name = "key1_normalized")
     private String key1Normalized;
 
+    @Column(name = "key1_iast")
+    private String key1Iast;
+
+    @Column(name = "key1_iast_plain")
+    private String key1IastPlain;
+
     @Column(name = "key2")
     private String key2;
 

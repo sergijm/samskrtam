@@ -1,10 +1,8 @@
 package sm.selflearn.samskrtam.monierwilliams.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import sm.selflearn.samskrtam.monierwilliams.entity.MwSanskritWord;
-import sm.selflearn.samskrtam.monierwilliams.model.SanskritWordSearchResult;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,9 +17,4 @@ public interface MwSanskritWordRepository extends JpaRepository<MwSanskritWord, 
     List<MwSanskritWord> findBySlp1Normalized(String slp1Spelling);
     Optional<MwSanskritWord> findByEntryIdAndIsPrimaryHeadwordTrue(Integer entryId);
 
-    @Query(value = "SELECT sw.*, similarity(sw.slp1_spelling, ?1) as similarity " +
-            "FROM cologne_mw.sanskrit_word sw " +
-            "WHERE similarity(sw.slp1_normalized, ?1) > 0.5 "
-            , nativeQuery = true)
-    List<SanskritWordSearchResult> findBySlp1NormalizedSimilarity(String normalizedQuery);
 }
