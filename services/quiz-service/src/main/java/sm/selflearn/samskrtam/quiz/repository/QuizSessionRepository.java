@@ -18,14 +18,14 @@ public interface QuizSessionRepository extends ReactiveCrudRepository<QuizSessio
     Flux<QuizSession> findByUserIdAndStatus(UUID userId, SessionStatus status);
     Mono<QuizSession> findByIdAndUserId(UUID id, UUID userId);
 
-    @Query("SELECT * FROM quiz.quiz_sessions " +
+    @Query("SELECT * FROM quiz.quiz_session " +
            "WHERE user_id = :userId " +
            "AND (:lessonType IS NULL OR lesson_type = :lessonType) " +
            "AND (:status IS NULL OR status = :status) " +
            "LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}") // Добавлены LIMIT и OFFSET
     Flux<QuizSession> findUserSessions(UUID userId, LessonType lessonType, SessionStatus status, Pageable pageable);
 
-    @Query("SELECT COUNT(*) FROM quiz.quiz_sessions " +
+    @Query("SELECT COUNT(*) FROM quiz.quiz_session " +
            "WHERE user_id = :userId " +
            "AND (:lessonType IS NULL OR lesson_type = :lessonType) " +
            "AND (:status IS NULL OR status = :status)")
@@ -38,6 +38,6 @@ public interface QuizSessionRepository extends ReactiveCrudRepository<QuizSessio
     Mono<QuizSession> findTopByUserIdAndQuizIdAndStatusOrderByStartedAtDesc(UUID userId, UUID quizId, SessionStatus status);
 
     @Modifying
-    @Query("UPDATE quiz.quiz_sessions SET answered_questions = answered_questions + 1, score = CASE WHEN :isCorrect THEN score + 1 ELSE score END WHERE id = :sessionId")
+    @Query("UPDATE quiz.quiz_session SET answered_questions = answered_questions + 1, score = CASE WHEN :isCorrect THEN score + 1 ELSE score END WHERE id = :sessionId")
     Mono<Void> incrementAnsweredQuestionsAndScore(UUID sessionId, boolean isCorrect);
 }

@@ -83,7 +83,7 @@ export const quizApi = {
         size,
         sortBy,
         sortDirection,
-        quizType,
+        lessonType,
         status,
       },
     });

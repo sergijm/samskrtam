@@ -14,7 +14,7 @@ export const useUserQuizSessions = (
   return useQuery<PaginatedResponse<QuizSessionSummary>, Error>({
     queryKey: ['userQuizSessions', { userId, page, size, sortBy, sortDirection, lessonType, status }], // userId is part of the query key
     queryFn: async () => {
-      const response = await quizApi.getUserQuizSessions(userId, page, size, sortBy, sortDirection, quizType, status);
+      const response = await quizApi.getUserQuizSessions(userId, page, size, sortBy, sortDirection, lessonType, status);
       return response.data;
     },
     enabled: !!userId, // Only run the query if userId is available

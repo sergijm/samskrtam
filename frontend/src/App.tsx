@@ -114,7 +114,7 @@ export default function App() {
                                 }
                             />
                             <Route
-                                path="/lesson-sessions"
+                                path="/quiz-sessions"
                                 element={
                                     <ProtectedRoute>
                                         <AppLayout>
@@ -124,7 +124,7 @@ export default function App() {
                                 }
                             />
                             <Route
-                                path="/lesson-sessions/:sessionId/history"
+                                path="/quiz-sessions/:sessionId/history"
                                 element={
                                     <ProtectedRoute>
                                         <AppLayout>
@@ -296,7 +296,7 @@ export default function App() {
                             />
 
                             <Route
-                                path="/lesson/:quizCategory/:slug/:sessionId?"
+                                path="/quiz/:quizCategory/:slug/:sessionId?"
                                 element={
                                     <ProtectedRoute>
                                         <AppLayout>

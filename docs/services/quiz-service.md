@@ -41,7 +41,7 @@ GET /api/v1/quiz/{type}/sessions/start[?quizId=uuid]
   ↓ WebClient → content-service /session-data (реактивно)
   ↓ для DECLENSIONS/CONJUGATIONS: генерирует N вопросов из sessionData.questions
   ↓ для VOCABULARY: генерирует N вопросов из sessionData.vocabularyWords (Sanskrit->Translation или Translation->Sanskrit)
-  ↓ flatMap: сохраняет сессию в Postgres (R2DBC) в `quiz.quiz_sessions`
+  ↓ flatMap: сохраняет сессию в Postgres (R2DBC) в `quiz.quiz_session`
   ↓ flatMap: сохраняет сгенерированные вопросы в Postgres (R2DBC) в `quiz.session_questions`
   ↓ **Публикует QuizSessionStatusChangedEvent (status=IN_PROGRESS) через Outbox Pattern**
   → Mono<StartSessionResponse>
@@ -225,19 +225,19 @@ dependencies {
 
 ### `startSession(UUID quizId, UUID userId, String userLocale)`
 *   Получает данные квиза из `content-service`.
-*   Генерирует и сохраняет новую сессию в `quiz.quiz_sessions`.
+*   Генерирует и сохраняет новую сессию в `quiz.quiz_session`.
 *   Публикует `QuizSessionStatusChangedEvent` (статус `IN_PROGRESS`) через Outbox Pattern.
 
 ### `submitAnswer(UUID sessionId, UUID userId, AnswerRequest request, String userLocale)`
 *   Проверяет существование сессии и принадлежность пользователю.
 *   Проверяет, не был ли вопрос уже отвечен.
 *   Получает детали вопроса из `content-service`.
-*   Сохраняет ответ пользователя в `quiz.quiz_answers` и обновляет `quiz.quiz_sessions`.
+*   Сохраняет ответ пользователя в `quiz.quiz_answers` и обновляет `quiz.quiz_session`.
 *   Публикует `QuizAnsweredEvent` через Outbox Pattern.
 
 ### `completeSession(UUID sessionId, UUID userId)`
 *   Проверяет существование сессии и принадлежность пользователю.
-*   Обновляет статус сессии в `quiz.quiz_sessions` на `COMPLETED`.
+*   Обновляет статус сессии в `quiz.quiz_session` на `COMPLETED`.
 *   Публикует `QuizSessionStatusChangedEvent` (статус `COMPLETED`) через Outbox Pattern.
 
 ---
@@ -246,7 +246,7 @@ dependencies {
 
 Все миграции для `quiz-service` объединены в один файл `V1__combined_schema.sql`.
 
-### `quiz.quiz_sessions`
+### `quiz.quiz_session`
 *   `id`: UUID (PK)
 *   `user_id`: UUID
 *   `quiz_id`: UUID
@@ -262,7 +262,7 @@ dependencies {
 
 ### `quiz.quiz_answers`
 *   `id`: UUID (PK)
-*   `session_id`: UUID (FK на `quiz.quiz_sessions`)
+*   `session_id`: UUID (FK на `quiz.quiz_session`)
 *   `question_id`: UUID
 *   `selected_option_id`: UUID
 *   `is_correct`: BOOLEAN
@@ -273,7 +273,7 @@ dependencies {
 
 ### `quiz.session_questions`
 *   `id`: UUID (PK)
-*   `session_id`: UUID (FK на `quiz.quiz_sessions`)
+*   `session_id`: UUID (FK на `quiz.quiz_session`)
 *   `question_id`: UUID
 *   `question_number`: INT
 *   `text`: TEXT

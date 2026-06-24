@@ -421,7 +421,7 @@ GET /api/v1/statistics/lessons/grammar/{type}/questions/{questionId}/history
     → история ответов пользователя на вопрос в уроке (paginated)
 ```
 
-Данные агрегируются из таблицы `quiz_answers` с JOIN на `quiz_sessions` для фильтрации по `quizId`. Статус слова/вопроса вычисляется на лету по формуле:
+Данные агрегируются из таблицы `quiz_answers` с JOIN на `quiz_session` для фильтрации по `quizId`. Статус слова/вопроса вычисляется на лету по формуле:
 - `LEARNED`: `nAll >= 3` и `successRate >= 80%`
 - `IN_PROGRESS`: `nAll > 0` и `successRate < 80%`
 - `NOT_STARTED`: `nAll = 0`

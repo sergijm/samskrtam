@@ -56,8 +56,8 @@ const SessionHistoryPage = () => {
 
   const handleResumeQuiz = () => {
     if (sessionSummary) {
-      const { quizType, slug, sessionId } = sessionSummary;
-      navigate(`/quiz/${quizType.toLowerCase()}/${slug}/${sessionId}`);
+      const { lessonType, slug, sessionId } = sessionSummary;
+      navigate(`/quiz/${lessonType.toLowerCase()}/${slug}/${sessionId}`);
     }
   };
 

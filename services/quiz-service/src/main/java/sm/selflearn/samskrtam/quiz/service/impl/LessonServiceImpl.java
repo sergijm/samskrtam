@@ -48,13 +48,22 @@ public class LessonServiceImpl implements LessonService {
 
     @Override
     public Mono<WordAnswerHistory> getWordAnswerHistory(String slug, UUID wordId, UUID userId, Pageable pageable, Locale locale) {
-        // Placeholder implementation
-        return Mono.empty();
+        // Get quiz summary to get quiz id from slug
+        return contentClient.getQuizSummaryBySlug(slug)
+                .flatMap(quizSummary -> {
+                    // Get word statistics for the specific word and user
+                    return userSessionService.getWordStatistics(userId, quizSummary.getId(), wordId)
+                            .flatMap(stats -> {
+                                // Create history based on stats and pageable criteria
+                                return createWordAnswerHistory(stats, wordId, pageable, locale);
+                            });
+                })
+                .switchIfEmpty(Mono.empty()); // Return empty if no quiz found
     }
 
     @Override
     public Mono<QuestionAnswerHistory> getQuestionAnswerHistory(String type, UUID questionId, UUID userId, Pageable pageable, Locale locale) {
-        // Placeholder implementation
+        // Placeholder implementation - this would need to be implemented based on actual requirements
         return Mono.empty();
     }
 
@@ -125,5 +134,16 @@ public class LessonServiceImpl implements LessonService {
                 .collect(java.util.stream.Collectors.toList());
         lesson.setWords(wordProgressList);
         return Mono.just(lesson);
+    }
+
+    private Mono<WordAnswerHistory> createWordAnswerHistory(WordStatisticsDto stats, UUID wordId, Pageable pageable, Locale locale) {
+        // This is a placeholder implementation. In a real system, this would involve
+        // creating a proper history based on the statistics and pagination criteria
+        WordAnswerHistory history = new WordAnswerHistory();
+        history.setWordId(wordId);
+        history.setNAll(stats.getNAll());
+        history.setNSuccess(stats.getNSuccess());
+        // Additional fields can be populated based on requirements
+        return Mono.just(history);
     }
 }

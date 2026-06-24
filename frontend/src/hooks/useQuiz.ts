@@ -33,8 +33,8 @@ export const useStartQuizSession = () => {
     Error,
     { quizIdentifier: string; lessonType: LessonType }
   >({
-    mutationFn: async ({ quizIdentifier, quizType }) => {
-      const response = await quizApi.startSession(quizIdentifier, quizType, locale);
+    mutationFn: async ({ quizIdentifier, lessonType }) => {
+      const response = await quizApi.startSession(quizIdentifier, lessonType, locale);
       return response.data;
     },
   });
@@ -47,8 +47,8 @@ export const useStartOrResumeQuizSession = () => {
     Error,
     { quizId: string; lessonType: LessonType }
   >({
-    mutationFn: async ({ quizId, quizType }) => {
-      const response = await quizApi.startOrResumeSession(quizId, quizType, locale);
+    mutationFn: async ({ quizId, lessonType }) => {
+      const response = await quizApi.startOrResumeSession(quizId, lessonType, locale);
       return response.data;
     },
   });
@@ -61,8 +61,8 @@ export const useResumeQuizSession = () => {
     Error,
     { sessionId: string; lessonType: LessonType }
   >({
-    mutationFn: async ({ sessionId, quizType }) => {
-      const response = await quizApi.resumeSession(sessionId, quizType, locale);
+    mutationFn: async ({ sessionId, lessonType }) => {
+      const response = await quizApi.resumeSession(sessionId, lessonType, locale);
       return response.data;
     },
   });
@@ -75,8 +75,8 @@ export const useSubmitQuizAnswer = () => {
     Error,
     { sessionId: string; quizIdentifier: string; lessonType: LessonType; answerRequest: AnswerRequest }
   >({
-    mutationFn: async ({ sessionId, quizIdentifier, quizType, answerRequest }) => {
-      const response = await quizApi.submitAnswer(sessionId, quizIdentifier, quizType, answerRequest, locale);
+    mutationFn: async ({ sessionId, quizIdentifier, lessonType, answerRequest }) => {
+      const response = await quizApi.submitAnswer(sessionId, quizIdentifier, lessonType, answerRequest, locale);
       return response.data;
     },
   });
@@ -90,8 +90,8 @@ export const useCompleteQuizSession = () => {
     Error,
     { sessionId: string; lessonType: LessonType }
   >({
-    mutationFn: async ({ sessionId, quizType }) => {
-      await quizApi.completeSession(sessionId, quizType, locale);
+    mutationFn: async ({ sessionId, lessonType }) => {
+      await quizApi.completeSession(sessionId, lessonType, locale);
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries(['quizSessionSummary', variables.sessionId]);
@@ -106,8 +106,8 @@ export const useRetakeQuizSession = () => {
     Error,
     { sessionId: string; lessonType: LessonType; slug: string }
   >({
-    mutationFn: async ({ sessionId, quizType, slug }) => {
-      const response = await quizApi.retakeSession(sessionId, quizType, slug, locale);
+    mutationFn: async ({ sessionId, lessonType, slug }) => {
+      const response = await quizApi.retakeSession(sessionId, lessonType, slug, locale);
       return response.data;
     },
   });
@@ -120,8 +120,8 @@ export const useStartNewQuizSession = () => {
     Error,
     { sessionId: string; lessonType: LessonType; slug: string }
   >({
-    mutationFn: async ({ sessionId, quizType, slug }) => {
-      const response = await quizApi.startNewQuizSession(sessionId, quizType, slug, locale);
+    mutationFn: async ({ sessionId, lessonType, slug }) => {
+      const response = await quizApi.startNewQuizSession(sessionId, lessonType, slug, locale);
       return response.data;
     },
   });

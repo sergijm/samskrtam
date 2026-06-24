@@ -83,7 +83,7 @@ const QuizPage = () => {
               setQuestions(data.questions);
               setStartTime(Date.now());
               setQuizSummaryData(data); // Update with full data from start
-              navigate(`/lesson/${fetchedQuizSummary.lessonType.toLowerCase()}/${fetchedQuizSummary.slug}/${data.sessionId}`, { replace: true });
+              navigate(`/quiz/${fetchedQuizSummary.lessonType.toLowerCase()}/${fetchedQuizSummary.slug}/${data.sessionId}`, { replace: true });
             },
             onError: (err) => {
               console.error('Failed to start lesson session:', err);
@@ -103,11 +103,11 @@ const QuizPage = () => {
         { sessionId, lessonType: quizSummaryData.lessonType },
         {
           onSuccess: () => {
-            navigate(`/lesson-sessions/${sessionId}/history`, { state: { lessonType: quizSummaryData.lessonType } });
+            navigate(`/quiz-sessions/${sessionId}/history`, { state: { lessonType: quizSummaryData.lessonType } });
           },
           onError: (err) => {
             console.error('Failed to complete lesson session:', err);
-            navigate(`/lesson-sessions/${sessionId}/history`, { state: { lessonType: quizSummaryData.lessonType } });
+            navigate(`/quiz-sessions/${sessionId}/history`, { state: { lessonType: quizSummaryData.lessonType } });
           },
         }
       );
@@ -152,7 +152,7 @@ const QuizPage = () => {
               isCorrect: data.isCorrect,
               correctOptionId: data.correctOptionId,
               correctAnswerText: data.correctAnswerText,
-              explanation: explanation || t('lesson.noExplanation'),
+              explanation: explanation || t('quiz.noExplanation'),
             });
             setStartTime(Date.now());
           }
@@ -187,7 +187,7 @@ const QuizPage = () => {
   if (isQuizSummaryError) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
-        <Message severity="error" text={t('lesson.fetchError', { message: quizSummaryError?.message })} />
+        <Message severity="error" text={t('quiz.fetchError', { message: quizSummaryError?.message })} />
       </div>
     );
   }
@@ -195,7 +195,7 @@ const QuizPage = () => {
   if (startSessionMutation.isError || resumeSessionMutation.isError || completeSessionMutation.isError) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
-        <Message severity="error" text={t('lesson.startError', { message: startSessionMutation.error?.message || resumeSessionMutation.error?.message || completeSessionMutation.error?.message })} />
+        <Message severity="error" text={t('quiz.startError', { message: startSessionMutation.error?.message || resumeSessionMutation.error?.message || completeSessionMutation.error?.message })} />
       </div>
     );
   }
@@ -203,7 +203,7 @@ const QuizPage = () => {
   if (questions.length === 0 && hasAttemptedSessionLoad && !isQuizSummaryLoading && !startSessionMutation.isLoading && !resumeSessionMutation.isLoading) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
-        <Message severity="info" text={t('lesson.noQuestions')} />
+        <Message severity="info" text={t('quiz.noQuestions')} />
       </div>
     );
   }
@@ -232,7 +232,7 @@ const QuizPage = () => {
         {localizedQuizTitle && <h1 className="text-center mb-3">{localizedQuizTitle}</h1>}
         {localizedQuizDescription && <p className="text-center text-color-secondary mb-4">{localizedQuizDescription}</p>}
         <ProgressBar value={progress} className="mb-4" />
-        <h2 className="text-center mb-4">{t('lesson.question', { current: currentQuestionIndex + 1, total: questions.length })}</h2>
+        <h2 className="text-center mb-4">{t('quiz.question', { current: currentQuestionIndex + 1, total: questions.length })}</h2>
         <div className="text-2xl font-bold text-center mb-5">
           {quizSummaryData?.lessonType === LessonType.VOCABULARY ? (
             <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>{currentQuestion.text}</span>
@@ -271,13 +271,13 @@ const QuizPage = () => {
         {feedback && (
           <div className="feedback-section mt-5 p-3 border-round-md" style={{ backgroundColor: feedback.isCorrect ? '#e6ffe6' : '#ffe6e6' }}>
             <h3 className="text-xl font-bold mb-2" style={{ color: feedback.isCorrect ? '#28a745' : '#dc3545' }}>
-              {feedback.isCorrect ? t('lesson.correct') : t('lesson.incorrect')}
+              {feedback.isCorrect ? t('quiz.correct') : t('quiz.incorrect')}
             </h3>
             {!feedback.isCorrect && (
-              <p className="text-lg">{t('lesson.correctAnswerIs')}: <strong>{feedback.correctAnswerText}</strong></p>
+              <p className="text-lg">{t('quiz.correctAnswerIs')}: <strong>{feedback.correctAnswerText}</strong></p>
             )}
             <Button
-              label={isLastQuestion ? t('lesson.completeQuiz') : t('lesson.next')}
+              label={isLastQuestion ? t('quiz.completeQuiz') : t('quiz.next')}
               icon="pi pi-arrow-right"
               iconPos="right"
               className="mt-3 w-full"

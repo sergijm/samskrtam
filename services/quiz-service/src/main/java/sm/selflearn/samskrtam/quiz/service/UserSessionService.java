@@ -173,4 +173,7 @@ public class UserSessionService {
     public QuizProgressDto getUserQuizProgress(UUID userId, UUID id) {
         return null;
     }
+
+    public Mono<Object> getWordStatistics(UUID userId, UUID id, UUID wordId) {
+    }
 }
