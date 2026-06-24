@@ -2,7 +2,7 @@ package sm.selflearn.samskrtam.quiz.dto;
 
 import lombok.Builder;
 import lombok.Value;
-import sm.selflearn.samskrtam.content.dto.QuizType; // Corrected import
+import sm.selflearn.samskrtam.content.dto.LessonType; // Corrected import
 import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 
 import java.time.Instant;
@@ -17,7 +17,7 @@ public class QuizSessionSummaryDto {
     String quizTitleRu;
     String quizTitleEn;
     String slug;
-    QuizType quizType;
+    LessonType lessonType;
     int score;
     int totalQuestions;
     SessionStatus status;

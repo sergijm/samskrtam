@@ -12,7 +12,7 @@
  Target Server Version : 170009 (170009)
  File Encoding         : 65001
 
- Date: 23/06/2026 06:10:51
+ Date: 24/06/2026 18:01:20
 */
 
 
@@ -70,10 +70,10 @@ CREATE TABLE "quiz"."quiz_answers" (
 ;
 
 -- ----------------------------
--- Table structure for quiz_sessions
+-- Table structure for quiz_session
 -- ----------------------------
-DROP TABLE IF EXISTS "quiz"."quiz_sessions";
-CREATE TABLE "quiz"."quiz_sessions" (
+DROP TABLE IF EXISTS "quiz"."quiz_session";
+CREATE TABLE "quiz"."quiz_session" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid(),
   "user_id" uuid NOT NULL,
   "quiz_id" uuid NOT NULL,
@@ -157,19 +157,19 @@ CREATE INDEX "idx_quiz_answers_session_id" ON "quiz"."quiz_answers" USING btree 
 ALTER TABLE "quiz"."quiz_answers" ADD CONSTRAINT "quiz_answers_pkey" PRIMARY KEY ("id");
 
 -- ----------------------------
--- Indexes structure for table quiz_sessions
+-- Indexes structure for table quiz_session
 -- ----------------------------
-CREATE INDEX "idx_quiz_sessions_quiz_id" ON "quiz"."quiz_sessions" USING btree (
+CREATE INDEX "idx_quiz_sessions_quiz_id" ON "quiz"."quiz_session" USING btree (
   "quiz_id" "pg_catalog"."uuid_ops" ASC NULLS LAST
 );
-CREATE INDEX "idx_quiz_sessions_user_id" ON "quiz"."quiz_sessions" USING btree (
+CREATE INDEX "idx_quiz_sessions_user_id" ON "quiz"."quiz_session" USING btree (
   "user_id" "pg_catalog"."uuid_ops" ASC NULLS LAST
 );
 
 -- ----------------------------
--- Primary Key structure for table quiz_sessions
+-- Primary Key structure for table quiz_session
 -- ----------------------------
-ALTER TABLE "quiz"."quiz_sessions" ADD CONSTRAINT "quiz_sessions_pkey" PRIMARY KEY ("id");
+ALTER TABLE "quiz"."quiz_session" ADD CONSTRAINT "quiz_sessions_pkey" PRIMARY KEY ("id");
 
 -- ----------------------------
 -- Indexes structure for table session_questions
@@ -190,9 +190,9 @@ ALTER TABLE "quiz"."session_questions" ADD CONSTRAINT "session_questions_pkey" P
 -- ----------------------------
 -- Foreign Keys structure for table quiz_answers
 -- ----------------------------
-ALTER TABLE "quiz"."quiz_answers" ADD CONSTRAINT "quiz_answers_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "quiz"."quiz_sessions" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE "quiz"."quiz_answers" ADD CONSTRAINT "quiz_answers_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "quiz"."quiz_session" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- ----------------------------
 -- Foreign Keys structure for table session_questions
 -- ----------------------------
-ALTER TABLE "quiz"."session_questions" ADD CONSTRAINT "session_questions_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "quiz"."quiz_sessions" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE "quiz"."session_questions" ADD CONSTRAINT "session_questions_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "quiz"."quiz_session" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;

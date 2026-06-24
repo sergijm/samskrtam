@@ -10,8 +10,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated } = useAuthStore();
   const location = useLocation();
 
+  const currentPath = location.pathname + location.search;
+
+  console.log('ProtectedRoute:', currentPath);
+
   if (!isAuthenticated) {
-    const currentPath = location.pathname + location.search;
     console.log('ProtectedRoute: User not authenticated. Saving redirect path:', currentPath);
     useAuthStore.getState().setRedirectPath(currentPath);
 

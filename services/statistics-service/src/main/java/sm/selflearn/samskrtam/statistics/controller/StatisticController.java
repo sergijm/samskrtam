@@ -57,7 +57,7 @@ public class StatisticController {
     private UserQuizStatisticDto mapToDto(UserQuizSessionStatistic statistic) {
         return UserQuizStatisticDto.builder()
                 .quizId(statistic.getQuizId())
-                .quizType(statistic.getQuizType())
+                .lessonType(statistic.getLessonType())
                 .totalSessions(statistic.getTotalSessions())
                 .totalQuestionsAnswered(statistic.getTotalQuestionsAnswered())
                 .totalCorrectAnswers(statistic.getTotalCorrectAnswers())

@@ -2,7 +2,7 @@ package sm.selflearn.samskrtam.statistics.dto;
 
 import lombok.Builder;
 import lombok.Value;
-import sm.selflearn.samskrtam.content.dto.QuizType; // Corrected import to quiz-content-dtos
+import sm.selflearn.samskrtam.content.dto.LessonType;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -11,7 +11,7 @@ import java.util.UUID;
 @Builder
 public class UserQuizStatisticDto {
     UUID quizId;
-    QuizType quizType;
+    LessonType lessonType;
     int totalSessions;
     int totalQuestionsAnswered;
     int totalCorrectAnswers;

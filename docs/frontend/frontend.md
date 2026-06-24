@@ -3,7 +3,7 @@
 > Модуль: `frontend/`
 > Язык: TypeScript 5
 > Фреймворк: React 18
-> Status: **UPDATED**
+> Status: **DRAFT**
 
 ---
 
@@ -32,7 +32,7 @@ PrimeReact — React-версия PrimeFaces от той же компании (
 
 | PrimeFaces | PrimeReact | Где используется |
 |---|---|---|
-| `<p:dataTable>` | `<DataTable>` | Лидерборд, история сессий, админка, списки упражнений Эмено |
+| `<p:dataTable>` | `<DataTable>` | Лидерборд, история сессий, админка |
 | `<p:card>` | `<Card>` | QuizCard, WordCard, ScoreSummary |
 | `<p:steps>` | `<Steps>` | Прогресс квиза (1/10 ... 10/10) |
 | `<p:tabView>` | `<TabPanel>` | AdminPage вкладки |
@@ -48,14 +48,22 @@ PrimeReact поддерживает динамическую смену темы
 
 | Режим | Тема PrimeReact |
 |---|---|
-| Светлая (по умолчанию) | `lara-light-amber` |
-| Тёмная | `lara-dark-amber` |
+| Светлая (по умолчанию) | `lara-light-blue` |
+| Тёмная | `lara-dark-blue` |
 
 Вместо статического `import` в `main.tsx` тема подключается динамически — `themeStore` меняет `href` у тега `<link>`:
 
+```typescript
+// main.tsx — только базовые стили, без темы
+import 'primereact/resources/primereact.min.css';
+import 'primeicons/primeicons.css';
+import 'primeflex/primeflex.css';
+// Тема подключается динамически через themeStore при монтировании App
+```
+
 ```html
 <!-- index.html — placeholder для динамической темы -->
-<link id="theme-link" rel="stylesheet" href="/themes/lara-light-amber/theme.css" />
+<link id="theme-link" rel="stylesheet" href="/themes/lara-light-blue/theme.css" />
 ```
 
 ---
@@ -73,105 +81,105 @@ frontend/
     ├── main.tsx                    ← точка входа
     ├── App.tsx                     ← роутер + провайдеры
     │
-    ├── pages/                      ← страницы
-    │   ├── HomePage.tsx
+    ├── pages/                      ← страницы (один файл = один роут)
+    │   ├── HomePage.tsx            ← публичная landing для незалогиненных (новое)
     │   ├── LoginPage.tsx
     │   ├── RegisterPage.tsx
     │   ├── ForgotPasswordPage.tsx
     │   ├── AuthCallbackPage.tsx
-    │   ├── ChangePasswordPage.tsx
-    │   ├── SettingsPage.tsx
-    │   ├── UserProfilePage.tsx
-    │   ├── GroupListPage.tsx
-    │   ├── GroupPage.tsx
-    │   ├── GroupCreatePage.tsx
-    │   ├── GroupEditPage.tsx
+    │   ├── ChangePasswordPage.tsx  ← спецификация в user-frontend.md
+    │   ├── SettingsPage.tsx        ← спецификация в user-frontend.md
+    │   ├── UserProfilePage.tsx     ← спецификация в user-frontend.md
+    │   ├── GroupListPage.tsx       ← спецификация в user-frontend.md
+    │   ├── GroupPage.tsx           ← спецификация в user-frontend.md
+    │   ├── GroupCreatePage.tsx     ← спецификация в user-frontend.md
+    │   ├── GroupEditPage.tsx       ← спецификация в user-frontend.md
     │   ├── DashboardPage.tsx
     │   ├── QuizListPage.tsx
     │   ├── QuizPage.tsx
+    │   ├── VocabularyLessonPage.tsx  ← спецификация в lesson-pages-spec.md
+    │   ├── GrammarLessonPage.tsx     ← спецификация в lesson-pages-spec.md
     │   ├── ResultPage.tsx
     │   ├── DictionaryPage.tsx
     │   ├── StatisticsPage.tsx
     │   ├── LeaderboardPage.tsx
-    │   ├── AdminHomePage.tsx
-    │   ├── AdminUsersPage.tsx
-    │   ├── AdminGroupsPage.tsx
-    │   ├── GrammarPage.tsx
-    │   ├── EmeneauRulesPage.tsx
-    │   └── eamenau/                ← Функциональность по Эмено вынесена в отдельную поддиректорию
-    │       ├── EmeneauExercisesPage.tsx
-    │       └── EmeneauExerciseDetailPage.tsx
+    │   └── AdminPage.tsx
     │
     ├── components/                 ← переиспользуемые компоненты
     │   ├── layout/
-    │   │   ├── AppLayout.tsx
-    │   │   ├── Header.tsx
+    │   │   ├── AppLayout.tsx       ← шапка + навигация + контент (только для залогиненных)
+    │   │   ├── PublicLayout.tsx    ← шапка для незалогиненных (кнопка Войти)
+    │   │   ├── Header.tsx          ← шапка залогиненного: лого + навигация + ThemeSwitcher + LocaleSwitcher + кнопка Выйти
+    │   │   ├── PublicHeader.tsx    ← шапка публичная: лого + ThemeSwitcher + LocaleSwitcher + кнопка Войти
     │   │   └── Sidebar.tsx
     │   ├── auth/
-    │   │   └── ProtectedRoute.tsx
+    │   │   └── ProtectedRoute.tsx  ← HOC для защищённых роутов
     │   ├── quiz/
-    │   │   ├── QuizCard.tsx
-    │   │   ├── QuestionCard.tsx
-    │   │   ├── OptionButton.tsx
-    │   │   ├── FeedbackPanel.tsx
-    │   │   └── ProgressBar.tsx
+    │   │   ├── QuizCard.tsx        ← карточка квиза в списке
+    │   │   ├── QuestionCard.tsx    ← вопрос + варианты ответа
+    │   │   ├── OptionButton.tsx    ← кнопка варианта ответа
+    │   │   ├── FeedbackPanel.tsx   ← правильно/нет + объяснение
+    │   │   └── ProgressBar.tsx     ← прогресс 3/10
     │   ├── statistics/
-    │   │   ├── ScoreSummary.tsx
-    │   │   ├── AnswerReview.tsx
-    │   │   ├── HeatmapChart.tsx
+    │   │   ├── ScoreSummary.tsx    ← итог сессии
+    │   │   ├── AnswerReview.tsx    ← разбор вопросов
+    │   │   ├── HeatmapChart.tsx    ← тепловая карта ошибок
     │   │   └── LeaderboardTable.tsx
     │   ├── dictionary/
-    │   │   ├── WordCard.tsx
-    │   │   └── SearchInput.tsx
-    │   ├── common/
-    │   │   ├── LocaleSwitcher.tsx
-    │   │   ├── ThemeSwitcher.tsx
-    │   │   ├── LoadingSpinner.tsx
-    │   │   └── ErrorMessage.tsx
-    │   ├── user/
+    │   │   ├── WordCard.tsx        ← статья словаря
+    │   │   └── SearchInput.tsx     ← поиск с автодополнением
+    │   ├── lesson/                   ← компоненты уроков (lesson-pages-spec.md)
+    │   │   ├── LessonHeader.tsx
+    │   │   ├── WordStatusIcon.tsx
+    │   │   ├── WordHistoryDialog.tsx
+    │   │   └── QuestionHistoryDialog.tsx
+    │   └── common/
+    │       ├── LocaleSwitcher.tsx  ← переключатель ru/en
+    │       ├── ThemeSwitcher.tsx   ← переключатель светлая/тёмная
+    │       ├── LoadingSpinner.tsx
+    │       └── ErrorMessage.tsx
+    │   ├── user/                   ← компоненты профиля (user-frontend.md)
     │   │   ├── UserGroupChips.tsx
     │   │   └── UserAvatar.tsx
-    │   ├── group/
-    │   │   ├── GroupMembersTable.tsx
-    │   │   ├── GroupCuratorBadge.tsx
-    │   │   └── AddMemberDialog.tsx
-    │   └── eamenau/                ← Компоненты для функциональности Эмено
-    │       └── SolutionPanel.tsx
+    │   └── group/                  ← компоненты групп (user-frontend.md)
+    │       ├── GroupMembersTable.tsx
+    │       ├── GroupCuratorBadge.tsx
+    │       └── AddMemberDialog.tsx
     │
     ├── api/                        ← HTTP клиенты по доменам
-    │   ├── axios.ts
+    │   ├── axios.ts                ← настройка axios + interceptors
     │   ├── authApi.ts
-    │   ├── userApi.ts
+    │   ├── userApi.ts              ← пользователи и группы (user-frontend.md)
     │   ├── quizApi.ts
+    │   ├── lessonApi.ts              ← lesson-pages-spec.md раздел 6
     │   ├── dictionaryApi.ts
-    │   ├── statisticsApi.ts
-    │   └── contentApi.ts           ← Обновлен для работы с упражнениями Эмено
+    │   └── statisticsApi.ts
     │
     ├── store/                      ← Zustand stores
-    │   ├── authStore.ts
-    │   ├── localeStore.ts
-    │   └── themeStore.ts
+    │   ├── authStore.ts            ← токены, текущий пользователь
+    │   ├── localeStore.ts          ← текущий язык
+    │   └── themeStore.ts           ← текущая тема
     │
     ├── hooks/                      ← React Query хуки
-    │   ├── useUser.ts
-    │   ├── useGroups.ts
+    │   ├── useUser.ts              ← пользователи (user-frontend.md)
+    │   ├── useGroups.ts            ← группы (user-frontend.md)
     │   ├── useQuizzes.ts
+    │   ├── useLessons.ts             ← lesson-pages-spec.md раздел 6
     │   ├── useQuizSession.ts
     │   ├── useDictionary.ts
-    │   ├── useStatistics.ts
-    │   └── useContent.ts           ← Обновлен для работы с упражнениями Эмено
+    │   └── useStatistics.ts
     │
     ├── types/                      ← TypeScript типы
-    │   ├── user.ts
+    │   ├── user.ts                 ← User, Group, GroupMember (user-frontend.md)
     │   ├── quiz.ts
+    │   ├── lesson.ts                 ← lesson-pages-spec.md раздел 7
     │   ├── dictionary.ts
-    │   ├── statistics.ts
-    │   └── index.ts                ← Обновлен для типов DTO Эмено
+    │   └── statistics.ts
     │
     └── i18n/
-        ├── index.ts
-        ├── ru.json
-        └── en.json
+        ├── index.ts                ← настройка i18next
+        ├── ru.json                 ← русские переводы
+        └── en.json                 ← английские переводы
 ```
 
 ---
@@ -180,14 +188,15 @@ frontend/
 
 | Path | Компонент | Auth | Role |
 |---|---|---|---|
-| `/` | HomePage | Нет | — |
 | `/login` | LoginPage | Нет | — |
 | `/register` | RegisterPage | Нет | — |
 | `/forgot-password` | ForgotPasswordPage | Нет | — |
 | `/auth/callback` | AuthCallbackPage | Нет | — |
-| `/dashboard` | DashboardPage | Да | STUDENT, ADMIN |
-| `/quizzes/:category` | QuizListPage | Да | STUDENT |
-| `/quiz/grammar/:slug` | QuizPage | Да | STUDENT |
+| `/` | **HomePage** (не залогинен) / **DashboardPage** (залогинен) | Нет | — |
+| `/quizzes` | QuizListPage | Да | STUDENT |
+| `/lessons/vocabulary/:slug` | VocabularyLessonPage | Да | STUDENT |
+| `/lessons/grammar/:type` | GrammarLessonPage | Да | STUDENT |
+| `/quiz/grammar/:type` | QuizPage | Да | STUDENT |
 | `/quiz/vocabulary/:slug` | QuizPage | Да | STUDENT |
 | `/quiz/*/result/:attemptId` | ResultPage | Да | STUDENT |
 | `/dictionary` | DictionaryPage | Да | STUDENT |
@@ -196,28 +205,20 @@ frontend/
 | `/settings/password` | ChangePasswordPage | Да | STUDENT, ADMIN |
 | `/settings` | SettingsPage | Да | STUDENT, ADMIN |
 | `/users/:id` | UserProfilePage | Да | STUDENT, ADMIN |
-| `/groups` | AdminGroupsPage | Да | ADMIN |
+| `/groups` | GroupListPage | Да | ADMIN |
 | `/groups/new` | GroupCreatePage | Да | ADMIN |
 | `/groups/:id` | GroupPage | Да | STUDENT, ADMIN |
 | `/groups/:id/edit` | GroupEditPage | Да | ADMIN, CURATOR |
-| `/admin` | AdminHomePage | Да | ADMIN |
-| `/admin/users` | AdminUsersPage | Да | ADMIN |
-| `/admin/groups` | AdminGroupsPage | Да | ADMIN |
+| `/admin` | AdminPage | Да | ADMIN |
 | `/admin/flags` | FeatureFlagsPage | Да | ADMIN |
 | `/admin/flags/:name/history` | FlagHistoryPage | Да | ADMIN |
-| `/quiz-sessions/:sessionId/history` | SessionHistoryPage | Да | STUDENT |
-| `/grammar` | GrammarPage | Да | STUDENT |
-| `/grammar/declensions` | QuizzesPage (category="declensions") | Да | STUDENT |
-| `/grammar/conjugations` | UnderConstructionPage | Да | STUDENT |
-| `/grammar/emeneau-exercises` | EmeneauExercisesPage | Да | STUDENT |
-| `/grammar/emeneau-exercises/:id` | EmeneauExerciseDetailPage | Да | STUDENT |
-| `/grammar/emeneau-quizzes` | UnderConstructionPage | Да | STUDENT |
-| `/grammar/emeneau-rules` | EmeneauRulesPage | Да | STUDENT |
 
-> Маршрут `/` отображает `HomePage` для неаутентифицированных пользователей и перенаправляет на `/dashboard` для аутентифицированных.
+> Маршрут `/` — единственный с условным рендером: `isAuthenticated ? <DashboardPage/> : <HomePage/>`.
+> HomePage не требует авторизации и доступна по прямой ссылке.
 
 Роуты `/settings`, `/users/:id`, `/groups/*` — подробная спецификация в [user-frontend.md](user-frontend.md).
 Роуты `/admin/flags/*` — подробная спецификация в [feature-flags-frontend.md](feature-flags-frontend.md).
+Роуты `/lessons/*` — подробная спецификация в [lesson-pages-spec.md](lesson-pages-spec.md). OpenAPI: [lesson-openapi.yaml](lesson-openapi.yaml).
 
 ---
 
@@ -229,22 +230,20 @@ frontend/
 
 **Элементы:**
 - Логотип / название SamskrtamApp
+- Кнопка "Войти через Google"
+- Кнопка "Войти через Mail.ru"
+- Форма: email + пароль + кнопка "Войти" (локальный аккаунт)
 - Переключатель языка (ru/en) — доступен без авторизации
 - Переключатель темы (светлая/тёмная) — доступен без авторизации
 
 **Поведение:**
-- Изначально отображаются кнопки "Войти через Google" и "Войти через Mail.ru", а также кнопка "Войти с паролем".
-- Форма ввода логина/пароля, ссылки "Зарегистрироваться" и "Забыли пароль?" скрыты.
-- **При нажатии на кнопку "Войти с паролем":**
-    - Кнопки социальных сетей скрываются.
-    - Появляется форма ввода логина/пароля и ссылки "Зарегистрироваться" и "Забыли пароль?".
-    - Появляется кнопка "Назад" для возврата к выбору способа входа.
-- Форма логин/пароль → POST /api/v1/auth/login → user-service. После получения токенов, вызывается GET /api/v1/users/me для получения полных данных пользователя.
+- Форма логин/пароль → POST /api/v1/auth/login → ROPC через user-service
 - Кнопка Google → GET /api/v1/auth/oauth2/google → редирект через Keycloak
 - Кнопка Mail.ru → GET /api/v1/auth/oauth2/mailru → редирект через Keycloak
-- После успешного входа → редирект на `/dashboard`
+- После успешного входа → редирект на `/`
 - Ошибка входа → сообщение под формой, без уточнения что именно неверно
-- Токены и объект пользователя сохраняются в `authStore` (не в localStorage)
+- Токены сохраняются в `authStore` (не в localStorage)
+- Ссылки: "Зарегистрироваться" → `/register`, "Забыли пароль?" → `/forgot-password`
 
 ---
 
@@ -290,10 +289,9 @@ frontend/
 - Только спиннер загрузки — пользователь видит эту страницу долю секунды
 
 **Поведение:**
-- Читает `access_token` и `refresh_token` из URL-фрагмента.
-- Временно сохраняет токены в localStorage.
-- Вызывает GET /api/v1/users/me для получения полных данных пользователя.
-- Успех → сохраняет токены и объект пользователя в authStore → редирект на `/dashboard`
+- Читает `?code=...` из URL
+- POST /api/v1/auth/callback { code } → user-service → обменивает на токены
+- Успех → сохраняет токены в authStore → редирект на `/`
 - Ошибка → редирект на `/login` с сообщением об ошибке
 
 ---
@@ -309,114 +307,224 @@ frontend/
 **Позиция:** фиксированная шапка, правый верхний угол.
 
 **Элементы (слева → справа):**
-- Логотип / название "SamskrtamApp" → ссылка на `/`
+- Логотип / название "Samskrtam" → ссылка на `/`
+- Навигация: Квизы / Словарь / Статистика / Лидерборд (+ Администрирование для ADMIN)
 - `ThemeSwitcher`
 - `LocaleSwitcher`
-- **Поле пользователя (аватар с именем):**
-    - **Кликабельно:** При клике перенаправляет на страницу настроек (`/settings`).
-    - **Отображение:**
-        - Первая строка: `firstName` + `lastName` (если доступны, иначе `username`).
-        - Вторая строка: `email`.
-- **Кнопка "Выйти"** (крайняя справа, иконка `pi-sign-out`)
+- Имя пользователя (кликабельно → `/users/:id`)
+- **Кнопка "Выйти"** (правый верхний угол, `severity="secondary"`, иконка `pi-sign-out`)
+
+```typescript
+// components/layout/Header.tsx
+export const Header = () => {
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const handleLogout = async () => {
+    await authApi.logout(useAuthStore.getState().refreshToken!);
+    logout();          // очищает Zustand store
+    navigate('/');     // → HomePage (публичная)
+  };
+
+  return (
+    <Menubar
+      start={<Link to="/" className="font-bold text-xl">Samskrtam</Link>}
+      end={
+        <div className="flex align-items-center gap-3">
+          <ThemeSwitcher />
+          <LocaleSwitcher />
+          <span
+            className="cursor-pointer hover:underline"
+            onClick={() => navigate(`/users/${user?.id}`)}>
+            {user?.username}
+          </span>
+          <Button
+            label={t('auth.logout')}
+            icon="pi pi-sign-out"
+            severity="secondary"
+            text
+            onClick={handleLogout}
+          />
+        </div>
+      }
+    />
+  );
+};
+```
+
+---
+
+### PublicHeader (незалогиненный пользователь)
+
+**Позиция:** фиксированная шапка, правый верхний угол.
+
+**Элементы (слева → справа):**
+- Логотип / название "Samskrtam"
+- `ThemeSwitcher`
+- `LocaleSwitcher`
+- **Кнопка "Войти"** (правый верхний угол, `severity="primary"`, иконка `pi-sign-in`)
+
+```typescript
+// components/layout/PublicHeader.tsx
+export const PublicHeader = () => {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  return (
+    <Menubar
+      start={<span className="font-bold text-xl">Samskrtam</span>}
+      end={
+        <div className="flex align-items-center gap-3">
+          <ThemeSwitcher />
+          <LocaleSwitcher />
+          <Button
+            label={t('auth.login')}
+            icon="pi pi-sign-in"
+            onClick={() => navigate('/login')}
+          />
+        </div>
+      }
+    />
+  );
+};
+```
 
 ---
 
 ### HomePage (`/` — незалогиненный пользователь)
 
 **Назначение:** публичная landing для пользователей не прошедших авторизацию.
-Если пользователь залогинен — роут `/` перенаправляет на `/dashboard`.
+Если пользователь залогинен — роут `/` отображает `DashboardPage`.
+
+```typescript
+// App.tsx
+<Route path="/" element={
+  isAuthenticated ? <DashboardPage /> : <HomePage />
+} />
+```
 
 **Элементы:**
 
-**Шапка:** Встроенная в `HomePage` кнопка "Вход" в правом верхнем углу.
+**Шапка:** `PublicHeader` с кнопкой "Войти" в правом верхнем углу.
 
 **Hero секция:**
-- Фоновое изображение: `/bk-samskrtam.jpg`
-- В правом верхнем углу кнопка "Вход" (ведет на `/login`).
-- Заголовок: "SamskrtamApp"
-- Подзаголовок: "Learn Sanskrit with interactive quizzes and tools."
+- Изображение Панини — грамматиста санскрита
+
+  URL: `https://kulturologia.ru/files/u18172/Panini-Zagl.jpg`
+
+  Отображается как круглый аватар (`border-radius: 50%`) или прямоугольник с
+  `border-radius: 12px`, выровнен по правому краю hero-блока.
+- Заголовок: "Samskrtam — платформа для изучения санскрита"
+- Подзаголовок: "Квизы по грамматике и лексике, словарь, лидерборды"
+- Краткое описание Панини: великий санскритский грамматист (IV–III вв. до н.э.),
+  автор "Аштадхьяи" — одной из самых совершенных грамматик в истории языкознания.
+  Именно его труд лёг в основу изучения санскрита.
+- Кнопка "Начать обучение" → `/login`
+- Кнопка "Узнать больше" → скролл к секции с описанием
+
+**Секция "Что внутри":**
+- 3 карточки: Квизы по грамматике / Словарь санскрита / Лидерборд
+- Каждая карточка: иконка + заголовок + 1-2 предложения
+
+**Footer:**
+- "© Samskrtam · Платформа изучения санскрита"
+
+```typescript
+// pages/HomePage.tsx
+export const HomePage = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <PublicHeader />
+
+      {/* Hero */}
+      <section className="flex align-items-center justify-content-between
+                          px-6 py-8 gap-6" style={{ minHeight: '70vh' }}>
+        <div className="flex flex-column gap-4" style={{ maxWidth: '520px' }}>
+          <h1 className="text-5xl font-bold m-0">{t('home.title')}</h1>
+          <p className="text-xl text-color-secondary m-0">{t('home.subtitle')}</p>
+          <p className="line-height-3">{t('home.paniniDescription')}</p>
+          <div className="flex gap-3">
+            <Button
+              label={t('home.startLearning')}
+              icon="pi pi-play"
+              size="large"
+              onClick={() => navigate('/login')}
+            />
+            <Button
+              label={t('home.learnMore')}
+              icon="pi pi-arrow-down"
+              severity="secondary"
+              text
+              size="large"
+              onClick={() => document.getElementById('features')?.scrollIntoView(
+                { behavior: 'smooth' })}
+            />
+          </div>
+        </div>
+
+        {/* Изображение Панини */}
+        <img
+          src="https://kulturologia.ru/files/u18172/Panini-Zagl.jpg"
+          alt={t('home.paniniAlt')}
+          style={{
+            width: '340px',
+            height: '400px',
+            objectFit: 'cover',
+            borderRadius: '12px',
+            flexShrink: 0,
+          }}
+        />
+      </section>
+
+      {/* Features */}
+      <section id="features" className="px-6 py-6">
+        <div className="grid">
+          {[
+            { icon: 'pi-book',      key: 'quizzes'     },
+            { icon: 'pi-search',    key: 'dictionary'  },
+            { icon: 'pi-chart-bar', key: 'leaderboard' },
+          ].map(({ icon, key }) => (
+            <div key={key} className="col-12 md:col-4">
+              <Card>
+                <div className="flex flex-column align-items-center gap-3 text-center p-3">
+                  <i className={`pi ${icon} text-4xl text-primary`} />
+                  <h3 className="m-0">{t(`home.features.${key}.title`)}</h3>
+                  <p className="text-color-secondary m-0">
+                    {t(`home.features.${key}.description`)}
+                  </p>
+                </div>
+              </Card>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <footer className="text-center py-4 text-color-secondary">
+        © Samskrtam · {t('home.footerTagline')}
+      </footer>
+    </>
+  );
+};
+```
 
 ---
 
-### DashboardPage (`/dashboard` — залогиненный пользователь)
+### DashboardPage (`/` — залогиненный пользователь)
 
-**Назначение:** главная страница после входа.
+**Назначение:** главная страница после входа. Отображается вместо HomePage если `isAuthenticated`.
 
 **Шапка:** `Header` с кнопкой "Выйти" в правом верхнем углу.
 
 **Элементы:**
 - Приветствие с именем пользователя: "Добро пожаловать, {{name}}"
-- Плитка "Грамматика" (ведет на `/grammar`)
-- Плитка "Лексика" (ведет на `/quizzes/vocabulary`)
-- Плитка "Словарь" (ведет на `/dictionary`)
-- Плитка "Статистика" (ведет на `/statistics`)
-- Плитка "Лидерборд" (ведет на `/leaderboard`)
-- Плитка "Администрирование" (ведет на `/admin`, только для ADMIN)
-
----
-
-### GrammarPage (`/grammar`)
-
-**Назначение:** страница с разделами грамматики.
-
-**Элементы:**
-- Плитка "Сандхи - Эмено (Упражнения)" (ведет на `/grammar/emeneau-exercises`)
-- Плитка "Сандхи - Эмено (Квизы)" (ведет на `/grammar/emeneau-quizzes`)
-- Плитка "Сандхи - Эмено (Правила)" (ведет на `/grammar/emeneau-rules`)
-- Плитка "Склонения" (ведет на `/grammar/declensions`)
-- Плитка "Спряжения" (ведет на `/grammar/conjugations`)
-
----
-
-### EmeneauExercisesPage (`/grammar/emeneau-exercises`)
-
-**Назначение:** список всех упражнений Эмено.
-
-**Элементы:**
-- Заголовок "Сандхи - Эмено (Упражнения)"
-- Таблица из двух колонок без заголовков, рамок и бордеров:
-    - Колонка 1: Номер упражнения + буква (жирный шрифт)
-    - Колонка 2: Сокращенный текст инструкции (с многоточием, если длинный)
-- Сортировка по номеру упражнения.
-- При клике на строку упражнения происходит переход на страницу деталей упражнения (`/grammar/emeneau-exercises/{id}`).
-
----
-
-### EmeneauExerciseDetailPage (`/grammar/emeneau-exercises/:id`)
-
-**Назначение:** детальный просмотр упражнения Эмено.
-
-**Элементы:**
-- Кнопки навигации "Назад" и "Вперед" для переключения между упражнениями.
-- Заголовок: "Упражнение № [номер] [буква]"
-- Полный текст инструкции.
-- Кнопка "Фильтровать правила" (отображается, если есть уникальные правила в упражнении). При клике перенаправляет на `/grammar/emeneau-rules` с параметрами `rule=N1&rule=N2...` для всех уникальных правил упражнения.
-- Таблица из двух колонок без заголовков, рамок и бордеров:
-    - Колонка 1: Номер задачи
-    - Колонка 2: Текст задачи
-- При клике на иконку-экспандер слева от задачи, под ней раскрывается панель с решением.
-
-**Панель решения (`SolutionPanel`):**
-- Текст решения (жирный шрифт).
-- Пошаговое описание (обычный текст).
-- Номера правил Сандхи (кликабельные, с тултипом). При клике на любой номер правила, происходит переход на `/grammar/emeneau-rules` с параметрами `rule=N1&rule=N2...` для *всех* правил, используемых в *данном решении*.
-- При наведении на номер правила отображается тултип с кратким описанием правила.
-
----
-
-### EmeneauRulesPage (`/grammar/emeneau-rules`)
-
-**Назначение:** список всех правил Сандхи Эмено, с возможностью фильтрации.
-
-**Элементы:**
-- Заголовок "Сандхи - Эмено (Правила)"
-- Пагинация (если правил много).
-- Карточки для каждого правила:
-    - Заголовок: Номер правила, номер Уитни (если есть), краткое описание.
-    - Содержимое: Полный текст правила, примеры IAST (если есть).
-
-**Поведение:**
-- Если в URL присутствуют параметры `rule=N1&rule=N2...`, список правил фильтруется по этим номерам.
+- Карточки доступных квизов (QuizCard × N)
+- Блок "Мой прогресс" — краткая статистика (всего попыток, средний %)
+- Блок "Лидерборд" — топ-3 участников
+- Кнопка "Словарь"
 
 ---
 
@@ -451,18 +559,16 @@ frontend/
 - Сложность
 - Лучший результат пользователя (если есть)
 - Кнопка "Начать"
-- **Прогресс:** Отображает "Прогресс: {{answered}}/{{total}} вопросов" если найдена незавершенная сессия для данного квиза.
 
 **Роутинг по группам:**
 
-```
-// Грамматические квизы
-<QuizCard href={`/quiz/grammar/${quiz.type}`} />
+```typescript
+// Грамматические квизы → страница урока
+<QuizCard href={`/lessons/grammar/${quiz.type}`} />
 
-// Словарные квизы — slug может быть текстовым или числовым
-<QuizCard href={`/quiz/vocabulary/${quiz.slug}`} />
-// например: /quiz/vocabulary/animals
-//           /quiz/vocabulary/1
+// Словарные квизы → страница урока
+<QuizCard href={`/lessons/vocabulary/${quiz.slug}`} />
+// QuizPage запускается уже из LessonPage — см. lesson-pages-spec.md
 ```
 
 ---
@@ -472,7 +578,7 @@ frontend/
 **Назначение:** прохождение квиза. Один компонент для всех типов квизов —
 параметры маршрута определяют какой сервис вызывается.
 
-```
+```typescript
 // App.tsx
 <Route path="/quiz/grammar/:type"      element={<QuizPage group="grammar" />} />
 <Route path="/quiz/vocabulary/:slug"   element={<QuizPage group="vocabulary" />} />
@@ -487,7 +593,7 @@ const apiPath = group === "grammar"
 ```
 LOADING    → загрузка сессии
 QUESTION   → показ вопроса
-FEEDBACK   → показ результата ответа (только для неверных ответов)
+FEEDBACK   → показ результата ответа
 COMPLETED  → редирект на ResultPage
 ```
 
@@ -497,15 +603,11 @@ COMPLETED  → редирект на ResultPage
 - 4 кнопки OptionButton
 - Нельзя изменить ответ после выбора
 
-**Элементы в состоянии FEEDBACK (только для неверных ответов):**
-- Индикатор "Неверно"
+**Элементы в состоянии FEEDBACK:**
+- Индикатор правильно / неправильно
 - Правильный ответ (выделен)
 - Объяснение (explanationRu или explanationEn по локали)
 - Кнопка "Следующий вопрос"
-
-**Поведение:**
-- Если ответ верный, происходит немедленный переход к следующему вопросу (или на страницу результатов, если квиз завершен).
-- Если ответ неверный, отображается секция обратной связи с объяснением.
 
 ---
 
@@ -529,38 +631,43 @@ COMPLETED  → редирект на ResultPage
 **Элементы:**
 - `SearchInput` — поле ввода слова (латиница, SLP1 транслитерация)
 - Кнопка "Найти" — запускает поиск списка
-- `SearchResultsList` — горизонтальный кликабельный список найденных слов (чипсы)
-- Таблица со словарными статьями:
-    - Колонка 1: `key1Display` (основное отображаемое слово)
-    - Колонка 2: `ecode` (жирным шрифтом)
-    - Колонка 3: `rawBody` (очищенный от HTML-тегов и HTML-сущностей текст)
+- `SearchResultsList` — горизонтальный кликабельный список найденных слов
+- `WordCard` — полная словарная статья выбранного слова
 - `LoadingSpinner` — пока идёт запрос к внешнему API
-
-**Поведение:**
-- Состояние страницы управляется через URL-параметры:
-    - `?q=deva`: то, что показывается в строке поиска (по нему ищется список похожих слов).
-    - `&slp=deva`: по этому аргументу ищется словарная статья.
-- При загрузке страницы `searchTerm` инициализируется из параметра `q`.
-- При клике на чипс со словом, происходит редирект на эту же страницу с обновленными параметрами `q` (текущий поисковый запрос) и `slp` (значение `slp1Normalized` выбранного слова).
-- Чипс с текущим `slp` подсвечивается.
-- Спиннер отображается по центру только тогда, когда есть параметр `q` или `slp` в URL *и* при этом идет загрузка данных (`isSearching` или `isFetchingEntry`).
 
 **Двухэтапный флоу:**
 
 ```
 Этап 1 — поиск списка:
   Пользователь вводит "deva" → нажимает "Найти"
-  GET /api/v1/dictionary/search?query=deva
+  GET /api/v1/dictionary/search?q=deva
   ↓
   Горизонтальный список: [deva] [devaka] [devī] [devadatta] ...
-  каждый элемент кликабелен, отображает slp1Normalized
+  каждый элемент кликабелен
 
 Этап 2 — загрузка статьи:
-  Пользователь кликает на "deva" (slp1Normalized)
-  GET /api/v1/dictionary/entry?slp1Spelling=deva (передается slp1Normalized в качестве slp1Spelling)
+  Пользователь кликает на "deva"
+  GET /api/v1/dictionary/entry?key=deva
   ↓
-  Таблица с полной статьёй
+  WordCard с полной статьёй
   (индикатор загрузки если запрос к внешнему API)
+```
+
+**WordCard содержит:**
+- Слово в IAST транслитерации + деванагари (если есть)
+- Грамматические характеристики: часть речи, род, корень глагола
+- Список значений
+- Бейдж источника: LOCAL / MONIER_WILLIAMS
+- Бейдж "из кэша" если слово уже было в БД
+
+**Состояния страницы:**
+```
+IDLE       → только строка поиска и кнопка
+SEARCHING  → спиннер под кнопкой (запрос списка)
+LIST       → горизонтальный список слов
+LOADING    → спиннер под списком (запрос статьи, внешний API)
+ENTRY      → WordCard со статьёй
+ERROR      → сообщение об ошибке (API недоступен и т.д.)
 ```
 
 ---
@@ -588,29 +695,6 @@ COMPLETED  → редирект на ResultPage
 
 ---
 
-### AdminHomePage (`/admin`)
-
-**Назначение:** стартовая страница для административных функций.
-
-**Элементы:**
-- Плитка "Управление пользователями" (ведет на `/admin/users`)
-- Плитка "Управление группами" (ведет на `/admin/groups`)
-- Плитка "Feature Flags" (ведет на `/admin/flags`)
-
----
-
-### AdminUsersPage (`/admin/users`)
-
-**Назначение:** управление пользователями.
-
----
-
-### AdminGroupsPage (`/admin/groups`)
-
-**Назначение:** управление группами.
-
----
-
 ### AdminPage (`/admin`)
 
 **Назначение:** управление контентом.
@@ -620,32 +704,6 @@ COMPLETED  → редирект на ResultPage
 - Вкладка "Вопросы" — редактор вопросов выбранного квиза
 - Вкладка "Пользователи" — список пользователей + создание
 - Вкладка "Группы" — список групп + кнопка создания (детали в [user-frontend.md](user-frontend.md) раздел 7)
-
----
-
-### SessionHistoryPage (`/quiz-sessions/:sessionId/history`)
-
-**Назначение:** Просмотр детальной истории ответов для завершенной сессии квиза.
-
-**Элементы:**
-- Заголовок: "История сессии ({{sessionId}})"
-- Таблица с ответами:
-    - Вопрос
-    - Ваш ответ
-    - Правильный ответ
-    - Результат (Верно/Неверно, с цветовой индикацией)
-    - Время ответа (мс)
-    - Время ответа (дата/время)
-    - Объяснение
-
-**Поведение:**
-- Получает `sessionId` из параметров URL.
-- Использует `useSessionAnswerHistory` для загрузки данных.
-- Отображает спиннер во время загрузки, сообщение об ошибке при неудаче, или сообщение "Ответы не найдены", если данных нет.
-- Для каждого ответа:
-    - Если `isCorrect` true, результат отображается как "Верно" (зеленый).
-    - Если `isCorrect` false, результат отображается как "Неверно" (красный).
-- Пагинация для списка ответов.
 
 ---
 
@@ -681,13 +739,12 @@ export interface SessionOption {
   text: string;
 }
 
-export interface AnswerResponse { // Обновлено
-  correct: boolean;
+export interface AnswerResult {
+  isCorrect:       boolean;
   correctOptionId: string;
-  explanationRu: string;
-  explanationEn: string;
-  questionNumber: number;
-  totalQuestions: number;
+  explanation:     string;
+  questionNumber:  number;
+  totalQuestions:  number;
 }
 
 export type QuizType   = 'DECLENSIONS' | 'CONJUGATIONS' | 'VOCABULARY';
@@ -718,41 +775,6 @@ export interface PersonalStats {
   averagePercentage: number;
   bestPercentage:    number;
   byQuizType:        Record<QuizType, QuizTypeStats>;
-}
-
-// types/index.ts (обновлено для Эмено)
-export interface SandhiRuleInfo {
-    ruleNumber: number;
-    shortDescription: string;
-}
-
-export interface SolutionDto {
-    id: number;
-    solutionText: string;
-    stepByStep?: string;
-    sandhiRules: SandhiRuleInfo[];
-}
-
-export interface EamenauExerciseDto {
-    id: number;
-    exerciseNumber: number;
-    exerciseLetter?: string;
-    instructionText: string;
-}
-
-export interface EamenauTaskDto {
-    id: number;
-    taskNumber: number;
-    taskText: string;
-    solution?: SolutionDto;
-}
-
-export interface EamenauExerciseDetailDto {
-    id: number;
-    exerciseNumber: number;
-    exerciseLetter?: string;
-    instructionText: string;
-    tasks: EamenauTaskDto[];
 }
 ```
 
@@ -796,51 +818,18 @@ export const useSubmitAnswer = () =>
 // hooks/useDictionary.ts
 
 // Шаг 1 — поиск списка слов (запускается по кнопке, не автоматически)
-export const useMwWordSearch = (query: string | null) => {
-  return useQuery<MwWordSearchDto[], Error>({
-    queryKey: ['mw-word-search', query],
-    queryFn: () => dictionaryApi.searchMwWords(query!).then((res) => res.data),
-    enabled: !!query, // Запрос будет выполняться только если query не пустой
-    staleTime: 60 * 1000, // Кэшируем результаты на 1 минуту
+export const useDictionarySearch = () =>
+  useMutation({
+    mutationFn: (query: string) => dictionaryApi.search(query),
   });
-};
 
 // Шаг 2 — загрузка статьи по ключу (запускается по клику на слово)
-export const useMwEntry = (slp1Spelling: string | null) => {
-  return useQuery<MwEntryDto, Error>({
-    queryKey: ['mw-entry', slp1Spelling],
-    queryFn: () => dictionaryApi.getMwEntry(slp1Spelling!).then((res) => res.data),
-    enabled: !!slp1Spelling,
-    staleTime: Infinity,
-  });
-};
-
-// hooks/useContent.ts (обновлено для Эмено)
-export const useEamenauExercises = () =>
+export const useDictionaryEntry = (key: string | null) =>
   useQuery({
-    queryKey: ['eamenau-exercises'],
-    queryFn: () => contentApi.getAllEamenauExercises().then(res => res.data),
-  });
-
-export const useEamenauExercise = (id: string) =>
-  useQuery({
-    queryKey: ['eamenau-exercise', id],
-    queryFn: () => contentApi.getEamenauExerciseById(id).then(res => res.data),
-    enabled: !!id,
-  });
-
-export const useUniqueSandhiRulesForExercise = (exerciseId: number) =>
-  useQuery({
-    queryKey: ['unique-sandhi-rules', exerciseId],
-    queryFn: () => contentApi.getUniqueSandhiRulesForExercise(exerciseId).then(res => res.data),
-    enabled: !!exerciseId,
-  });
-
-export const useSolutionsForTask = (taskId: number) =>
-  useQuery({
-    queryKey: ['solution', taskId],
-    queryFn: () => contentApi.getSolutionsForTask(taskId).then(res => res.data),
-    enabled: !!taskId,
+    queryKey: ['dictionary', 'entry', key],
+    queryFn:  () => dictionaryApi.getEntry(key!),
+    enabled:  key !== null,
+    staleTime: Infinity,    // статья не меняется — кэшируем навсегда
   });
 ```
 
@@ -850,9 +839,6 @@ export const useSolutionsForTask = (taskId: number) =>
 
 ```typescript
 // store/authStore.ts
-import { create } from 'zustand';
-import { User, AuthTokens } from '../types/user';
-
 interface AuthState {
   user:         User | null;
   accessToken:  string | null;
@@ -864,59 +850,24 @@ interface AuthState {
   setAccessToken: (token: string) => void;
 }
 
-const getInitialState = () => {
-  const accessToken = localStorage.getItem('accessToken');
-  const refreshToken = localStorage.getItem('refreshToken');
-  const userString = localStorage.getItem('user');
-  let user: User | null = null;
-  try {
-    if (userString) {
-      user = JSON.parse(userString);
-    }
-  } catch (e) {
-    console.error("Failed to parse user from localStorage", e);
-    localStorage.removeItem('user');
-  }
-
-  return {
-    user,
-    accessToken,
-    refreshToken,
-    isAuthenticated: !!accessToken && !!refreshToken,
-  };
-};
-
 export const useAuthStore = create<AuthState>((set) => ({
-  ...getInitialState(),
+  user:            null,
+  accessToken:     null,
+  refreshToken:    null,
+  isAuthenticated: false,
 
-  login: (tokens, user) => {
-    localStorage.setItem('accessToken', tokens.accessToken);
-    localStorage.setItem('refreshToken', tokens.refreshToken);
-    localStorage.setItem('user', JSON.stringify(user));
-    set({
-      user,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      isAuthenticated: true,
-    });
-  },
+  login: (tokens, user) => set({
+    ...tokens,
+    user,
+    isAuthenticated: true,
+  }),
 
-  logout: () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
-    set({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false,
-    });
-  },
+  logout: () => set({
+    user: null, accessToken: null,
+    refreshToken: null, isAuthenticated: false,
+  }),
 
-  setAccessToken: (token) => {
-    localStorage.setItem('accessToken', token);
-    set({ accessToken: token });
-  },
+  setAccessToken: (token) => set({ accessToken: token }),
 }));
 ```
 
@@ -929,8 +880,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 type Theme = 'light' | 'dark';
 
 const THEME_HREFS: Record<Theme, string> = {
-  light: '/themes/lara-light-amber/theme.css',
-  dark:  '/themes/lara-dark-amber/theme.css',
+  light: '/themes/lara-light-blue/theme.css',
+  dark:  '/themes/lara-dark-blue/theme.css',
 };
 
 interface ThemeState {
@@ -938,34 +889,24 @@ interface ThemeState {
   setTheme: (theme: Theme) => void;
 }
 
-export const useThemeStore = create<ThemeState>()(
-  persist(
-    (set) => ({
-      theme: (localStorage.getItem('theme') as Theme) ?? 'light',
+export const useThemeStore = create<ThemeState>((set) => ({
+  // Начальное значение: из localStorage (для неавторизованных)
+  theme: (localStorage.getItem('theme') as Theme) ?? 'light',
 
-      setTheme: (theme) => {
-        if (theme && THEME_HREFS[theme]) {
-          const link = document.getElementById('theme-link') as HTMLLinkElement;
-          if (link) {
-            link.href = THEME_HREFS[theme];
-          }
-        } else {
-          console.warn(`Attempted to set an invalid theme: ${theme}. Defaulting to 'light'.`);
-          theme = 'light';
-          const link = document.getElementById('theme-link') as HTMLLinkElement;
-          if (link) {
-            link.href = THEME_HREFS[theme];
-          }
-        }
-        document.documentElement.setAttribute('data-theme', theme);
-        set({ theme });
-      },
-    }),
-    {
-      name: 'theme-storage',
-    }
-  )
-);
+  setTheme: (theme) => {
+    // 1. Применяем немедленно — меняем href тега <link>
+    const link = document.getElementById('theme-link') as HTMLLinkElement;
+    if (link) link.href = THEME_HREFS[theme];
+
+    // 2. Синхронизируем <html data-theme="..."> для кастомных CSS переменных
+    document.documentElement.setAttribute('data-theme', theme);
+
+    // 3. Сохраняем в localStorage для неавторизованных / до логина
+    localStorage.setItem('theme', theme);
+
+    set({ theme });
+  },
+}));
 
 // store/localeStore.ts
 type Locale = 'ru' | 'en';
@@ -975,45 +916,65 @@ interface LocaleState {
   setLocale: (locale: Locale) => void;
 }
 
-export const useLocaleStore = create<LocaleState>()(
-  persist(
-    (set) => ({
-      locale: (localStorage.getItem('locale') as Locale) ?? 'ru',
+export const useLocaleStore = create<LocaleState>((set) => ({
+  locale: (localStorage.getItem('locale') as Locale) ?? 'ru',
 
-      setLocale: (locale) => {
-        i18next.changeLanguage(locale);
-        set({ locale });
-      },
-    }),
-    {
-      name: 'locale-storage',
-    }
-  )
-);
+  setLocale: (locale) => {
+    i18next.changeLanguage(locale);       // применяется немедленно
+    localStorage.setItem('locale', locale);
+    set({ locale });
+  },
+}));
 ```
 
-`ThemeSwitcher` и `LocaleSwitcher` размещаются в `Header.tsx` (для авторизованных пользователей) и на `LoginPage` и `HomePage` (для всех остальных).
+```typescript
+// components/common/ThemeSwitcher.tsx
+export const ThemeSwitcher = () => {
+  const { theme, setTheme } = useThemeStore();
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex align-items-center gap-2">
+      <i className="pi pi-sun" aria-hidden="true" />
+      <InputSwitch
+        checked={theme === 'dark'}
+        onChange={(e) => setTheme(e.value ? 'dark' : 'light')}
+        aria-label={t('settings.toggleTheme')}
+      />
+      <i className="pi pi-moon" aria-hidden="true" />
+    </div>
+  );
+};
+
+// components/common/LocaleSwitcher.tsx
+export const LocaleSwitcher = () => {
+  const { locale, setLocale } = useLocaleStore();
+
+  return (
+    <SelectButton
+      value={locale}
+      onChange={(e) => setLocale(e.value)}
+      options={[
+        { label: 'RU', value: 'ru' },
+        { label: 'EN', value: 'en' },
+      ]}
+      aria-label="Язык / Language"
+    />
+  );
+};
+```
+
+`ThemeSwitcher` и `LocaleSwitcher` размещаются в `Header.tsx` (для авторизованных пользователей) и на `LoginPage` (для всех остальных).
 
 ---
 
 ```typescript
 // api/authApi.ts — все вызовы к user-service
-import api from './axios';
-import { AuthTokens, User } from '../types/user';
-
-const API_URL = import.meta.env.VITE_API_URL;
-
-interface AuthResponse extends AuthTokens {
-  // The user object is now fetched via getMe, but AuthResponse still defines tokens
-  access_token: string; // Keycloak specific
-  refresh_token: string; // Keycloak specific
-}
-
 export const authApi = {
 
   // ROPC — логин через форму
-  login: (username: string, password: string) =>
-    api.post<AuthResponse>('/api/v1/auth/login', { username, password }),
+  login: (email: string, password: string) =>
+    api.post<AuthResponse>('/api/v1/auth/login', { email, password }),
 
   // OAuth2 редиректы — просто открываем URL в браузере
   loginWithGoogle: () => {
@@ -1050,54 +1011,28 @@ export const authApi = {
 };
 
 // api/axios.ts
-import axios from 'axios';
-import { useAuthStore } from '../store/authStore';
-import { authApi } from './authApi';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+// Request interceptor — добавляет Bearer токен
+api.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().accessToken;
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
 });
 
-// Request interceptor to add the Bearer token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Response interceptor for automatic token refresh
+// Response interceptor — автоматический refresh при 401
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/refresh')) {
-      originalRequest._retry = true;
-      const { refreshToken, setAccessToken, logout } = useAuthStore.getState();
-
+    if (error.response?.status === 401) {
+      const { refreshToken } = useAuthStore.getState();
       if (refreshToken) {
-        try {
-          const { data } = await authApi.refresh(refreshToken);
-          setAccessToken(data.accessToken);
-          originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
-          return api(originalRequest);
-        } catch (refreshError) {
-          logout();
-          return Promise.reject(refreshError);
-        }
-      } else {
-        logout();
+        const { data } = await authApi.refresh(refreshToken);
+        useAuthStore.getState().setAccessToken(data.accessToken);
+        return api.request(error.config);   // повторяем запрос
       }
     }
     return Promise.reject(error);
   }
 );
-
-export default api;
 ```
 
 ---
@@ -1108,174 +1043,54 @@ export default api;
 // i18n/ru.json
 {
   "nav": {
-    "dashboard": "Главная",
-    "quizzes": "Квизы",
-    "dictionary": "Словарь",
-    "statistics": "Статистика",
+    "dashboard":   "Главная",
+    "quizzes":     "Квизы",
+    "dictionary":  "Словарь",
+    "statistics":  "Статистика",
     "leaderboard": "Рейтинг",
-    "admin": "Администрирование",
-    "grammar": "Грамматика",
-    "vocabulary": "Лексика"
-  },
-  "settings": {
-    "title": "Настройки",
-    "language": "Язык",
-    "theme": "Тема",
-    "themeLight": "Светлая",
-    "themeDark": "Тёмная",
-    "toggleTheme": "Переключить тему",
-    "save": "Сохранить",
-    "saved": "Настройки сохранены",
-    "saveError": "Не удалось сохранить настройки.",
-    "languageRu": "Русский",
-    "languageEn": "Английский",
-    "username": "Имя пользователя",
-    "firstName": "Имя",
-    "lastName": "Фамилия",
-    "avatar": {
-      "title": "Аватар",
-      "upload": "Загрузить новый аватар",
-      "uploaded": "Аватар успешно загружен!",
-      "invalidFileType": "Недопустимый тип файла. Разрешены только изображения JPEG, PNG, WEBP.",
-      "uploadError": "Не удалось загрузить аватар."
-    }
-  },
-  "quiz": {
-    "start": "Начать квиз",
-    "next": "Следующий вопрос",
-    "correct": "Верно!",
-    "incorrect": "Неверно",
-    "question": "Вопрос {{current}} из {{total}}",
-    "explanation": "Объяснение",
-    "title": "Квизы",
-    "fetchError": "Не удалось загрузить квизы: {{message}}",
-    "totalQuestions": "Всего вопросов: {{count}}",
-    "noQuizzesFound": "Квизы не найдены."
-  },
-  "quizzes": {
-    "title": "Список квизов"
-  },
-  "auth": {
-    "login": "Войти",
-    "logout": "Выйти",
-    "email": "Email",
-    "emailOrLogin": "Email или логин",
-    "password": "Пароль",
-    "google": "Войти через Google",
-    "mailru": "Войти через Mail.ru",
-    "error": "Неверный email или пароль",
-    "register": "Регистрация",
-    "registerLink": "Зарегистрироваться",
-    "forgotPassword": "Забыли пароль?",
-    "forgotPasswordLink": "Забыли пароль?",
-    "sendResetLink": "Отправить ссылку для сброса",
-    "forgotPasswordSuccess": "Если ваш email зарегистрирован, вы получите ссылку для сброса пароля.",
-    "username": "Имя пользователя",
-    "confirmPassword": "Подтвердите пароль",
-    "changePassword": "Сменить пароль",
-    "currentPassword": "Текущий пароль",
-    "newPassword": "Новый пароль",
-    "passwordChanged": "Пароль успешно изменен",
-    "registerError": "Ошибка регистрации."
-  },
-  "groups": {
-    "title": "Группы",
-    "createGroup": "Создать группу",
-    "editGroup": "Редактировать группу",
-    "groupName": "Название группы",
-    "noGroups": "Не состоит ни в одной группе",
-    "addMember": "Добавить участника",
-    "removeMember": "Удалить из группы",
-    "setCurator": "Назначить куратором",
-    "curator": "Куратор",
-    "member": "Участник",
-    "memberCount": "Участников",
-    "searchUser": "Поиск по имени или email",
-    "table": {
-      "name": "Имя",
-      "role": "Роль в группе",
-      "joined": "Дата вступления"
-    },
-    "confirm": {
-      "remove": "Удалить {{username}} из группы?",
-      "setCurator": "Назначить {{username}} куратором группы?"
-    }
-  },
-  "admin": {
-    "tabs": {
-      "quizzes": "Квизы",
-      "questions": "Вопросы",
-      "users": "Пользователи",
-      "groups": "Группы"
-    },
-    "users": {
-      "title": "Управление пользователями",
-      "fetchError": "Не удалось получить список пользователей.",
-      "searchPlaceholder": "Поиск по логину, email, имени...",
-      "filterByRole": "Фильтр по роли",
-      "filterByStatus": "Фильтр по статусу",
-      "noUsersFound": "Пользователи не найдены.",
-      "role": "Роль",
-      "status": "Статус",
-      "blocked": "Заблокирован",
-      "active": "Активен",
-      "role": {
-        "all": "Все роли",
-        "student": "Студент",
-        "admin": "Администратор"
-      },
-      "blocked": {
-        "all": "Все статусы",
-        "true": "Заблокирован",
-        "false": "Активен"
-      }
-    }
-  },
-  "common": {
-      "search": "Поиск",
-      "edit": "Редактировать",
-      "create": "Создать",
-      "save": "Сохранить",
-      "cancel": "Отмена",
-      "add": "Добавить",
-      "createdAt": "Дата создания",
-      "or": "или",
-      "go": "Перейти"
-  },
-  "validation": {
-    "usernameRequired": "Требуется Email или логин.",
-    "emailRequired": "Требуется Email.",
-    "invalidEmail": "Неверный формат Email.",
-    "passwordRequired": "Требуется пароль.",
-    "confirmPasswordRequired": "Пожалуйста, подтвердите пароль.",
-    "passwordsDoNotMatch": "Пароли не совпадают.",
-    "currentPasswordRequired": "Требуется текущий пароль.",
-    "newPasswordRequired": "Требуется новый пароль.",
-    "confirmNewPasswordRequired": "Пожалуйста, подтвердите новый пароль."
-  },
-  "dashboard": {
-    "quizzesDescription": "Проверьте свои знания с помощью интерактивных квизов.",
-    "dictionaryDescription": "Изучайте новые слова на санскрите.",
-    "statisticsDescription": "Отслеживайте свой прогресс и достижения.",
-    "leaderboardDescription": "Соревнуйтесь с другими и смотрите свой рейтинг.",
-    "settingsDescription": "Управляйте своим профилем и настройками приложения.",
-    "adminDescription": "Доступ к административным инструментам и функциям.",
-    "grammarDescription": "Квизы по грамматике: склонения и спряжения.",
-    "vocabularyDescription": "Квизы на знание лексики."
+    "settings":    "Настройки",
+    "admin":       "Администрирование"
   },
   "home": {
-    "title": "SamskrtamApp",
-    "subtitle": "Learn Sanskrit with interactive quizzes and tools.",
+    "title":       "Samskrtam",
+    "subtitle":    "Платформа для изучения санскрита",
     "paniniDescription": "Панини (IV–III вв. до н.э.) — великий санскритский грамматист, автор «Аштадхьяи» — одной из самых совершенных грамматик в истории языкознания. Его труд до сих пор остаётся эталоном лингвистического анализа.",
-    "paniniAlt": "Панини — грамматист санскрита",
+    "paniniAlt":   "Панини — грамматист санскрита",
     "startLearning": "Начать обучение",
-    "learnMore": "Узнать больше",
+    "learnMore":   "Узнать больше",
     "footerTagline": "Платформа изучения санскрита",
     "features": {
-      "quizzes": { "title": "Квизы по грамматике и лексике", "description": "Склонения, спряжения, словарный запас — всё в интерактивном формате с разбором ошибок." },
-      "dictionary": { "title": "Словарь санскрита", "description": "Поиск по словам, транслитерация, примеры употребления." },
-      "leaderboard": { "title": "Лидерборд", "description": "Соревнуйтесь с другими учащимися — глобальный рейтинг и рейтинг внутри группы." }
+      "quizzes":     { "title": "Квизы по грамматике и лексике", "description": "Склонения, спряжения, словарный запас — всё в интерактивном формате с разбором ошибок." },
+      "dictionary":  { "title": "Словарь санскрита",              "description": "Поиск по словам, транслитерация, примеры употребления." },
+      "leaderboard": { "title": "Лидерборд",                      "description": "Соревнуйтесь с другими учащимися — глобальный рейтинг и рейтинг внутри группы." }
     }
+  },
+  "settings": {
+    "title":         "Настройки",
+    "language":      "Язык",
+    "theme":         "Тема",
+    "themeLight":    "Светлая",
+    "themeDark":     "Тёмная",
+    "toggleTheme":   "Переключить тему",
+    "save":          "Сохранить",
+    "saved":         "Настройки сохранены"
+  },
+  "quiz": {
+    "start":       "Начать квиз",
+    "next":        "Следующий вопрос",
+    "correct":     "Верно!",
+    "incorrect":   "Неверно",
+    "question":    "Вопрос {{current}} из {{total}}",
+    "explanation": "Объяснение"
+  },
+  "auth": {
+    "login":       "Войти",
+    "logout":      "Выйти",
+    "email":       "Email",
+    "password":    "Пароль",
+    "google":      "Войти через Google",
+    "mailru":      "Войти через Mail.ru",
+    "error":       "Неверный email или пароль"
   }
 }
 ```
@@ -1311,19 +1126,19 @@ VITE_KEYCLOAK_CLIENT_ID=samskrtam-frontend
 ## 12. Acceptance Criteria
 
 ### Навигация и аутентификация
-- [ ] `/` для незалогиненного пользователя → HomePage с кнопкой "Вход"
-- [ ] `/` для залогиненного пользователя → автоматический редирект на `/dashboard`
+- [ ] `/` для незалогиненного пользователя → HomePage с PublicHeader
+- [ ] `/` для залогиненного пользователя → DashboardPage с Header
+- [ ] PublicHeader: кнопка "Войти" в правом верхнем углу ведёт на `/login`
 - [ ] Header: кнопка "Выйти" в правом верхнем углу — очищает authStore и редиректит на `/`
-- [ ] Header: при клике на поле пользователя (аватар/имя) происходит переход на `/settings`
 - [ ] После logout — пользователь видит HomePage (не DashboardPage)
-- [ ] Кнопка "Вход" на HomePage ведёт на `/login`
-- [ ] Плитка "Настройки" удалена с DashboardPage.
-- [ ] Пункт "Настройки" удален из Sidebar.
+- [ ] Изображение Панини отображается на HomePage
+- [ ] Кнопка "Начать обучение" ведёт на `/login`
+- [ ] Кнопка "Узнать больше" плавно скроллит к секции features
 
 ### Auth
-- [ ] Логин через форму → ROPC → получение токенов → вызов `/api/v1/users/me` → сохранение токенов и User в authStore → редирект на /dashboard
-- [ ] Кнопка Google → редирект → /auth/callback → получение токенов → вызов `/api/v1/users/me` → сохранение токенов и User в authStore → редирект на /dashboard
-- [ ] Кнопка Mail.ru → редирект → /auth/callback → получение токенов → вызов `/api/v1/users/me` → сохранение токенов и User в authStore → редирект на /dashboard
+- [ ] Логин через форму → ROPC → JWT в authStore → редирект на /
+- [ ] Кнопка Google → редирект → /auth/callback → JWT → редирект на /
+- [ ] Кнопка Mail.ru → редирект → /auth/callback → JWT → редирект на /
 - [ ] Регистрация → письмо верификации → страница подтверждения
 - [ ] Восстановление пароля → всегда показывает одно сообщение (без раскрытия)
 - [ ] Смена пароля → требует текущий пароль → успех/ошибка
@@ -1351,36 +1166,13 @@ VITE_KEYCLOAK_CLIENT_ID=samskrtam-frontend
 - [ ] Все тексты через i18next, нет захардкоженных строк
 - [ ] После логина тема и язык восстанавливаются из профиля
 
-### Функциональность Эмено
-- [ ] Страницы, связанные с Эмено, вынесены в `frontend/src/pages/eamenau/` и `frontend/src/components/eamenau/`.
-- [ ] Список упражнений отображается с номером, буквой и сокращенной инструкцией.
-- [ ] При клике на упражнение открывается страница с полной инструкцией и списком задач.
-- [ ] При клике на иконку-экспандер рядом с задачей раскрывается панель с решением (текст решения, пошаговое описание, номера правил).
-- [ ] Номера правил в решении кликабельны и ведут на страницу правил, отфильтрованных по всем правилам, используемым в данном решении (параметры `rule=N1&rule=N2...`).
-- [ ] При наведении на номер правила отображается тултип с кратким описанием правила.
-- [ ] На странице деталей упражнения есть кнопка "Фильтровать правила", которая ведет на страницу правил, отфильтрованных по всем уникальным правилам, используемым во всех задачах упражнения.
-
 Полные критерии по настройкам, профилю и группам — в [user-frontend.md](user-frontend.md) раздел 9.
 
 ---
 
 ## 13. Открытые вопросы
 
-- [x] Тема — обе с переключателем: `lara-light-amber` (по умолчанию) и `lara-dark-amber`, динамическое переключение через `#theme-link`
+- [x] Тема — обе с переключателем: `lara-light-blue` (по умолчанию) и `lara-dark-blue`, динамическое переключение через `#theme-link`
 - [ ] Шрифт для деванагари — Noto Sans Devanagari?
 - [ ] Keycloak JS adapter или самописный OAuth2 флоу?
 - [ ] PWA (оффлайн режим для словаря)?
-
-
-
-## Localization Rule
-
-All user-facing messages, validation messages and notifications must use i18n keys.
-
-## Dashboard
-
-Responsive card layout is the default navigation mechanism.
-
-## Avatar Workflow
-
-Settings -> Upload URL -> Direct MinIO Upload -> Confirm Upload

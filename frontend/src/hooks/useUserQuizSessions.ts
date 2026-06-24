@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { quizApi } from '../api/quizApi';
-import { QuizType, SessionStatus, QuizSessionSummary, PaginatedResponse, AnswerHistory } from '../types/quiz';
+import { LessonType, SessionStatus, QuizSessionSummary, PaginatedResponse, AnswerHistory } from '../types/quiz';
 
 export const useUserQuizSessions = (
   userId: string, // userId is now passed as a query parameter
@@ -8,11 +8,11 @@ export const useUserQuizSessions = (
   size: number,
   sortBy: string,
   sortDirection: string,
-  quizType?: QuizType,
+  lessonType?: LessonType,
   status?: SessionStatus
 ) => {
   return useQuery<PaginatedResponse<QuizSessionSummary>, Error>({
-    queryKey: ['userQuizSessions', { userId, page, size, sortBy, sortDirection, quizType, status }], // userId is part of the query key
+    queryKey: ['userQuizSessions', { userId, page, size, sortBy, sortDirection, lessonType, status }], // userId is part of the query key
     queryFn: async () => {
       const response = await quizApi.getUserQuizSessions(userId, page, size, sortBy, sortDirection, quizType, status);
       return response.data;

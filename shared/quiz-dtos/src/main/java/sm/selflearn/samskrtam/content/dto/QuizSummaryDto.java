@@ -17,6 +17,6 @@ public class QuizSummaryDto {
     private String titleEn;
     private String descriptionRu; // New field
     private String descriptionEn; // New field
-    private QuizType quizType;
+    private LessonType lessonType;
     private Difficulty difficulty;
 }

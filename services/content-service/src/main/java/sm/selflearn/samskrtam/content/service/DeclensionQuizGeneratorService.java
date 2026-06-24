@@ -4,11 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.QuestionResponse;
-import sm.selflearn.samskrtam.content.dto.QuizType;
+import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.model.Case; // Corrected import for Case
 import sm.selflearn.samskrtam.content.model.DeclensionForm;
 import sm.selflearn.samskrtam.content.model.DeclensionStem;
-import sm.selflearn.samskrtam.content.model.Quiz;
+import sm.selflearn.samskrtam.content.model.Lesson;
 import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
 import sm.selflearn.samskrtam.content.repository.DeclensionStemRepository;
@@ -25,11 +25,11 @@ public class DeclensionQuizGeneratorService {
 
     private static final Random random = new Random();
 
-    public List<QuestionResponse> generateDeclensionQuestions(Quiz quiz, Locale locale) {
+    public List<QuestionResponse> generateDeclensionQuestions(Lesson lesson, Locale locale) {
         List<DeclensionStem> availableStems;
 
-        if (quiz.getQuizType().toString().contains("DECLENSIONS")) {
-            VowelType requiredVowelType = mapQuizTypeToVowelType(quiz.getQuizType());
+        if (lesson.getLessonType().toString().contains("DECLENSIONS")) {
+            VowelType requiredVowelType = mapLessonTypeToVowelType(lesson.getLessonType());
             availableStems = declensionStemRepository.findAll().stream()
                     .filter(stem -> stem.getVowelType() == requiredVowelType)
                     .collect(Collectors.toList());
@@ -38,10 +38,10 @@ public class DeclensionQuizGeneratorService {
         }
 
         if (availableStems.isEmpty()) {
-            throw new SamskrtamException("NO_DECLENSION_STEMS", "No declension stems found for quiz type: " + quiz.getQuizType());
+            throw new SamskrtamException("NO_DECLENSION_STEMS", "No declension stems found for quiz type: " + lesson.getLessonType());
         }
 
-        int questionsToGenerate = Math.min(quiz.getQuestionsPerSession(), availableStems.size());
+        int questionsToGenerate = Math.min(lesson.getQuestionsPerSession(), availableStems.size());
         Collections.shuffle(availableStems);
         List<DeclensionStem> selectedStems = availableStems.subList(0, questionsToGenerate);
 
@@ -102,8 +102,8 @@ public class DeclensionQuizGeneratorService {
                 .build();
     }
 
-    private VowelType mapQuizTypeToVowelType(QuizType quizType) {
-        return switch (quizType) {
+    private VowelType mapLessonTypeToVowelType(LessonType lessonType) {
+        return switch (lessonType) {
             case A_STEM_DECLENSIONS -> VowelType.A_STEM;
             case AA_STEM_DECLENSIONS -> VowelType.AA_STEM;
             case I_STEM_DECLENSIONS -> VowelType.I_STEM;
@@ -111,7 +111,7 @@ public class DeclensionQuizGeneratorService {
             case U_STEM_DECLENSIONS -> VowelType.U_STEM;
             case UU_STEM_DECLENSIONS -> VowelType.UU_STEM;
             case R_STEM_DECLENSIONS -> VowelType.R_STEM;
-            default -> throw new SamskrtamException("UNSUPPORTED_QUIZ_TYPE", "Quiz type " + quizType + " is not a specific declension type.");
+            default -> throw new SamskrtamException("UNSUPPORTED_QUIZ_TYPE", "Quiz type " + lessonType + " is not a specific declension type.");
         };
     }
 }

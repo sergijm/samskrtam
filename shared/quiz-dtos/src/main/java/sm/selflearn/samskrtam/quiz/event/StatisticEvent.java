@@ -2,7 +2,7 @@ package sm.selflearn.samskrtam.quiz.event;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import sm.selflearn.samskrtam.content.dto.QuizType;
+import sm.selflearn.samskrtam.content.dto.LessonType;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -18,6 +18,6 @@ import java.util.UUID;
 public interface StatisticEvent {
     UUID userId();
     UUID quizId();
-    QuizType quizType();
+    LessonType lessonType();
     Instant timestamp();
 }

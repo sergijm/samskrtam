@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import sm.selflearn.samskrtam.content.dto.QuizType;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -23,7 +22,6 @@ public class GeneratedQuizDataRecord {
     @Column(nullable = false)
     private UUID quizId;
 
-    // Removed quizType field as it can be joined from the Quiz entity
 
     @Column(nullable = false)
     private String userLocale;

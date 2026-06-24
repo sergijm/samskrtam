@@ -60,9 +60,19 @@ logging:
   level:
     root: WARN
     sm.selflearn.samskrtam: DEBUG
+    sm.selflearn.samskrtam.quiz.scheduler: WARN
     org.springframework.kafka: DEBUG
     org.apache.kafka: DEBUG
-    org.springframework.web: DEBUG # Изменено с TRACE на DEBUG
+
+    org.springframework.web: WARN
+    org.springframework.web.HttpLogging: DEBUG
+
+    org.springframework.web.reactive: DEBUG
+    org.springframework.web.server: DEBUG
+    org.springframework.http.server.reactive: DEBUG
+    org.springframework.web.reactive.function: DEBUG
+
+    reactor.netty: WARN
 
 app:
   outbox:

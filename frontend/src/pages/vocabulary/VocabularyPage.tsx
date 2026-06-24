@@ -39,7 +39,7 @@ const VocabularyPage = () => {
               <div key={index} className="col-12 sm:col-6 md:col-4 lg:col-3 p-2 flex">
                 <div
                     onClick={() => handleSectionClick(section.link)}
-                    className="p-card p-component quiz-card flex flex-column text-center h-full cursor-pointer hover:shadow-8 transition-all transition-duration-200 w-full"
+                    className="p-card p-component lesson-card flex flex-column text-center h-full cursor-pointer hover:shadow-8 transition-all transition-duration-200 w-full"
                 >
                   <div className="p-card-body flex flex-column flex-grow-1">
                     <div className="p-card-title">{section.title}</div>

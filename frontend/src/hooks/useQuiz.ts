@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { quizApi } from '../api/quizApi';
-import { StartSessionResponse, AnswerRequest, AnswerResponse, QuizSummaryDto, QuizListItem, QuizType, ResumeSessionResponse, StartOrResumeResponse } from '../types/quiz';
+import { StartSessionResponse, AnswerRequest, AnswerResponse, QuizSummaryDto, QuizListItem, LessonType, ResumeSessionResponse, StartOrResumeResponse } from '../types/quiz';
 import { useLocaleStore } from '../store/localeStore';
 
 export const useQuizList = (category?: string) => {
@@ -31,7 +31,7 @@ export const useStartQuizSession = () => {
   return useMutation<
     StartSessionResponse,
     Error,
-    { quizIdentifier: string; quizType: QuizType }
+    { quizIdentifier: string; lessonType: LessonType }
   >({
     mutationFn: async ({ quizIdentifier, quizType }) => {
       const response = await quizApi.startSession(quizIdentifier, quizType, locale);
@@ -45,7 +45,7 @@ export const useStartOrResumeQuizSession = () => {
   return useMutation<
     StartOrResumeResponse,
     Error,
-    { quizId: string; quizType: QuizType }
+    { quizId: string; lessonType: LessonType }
   >({
     mutationFn: async ({ quizId, quizType }) => {
       const response = await quizApi.startOrResumeSession(quizId, quizType, locale);
@@ -59,7 +59,7 @@ export const useResumeQuizSession = () => {
   return useMutation<
     ResumeSessionResponse,
     Error,
-    { sessionId: string; quizType: QuizType }
+    { sessionId: string; lessonType: LessonType }
   >({
     mutationFn: async ({ sessionId, quizType }) => {
       const response = await quizApi.resumeSession(sessionId, quizType, locale);
@@ -73,7 +73,7 @@ export const useSubmitQuizAnswer = () => {
   return useMutation<
     AnswerResponse,
     Error,
-    { sessionId: string; quizIdentifier: string; quizType: QuizType; answerRequest: AnswerRequest }
+    { sessionId: string; quizIdentifier: string; lessonType: LessonType; answerRequest: AnswerRequest }
   >({
     mutationFn: async ({ sessionId, quizIdentifier, quizType, answerRequest }) => {
       const response = await quizApi.submitAnswer(sessionId, quizIdentifier, quizType, answerRequest, locale);
@@ -88,7 +88,7 @@ export const useCompleteQuizSession = () => {
   return useMutation<
     void,
     Error,
-    { sessionId: string; quizType: QuizType }
+    { sessionId: string; lessonType: LessonType }
   >({
     mutationFn: async ({ sessionId, quizType }) => {
       await quizApi.completeSession(sessionId, quizType, locale);
@@ -104,7 +104,7 @@ export const useRetakeQuizSession = () => {
   return useMutation<
     StartOrResumeResponse,
     Error,
-    { sessionId: string; quizType: QuizType; slug: string }
+    { sessionId: string; lessonType: LessonType; slug: string }
   >({
     mutationFn: async ({ sessionId, quizType, slug }) => {
       const response = await quizApi.retakeSession(sessionId, quizType, slug, locale);
@@ -118,7 +118,7 @@ export const useStartNewQuizSession = () => {
   return useMutation<
     StartOrResumeResponse,
     Error,
-    { sessionId: string; quizType: QuizType; slug: string }
+    { sessionId: string; lessonType: LessonType; slug: string }
   >({
     mutationFn: async ({ sessionId, quizType, slug }) => {
       const response = await quizApi.startNewQuizSession(sessionId, quizType, slug, locale);

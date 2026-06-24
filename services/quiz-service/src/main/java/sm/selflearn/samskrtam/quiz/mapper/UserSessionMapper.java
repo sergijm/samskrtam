@@ -13,7 +13,7 @@ public interface UserSessionMapper {
 
     @Mapping(target = "sessionId", source = "session.id")
     @Mapping(target = "quizId", source = "session.quizId")
-    @Mapping(target = "quizType", source = "session.quizType")
+    @Mapping(target = "lessonType", source = "session.lessonType")
     @Mapping(target = "score", source = "session.score")
     @Mapping(target = "totalQuestions", source = "session.totalQuestions")
     @Mapping(target = "status", source = "session.status")

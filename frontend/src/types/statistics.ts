@@ -1,9 +1,9 @@
-import { QuizType, AnswerHistory } from './quiz'; // Assuming QuizType is defined here or in a shared types file
+import { LessonType, AnswerHistory } from './quiz'; // Assuming LessonType is defined here or in a shared types file
 import { PaginatedResponse } from './common'; // Import PaginatedResponse
 
 export interface UserQuizStatisticDto {
   quizId: string;
-  quizType: QuizType;
+  lessonType: LessonType;
   totalSessions: number;
   totalQuestionsAnswered: number;
   totalCorrectAnswers: number;

@@ -28,7 +28,7 @@ public abstract class QuizSessionMapper {
 
     @Mapping(target = "sessionId", source = "session.id")
     @Mapping(target = "quizId", source = "session.quizId")
-    @Mapping(target = "quizType", source = "session.quizType")
+    @Mapping(target = "lessonType", source = "session.lessonType")
     @Mapping(target = "totalQuestions", source = "session.totalQuestions")
     @Mapping(target = "answeredQuestions", expression = "java(answeredQuestionIds.size())")
     @Mapping(target = "score", source = "session.score")

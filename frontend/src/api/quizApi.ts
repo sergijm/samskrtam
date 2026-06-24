@@ -1,5 +1,5 @@
 import api from './axios';
-import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, QuizType, QuizSessionSummary, AnswerHistory, QuizProgress, ResumeSessionResponse, StartOrResumeResponse } from '../types/quiz';
+import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, LessonType, QuizSessionSummary, AnswerHistory, QuizProgress, ResumeSessionResponse, StartOrResumeResponse } from '../types/quiz';
 import { PaginatedResponse } from '../types/common';
 
 export const quizApi = {
@@ -14,8 +14,8 @@ export const quizApi = {
 
   getQuizBySlug: (slug: string) => api.get<QuizSummaryDto>(`/api/v1/content/quizzes/by-slug/${slug}`),
 
-  startSession: (quizId: string, quizType: QuizType, userLocale: string) => {
-    const slug = quizType.toLowerCase();
+  startSession: (quizId: string, lessonType: LessonType, userLocale: string) => {
+    const slug = lessonType.toLowerCase();
     const url = `/api/v1/quiz/${slug}/sessions/start`;
     const params = { quizId: quizId };
 
@@ -25,8 +25,8 @@ export const quizApi = {
     });
   },
 
-  startOrResumeSession: (quizId: string, quizType: QuizType, userLocale: string) => {
-    const slug = quizType.toLowerCase();
+  startOrResumeSession: (quizId: string, lessonType: LessonType, userLocale: string) => {
+    const slug = lessonType.toLowerCase();
     const url = `/api/v1/quiz/${slug}/sessions/start-or-resume`;
     const params = { quizId: quizId };
 
@@ -36,16 +36,16 @@ export const quizApi = {
     });
   },
 
-  resumeSession: (sessionId: string, quizType: QuizType, userLocale: string) => {
-    const slug = quizType.toLowerCase();
+  resumeSession: (sessionId: string, lessonType: LessonType, userLocale: string) => {
+    const slug = lessonType.toLowerCase();
     const url = `/api/v1/quiz/${slug}/sessions/${sessionId}/resume`;
     return api.get<ResumeSessionResponse>(url, {
       headers: { 'X-User-Locale': userLocale },
     });
   },
 
-  submitAnswer: (sessionId: string, quizId: string, quizType: QuizType, answer: AnswerRequest, userLocale: string) => {
-    const slug = quizType.toLowerCase();
+  submitAnswer: (sessionId: string, quizId: string, lessonType: LessonType, answer: AnswerRequest, userLocale: string) => {
+    const slug = lessonType.toLowerCase();
     const url = `/api/v1/quiz/${slug}/sessions/${sessionId}/answer`;
 
     return api.post<AnswerResponse>(url, answer, {
@@ -53,29 +53,29 @@ export const quizApi = {
     });
   },
 
-  completeSession: (sessionId: string, quizType: QuizType, userLocale: string) => {
-    const slug = quizType.toLowerCase();
+  completeSession: (sessionId: string, lessonType: LessonType, userLocale: string) => {
+    const slug = lessonType.toLowerCase();
     const url = `/api/v1/quiz/${slug}/sessions/${sessionId}/complete`;
     return api.post(url, null, {
       headers: { 'X-User-Locale': userLocale },
     });
   },
 
-  retakeSession: (sessionId: string, quizType: QuizType, slug: string, userLocale: string) => {
+  retakeSession: (sessionId: string, lessonType: LessonType, slug: string, userLocale: string) => {
     const url = `/api/v1/quiz/${slug}/sessions/${sessionId}/retake`;
     return api.post<StartOrResumeResponse>(url, null, {
       headers: { 'X-User-Locale': userLocale },
     });
   },
 
-  startNewQuizSession: (sessionId: string, quizType: QuizType, slug: string, userLocale: string) => {
+  startNewQuizSession: (sessionId: string, lessonType: LessonType, slug: string, userLocale: string) => {
     const url = `/api/v1/quiz/${slug}/sessions/${sessionId}/new-quiz`;
     return api.post<StartOrResumeResponse>(url, null, {
       headers: { 'X-User-Locale': userLocale },
     });
   },
 
-  getUserQuizSessions: (userId: string, page: number, size: number, sortBy: string, sortDirection: string, quizType?: QuizType, status?: SessionStatus) => {
+  getUserQuizSessions: (userId: string, page: number, size: number, sortBy: string, sortDirection: string, lessonType?: LessonType, status?: SessionStatus) => {
     return api.get<PaginatedResponse<QuizSessionSummary>>(`/api/v1/quiz-sessions`, {
       params: {
         userId,

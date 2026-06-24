@@ -11,7 +11,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
-import sm.selflearn.samskrtam.content.dto.QuizType;
+import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.quiz.dto.AnswerHistoryDto;
 import sm.selflearn.samskrtam.quiz.dto.QuizProgressDto;
 import sm.selflearn.samskrtam.quiz.dto.QuizSessionSummaryDto;
@@ -40,13 +40,13 @@ public class UserQuizSessionController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "startedAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDirection,
-            @RequestParam(required = false) QuizType quizType,
+            @RequestParam(required = false) LessonType lessonType,
             @RequestParam(required = false) SessionStatus status
     ) {
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        return userSessionService.getUserQuizSessions(userId, quizType, status, pageable)
+        return userSessionService.getUserQuizSessions(userId, lessonType, status, pageable)
                 .map(ResponseEntity::ok);
     }
 

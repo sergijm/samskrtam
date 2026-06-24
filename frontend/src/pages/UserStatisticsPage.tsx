@@ -31,7 +31,7 @@ const UserStatisticsPage = () => {
   const statistics = paginatedStatistics?.content || [];
 
   const quizTypeBodyTemplate = (rowData: UserQuizStatisticDto) => {
-    return t(`quizType.${rowData.quizType}`);
+    return t(`lessonType.${rowData.lessonType}`);
   };
 
   const averageScoreBodyTemplate = (rowData: UserQuizStatisticDto) => {
@@ -56,7 +56,7 @@ const UserStatisticsPage = () => {
               dataKey="id"
             >
               <Column field="quizId" header={t('userProfile.quizId')} />
-              <Column field="quizType" header={t('userProfile.quizType')} body={quizTypeBodyTemplate} />
+              <Column field="lessonType" header={t('userProfile.lessonType')} body={quizTypeBodyTemplate} />
               <Column field="totalSessions" header={t('userProfile.totalSessions')} />
               <Column field="totalQuestionsAnswered" header={t('userProfile.totalQuestionsAnswered')} />
               <Column field="totalCorrectAnswers" header={t('userProfile.totalCorrectAnswers')} />

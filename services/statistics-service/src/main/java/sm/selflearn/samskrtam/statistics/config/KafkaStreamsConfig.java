@@ -116,7 +116,7 @@ public class KafkaStreamsConfig {
                                 aggregate.setId(UUID.randomUUID());
                                 aggregate.setUserId(event.userId());
                                 aggregate.setQuizId(event.quizId());
-                                aggregate.setQuizType(event.quizType());
+                                aggregate.setLessonType(event.lessonType());
                                 aggregate.setTotalSessions(0);
                                 aggregate.setTotalQuestionsAnswered(0);
                                 aggregate.setTotalCorrectAnswers(0);
@@ -139,8 +139,8 @@ public class KafkaStreamsConfig {
                                     aggregate.setTotalSessions(aggregate.getTotalSessions() + 1);
                                     aggregate.setLastCompletedAt(statusChangedEvent.timestamp());
                                 }
-                                if (statusChangedEvent.quizType() != null) {
-                                    aggregate.setQuizType(statusChangedEvent.quizType());
+                                if (statusChangedEvent.lessonType() != null) {
+                                    aggregate.setLessonType(statusChangedEvent.lessonType());
                                 }
                             }
                             return aggregate;

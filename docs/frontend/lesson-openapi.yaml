@@ -1,0 +1,536 @@
+openapi: 3.1.0
+info:
+  title: Akshara — Lesson API
+  description: |
+    API для страниц уроков. Агрегирует данные из content-service (содержание)
+    и statistics-service (история ответов пользователя).
+
+    Все эндпоинты требуют JWT. `userId` извлекается из заголовка `X-User-Id`,
+    добавляемого api-gateway — клиент его не передаёт явно.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8090/api/v1
+    description: Локальная разработка (через api-gateway)
+
+tags:
+  - name: vocabulary-lesson
+    description: Словарные уроки
+  - name: grammar-lesson
+    description: Грамматические уроки
+  - name: word-history
+    description: История ответов на слова и вопросы
+
+paths:
+
+  # ─────────────────────────────────────────────
+  # VOCABULARY LESSON
+  # ─────────────────────────────────────────────
+
+  /lessons/vocabulary/{slug}:
+    get:
+      tags: [vocabulary-lesson]
+      summary: Получить словарный урок с прогрессом пользователя
+      description: |
+        Возвращает список слов урока с индивидуальной статистикой каждого слова
+        для текущего пользователя. Агрегирует данные из content-service и
+        statistics-service.
+
+        Статус слова:
+        - `NOT_STARTED` — nAll = 0
+        - `IN_PROGRESS` — nAll > 0 и successRate < 80
+        - `LEARNED`     — nAll >= 3 и successRate >= 80
+      operationId: getVocabularyLesson
+      parameters:
+        - $ref: '#/components/parameters/SlugParam'
+      responses:
+        '200':
+          description: Урок с прогрессом пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VocabularyLesson'
+              example:
+                quizId: "550e8400-e29b-41d4-a716-446655440000"
+                slug: "animals"
+                titleRu: "Животные"
+                titleEn: "Animals"
+                difficulty: "BEGINNER"
+                totalWords: 20
+                learnedWords: 8
+                progressPercent: 40
+                words:
+                  - wordId: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                    word: "mṛga"
+                    wordDevanagari: "मृग"
+                    translationRu: "олень, животное"
+                    translationEn: "deer, animal"
+                    nSuccess: 4
+                    nAll: 5
+                    successRate: 80
+                    status: "LEARNED"
+                  - wordId: "a3bb189e-8bf9-3888-9902-33748d1cb7b9"
+                    word: "vṛka"
+                    wordDevanagari: "वृक"
+                    translationRu: "волк"
+                    translationEn: "wolf"
+                    nSuccess: 0
+                    nAll: 0
+                    successRate: 0
+                    status: "NOT_STARTED"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─────────────────────────────────────────────
+  # GRAMMAR LESSON
+  # ─────────────────────────────────────────────
+
+  /lessons/grammar/{type}:
+    get:
+      tags: [grammar-lesson]
+      summary: Получить грамматический урок с прогрессом пользователя
+      description: |
+        Возвращает список вопросов урока с правильными ответами и
+        индивидуальной статистикой каждого вопроса для текущего пользователя.
+      operationId: getGrammarLesson
+      parameters:
+        - $ref: '#/components/parameters/QuizTypeParam'
+      responses:
+        '200':
+          description: Урок с прогрессом пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrammarLesson'
+              example:
+                quizId: "660e8400-e29b-41d4-a716-446655440001"
+                type: "DECLENSIONS"
+                titleRu: "Склонения существительных"
+                titleEn: "Noun Declensions"
+                difficulty: "BEGINNER"
+                totalQuestions: 24
+                learnedQuestions: 6
+                progressPercent: 25
+                questions:
+                  - questionId: "8b1e1c47-8d9f-4e1a-b4e3-1f2c3d4e5f6a"
+                    textRu: "Основа: deva-, Падеж: Именительный, Число: Единственное"
+                    textEn: "Stem: deva-, Case: Nominative, Number: Singular"
+                    correctAnswerRu: "devaḥ"
+                    correctAnswerEn: "devaḥ"
+                    nSuccess: 3
+                    nAll: 4
+                    successRate: 75
+                    status: "IN_PROGRESS"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─────────────────────────────────────────────
+  # WORD HISTORY
+  # ─────────────────────────────────────────────
+
+  /lessons/vocabulary/{slug}/words/{wordId}/history:
+    get:
+      tags: [word-history]
+      summary: История ответов пользователя на конкретное слово в уроке
+      description: |
+        Возвращает хронологию попыток ответить на вопрос по данному слову
+        в рамках конкретного урока (quizId из slug). Отображается в
+        WordHistoryDialog при клике на {nSuccess}/{nAll}.
+
+        Фильтрация по `quizId` обязательна — одно слово может встречаться
+        в разных уроках с разными контекстами.
+      operationId: getWordAnswerHistory
+      parameters:
+        - $ref: '#/components/parameters/SlugParam'
+        - name: wordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: История ответов на слово
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WordAnswerHistory'
+              example:
+                wordId: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                word: "mṛga"
+                quizId: "550e8400-e29b-41d4-a716-446655440000"
+                entries:
+                  - answeredAt: "2025-06-01T14:32:00Z"
+                    correctAnswer: "мṛga — олень, животное"
+                    userAnswer: "мṛga — олень, животное"
+                    isCorrect: true
+                  - answeredAt: "2025-05-29T10:15:00Z"
+                    correctAnswer: "мṛga — олень, животное"
+                    userAnswer: "siṃha — лев"
+                    isCorrect: false
+                page: 0
+                size: 10
+                total: 5
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─────────────────────────────────────────────
+  # QUESTION HISTORY
+  # ─────────────────────────────────────────────
+
+  /lessons/grammar/{type}/questions/{questionId}/history:
+    get:
+      tags: [word-history]
+      summary: История ответов пользователя на конкретный вопрос в уроке
+      description: |
+        Возвращает хронологию попыток ответить на грамматический вопрос
+        в рамках конкретного урока. Отображается в QuestionHistoryDialog.
+      operationId: getQuestionAnswerHistory
+      parameters:
+        - $ref: '#/components/parameters/QuizTypeParam'
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: История ответов на вопрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionAnswerHistory'
+              example:
+                questionId: "8b1e1c47-8d9f-4e1a-b4e3-1f2c3d4e5f6a"
+                textRu: "Основа: deva-, Падеж: Именительный, Число: Единственное"
+                quizId: "660e8400-e29b-41d4-a716-446655440001"
+                entries:
+                  - answeredAt: "2025-06-02T09:00:00Z"
+                    correctAnswer: "devaḥ"
+                    userAnswer: "devam"
+                    isCorrect: false
+                  - answeredAt: "2025-06-01T18:30:00Z"
+                    correctAnswer: "devaḥ"
+                    userAnswer: "devaḥ"
+                    isCorrect: true
+                page: 0
+                size: 10
+                total: 4
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# ─────────────────────────────────────────────
+# COMPONENTS
+# ─────────────────────────────────────────────
+
+components:
+
+  parameters:
+    SlugParam:
+      name: slug
+      in: path
+      required: true
+      description: Уникальный slug словарного квиза (например "animals", "1")
+      schema:
+        type: string
+        pattern: '^[a-z0-9][a-z0-9-]*$'
+        example: animals
+
+    QuizTypeParam:
+      name: type
+      in: path
+      required: true
+      description: Тип грамматического квиза
+      schema:
+        type: string
+        enum: [DECLENSIONS, CONJUGATIONS]
+        example: DECLENSIONS
+
+    PageParam:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+    SizeParam:
+      name: size
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 10
+
+  schemas:
+
+    WordStatus:
+      type: string
+      enum: [NOT_STARTED, IN_PROGRESS, LEARNED]
+      description: |
+        NOT_STARTED — нет попыток;
+        IN_PROGRESS — есть попытки, successRate < 80%;
+        LEARNED     — nAll >= 3 и successRate >= 80%
+
+    VocabularyWordProgress:
+      type: object
+      required: [wordId, word, translationRu, translationEn, nSuccess, nAll, successRate, status]
+      properties:
+        wordId:
+          type: string
+          format: uuid
+        word:
+          type: string
+          description: Слово в IAST транслитерации
+          example: mṛga
+        wordDevanagari:
+          type: string
+          nullable: true
+          example: मृग
+        translationRu:
+          type: string
+          example: олень, животное
+        translationEn:
+          type: string
+          example: deer, animal
+        nSuccess:
+          type: integer
+          minimum: 0
+          description: Количество правильных ответов
+        nAll:
+          type: integer
+          minimum: 0
+          description: Общее количество попыток
+        successRate:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Процент правильных ответов (0-100)
+        status:
+          $ref: '#/components/schemas/WordStatus'
+
+    GrammarQuestionProgress:
+      type: object
+      required: [questionId, textRu, textEn, correctAnswerRu, correctAnswerEn, nSuccess, nAll, successRate, status]
+      properties:
+        questionId:
+          type: string
+          format: uuid
+        textRu:
+          type: string
+          example: "Основа: deva-, Падеж: Именительный, Число: Единственное"
+        textEn:
+          type: string
+          example: "Stem: deva-, Case: Nominative, Number: Singular"
+        correctAnswerRu:
+          type: string
+          example: devaḥ
+        correctAnswerEn:
+          type: string
+          example: devaḥ
+        nSuccess:
+          type: integer
+          minimum: 0
+        nAll:
+          type: integer
+          minimum: 0
+        successRate:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        status:
+          $ref: '#/components/schemas/WordStatus'
+
+    VocabularyLesson:
+      type: object
+      required: [quizId, slug, titleRu, titleEn, difficulty, totalWords, learnedWords, progressPercent, words]
+      properties:
+        quizId:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          example: animals
+        titleRu:
+          type: string
+          example: Животные
+        titleEn:
+          type: string
+          example: Animals
+        difficulty:
+          type: string
+          enum: [BEGINNER, INTERMEDIATE, ADVANCED]
+        totalWords:
+          type: integer
+          minimum: 1
+        learnedWords:
+          type: integer
+          minimum: 0
+        progressPercent:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: learnedWords / totalWords * 100
+        words:
+          type: array
+          items:
+            $ref: '#/components/schemas/VocabularyWordProgress'
+
+    GrammarLesson:
+      type: object
+      required: [quizId, type, titleRu, titleEn, difficulty, totalQuestions, learnedQuestions, progressPercent, questions]
+      properties:
+        quizId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [DECLENSIONS, CONJUGATIONS]
+        titleRu:
+          type: string
+          example: Склонения существительных
+        titleEn:
+          type: string
+          example: Noun Declensions
+        difficulty:
+          type: string
+          enum: [BEGINNER, INTERMEDIATE, ADVANCED]
+        totalQuestions:
+          type: integer
+          minimum: 1
+        learnedQuestions:
+          type: integer
+          minimum: 0
+        progressPercent:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GrammarQuestionProgress'
+
+    AnswerHistoryEntry:
+      type: object
+      required: [answeredAt, correctAnswer, userAnswer, isCorrect]
+      properties:
+        answeredAt:
+          type: string
+          format: date-time
+          example: "2025-06-01T14:32:00Z"
+        correctAnswer:
+          type: string
+          description: Текст правильного варианта ответа
+          example: devaḥ
+        userAnswer:
+          type: string
+          description: Текст варианта выбранного пользователем
+          example: devam
+        isCorrect:
+          type: boolean
+
+    WordAnswerHistory:
+      type: object
+      required: [wordId, word, quizId, entries, page, size, total]
+      properties:
+        wordId:
+          type: string
+          format: uuid
+        word:
+          type: string
+          example: mṛga
+        quizId:
+          type: string
+          format: uuid
+          description: ID урока — для корректной фильтрации
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnswerHistoryEntry'
+        page:
+          type: integer
+        size:
+          type: integer
+        total:
+          type: integer
+
+    QuestionAnswerHistory:
+      type: object
+      required: [questionId, textRu, quizId, entries, page, size, total]
+      properties:
+        questionId:
+          type: string
+          format: uuid
+        textRu:
+          type: string
+        quizId:
+          type: string
+          format: uuid
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnswerHistoryEntry'
+        page:
+          type: integer
+        size:
+          type: integer
+        total:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      required: [errorCode, message, traceId]
+      properties:
+        errorCode:
+          type: string
+          example: QUIZ_NOT_FOUND
+        message:
+          type: string
+          example: Quiz with slug 'animals' not found
+        traceId:
+          type: string
+          example: "4bf92f3577b34da6a3ce929d0e0e4736"
+
+  responses:
+    Unauthorized:
+      description: JWT отсутствует или невалиден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Урок не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

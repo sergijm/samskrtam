@@ -2,7 +2,7 @@ package sm.selflearn.samskrtam.quiz.dto;
 
 import lombok.Builder;
 import lombok.Value;
-import sm.selflearn.samskrtam.content.dto.QuizType; // Corrected import
+import sm.selflearn.samskrtam.content.dto.LessonType; // Corrected import
 
 import java.util.List;
 import java.util.UUID;
@@ -12,7 +12,7 @@ import java.util.UUID;
 public class StartOrResumeResponse {
     UUID sessionId;
     UUID quizId;
-    QuizType quizType;
+    LessonType lessonType;
     List<QuestionDto> questions;
     int totalQuestions;
     int answeredQuestions;

@@ -1,6 +1,6 @@
 package sm.selflearn.samskrtam.content.dto;
 
-public enum QuizType {
+public enum LessonType {
     DECLENSIONS, // Combined declensions quiz
     A_STEM_DECLENSIONS,
     AA_STEM_DECLENSIONS,
@@ -14,7 +14,7 @@ public enum QuizType {
     VOCABULARY_BASIC,
     VOCABULARY_TEXTS;
 
-    public static boolean isDeclensions(QuizType qt) {
+    public static boolean isDeclensions(LessonType qt) {
         return qt.equals(DECLENSIONS) ||
                 qt.equals(A_STEM_DECLENSIONS) ||
                 qt.equals(AA_STEM_DECLENSIONS) ||
@@ -25,7 +25,7 @@ public enum QuizType {
                 qt.equals(R_STEM_DECLENSIONS);
     }
 
-    public static boolean isVocabulary(QuizType qt) {
+    public static boolean isVocabulary(LessonType qt) {
         return qt.equals(VOCABULARY) ||
                 qt.equals(VOCABULARY_BASIC) ||
                 qt.equals(VOCABULARY_TEXTS);

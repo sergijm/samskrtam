@@ -100,6 +100,10 @@ public class GatewayRoutesConfig {
                         .path("/api/v1/quiz/**")
                         .uri(quizServiceUrl))
 
+                .route("lessons", r -> r
+                        .path("/api/v1/lessons/**")
+                        .uri(quizServiceUrl))
+
                 // --- New route for user quiz sessions ---
                 .route("user-quiz-sessions", r -> r
                         .path("/api/v1/quiz-sessions/**")

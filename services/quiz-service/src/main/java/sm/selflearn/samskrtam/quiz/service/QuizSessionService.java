@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.GeneratedQuizData;
-import sm.selflearn.samskrtam.content.dto.QuizType;
+import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.quiz.dto.AnswerRequest;
 import sm.selflearn.samskrtam.quiz.dto.AnswerResponse;
@@ -120,7 +120,7 @@ public class QuizSessionService {
 
                     return quizAnswerRepository.save(newAnswer)
                             .then(quizSessionRepository.incrementAnsweredQuestionsAndScore(session.getId(), isCorrect))
-                            .then(outboxEventCreator.createAndSaveQuizAnsweredEvent(new QuizAnsweredEvent(session.getId(), userId, session.getQuizId(), session.getQuizType(), request.getQuestionId(), selectedOptionIast, isCorrect, Instant.now())))
+                            .then(outboxEventCreator.createAndSaveQuizAnsweredEvent(new QuizAnsweredEvent(session.getId(), userId, session.getQuizId(), session.getLessonType(), request.getQuestionId(), selectedOptionIast, isCorrect, Instant.now())))
                             .thenReturn(quizAnswerMapper.toAnswerResponse(isCorrect, correctWordId, correctAnswerText, generatedQuestion, session));
                 });
     }
@@ -131,7 +131,7 @@ public class QuizSessionService {
         session.setCompletedAt(Instant.now());
 
         return quizSessionRepository.save(session)
-                .flatMap(savedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(savedSession.getId(), savedSession.getUserId(), savedSession.getQuizId(), savedSession.getQuizType(), oldStatus.name(), savedSession.getStatus().name(), Instant.now()))
+                .flatMap(savedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(savedSession.getId(), savedSession.getUserId(), savedSession.getQuizId(), savedSession.getLessonType(), oldStatus.name(), savedSession.getStatus().name(), Instant.now()))
                         .thenReturn(savedSession));
     }
 
@@ -141,7 +141,7 @@ public class QuizSessionService {
                     String vocabularyWordsJson = serializeVocabularyWords(generatedQuizData.getVocabularyWords());
                     QuizSession newSession = buildNewQuizSession(quizId, userId, generatedQuizData, vocabularyWordsJson);
                     return quizSessionRepository.save(newSession)
-                            .flatMap(savedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(savedSession.getId(), userId, quizId, savedSession.getQuizType(), null, SessionStatus.IN_PROGRESS.name(), Instant.now()))
+                            .flatMap(savedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(savedSession.getId(), userId, quizId, savedSession.getLessonType(), null, SessionStatus.IN_PROGRESS.name(), Instant.now()))
                                     .then(quizDataAssembler.assembleResponse(savedSession, generatedQuizData.getGeneratedQuestions(), generatedQuizData.getVocabularyWords(), userLocale)));
                 });
     }
@@ -163,7 +163,7 @@ public class QuizSessionService {
         session.setStatus(SessionStatus.IN_PROGRESS);
         session.setCompletedAt(null);
         return quizSessionRepository.save(session)
-                .flatMap(savedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(savedSession.getId(), savedSession.getUserId(), savedSession.getQuizId(), savedSession.getQuizType(), oldStatus.name(), savedSession.getStatus().name(), Instant.now()))
+                .flatMap(savedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(savedSession.getId(), savedSession.getUserId(), savedSession.getQuizId(), savedSession.getLessonType(), oldStatus.name(), savedSession.getStatus().name(), Instant.now()))
                         .then(fetchGeneratedQuizDataAndBuildResponse(savedSession, userLocale)));
     }
 
@@ -181,7 +181,7 @@ public class QuizSessionService {
         session.setStatus(SessionStatus.IN_PROGRESS);
         session.setCompletedAt(null);
         return quizSessionRepository.save(session)
-                .flatMap(updatedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(updatedSession.getId(), updatedSession.getUserId(), updatedSession.getQuizId(), updatedSession.getQuizType(), oldStatus.name(), updatedSession.getStatus().name(), Instant.now()))
+                .flatMap(updatedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(updatedSession.getId(), updatedSession.getUserId(), updatedSession.getQuizId(), updatedSession.getLessonType(), oldStatus.name(), updatedSession.getStatus().name(), Instant.now()))
                         .then(fetchGeneratedQuizDataAndBuildResponse(updatedSession, userLocale)));
     }
 
@@ -201,7 +201,7 @@ public class QuizSessionService {
                 .id(null)
                 .userId(userId)
                 .quizId(quizId)
-                .quizType(generatedQuizData.getQuizType())
+                .lessonType(generatedQuizData.getLessonType())
                 .totalQuestions(generatedQuizData.getQuestionsPerSession())
                 .answeredQuestions(0)
                 .score(0)
@@ -213,7 +213,7 @@ public class QuizSessionService {
     }
 
     private Mono<List<VocabularyWordDto>> getVocabularyWords(QuizSession session) {
-        if (QuizType.isVocabulary(session.getQuizType()) && session.getVocabularyWordsJson() != null) {
+        if (LessonType.isVocabulary(session.getLessonType()) && session.getVocabularyWordsJson() != null) {
             try {
                 return Mono.just(objectMapper.readValue(session.getVocabularyWordsJson(),
                         objectMapper.getTypeFactory().constructCollectionType(List.class, VocabularyWordDto.class)));

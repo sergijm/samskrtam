@@ -1,0 +1,89 @@
+package sm.selflearn.samskrtam.quiz.dto;
+
+import java.util.List;
+import java.util.UUID;
+
+public class VocabularyLesson {
+    private UUID quizId;
+    private String slug;
+    private String titleRu;
+    private String titleEn;
+    private String difficulty;
+    private int totalWords;
+    private int learnedWords;
+    private float progressPercent;
+    private List<VocabularyWordProgress> words;
+
+    // Getters and setters
+    public UUID getQuizId() {
+        return quizId;
+    }
+
+    public void setQuizId(UUID quizId) {
+        this.quizId = quizId;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
+    }
+
+    public String getTitleRu() {
+        return titleRu;
+    }
+
+    public void setTitleRu(String titleRu) {
+        this.titleRu = titleRu;
+    }
+
+    public String getTitleEn() {
+        return titleEn;
+    }
+
+    public void setTitleEn(String titleEn) {
+        this.titleEn = titleEn;
+    }
+
+    public String getDifficulty() {
+        return difficulty;
+    }
+
+    public void setDifficulty(String difficulty) {
+        this.difficulty = difficulty;
+    }
+
+    public int getTotalWords() {
+        return totalWords;
+    }
+
+    public void setTotalWords(int totalWords) {
+        this.totalWords = totalWords;
+    }
+
+    public int getLearnedWords() {
+        return learnedWords;
+    }
+
+    public void setLearnedWords(int learnedWords) {
+        this.learnedWords = learnedWords;
+    }
+
+    public float getProgressPercent() {
+        return progressPercent;
+    }
+
+    public void setProgressPercent(float progressPercent) {
+        this.progressPercent = progressPercent;
+    }
+
+    public List<VocabularyWordProgress> getWords() {
+        return words;
+    }
+
+    public void setWords(List<VocabularyWordProgress> words) {
+        this.words = words;
+    }
+}

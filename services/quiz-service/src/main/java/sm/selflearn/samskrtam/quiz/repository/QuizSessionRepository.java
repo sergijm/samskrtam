@@ -7,7 +7,7 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import sm.selflearn.samskrtam.content.dto.QuizType; // Import QuizType
+import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.quiz.model.QuizSession;
 import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 
@@ -20,19 +20,19 @@ public interface QuizSessionRepository extends ReactiveCrudRepository<QuizSessio
 
     @Query("SELECT * FROM quiz.quiz_sessions " +
            "WHERE user_id = :userId " +
-           "AND (:quizType IS NULL OR quiz_type = :quizType) " +
+           "AND (:lessonType IS NULL OR lesson_type = :lessonType) " +
            "AND (:status IS NULL OR status = :status) " +
            "LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}") // Добавлены LIMIT и OFFSET
-    Flux<QuizSession> findUserSessions(UUID userId, QuizType quizType, SessionStatus status, Pageable pageable);
+    Flux<QuizSession> findUserSessions(UUID userId, LessonType lessonType, SessionStatus status, Pageable pageable);
 
     @Query("SELECT COUNT(*) FROM quiz.quiz_sessions " +
            "WHERE user_id = :userId " +
-           "AND (:quizType IS NULL OR quiz_type = :quizType) " +
+           "AND (:lessonType IS NULL OR lesson_type = :lessonType) " +
            "AND (:status IS NULL OR status = :status)")
-    Mono<Long> countUserSessions(UUID userId, QuizType quizType, SessionStatus status);
+    Mono<Long> countUserSessions(UUID userId, LessonType lessonType, SessionStatus status);
 
     // New method to find the latest unfinished quiz session for a user and quiz type
-    Mono<QuizSession> findTopByUserIdAndQuizTypeAndStatusOrderByStartedAtDesc(UUID userId, QuizType quizType, SessionStatus status);
+    Mono<QuizSession> findTopByUserIdAndLessonTypeAndStatusOrderByStartedAtDesc(UUID userId, LessonType lessonType, SessionStatus status);
 
     // New method to find the latest unfinished quiz session for a user and specific quiz ID
     Mono<QuizSession> findTopByUserIdAndQuizIdAndStatusOrderByStartedAtDesc(UUID userId, UUID quizId, SessionStatus status);

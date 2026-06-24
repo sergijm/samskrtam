@@ -38,9 +38,9 @@ const SessionHistoryPage = () => {
   const startNewQuizSessionMutation = useStartNewQuizSession();
 
   const handleCompleteQuiz = () => {
-    if (sessionId && sessionSummary?.quizType) {
+    if (sessionId && sessionSummary?.lessonType) {
       completeSessionMutation.mutate(
-        { sessionId, quizType: sessionSummary.quizType },
+        { sessionId, lessonType: sessionSummary.lessonType },
         {
           onSuccess: () => {
             queryClient.invalidateQueries(['quizSessionSummary', sessionId]);
@@ -64,10 +64,10 @@ const SessionHistoryPage = () => {
   const handleRetakeQuiz = () => {
     if (sessionId && sessionSummary) {
       retakeSessionMutation.mutate(
-        { sessionId, quizType: sessionSummary.quizType, slug: sessionSummary.slug },
+        { sessionId, lessonType: sessionSummary.lessonType, slug: sessionSummary.slug },
         {
           onSuccess: (data) => {
-            navigate(`/quiz/${data.quizType.toLowerCase()}/${data.slug}/${data.sessionId}`, { state: { sessionData: data } });
+            navigate(`/quiz/${data.lessonType.toLowerCase()}/${data.slug}/${data.sessionId}`, { state: { sessionData: data } });
           },
           onError: (err) => {
             console.error('Failed to retake quiz session:', err);
@@ -80,10 +80,10 @@ const SessionHistoryPage = () => {
   const handleStartNewQuiz = () => {
     if (sessionId && sessionSummary) {
       startNewQuizSessionMutation.mutate(
-        { sessionId, quizType: sessionSummary.quizType, slug: sessionSummary.slug },
+        { sessionId, lessonType: sessionSummary.lessonType, slug: sessionSummary.slug },
         {
           onSuccess: (data) => {
-            navigate(`/quiz/${data.quizType.toLowerCase()}/${data.slug}/${data.sessionId}`, { state: { sessionData: data } });
+            navigate(`/quiz/${data.lessonType.toLowerCase()}/${data.slug}/${data.sessionId}`, { state: { sessionData: data } });
           },
           onError: (err) => {
             console.error('Failed to start new quiz session:', err);

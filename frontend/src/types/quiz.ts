@@ -1,3 +1,32 @@
+// Все типы как enum (доступны и во время компиляции, и во время выполнения)
+export enum LessonType {
+    DECLENSIONS = 'DECLENSIONS',
+    A_STEM_DECLENSIONS = 'A_STEM_DECLENSIONS',
+    AA_STEM_DECLENSIONS = 'AA_STEM_DECLENSIONS',
+    I_STEM_DECLENSIONS = 'I_STEM_DECLENSIONS',
+    II_STEM_DECLENSIONS = 'II_STEM_DECLENSIONS',
+    U_STEM_DECLENSIONS = 'U_STEM_DECLENSIONS',
+    UU_STEM_DECLENSIONS = 'UU_STEM_DECLENSIONS',
+    R_STEM_DECLENSIONS = 'R_STEM_DECLENSIONS',
+    CONJUGATIONS = 'CONJUGATIONS',
+    VOCABULARY = 'VOCABULARY',
+    VOCABULARY_BASIC = 'VOCABULARY_BASIC',
+    VOCABULARY_TEXTS = 'VOCABULARY_TEXTS',
+}
+
+export enum Difficulty {
+    BEGINNER = 'BEGINNER',
+    INTERMEDIATE = 'INTERMEDIATE',
+    ADVANCED = 'ADVANCED',
+}
+
+export enum SessionStatus {
+    IN_PROGRESS = 'IN_PROGRESS',
+    COMPLETED = 'COMPLETED',
+    ABANDONED = 'ABANDONED',
+}
+
+
 export interface QuizListItem {
     id: string;
     title: string;
@@ -6,7 +35,7 @@ export interface QuizListItem {
     description: string;
     descriptionRu: string;
     descriptionEn: string;
-    quizType: QuizType;
+    lessonType: LessonType;
     slug: string;
     totalQuestions: number;
     wordCount: number; // New field for word count
@@ -19,14 +48,14 @@ export interface QuizSummaryDto {
     titleEn: string;
     descriptionRu: string;
     descriptionEn: string;
-    quizType: QuizType;
-    difficulty: string;
+    lessonType: LessonType;
+    difficulty: Difficulty;
 }
 
 export interface StartSessionResponse {
     sessionId: string;
     quizId: string;
-    quizType: QuizType;
+    lessonType: LessonType;
     questions: SessionQuestion[];
     totalQuestions: number;
     answeredQuestions: number;
@@ -36,7 +65,7 @@ export interface StartSessionResponse {
 export interface ResumeSessionResponse {
     sessionId: string;
     quizId: string;
-    quizType: QuizType;
+    lessonType: LessonType;
     questions: SessionQuestion[];
     totalQuestions: number;
     answeredQuestions: number;
@@ -47,7 +76,7 @@ export interface ResumeSessionResponse {
 export interface StartOrResumeResponse {
     sessionId: string;
     quizId: string;
-    quizType: QuizType;
+    lessonType: LessonType;
     questions: SessionQuestion[];
     totalQuestions: number;
     answeredQuestions: number;
@@ -94,53 +123,62 @@ export interface AnswerResponse {
     totalQuestions: number;
 }
 
-export enum QuizType {
-    VOCABULARY = 'VOCABULARY',
-    DECLENSIONS = 'DECLENSIONS',
-    CONJUGATIONS = 'CONJUGATIONS',
-    A_STEM_DECLENSIONS = 'A_STEM_DECLENSIONS',
-    AA_STEM_DECLENSIONS = 'AA_STEM_DECLENSIONS',
-    I_STEM_DECLENSIONS = 'I_STEM_DECLENSIONS',
-    II_STEM_DECLENSIONS = 'II_STEM_DECLENSIONS',
-    U_STEM_DECLENSIONS = 'U_STEM_DECLENSIONS',
-    UU_STEM_DECLENSIONS = 'UU_STEM_DECLENSIONS',
-    R_STEM_DECLENSIONS = 'R_STEM_DECLENSIONS',
+export interface QuizSummary {
+  id:         string;
+  titleRu:    string;
+  titleEn:    string;
+  lessonType:   LessonType;
+  difficulty: Difficulty;
+  bestScore?: number;
 }
 
-export interface QuizSessionSummary {
-    sessionId: string;
-    quizId: string;
-    quizTitle: string;
-    quizType: QuizType;
-    slug: string;
-    score: number;
-    totalQuestions: number;
-    status: SessionStatus;
-    startedAt: string;
-    completedAt?: string;
-    durationMs?: number;
+export interface QuizSession {
+  sessionId:  string;
+  quizId:     string;
+  questions:  SessionQuestion[];
 }
 
-export enum SessionStatus {
-    IN_PROGRESS = 'IN_PROGRESS',
-    COMPLETED = 'COMPLETED',
-    ABANDONED = 'ABANDONED',
-}
 
-export interface AnswerHistory {
-    questionText: string;
-    selectedAnswerIast: string;
-    correctOptionIast: string;
-    isCorrect: boolean;
-    responseTimeMs: number;
-    answeredAt: string;
-    explanationRu: string;
-    explanationEn: string;
+export interface AnswerResult {
+  isCorrect:       boolean;
+  correctOptionId: string;
+  explanation:     string;
+  questionNumber:  number;
+  totalQuestions:  number;
 }
+// Helper functions to check quiz types (similar to Java enum methods)
+export const isDeclensionsQuiz = (lessonType: LessonType): boolean => {
+  return [
+    'DECLENSIONS',
+    'A_STEM_DECLENSIONS',
+    'AA_STEM_DECLENSIONS',
+    'I_STEM_DECLENSIONS',
+    'II_STEM_DECLENSIONS',
+    'U_STEM_DECLENSIONS',
+    'UU_STEM_DECLENSIONS',
+    'R_STEM_DECLENSIONS'
+  ].includes(lessonType);
+};
 
-export interface QuizProgress {
-    sessionId: string;
-    quizId: string;
-    answeredQuestions: number;
-    totalQuestions: number;
-}
+export const isVocabularyQuiz = (lessonType: LessonType): boolean => {
+  return [
+    'VOCABULARY',
+    'VOCABULARY_BASIC',
+    'VOCABULARY_TEXTS'
+  ].includes(lessonType);
+};
+
+// Alternative approach with more specific type checking
+export const getQuizCategory = (lessonType: LessonType): 'declensions' | 'conjugations' | 'vocabulary' | 'other' => {
+  if (isDeclensionsQuiz(lessonType)) {
+    return 'declensions';
+  }
+  if (isVocabularyQuiz(lessonType)) {
+    return 'vocabulary';
+  }
+  if (lessonType === 'CONJUGATIONS') {
+    return 'conjugations';
+  }
+  return 'other';
+};
+

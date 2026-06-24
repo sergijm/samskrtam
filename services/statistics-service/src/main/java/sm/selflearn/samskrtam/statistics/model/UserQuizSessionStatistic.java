@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import sm.selflearn.samskrtam.content.dto.QuizType;
+import sm.selflearn.samskrtam.content.dto.LessonType;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -29,7 +29,7 @@ public class UserQuizSessionStatistic {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private QuizType quizType;
+    private LessonType lessonType;
 
     @Column(nullable = false)
     private int totalSessions;

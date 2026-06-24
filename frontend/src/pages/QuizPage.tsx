@@ -7,9 +7,10 @@ import { Button } from 'primereact/button';
 import { ProgressBar } from 'primereact/progressbar';
 import { Card } from 'primereact/card';
 
+
 import { useStartQuizSession, useSubmitQuizAnswer, useQuizBySlug, useResumeQuizSession, useCompleteQuizSession } from '../hooks/useQuiz';
-import { AnswerRequest, SessionQuestion, QuizType, StartOrResumeResponse } from '../types/quiz';
-import { useLocaleStore } from '../store/localeStore';
+import { AnswerRequest, SessionQuestion, StartOrResumeResponse, LessonType } from '../types/quiz';
+
 
 const QuizPage = () => {
   const { t, i18n } = useTranslation();
@@ -26,10 +27,10 @@ const QuizPage = () => {
   const [hasAttemptedSessionLoad, setHasAttemptedSessionLoad] = useState(false);
   const [sessionCompletionAttempted, setSessionCompletionAttempted] = useState(false);
 
-  // State to hold quiz summary data, either from state or fetched
+  // State to hold lesson summary data, either from state or fetched
   const [quizSummaryData, setQuizSummaryData] = useState<StartOrResumeResponse | null>(null);
 
-  // Conditionally fetch quiz summary if not available from state
+  // Conditionally fetch lesson summary if not available from state
   const shouldFetchQuizSummary = !quizSummaryData && !location.state?.sessionData && slug;
   const { data: fetchedQuizSummary, isLoading: isQuizSummaryLoading, isError: isQuizSummaryError, error: quizSummaryError } = useQuizBySlug(shouldFetchQuizSummary ? slug || '' : '');
 
@@ -45,7 +46,7 @@ const QuizPage = () => {
 
     if (location.state?.sessionData) {
       const sessionDataFromState = location.state.sessionData as StartOrResumeResponse;
-      setQuizSummaryData(sessionDataFromState); // Set quiz summary from state
+      setQuizSummaryData(sessionDataFromState); // Set lesson summary from state
       setSessionId(sessionDataFromState.sessionId);
       setQuestions(sessionDataFromState.questions);
       setCurrentQuestionIndex(sessionDataFromState.currentQuestionIndex);
@@ -55,11 +56,11 @@ const QuizPage = () => {
 
     } else if (fetchedQuizSummary && !hasAttemptedSessionLoad) {
       setHasAttemptedSessionLoad(true);
-      setQuizSummaryData(fetchedQuizSummary); // Set quiz summary from fetch
+      setQuizSummaryData(fetchedQuizSummary); // Set lesson summary from fetch
 
       if (sessionIdFromParams) {
         resumeSessionMutation.mutate(
-          { sessionId: sessionIdFromParams, quizType: fetchedQuizSummary.quizType },
+          { sessionId: sessionIdFromParams, lessonType: fetchedQuizSummary.lessonType },
           {
             onSuccess: (data) => {
               setSessionId(data.sessionId);
@@ -69,23 +70,23 @@ const QuizPage = () => {
               setQuizSummaryData(data); // Update with full data from resume
             },
             onError: (err) => {
-              console.error('Failed to resume quiz session:', err);
+              console.error('Failed to resume lesson session:', err);
             },
           }
         );
       } else {
         startSessionMutation.mutate(
-          { quizIdentifier: fetchedQuizSummary.id, quizType: fetchedQuizSummary.quizType },
+          { quizIdentifier: fetchedQuizSummary.id, lessonType: fetchedQuizSummary.lessonType },
           {
             onSuccess: (data) => {
               setSessionId(data.sessionId);
               setQuestions(data.questions);
               setStartTime(Date.now());
               setQuizSummaryData(data); // Update with full data from start
-              navigate(`/quiz/${fetchedQuizSummary.quizType.toLowerCase()}/${fetchedQuizSummary.slug}/${data.sessionId}`, { replace: true });
+              navigate(`/lesson/${fetchedQuizSummary.lessonType.toLowerCase()}/${fetchedQuizSummary.slug}/${data.sessionId}`, { replace: true });
             },
             onError: (err) => {
-              console.error('Failed to start quiz session:', err);
+              console.error('Failed to start lesson session:', err);
             },
           }
         );
@@ -96,22 +97,22 @@ const QuizPage = () => {
   useEffect(() => {
     const allQuestionsAnswered = questions.length > 0 && currentQuestionIndex >= questions.length;
 
-    if (allQuestionsAnswered && sessionId && quizSummaryData?.quizType && !sessionCompletionAttempted) {
+    if (allQuestionsAnswered && sessionId && quizSummaryData?.lessonType && !sessionCompletionAttempted) {
       setSessionCompletionAttempted(true);
       completeSessionMutation.mutate(
-        { sessionId, quizType: quizSummaryData.quizType },
+        { sessionId, lessonType: quizSummaryData.lessonType },
         {
           onSuccess: () => {
-            navigate(`/quiz-sessions/${sessionId}/history`, { state: { quizType: quizSummaryData.quizType } });
+            navigate(`/lesson-sessions/${sessionId}/history`, { state: { lessonType: quizSummaryData.lessonType } });
           },
           onError: (err) => {
-            console.error('Failed to complete quiz session:', err);
-            navigate(`/quiz-sessions/${sessionId}/history`, { state: { quizType: quizSummaryData.quizType } });
+            console.error('Failed to complete lesson session:', err);
+            navigate(`/lesson-sessions/${sessionId}/history`, { state: { lessonType: quizSummaryData.lessonType } });
           },
         }
       );
     }
-  }, [currentQuestionIndex, questions.length, sessionId, quizSummaryData?.quizType, sessionCompletionAttempted, completeSessionMutation, navigate]);
+  }, [currentQuestionIndex, questions.length, sessionId, quizSummaryData?.lessonType, sessionCompletionAttempted, completeSessionMutation, navigate]);
 
   const handleSubmitAnswer = (optionIdToSubmit: string) => {
     if (!sessionId || !optionIdToSubmit || !currentQuestion || !quizSummaryData) {
@@ -129,7 +130,7 @@ const QuizPage = () => {
     const answerRequest: AnswerRequest = {
       questionId: questionId,
       selectedOptionId: optionIdToSubmit,
-      selectedFormIast: quizSummaryData.quizType !== QuizType.VOCABULARY ? selectedFormIast : undefined,
+      selectedFormIast: quizSummaryData.lessonType !== LessonType.VOCABULARY ? selectedFormIast : undefined,
       responseTimeMs: responseTimeMs,
     };
 
@@ -137,7 +138,7 @@ const QuizPage = () => {
       {
         sessionId: sessionId,
         quizIdentifier: quizSummaryData.quizId,
-        quizType: quizSummaryData.quizType,
+        lessonType: quizSummaryData.lessonType,
         answerRequest: answerRequest,
       },
       {
@@ -151,7 +152,7 @@ const QuizPage = () => {
               isCorrect: data.isCorrect,
               correctOptionId: data.correctOptionId,
               correctAnswerText: data.correctAnswerText,
-              explanation: explanation || t('quiz.noExplanation'),
+              explanation: explanation || t('lesson.noExplanation'),
             });
             setStartTime(Date.now());
           }
@@ -186,7 +187,7 @@ const QuizPage = () => {
   if (isQuizSummaryError) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
-        <Message severity="error" text={t('quiz.fetchError', { message: quizSummaryError?.message })} />
+        <Message severity="error" text={t('lesson.fetchError', { message: quizSummaryError?.message })} />
       </div>
     );
   }
@@ -194,7 +195,7 @@ const QuizPage = () => {
   if (startSessionMutation.isError || resumeSessionMutation.isError || completeSessionMutation.isError) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
-        <Message severity="error" text={t('quiz.startError', { message: startSessionMutation.error?.message || resumeSessionMutation.error?.message || completeSessionMutation.error?.message })} />
+        <Message severity="error" text={t('lesson.startError', { message: startSessionMutation.error?.message || resumeSessionMutation.error?.message || completeSessionMutation.error?.message })} />
       </div>
     );
   }
@@ -202,7 +203,7 @@ const QuizPage = () => {
   if (questions.length === 0 && hasAttemptedSessionLoad && !isQuizSummaryLoading && !startSessionMutation.isLoading && !resumeSessionMutation.isLoading) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
-        <Message severity="info" text={t('quiz.noQuestions')} />
+        <Message severity="info" text={t('lesson.noQuestions')} />
       </div>
     );
   }
@@ -227,13 +228,13 @@ const QuizPage = () => {
 
   return (
     <div className="flex flex-column align-items-center justify-content-center p-4">
-      <Card className="quiz-container" style={{ maxWidth: '800px', width: '100%' }}>
+      <Card className="lesson-container" style={{ maxWidth: '800px', width: '100%' }}>
         {localizedQuizTitle && <h1 className="text-center mb-3">{localizedQuizTitle}</h1>}
         {localizedQuizDescription && <p className="text-center text-color-secondary mb-4">{localizedQuizDescription}</p>}
         <ProgressBar value={progress} className="mb-4" />
-        <h2 className="text-center mb-4">{t('quiz.question', { current: currentQuestionIndex + 1, total: questions.length })}</h2>
+        <h2 className="text-center mb-4">{t('lesson.question', { current: currentQuestionIndex + 1, total: questions.length })}</h2>
         <div className="text-2xl font-bold text-center mb-5">
-          {quizSummaryData?.quizType === QuizType.VOCABULARY ? (
+          {quizSummaryData?.lessonType === LessonType.VOCABULARY ? (
             <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>{currentQuestion.text}</span>
           ) : (
             <>
@@ -270,13 +271,13 @@ const QuizPage = () => {
         {feedback && (
           <div className="feedback-section mt-5 p-3 border-round-md" style={{ backgroundColor: feedback.isCorrect ? '#e6ffe6' : '#ffe6e6' }}>
             <h3 className="text-xl font-bold mb-2" style={{ color: feedback.isCorrect ? '#28a745' : '#dc3545' }}>
-              {feedback.isCorrect ? t('quiz.correct') : t('quiz.incorrect')}
+              {feedback.isCorrect ? t('lesson.correct') : t('lesson.incorrect')}
             </h3>
             {!feedback.isCorrect && (
-              <p className="text-lg">{t('quiz.correctAnswerIs')}: <strong>{feedback.correctAnswerText}</strong></p>
+              <p className="text-lg">{t('lesson.correctAnswerIs')}: <strong>{feedback.correctAnswerText}</strong></p>
             )}
             <Button
-              label={isLastQuestion ? t('quiz.completeQuiz') : t('quiz.next')}
+              label={isLastQuestion ? t('lesson.completeQuiz') : t('lesson.next')}
               icon="pi pi-arrow-right"
               iconPos="right"
               className="mt-3 w-full"

@@ -38,12 +38,12 @@ public class UserSessionService {
 
     public Mono<Page<QuizSessionSummaryDto>> getUserQuizSessions(
             UUID userId,
-            QuizType quizType,
+            LessonType lessonType,
             SessionStatus status,
             Pageable pageable) {
 
-        Mono<Long> totalElementsMono = quizSessionRepository.countUserSessions(userId, quizType, status);
-        Flux<QuizSession> sessionsFlux = quizSessionRepository.findUserSessions(userId, quizType, status, pageable);
+        Mono<Long> totalElementsMono = quizSessionRepository.countUserSessions(userId, lessonType, status);
+        Flux<QuizSession> sessionsFlux = quizSessionRepository.findUserSessions(userId, lessonType, status, pageable);
 
         Mono<Map<UUID, QuizSummaryDto>> quizSummariesMapMono = sessionsFlux
                 .map(QuizSession::getQuizId)
@@ -77,7 +77,7 @@ public class UserSessionService {
                                         .quizTitleRu(summary != null ? summary.getTitleRu() : "Неизвестный квиз")
                                         .quizTitleEn(summary != null ? summary.getTitleEn() : "Unknown Quiz")
                                         .slug(summary != null ? summary.getSlug() : "")
-                                        .quizType(session.getQuizType())
+                                        .lessonType(session.getLessonType())
                                         .score(session.getScore())
                                         .totalQuestions(session.getTotalQuestions())
                                         .status(session.getStatus())
@@ -108,7 +108,7 @@ public class UserSessionService {
                                     .quizTitleRu(quizSummary.getTitleRu())
                                     .quizTitleEn(quizSummary.getTitleEn())
                                     .slug(quizSummary.getSlug())
-                                    .quizType(session.getQuizType())
+                                    .lessonType(session.getLessonType())
                                     .score(session.getScore())
                                     .totalQuestions(session.getTotalQuestions())
                                     .status(session.getStatus())
@@ -168,5 +168,9 @@ public class UserSessionService {
         return quizSessionRepository.findTopByUserIdAndQuizIdAndStatusOrderByStartedAtDesc(userId, quizId, SessionStatus.IN_PROGRESS)
                 .map(session -> new QuizProgressDto(session.getId(), session.getAnsweredQuestions(), session.getTotalQuestions(), true))
                 .defaultIfEmpty(new QuizProgressDto(null, 0, 0, false));
+    }
+
+    public QuizProgressDto getUserQuizProgress(UUID userId, UUID id) {
+        return null;
     }
 }

@@ -18,7 +18,7 @@ public class QuizListItemResponse {
     String description; // Keep existing description for backward compatibility or default
     String descriptionRu; // New field for Russian description
     String descriptionEn; // New field for English description
-    QuizType quizType;
+    LessonType lessonType;
     String slug;
     int totalQuestions;
 }

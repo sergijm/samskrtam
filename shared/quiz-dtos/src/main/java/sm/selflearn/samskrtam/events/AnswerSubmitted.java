@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import sm.selflearn.samskrtam.content.dto.QuizType; // Corrected import
+import sm.selflearn.samskrtam.content.dto.LessonType; // Corrected import
 
 import java.util.UUID;
 
@@ -15,7 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AnswerSubmitted extends AbstractEvent {
     UUID    userId;
-    QuizType quizType;
+    LessonType lessonType;
     UUID    quizId;
     UUID    questionId;
     UUID    selectedOptionId;

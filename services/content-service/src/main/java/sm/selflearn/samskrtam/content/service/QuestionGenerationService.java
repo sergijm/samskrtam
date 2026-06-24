@@ -4,12 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.common.SamskrtamException;
+import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.dto.QuestionLanguage;
-import sm.selflearn.samskrtam.content.dto.QuestionResponse; // Import QuestionResponse
-import sm.selflearn.samskrtam.content.dto.QuizType;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.content.model.GeneratedQuestion;
-import sm.selflearn.samskrtam.content.model.Quiz;
+import sm.selflearn.samskrtam.content.model.Lesson;
 import sm.selflearn.samskrtam.content.repository.GeneratedQuestionRepository;
 import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
 
@@ -25,10 +24,10 @@ public class QuestionGenerationService {
     private final DeclensionQuizGeneratorService declensionQuizGeneratorService;
     private final VocabularyService vocabularyService;
 
-    public List<GeneratedQuizQuestionDto> generateQuestions(UUID generatedQuizDataId, Quiz quiz, String userLocale) {
+    public List<GeneratedQuizQuestionDto> generateQuestions(UUID generatedQuizDataId, Lesson lesson, String userLocale) {
 
-        log.debug("Generating new questions for quizId: {} and locale: {}", quiz.getId(), userLocale);
-        List<GeneratedQuestion> newQuestions = generateAndSaveQuestions(generatedQuizDataId, quiz, userLocale);
+        log.debug("Generating new questions for quizId: {} and locale: {}", lesson.getId(), userLocale);
+        List<GeneratedQuestion> newQuestions = generateAndSaveQuestions(generatedQuizDataId, lesson, userLocale);
         return newQuestions.stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
@@ -41,15 +40,15 @@ public class QuestionGenerationService {
         return mapToDto(question);
     }
 
-    private List<GeneratedQuestion> generateAndSaveQuestions(UUID generatedQuizDataId, Quiz quiz, String userLocale) {
+    private List<GeneratedQuestion> generateAndSaveQuestions(UUID generatedQuizDataId, Lesson lesson, String userLocale) {
         List<GeneratedQuestion> questionsToSave = new ArrayList<>();
 
-        if (quiz.getQuizType().toString().contains("DECLENSIONS")) {
-            questionsToSave.addAll(declensionQuizGeneratorService.generateDeclensionQuestions(quiz, new Locale(userLocale)).stream()
+        if (lesson.getLessonType().toString().contains("DECLENSIONS")) {
+            questionsToSave.addAll(declensionQuizGeneratorService.generateDeclensionQuestions(lesson, new Locale(userLocale)).stream()
                     .map(response -> GeneratedQuestion.builder()
                             .id(UUID.randomUUID())
                             .generatedQuizDataId(generatedQuizDataId)
-                            .quizId(quiz.getId())
+                            .quizId(lesson.getId())
                             .text(response.getText()) // Keep original text for now, can be refined
                             .explanationRu(response.getExplanationRu())
                             .explanationEn(response.getExplanationEn())
@@ -65,8 +64,8 @@ public class QuestionGenerationService {
                             .numberType(response.getTargetNumber()) // Assign Number enum directly
                             .build())
                     .collect(Collectors.<GeneratedQuestion>toList()));
-        } else if ( QuizType.isVocabulary(quiz.getQuizType() )) {
-            List<VocabularyWordDto> vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(quiz.getSlug(), quiz.getQuestionsPerSession() * 4); // Changed to quiz.getSlug()
+        } else if ( LessonType.isVocabulary(lesson.getLessonType() )) {
+            List<VocabularyWordDto> vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(lesson.getSlug(), lesson.getQuestionsPerSession() * 4); // Changed to quiz.getSlug()
 
             for (VocabularyWordDto word : vocabularyWords) {
                 // Sanskrit to Translation
@@ -77,7 +76,7 @@ public class QuestionGenerationService {
                 questionsToSave.add(GeneratedQuestion.builder()
                         .id(UUID.randomUUID())
                         .generatedQuizDataId(generatedQuizDataId)
-                        .quizId(quiz.getId())
+                        .quizId(lesson.getId())
                         .text(questionTextSanskritToTranslation)
                         .explanationRu(word.getExplanationRu())
                         .explanationEn(word.getExplanationEn())
@@ -102,7 +101,7 @@ public class QuestionGenerationService {
                 questionsToSave.add(GeneratedQuestion.builder()
                         .id(UUID.randomUUID())
                         .generatedQuizDataId(generatedQuizDataId)
-                        .quizId(quiz.getId())
+                        .quizId(lesson.getId())
                         .text(questionTextTranslationToSanskrit)
                         .explanationRu(word.getExplanationRu())
                         .explanationEn(word.getExplanationEn())
@@ -129,7 +128,7 @@ public class QuestionGenerationService {
 
         // Limit to questionsPerSession if more were generated
         List<GeneratedQuestion> finalQuestions = questionsToSave.stream()
-                .limit(quiz.getQuestionsPerSession())
+                .limit(lesson.getQuestionsPerSession())
                 .collect(Collectors.toList());
 
         return generatedQuestionRepository.saveAll(finalQuestions);

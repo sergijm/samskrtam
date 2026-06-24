@@ -8,11 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.GeneratedQuizData;
-import sm.selflearn.samskrtam.content.dto.QuizType;
+import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.content.model.GeneratedQuizDataRecord;
 import sm.selflearn.samskrtam.content.model.GeneratedQuestion;
-import sm.selflearn.samskrtam.content.model.Quiz;
+import sm.selflearn.samskrtam.content.model.Lesson;
 import sm.selflearn.samskrtam.content.repository.*;
 import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.QuizListItemResponse;
@@ -43,18 +43,18 @@ public class QuizContentService {
                     }
                     switch (category.toLowerCase()) {
                         case "declensions":
-                            return  QuizType.isDeclensions(quiz.getQuizType());
+                            return  LessonType.isDeclensions(quiz.getLessonType());
                         case "conjugations":
-                            return quiz.getQuizType() == QuizType.CONJUGATIONS;
+                            return quiz.getLessonType() == LessonType.CONJUGATIONS;
                         case "vocabulary":
-                            return  QuizType.isVocabulary(quiz.getQuizType());
+                            return  LessonType.isVocabulary(quiz.getLessonType());
                         case "vocabulary-basic":
-                            return quiz.getQuizType() == QuizType.VOCABULARY_BASIC;
+                            return quiz.getLessonType() == LessonType.VOCABULARY_BASIC;
                         case "vocabulary-text":
                         case "vocabulary-texts":
-                            return quiz.getQuizType() == QuizType.VOCABULARY_TEXTS;
+                            return quiz.getLessonType() == LessonType.VOCABULARY_TEXTS;
                         case "grammar": // Fallback for general grammar, if needed
-                            return !QuizType.isVocabulary(quiz.getQuizType());
+                            return !LessonType.isVocabulary(quiz.getLessonType());
                         default:
                             return true;
                     }
@@ -63,10 +63,10 @@ public class QuizContentService {
                 .collect(Collectors.toList());
     }
 
-    private QuizListItemResponse mapToQuizListItemResponse(Quiz quiz) {
+    private QuizListItemResponse mapToQuizListItemResponse(Lesson lesson) {
         int wordCount = 0;
-        if (QuizType.isVocabulary(quiz.getQuizType())) {
-            wordCount = vocabularyCategoryRepository.findByCodeIgnoreCase(quiz.getSlug())
+        if (LessonType.isVocabulary(lesson.getLessonType())) {
+            wordCount = vocabularyCategoryRepository.findByCodeIgnoreCase(lesson.getSlug())
                     .map(category -> {
                         List<UUID> allCategoryIds = vocabularyCategoryRepository.findAllChildrenIds(category.getId());
                         return vocabularyWordCategoryRepository.countByCategoryIdIn(allCategoryIds);
@@ -75,31 +75,31 @@ public class QuizContentService {
         }
 
         return QuizListItemResponse.builder()
-                .id(quiz.getId())
-                .title(quiz.getTitleEn())
-                .titleRu(quiz.getTitleRu())
-                .titleEn(quiz.getTitleEn())
-                .description(quiz.getDescriptionEn())
-                .descriptionRu(quiz.getDescriptionRu())
-                .descriptionEn(quiz.getDescriptionEn())
-                .quizType(quiz.getQuizType())
-                .slug(quiz.getSlug())
-                .totalQuestions(quiz.getQuestionsPerSession())
+                .id(lesson.getId())
+                .title(lesson.getTitleEn())
+                .titleRu(lesson.getTitleRu())
+                .titleEn(lesson.getTitleEn())
+                .description(lesson.getDescriptionEn())
+                .descriptionRu(lesson.getDescriptionRu())
+                .descriptionEn(lesson.getDescriptionEn())
+                .lessonType(lesson.getLessonType())
+                .slug(lesson.getSlug())
+                .totalQuestions(lesson.getQuestionsPerSession())
                 .wordCount(wordCount)
                 .build();
     }
 
     @Transactional
     public GeneratedQuizData generateQuizData(UUID quizId, Locale locale) {
-        Quiz quiz = quizRepository.findById(quizId)
+        Lesson lesson = quizRepository.findById(quizId)
                 .orElseThrow(() -> new SamskrtamException("QUIZ_NOT_FOUND", "Quiz not found with ID: " + quizId));
 
         UUID generatedQuizDataId = UUID.randomUUID();
 
         List<VocabularyWordDto> vocabularyWords = Collections.emptyList();
         String vocabularyWordsJson = null;
-        if (QuizType.isVocabulary(quiz.getQuizType())) {
-            vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(quiz.getSlug(), quiz.getQuestionsPerSession() * 4);
+        if (LessonType.isVocabulary(lesson.getLessonType())) {
+            vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(lesson.getSlug(), lesson.getQuestionsPerSession() * 4);
             try {
                 vocabularyWordsJson = objectMapper.writeValueAsString(vocabularyWords);
             } catch (JsonProcessingException e) {
@@ -119,7 +119,7 @@ public class QuizContentService {
 
         List<GeneratedQuizQuestionDto> questions = questionGenerationService.generateQuestions(
                 generatedQuizDataId,
-                quiz, locale.getLanguage());
+                lesson, locale.getLanguage());
 
         List<GeneratedQuestion> generatedQuestionEntities = questions.stream()
                 .map(dto -> GeneratedQuestion.builder()
@@ -152,9 +152,9 @@ public class QuizContentService {
 
         return GeneratedQuizData.builder()
                 .generatedQuizDataId(generatedQuizDataId)
-                .quizId(quiz.getId())
-                .quizType(quiz.getQuizType())
-                .questionsPerSession(quiz.getQuestionsPerSession())
+                .quizId(lesson.getId())
+                .lessonType(lesson.getLessonType())
+                .questionsPerSession(lesson.getQuestionsPerSession())
                 .generatedQuestions(sortedQuestions)
                 .vocabularyWords(vocabularyWords)
                 .build();
@@ -202,16 +202,16 @@ public class QuizContentService {
             }
         }
 
-        Quiz quiz = quizRepository.findById(record.getQuizId())
+        Lesson lesson = quizRepository.findById(record.getQuizId())
                 .orElseThrow(() -> new SamskrtamException("QUIZ_NOT_FOUND", "Quiz not found with ID: " + record.getQuizId()));
 
         List<GeneratedQuizQuestionDto> sortedQuestions = questions.stream().sorted(Comparator.comparingInt(GeneratedQuizQuestionDto::getQuestionNumber)).toList();
 
         return GeneratedQuizData.builder()
                 .generatedQuizDataId(record.getId())
-                .quizId(quiz.getId())
-                .quizType(quiz.getQuizType())
-                .questionsPerSession(quiz.getQuestionsPerSession())
+                .quizId(lesson.getId())
+                .lessonType(lesson.getLessonType())
+                .questionsPerSession(lesson.getQuestionsPerSession())
                 .generatedQuestions(sortedQuestions)
                 .vocabularyWords(vocabularyWords)
                 .build();

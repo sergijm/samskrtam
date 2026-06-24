@@ -4,9 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.dto.QuestionLanguage;
-import sm.selflearn.samskrtam.content.dto.QuizSummaryDto;
-import sm.selflearn.samskrtam.content.dto.QuizType;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.quiz.dto.AnswerRequest;
 import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
@@ -109,7 +108,7 @@ public class QuizDataAssembler {
     }
 
     private Mono<QuestionDto> generateQuestionOptions(QuizSession session, GeneratedQuizQuestionDto generatedQuestion, List<VocabularyWordDto> allVocabularyWords, String userLocale) {
-        if (QuizType.isVocabulary(session.getQuizType())) {
+        if (LessonType.isVocabulary(session.getLessonType())) {
             VocabularyWordDto correctWord = allVocabularyWords.stream()
                     .filter(w -> w.getId().equals(generatedQuestion.getVocabularyWordId()))
                     .findFirst()

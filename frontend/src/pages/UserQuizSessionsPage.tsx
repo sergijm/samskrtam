@@ -12,7 +12,7 @@ import { Button } from 'primereact/button';
 
 import { useUserQuizSessions } from '../hooks/useUserQuizSessions';
 import { useMe } from '../hooks/useUser'; // Import useMe
-import { QuizType, SessionStatus, QuizSessionSummary } from '../types/quiz';
+import { LessonType, SessionStatus, QuizSessionSummary } from '../types/quiz';
 
 const UserQuizSessionsPage = () => {
   const { t } = useTranslation();
@@ -25,7 +25,7 @@ const UserQuizSessionsPage = () => {
   const [size, setSize] = useState(10);
   const [sortBy, setSortBy] = useState('startedAt');
   const [sortDirection, setSortDirection] = useState('desc');
-  const [quizTypeFilter, setQuizTypeFilter] = useState<QuizType | undefined>(undefined);
+  const [quizTypeFilter, setQuizTypeFilter] = useState<LessonType | undefined>(undefined);
   const [statusFilter, setStatusFilter] = useState<SessionStatus | undefined>(undefined);
 
   const { data, isLoading: isSessionsLoading, isError, error } = useUserQuizSessions(
@@ -50,16 +50,16 @@ const UserQuizSessionsPage = () => {
 
   const quizTypeOptions = [
     { label: t('common.all'), value: undefined },
-    { label: t('quizType.VOCABULARY'), value: 'VOCABULARY' },
-    { label: t('quizType.DECLENSIONS'), value: 'DECLENSIONS' },
-    { label: t('quizType.CONJUGATIONS'), value: 'CONJUGATIONS' },
-    { label: t('quizType.A_STEM_DECLENSIONS'), value: 'A_STEM_DECLENSIONS' },
-    { label: t('quizType.AA_STEM_DECLENSIONS'), value: 'AA_STEM_DECLENSIONS' },
-    { label: t('quizType.I_STEM_DECLENSIONS'), value: 'I_STEM_DECLENSIONS' },
-    { label: t('quizType.II_STEM_DECLENSIONS'), value: 'II_STEM_DECLENSIONS' },
-    { label: t('quizType.U_STEM_DECLENSIONS'), value: 'U_STEM_DECLENSIONS' },
-    { label: t('quizType.UU_STEM_DECLENSIONS'), value: 'UU_STEM_DECLENSIONS' },
-    { label: t('quizType.R_STEM_DECLENSIONS'), value: 'R_STEM_DECLENSIONS' },
+    { label: t('lessonType.VOCABULARY'), value: 'VOCABULARY' },
+    { label: t('lessonType.DECLENSIONS'), value: 'DECLENSIONS' },
+    { label: t('lessonType.CONJUGATIONS'), value: 'CONJUGATIONS' },
+    { label: t('lessonType.A_STEM_DECLENSIONS'), value: 'A_STEM_DECLENSIONS' },
+    { label: t('lessonType.AA_STEM_DECLENSIONS'), value: 'AA_STEM_DECLENSIONS' },
+    { label: t('lessonType.I_STEM_DECLENSIONS'), value: 'I_STEM_DECLENSIONS' },
+    { label: t('lessonType.II_STEM_DECLENSIONS'), value: 'II_STEM_DECLENSIONS' },
+    { label: t('lessonType.U_STEM_DECLENSIONS'), value: 'U_STEM_DECLENSIONS' },
+    { label: t('lessonType.UU_STEM_DECLENSIONS'), value: 'UU_STEM_DECLENSIONS' },
+    { label: t('lessonType.R_STEM_DECLENSIONS'), value: 'R_STEM_DECLENSIONS' },
   ];
 
   const sessionStatusOptions = [
@@ -70,7 +70,7 @@ const UserQuizSessionsPage = () => {
   ];
 
   const quizTypeBodyTemplate = (rowData: QuizSessionSummary) => {
-    return t(`quizType.${rowData.quizType}`);
+    return t(`lessonType.${rowData.lessonType}`);
   };
 
   const statusBodyTemplate = (rowData: QuizSessionSummary) => {
@@ -97,7 +97,7 @@ const UserQuizSessionsPage = () => {
 
   const actionBodyTemplate = (rowData: QuizSessionSummary) => {
     const isCompleted = rowData.status === SessionStatus.COMPLETED;
-    const quizCategory = rowData.quizType.toLowerCase();
+    const quizCategory = rowData.lessonType.toLowerCase();
 
     return (
       <div className="flex gap-2">
@@ -189,7 +189,7 @@ const UserQuizSessionsPage = () => {
           rowClassName={() => 'cursor-pointer'}
         >
           <Column field="quizTitle" header={t('userProfile.quizTitle')} sortable />
-          <Column field="quizType" header={t('userProfile.quizType')} body={quizTypeBodyTemplate} sortable />
+          <Column field="lessonType" header={t('userProfile.lessonType')} body={quizTypeBodyTemplate} sortable />
           <Column field="score" header={t('userProfile.score')} sortable />
           <Column field="totalQuestions" header={t('userProfile.totalQuestions')} sortable />
           <Column field="status" header={t('userProfile.status')} body={statusBodyTemplate} sortable />
