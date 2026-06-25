@@ -6,9 +6,7 @@ import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.model.VocabularyCategory;
 import sm.selflearn.samskrtam.content.model.VocabularyWord;
 import sm.selflearn.samskrtam.content.model.VocabularyWordCategory;
-import sm.selflearn.samskrtam.content.repository.VocabularyCategoryRepository;
-import sm.selflearn.samskrtam.content.repository.VocabularyWordCategoryRepository;
-import sm.selflearn.samskrtam.content.repository.VocabularyWordRepository;
+import sm.selflearn.samskrtam.content.repository.*;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 
 import java.util.HashSet;
@@ -24,6 +22,7 @@ public class VocabularyService {
     private final VocabularyWordRepository vocabularyWordRepository;
     private final VocabularyCategoryRepository vocabularyCategoryRepository;
     private final VocabularyWordCategoryRepository vocabularyWordCategoryRepository;
+    private final QuizRepository quizRepository;
 
     public List<VocabularyWordDto> getVocabularyWordsForQuiz(String quizSlug, int limit) {
         // 1. Find the category by code (which matches quizSlug)
@@ -49,6 +48,14 @@ public class VocabularyService {
         return words.stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
+    }
+
+    public List<VocabularyWordDto> getVocabularyWordsForQuizById(UUID quizId, int limit) {
+        String slug = quizRepository.findById(quizId)
+                .orElseThrow(() -> new SamskrtamException("QUIZ_NOT_FOUND",
+                        "Quiz not found with ID: " + quizId))
+                .getSlug();
+        return getVocabularyWordsForQuiz(slug, limit);
     }
 
     private VocabularyWordDto toDto(VocabularyWord word) {

@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.statistics.model.UserQuizSessionStatistic;
+import sm.selflearn.samskrtam.statistics.dto.UserQuizStatisticDto;
 
 import java.util.List;
 import java.util.Spliterators;
@@ -71,5 +72,18 @@ public class StatisticService {
         ReadOnlyKeyValueStore<String, UserQuizSessionStatistic> store = getUserQuizStatisticsStore();
         String key = userId.toString() + "-" + quizId.toString();
         return store.get(key);
+    }
+
+    public UserQuizStatisticDto toDto(UserQuizSessionStatistic statistic) {
+        return UserQuizStatisticDto.builder()
+                .quizId(statistic.getQuizId())
+                .lessonType(statistic.getLessonType())
+                .totalSessions(statistic.getTotalSessions())
+                .totalQuestionsAnswered(statistic.getTotalQuestionsAnswered())
+                .totalCorrectAnswers(statistic.getTotalCorrectAnswers())
+                .totalScore(statistic.getTotalScore())
+                .averageScore(statistic.getAverageScore())
+                .lastCompletedAt(statistic.getLastCompletedAt())
+                .build();
     }
 }

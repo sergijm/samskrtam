@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Value
 @Builder
-@Table("outbox_events") // Specify the table name for R2DBC
+@Table(name = "outbox_events", schema = "quiz") // Specify the table name for R2DBC
 public class OutboxEvent {
     @Id // Mark id as the primary key
     UUID id;
@@ -24,3 +24,4 @@ public class OutboxEvent {
     Integer retryCount; // Added for retry mechanism
     Instant processedAt; // Added for tracking when event was processed
 }
+

@@ -42,7 +42,7 @@ public class EamenauExerciseController {
     }
 
     @PutMapping("/solutions/{solutionId}")
-    public ResponseEntity updateSolution(
+    public ResponseEntity<Void> updateSolution(
             @PathVariable Integer solutionId,
             @RequestBody SolutionUpdateRequestDto requestDto) {
         log.info("Received update request for solutionId: {}. Data: {}", solutionId, requestDto);
@@ -51,3 +51,4 @@ public class EamenauExerciseController {
         return ResponseEntity.ok().build();
     }
 }
+

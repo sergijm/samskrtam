@@ -1,5 +1,5 @@
 server:
-  port: ${QUIZ_SERVICE_PORT:8082}
+  port: ${QUIZ_SERVICE_PORT}
   error:
     include-stacktrace: always
     include-exception: true
@@ -9,22 +9,19 @@ spring:
     name: quiz-service
   config:
     import: "optional:file:.env[.properties]"
-  threads:
-    virtual:
-      enabled: true
 
   # R2DBC — основной datasource для бизнес-логики
   r2dbc:
-    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://postgres:5432/samskrtam}
-    username: ${DB_USER:samskrtam}
+    url: ${SPRING_R2DBC_URL}
+    username: ${DB_USER}
     password: ${DB_PASSWORD}
     properties:
       schema: quiz
 
   # JDBC — только для Flyway (отдельный бин в FlywayConfig)
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/samskrtam}
-    username: ${DB_USER:samskrtam}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${DB_USER}
     password: ${DB_PASSWORD}
   flyway:
     enabled: false   # отключаем auto, запускаем вручную из FlywayConfig
@@ -32,7 +29,7 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST:redis}
+      host: ${REDIS_HOST}
       port: 6379
 
   kafka:
@@ -54,7 +51,7 @@ spring:
 
 content:
   service:
-    url: ${CONTENT_SERVICE_URL:http://content-service:8081}
+    url: ${CONTENT_SERVICE_URL}
 
 logging:
   level:
@@ -77,3 +74,4 @@ logging:
 app:
   outbox:
     fixed-delay-ms: 5000 # Задержка между проверками outbox-таблицы в миллисекундах
+

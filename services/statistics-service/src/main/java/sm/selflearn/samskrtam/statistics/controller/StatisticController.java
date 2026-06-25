@@ -40,7 +40,7 @@ public class StatisticController {
         Page<UserQuizSessionStatistic> statisticsPage = statisticService.getUserQuizStatistics(userId, pageable);
 
         List<UserQuizStatisticDto> dtoList = statisticsPage.getContent().stream()
-                .map(this::mapToDto)
+                .map(statisticService::toDto)
                 .collect(Collectors.toList());
 
         return PaginatedResponse.<UserQuizStatisticDto>builder()
@@ -51,19 +51,6 @@ public class StatisticController {
                 .pageSize(statisticsPage.getSize())
                 .isFirst(statisticsPage.isFirst())
                 .isLast(statisticsPage.isLast())
-                .build();
-    }
-
-    private UserQuizStatisticDto mapToDto(UserQuizSessionStatistic statistic) {
-        return UserQuizStatisticDto.builder()
-                .quizId(statistic.getQuizId())
-                .lessonType(statistic.getLessonType())
-                .totalSessions(statistic.getTotalSessions())
-                .totalQuestionsAnswered(statistic.getTotalQuestionsAnswered())
-                .totalCorrectAnswers(statistic.getTotalCorrectAnswers())
-                .totalScore(statistic.getTotalScore())
-                .averageScore(statistic.getAverageScore())
-                .lastCompletedAt(statistic.getLastCompletedAt())
                 .build();
     }
 }

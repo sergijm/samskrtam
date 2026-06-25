@@ -29,6 +29,7 @@ SamskrtamApp построен как production-grade референсная р�
 - Аутентификация: Keycloak (собственный аккаунт + Google + Mail.ru)
 - Горизонтальное масштабирование: stateless сервисы, Kafka для async
 - Bilingual UI (ru / en)
+- [Упражнения по сандхи (Eamenau)](./services/eamenau.md) — разбор правил сандхи на материале учебника Eméneau
 
 ### Non-Goals (v1.0)
 - Mobile native app
@@ -43,7 +44,7 @@ SamskrtamApp построен как production-grade референсная р�
 | api-gateway | Java 21 | WebFlux (Reactor) | Gateway требует реактивный стек |
 | feature-flag-service | Java 21 | Virtual Threads | Простой CRUD + Redis, нет смысла в реактивщине |
 | user-service | Java 21 | Virtual Threads | Профили, регистрация, аватарки, блокировка |
-| content-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов. Поддерживает иерархические категории для VOCABULARY квизов. |
+| content-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов. Поддерживает иерархические категории для VOCABULARY квизов. Содержит домен Eamenau (упражнения по сандхи). |
 | quiz-service | Java 21 | WebFlux (Reactor) + R2DBC | Единый сервис прохождения всех квизов. Использует Outbox Pattern для публикации событий в Kafka. |
 | **dictionary-service** | **Kotlin** | **Coroutines** | Практика Kotlin, Cache-aside |
 | statistics-service | Java 21 | Kafka Streams | Расчет статистики с использованием Kafka Streams. |
@@ -124,6 +125,7 @@ graph TD
 | [services/feature-flag-service.md](./services/feature-flag-service.md) | Java 21 + VT | Feature Flag Service |
 | [services/user-service.md](./services/user-service.md) | Java 21 + VT | Логин, регистрация, OAuth, управление паролем |
 | [services/content-service.md](./services/content-service.md) | Java 21 + VT | Настройки и содержание всех квизов |
+| [services/eamenau.md](./services/eamenau.md) | — (домен content-service) | Упражнения по сандхи, фонемная система |
 | [services/quiz-service.md](./services/quiz-service.md) | Java 21 + VT | Прохождение квизов пользователем |
 | [services/dictionary-service.md](./services/dictionary-service.md) | Kotlin + Coroutines | Словарь + внешнее API |
 | [services/statistics-service.md](./services/statistics-service.md) | Java 21 + VT | Статистика |
@@ -160,3 +162,6 @@ graph TD
 - [ ] Внешнее API для словаря: Sanskrit Heritage или Monier-Williams приоритет?
 - [ ] Mail.ru OAuth: актуальны ли endpoints в 2025?
 - [ ] Автоматический деплой на main или только ручной (when: manual)?
+- [ ] **Eamenau:** нужен ли API для фонемной системы (`GET /api/v1/eamenau/phonemes`)? — см. [services/eamenau.md](./services/eamenau.md)
+- [ ] **Eamenau:** унифицировать написание `Eamenau` / `Emeneau` во всём проекте (в именах файлов фронтенда — `Emeneau`, в Java-коде — `Eamenau`)
+- [ ] **Eamenau:** `Answer` (варианты ответа к задаче) — реализован в модели, не используется в API. Планируется ли режим с выбором варианта?

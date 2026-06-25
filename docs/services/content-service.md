@@ -360,3 +360,40 @@ spring:
 
 - [ ] Импорт вопросов и слов из CSV для массового добавления?
 - [ ] Кэшировать ли session-data в quiz-service (Redis)?
+
+---
+
+## 10. Домен Eamenau
+
+`content-service` содержит встроенный домен **Eamenau** — модуль упражнений по правилам сандхи санскрита. Домен живёт в отдельной PostgreSQL-схеме `eamenau` и отдельном Java-пакете.
+
+**Полная спецификация:** [services/eamenau.md](./eamenau.md)
+
+### Что входит в домен
+
+| Слой | Расположение |
+|---|---|
+| Модели (13 классов) | `services/content-service/src/main/java/sm/selflearn/samskrtam/eamenau/model/` |
+| Репозитории (12 интерфейсов) | `services/content-service/src/main/java/sm/selflearn/samskrtam/eamenau/repository/` |
+| Сервисы | `EamenauService.java`, `EamenauExerciseService.java` в пакете `content/service/` |
+| Контроллеры | `EamenauController.java`, `EamenauExerciseController.java` в пакете `content/controller/` |
+| Shared DTOs | `shared/quiz-dtos/` — `EamenauExerciseDto`, `EamenauExerciseDetailDto`, `EamenauTaskDto`, `SandhiRuleDto` и др. |
+| Миграция | `V2__create_eamenau_schema_and_sandhi_rules_table.sql` |
+| Фронтенд | `frontend/src/pages/eamenau/`, `frontend/src/components/eamenau/` |
+
+### Endpoints (краткий список)
+
+```
+GET  /api/v1/eamenau/sandhi-rules                          → все правила сандхи
+GET  /api/v1/eamenau/exercises                             → список упражнений
+GET  /api/v1/eamenau/exercises/{id}                        → упражнение с задачами
+GET  /api/v1/eamenau/exercises/{exerciseId}/sandhi-rules   → правила сандхи в упражнении
+GET  /api/v1/eamenau/exercises/tasks/{taskId}/solution     → эталонные решения задачи
+PUT  /api/v1/eamenau/exercises/solutions/{solutionId}      → обновить решение (ADMIN)
+```
+
+### Известные проблемы (требуют задачи для Агента 2)
+
+- `PUT /solutions/{id}` не защищён `@PreAuthorize("hasRole('ADMIN')")` — авторизация отсутствует
+- `Answer` (варианты ответа) реализован в модели и репозитории, но не используется ни в одном endpoint'е
+- `Phoneme` и связанные классы артикуляции реализованы, но не имеют API endpoint'а

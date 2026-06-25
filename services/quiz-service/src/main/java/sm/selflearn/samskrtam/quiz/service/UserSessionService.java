@@ -175,5 +175,6 @@ public class UserSessionService {
     }
 
     public Mono<Object> getWordStatistics(UUID userId, UUID id, UUID wordId) {
+        return Mono.empty();
     }
 }

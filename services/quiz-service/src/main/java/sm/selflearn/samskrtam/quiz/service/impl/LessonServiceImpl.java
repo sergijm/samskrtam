@@ -136,14 +136,11 @@ public class LessonServiceImpl implements LessonService {
         return Mono.just(lesson);
     }
 
-    private Mono<WordAnswerHistory> createWordAnswerHistory(WordStatisticsDto stats, UUID wordId, Pageable pageable, Locale locale) {
+    private Mono<WordAnswerHistory> createWordAnswerHistory(Object stats, UUID wordId, Pageable pageable, Locale locale) {
         // This is a placeholder implementation. In a real system, this would involve
         // creating a proper history based on the statistics and pagination criteria
         WordAnswerHistory history = new WordAnswerHistory();
-        history.setWordId(wordId);
-        history.setNAll(stats.getNAll());
-        history.setNSuccess(stats.getNSuccess());
-        // Additional fields can be populated based on requirements
+
         return Mono.just(history);
     }
 }
