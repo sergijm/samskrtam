@@ -19,16 +19,16 @@ public class SessionHistoryService {
 
     private final SessionHistoryRepository sessionHistoryRepository;
 
-    public Flux<SessionHistoryResponse> getSessionHistory(UUID userId, UUID quizId, String lessonType, int page, int size) {
+    public Flux<SessionHistoryResponse> getSessionHistory(UUID userId, UUID quizId, String quizType, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
 
         Flux<SessionHistory> historyFlux;
-        if (quizId != null && lessonType != null) {
-            historyFlux = sessionHistoryRepository.findByUserIdAndQuizIdAndLessonType(userId, quizId, LessonType.valueOf(lessonType), pageRequest);
+        if (quizId != null && quizType != null) {
+            historyFlux = sessionHistoryRepository.findByUserIdAndQuizIdAndLessonType(userId, quizId, LessonType.valueOf(quizType), pageRequest);
         } else if (quizId != null) {
             historyFlux = sessionHistoryRepository.findByUserIdAndQuizId(userId, quizId, pageRequest);
-        } else if (lessonType != null) {
-            historyFlux = sessionHistoryRepository.findByUserIdAndLessonType(userId, LessonType.valueOf(lessonType), pageRequest);
+        } else if (quizType != null) {
+            historyFlux = sessionHistoryRepository.findByUserIdAndLessonType(userId, LessonType.valueOf(quizType), pageRequest);
         } else {
             historyFlux = sessionHistoryRepository.findByUserId(userId, pageRequest);
         }

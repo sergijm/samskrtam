@@ -2,7 +2,7 @@
 
 > Проект: SamskrtamApp · Платформа изучения санскрита  
 > Паттерн: Specification-Driven Development · Микросервисы · Монорепо  
-> Стек: Java 21 + Virtual Threads · WebFlux · Kotlin · React/TypeScript · PostgreSQL · Keycloak · Kafka
+> Стек: Java 21 + Virtual Threads · WebFlux · React/TypeScript · PostgreSQL · Keycloak · Kafka
 
 ---
 
@@ -94,18 +94,21 @@
 - Управление группами и блокировками
 
 ### content-service (Java 21 + Virtual Threads, порт 8081)
-- CRUD квизов и вопросов (DECLENSIONS, CONJUGATIONS, VOCABULARY)
-- Иерархические категории слов (`VocabularyCategory`, `VocabularyWordCategory`)
-- Генерация session-data для quiz-service
+- Управление уроками (Lesson): CRUD, идентификация по slug и lessonId
+- Содержит N слов на урок; слова могут быть иерархически категоризированы (`VocabularyCategory`, `VocabularyWordCategory`)
+- Возвращает `LessonSummaryDto` для фронтенда
+- Генерация session-data для quiz-service (набор слов для квиза)
 - Разграничение доступа: ADMIN (write), STUDENT (read public)
 
 ### quiz-service (Java 21 + WebFlux + R2DBC, порт 8082)
-- Жизненный цикл сессии: start → answer → complete
-- Поддержка всех типов квизов; resume незавершённых сессий
+- Управление квиз-сессиями (quiz_session), каждая из которых — попытка пользователя пройти часть урока (например, 20 слов из 100)
+- Сессия привязана к уроку (lessonId); у одного урока может быть много квизов одного пользователя
+- Жизненный цикл сессии: start → answer → complete; поддержка resume незавершённых сессий
+- `WordAnswerHistory` агрегирует ответы на каждое слово в рамках квиза (через JOIN по quiz_session с фильтром lessonId + userId)
 - Outbox Pattern: `QuizAnsweredEvent`, `QuizSessionStatusChangedEvent` → Kafka
 - Реактивный HTTP к content-service через WebClient
 
-### dictionary-service (Kotlin + Coroutines, порт 8085)
+### dictionary-service (Java 21 + Virtual Threads, порт 8085)
 - Поиск словарных статей по `slp1Spelling`
 - Cache-aside: Redis → внешнее API (Sanskrit Heritage / Monier-Williams)
 - Fallback при недоступности внешнего API
@@ -120,7 +123,7 @@
 - Реализованные сервисы с Flyway-миграциями
 - OpenAPI-спецификации (springdoc, `SPRINGDOC_ENABLED=true` в dev)
 - Kafka-топики: `quiz-answered-events`, `quiz-session-status-changed-events`, `user-quiz-statistics-output`
-- Shared-модули: `shared/quiz-dtos`, `shared/common-dto`
+- Shared-модули: `shared/quiz-dtos` (включает `LessonSummaryDto`, `QuizSessionDto`, `WordAnswerHistoryDto`), `shared/common-dto`
 
 **Ограничения:**
 - quiz-service: только R2DBC (JPA несовместима с WebFlux)

@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useVocabularyLesson } from '../../hooks/useLessons';
-import { useWordHistory } from '../../hooks/useLessons';
 import { LessonHeader } from '../../components/lesson/LessonHeader';
 import { WordStatusIcon } from '../../components/lesson/WordStatusIcon';
 import { WordHistoryDialog } from '../../components/lesson/WordHistoryDialog';
@@ -183,7 +182,7 @@ export const VocabularyLessonPage = () => {
             visible={wordHistoryDialogVisible} 
             onHide={() => setWordHistoryDialogVisible(false)} 
             wordId={selectedWord} 
-            quizId={lesson.quizId}
+            slug={lesson.slug}
           />
         </>
       )}

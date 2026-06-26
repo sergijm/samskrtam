@@ -30,3 +30,4 @@ public class MwSanskritWord {
     @Column(name = "position_order")
     private Integer positionOrder;
 }
+

@@ -19,11 +19,11 @@ export const useGrammarLesson = (type: string) =>
   });
 
 // История ответов на конкретное слово в уроке
-export const useWordHistory = (quizId: string, wordId: string) =>
+export const useWordHistory = (slug: string, wordId: string) =>
   useQuery({
-    queryKey: ['word-history', quizId, wordId],
-    queryFn: () => lessonApi.getWordHistory(quizId, wordId).then(res => res.data),
-    enabled: !!wordId && !!quizId,
+    queryKey: ['word-history', slug, wordId],
+    queryFn: () => lessonApi.getWordHistory(slug, wordId).then(res => res.data),
+    enabled: !!wordId && !!slug,
   });
 
 // История ответов на конкретный вопрос в уроке

@@ -12,8 +12,9 @@ public class MwInfo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "entry_id")
-    private Integer entryId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "entry_id", nullable = false)
+    private MwEntry entry;
 
     @Column(name = "info_type")
     private String infoType;
@@ -42,3 +43,4 @@ public class MwInfo {
     @Column(name = "whitney_page")
     private String whitneyPage;
 }
+

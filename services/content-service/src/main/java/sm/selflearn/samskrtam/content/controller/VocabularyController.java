@@ -22,6 +22,12 @@ public class VocabularyController {
     // PUT    /api/v1/content/vocabulary/{wordId}
     // DELETE /api/v1/content/vocabulary/{wordId}
 
+    // Новый эндпоинт для получения одного словарного слова по ID
+    @GetMapping("/vocabulary/words/{wordId}")
+    public VocabularyWordDto getVocabularyWordById(@PathVariable UUID wordId) {
+        return vocabularyService.getVocabularyWordById(wordId);
+    }
+
     // New endpoint for quiz-service to get vocabulary words
     @GetMapping("/quizzes/{quizId}/vocabulary-words")
     public List<VocabularyWordDto> getVocabularyWordsForQuiz(

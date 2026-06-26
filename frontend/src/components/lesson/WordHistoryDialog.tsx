@@ -10,16 +10,16 @@ interface WordHistoryDialogProps {
   visible: boolean;
   onHide: () => void;
   wordId: string | null;
-  quizId: string;
+  slug: string;
 }
 
 export const WordHistoryDialog = ({ 
   visible, 
   onHide, 
   wordId, 
-  quizId 
+  slug 
 }: WordHistoryDialogProps) => {
-  const { data: history, isLoading } = useWordHistory(quizId, wordId || '');
+  const { data: history, isLoading } = useWordHistory(slug, wordId || '');
   
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);

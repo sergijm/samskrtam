@@ -23,6 +23,7 @@ import sm.selflearn.samskrtam.quiz.model.QuizSession;
 import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
+import sm.selflearn.samskrtam.quiz.repository.WordStatisticsRepository;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -42,6 +43,7 @@ public class QuizSessionService {
     private final OutboxEventCreator outboxEventCreator;
     private final QuizAnswerMapper quizAnswerMapper;
     private final ObjectMapper objectMapper;
+    private final WordStatisticsRepository wordStatisticsRepository;
 
     public Mono<StartOrResumeResponse> startOrResumeSession(UUID quizId, UUID userId, String userLocale) {
         return quizSessionRepository.findTopByUserIdAndQuizIdAndStatusOrderByStartedAtDesc(userId, quizId, SessionStatus.IN_PROGRESS)
@@ -118,10 +120,22 @@ public class QuizSessionService {
                             .answeredAt(Instant.now())
                             .build();
 
+                    // Определяем vocabularyWordId из вопроса (null для не-лексических квизов)
+                    UUID vocabularyWordId = generatedQuestion.getVocabularyWordId();
+
+                    Mono<Void> wordStatsMono = (vocabularyWordId != null)
+                            ? wordStatisticsRepository.upsert(userId, vocabularyWordId, isCorrect ? 1 : 0)
+                            : Mono.empty();
+
                     return quizAnswerRepository.save(newAnswer)
                             .then(quizSessionRepository.incrementAnsweredQuestionsAndScore(session.getId(), isCorrect))
-                            .then(outboxEventCreator.createAndSaveQuizAnsweredEvent(new QuizAnsweredEvent(session.getId(), userId, session.getQuizId(), session.getLessonType(), request.getQuestionId(), selectedOptionIast, isCorrect, Instant.now())))
-                            .thenReturn(quizAnswerMapper.toAnswerResponse(isCorrect, correctWordId, correctAnswerText, generatedQuestion, session));
+                            .then(wordStatsMono)
+                            .then(outboxEventCreator.createAndSaveQuizAnsweredEvent(
+                                    new QuizAnsweredEvent(session.getId(), userId, session.getQuizId(),
+                                            session.getLessonType(), request.getQuestionId(),
+                                            selectedOptionIast, isCorrect, Instant.now())))
+                            .thenReturn(quizAnswerMapper.toAnswerResponse(
+                                    isCorrect, correctWordId, correctAnswerText, generatedQuestion, session));
                 });
     }
 

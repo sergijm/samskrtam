@@ -1,7 +1,7 @@
 # SamskrtamApp — Project Specification v0.5
 
 > Specification-Driven Development · Microservices · Monorepo
-> Stack: Java 21 + Virtual Threads · WebFlux (gateway, quiz-service) · Kotlin (dictionary-service) · React/TypeScript · PostgreSQL · Keycloak · Kafka · MinIO · Grafana Stack (Tempo · Loki · Prometheus)
+> Stack: Java 21 + Virtual Threads · WebFlux (gateway, quiz-service) · React/TypeScript · PostgreSQL · Keycloak · Kafka · MinIO · Grafana Stack (Tempo · Loki · Prometheus)
 > Status: **UPDATED**
 
 ---
@@ -39,14 +39,14 @@ SamskrtamApp построен как production-grade референсная р�
 
 ## 3. Язык и стек по сервисам
 
-| Сервис | Язык | Async модель | Причина |
-|---|---|---|---|
+| Сервис | Язык    | Async модель | Причина |
+|---|---------|---|---|
 | api-gateway | Java 21 | WebFlux (Reactor) | Gateway требует реактивный стек |
 | feature-flag-service | Java 21 | Virtual Threads | Простой CRUD + Redis, нет смысла в реактивщине |
 | user-service | Java 21 | Virtual Threads | Профили, регистрация, аватарки, блокировка |
 | content-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов. Поддерживает иерархические категории для VOCABULARY квизов. Содержит домен Eamenau (упражнения по сандхи). |
 | quiz-service | Java 21 | WebFlux (Reactor) + R2DBC | Единый сервис прохождения всех квизов. Использует Outbox Pattern для публикации событий в Kafka. |
-| **dictionary-service** | **Kotlin** | **Coroutines** | Практика Kotlin, Cache-aside |
+| **dictionary-service** | Java 21 | Virtual Threads|
 | statistics-service | Java 21 | Kafka Streams | Расчет статистики с использованием Kafka Streams. |
 | shared/quiz-dtos | Java 21 | — | Объединенный модуль для всех DTO и событий квизов, контента и статистики |
 | shared/common-dto | Java 21 | — | Совместимость со всеми сервисами |
@@ -81,7 +81,7 @@ graph TD
     QS[quiz-service\nпрохождение квизов]
   end
 
-  subgraph Dictionary ["📖 Dictionary — Kotlin + Coroutines"]
+  subgraph Dictionary ["📖 Dictionary — Java 21 + Virtual Threads"]
     DS[dictionary-service]
   end
 
@@ -127,7 +127,7 @@ graph TD
 | [services/content-service.md](./services/content-service.md) | Java 21 + VT | Настройки и содержание всех квизов |
 | [services/eamenau.md](./services/eamenau.md) | — (домен content-service) | Упражнения по сандхи, фонемная система |
 | [services/quiz-service.md](./services/quiz-service.md) | Java 21 + VT | Прохождение квизов пользователем |
-| [services/dictionary-service.md](./services/dictionary-service.md) | Kotlin + Coroutines | Словарь + внешнее API |
+| [services/dictionary-service.md](./services/dictionary-service.md) | Java 21 + Virtual Threads | Словарь + внешнее API |
 | [services/statistics-service.md](./services/statistics-service.md) | Java 21 + VT | Статистика |
 | [services/leaderboard.md](./services/leaderboard.md) | — | Алгоритмы лидерборда (XP, Elo, Skill, Composite) |
 
@@ -148,7 +148,7 @@ graph TD
 | **M1 — Foundation** | Gateway + Keycloak + user-service + content-service | Auth, CRUD контента, монорепо скелет |
 | **M2 — First Quiz** | quiz-service (declensions) | Первый рабочий квиз, Contract-First |
 | **M3 — Statistics** | statistics-service + Kafka | События, async обработка |
-| **M4 — Dictionary** | dictionary-service (Kotlin) | Cache-aside, внешнее API, Kotlin практика |
+| **M4 — Dictionary** | dictionary-service (Java 21 + Virtual Threads) | Cache-aside, внешнее API |
 | **M5 — More Quizzes** | quiz-service (conjugations + vocabulary) | Масштабирование паттерна |
 | **M6 — Observability** | все сервисы | Distributed tracing, structured logging, metrics |
 | **M7 — Polish** | все сервисы | i18n, UX, CI/CD финализация, load testing |

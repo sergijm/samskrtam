@@ -11,7 +11,7 @@
 | user-service | Java 21 | Virtual Threads | 8087 | `sm.selflearn.samskrtam.user` |
 | content-service | Java 21 | Virtual Threads | 8081 | `sm.selflearn.samskrtam.content` |
 | quiz-service | Java 21 | WebFlux + R2DBC | 8082 | `sm.selflearn.samskrtam.quiz` |
-| dictionary-service | Kotlin | Coroutines | 8085 | `sm.selflearn.samskrtam.dictionary` |
+| dictionary-service | Java 21 | Virtual Threads | 8085 | `sm.selflearn.samskrtam.dictionary` |
 | statistics-service | Java 21 | Kafka Streams | 8086 | `sm.selflearn.samskrtam.statistics` |
 
 ## Документы

@@ -12,8 +12,9 @@ public class MwHomonym {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "entry_id")
-    private Integer entryId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "entry_id", nullable = false)
+    private MwEntry entry;
 
     @Column(name = "homonym_number")
     private String homonymNumber;
@@ -24,3 +25,4 @@ public class MwHomonym {
     @Column(name = "position_order")
     private Integer positionOrder;
 }
+

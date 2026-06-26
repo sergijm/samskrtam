@@ -1,8 +1,0 @@
-spring:
-  application:
-    name: samskrtam
-
-logging:
-  level:
-    root: WARN
-    sm.selflearn.samskrtam: DEBUG

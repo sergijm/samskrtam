@@ -81,6 +81,15 @@ public class ContentClient {
                 .collectList();
     }
 
+    public Mono<VocabularyWordDto> getVocabularyWordById(UUID wordId) {
+        return webClient.get()
+                .uri("/api/v1/content/vocabulary/words/{wordId}", wordId)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("VOCABULARY_WORD_NOT_FOUND", "Vocabulary word not found in content-service: " + wordId)))
+                .bodyToMono(VocabularyWordDto.class);
+    }
+
     public Mono<QuizSummaryDto> getQuizSummary(UUID quizId) {
         return webClient.get()
                 .uri("/api/v1/content/quizzes/{id}/summary", quizId)

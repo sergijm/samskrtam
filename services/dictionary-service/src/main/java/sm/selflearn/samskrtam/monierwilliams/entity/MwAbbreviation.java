@@ -12,8 +12,9 @@ public class MwAbbreviation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "entry_id")
-    private Integer entryId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "entry_id", nullable = false)
+    private MwEntry entry;
 
     @Column(name = "abbrev_text")
     private String abbrevText;
@@ -27,3 +28,4 @@ public class MwAbbreviation {
     @Column(name = "position_order")
     private Integer positionOrder;
 }
+

@@ -25,3 +25,15 @@ logging:
   level:
     root: WARN
     sm.selflearn.samskrtam: DEBUG
+
+management:
+  server:
+    port: ${DICTIONARY_MANAGEMENT_PORT}
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true

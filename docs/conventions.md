@@ -307,7 +307,7 @@ Swagger UI: `http://localhost:8090/swagger-ui.html`
 
 ### Обязательные аннотации
 
-Все публичные эндпоинты аннотируются. 
+Все публичные эндпоинты аннотируются.
 
 ---
 
@@ -561,3 +561,270 @@ PR в `main` требует: прохождения CI + одного code revie
 | `quiz-answered-events` | События об ответах на вопросы квизов |
 | `quiz-session-status-changed-events` | События об изменении статуса сессии квиза |
 | `user-quiz-statistics-output` | Выходной топик для агрегированной статистики |
+
+---
+
+## 16. Архитектурные правила кода
+
+> Эти правила применяются **с учётом стека сервиса**.
+> Перед применением проверь: сервис использует JPA или R2DBC?
+> Таблица в начале раздела — быстрый справочник.
+
+### Стек по сервисам
+
+| Сервис | ORM | Применимы JPA-связи | Применим @MappedSuperclass |
+|---|---|---|---|
+| content-service | JPA (Hibernate) | ✅ | ✅ |
+| user-service | JPA (Hibernate) | ✅ | ✅ |
+| statistics-service | JPA (Hibernate) | ✅ | ✅ |
+| feature-flag-service | JPA (Hibernate) | ✅ | ✅ |
+| quiz-service | **R2DBC** | ❌ | ❌ |
+| dictionary-service | **R2DBC** | ❌ | ❌ |
+| api-gateway | нет ORM | ❌ | ❌ |
+
+---
+
+### 16.1 Связи между сущностями (только JPA-сервисы)
+
+Для маппинга связей используй JPA-аннотации, не `@Column` с UUID.
+
+```java
+// ✅ Правильно — связь через JPA
+@Entity
+public class Solution {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "task_id", nullable = false)
+    private Task task;
+
+    @OneToMany(mappedBy = "solution", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SolutionSandhiRule> sandhiRules = new ArrayList<>();
+}
+
+// ❌ Неправильно — UUID вместо связи
+@Entity
+public class Solution {
+    @Column(name = "task_id")
+    private UUID taskId;  // нет типобезопасности, нет lazy loading
+}
+```
+
+**`@ManyToMany` — когда использовать и когда нет:**
+
+Используй `@ManyToMany` с `@JoinTable` только если у связи нет собственных полей
+и она никогда их не получит:
+
+```java
+// ✅ @ManyToMany — связь без семантики, только ссылки
+@ManyToMany
+@JoinTable(
+    name = "sandhi_rules_group_map",
+    schema = "eamenau",
+    joinColumns = @JoinColumn(name = "rule_id"),
+    inverseJoinColumns = @JoinColumn(name = "group_id")
+)
+private List<SandhiRuleGroup> groups = new ArrayList<>();
+```
+
+Если у связи есть или могут появиться собственные поля (порядок, статус, дата) —
+создавай отдельный entity-класс:
+
+```java
+// ✅ Отдельный entity — связь со своей семантикой
+@Entity
+@Table(name = "solution_sandhi_rules", schema = "eamenau")
+public class SolutionSandhiRule {
+
+    @EmbeddedId
+    private SolutionSandhiRuleId id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("solutionId")
+    private Solution solution;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("sandhiRuleId")
+    private SandhiRule sandhiRule;
+
+    // В будущем сюда можно добавить: порядок применения, комментарий и т.д.
+}
+
+// ❌ Неправильно — @ManyToMany когда связь имеет семантику
+// (нельзя будет добавить поля без полного рефакторинга)
+```
+
+**R2DBC (quiz-service, dictionary-service):**
+
+В R2DBC нет поддержки `@OneToMany`, `@ManyToMany`, `@JoinColumn`.
+Связи хранятся как UUID-поля и разрешаются вручную через отдельные запросы:
+
+```java
+// ✅ R2DBC — UUID-ссылка, JOIN вручную
+@Table(name = "quiz_answers", schema = "quiz")
+public class QuizAnswer {
+    @Id
+    private UUID id;
+    private UUID sessionId;   // ← не @ManyToOne, просто UUID
+    private UUID questionId;
+}
+```
+
+---
+
+### 16.2 Общие поля сущностей (@MappedSuperclass, только JPA)
+
+Если несколько entity-классов имеют одинаковые поля — выноси их в
+абстрактный суперкласс с `@MappedSuperclass`:
+
+```java
+// ✅ Базовый класс с общими полями
+@MappedSuperclass
+public abstract class BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(nullable = false)
+    private Instant updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = updatedAt = Instant.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = Instant.now();
+    }
+}
+
+// ✅ Использование
+@Entity
+@Table(name = "quizzes", schema = "content")
+public class Quiz extends BaseEntity {
+    private String slug;
+    private String titleRu;
+    // id, createdAt, updatedAt — унаследованы
+}
+```
+
+Кандидаты для `BaseEntity` в проекте: `Quiz`, `VocabularyWord`, `DeclensionStem`,
+`Exercise`, `Task`, `Solution` — у всех есть `id`, у большинства логично иметь `createdAt`.
+
+---
+
+### 16.3 Интерфейсы для сервисов
+
+Каждый сервисный класс должен реализовывать интерфейс.
+Это уже принято в проекте (`LessonService → LessonServiceImpl`).
+Применять везде:
+
+```java
+// ✅ Интерфейс — контракт
+public interface VocabularyService {
+    List<VocabularyWordDto> getVocabularyWordsForQuiz(String slug, int limit);
+    List<VocabularyWordDto> getVocabularyWordsForQuizById(UUID quizId, int limit);
+}
+
+// ✅ Реализация — детали
+@Service
+@RequiredArgsConstructor
+public class VocabularyServiceImpl implements VocabularyService {
+    // ...
+}
+```
+
+Исключение — сервисы-утилиты без альтернативных реализаций (`OutboxEventCreator`,
+`QuizDataAssembler`) могут быть без интерфейса.
+
+---
+
+### 16.4 Разделение Entity и DTO
+
+Entity-классы не выходят за пределы сервисного слоя.
+Контроллеры принимают и возвращают только DTO.
+Маппинг — в сервисном слое вручную или через выделенный mapper-класс:
+
+```java
+// ✅ Mapper-класс в сервисном слое
+@Component
+public class QuizMapper {
+
+    public QuizSummaryDto toSummaryDto(Quiz quiz) {
+        return QuizSummaryDto.builder()
+                .id(quiz.getId())
+                .slug(quiz.getSlug())
+                .titleRu(quiz.getTitleRu())
+                .titleEn(quiz.getTitleEn())
+                .difficulty(quiz.getDifficulty())
+                .build();
+    }
+
+    public Quiz toEntity(CreateQuizRequest request) {
+        return Quiz.builder()
+                .slug(request.getSlug())
+                .titleRu(request.getTitleRu())
+                .titleEn(request.getTitleEn())
+                .build();
+    }
+}
+
+// ❌ Неправильно — маппинг в контроллере
+@GetMapping("/{id}")
+public QuizSummaryDto getQuiz(@PathVariable UUID id) {
+    Quiz quiz = quizRepository.findById(id)...;
+    return new QuizSummaryDto(quiz.getId(), quiz.getSlug(), ...); // ← не сюда
+}
+
+// ❌ Неправильно — Entity в ответе контроллера
+@GetMapping("/{id}")
+public Quiz getQuiz(@PathVariable UUID id) { ... } // ← Entity утекает в API
+```
+
+---
+
+### 16.5 Запрещённые паттерны
+
+```java
+// ❌ God-класс — сущность с 30+ полями без декомпозиции
+@Entity
+public class UserProfile {
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String phone;
+    private String country;
+    private String city;
+    private String street;
+    // ... ещё 25 полей
+    // Решение: выделить Address как @Embeddable или отдельный @Entity
+}
+
+// ❌ Список ID вместо связи (только для JPA-сервисов)
+@Entity
+public class Exercise {
+    @ElementCollection
+    private List<UUID> taskIds; // ← нет lazy loading, нет типобезопасности
+    // Решение: @OneToMany private List<Task> tasks
+}
+
+// ❌ Дублирование кода вместо общего суперкласса
+@Entity public class Quiz    { private UUID id; private Instant createdAt; ... }
+@Entity public class Lesson  { private UUID id; private Instant createdAt; ... }
+// Решение: extends BaseEntity
+
+// ❌ Публичные поля в Entity
+@Entity
+public class SandhiRule {
+    public UUID id;       // ← всегда private + @Getter (Lombok) или геттеры
+    public String text;
+}
+```

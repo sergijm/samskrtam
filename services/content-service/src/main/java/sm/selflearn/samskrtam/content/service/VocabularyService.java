@@ -58,6 +58,12 @@ public class VocabularyService {
         return getVocabularyWordsForQuiz(slug, limit);
     }
 
+    public VocabularyWordDto getVocabularyWordById(UUID wordId) {
+        VocabularyWord word = vocabularyWordRepository.findById(wordId)
+                .orElseThrow(() -> new SamskrtamException("VOCABULARY_WORD_NOT_FOUND", "Vocabulary word not found with ID: " + wordId));
+        return toDto(word);
+    }
+
     private VocabularyWordDto toDto(VocabularyWord word) {
         return VocabularyWordDto.builder()
                 .id(word.getId())

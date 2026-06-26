@@ -59,23 +59,32 @@ public class TransliterationService {
      * Конвертация из SLP1 в IAST
      */
     public String slp1ToIast(String slp1) {
-        // TODO: реализовать транслитерацию
-        return slp1;
+        try {
+            return sanscript.t(slp1, "slp1", "iast");
+        } catch (Exception e) {
+            return slp1;
+        }
     }
 
     /**
      * Конвертация из IAST в SLP1
      */
     public String iastToSlp1(String iast) {
-        // TODO: реализовать транслитерацию
-        return iast;
+        try {
+            return slp1RemoveStress(sanscript.t(iast, "iast", "slp1"));
+        } catch (Exception e) {
+            return iast;
+        }
     }
 
     /**
      * Конвертация из SLP1 в Devanagari
      */
     public String slp1ToDevanagari(String slp1) {
-        // TODO: реализовать транслитерацию
-        return slp1;
+        try {
+            return sanscript.t(slp1, "slp1", "devanagari");
+        } catch (Exception e) {
+            return slp1;
+        }
     }
 }

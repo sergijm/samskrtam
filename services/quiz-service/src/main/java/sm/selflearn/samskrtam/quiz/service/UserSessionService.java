@@ -19,6 +19,7 @@ import sm.selflearn.samskrtam.quiz.model.*;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
 import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
+import sm.selflearn.samskrtam.quiz.repository.WordStatisticsRepository;
 
 import java.time.Duration;
 import java.util.*;
@@ -35,6 +36,7 @@ public class UserSessionService {
     private final ContentClient contentClient;
     private final ObjectMapper objectMapper;
     private final UserSessionMapper userSessionMapper;
+    private final WordStatisticsRepository wordStatisticsRepository;
 
     public Mono<Page<QuizSessionSummaryDto>> getUserQuizSessions(
             UUID userId,
@@ -126,40 +128,40 @@ public class UserSessionService {
         return quizSessionRepository.findByIdAndUserId(sessionId, userId)
                 .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Session not found or does not belong to user: " + sessionId)))
                 .flatMap(session -> Mono.zip(
-                                contentClient.getGeneratedQuizData(session.getGeneratedQuizDataId()),
-                                quizAnswerRepository.findBySessionId(sessionId).collectList()
-                        )
-                        .flatMap(tuple -> {
-                            GeneratedQuizData generatedQuizData = tuple.getT1();
-                            List<GeneratedQuizQuestionDto> generatedQuestions = generatedQuizData.getGeneratedQuestions();
-                            List<QuizAnswer> quizAnswers = tuple.getT2();
+                                        contentClient.getGeneratedQuizData(session.getGeneratedQuizDataId()),
+                                        quizAnswerRepository.findBySessionId(sessionId).collectList()
+                                )
+                                .flatMap(tuple -> {
+                                    GeneratedQuizData generatedQuizData = tuple.getT1();
+                                    List<GeneratedQuizQuestionDto> generatedQuestions = generatedQuizData.getGeneratedQuestions();
+                                    List<QuizAnswer> quizAnswers = tuple.getT2();
 
-                            Map<UUID, QuizAnswer> answersMap = quizAnswers.stream()
-                                    .collect(Collectors.toMap(QuizAnswer::getQuestionId, Function.identity()));
+                                    Map<UUID, QuizAnswer> answersMap = quizAnswers.stream()
+                                            .collect(Collectors.toMap(QuizAnswer::getQuestionId, Function.identity()));
 
-                            List<AnswerHistoryDto> fullHistory = generatedQuestions.stream()
-                                    .sorted(Comparator.comparing(GeneratedQuizQuestionDto::getId))
-                                    .map(gq -> {
-                                        QuizAnswer answer = answersMap.get(gq.getId());
-                                        String explanationRu = gq.getExplanationRu();
-                                        String explanationEn = gq.getExplanationEn();
+                                    List<AnswerHistoryDto> fullHistory = generatedQuestions.stream()
+                                            .sorted(Comparator.comparing(GeneratedQuizQuestionDto::getId))
+                                            .map(gq -> {
+                                                QuizAnswer answer = answersMap.get(gq.getId());
+                                                String explanationRu = gq.getExplanationRu();
+                                                String explanationEn = gq.getExplanationEn();
 
-                                        return AnswerHistoryDto.builder()
-                                                .questionId(gq.getId())
-                                                .questionText(gq.getText())
-                                                .selectedAnswerIast(answer != null ? answer.getSelectedFormIast() : null)
-                                                .correctOptionIast(gq.getCorrectFormIast())
-                                                .isCorrect(answer != null ? answer.getIsCorrect() : null)
-                                                .responseTimeMs(answer != null ? answer.getResponseTimeMs() : null)
-                                                .answeredAt(answer != null ? answer.getAnsweredAt() : null)
-                                                .explanationRu(explanationRu)
-                                                .explanationEn(explanationEn)
-                                                .build();
-                                    })
-                                    .collect(Collectors.toList());
+                                                return AnswerHistoryDto.builder()
+                                                        .questionId(gq.getId())
+                                                        .questionText(gq.getText())
+                                                        .selectedAnswerIast(answer != null ? answer.getSelectedFormIast() : null)
+                                                        .correctOptionIast(gq.getCorrectFormIast())
+                                                        .isCorrect(answer != null ? answer.getIsCorrect() : null)
+                                                        .responseTimeMs(answer != null ? answer.getResponseTimeMs() : null)
+                                                        .answeredAt(answer != null ? answer.getAnsweredAt() : null)
+                                                        .explanationRu(explanationRu)
+                                                        .explanationEn(explanationEn)
+                                                        .build();
+                                            })
+                                            .collect(Collectors.toList());
 
-                            return Mono.just(fullHistory);
-                        })
+                                    return Mono.just(fullHistory);
+                                })
 
                 );
     }
@@ -174,7 +176,16 @@ public class UserSessionService {
         return null;
     }
 
-    public Mono<Object> getWordStatistics(UUID userId, UUID id, UUID wordId) {
-        return Mono.empty();
+    public Mono<WordStatistics> getWordStatistics(UUID userId, UUID quizId, UUID wordId) {
+        return wordStatisticsRepository.findByUserIdAndVocabularyWordId(userId, wordId);
+    }
+
+    public Mono<List<QuizAnswer>> getWordAnswers(UUID userId, UUID wordId) {
+        return quizAnswerRepository.findByWordIdAndUserId(wordId, userId)
+                .collectList();
+    }
+
+    public Mono<Long> countWordAnswers(UUID userId, UUID wordId) {
+        return quizAnswerRepository.countByWordIdAndUserId(wordId, userId);
     }
 }

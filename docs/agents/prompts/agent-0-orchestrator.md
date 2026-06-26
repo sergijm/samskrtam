@@ -13,7 +13,7 @@ SamskrtamApp — платформа изучения санскрита. Мон�
 - `services/user-service` — Java 21 + Virtual Threads, порт 8087
 - `services/content-service` — Java 21 + Virtual Threads, порт 8081
 - `services/quiz-service` — Java 21 + WebFlux + R2DBC, порт 8082
-- `services/dictionary-service` — Kotlin + Coroutines, порт 8085
+- `services/dictionary-service` — Java 21 + Virtual Threads, порт 8085
 - `services/statistics-service` — Java 21 + Kafka Streams, порт 8086
 - `infrastructure/feature-flag-service` — Java 21 + Virtual Threads, порт 8088
 - `frontend/` — React 18 + TypeScript 5 + PrimeReact 10.x

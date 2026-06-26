@@ -3,10 +3,10 @@ package sm.selflearn.samskrtam.dictionary.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.dictionary.dto.MwEntryDto;
+import sm.selflearn.samskrtam.dictionary.provider.DictionaryProvider;
 import sm.selflearn.samskrtam.monierwilliams.dto.MwWordSearchDto;
 
 import sm.selflearn.samskrtam.monierwilliams.dto.MwDictionaryEntryDto;
-import sm.selflearn.samskrtam.monierwilliams.model.SanskritWordSearchResult;
 import sm.selflearn.samskrtam.monierwilliams.repository.MwEntryRepository;
 import sm.selflearn.samskrtam.monierwilliams.repository.MwSanskritWordRepository;
 import org.apache.commons.text.similarity.LevenshteinDistance;
@@ -20,10 +20,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DictionaryService {
 
-
     private final MwEntryRepository mwEntryRepository;
     private final TransliterationService transliterationService;
     private final MwDictionaryEntryService mwDictionaryEntryService;
+    private final List<DictionaryProvider> providers;
 
     public List<MwWordSearchDto> searchWords(String query) {
         String normalizedQuery = transliterationService.normalizeToSlp1(query,null);
@@ -48,15 +48,5 @@ public class DictionaryService {
                 .build();
     }
 
-    private MwWordSearchDto mapToMwWordSearchDto(SanskritWordSearchResult mwSanskritWord) {
-        // Fetch the main headword (key1) from the associated MwEntry
-
-        return MwWordSearchDto.builder()
-                .slp1Spelling(mwSanskritWord.getSlp1Spelling())
-                .slp1Normalized(mwSanskritWord.getSlp1Normalized())
-                .iastSpelling(mwSanskritWord.getIastSpelling())
-                .similarity(mwSanskritWord.getSimilarity())
-                .build();
-    }
-
 }
+

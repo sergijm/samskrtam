@@ -9,6 +9,7 @@ import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.content.dto.QuizSummaryDto;
 import sm.selflearn.samskrtam.quiz.dto.*;
+import sm.selflearn.samskrtam.quiz.model.WordStatistics;
 import sm.selflearn.samskrtam.quiz.service.LessonService;
 import sm.selflearn.samskrtam.quiz.service.ContentClient;
 import sm.selflearn.samskrtam.quiz.service.QuizDataAssembler;
@@ -16,6 +17,13 @@ import sm.selflearn.samskrtam.quiz.service.UserSessionService;
 
 import java.util.Locale;
 import java.util.UUID;
+
+
+
+
+import sm.selflearn.samskrtam.quiz.dto.AnswerHistoryEntry;
+import sm.selflearn.samskrtam.quiz.model.QuizAnswer;
+
 
 @Service
 @RequiredArgsConstructor
@@ -52,19 +60,33 @@ public class LessonServiceImpl implements LessonService {
         return contentClient.getQuizSummaryBySlug(slug)
                 .flatMap(quizSummary -> {
                     // Get word statistics for the specific word and user
-                    return userSessionService.getWordStatistics(userId, quizSummary.getId(), wordId)
-                            .flatMap(stats -> {
-                                // Create history based on stats and pageable criteria
-                                return createWordAnswerHistory(stats, wordId, pageable, locale);
-                            });
+                                        return Mono.zip(
+                            userSessionService.getWordStatistics(userId, quizSummary.getId(), wordId),
+                            contentClient.getVocabularyWordById(wordId)
+                    ).flatMap(tuple -> {
+                        WordStatistics stats = tuple.getT1();
+                        String wordIast = tuple.getT2().getWordIast();
+                        return createWordAnswerHistory(stats, wordId, quizSummary.getId(), wordIast, userId, pageable, locale);
+                    });
                 })
                 .switchIfEmpty(Mono.empty()); // Return empty if no quiz found
     }
 
     @Override
     public Mono<QuestionAnswerHistory> getQuestionAnswerHistory(String type, UUID questionId, UUID userId, Pageable pageable, Locale locale) {
-        // Placeholder implementation - this would need to be implemented based on actual requirements
-        return Mono.empty();
+        // This is a placeholder implementation. In a real system, we would need to get
+        // question details and answer history from a data source or service
+        // For now, we'll return a minimal implementation without real question data
+        QuestionAnswerHistory history = new QuestionAnswerHistory();
+        history.setQuestionId(questionId);
+        history.setTextRu("Question details not available");
+        history.setQuizId(null); // Установим null, так как не можем получить quizId без дополнительных вызовов
+        history.setEntries(java.util.Collections.emptyList());
+        history.setPage(pageable.getPageNumber());
+        history.setSize(pageable.getPageSize());
+        history.setTotal(0); // Total would come from data source in a real implementation
+        
+        return Mono.just(history);
     }
 
     private Mono<VocabularyLesson> createVocabularyLesson(QuizSummaryDto quizSummary,
@@ -87,9 +109,6 @@ public class LessonServiceImpl implements LessonService {
         }
 
         // Create vocabulary word progress items
-// In your LessonServiceImpl.java or appropriate service file
-
-// Replace the vocabulary word creation section with this implementation:
         java.util.List<VocabularyWordProgress> wordProgressList = vocabularyWords.stream()
                 .map(word -> {
                     VocabularyWordProgress progressItem = new VocabularyWordProgress();
@@ -136,11 +155,40 @@ public class LessonServiceImpl implements LessonService {
         return Mono.just(lesson);
     }
 
-    private Mono<WordAnswerHistory> createWordAnswerHistory(Object stats, UUID wordId, Pageable pageable, Locale locale) {
-        // This is a placeholder implementation. In a real system, this would involve
-        // creating a proper history based on the statistics and pagination criteria
-        WordAnswerHistory history = new WordAnswerHistory();
+        private Mono<WordAnswerHistory> createWordAnswerHistory(
+            WordStatistics stats, UUID wordId, UUID quizId,
+            String wordIast, UUID userId, Pageable pageable, Locale locale) {
 
-        return Mono.just(history);
+        Mono<java.util.List<QuizAnswer>> answersMono =
+                userSessionService.getWordAnswers(userId, wordId);
+        Mono<Long> totalMono =
+                userSessionService.countWordAnswers(userId, wordId);
+
+        return Mono.zip(answersMono, totalMono)
+                .map(tuple -> {
+                    java.util.List<QuizAnswer> answers = tuple.getT1();
+                    long total = tuple.getT2();
+
+                    java.util.List<AnswerHistoryEntry> entries = answers.stream()
+                            .map(qa -> AnswerHistoryEntry.builder()
+                                    .answeredAt(qa.getAnsweredAt() != null
+                                            ? java.time.LocalDateTime.ofInstant(qa.getAnsweredAt(), java.time.ZoneOffset.UTC)
+                                            : null)
+                                    .correctAnswer(qa.getCorrectFormIast())
+                                    .userAnswer(qa.getSelectedFormIast())
+                                    .isCorrect(Boolean.TRUE.equals(qa.getIsCorrect()))
+                                    .build())
+                            .collect(java.util.stream.Collectors.toList());
+
+                    return WordAnswerHistory.builder()
+                            .wordId(wordId)
+                            .quizId(quizId)
+                            .word(wordIast)
+                            .entries(entries)
+                            .page(pageable.getPageNumber())
+                            .size(pageable.getPageSize())
+                            .total((int) total)
+                            .build();
+                });
     }
 }

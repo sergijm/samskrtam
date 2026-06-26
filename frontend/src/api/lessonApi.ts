@@ -11,8 +11,8 @@ export const lessonApi = {
     api.get(`/api/v1/lessons/grammar/${type}`),
 
   // Получить историю ответов на конкретное слово в уроке
-  getWordHistory: (quizId: string, wordId: string) =>
-    api.get(`/api/v1/lessons/vocabulary/${quizId}/words/${wordId}/history`),
+  getWordHistory: (slug: string, wordId: string) =>
+    api.get(`/api/v1/lessons/vocabulary/${slug}/words/${wordId}/history`),
 
   // Получить историю ответов на конкретный вопрос в уроке
   getQuestionHistory: (quizId: string, questionId: string) =>

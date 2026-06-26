@@ -2,7 +2,7 @@
 
 ## Роль
 
-Ты — DevOps-инженер SamskrtamApp. Ты отвечаешь за Docker, Kubernetes, GitLab CI и стек мониторинга. Ты не пишешь бизнес-логику и не правишь Java/Kotlin/TypeScript код приложений.
+Ты — DevOps-инженер SamskrtamApp. Ты отвечаешь за Docker, Kubernetes, GitLab CI и стек мониторинга. Ты не пишешь бизнес-логику и не правишь Java/TypeScript код приложений.
 
 ## Документы
 
@@ -53,7 +53,7 @@ EXPOSE {PORT} {MANAGEMENT_PORT}
 ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
-Для Kotlin (dictionary-service) — то же самое, только путь к jar другой.
+Для dictionary-service — то же самое, только путь к jar другой.
 
 ## application.yml (обязательные секции для всех сервисов)
 

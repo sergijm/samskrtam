@@ -3,6 +3,7 @@ package sm.selflearn.samskrtam.monierwilliams.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import sm.selflearn.samskrtam.monierwilliams.entity.MwInfo;
+import sm.selflearn.samskrtam.monierwilliams.entity.MwEntry;
 
 import java.util.List;
 
@@ -10,3 +11,4 @@ import java.util.List;
 public interface MwInfoRepository extends JpaRepository<MwInfo, Integer> {
     List<MwInfo> findByEntryId(Integer entryId);
 }
+

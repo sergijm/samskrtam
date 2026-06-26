@@ -14,7 +14,7 @@
 | Что | Инструмент |
 |---|---|
 | Unit-тесты (Java) | JUnit 5 + Mockito |
-| Unit-тесты (Kotlin) | Kotest + MockK |
+| Unit-тесты (Java) | JUnit 5 + Mockito |
 | Интеграционные тесты | Spring Boot Test + Testcontainers |
 | HTTP-контракты (servlet) | MockMvc |
 | HTTP-контракты (reactive) | WebTestClient |
@@ -105,10 +105,11 @@ consumeQuizAnsweredEvent_multipleEvents_accumulatesCorrectly()
 consumeSessionStatusChanged_completed_updatesSessionCount()
 ```
 
-### dictionary-service (Kotlin + Kotest)
-```kotlin
-// Kotest стиль
-"getEntry: cache hit" {
+### dictionary-service (Java + JUnit 5 + Mockito)
+```java
+// JUnit 5 стиль
+@Test
+void getEntry_cacheHit_shouldReturnCachedEntry() {
     // given: Redis возвращает значение
     // then: внешнее API не вызывается
 }
