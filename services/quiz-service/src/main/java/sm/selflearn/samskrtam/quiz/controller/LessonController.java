@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.content.dto.LessonType;
+import sm.selflearn.samskrtam.quiz.dto.LessonListResponse;
 import sm.selflearn.samskrtam.quiz.dto.VocabularyLessonDto;
 import sm.selflearn.samskrtam.quiz.dto.GrammarLesson;
 import sm.selflearn.samskrtam.quiz.service.LessonService;
@@ -31,6 +32,16 @@ public class LessonController {
             @RequestHeader(value = "X-User-Id", required = false) UUID userId )
     {
         return lessonService.getVocabularyLesson(slug, userId)
+                .map(ResponseEntity::ok);
+    }
+
+        @GetMapping("/{lessonType}")
+    @Operation(summary = "Get lessons by type (e.g. VOCABULARY, DECLENSIONS)")
+    @ApiResponse(responseCode = "200", description = "List of lessons retrieved successfully")
+    public Mono<ResponseEntity<LessonListResponse>> getLessonsByType(
+            @PathVariable String lessonType,
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId) {
+        return lessonService.getLessonsByType(lessonType, userId)
                 .map(ResponseEntity::ok);
     }
 

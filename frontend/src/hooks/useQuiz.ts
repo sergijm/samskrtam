@@ -1,15 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { quizApi } from '../api/quizApi';
-import { StartSessionResponse, AnswerRequest, AnswerResponse, QuizSummaryDto, QuizListItem, LessonType, ResumeSessionResponse, StartOrResumeResponse } from '../types/quiz';
+import { StartSessionResponse, AnswerRequest, AnswerResponse, QuizSummaryDto, LessonItemDto, LessonType, ResumeSessionResponse, StartOrResumeResponse } from '../types/quiz';
 import { useLocaleStore } from '../store/localeStore';
 
 export const useQuizList = (category?: string) => {
   const { locale } = useLocaleStore();
-  return useQuery<QuizListItem[], Error>({
+  return useQuery<LessonItemDto[], Error>({
     queryKey: ['quizzes', 'list', category, locale],
     queryFn: async () => {
-      const response = await quizApi.getQuizList(category); // Pass category to API call
-      return response.data;
+      const response = await quizApi.getQuizList(category);
+      return response.data.lessons;
     },
   });
 };
@@ -126,3 +126,4 @@ export const useStartNewQuizSession = () => {
     },
   });
 };
+

@@ -160,6 +160,15 @@ export const isDeclensionsQuiz = (lessonType: LessonType): boolean => {
   ].includes(lessonType);
 };
 
+export interface LessonListResponse {
+    lessons: LessonItemDto[];
+}
+
+export interface LessonItemDto extends QuizListItem {
+    totalWordsOwn: number;
+    learnedWords: number;
+}
+
 export const isVocabularyQuiz = (lessonType: LessonType): boolean => {
   return [
     'VOCABULARY',

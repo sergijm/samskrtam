@@ -10,6 +10,7 @@ import sm.selflearn.samskrtam.content.dto.*;
 import sm.selflearn.samskrtam.quiz.dto.*;
 import sm.selflearn.samskrtam.quiz.model.QuizAnswer;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
+import sm.selflearn.samskrtam.quiz.repository.WordScoreRepository;
 
 import java.util.List;
 import java.util.Locale;
@@ -25,6 +26,7 @@ public class LessonService {
     private final QuizDataAssembler quizDataAssembler;
     private final UserSessionService userSessionService;
     private final QuizAnswerRepository quizAnswerRepository;
+    private final WordScoreRepository wordScoreRepository;
 
     public Mono<VocabularyLessonDto> getVocabularyLesson(String slug, UUID userId) {
         return contentClient.getLessonItemBySlug(slug)
@@ -50,6 +52,14 @@ public class LessonService {
                 .switchIfEmpty(Mono.empty());
     }
 
+    public Mono<LessonListResponse> getLessonsByType(String lessonType, UUID userId) {
+        return contentClient.getQuizzesByCategory(lessonType)
+                .flatMap(lessons -> Flux.fromIterable(lessons)
+                        .flatMap(lesson -> enrichLessonWithProgress(lesson, userId))
+                .collectList()
+                        .map(LessonListResponse::new));
+    }
+
     public Mono<QuestionAnswerHistory> getQuestionAnswerHistory(String type, UUID questionId, UUID userId, Pageable pageable, Locale locale) {
         QuestionAnswerHistory history = new QuestionAnswerHistory();
         history.setQuestionId(questionId);
@@ -60,6 +70,33 @@ public class LessonService {
         history.setSize(pageable.getPageSize());
         history.setTotal(0);
         return Mono.just(history);
+    }
+
+    private Mono<LessonItemDto> enrichLessonWithProgress(LessonItemResponse lesson, UUID userId) {
+        LessonItemDto.LessonItemDtoBuilder builder = LessonItemDto.builder()
+                .id(lesson.getId())
+                .slug(lesson.getSlug())
+                .titleRu(lesson.getTitleRu())
+                .titleEn(lesson.getTitleEn())
+                .descriptionRu(lesson.getDescriptionRu())
+                .descriptionEn(lesson.getDescriptionEn())
+                .lessonType(lesson.getLessonType())
+                .difficulty(lesson.getDifficulty())
+                .totalQuestions(lesson.getTotalQuestions())
+                .totalWordsOwn(lesson.getWordCount());
+
+                if (userId != null && LessonType.isVocabulary(lesson.getLessonType())) {
+            return wordScoreRepository.countLearnedWords(userId, lesson.getId(), 80)
+                    .map(learnedCount -> builder
+                            .learnedWords(learnedCount.intValue())
+                            .build());
+        }
+
+        // Для не-VOCABULARY квизов поля прогресса равны 0
+        return Mono.just(builder
+                .totalWordsOwn(0)
+                .learnedWords(0)
+                .build());
     }
 
     private Mono<VocabularyLessonDto> createVocabularyLesson(LessonItemResponse lessonItem,

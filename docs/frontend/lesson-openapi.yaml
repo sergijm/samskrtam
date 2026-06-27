@@ -184,6 +184,34 @@ paths:
           $ref: '#/components/responses/Unauthorized'
 
   # ─────────────────────────────────────────────
+  # LESSON LIST (by type)
+  # ─────────────────────────────────────────────
+
+  /lessons/{lessonType}:
+    get:
+      tags: [vocabulary-lesson, grammar-lesson]
+      summary: Get list of lessons by type with user progress
+      description: |
+        Returns a list of all lessons of the given type with user progress summary.
+        For VOCABULARY types includes totalWordsOwn and learnedWords.
+      operationId: getLessonsByType
+      parameters:
+        - name: lessonType
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/LessonType'
+      responses:
+        '200':
+          description: List of lessons
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─────────────────────────────────────────────
   # QUESTION HISTORY
   # ─────────────────────────────────────────────
 
@@ -280,6 +308,52 @@ components:
         default: 10
 
   schemas:
+
+    LessonType:
+      type: string
+      enum: [VOCABULARY, VOCABULARY_BASIC, VOCABULARY_TEXTS, DECLENSIONS, CONJUGATIONS]
+      description: Type of lesson
+
+    LessonItemDto:
+      type: object
+      required: [id, slug, titleRu, titleEn, descriptionRu, descriptionEn, lessonType, difficulty, totalQuestions, totalWordsOwn, learnedWords]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        titleRu:
+          type: string
+        titleEn:
+          type: string
+        descriptionRu:
+          type: string
+        descriptionEn:
+          type: string
+        lessonType:
+          $ref: '#/components/schemas/LessonType'
+        difficulty:
+          type: string
+          enum: [BEGINNER, INTERMEDIATE, ADVANCED]
+        totalQuestions:
+          type: integer
+          description: Total number of questions in this lesson
+        totalWordsOwn:
+          type: integer
+          description: Words count without subcategories (VOCABULARY only)
+        learnedWords:
+          type: integer
+          description: Words with score >= 80 for current user (VOCABULARY only)
+
+    LessonListResponse:
+      type: object
+      required: [lessons]
+      properties:
+        lessons:
+          type: array
+          items:
+            $ref: '#/components/schemas/LessonItemDto'
 
     WordStatus:
       type: string

@@ -1,27 +1,25 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from 'primereact/card';
-import { useNavigate, useParams } from 'react-router-dom'; // Keep useParams for potential future dynamic routes
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuizList, useStartOrResumeQuizSession } from '../hooks/useQuiz';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
 import { useMe } from '../hooks/useUser';
-import {isDeclensionsQuiz, isVocabularyQuiz, QuizListItem, LessonType} from '../types/quiz';
+import {isDeclensionsQuiz, isVocabularyQuiz, LessonItemDto, LessonType} from '../types/quiz';
 
 interface QuizzesPageProps {
-  category?: string; // Accept category as a prop
+  category?: string;
 }
 
-const QuizzesPage: React.FC<QuizzesPageProps> = ({ category: propCategory }) => { // Rename prop to avoid conflict
+const QuizzesPage: React.FC<QuizzesPageProps> = ({ category: propCategory }) => {
   const { t, i18n } = useTranslation();
-  // const { category: urlCategory } = useParams<{ category?: string }>(); // No longer needed for filtering
   const navigate = useNavigate();
-  // Use propCategory for fetching lesson list
   const { data: quizList, isLoading: isQuizListLoading, isError: isQuizListError, error: quizListError } = useQuizList(propCategory);
   const { data: user, isLoading: isUserLoading } = useMe();
   const startOrResumeMutation = useStartOrResumeQuizSession();
 
-  const handleQuizClick = (lesson: QuizListItem) => {
+  const handleQuizClick = (lesson: LessonItemDto) => {
     if (!user) {
       navigate('/login');
       return;
@@ -101,10 +99,15 @@ const QuizzesPage: React.FC<QuizzesPageProps> = ({ category: propCategory }) => 
                   <div className="p-card-subtitle">{localizedDescription}</div>
                   <div className="p-card-footer" style={{ marginTop: 'auto' }}>
                     <div className="text-lg font-bold">
-                      {isVocabularyQuiz(lesson.lessonType) ? (
-                          <span>{lesson.wordCount} {t('quizzes.words')}</span>
+                                            {isVocabularyQuiz(lesson.lessonType) ? (
+                        <span>
+                          <span style={{ color: 'var(--green-500)', fontWeight: 600 }}>
+                            {lesson.learnedWords}
+                          </span>
+                          /{lesson.totalWordsOwn} {t('quizzes.words')}
+                        </span>
                       ) : (
-                          <span>{lesson.totalQuestions} {t('quizzes.questions')}</span>
+                        <span>{lesson.totalQuestions} {t('quizzes.questions')}</span>
                       )}
                     </div>
                   </div>
@@ -124,3 +127,4 @@ const QuizzesPage: React.FC<QuizzesPageProps> = ({ category: propCategory }) => 
 };
 
 export default QuizzesPage;
+

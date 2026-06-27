@@ -26,6 +26,19 @@ public class ContentClient {
                 .build();
     }
 
+    public Mono<List<LessonItemResponse>> getQuizzesByCategory(String category) {
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/v1/content/quizzes")
+                        .queryParam("category", category)
+                        .build())
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("CATEGORY_NOT_FOUND", "No quizzes found for category: " + category)))
+                .bodyToFlux(LessonItemResponse.class)
+                .collectList();
+    }
+
     public Mono<GeneratedQuizData> generateQuizData(UUID lessonId, String userLocale) {
         return webClient.post()
                 .uri("/api/v1/content/lessons/{id}/generate-quiz-data", lessonId)
@@ -104,3 +117,4 @@ public class ContentClient {
                 .bodyToMono(LessonItemResponse.class);
     }
 }
+

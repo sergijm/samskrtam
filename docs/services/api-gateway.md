@@ -51,6 +51,7 @@ dependencies {
 | `/api/v1/auth/refresh` | **Gateway (OAuth2 Client)** | Public |
 | `/api/v1/auth/**` | user-service:8087 | **Public** |
 | `/api/v1/content/public/**` | content-service:8081 | STUDENT |
+| `/api/v1/lessons/**` | content-service:8081 | STUDENT |
 | `/api/v1/content/**` | content-service:8081 | ADMIN |
 | `/api/v1/quiz/**` | quiz-service:8082 | STUDENT |
 | `/api/v1/dictionary/**` | dictionary-service:8085 | STUDENT |

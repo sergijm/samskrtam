@@ -1,15 +1,13 @@
 import api from './axios';
-import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, LessonType, QuizSessionSummary, AnswerHistory, QuizProgress, ResumeSessionResponse, StartOrResumeResponse } from '../types/quiz';
+import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, LessonType, QuizSessionSummary, AnswerHistory, QuizProgress, ResumeSessionResponse, StartOrResumeResponse, LessonListResponse } from '../types/quiz';
 import { PaginatedResponse } from '../types/common';
 
 export const quizApi = {
   getQuizList: (category?: string) => {
-    let url = '/api/v1/content/quizzes';
-    const params: { category?: string } = {};
-    if (category && category !== '') { // Only add category if it's not null/undefined/empty
-      params.category = category;
-    }
-    return api.get<QuizListItem[]>(url, { params });
+    const url = category
+      ? `/api/v1/lessons/${category}`
+      : '/api/v1/lessons';
+    return api.get<LessonListResponse>(url);
   },
 
   getQuizBySlug: (slug: string) => api.get<QuizSummaryDto>(`/api/v1/content/lessons/by-slug/${slug}`),
@@ -111,3 +109,4 @@ export const quizApi = {
     return api.get<SandhiRuleDto[]>('/api/v1/eamenau/sandhi-rules');
   },
 };
+

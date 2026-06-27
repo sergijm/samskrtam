@@ -45,6 +45,7 @@ public class QuizSessionService {
         private final QuizAnswerMapper quizAnswerMapper;
     private final ObjectMapper objectMapper;
     private final SessionQuestionRepository sessionQuestionRepository;
+    private final WordScoreService wordScoreService;
 
     public Mono<StartOrResumeResponse> startOrResumeSession(UUID lessonId, UUID userId, String userLocale) {
         return quizSessionRepository.findTopByUserIdAndLessonIdAndStatusOrderByStartedAtDesc(userId, lessonId, SessionStatus.IN_PROGRESS)
@@ -123,6 +124,12 @@ public class QuizSessionService {
 
                     return quizAnswerRepository.save(newAnswer)
                             .then(quizSessionRepository.incrementAnsweredQuestionsAndScore(session.getId(), isCorrect))
+                            .then(Mono.defer(() -> {
+                                if (LessonType.isVocabulary(session.getLessonType()) && generatedQuestion.getVocabularyWordId() != null) {
+                                    return wordScoreService.upsertScore(userId, generatedQuestion.getVocabularyWordId(), session.getLessonId(), isCorrect).then();
+                                }
+                                return Mono.empty();
+                            }))
                             .then(outboxEventCreator.createAndSaveQuizAnsweredEvent(
                                     new QuizAnsweredEvent(session.getId(), userId, session.getLessonId(),
                                             session.getLessonType(), request.getQuestionId(),
