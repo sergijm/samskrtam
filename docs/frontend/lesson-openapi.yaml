@@ -37,9 +37,10 @@ paths:
         statistics-service.
 
         Статус слова:
-        - `NOT_STARTED` — nAll = 0
-        - `IN_PROGRESS` — nAll > 0 и successRate < 80
-        - `LEARNED`     — nAll >= 3 и successRate >= 80
+        - `NEW`      — nAll = 0
+        - `LEARNING` — nAll > 0 и successRate < 80
+        - `REVIEW`   — successRate < 50, требуется повторение
+        - `MASTERED` — successRate >= 80
       operationId: getVocabularyLesson
       parameters:
         - $ref: '#/components/parameters/SlugParam'
@@ -68,7 +69,7 @@ paths:
                     nSuccess: 4
                     nAll: 5
                     successRate: 80
-                    status: "LEARNED"
+                    status: "MASTERED"
                   - wordId: "a3bb189e-8bf9-3888-9902-33748d1cb7b9"
                     word: "vṛka"
                     wordDevanagari: "वृक"
@@ -77,7 +78,7 @@ paths:
                     nSuccess: 0
                     nAll: 0
                     successRate: 0
-                    status: "NOT_STARTED"
+                    status: "NEW"
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -122,7 +123,7 @@ paths:
                     nSuccess: 3
                     nAll: 4
                     successRate: 75
-                    status: "IN_PROGRESS"
+                    status: "LEARNING"
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -282,11 +283,12 @@ components:
 
     WordStatus:
       type: string
-      enum: [NOT_STARTED, IN_PROGRESS, LEARNED]
+      enum: [NEW, LEARNING, REVIEW, MASTERED]
       description: |
-        NOT_STARTED — нет попыток;
-        IN_PROGRESS — есть попытки, successRate < 80%;
-        LEARNED     — nAll >= 3 и successRate >= 80%
+        NEW      — нет попыток (nAll = 0);
+        LEARNING — есть попытки, successRate < 80%;
+        REVIEW   — successRate < 50%, требуется повторение;
+        MASTERED — successRate >= 80%
 
     VocabularyWordProgress:
       type: object

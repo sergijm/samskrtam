@@ -18,7 +18,7 @@ export const VocabularyLessonPage = () => {
   const { data: lesson, isLoading, isError } = useVocabularyLesson(slug || '');
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [wordHistoryDialogVisible, setWordHistoryDialogVisible] = useState(false);
-  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<string>('word');
   const [sortOrder, setSortOrder] = useState<number>(1);
   
   const handleWordHistoryClick = (wordId: string) => {
@@ -148,27 +148,16 @@ export const VocabularyLessonPage = () => {
                 )} 
                 style={{ width: '30%' }}
               />
+
               <Column 
-                header="Попытки" 
+                header="Изучено" 
                 body={(rowData) => (
                   <span 
                     className="cursor-pointer underline text-primary"
                     onClick={() => handleWordHistoryClick(rowData.wordId)}
                   >
-                    {rowData.nSuccess}/{rowData.nAll}
-                  </span>
-                )} 
-                style={{ width: '20%' }}
-                sortable
-                sortField="nAll"
-                onSort={(e) => handleSort('nAll')}
-              />
-              <Column 
-                header="Изучено" 
-                body={(rowData) => (
-                  <div>
                     {rowData.successRate > 0 ? `${rowData.successRate.toFixed(0)}%` : '0%'}
-                  </div>
+                  </span>
                 )}
                 style={{ width: '15%' }}
                 sortable

@@ -4,19 +4,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.content.dto.*;
 import sm.selflearn.samskrtam.quiz.dto.*;
+import sm.selflearn.samskrtam.quiz.model.QuizAnswer;
+import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-
-
-
-
-import sm.selflearn.samskrtam.quiz.dto.AnswerHistoryEntry;
-import sm.selflearn.samskrtam.quiz.model.QuizAnswer;
-
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,42 +24,33 @@ public class LessonService {
     private final ContentClient contentClient;
     private final QuizDataAssembler quizDataAssembler;
     private final UserSessionService userSessionService;
+    private final QuizAnswerRepository quizAnswerRepository;
 
     public Mono<VocabularyLessonDto> getVocabularyLesson(String slug, UUID userId) {
-        // Get the quiz summary to get basic information
         return contentClient.getLessonItemBySlug(slug)
-                        .flatMap(lessonSummary -> {
-                            return contentClient.getVocabularyWordsForLesson(lessonSummary.getId(), 100000 )
-                                    .flatMap(vocabularyWords -> {
-                                        // Get user progress for the lesson
-                                        QuizProgressDto progress = userSessionService.getUserQuizProgress(userId, lessonSummary.getId());
-                                        return createVocabularyLesson(lessonSummary, vocabularyWords, progress);
-                            });
-                });
+                .flatMap(lessonSummary ->
+                        contentClient.getVocabularyWordsForLesson(lessonSummary.getId(), 100000)
+                                .flatMap(vocabularyWords ->
+                                        createVocabularyLesson(lessonSummary, vocabularyWords, userId)
+                                ));
     }
 
     public Mono<GrammarLesson> getGrammarLesson(LessonType type, UUID userId) {
-        // For now, we'll return a generic empty lesson until we get full functionality
         return Mono.empty();
     }
 
     public Mono<WordAnswerHistory> getWordAnswerHistory(String slug, UUID wordId, UUID userId, Pageable pageable, Locale locale) {
-        // Get quiz summary to get quiz id from slug
         return contentClient.getLessonItemBySlug(slug)
-                        .flatMap(lessonSummary -> {
-                            return contentClient.getVocabularyWordById(wordId)
-                                    .flatMap(vocabularyWord -> createWordAnswerHistory(
-                                            wordId, lessonSummary.getId(),
-                                            vocabularyWord.getWordIast(),
-                                            userId, pageable, locale));
-                        })
-                        .switchIfEmpty(Mono.empty());
+                .flatMap(lessonSummary ->
+                        contentClient.getVocabularyWordById(wordId)
+                                .flatMap(vocabularyWord -> createWordAnswerHistory(
+                                        wordId, lessonSummary.getId(),
+                                        vocabularyWord.getWordIast(),
+                                        userId, pageable, locale)))
+                .switchIfEmpty(Mono.empty());
     }
 
     public Mono<QuestionAnswerHistory> getQuestionAnswerHistory(String type, UUID questionId, UUID userId, Pageable pageable, Locale locale) {
-        // This is a placeholder implementation. In a real system, we would need to get
-        // question details and answer history from a data source or service
-        // For now, we'll return a minimal implementation without real question data
         QuestionAnswerHistory history = new QuestionAnswerHistory();
         history.setQuestionId(questionId);
         history.setTextRu("Question details not available");
@@ -69,103 +58,108 @@ public class LessonService {
         history.setEntries(java.util.Collections.emptyList());
         history.setPage(pageable.getPageNumber());
         history.setSize(pageable.getPageSize());
-        history.setTotal(0); // Total would come from data source in a real implementation
-        
+        history.setTotal(0);
         return Mono.just(history);
     }
 
     private Mono<VocabularyLessonDto> createVocabularyLesson(LessonItemResponse lessonItem,
-                                                             java.util.List<VocabularyWordDto> vocabularyWords,
-                                                             QuizProgressDto progress) {
-            VocabularyLessonDto lesson = new VocabularyLessonDto();
-            lesson.setLessonId(lessonItem.getId());
-            lesson.setSlug(lessonItem.getSlug());
-            lesson.setTitleRu(lessonItem.getTitleRu());
-            lesson.setTitleEn(lessonItem.getTitleEn());
-            lesson.setDifficulty(lessonItem.getDifficulty().toString());
-
-        // Calculate progress statistics
+                                                             List<VocabularyWordDto> vocabularyWords,
+                                                             UUID userId) {
+        VocabularyLessonDto lesson = new VocabularyLessonDto();
+        lesson.setLessonId(lessonItem.getId());
+        lesson.setSlug(lessonItem.getSlug());
+        lesson.setTitleRu(lessonItem.getTitleRu());
+        lesson.setTitleEn(lessonItem.getTitleEn());
+        lesson.setDifficulty(lessonItem.getDifficulty().toString());
         lesson.setTotalWords(vocabularyWords.size());
-        //lesson.setLearnedWords(progress.getLearnedWords());
-        if (lesson.getTotalWords() > 0) {
-            lesson.setProgressPercent((float) lesson.getLearnedWords() / lesson.getTotalWords() * 100);
-        } else {
-            lesson.setProgressPercent(0);
-        }
 
-        // Create vocabulary word progress items
-        java.util.List<VocabularyWordProgress> wordProgressList = vocabularyWords.stream()
-                .map(word -> {
-                    VocabularyWordProgress progressItem = new VocabularyWordProgress();
-                    progressItem.setWordId(word.getId());
-                    progressItem.setWord(word.getWordIast());
-                    progressItem.setWordDevanagari(word.getWordDevanagari());
-                    progressItem.setTranslationRu(word.getTranslationRu());
-                    progressItem.setTranslationEn(word.getTranslationEn());
+        return Flux.fromIterable(vocabularyWords)
+                .flatMap(word ->
+                        userSessionService.getWordAnswers(userId, word.getId(), lessonItem.getId())
+                                .map(answers -> {
+                                    int nAll = answers.size();
+                                    int nSuccess = (int) answers.stream()
+                                            .filter(a -> Boolean.TRUE.equals(a.getIsCorrect()))
+                                            .count();
+                                    float successRate = nAll > 0 ? (float) nSuccess / nAll * 100f : 0f;
 
-                    // Реальный расчет рейтинга на основе данных из quiz-service
-                    try {
-                        // Здесь будет логика получения статистики по каждому слову
-                        // Это должно быть реализовано через вызов статистического сервиса или БД
+                                    VocabularyWordProgress progressItem = new VocabularyWordProgress();
+                                    progressItem.setWordId(word.getId());
+                                    progressItem.setWord(word.getWordIast());
+                                    progressItem.setWordDevanagari(word.getWordDevanagari());
+                                    progressItem.setTranslationRu(word.getTranslationRu());
+                                    progressItem.setTranslationEn(word.getTranslationEn());
+                                    progressItem.setNAll(nAll);
+                                    progressItem.setNSuccess(nSuccess);
+                                    progressItem.setSuccessRate(successRate);
+                                    progressItem.setStatus(resolveStatus(successRate, nAll));
+                                    return progressItem;
+                                })
+                                .onErrorReturn(emptyWordProgress(word))
+                )
+                .collectList()
+                .map(wordProgressList -> {
+                    lesson.setWords(wordProgressList);
 
-                        // Пример реальных значений (настоящая логика):
-                        int nAll = 0;  // Общее количество попыток
-                        int nSuccess = 0;  // Количество успешных попыток
-
-                        // В реальной реализации вызов к сервису статистики будет выглядеть так:
-                        // WordStatisticsDto stats = userSessionService.getWordStatistics(userId, quizId, word.getId());
-                        // nAll = stats.getNAll();
-                        // nSuccess = stats.getNSuccess();
-
-
-                        progressItem.setNSuccess(nSuccess);
-                        progressItem.setNAll(nAll);
-                        //progressItem.setSuccessRate(successRate);
-
-                        // Определение статуса по рейтингу
-
-
-                    } catch (Exception e) {
-                        // Обработка ошибок: возвращаем значения по умолчанию
-                        progressItem.setNSuccess(0);
-                        progressItem.setNAll(0);
-                        progressItem.setSuccessRate(0);
-                        progressItem.setStatus(WordStatus.NEW);
-                    }
-
-                    return progressItem;
-                })
-                .collect(java.util.stream.Collectors.toList());
-        lesson.setWords(wordProgressList);
-        return Mono.just(lesson);
+                    int learnedWords = (int) wordProgressList.stream()
+                            .filter(w -> WordStatus.LEARNING.equals(w.getStatus()))
+                            .count();
+                    lesson.setLearnedWords(learnedWords);
+                    lesson.setProgressPercent(lesson.getTotalWords() > 0
+                            ? (float) learnedWords / lesson.getTotalWords() * 100f
+                            : 0f);
+                    return lesson;
+                });
     }
 
-                    private Mono<WordAnswerHistory> createWordAnswerHistory(
+    private WordStatus resolveStatus(float successRate, int nAll) {
+        if (nAll == 0) return WordStatus.NEW;
+        if (successRate >= 80f) return WordStatus.MASTERED;
+        return WordStatus.LEARNING;
+    }
+
+    private VocabularyWordProgress emptyWordProgress(VocabularyWordDto word) {
+        VocabularyWordProgress p = new VocabularyWordProgress();
+        p.setWordId(word.getId());
+        p.setWord(word.getWordIast());
+        p.setWordDevanagari(word.getWordDevanagari());
+        p.setTranslationRu(word.getTranslationRu());
+        p.setTranslationEn(word.getTranslationEn());
+        p.setNSuccess(0);
+        p.setNAll(0);
+        p.setSuccessRate(0);
+        p.setStatus(WordStatus.NEW);
+        return p;
+    }
+
+    private Mono<WordAnswerHistory> createWordAnswerHistory(
             UUID wordId, UUID lessonId,
             String wordIast, UUID userId, Pageable pageable, Locale locale) {
 
-        Mono<java.util.List<QuizAnswer>> answersMono =
+        Mono<List<QuizAnswer>> answersMono =
                 userSessionService.getWordAnswers(userId, wordId, lessonId);
         Mono<Long> totalMono =
                 userSessionService.countWordAnswers(userId, wordId, lessonId);
 
         return Mono.zip(answersMono, totalMono)
                 .map(tuple -> {
-                    java.util.List<QuizAnswer> answers = tuple.getT1();
+                    List<QuizAnswer> answers = tuple.getT1();
                     long total = tuple.getT2();
 
-                    java.util.List<AnswerHistoryEntry> entries = answers.stream()
-                            .map(qa -> AnswerHistoryEntry.builder()
-                                    .answeredAt(qa.getAnsweredAt() != null
-                                            ? java.time.LocalDateTime.ofInstant(qa.getAnsweredAt(), java.time.ZoneOffset.UTC)
-                                            : null)
-                                    .correctAnswer(qa.getCorrectFormIast())
-                                    .userAnswer(qa.getSelectedFormIast())
-                                    .isCorrect(Boolean.TRUE.equals(qa.getIsCorrect()))
-                                    .build())
-                            .collect(java.util.stream.Collectors.toList());
+                    List<AnswerHistoryEntry> entries = answers.stream()
+                            .map(qa -> {
+                                AnswerHistoryEntry entry = new AnswerHistoryEntry();
+                                entry.setAnsweredAt(qa.getAnsweredAt() != null
+                                        ? java.time.LocalDateTime.ofInstant(qa.getAnsweredAt(), java.time.ZoneOffset.UTC)
+                                        : null);
+                                entry.setCorrectAnswer(qa.getCorrectFormIast());
+                                entry.setUserAnswer(qa.getSelectedFormIast());
+                                entry.setCorrect(Boolean.TRUE.equals(qa.getIsCorrect()));
+                                return entry;
+                            })
+                            .collect(Collectors.toList());
 
-                                        return WordAnswerHistory.builder()
+                    return WordAnswerHistory.builder()
                             .wordId(wordId)
                             .lessonId(lessonId)
                             .word(wordIast)

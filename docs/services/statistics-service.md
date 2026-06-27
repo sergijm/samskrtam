@@ -422,9 +422,10 @@ GET /api/v1/statistics/lessons/grammar/{type}/questions/{questionId}/history
 ```
 
 Данные агрегируются из таблицы `quiz_answers` с JOIN на `quiz_session` для фильтрации по `quizId`. Статус слова/вопроса вычисляется на лету по формуле:
-- `LEARNED`: `nAll >= 3` и `successRate >= 80%`
-- `IN_PROGRESS`: `nAll > 0` и `successRate < 80%`
-- `NOT_STARTED`: `nAll = 0`
+- `MASTERED`: `nAll > 0` и `successRate >= 80%`
+- `LEARNING`: `nAll > 0` и `successRate >= 50%` и `successRate < 80%`
+- `REVIEW`: `nAll > 0` и `successRate < 50%`
+- `NEW`: `nAll = 0`
 
 
 ## 9. Открытые вопросы

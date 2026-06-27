@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.quiz.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,5 +16,7 @@ public class AnswerHistoryEntry {
     private LocalDateTime answeredAt;
     private String correctAnswer;
     private String userAnswer;
-    private boolean isCorrect;
+
+    @JsonProperty("isCorrect")
+    private boolean correct;
 }

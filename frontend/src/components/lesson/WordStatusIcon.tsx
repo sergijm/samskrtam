@@ -6,11 +6,13 @@ interface WordStatusIconProps {
 
 export const WordStatusIcon = ({ status }: WordStatusIconProps) => {
   switch (status) {
-    case 'NOT_STARTED':
+    case 'NEW':
       return <i className="pi pi-circle text-color-secondary"></i>;
-    case 'IN_PROGRESS':
+    case 'LEARNING':
       return <i className="pi pi-spin pi-spinner text-primary"></i>;
-    case 'LEARNED':
+    case 'REVIEW':
+      return <i className="pi pi-exclamation-circle text-yellow-500"></i>;
+    case 'MASTERED':
       return <i className="pi pi-check-circle text-green-500"></i>;
     default:
       return <i className="pi pi-circle text-color-secondary"></i>;

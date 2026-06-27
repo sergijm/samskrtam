@@ -20,9 +20,11 @@ import sm.selflearn.samskrtam.quiz.event.QuizSessionStatusChangedEvent;
 import sm.selflearn.samskrtam.quiz.mapper.QuizAnswerMapper;
 import sm.selflearn.samskrtam.quiz.model.QuizAnswer;
 import sm.selflearn.samskrtam.quiz.model.QuizSession;
+import sm.selflearn.samskrtam.quiz.model.SessionQuestion;
 import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
+import sm.selflearn.samskrtam.quiz.repository.SessionQuestionRepository;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -40,8 +42,9 @@ public class QuizSessionService {
     private final ContentClient contentClient;
     private final QuizDataAssembler quizDataAssembler;
     private final OutboxEventCreator outboxEventCreator;
-    private final QuizAnswerMapper quizAnswerMapper;
-        private final ObjectMapper objectMapper;
+        private final QuizAnswerMapper quizAnswerMapper;
+    private final ObjectMapper objectMapper;
+    private final SessionQuestionRepository sessionQuestionRepository;
 
     public Mono<StartOrResumeResponse> startOrResumeSession(UUID lessonId, UUID userId, String userLocale) {
         return quizSessionRepository.findTopByUserIdAndLessonIdAndStatusOrderByStartedAtDesc(userId, lessonId, SessionStatus.IN_PROGRESS)
@@ -140,15 +143,48 @@ public class QuizSessionService {
     }
 
         private Mono<StartOrResumeResponse> createNewSessionAndBuildStartOrResumeResponse(UUID lessonId, UUID userId, String userLocale) {
-        return contentClient.generateQuizData(lessonId, userLocale)
-                .flatMap(generatedQuizData -> {
-                    String vocabularyWordsJson = serializeVocabularyWords(generatedQuizData.getVocabularyWords());
-                    QuizSession newSession = buildNewQuizSession(lessonId, userId, generatedQuizData, vocabularyWordsJson);
-                    return quizSessionRepository.save(newSession)
-                            .flatMap(savedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(savedSession.getId(), userId, lessonId, savedSession.getLessonType(), null, SessionStatus.IN_PROGRESS.name(), Instant.now()))
-                                    .then(quizDataAssembler.assembleResponse(savedSession, generatedQuizData.getGeneratedQuestions(), generatedQuizData.getVocabularyWords(), userLocale)));
-                });
-    }
+            return contentClient.generateQuizData(lessonId, userLocale)
+                    .flatMap(generatedQuizData -> {
+                        String vocabularyWordsJson = serializeVocabularyWords(generatedQuizData.getVocabularyWords());
+                        QuizSession newSession = buildNewQuizSession(lessonId, userId, generatedQuizData, vocabularyWordsJson);
+                        return quizSessionRepository.save(newSession)
+                                .flatMap(savedSession -> {
+                                    List<SessionQuestion> sessionQuestions = generatedQuizData.getGeneratedQuestions().stream()
+                                            .map(q -> SessionQuestion.builder()
+                                                    .sessionId(savedSession.getId())
+                                                    .questionId(q.getId())
+                                                    .questionNumber(q.getQuestionNumber())
+                                                    .text(q.getText())
+                                                    .explanationRu(q.getExplanationRu())
+                                                    .explanationEn(q.getExplanationEn())
+                                                    .declensionStemId(q.getDeclensionStemId())
+                                                    .targetCase(q.getTargetCase() != null ? q.getTargetCase().name() : null)
+                                                    .targetNumber(q.getTargetNumber() != null ? q.getTargetNumber().name() : null)
+                                                    .correctFormIast(q.getCorrectFormIast())
+                                                    .correctFormDevanagari(q.getCorrectFormDevanagari())
+                                                    .vocabularyWordId(q.getVocabularyWordId())
+                                                    .questionSourceLanguage(q.getQuestionSourceLanguage() != null ? q.getQuestionSourceLanguage().name() : null)
+                                                    .questionTargetLanguage(q.getQuestionTargetLanguage() != null ? q.getQuestionTargetLanguage().name() : null)
+                                                    .correctTranslationRu(q.getCorrectTranslationRu())
+                                                    .correctTranslationEn(q.getCorrectTranslationEn())
+                                                    .build())
+                                            .collect(java.util.stream.Collectors.toList());
+
+                                    return sessionQuestionRepository.saveAll(sessionQuestions).then(
+                                            outboxEventCreator.createAndSaveSessionStatusChangedEvent(
+                                                    new QuizSessionStatusChangedEvent(
+                                                            savedSession.getId(), userId, lessonId,
+                                                            savedSession.getLessonType(), null,
+                                                            SessionStatus.IN_PROGRESS.name(), Instant.now()))
+                                                    .then(quizDataAssembler.assembleResponse(
+                                                            savedSession,
+                                                            generatedQuizData.getGeneratedQuestions(),
+                                                            generatedQuizData.getVocabularyWords(),
+                                                            userLocale))
+                                    );
+                                });
+                    });
+        }
 
     private Mono<StartOrResumeResponse> resume(UUID sessionId, UUID userId, String userLocale) {
         return quizSessionRepository.findByIdAndUserId(sessionId, userId)

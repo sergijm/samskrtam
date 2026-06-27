@@ -1,5 +1,7 @@
 package sm.selflearn.samskrtam.quiz.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.UUID;
 
 public class VocabularyWordProgress {
@@ -8,9 +10,11 @@ public class VocabularyWordProgress {
     private String wordDevanagari;
     private String translationRu;
     private String translationEn;
+    @JsonProperty("nSuccess")
     private int nSuccess;
-    private int nAll;
-    private float successRate;
+
+    @JsonProperty("nAll")
+    private int nAll;    private float successRate;
     private WordStatus status;
 
     // Getters and setters

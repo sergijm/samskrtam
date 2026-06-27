@@ -90,13 +90,6 @@ def zip_project(output_zip: str, root_dir: str = None) -> None:
 
     print("\n" + "-" * 70)
 
-    # Проверяем, не существует ли уже архив
-    if output_path.exists():
-        response = input(f"⚠️ Файл '{output_path}' уже существует. Перезаписать? (y/n): ").strip().lower()
-        if response != 'y':
-            print("Отменено.")
-            return
-
     # Создаем архив
     created_count = 0
     with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zipf:

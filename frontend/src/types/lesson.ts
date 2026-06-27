@@ -1,4 +1,4 @@
-export type WordStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'LEARNED';
+export type WordStatus = 'NEW' | 'LEARNING' | 'REVIEW' | 'MASTERED';
 
 export interface VocabularyWordProgress {
   wordId:       string;
