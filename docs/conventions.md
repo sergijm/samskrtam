@@ -275,8 +275,8 @@ scrape_configs:
 
 | Сервис | Метрика | Тип | Теги |
 |---|---|---|---|
-| quiz-service | `quiz.answers.total` | Counter | `quizType`, `correct` |
-| quiz-service | `quiz.session.duration` | Timer | `quizType` |
+| quiz-service | `quiz.answers.total` | Counter | `lessonType`, `correct` |
+| quiz-service | `quiz.session.duration` | Timer | `lessonType` |
 | quiz-service | `quiz.cache.miss` | Counter | — |
 | statistics-service | `kafka.events.processed` | Counter | `topic` |
 | dictionary-service | `dictionary.cache.hit` | Counter | — |

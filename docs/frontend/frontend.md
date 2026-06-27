@@ -717,7 +717,7 @@ export interface QuizSummary {
   id:         string;
   titleRu:    string;
   titleEn:    string;
-  quizType:   QuizType;
+  lessonType:   LessonType;
   difficulty: Difficulty;
   bestScore?: number;
 }
@@ -747,7 +747,7 @@ export interface AnswerResult {
   totalQuestions:  number;
 }
 
-export type QuizType   = 'DECLENSIONS' | 'CONJUGATIONS' | 'VOCABULARY';
+export type LessonType   = 'DECLENSIONS' | 'CONJUGATIONS' | 'VOCABULARY';
 export type Difficulty = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
 
 // types/dictionary.ts
@@ -774,7 +774,7 @@ export interface PersonalStats {
   totalSessions:     number;
   averagePercentage: number;
   bestPercentage:    number;
-  byQuizType:        Record<QuizType, QuizTypeStats>;
+  byQuizType:        Record<LessonType, QuizTypeStats>;
 }
 ```
 

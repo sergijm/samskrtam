@@ -20,7 +20,7 @@
 
 ## 2. Типы квизов
 
-| QuizType | Описание |
+| LessonType | Описание |
 |---|---|
 | `DECLENSIONS` | Квиз по падежным формам санскрита |
 | `CONJUGATIONS` | Квиз по спряжениям глаголов |
@@ -56,7 +56,7 @@ public class Quiz {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private QuizType quizType;
+    private LessonType lessonType;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -231,7 +231,7 @@ VALUES
 ### Управление квизами (ADMIN)
 
 ```
-GET    /api/v1/content/quizzes                          → список квизов (фильтр по quizType)
+GET    /api/v1/content/quizzes                          → список квизов (фильтр по lessonType)
 GET    /api/v1/content/quizzes/{id}                     → детали квиза
 POST   /api/v1/content/quizzes                          → создать квиз
 PUT    /api/v1/content/quizzes/{id}                     → обновить квиз
@@ -258,7 +258,7 @@ GET /api/v1/content/quizzes/{id}/session-data           → всё необхо�
 ```json
 {
   "quizId": "uuid",
-  "quizType": "DECLENSIONS",
+  "lessonType": "DECLENSIONS",
   "questionsPerSession": 10,
   "questions": [
     {
@@ -305,7 +305,7 @@ sm/selflearn/samskrtam/content/
 │   ├── Question.java
 │   ├── QuestionOption.java
 │   ├── VocabularyWord.java
-│   ├── QuizType.java
+│   ├── LessonType.java
 │   └── Difficulty.java
 └── dto/
     ├── CreateQuizRequest.java

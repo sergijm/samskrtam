@@ -498,13 +498,13 @@ ORDER BY w.weekly_xp DESC;
 
 ### Категории
 
-| Категория | QuizType в системе |
+| Категория | LessonType в системе |
 |---|---|
 | Declensions | `DECLENSIONS` |
 | Conjugations | `CONJUGATIONS` |
 | Vocabulary | `VOCABULARY` |
 
-> Sandhi — можно добавить позже как отдельный `QuizType`.
+> Sandhi — можно добавить позже как отдельный `LessonType`.
 
 ### Схема БД
 
@@ -527,7 +527,7 @@ CREATE TABLE statistics.skill_ratings (
 ### Алгоритм
 
 Skill Rating использует тот же Elo-алгоритм что и Вариант 2, но применяется
-отдельно по каждому `QuizType`. `SessionCompleted` содержит `quizType` — этого
+отдельно по каждому `LessonType`. `SessionCompleted` содержит `lessonType` — этого
 достаточно для маршрутизации в нужный рейтинг.
 
 ```java
@@ -543,8 +543,8 @@ public class SkillRatingService {
     @Transactional
     public void processSession(SessionCompleted event) {
         SkillRating skill = skillRepository
-                .findByUserIdAndQuizType(event.userId(), event.quizType())
-                .orElse(SkillRating.defaultFor(event.userId(), event.quizType()));
+                .findByUserIdAndQuizType(event.userId(), event.lessonType())
+                .orElse(SkillRating.defaultFor(event.userId(), event.lessonType()));
 
         int delta    = eloCalculator.delta(skill.getRating(),
                 event.difficulty(), event.correctAnswers(), event.totalQuestions());
@@ -665,7 +665,7 @@ API принимает опциональный параметр `groupId`:
 
 ```
 GET /api/v1/leaderboard?type=xp&period=weekly&groupId=<uuid>
-GET /api/v1/leaderboard?type=skill&quizType=DECLENSIONS&groupId=<uuid>
+GET /api/v1/leaderboard?type=skill&lessonType=DECLENSIONS&groupId=<uuid>
 GET /api/v1/leaderboard?type=streak
 ```
 
@@ -673,7 +673,7 @@ GET /api/v1/leaderboard?type=streak
 |---|---|---|
 | `type` | `xp`, `elo`, `accuracy`, `streak`, `skill`, `composite` | `xp` |
 | `period` | `all`, `weekly`, `monthly` | `all` |
-| `quizType` | `DECLENSIONS`, `CONJUGATIONS`, `VOCABULARY` | — (обязателен для `type=skill`) |
+| `lessonType` | `DECLENSIONS`, `CONJUGATIONS`, `VOCABULARY` | — (обязателен для `type=skill`) |
 | `groupId` | UUID группы | — (глобальный если не указан) |
 | `limit` | 1–100 | 50 |
 
@@ -815,7 +815,7 @@ public void recordAnswer(AnswerSubmitted event) {
 
 - [ ] Какой алгоритм(ы) включать в MVP? Рекомендация: XP + Weekly + Skill Rating
 - [ ] Timezone для стрика: хранить в профиле пользователя или всегда UTC?
-- [ ] Sandhi как отдельный QuizType для Skill Rating?
+- [ ] Sandhi как отдельный LessonType для Skill Rating?
 - [ ] Achievement bonus в Composite Score — когда реализовывать систему ачивок?
 - [ ] Нужен ли Elo в MVP или достаточно XP?
 - [ ] Отображение delta ("↑ +320 за сегодня") — хранить или вычислять на лету?

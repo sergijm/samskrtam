@@ -29,7 +29,7 @@ public class AnswerRecord {
 
     private UUID userId;
     @Enumerated(EnumType.STRING)
-    private QuizType quizType;
+    private LessonType lessonType;
     private UUID quizId;
     private UUID questionId;
     private UUID selectedOptionId;
@@ -50,7 +50,7 @@ public class SessionRecord {
 
     private UUID userId;
     @Enumerated(EnumType.STRING)
-    private QuizType quizType;
+    private LessonType lessonType;
     private UUID quizId;
     private int score;
     private int totalQuestions;
@@ -162,7 +162,7 @@ public class StatisticsService {
         int inserted = answerRepository.insertIfNotExists(
                 event.eventId(),
                 event.userId(),
-                event.quizType(),
+                event.lessonType(),
                 event.quizId(),
                 event.questionId(),
                 event.selectedOptionId(),
@@ -180,7 +180,7 @@ public class StatisticsService {
         int inserted = sessionRepository.insertIfNotExists(
                 event.eventId(),
                 event.userId(),
-                event.quizType(),
+                event.lessonType(),
                 event.quizId(),
                 event.score(),
                 event.totalQuestions(),
@@ -205,14 +205,14 @@ public interface AnswerRecordRepository extends JpaRepository<AnswerRecord, UUID
                 (event_id, user_id, quiz_type, quiz_id, question_id,
                  selected_option_id, correct, response_time_ms, occurred_at)
             VALUES
-                (:eventId, :userId, :quizType, :quizId, :questionId,
+                (:eventId, :userId, :lessonType, :quizId, :questionId,
                  :selectedOptionId, :correct, :responseTimeMs, :occurredAt)
             ON CONFLICT (event_id) DO NOTHING
             """, nativeQuery = true)
     int insertIfNotExists(
             @Param("eventId")          UUID    eventId,
             @Param("userId")           UUID    userId,
-            @Param("quizType")         String  quizType,
+            @Param("lessonType")         String  lessonType,
             @Param("quizId")           UUID    quizId,
             @Param("questionId")       UUID    questionId,
             @Param("selectedOptionId") UUID    selectedOptionId,
@@ -235,14 +235,14 @@ public interface SessionRecordRepository extends JpaRepository<SessionRecord, UU
                 (event_id, user_id, quiz_type, quiz_id, score, total_questions,
                  duration_ms, occurred_at)
             VALUES
-                (:eventId, :userId, :quizType, :quizId, :score, :totalQuestions,
+                (:eventId, :userId, :lessonType, :quizId, :score, :totalQuestions,
                  :durationMs, :occurredAt)
             ON CONFLICT (event_id) DO NOTHING
             """, nativeQuery = true)
     int insertIfNotExists(
             @Param("eventId")        UUID    eventId,
             @Param("userId")         UUID    userId,
-            @Param("quizType")       String  quizType,
+            @Param("lessonType")       String  lessonType,
             @Param("quizId")         UUID    quizId,
             @Param("score")          int     score,
             @Param("totalQuestions") int     totalQuestions,
@@ -266,7 +266,7 @@ GET /api/v1/statistics/attempts/{id}   → детали попытки
 GET /api/v1/leaderboard                → лидерборд (алгоритмы в leaderboard.md)
   ?type=xp|elo|accuracy|streak|skill|composite
   &period=all|weekly|monthly
-  &quizType=DECLENSIONS|CONJUGATIONS|VOCABULARY
+  &lessonType=DECLENSIONS|CONJUGATIONS|VOCABULARY
   &groupId=<uuid>
   &limit=1-100
 ```

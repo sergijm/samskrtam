@@ -93,7 +93,7 @@ src/main/java/sm/selflearn/samskrtam/{service}/
 // В каждом методе сервисного слоя:
 log.info("Starting quiz session", 
     kv("userId", userId), 
-    kv("quizType", type),
+    kv("lessonType", type),
     kv("traceId", MDC.get("traceId")));
 ```
 
