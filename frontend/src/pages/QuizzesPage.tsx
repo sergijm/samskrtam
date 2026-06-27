@@ -101,10 +101,10 @@ const QuizzesPage: React.FC<QuizzesPageProps> = ({ category: propCategory }) => 
                   <div className="p-card-subtitle">{localizedDescription}</div>
                   <div className="p-card-footer" style={{ marginTop: 'auto' }}>
                     <div className="text-lg font-bold">
-                      {lesson.lessonType === LessonType.VOCABULARY ? (
-                        <span>{lesson.wordCount} {t('quizzes.words')}</span>
+                      {isVocabularyQuiz(lesson.lessonType) ? (
+                          <span>{lesson.wordCount} {t('quizzes.words')}</span>
                       ) : (
-                        <span>{lesson.totalQuestions} {t('quizzes.questions')}</span>
+                          <span>{lesson.totalQuestions} {t('quizzes.questions')}</span>
                       )}
                     </div>
                   </div>

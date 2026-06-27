@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.quiz.dto.AnswerHistoryDto;
 import sm.selflearn.samskrtam.quiz.dto.QuizProgressDto;
-import sm.selflearn.samskrtam.quiz.dto.QuizSessionSummaryDto;
+import sm.selflearn.samskrtam.quiz.dto.QuizSummaryDto;
 import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 import sm.selflearn.samskrtam.quiz.service.UserSessionService;
 
@@ -26,7 +26,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/quiz-sessions")
 @Tag(name = "User Quiz Sessions", description = "APIs for retrieving user quiz session history")
 @RequiredArgsConstructor
-public class UserQuizSessionController {
+public class UserSessionController {
 
     private final UserSessionService userSessionService;
 
@@ -34,7 +34,7 @@ public class UserQuizSessionController {
     @Operation(summary = "Get a paginated list of user's quiz sessions")
     @ApiResponse(responseCode = "200", description = "List of quiz sessions retrieved successfully")
     @ApiResponse(responseCode = "401", description = "Unauthorized")
-    public Mono<ResponseEntity<Page<QuizSessionSummaryDto>>> getUserQuizSessions(
+    public Mono<ResponseEntity<Page<QuizSummaryDto>>> getUserQuizSessions(
             @RequestParam UUID userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -55,7 +55,7 @@ public class UserQuizSessionController {
     @ApiResponse(responseCode = "200", description = "Quiz session summary retrieved successfully")
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @ApiResponse(responseCode = "404", description = "Session not found")
-    public Mono<ResponseEntity<QuizSessionSummaryDto>> getQuizSessionSummary(
+    public Mono<ResponseEntity<QuizSummaryDto>> getQuizSessionSummary(
             @PathVariable UUID sessionId,
             @RequestHeader("X-User-Id") UUID userId
     ) {

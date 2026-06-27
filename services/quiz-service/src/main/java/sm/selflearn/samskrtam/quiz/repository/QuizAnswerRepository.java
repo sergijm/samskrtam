@@ -1,6 +1,6 @@
 package sm.selflearn.samskrtam.quiz.repository;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
@@ -14,12 +14,13 @@ import java.util.UUID;
 @Repository
 public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer, UUID> {
     Flux<QuizAnswer> findBySessionId(UUID sessionId);
-    Mono<Boolean> existsBySessionIdAndQuestionId(UUID sessionId, UUID questionId); // Changed from SessionQuestionId
 
-    // New method to delete all answers for a given session
+
+
+    Mono<Boolean> existsBySessionIdAndQuestionId(UUID sessionId, UUID questionId);
     Mono<Void> deleteBySessionId(UUID sessionId);
 
-    // Removed ORDER BY :#{#pageable.sort} to avoid null binding issue
+
     @Query("SELECT * FROM quiz.quiz_answers WHERE session_id = :sessionId LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}")
     Flux<QuizAnswer> findSessionAnswers(UUID sessionId, Pageable pageable);
 
@@ -27,8 +28,10 @@ public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer,
     Mono<Long> countBySessionId(UUID sessionId);
 
     /**
-     * Находит все ответы пользователя по конкретному слову в рамках конкретного квиза.
+
+     * Находит все ответы пользователя по конкретному слову в рамках конкретного урока.
      * JOIN через session_questions, которая хранит vocabulary_word_id.
+     * Фильтрует по lessonId чтобы история не смешивалась между уроками.
      */
     @Query("""
             SELECT qa.*
@@ -37,9 +40,11 @@ public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer,
             JOIN quiz.quiz_session qs ON qs.id = qa.session_id
             WHERE sq.vocabulary_word_id = :wordId
               AND qs.user_id = :userId
+              AND qs.lesson_id = :lessonId
             ORDER BY qa.answered_at DESC
             """)
-    Flux<QuizAnswer> findByWordIdAndUserId(UUID wordId, UUID userId);
+
+    Flux<QuizAnswer> findByWordIdAndUserIdAndLessonId(UUID wordId, UUID userId, UUID lessonId);
 
     @Query("""
             SELECT COUNT(*)
@@ -48,8 +53,10 @@ public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer,
             JOIN quiz.quiz_session qs ON qs.id = qa.session_id
             WHERE sq.vocabulary_word_id = :wordId
               AND qs.user_id = :userId
+              AND qs.lesson_id = :lessonId
             """)
-    Mono<Long> countByWordIdAndUserId(UUID wordId, UUID userId);
 
 
+
+    Mono<Long> countByWordIdAndUserIdAndLessonId(UUID wordId, UUID userId, UUID lessonId);
 }

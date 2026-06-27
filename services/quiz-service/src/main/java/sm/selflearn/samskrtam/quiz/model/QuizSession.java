@@ -16,7 +16,7 @@ public class QuizSession {
     @Id
     private UUID id;
     private UUID userId;
-    private UUID quizId;
+    private UUID lessonId;
     private LessonType lessonType;
     private int totalQuestions;
     private int answeredQuestions;

@@ -6,16 +6,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import sm.selflearn.samskrtam.common.SamskrtamException;
-import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
-import sm.selflearn.samskrtam.content.dto.QuizSummaryDto;
+import sm.selflearn.samskrtam.content.dto.*;
 import sm.selflearn.samskrtam.content.model.DeclensionForm;
 import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
 import sm.selflearn.samskrtam.content.service.QuestionGenerationService;
 import sm.selflearn.samskrtam.content.service.QuizContentService;
-import sm.selflearn.samskrtam.content.service.QuizService;
-import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
-import sm.selflearn.samskrtam.quiz.dto.QuizListItemResponse;
-import sm.selflearn.samskrtam.content.dto.GeneratedQuizData;
 
 import java.util.List;
 import java.util.Locale;
@@ -26,21 +21,20 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/content")
 @Tag(name = "Quiz Content", description = "APIs for managing quiz content")
 @RequiredArgsConstructor
-public class QuizContentController {
+public class LessonContentController {
 
     private final QuizContentService quizContentService;
     private final DeclensionFormRepository declensionFormRepository;
-    private final QuizService quizService;
     private final QuestionGenerationService questionGenerationService;
 
     @GetMapping("/quizzes")
     @Operation(summary = "Get a list of available quizzes")
     @ApiResponse(responseCode = "200", description = "List of quizzes retrieved successfully")
-    public List<QuizListItemResponse> getQuizList(@RequestParam(required = false) String category) {
-        return quizContentService.getQuizList(category);
+    public List<LessonItemResponse> getQuizList(@RequestParam(required = false) String category) {
+        return quizContentService.getLessonsList(category);
     }
 
-    @PostMapping("/quizzes/{quizId}/generate-quiz-data")
+    @PostMapping("/lessons/{quizId}/generate-quiz-data")
     @Operation(summary = "Generate quiz data for a specific quiz")
     @ApiResponse(responseCode = "200", description = "Quiz data generated successfully")
     @ApiResponse(responseCode = "404", description = "Quiz not found")
@@ -58,20 +52,20 @@ public class QuizContentController {
         return quizContentService.getGeneratedQuizData(id);
     }
 
-    @GetMapping("/quizzes/by-slug/{slug}")
+    @GetMapping("/lessons/by-slug/{slug}")
     @Operation(summary = "Get quiz summary by slug")
     @ApiResponse(responseCode = "200", description = "Quiz summary retrieved successfully")
     @ApiResponse(responseCode = "404", description = "Quiz not found")
-    public QuizSummaryDto getQuizBySlug(@PathVariable String slug) {
-        return quizService.getQuizBySlug(slug);
+    public LessonItemResponse getLessonBySlug(@PathVariable String slug) {
+        return quizContentService.getLessonItemBySlug(slug);
     }
 
-    @GetMapping("/quizzes/{id}/summary")
+    @GetMapping("/lessons/{id}/summary")
     @Operation(summary = "Get quiz summary by ID")
     @ApiResponse(responseCode = "200", description = "Quiz summary retrieved successfully")
     @ApiResponse(responseCode = "404", description = "Quiz not found")
-    public QuizSummaryDto getQuizSummaryById(@PathVariable UUID id) {
-        return quizService.getQuizSummaryById(id);
+    public LessonItemResponse getLessonSummaryById(@PathVariable UUID id) {
+        return quizContentService.getLessonItemById(id);
     }
 
     @GetMapping("/declension-stems/{stemId}/forms")
@@ -106,3 +100,4 @@ public class QuizContentController {
                 .build();
     }
 }
+

@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.content.dto.LessonType;
-import sm.selflearn.samskrtam.quiz.dto.VocabularyLesson;
+import sm.selflearn.samskrtam.quiz.dto.VocabularyLessonDto;
 import sm.selflearn.samskrtam.quiz.dto.GrammarLesson;
 import sm.selflearn.samskrtam.quiz.service.LessonService;
 
@@ -26,7 +26,7 @@ public class LessonController {
     @Operation(summary = "Get vocabulary lesson with user progress")
     @ApiResponse(responseCode = "200", description = "Lesson with user progress retrieved successfully")
     @ApiResponse(responseCode = "404", description = "Lesson not found")
-    public Mono<ResponseEntity<VocabularyLesson>> getVocabularyLesson(
+    public Mono<ResponseEntity<VocabularyLessonDto>> getVocabularyLesson(
             @PathVariable String slug,
             @RequestHeader(value = "X-User-Id", required = false) UUID userId )
     {

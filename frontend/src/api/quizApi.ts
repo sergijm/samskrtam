@@ -12,12 +12,12 @@ export const quizApi = {
     return api.get<QuizListItem[]>(url, { params });
   },
 
-  getQuizBySlug: (slug: string) => api.get<QuizSummaryDto>(`/api/v1/content/quizzes/by-slug/${slug}`),
+  getQuizBySlug: (slug: string) => api.get<QuizSummaryDto>(`/api/v1/content/lessons/by-slug/${slug}`),
 
   startSession: (quizId: string, lessonType: LessonType, userLocale: string) => {
     const slug = lessonType.toLowerCase();
     const url = `/api/v1/quiz/${slug}/sessions/start`;
-    const params = { quizId: quizId };
+    const params = { lessonId: quizId };
 
     return api.post<StartSessionResponse>(url, null, {
       params: params,
@@ -28,7 +28,7 @@ export const quizApi = {
   startOrResumeSession: (quizId: string, lessonType: LessonType, userLocale: string) => {
     const slug = lessonType.toLowerCase();
     const url = `/api/v1/quiz/${slug}/sessions/start-or-resume`;
-    const params = { quizId: quizId };
+    const params = { lessonId: quizId };
 
     return api.post<StartOrResumeResponse>(url, null, {
         params: params,

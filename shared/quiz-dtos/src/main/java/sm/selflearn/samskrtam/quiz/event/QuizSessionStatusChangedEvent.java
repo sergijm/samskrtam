@@ -8,9 +8,10 @@ import java.util.UUID;
 public record QuizSessionStatusChangedEvent(
     UUID quizSessionId,
     UUID userId,
-    UUID quizId,
+    UUID lessonId,
     LessonType lessonType,
     String oldStatus,
     String newStatus,
     Instant timestamp
 ) implements StatisticEvent {}
+

@@ -1,21 +1,22 @@
 package sm.selflearn.samskrtam.quiz.dto;
 
-import lombok.Builder;
-import lombok.Value;
-import sm.selflearn.samskrtam.content.dto.LessonType; // Corrected import
+import lombok.*;
+import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 
 import java.time.Instant;
 import java.util.UUID;
 
-@Value
+@Data
 @Builder
-public class QuizSessionSummaryDto {
+@NoArgsConstructor
+@AllArgsConstructor
+public class QuizSummaryDto {
     UUID sessionId;
-    UUID quizId;
-    String quizTitle;
-    String quizTitleRu;
-    String quizTitleEn;
+    UUID lessonId;
+    String lessonTitle;
+    String lessonTitleRu;
+    String lessonTitleEn;
     String slug;
     LessonType lessonType;
     int score;

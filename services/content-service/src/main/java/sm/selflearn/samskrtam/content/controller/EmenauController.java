@@ -16,7 +16,7 @@ import java.util.List;
 @RequestMapping("/api/v1/eamenau")
 @Tag(name = "Eamenau", description = "APIs for Eamenau content (e.g., Sandhi Rules)")
 @RequiredArgsConstructor
-public class EamenauController {
+public class EmenauController {
 
     private final EamenauService eamenauService;
 

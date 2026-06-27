@@ -10,7 +10,7 @@ import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.content.model.GeneratedQuestion;
 import sm.selflearn.samskrtam.content.model.Lesson;
 import sm.selflearn.samskrtam.content.repository.GeneratedQuestionRepository;
-import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
+import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,7 +43,7 @@ public class QuestionGenerationService {
     private List<GeneratedQuestion> generateAndSaveQuestions(UUID generatedQuizDataId, Lesson lesson, String userLocale) {
         List<GeneratedQuestion> questionsToSave = new ArrayList<>();
 
-        if (lesson.getLessonType().toString().contains("DECLENSIONS")) {
+        if ( LessonType.isDeclensions(lesson.getLessonType())) {
             questionsToSave.addAll(declensionQuizGeneratorService.generateDeclensionQuestions(lesson, new Locale(userLocale)).stream()
                     .map(response -> GeneratedQuestion.builder()
                             .id(UUID.randomUUID())

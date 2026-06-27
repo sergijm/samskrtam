@@ -60,8 +60,9 @@ public class GatewayRoutesConfig {
                         .path("/api/v1/auth/**")
                         .and().not(p -> p.path("/api/v1/auth/oauth2/**")
                                 .or().path("/api/v1/auth/login")
-                                .or().path("/api/v1/auth/register") // Exclude specific register path
-                                .or().path("/api/v1/auth/forgot-password")) // Exclude specific forgot-password path
+                                                                .or().path("/api/v1/auth/refresh")
+                                                                .or().path("/api/v1/auth/register") // Exclude specific register path
+                                                                .or().path("/api/v1/auth/forgot-password")) // Exclude specific forgot-password path
                         .uri(userServiceUrl))
 
                 // ── Admin Users (требует JWT и ADMIN роль) ──────────────────────────────────────────

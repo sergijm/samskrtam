@@ -13,7 +13,7 @@ import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.quiz.dto.AnswerRequest;
 import sm.selflearn.samskrtam.quiz.dto.AnswerResponse;
 import sm.selflearn.samskrtam.quiz.dto.CompleteSessionResponse;
-import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
+import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse;
 import sm.selflearn.samskrtam.quiz.event.QuizAnsweredEvent;
 import sm.selflearn.samskrtam.quiz.event.QuizSessionStatusChangedEvent;
@@ -23,7 +23,6 @@ import sm.selflearn.samskrtam.quiz.model.QuizSession;
 import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
-import sm.selflearn.samskrtam.quiz.repository.WordStatisticsRepository;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -42,13 +41,12 @@ public class QuizSessionService {
     private final QuizDataAssembler quizDataAssembler;
     private final OutboxEventCreator outboxEventCreator;
     private final QuizAnswerMapper quizAnswerMapper;
-    private final ObjectMapper objectMapper;
-    private final WordStatisticsRepository wordStatisticsRepository;
+        private final ObjectMapper objectMapper;
 
-    public Mono<StartOrResumeResponse> startOrResumeSession(UUID quizId, UUID userId, String userLocale) {
-        return quizSessionRepository.findTopByUserIdAndQuizIdAndStatusOrderByStartedAtDesc(userId, quizId, SessionStatus.IN_PROGRESS)
+    public Mono<StartOrResumeResponse> startOrResumeSession(UUID lessonId, UUID userId, String userLocale) {
+        return quizSessionRepository.findTopByUserIdAndLessonIdAndStatusOrderByStartedAtDesc(userId, lessonId, SessionStatus.IN_PROGRESS)
                 .flatMap(session -> resume(session.getId(), userId, userLocale))
-                .switchIfEmpty(Mono.defer(() -> createNewSessionAndBuildStartOrResumeResponse(quizId, userId, userLocale)));
+                .switchIfEmpty(Mono.defer(() -> createNewSessionAndBuildStartOrResumeResponse(lessonId, userId, userLocale)));
     }
 
     public Mono<StartOrResumeResponse> resumeSession(UUID sessionId, UUID userId, String userLocale) {
@@ -97,7 +95,7 @@ public class QuizSessionService {
         return quizSessionRepository.findByIdAndUserId(sessionId, userId)
                 .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Session not found or does not belong to user: " + sessionId)))
                 .flatMap(this::completeAndPublishSessionStatus)
-                .flatMap(completedSession -> createNewSessionAndBuildStartOrResumeResponse(completedSession.getQuizId(), userId, userLocale));
+                .flatMap(completedSession -> createNewSessionAndBuildStartOrResumeResponse(completedSession.getLessonId(), userId, userLocale));
     }
 
     private Mono<AnswerResponse> processAndSaveAnswer(QuizSession session, UUID userId, AnswerRequest request, GeneratedQuizQuestionDto generatedQuestion, String userLocale) {
@@ -118,20 +116,12 @@ public class QuizSessionService {
                             .isCorrect(isCorrect)
                             .responseTimeMs(request.getResponseTimeMs())
                             .answeredAt(Instant.now())
-                            .build();
-
-                    // Определяем vocabularyWordId из вопроса (null для не-лексических квизов)
-                    UUID vocabularyWordId = generatedQuestion.getVocabularyWordId();
-
-                    Mono<Void> wordStatsMono = (vocabularyWordId != null)
-                            ? wordStatisticsRepository.upsert(userId, vocabularyWordId, isCorrect ? 1 : 0)
-                            : Mono.empty();
+                                                        .build();
 
                     return quizAnswerRepository.save(newAnswer)
                             .then(quizSessionRepository.incrementAnsweredQuestionsAndScore(session.getId(), isCorrect))
-                            .then(wordStatsMono)
                             .then(outboxEventCreator.createAndSaveQuizAnsweredEvent(
-                                    new QuizAnsweredEvent(session.getId(), userId, session.getQuizId(),
+                                    new QuizAnsweredEvent(session.getId(), userId, session.getLessonId(),
                                             session.getLessonType(), request.getQuestionId(),
                                             selectedOptionIast, isCorrect, Instant.now())))
                             .thenReturn(quizAnswerMapper.toAnswerResponse(
@@ -145,17 +135,17 @@ public class QuizSessionService {
         session.setCompletedAt(Instant.now());
 
         return quizSessionRepository.save(session)
-                .flatMap(savedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(savedSession.getId(), savedSession.getUserId(), savedSession.getQuizId(), savedSession.getLessonType(), oldStatus.name(), savedSession.getStatus().name(), Instant.now()))
+                .flatMap(savedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(savedSession.getId(), savedSession.getUserId(), savedSession.getLessonId(), savedSession.getLessonType(), oldStatus.name(), savedSession.getStatus().name(), Instant.now()))
                         .thenReturn(savedSession));
     }
 
-    private Mono<StartOrResumeResponse> createNewSessionAndBuildStartOrResumeResponse(UUID quizId, UUID userId, String userLocale) {
-        return contentClient.generateQuizData(quizId, userLocale)
+        private Mono<StartOrResumeResponse> createNewSessionAndBuildStartOrResumeResponse(UUID lessonId, UUID userId, String userLocale) {
+        return contentClient.generateQuizData(lessonId, userLocale)
                 .flatMap(generatedQuizData -> {
                     String vocabularyWordsJson = serializeVocabularyWords(generatedQuizData.getVocabularyWords());
-                    QuizSession newSession = buildNewQuizSession(quizId, userId, generatedQuizData, vocabularyWordsJson);
+                    QuizSession newSession = buildNewQuizSession(lessonId, userId, generatedQuizData, vocabularyWordsJson);
                     return quizSessionRepository.save(newSession)
-                            .flatMap(savedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(savedSession.getId(), userId, quizId, savedSession.getLessonType(), null, SessionStatus.IN_PROGRESS.name(), Instant.now()))
+                            .flatMap(savedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(savedSession.getId(), userId, lessonId, savedSession.getLessonType(), null, SessionStatus.IN_PROGRESS.name(), Instant.now()))
                                     .then(quizDataAssembler.assembleResponse(savedSession, generatedQuizData.getGeneratedQuestions(), generatedQuizData.getVocabularyWords(), userLocale)));
                 });
     }
@@ -177,7 +167,7 @@ public class QuizSessionService {
         session.setStatus(SessionStatus.IN_PROGRESS);
         session.setCompletedAt(null);
         return quizSessionRepository.save(session)
-                .flatMap(savedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(savedSession.getId(), savedSession.getUserId(), savedSession.getQuizId(), savedSession.getLessonType(), oldStatus.name(), savedSession.getStatus().name(), Instant.now()))
+                .flatMap(savedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(savedSession.getId(), savedSession.getUserId(), savedSession.getLessonId(), savedSession.getLessonType(), oldStatus.name(), savedSession.getStatus().name(), Instant.now()))
                         .then(fetchGeneratedQuizDataAndBuildResponse(savedSession, userLocale)));
     }
 
@@ -195,7 +185,7 @@ public class QuizSessionService {
         session.setStatus(SessionStatus.IN_PROGRESS);
         session.setCompletedAt(null);
         return quizSessionRepository.save(session)
-                .flatMap(updatedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(updatedSession.getId(), updatedSession.getUserId(), updatedSession.getQuizId(), updatedSession.getLessonType(), oldStatus.name(), updatedSession.getStatus().name(), Instant.now()))
+                .flatMap(updatedSession -> outboxEventCreator.createAndSaveSessionStatusChangedEvent(new QuizSessionStatusChangedEvent(updatedSession.getId(), updatedSession.getUserId(), updatedSession.getLessonId(), updatedSession.getLessonType(), oldStatus.name(), updatedSession.getStatus().name(), Instant.now()))
                         .then(fetchGeneratedQuizDataAndBuildResponse(updatedSession, userLocale)));
     }
 
@@ -210,11 +200,11 @@ public class QuizSessionService {
         }
     }
 
-    private QuizSession buildNewQuizSession(UUID quizId, UUID userId, GeneratedQuizData generatedQuizData, String vocabularyWordsJson) {
+        private QuizSession buildNewQuizSession(UUID lessonId, UUID userId, GeneratedQuizData generatedQuizData, String vocabularyWordsJson) {
         return QuizSession.builder()
                 .id(null)
                 .userId(userId)
-                .quizId(quizId)
+                .lessonId(lessonId)
                 .lessonType(generatedQuizData.getLessonType())
                 .totalQuestions(generatedQuizData.getQuestionsPerSession())
                 .answeredQuestions(0)

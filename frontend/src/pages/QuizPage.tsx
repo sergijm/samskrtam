@@ -240,7 +240,7 @@ const QuizPage = () => {
             <>
               {currentQuestion.stem && (
                 <>
-                  <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>{currentQuestion.stem}</span>
+                  <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>{currentQuestion.text}</span>
                   <br style={{ lineHeight: '1.5' }} />
                 </>
               )}

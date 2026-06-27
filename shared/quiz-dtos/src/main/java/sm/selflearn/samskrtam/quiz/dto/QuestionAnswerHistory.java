@@ -15,7 +15,7 @@ import java.util.UUID;
 public class QuestionAnswerHistory {
     private UUID questionId;
     private String textRu;
-    private UUID quizId;
+    private UUID lessonId;
     private List<AnswerHistoryEntry> entries;
     private int page;
     private int size;

@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
-import { authApi } from './authApi';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -34,7 +33,18 @@ api.interceptors.response.use(
       if (refreshToken) {
         try {
           console.log('axios.ts: Access token expired. Attempting to refresh with token:', refreshToken);
-          const newTokens = await authApi.refresh(refreshToken);
+          const response = await axios.post<{
+            access_token: string;
+            refresh_token: string;
+          }>(
+            `${import.meta.env.VITE_API_URL}/api/v1/auth/refresh`,
+            { refresh_token: refreshToken },
+            { headers: { 'Content-Type': 'application/json' } }
+          );
+          const newTokens: { accessToken: string; refreshToken: string } = {
+            accessToken: response.data.access_token,
+            refreshToken: response.data.refresh_token,
+          };
           setAuthTokens(newTokens);
           originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
           console.log('axios.ts: Token refreshed successfully. Retrying original request.');
@@ -56,3 +66,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+

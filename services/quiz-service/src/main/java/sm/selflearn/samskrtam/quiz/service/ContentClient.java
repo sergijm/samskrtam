@@ -8,11 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
-import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
-import sm.selflearn.samskrtam.content.dto.QuizSummaryDto;
-import sm.selflearn.samskrtam.content.dto.GeneratedQuizData;
-import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
-import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
+import sm.selflearn.samskrtam.content.dto.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -30,13 +26,13 @@ public class ContentClient {
                 .build();
     }
 
-    public Mono<GeneratedQuizData> generateQuizData(UUID quizId, String userLocale) {
+    public Mono<GeneratedQuizData> generateQuizData(UUID lessonId, String userLocale) {
         return webClient.post()
-                .uri("/api/v1/content/quizzes/{id}/generate-quiz-data", quizId)
+                .uri("/api/v1/content/lessons/{id}/generate-quiz-data", lessonId)
                 .header("X-User-Locale", userLocale)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError,
-                        r -> Mono.error(new SamskrtamException("QUIZ_NOT_FOUND", "Quiz not found in content-service: " + quizId)))
+                        r -> Mono.error(new SamskrtamException("LESSON_NOT_FOUND", "Lesson not found in content-service: " + lessonId)))
                 .bodyToMono(GeneratedQuizData.class);
     }
 
@@ -68,15 +64,15 @@ public class ContentClient {
                 .collectList();
     }
 
-    public Mono<List<VocabularyWordDto>> getVocabularyWordsForQuiz(UUID quizId, int limit) {
+    public Mono<List<VocabularyWordDto>> getVocabularyWordsForLesson(UUID lessonId, int limit) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/api/v1/content/quizzes/{quizId}/vocabulary-words")
+                        .path("/api/v1/content/lessons/{lessonId}/vocabulary-words")
                         .queryParam("limit", limit)
-                        .build(quizId))
+                        .build(lessonId))
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError,
-                        r -> Mono.error(new SamskrtamException("VOCABULARY_WORDS_NOT_FOUND", "Vocabulary words not found for quiz: " + quizId)))
+                        r -> Mono.error(new SamskrtamException("VOCABULARY_WORDS_NOT_FOUND", "Vocabulary words not found for lesson: " + lessonId)))
                 .bodyToFlux(VocabularyWordDto.class)
                 .collectList();
     }
@@ -90,21 +86,21 @@ public class ContentClient {
                 .bodyToMono(VocabularyWordDto.class);
     }
 
-    public Mono<QuizSummaryDto> getQuizSummary(UUID quizId) {
+    public Mono<LessonItemResponse> getLessonItem(UUID lessonId) {
         return webClient.get()
-                .uri("/api/v1/content/quizzes/{id}/summary", quizId)
+                .uri("/api/v1/content/lessons/{id}/summary", lessonId)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError,
-                        r -> Mono.error(new SamskrtamException("QUIZ_NOT_FOUND", "Quiz summary not found in content-service: " + quizId)))
-                .bodyToMono(QuizSummaryDto.class);
+                        r -> Mono.error(new SamskrtamException("LESSON_NOT_FOUND", "Lesson summary not found in content-service: " + lessonId)))
+                .bodyToMono(LessonItemResponse.class);
     }
 
-    public Mono<QuizSummaryDto> getQuizSummaryBySlug(String slug) {
+    public Mono<LessonItemResponse> getLessonItemBySlug(String slug) {
         return webClient.get()
-                .uri("/api/v1/content/quizzes/by-slug/{slug}", slug)
+                .uri("/api/v1/content/lessons/by-slug/{slug}", slug)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError,
-                        r -> Mono.error(new SamskrtamException("QUIZ_NOT_FOUND", "Quiz summary not found for slug: " + slug)))
-                .bodyToMono(QuizSummaryDto.class);
+                        r -> Mono.error(new SamskrtamException("LESSON_NOT_FOUND", "Lesson summary not found for slug: " + slug)))
+                .bodyToMono(LessonItemResponse.class);
     }
 }

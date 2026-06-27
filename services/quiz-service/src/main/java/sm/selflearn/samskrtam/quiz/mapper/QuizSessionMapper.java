@@ -3,7 +3,7 @@ package sm.selflearn.samskrtam.quiz.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.beans.factory.annotation.Autowired;
-import sm.selflearn.samskrtam.content.dto.QuizSummaryDto;
+import sm.selflearn.samskrtam.content.dto.LessonItemResponse;
 import sm.selflearn.samskrtam.quiz.dto.QuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse;
 import sm.selflearn.samskrtam.quiz.model.QuizSession;
@@ -27,17 +27,21 @@ public abstract class QuizSessionMapper {
     protected LexicalOptionGeneratorService lexicalOptionGeneratorService;
 
     @Mapping(target = "sessionId", source = "session.id")
-    @Mapping(target = "quizId", source = "session.quizId")
+    @Mapping(target = "lessonId", source = "session.lessonId")
     @Mapping(target = "lessonType", source = "session.lessonType")
     @Mapping(target = "totalQuestions", source = "session.totalQuestions")
     @Mapping(target = "answeredQuestions", expression = "java(answeredQuestionIds.size())")
     @Mapping(target = "score", source = "session.score")
     @Mapping(target = "currentQuestionIndex", expression = "java(answeredQuestionIds.size())")
-    @Mapping(target = "currentQuestionNumber", expression = "java(answeredQuestionIds.size() + 1)") // Added mapping
-    @Mapping(target = "quizTitleRu", source = "quizSummary.titleRu")
-    @Mapping(target = "quizTitleEn", source = "quizSummary.titleEn")
-    @Mapping(target = "quizDescriptionRu", source = "quizSummary.descriptionRu")
-    @Mapping(target = "quizDescriptionEn", source = "quizSummary.descriptionEn")
-    @Mapping(target = "slug", source = "quizSummary.slug")
-    public abstract StartOrResumeResponse toStartOrResumeResponse(QuizSession session, List<QuestionDto> questions, QuizSummaryDto quizSummary, List<UUID> answeredQuestionIds);
+    @Mapping(target = "currentQuestionNumber", expression = "java(answeredQuestionIds.size() + 1)")
+    @Mapping(target = "lessonTitleRu", source = "lessonItem.titleRu")
+    @Mapping(target = "lessonTitleEn", source = "lessonItem.titleEn")
+    @Mapping(target = "lessonDescriptionRu", source = "lessonItem.descriptionRu")
+    @Mapping(target = "lessonDescriptionEn", source = "lessonItem.descriptionEn")
+    @Mapping(target = "slug", source = "lessonItem.slug")
+    public abstract StartOrResumeResponse toStartOrResumeResponse(QuizSession session,
+                                                                  List<QuestionDto> questions,
+                                                                  LessonItemResponse lessonItem,
+                                                                  List<UUID> answeredQuestionIds);
 }
+

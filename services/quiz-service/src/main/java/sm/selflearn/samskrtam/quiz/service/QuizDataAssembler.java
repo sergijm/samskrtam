@@ -8,7 +8,7 @@ import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.dto.QuestionLanguage;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.quiz.dto.AnswerRequest;
-import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
+import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.QuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse;
 import sm.selflearn.samskrtam.quiz.mapper.QuizSessionMapper;
@@ -33,7 +33,7 @@ public class QuizDataAssembler {
     private final LexicalOptionGeneratorService lexicalOptionGeneratorService;
 
     public Mono<StartOrResumeResponse> assembleResponse(QuizSession session, List<GeneratedQuizQuestionDto> generatedQuestions, List<VocabularyWordDto> allVocabularyWords, String userLocale) {
-        return contentClient.getQuizSummary(session.getQuizId())
+        return contentClient.getLessonItem(session.getLessonId())
                 .flatMap(quizSummary -> quizAnswerRepository.findBySessionId(session.getId())
                         .collectList()
                         .flatMap(answeredQuestions -> {

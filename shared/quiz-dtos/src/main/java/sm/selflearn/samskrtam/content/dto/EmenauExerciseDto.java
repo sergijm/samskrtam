@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class EamenauExerciseDto {
+public class EmenauExerciseDto {
     private Integer id;
     private Integer exerciseNumber;
     private String exerciseLetter;

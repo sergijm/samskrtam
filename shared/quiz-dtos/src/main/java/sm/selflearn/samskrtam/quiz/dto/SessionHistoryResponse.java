@@ -2,7 +2,7 @@ package sm.selflearn.samskrtam.quiz.dto;
 
 import lombok.Builder;
 import lombok.Value;
-import sm.selflearn.samskrtam.content.dto.LessonType; // Corrected import
+import sm.selflearn.samskrtam.content.dto.LessonType;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -11,7 +11,7 @@ import java.util.UUID;
 @Builder
 public class SessionHistoryResponse {
     UUID sessionId;
-    UUID quizId;
+    UUID lessonId;
     LessonType lessonType;
     int score;
     int totalQuestions;
@@ -19,3 +19,4 @@ public class SessionHistoryResponse {
     long durationMs;
     Instant completedAt;
 }
+

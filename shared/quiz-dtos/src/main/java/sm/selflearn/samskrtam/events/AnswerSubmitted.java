@@ -1,11 +1,10 @@
 package sm.selflearn.samskrtam.events;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import sm.selflearn.samskrtam.content.dto.LessonType; // Corrected import
+import sm.selflearn.samskrtam.content.dto.LessonType;
 
 import java.util.UUID;
 
@@ -16,9 +15,10 @@ import java.util.UUID;
 public class AnswerSubmitted extends AbstractEvent {
     UUID    userId;
     LessonType lessonType;
-    UUID    quizId;
+    UUID    lessonId; // Changed from quizId to lessonId
     UUID    questionId;
     UUID    selectedOptionId;
     Boolean isCorrect;
     int     responseTimeMs;
 }
+

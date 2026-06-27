@@ -19,16 +19,16 @@ public class SessionHistoryService {
 
     private final SessionHistoryRepository sessionHistoryRepository;
 
-    public Flux<SessionHistoryResponse> getSessionHistory(UUID userId, UUID quizId, String quizType, int page, int size) {
+    public Flux<SessionHistoryResponse> getSessionHistory(UUID userId, UUID lessonId, String lessonType, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
 
         Flux<SessionHistory> historyFlux;
-        if (quizId != null && quizType != null) {
-            historyFlux = sessionHistoryRepository.findByUserIdAndQuizIdAndLessonType(userId, quizId, LessonType.valueOf(quizType), pageRequest);
-        } else if (quizId != null) {
-            historyFlux = sessionHistoryRepository.findByUserIdAndQuizId(userId, quizId, pageRequest);
-        } else if (quizType != null) {
-            historyFlux = sessionHistoryRepository.findByUserIdAndLessonType(userId, LessonType.valueOf(quizType), pageRequest);
+        if (lessonId != null && lessonType != null) {
+            historyFlux = sessionHistoryRepository.findByUserIdAndLessonIdAndLessonType(userId, lessonId, LessonType.valueOf(lessonType), pageRequest);
+        } else if (lessonId != null) {
+            historyFlux = sessionHistoryRepository.findByUserIdAndLessonId(userId, lessonId, pageRequest);
+        } else if (lessonType != null) {
+            historyFlux = sessionHistoryRepository.findByUserIdAndLessonType(userId, LessonType.valueOf(lessonType), pageRequest);
         } else {
             historyFlux = sessionHistoryRepository.findByUserId(userId, pageRequest);
         }
@@ -36,17 +36,12 @@ public class SessionHistoryService {
         return historyFlux.map(this::mapToSessionHistoryResponse);
     }
 
-    public Mono<SessionHistoryResponse> getSessionHistoryDetails(UUID sessionId, UUID userId) {
-        return sessionHistoryRepository.findBySessionIdAndUserId(sessionId, userId)
-                .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_HISTORY_NOT_FOUND", "Session history not found for ID: " + sessionId)))
-                .map(this::mapToSessionHistoryResponse);
-    }
 
     private SessionHistoryResponse mapToSessionHistoryResponse(SessionHistory history) {
         int percentage = (history.getTotalQuestions() > 0) ? (history.getScore() * 100 / history.getTotalQuestions()) : 0;
         return SessionHistoryResponse.builder()
                 .sessionId(history.getSessionId())
-                .quizId(history.getQuizId())
+                .lessonId(history.getLessonId())
                 .lessonType(history.getLessonType())
                 .score(history.getScore())
                 .totalQuestions(history.getTotalQuestions())
@@ -56,3 +51,4 @@ public class SessionHistoryService {
                 .build();
     }
 }
+

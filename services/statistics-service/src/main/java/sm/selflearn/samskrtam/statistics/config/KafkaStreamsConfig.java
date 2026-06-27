@@ -99,11 +99,11 @@ public class KafkaStreamsConfig {
                         log.warn("groupBy received null event with key: {}. Grouping as invalid.", key);
                         return "invalid-event-key";
                     }
-                    if (event.userId() == null || event.quizId() == null) {
+                    if (event.userId() == null || event.lessonId() == null) {
                         log.warn("groupBy received event with null userId or quizId: {}. Grouping as invalid.", event);
                         return "invalid-event-key";
                     }
-                    return event.userId().toString() + "-" + event.quizId().toString();
+                    return event.userId().toString() + "-" + event.lessonId().toString();
                 })
                 .aggregate(
                         UserQuizSessionStatistic::new,
@@ -115,7 +115,7 @@ public class KafkaStreamsConfig {
                             if (aggregate.getUserId() == null) {
                                 aggregate.setId(UUID.randomUUID());
                                 aggregate.setUserId(event.userId());
-                                aggregate.setQuizId(event.quizId());
+                                aggregate.setQuizId(event.lessonId());
                                 aggregate.setLessonType(event.lessonType());
                                 aggregate.setTotalSessions(0);
                                 aggregate.setTotalQuestionsAnswered(0);

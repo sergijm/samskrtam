@@ -23,13 +23,13 @@ public class EamenauExerciseService {
     private final SolutionSandhiRuleRepository solutionSandhiRuleRepository;
     private final SandhiRuleRepository sandhiRuleRepository;
 
-    public List<EamenauExerciseDto> getAllExercises() {
+    public List<EmenauExerciseDto> getAllExercises() {
         return exerciseRepository.findAllByOrderByExerciseNumberAscExerciseLetterAsc().stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
 
-    public EamenauExerciseDetailDto getExerciseById(Integer id) {
+    public EmenauExerciseDetailDto getExerciseById(Integer id) {
         return exerciseRepository.findById(id)
                 .map(this::mapToDetailDto)
                 .orElse(null);
@@ -133,8 +133,8 @@ public class EamenauExerciseService {
                 .build();
     }
 
-    private EamenauExerciseDto mapToDto(Exercise exercise) {
-        return EamenauExerciseDto.builder()
+    private EmenauExerciseDto mapToDto(Exercise exercise) {
+        return EmenauExerciseDto.builder()
                 .id(exercise.getId())
                 .exerciseNumber(exercise.getExerciseNumber())
                 .exerciseLetter(exercise.getExerciseLetter())
@@ -142,9 +142,9 @@ public class EamenauExerciseService {
                 .build();
     }
 
-    private EamenauExerciseDetailDto mapToDetailDto(Exercise exercise) {
+    private EmenauExerciseDetailDto mapToDetailDto(Exercise exercise) {
         List<Task> tasks = taskRepository.findByExerciseIdOrderByTaskNumberAsc(exercise.getId());
-        return EamenauExerciseDetailDto.builder()
+        return EmenauExerciseDetailDto.builder()
                 .id(exercise.getId())
                 .exerciseNumber(exercise.getExerciseNumber())
                 .exerciseLetter(exercise.getExerciseLetter())

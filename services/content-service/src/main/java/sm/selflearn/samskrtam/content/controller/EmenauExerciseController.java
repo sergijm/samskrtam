@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import sm.selflearn.samskrtam.content.dto.EamenauExerciseDetailDto;
-import sm.selflearn.samskrtam.content.dto.EamenauExerciseDto;
+import sm.selflearn.samskrtam.content.dto.EmenauExerciseDetailDto;
+import sm.selflearn.samskrtam.content.dto.EmenauExerciseDto;
 import sm.selflearn.samskrtam.content.dto.SandhiRuleInfo;
 import sm.selflearn.samskrtam.content.dto.SolutionDto;
 import sm.selflearn.samskrtam.content.dto.SolutionUpdateRequestDto;
@@ -17,17 +17,17 @@ import java.util.List;
 @RequestMapping("/api/v1/eamenau/exercises")
 @RequiredArgsConstructor
 @Slf4j
-public class EamenauExerciseController {
+public class EmenauExerciseController {
 
     private final EamenauExerciseService eamenauExerciseService;
 
     @GetMapping
-    public List<EamenauExerciseDto> getAllExercises() {
+    public List<EmenauExerciseDto> getAllExercises() {
         return eamenauExerciseService.getAllExercises();
     }
 
     @GetMapping("/{id}")
-    public EamenauExerciseDetailDto getExerciseById(@PathVariable Integer id) {
+    public EmenauExerciseDetailDto getExerciseById(@PathVariable Integer id) {
         return eamenauExerciseService.getExerciseById(id);
     }
 

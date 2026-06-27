@@ -1,5 +1,9 @@
 server:
   port: ${DICTIONARY_SERVICE_PORT}
+  error:
+    include-stacktrace: always
+    include-exception: true
+
 
 spring:
   application:

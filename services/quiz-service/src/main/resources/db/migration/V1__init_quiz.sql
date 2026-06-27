@@ -15,24 +15,7 @@
  Date: 27/06/2026 06:52:22
 */
 
-
--- ----------------------------
--- Table structure for flyway_schema_history
--- ----------------------------
-DROP TABLE IF EXISTS "quiz"."flyway_schema_history";
-CREATE TABLE "quiz"."flyway_schema_history" (
-  "installed_rank" int4 NOT NULL,
-  "version" varchar(50) COLLATE "pg_catalog"."default",
-  "description" varchar(200) COLLATE "pg_catalog"."default" NOT NULL,
-  "type" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-  "script" varchar(1000) COLLATE "pg_catalog"."default" NOT NULL,
-  "checksum" int4,
-  "installed_by" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-  "installed_on" timestamp(6) NOT NULL DEFAULT now(),
-  "execution_time" int4 NOT NULL,
-  "success" bool NOT NULL
-)
-;
+CREATE SCHEMA IF NOT EXISTS "quiz";
 
 -- ----------------------------
 -- Table structure for outbox_events
@@ -113,18 +96,6 @@ CREATE TABLE "quiz"."session_questions" (
   "correct_translation_en" varchar(255) COLLATE "pg_catalog"."default"
 )
 ;
-
--- ----------------------------
--- Indexes structure for table flyway_schema_history
--- ----------------------------
-CREATE INDEX "flyway_schema_history_s_idx" ON "quiz"."flyway_schema_history" USING btree (
-  "success" "pg_catalog"."bool_ops" ASC NULLS LAST
-);
-
--- ----------------------------
--- Primary Key structure for table flyway_schema_history
--- ----------------------------
-ALTER TABLE "quiz"."flyway_schema_history" ADD CONSTRAINT "flyway_schema_history_pk" PRIMARY KEY ("installed_rank");
 
 -- ----------------------------
 -- Indexes structure for table outbox_events

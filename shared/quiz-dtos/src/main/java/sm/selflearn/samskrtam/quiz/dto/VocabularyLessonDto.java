@@ -3,8 +3,8 @@ package sm.selflearn.samskrtam.quiz.dto;
 import java.util.List;
 import java.util.UUID;
 
-public class VocabularyLesson {
-    private UUID quizId;
+public class VocabularyLessonDto {
+    private UUID lessonId;
     private String slug;
     private String titleRu;
     private String titleEn;
@@ -15,12 +15,12 @@ public class VocabularyLesson {
     private List<VocabularyWordProgress> words;
 
     // Getters and setters
-    public UUID getQuizId() {
-        return quizId;
+    public UUID getLessonId() {
+        return lessonId;
     }
 
-    public void setQuizId(UUID quizId) {
-        this.quizId = quizId;
+    public void setLessonId(UUID lessonId) {
+        this.lessonId = lessonId;
     }
 
     public String getSlug() {

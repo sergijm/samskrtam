@@ -160,6 +160,30 @@ dependencies {
 
 ---
 
+## 6а. Word Score Calculation (On-the-fly)
+
+**Удалено:** Таблица `quiz.word_statistics` и связанная модель `WordStatistics` удалены.
+
+Вместо этого score слова (количество попыток, правильных ответов, последняя дата) вычисляется **на лету** через SQL-запрос к трём существующим таблицам:
+
+```sql
+SELECT
+  COUNT(*) AS total_attempts,
+  SUM(CASE WHEN qa.is_correct THEN 1 ELSE 0 END) AS correct_answers,
+  MAX(qa.answered_at) AS last_seen_at
+FROM quiz.quiz_answers qa
+JOIN quiz.quiz_session qs ON qa.session_id = qs.id
+JOIN quiz.session_questions sq ON qa.question_id = sq.id
+WHERE qs.user_id = :userId
+  AND qs.quiz_id = :quizId
+  AND sq.vocabulary_word_id = :wordId
+```
+
+Этот запрос выполняется асинхронно через R2DBC `@Query` в `UserSessionService`.
+Используется в `LessonServiceImpl` для отображения прогресса по каждому слову урока.
+
+---
+
 ## 7. ContentClient (WebClient)
 
 Внутренний клиент для взаимодействия с `content-service`.

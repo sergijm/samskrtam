@@ -22,7 +22,7 @@ public class QuizController {
     private final LessonService lessonService;
 
     @GetMapping("/lessons/{slug}")
-    public Mono<ResponseEntity<VocabularyLesson>> getVocabularyLesson(
+    public Mono<ResponseEntity<VocabularyLessonDto>> getVocabularyLesson(
             @PathVariable String slug,
             @RequestHeader("X-User-ID") UUID userId) {
         return lessonService.getVocabularyLesson(slug, userId)

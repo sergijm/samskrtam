@@ -14,8 +14,8 @@ import sm.selflearn.samskrtam.content.model.GeneratedQuizDataRecord;
 import sm.selflearn.samskrtam.content.model.GeneratedQuestion;
 import sm.selflearn.samskrtam.content.model.Lesson;
 import sm.selflearn.samskrtam.content.repository.*;
-import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
-import sm.selflearn.samskrtam.quiz.dto.QuizListItemResponse;
+import sm.selflearn.samskrtam.content.dto.LessonItemResponse;
+import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
 
 import java.time.Instant;
 import java.util.*;
@@ -35,7 +35,7 @@ public class QuizContentService {
     private final VocabularyWordCategoryRepository vocabularyWordCategoryRepository;
     private final ObjectMapper objectMapper;
 
-    public List<QuizListItemResponse> getQuizList(String category) {
+    public List<LessonItemResponse> getLessonsList(String category) {
         return quizRepository.findAll().stream()
                 .filter(quiz -> {
                     if (category == null) {
@@ -59,11 +59,25 @@ public class QuizContentService {
                             return true;
                     }
                 })
-                .map(this::mapToQuizListItemResponse)
+                .map(this::mapToLessonItemResponse)
                 .collect(Collectors.toList());
     }
 
-    private QuizListItemResponse mapToQuizListItemResponse(Lesson lesson) {
+    public LessonItemResponse getLessonItemBySlug(String slug) {
+        log.debug("getQuizBySlug called with slug: {}", slug);
+        return quizRepository.findBySlug(slug)
+                .map(this::mapToLessonItemResponse)
+                .orElseThrow(() -> new SamskrtamException("QUIZ_NOT_FOUND", "Quiz not found with slug: " + slug));
+    }
+
+    public LessonItemResponse getLessonItemById(UUID quizId) {
+        log.debug("getQuizSummaryById called with quizId: {}", quizId);
+        return quizRepository.findById(quizId)
+                .map(this::mapToLessonItemResponse)
+                .orElseThrow(() -> new SamskrtamException("QUIZ_NOT_FOUND", "Quiz not found with ID: " + quizId));
+    }
+
+    private LessonItemResponse mapToLessonItemResponse(Lesson lesson) {
         int wordCount = 0;
         if (LessonType.isVocabulary(lesson.getLessonType())) {
             wordCount = vocabularyCategoryRepository.findByCodeIgnoreCase(lesson.getSlug())
@@ -74,7 +88,7 @@ public class QuizContentService {
                     .orElse(0);
         }
 
-        return QuizListItemResponse.builder()
+        return LessonItemResponse.builder()
                 .id(lesson.getId())
                 .title(lesson.getTitleEn())
                 .titleRu(lesson.getTitleRu())
@@ -83,6 +97,7 @@ public class QuizContentService {
                 .descriptionRu(lesson.getDescriptionRu())
                 .descriptionEn(lesson.getDescriptionEn())
                 .lessonType(lesson.getLessonType())
+                .difficulty(lesson.getDifficulty())
                 .slug(lesson.getSlug())
                 .totalQuestions(lesson.getQuestionsPerSession())
                 .wordCount(wordCount)
@@ -152,7 +167,7 @@ public class QuizContentService {
 
         return GeneratedQuizData.builder()
                 .generatedQuizDataId(generatedQuizDataId)
-                .quizId(lesson.getId())
+                .lessonId(lesson.getId())
                 .lessonType(lesson.getLessonType())
                 .questionsPerSession(lesson.getQuestionsPerSession())
                 .generatedQuestions(sortedQuestions)
@@ -209,7 +224,7 @@ public class QuizContentService {
 
         return GeneratedQuizData.builder()
                 .generatedQuizDataId(record.getId())
-                .quizId(lesson.getId())
+                .lessonId(lesson.getId())
                 .lessonType(lesson.getLessonType())
                 .questionsPerSession(lesson.getQuestionsPerSession())
                 .generatedQuestions(sortedQuestions)

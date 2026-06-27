@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class GrammarLesson {
-    private UUID quizId;
+    private UUID lessonId;
     private String type;
     private String titleRu;
     private String titleEn;
@@ -15,12 +15,12 @@ public class GrammarLesson {
     private List<GrammarQuestionProgress> questions;
 
     // Getters and setters
-    public UUID getQuizId() {
-        return quizId;
+    public UUID getLessonId() {
+        return lessonId;
     }
 
-    public void setQuizId(UUID quizId) {
-        this.quizId = quizId;
+    public void setLessonId(UUID lessonId) {
+        this.lessonId = lessonId;
     }
 
     public String getType() {

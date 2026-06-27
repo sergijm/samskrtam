@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class EamenauExerciseDetailDto {
+public class EmenauExerciseDetailDto {
     private Integer id;
     private Integer exerciseNumber;
     private String exerciseLetter;

@@ -16,9 +16,10 @@ import java.util.UUID;
 public class SessionCompleted extends AbstractEvent {
     UUID    userId;
     LessonType lessonType;
-    UUID    quizId;
+    UUID    lessonId;
     int     score;
     int     totalQuestions;
     long    durationMs;
     List<AnswerData> answers; // New field to store the session history
 }
+

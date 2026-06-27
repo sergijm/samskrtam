@@ -17,7 +17,8 @@ import java.util.UUID;
 })
 public interface StatisticEvent {
     UUID userId();
-    UUID quizId();
+    UUID lessonId();
     LessonType lessonType();
     Instant timestamp();
 }
+

@@ -15,7 +15,7 @@ import java.util.UUID;
 public class WordAnswerHistory {
     private UUID wordId;
     private String word;
-    private UUID quizId;
+    private UUID lessonId;
     private List<AnswerHistoryEntry> entries;
     private int page;
     private int size;

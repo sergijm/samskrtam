@@ -27,25 +27,25 @@ public class QuizSessionController {
     @ApiResponse(responseCode = "200", description = "Session started or resumed successfully")
     @ApiResponse(responseCode = "404", description = "Quiz not found")
     public Mono<StartOrResumeResponse> startSession( // Changed return type to StartOrResumeResponse
-            @PathVariable String slug,
-            @RequestParam UUID quizId,
-            @RequestHeader("X-User-Id") UUID userId,
-            @RequestHeader("X-User-Locale") String userLocale) {
-        // This endpoint now behaves like start-or-resume to simplify client logic
-        return quizSessionService.startOrResumeSession(quizId, userId, userLocale); // Changed service call
-    }
+                @PathVariable String slug,
+                @RequestParam UUID lessonId,
+                @RequestHeader("X-User-Id") UUID userId,
+                @RequestHeader("X-User-Locale") String userLocale) {
+            // This endpoint now behaves like start-or-resume to simplify client logic
+            return quizSessionService.startOrResumeSession(lessonId, userId, userLocale); // Changed service call
+        }
 
     @PostMapping("/start-or-resume")
     @Operation(summary = "Start a new quiz session or resume the latest in-progress session for a given quiz")
     @ApiResponse(responseCode = "200", description = "Session started or resumed successfully")
     @ApiResponse(responseCode = "404", description = "Quiz not found")
     public Mono<StartOrResumeResponse> startOrResumeSession(
-            @PathVariable String slug,
-            @RequestParam UUID quizId,
-            @RequestHeader("X-User-Id") UUID userId,
-            @RequestHeader("X-User-Locale") String userLocale) {
-        return quizSessionService.startOrResumeSession(quizId, userId, userLocale); // Changed service call
-    }
+                @PathVariable String slug,
+                @RequestParam UUID lessonId,
+                @RequestHeader("X-User-Id") UUID userId,
+                @RequestHeader("X-User-Locale") String userLocale) {
+            return quizSessionService.startOrResumeSession(lessonId, userId, userLocale); // Changed service call
+        }
 
     @GetMapping("/{sessionId}/resume")
     @Operation(summary = "Resume an existing quiz session")

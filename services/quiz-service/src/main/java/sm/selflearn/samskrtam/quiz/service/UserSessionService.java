@@ -13,13 +13,13 @@ import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.*;
 import sm.selflearn.samskrtam.quiz.dto.AnswerHistoryDto;
 import sm.selflearn.samskrtam.quiz.dto.QuizProgressDto;
-import sm.selflearn.samskrtam.quiz.dto.QuizSessionSummaryDto;
+import sm.selflearn.samskrtam.quiz.dto.QuizSummaryDto;
 import sm.selflearn.samskrtam.quiz.mapper.UserSessionMapper;
 import sm.selflearn.samskrtam.quiz.model.*;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
-import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
-import sm.selflearn.samskrtam.quiz.repository.WordStatisticsRepository;
+import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
+
 
 import java.time.Duration;
 import java.util.*;
@@ -36,9 +36,9 @@ public class UserSessionService {
     private final ContentClient contentClient;
     private final ObjectMapper objectMapper;
     private final UserSessionMapper userSessionMapper;
-    private final WordStatisticsRepository wordStatisticsRepository;
+    
 
-    public Mono<Page<QuizSessionSummaryDto>> getUserQuizSessions(
+    public Mono<Page<QuizSummaryDto>> getUserQuizSessions(
             UUID userId,
             LessonType lessonType,
             SessionStatus status,
@@ -47,37 +47,37 @@ public class UserSessionService {
         Mono<Long> totalElementsMono = quizSessionRepository.countUserSessions(userId, lessonType, status);
         Flux<QuizSession> sessionsFlux = quizSessionRepository.findUserSessions(userId, lessonType, status, pageable);
 
-        Mono<Map<UUID, QuizSummaryDto>> quizSummariesMapMono = sessionsFlux
-                .map(QuizSession::getQuizId)
+                Mono<Map<UUID, LessonItemResponse>> lessonSummariesMapMono = sessionsFlux
+                .map(QuizSession::getLessonId)
                 .collect(Collectors.toSet())
-                .flatMap(quizIds -> {
-                    if (quizIds.isEmpty()) {
+                .flatMap(lessonIds -> {
+                    if (lessonIds.isEmpty()) {
                         return Mono.just(Map.of());
                     }
-                    return Flux.fromIterable(quizIds)
-                            .flatMap(contentClient::getQuizSummary)
-                            .collect(Collectors.toMap(QuizSummaryDto::getId, Function.identity()));
+                    return Flux.fromIterable(lessonIds)
+                            .flatMap(contentClient::getLessonItem)
+                            .collect(Collectors.toMap(LessonItemResponse::getId, Function.identity()));
                 });
 
-        return Mono.zip(sessionsFlux.collectList(), quizSummariesMapMono, totalElementsMono)
+        return Mono.zip(sessionsFlux.collectList(), lessonSummariesMapMono, totalElementsMono)
                 .map(tuple -> {
                     List<QuizSession> sessions = tuple.getT1();
-                    Map<UUID, QuizSummaryDto> quizSummariesMap = tuple.getT2();
+                    Map<UUID, LessonItemResponse> lessonSummariesMap = tuple.getT2();
                     Long totalElements = tuple.getT3();
 
-                    List<QuizSessionSummaryDto> dtoList = sessions.stream()
+                    List<QuizSummaryDto> dtoList = sessions.stream()
                             .map(session -> {
-                                QuizSummaryDto summary = quizSummariesMap.get(session.getQuizId());
+                                LessonItemResponse summary = lessonSummariesMap.get(session.getLessonId());
                                 Long durationMs = null;
                                 if (session.getStartedAt() != null && session.getCompletedAt() != null) {
                                     durationMs = Duration.between(session.getStartedAt(), session.getCompletedAt()).toMillis();
                                 }
-                                return QuizSessionSummaryDto.builder()
+                                return QuizSummaryDto.builder()
                                         .sessionId(session.getId())
-                                        .quizId(session.getQuizId())
-                                        .quizTitle(summary != null ? summary.getTitleEn() : "Unknown Quiz")
-                                        .quizTitleRu(summary != null ? summary.getTitleRu() : "Неизвестный квиз")
-                                        .quizTitleEn(summary != null ? summary.getTitleEn() : "Unknown Quiz")
+                                        .lessonId(session.getLessonId())
+                                        .lessonTitle(summary != null ? summary.getTitleEn() : "Unknown Lesson")
+                                        .lessonTitleRu(summary != null ? summary.getTitleRu() : "Неизвестный урок")
+                                        .lessonTitleEn(summary != null ? summary.getTitleEn() : "Unknown Lesson")
                                         .slug(summary != null ? summary.getSlug() : "")
                                         .lessonType(session.getLessonType())
                                         .score(session.getScore())
@@ -94,22 +94,22 @@ public class UserSessionService {
                 });
     }
 
-    public Mono<QuizSessionSummaryDto> getQuizSessionSummary(UUID sessionId, UUID userId) {
+        public Mono<QuizSummaryDto> getQuizSessionSummary(UUID sessionId, UUID userId) {
         return quizSessionRepository.findByIdAndUserId(sessionId, userId)
                 .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Quiz session not found or does not belong to user: " + sessionId)))
-                .flatMap(session -> contentClient.getQuizSummary(session.getQuizId())
-                        .map(quizSummary -> {
+                .flatMap(session -> contentClient.getLessonItem(session.getLessonId())
+                        .map(lessonSummary -> {
                             Long durationMs = null;
                             if (session.getStartedAt() != null && session.getCompletedAt() != null) {
                                 durationMs = Duration.between(session.getStartedAt(), session.getCompletedAt()).toMillis();
                             }
-                            return QuizSessionSummaryDto.builder()
+                            return QuizSummaryDto.builder()
                                     .sessionId(session.getId())
-                                    .quizId(session.getQuizId())
-                                    .quizTitle(quizSummary.getTitleEn())
-                                    .quizTitleRu(quizSummary.getTitleRu())
-                                    .quizTitleEn(quizSummary.getTitleEn())
-                                    .slug(quizSummary.getSlug())
+                                    .lessonId(session.getLessonId())
+                                    .lessonTitle(lessonSummary.getTitleEn())
+                                    .lessonTitleRu(lessonSummary.getTitleRu())
+                                    .lessonTitleEn(lessonSummary.getTitleEn())
+                                    .slug(lessonSummary.getSlug())
                                     .lessonType(session.getLessonType())
                                     .score(session.getScore())
                                     .totalQuestions(session.getTotalQuestions())
@@ -166,8 +166,8 @@ public class UserSessionService {
                 );
     }
 
-    public Mono<QuizProgressDto> getLatestUnfinishedQuizProgress(UUID userId, UUID quizId) {
-        return quizSessionRepository.findTopByUserIdAndQuizIdAndStatusOrderByStartedAtDesc(userId, quizId, SessionStatus.IN_PROGRESS)
+        public Mono<QuizProgressDto> getLatestUnfinishedQuizProgress(UUID userId, UUID lessonId) {
+        return quizSessionRepository.findTopByUserIdAndLessonIdAndStatusOrderByStartedAtDesc(userId, lessonId, SessionStatus.IN_PROGRESS)
                 .map(session -> new QuizProgressDto(session.getId(), session.getAnsweredQuestions(), session.getTotalQuestions(), true))
                 .defaultIfEmpty(new QuizProgressDto(null, 0, 0, false));
     }
@@ -176,16 +176,12 @@ public class UserSessionService {
         return null;
     }
 
-    public Mono<WordStatistics> getWordStatistics(UUID userId, UUID quizId, UUID wordId) {
-        return wordStatisticsRepository.findByUserIdAndVocabularyWordId(userId, wordId);
-    }
-
-    public Mono<List<QuizAnswer>> getWordAnswers(UUID userId, UUID wordId) {
-        return quizAnswerRepository.findByWordIdAndUserId(wordId, userId)
+        public Mono<List<QuizAnswer>> getWordAnswers(UUID userId, UUID wordId, UUID lessonId) {
+        return quizAnswerRepository.findByWordIdAndUserIdAndLessonId(wordId, userId, lessonId)
                 .collectList();
     }
 
-    public Mono<Long> countWordAnswers(UUID userId, UUID wordId) {
-        return quizAnswerRepository.countByWordIdAndUserId(wordId, userId);
+    public Mono<Long> countWordAnswers(UUID userId, UUID wordId, UUID lessonId) {
+        return quizAnswerRepository.countByWordIdAndUserIdAndLessonId(wordId, userId, lessonId);
     }
 }

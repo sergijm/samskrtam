@@ -3,7 +3,7 @@ package sm.selflearn.samskrtam.quiz.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import sm.selflearn.samskrtam.quiz.dto.AnswerResponse;
-import sm.selflearn.samskrtam.quiz.dto.GeneratedQuizQuestionDto;
+import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
 import sm.selflearn.samskrtam.quiz.model.QuizSession;
 
 import java.util.UUID;

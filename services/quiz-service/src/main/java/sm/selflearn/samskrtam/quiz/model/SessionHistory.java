@@ -17,7 +17,7 @@ public class SessionHistory {
     private UUID id;
     private UUID sessionId;
     private UUID userId;
-    private UUID quizId;
+    private UUID lessonId;
     private LessonType lessonType;
     private int score;
     private int totalQuestions;

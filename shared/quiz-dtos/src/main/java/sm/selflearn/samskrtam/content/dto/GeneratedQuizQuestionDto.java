@@ -1,9 +1,8 @@
-package sm.selflearn.samskrtam.quiz.dto;
+package sm.selflearn.samskrtam.content.dto;
 
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
-import sm.selflearn.samskrtam.content.dto.QuestionLanguage; // Corrected import
 import sm.selflearn.samskrtam.content.model.Case; // Corrected import
 import sm.selflearn.samskrtam.content.model.Number; // Corrected import
 

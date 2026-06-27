@@ -19,23 +19,21 @@ public interface QuizSessionRepository extends ReactiveCrudRepository<QuizSessio
     Mono<QuizSession> findByIdAndUserId(UUID id, UUID userId);
 
     @Query("SELECT * FROM quiz.quiz_session " +
-           "WHERE user_id = :userId " +
-           "AND (:lessonType IS NULL OR lesson_type = :lessonType) " +
-           "AND (:status IS NULL OR status = :status) " +
-           "LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}") // Добавлены LIMIT и OFFSET
+            "WHERE user_id = :userId " +
+            "AND (:lessonType IS NULL OR lesson_type = :lessonType) " +
+            "AND (:status IS NULL OR status = :status) " +
+            "LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}")
     Flux<QuizSession> findUserSessions(UUID userId, LessonType lessonType, SessionStatus status, Pageable pageable);
 
     @Query("SELECT COUNT(*) FROM quiz.quiz_session " +
-           "WHERE user_id = :userId " +
-           "AND (:lessonType IS NULL OR lesson_type = :lessonType) " +
-           "AND (:status IS NULL OR status = :status)")
+            "WHERE user_id = :userId " +
+            "AND (:lessonType IS NULL OR lesson_type = :lessonType) " +
+            "AND (:status IS NULL OR status = :status)")
     Mono<Long> countUserSessions(UUID userId, LessonType lessonType, SessionStatus status);
 
-    // New method to find the latest unfinished quiz session for a user and quiz type
     Mono<QuizSession> findTopByUserIdAndLessonTypeAndStatusOrderByStartedAtDesc(UUID userId, LessonType lessonType, SessionStatus status);
 
-    // New method to find the latest unfinished quiz session for a user and specific quiz ID
-    Mono<QuizSession> findTopByUserIdAndQuizIdAndStatusOrderByStartedAtDesc(UUID userId, UUID quizId, SessionStatus status);
+    Mono<QuizSession> findTopByUserIdAndLessonIdAndStatusOrderByStartedAtDesc(UUID userId, UUID lessonId, SessionStatus status);
 
     @Modifying
     @Query("UPDATE quiz.quiz_session SET answered_questions = answered_questions + 1, score = CASE WHEN :isCorrect THEN score + 1 ELSE score END WHERE id = :sessionId")

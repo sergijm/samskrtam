@@ -13,8 +13,8 @@ import java.util.UUID;
 @Repository
 public interface SessionHistoryRepository extends ReactiveCrudRepository<SessionHistory, UUID> {
     Flux<SessionHistory> findByUserId(UUID userId, Pageable pageable);
-    Flux<SessionHistory> findByUserIdAndQuizId(UUID userId, UUID quizId, Pageable pageable);
+    Flux<SessionHistory> findByUserIdAndLessonId(UUID userId, UUID lessonId, Pageable pageable);
     Flux<SessionHistory> findByUserIdAndLessonType(UUID userId, LessonType lessonType, Pageable pageable);
-    Flux<SessionHistory> findByUserIdAndQuizIdAndLessonType(UUID userId, UUID quizId, LessonType lessonType, Pageable pageable);
-    Mono<SessionHistory> findBySessionIdAndUserId(UUID sessionId, UUID userId);
+    Flux<SessionHistory> findByUserIdAndLessonIdAndLessonType(UUID userId, UUID lessonId, LessonType lessonType, Pageable pageable);
 }
+
