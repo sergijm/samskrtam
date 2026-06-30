@@ -1,6 +1,6 @@
-# Lesson Pages — VocabularyLessonPage и GrammarLessonPage
+﻿# Lesson Pages — VocabularyLessonPage и GrammarLessonPage
 
-> Связанные файлы: [frontend.md](../../../../Users/sm/AppData/Local/Temp/frontend.md) · [content-service.md](../services/content-service.md) · [quiz-service.md](../services/quiz-service.md) · [statistics-service.md](../services/statistics-service.md)
+> Связанные файлы: [frontend-overview.md](../../../../Users/sm/AppData/Local/Temp/frontend-overview.md) · [content-service.md](../services/content-service.md) · [quiz-service.md](../services/quiz-service.md) · [statistics-service.md](../services/statistics-service.md)
 > Status: **DRAFT**
 
 ---
@@ -88,7 +88,7 @@
 
 ---
 
-## 4. Изменения в роутинге (frontend.md раздел 3)
+## 4. Изменения в роутинге (frontend-overview.md раздел 3)
 
 Добавить маршруты:
 
@@ -266,3 +266,4 @@ export interface WordAnswerHistory {
 - [ ] Нужна ли сортировка в таблице (по статусу, по алфавиту)?
 - [ ] Показывать ли слова/вопросы которые не вошли в последнюю сессию (если `questionsPerSession < totalWords`)?
 - [ ] Нужна ли кнопка «Повторить только ошибки»?
+

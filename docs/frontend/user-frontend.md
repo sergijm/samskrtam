@@ -1,4 +1,4 @@
-# User & Groups Frontend Specification
+﻿# User & Groups Frontend Specification
 
 > Модуль: `frontend/`
 > Связанные сервисы: `user-service`
@@ -6,7 +6,7 @@
 
 Этот файл описывает всё что касается пользователей и групп учащихся на фронтенде:
 страницы, компоненты, TypeScript типы, React Query хуки и API клиент.
-Остальные части фронтенда — в [frontend.md](frontend.md).
+Остальные части фронтенда — в [frontend-overview.md](frontend-overview.md).
 
 ---
 
@@ -574,3 +574,4 @@ export const UserGroupChips = ({ userId }: { userId: string }) => {
 - [ ] Кнопка "Сохранить" делает PATCH /api/v1/users/me и показывает Toast
 - [ ] После логина тема и язык восстанавливаются из профиля
 - [ ] ChangePasswordPage: успех показывает Toast, поля очищаются
+

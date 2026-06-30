@@ -9,7 +9,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
-import sm.selflearn.samskrtam.content.dto.*;
+import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
+import sm.selflearn.samskrtam.content.dto.DeclensionStemDto;
+import sm.selflearn.samskrtam.content.dto.GeneratedQuizData;
+import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
+import sm.selflearn.samskrtam.content.dto.LessonItemResponse;
+import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
+import sm.selflearn.samskrtam.content.model.VowelType;
+import sm.selflearn.samskrtam.quiz.dto.CaseEndingDto;
 
 import java.util.List;
 import java.util.UUID;
@@ -123,11 +130,25 @@ public class ContentClient {
 
     public Mono<List<DeclensionStemDto>> getDeclensionStemsForLesson(String slug) {
         return webClient.get()
-                .uri("/api/v1/content/lessons/by-slug/{slug}/declension-stems", slug)
+                .uri("/api/v1/content/lessons/{slug}/declension-stems", slug)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError,
                         r -> Mono.error(new SamskrtamException("STEMS_NOT_FOUND", "Declension stems not found for lesson slug: " + slug)))
                 .bodyToFlux(DeclensionStemDto.class)
                 .collectList();
     }
+
+    public Mono<List<CaseEndingDto>> getCaseEndingsByVowelType(String vowelType) {
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/v1/content/case-endings")
+                        .queryParam("vowelType", vowelType)
+                        .build())
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("CASE_ENDINGS_NOT_FOUND", "Case endings not found for vowelType: " + vowelType)))
+                .bodyToFlux(CaseEndingDto.class)
+                .collectList();
+    }
+
 }

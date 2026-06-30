@@ -22,3 +22,4 @@ public interface UserSessionMapper {
 //    @Mapping(target = "durationMs", expression = "java(session.getStartedAt() != null && session.getCompletedAt() != null ? Duration.between(session.getStartedAt(), session.getCompletedAt()).toMillis() : null)")
 //    QuizSummaryDto toQuizSummaryDto(QuizSession session, LessonSummaryDto lessonSummary);
 }
+

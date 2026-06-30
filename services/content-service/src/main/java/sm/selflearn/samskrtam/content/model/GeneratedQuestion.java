@@ -41,10 +41,10 @@ public class GeneratedQuestion {
     private UUID declensionStemId;
 
     @Enumerated(EnumType.STRING)
-    private Case targetCase;
+    private CaseType targetCase;
 
     @Enumerated(EnumType.STRING)
-    private Number targetNumber;
+    private NumberType targetNumber;
 
     private String correctFormIast;
     private String correctFormDevanagari;
@@ -65,8 +65,8 @@ public class GeneratedQuestion {
     private String stem;
     @Enumerated(EnumType.STRING) // Added annotation
     @Column
-    private Case caseType; // Changed type to Case enum
+    private CaseType caseType; // Changed type to Case enum
     @Enumerated(EnumType.STRING) // Added annotation
     @Column
-    private Number numberType; // Changed type to Number enum
+    private NumberType numberType; // Changed type to Number enum
 }

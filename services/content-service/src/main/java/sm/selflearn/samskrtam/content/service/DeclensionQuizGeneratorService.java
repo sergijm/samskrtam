@@ -4,12 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.QuestionResponse;
-import sm.selflearn.samskrtam.content.dto.LessonType;
-import sm.selflearn.samskrtam.content.model.Case; // Corrected import for Case
-import sm.selflearn.samskrtam.content.model.DeclensionForm;
-import sm.selflearn.samskrtam.content.model.DeclensionStem;
-import sm.selflearn.samskrtam.content.model.Lesson;
-import sm.selflearn.samskrtam.content.model.VowelType;
+import sm.selflearn.samskrtam.content.model.*;
 import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
 import sm.selflearn.samskrtam.content.repository.DeclensionStemRepository;
 
@@ -58,9 +53,9 @@ public class DeclensionQuizGeneratorService {
     }
 
     private QuestionResponse generateSingleQuestion(DeclensionStem stem, Locale locale, int questionNumber) {
-        Case targetCase = Case.values()[random.nextInt(Case.values().length)];
+        CaseType targetCase = CaseType.values()[random.nextInt(CaseType.values().length)];
         // Assuming Number is in the same package as Case
-        sm.selflearn.samskrtam.content.model.Number targetNumber = sm.selflearn.samskrtam.content.model.Number.values()[random.nextInt(sm.selflearn.samskrtam.content.model.Number.values().length)];
+        NumberType targetNumber = NumberType.values()[random.nextInt(NumberType.values().length)];
 
         DeclensionForm correctForm = declensionFormRepository
                 .findByDeclensionStemIdAndCaseTypeAndNumberType(stem.getId(), targetCase, targetNumber)

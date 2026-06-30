@@ -119,7 +119,7 @@ const DictionaryPage = () => {
                 >
                   <td
                     style={{
-                      width: '150px',
+                      width: '300px',
                       padding: '0.75rem',
                       verticalAlign: 'top',
                       fontWeight: 'bold',

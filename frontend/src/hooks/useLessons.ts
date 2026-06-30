@@ -22,9 +22,9 @@ export const useWordHistory = (slug: string, wordId: string) =>
     enabled: !!wordId && !!slug,
   });
 
-export const useQuestionHistory = (slug: string, caseType: string, numberType: string) =>
+export const useQuestionHistory = (slug: string, caseType: string, numberType: string, gender: string) =>
   useQuery({
-    queryKey: ['question-history', slug, caseType, numberType],
-    queryFn: () => lessonApi.getQuestionHistory(slug, caseType, numberType).then(res => res.data),
-    enabled: !!slug && !!caseType && !!numberType,
+    queryKey: ['question-history', slug, caseType, numberType, gender],
+    queryFn: () => lessonApi.getQuestionHistory(slug, caseType, numberType, gender).then(res => res.data),
+    enabled: !!slug && !!caseType && !!numberType && !!gender,
   });

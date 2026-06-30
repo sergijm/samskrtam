@@ -30,11 +30,11 @@ public class GrammarFormScoreService {
 
     public Mono<GrammarFormScore> upsertScore(
             UUID userId, UUID lessonId,
-            String caseType, String numberType,
+            String gender, String caseType, String numberType,
             boolean isCorrect) {
 
-        return repository.findByUserIdAndLessonIdAndCaseTypeAndNumberType(
-                        userId, lessonId, caseType, numberType)
+        return repository.findByUserIdAndLessonIdAndGenderAndCaseTypeAndNumberType(
+                        userId, lessonId, gender, caseType, numberType)
                 .flatMap(existing -> {
                     int newScore = calculateScore(existing.getScore(), isCorrect);
                     existing.setScore(newScore);
@@ -43,9 +43,9 @@ public class GrammarFormScoreService {
                 })
                 .switchIfEmpty(Mono.defer(() -> {
                     GrammarFormScore entry = GrammarFormScore.builder()
-                            .id(UUID.randomUUID())
                             .userId(userId)
                             .lessonId(lessonId)
+                            .gender(gender)
                             .caseType(caseType)
                             .numberType(numberType)
                             .score(calculateScore(0, isCorrect))

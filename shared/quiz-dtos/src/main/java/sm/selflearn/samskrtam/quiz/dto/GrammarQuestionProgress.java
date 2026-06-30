@@ -12,6 +12,7 @@ public class GrammarQuestionProgress {
     private int nAll;
     private float successRate;
     private WordStatus status;
+    private String caseEnding;
     private String caseType;
     private String caseRu;
     private String caseEn;
@@ -93,6 +94,14 @@ public class GrammarQuestionProgress {
 
     public void setStatus(WordStatus status) {
         this.status = status;
+    }
+
+    public String getCaseEnding() {
+        return caseEnding;
+    }
+
+    public void setCaseEnding(String caseEnding) {
+        this.caseEnding = caseEnding;
     }
 
     public String getCaseType() {

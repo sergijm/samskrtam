@@ -23,6 +23,7 @@ public class SessionQuestion {
     private UUID declensionStemId;
     private String targetCase;
     private String targetNumber;
+    private String targetGender; // NEW: gender for the question (MASCULINE, FEMININE, NEUTER, UNSPECIFIED)
     private String correctFormIast;
     private String correctFormDevanagari;
     private UUID vocabularyWordId;

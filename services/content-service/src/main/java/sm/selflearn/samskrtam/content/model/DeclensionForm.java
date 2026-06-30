@@ -16,12 +16,12 @@ public class DeclensionForm {
     @Id
     @Enumerated(EnumType.STRING)
     @Column(name = "case_type", nullable = false)
-    private Case caseType;
+    private CaseType caseType;
 
     @Id
     @Enumerated(EnumType.STRING)
     @Column(name = "number_type", nullable = false)
-    private Number numberType;
+    private NumberType numberType;
 
     @Column(name = "form_iast", nullable = false)
     private String formIast;

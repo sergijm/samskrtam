@@ -8,17 +8,21 @@ import { Skeleton } from 'primereact/skeleton';
 interface QuestionHistoryDialogProps {
   visible: boolean;
   onHide: () => void;
-  questionId: string | null;
+  caseType: string;
+  numberType: string;
+  gender: string;
   lessonSlug: string | undefined;
 }
 
 export const QuestionHistoryDialog = ({ 
   visible, 
   onHide, 
-  questionId, 
+  caseType, 
+  numberType, 
+  gender, 
   lessonSlug 
 }: QuestionHistoryDialogProps) => {
-  const { data: history, isLoading } = useQuestionHistory(lessonSlug ?? '', questionId || '');
+  const { data: history, isLoading } = useQuestionHistory(lessonSlug ?? '', caseType, numberType, gender);
   
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -38,7 +42,7 @@ export const QuestionHistoryDialog = ({
     );
   };
   
-  const header = questionId && history ? `История ответов: ${history.textRu}` : 'История ответов';
+  const header = history ? `История ответов: ${history.textRu}` : 'История ответов';
   
   return (
     <Dialog 

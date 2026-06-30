@@ -1,6 +1,6 @@
 package sm.selflearn.samskrtam.content.model;
 
-public enum Case {
+public enum CaseType {
     NOMINATIVE("Именительный", "Nominative"),
     ACCUSATIVE("Винительный", "Accusative"),
     INSTRUMENTAL("Творительный", "Instrumental"),
@@ -13,7 +13,7 @@ public enum Case {
     private final String ruName;
     private final String enName;
 
-    Case(String ruName, String enName) {
+    CaseType(String ruName, String enName) {
         this.ruName = ruName;
         this.enName = enName;
     }

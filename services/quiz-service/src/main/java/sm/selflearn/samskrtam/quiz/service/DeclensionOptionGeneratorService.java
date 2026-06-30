@@ -5,8 +5,8 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
-import sm.selflearn.samskrtam.content.model.Case;
-import sm.selflearn.samskrtam.content.model.Number;
+import sm.selflearn.samskrtam.content.model.CaseType;
+import sm.selflearn.samskrtam.content.model.NumberType;
 import sm.selflearn.samskrtam.quiz.dto.QuestionOptionDto;
 
 import java.util.ArrayList;
@@ -23,8 +23,8 @@ public class DeclensionOptionGeneratorService {
 
     public Mono<List<QuestionOptionDto>> generateOptions(
             UUID declensionStemId,
-            Case targetCase,
-            Number targetNumber,
+            CaseType targetCase,
+            NumberType targetNumber,
             String correctFormIast
     ) {
         return contentClient.getDeclensionForms(declensionStemId)

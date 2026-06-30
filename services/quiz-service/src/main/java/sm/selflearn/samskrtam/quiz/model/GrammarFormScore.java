@@ -24,6 +24,8 @@ public class GrammarFormScore {
 
     private UUID lessonId;
 
+    private String gender;       // "MASCULINE", "FEMININE", "NEUTER", "UNSPECIFIED"
+
     private String caseType;     // "NOMINATIVE", "ACCUSATIVE", ...
 
     private String numberType;   // "SINGULAR", "DUAL", "PLURAL"

@@ -9,4 +9,5 @@ public interface QuizAnswerHistoryProjection {
     LocalDateTime getAnsweredAt();
     String getCorrectFormIast();
     String getSelectedAnswer();
+    String getTargetGender(); // NEW: gender for the question
 }

@@ -6,15 +6,12 @@ GrammarQuestionProgress:
     - questionId
     - textRu
     - textEn
-    - correctAnswerRu
-    - correctAnswerEn
-    - nSuccess
-    - nAll
     - successRate
     - status
     - caseType
     - caseRu
     - caseEn
+    - caseEnding
     - numberType
     - numberRu
     - numberEn
@@ -31,14 +28,22 @@ GrammarQuestionProgress:
       type: string
     correctAnswerRu:
       type: string
+      deprecated: true
+      description: Заменено на caseEnding. Оставлено для обратной совместимости.
     correctAnswerEn:
       type: string
+      deprecated: true
+      description: Заменено на caseEnding. Оставлено для обратной совместимости.
     nSuccess:
       type: integer
       minimum: 0
+      deprecated: true
+      description: Вычисляется на стороне сервера, больше не требуется.
     nAll:
       type: integer
       minimum: 0
+      deprecated: true
+      description: Вычисляется на стороне сервера, больше не требуется.
     successRate:
       type: number
       format: float
@@ -46,6 +51,10 @@ GrammarQuestionProgress:
       maximum: 100
     status:
       $ref: './vocabulary.yaml#/WordStatus'
+    caseEnding:
+      type: string
+      description: Эталонное окончание для данного вопроса (caseType + numberType + gender). В IAST.
+      example: 'aḥ'
     caseType:
       type: string
       example: NOMINATIVE
@@ -66,10 +75,14 @@ GrammarQuestionProgress:
       example: Singular
     gender:
       type: string
+      description: Грамматический род. Для уроков с двумя родами (declensions-i, declensions-u, declensions-r) значение 'UNSPECIFIED'.
+      example: MASCULINE
     genderRu:
       type: string
+      example: Мужской
     genderEn:
       type: string
+      example: Masculine
 
 GrammarLesson:
   type: object

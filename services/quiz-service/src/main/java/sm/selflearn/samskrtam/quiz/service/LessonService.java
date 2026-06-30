@@ -15,9 +15,9 @@ import sm.selflearn.samskrtam.quiz.dto.VocabularyLessonDto;
 import sm.selflearn.samskrtam.quiz.dto.WordAnswerHistory;
 import sm.selflearn.samskrtam.quiz.dto.GrammarLesson;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
+import sm.selflearn.samskrtam.quiz.repository.QuizAnswerHistoryProjection;
 import sm.selflearn.samskrtam.quiz.repository.WordScoreRepository;
 import sm.selflearn.samskrtam.quiz.repository.GrammarFormScoreRepository;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -31,7 +31,7 @@ public class LessonService {
 
     private final ContentClient contentClient;
     private final UserSessionService userSessionService;
-    private final QuizAnswerRepository quizAnswerRepository;
+        private final QuizAnswerRepository quizAnswerRepository;
     private final WordScoreRepository wordScoreRepository;
     private final GrammarFormScoreRepository grammarFormScoreRepository;
 
@@ -48,7 +48,7 @@ public class LessonService {
                                 ));
     }
 
-    public Mono<GrammarLesson> getGrammarLesson(String slug, UUID userId) {
+            public Mono<GrammarLesson> getGrammarLesson(String slug, UUID userId) {
         return grammarProgressService.getGrammarLesson(slug, userId);
     }
 
@@ -69,31 +69,31 @@ public class LessonService {
         return contentClient.getQuizzesByCategory(lessonType)
                 .flatMap(lessons -> Flux.fromIterable(lessons)
                         .flatMap(lesson -> enrichLessonWithProgress(lesson, userId))
-                        .collectList()
+                .collectList()
                         .map(LessonListResponse::new));
     }
 
     public Mono<QuestionAnswerHistory> getQuestionAnswerHistory(
-            String slug, String caseType, String numberType, UUID userId, Pageable pageable, Locale locale) {
+            String slug, String caseType, String numberType, String gender, UUID userId, Pageable pageable, Locale locale) {
         return contentClient.getLessonItemBySlug(slug)
                 .flatMap(lessonSummary ->
                         quizAnswerRepository.findGrammarHistory(
-                                        caseType, numberType, userId, lessonSummary.getId(),
+                                        caseType, numberType, gender, userId, lessonSummary.getId(),
                                         pageable.getPageSize(), pageable.getOffset())
                                 .collectList()
                                 .flatMap(answers ->
-                                        quizAnswerRepository.countGrammarHistory(caseType, numberType, userId, lessonSummary.getId())
+                                        quizAnswerRepository.countGrammarHistory(caseType, numberType, gender, userId, lessonSummary.getId())
                                                 .map(total -> {
                                                     List<AnswerHistoryEntry> entries = answers.stream()
                                                             .map(a -> AnswerHistoryEntry.builder()
-                                                                    .answeredAt(a.getAnsweredAt())
+                                                                .answeredAt(a.getAnsweredAt())
                                                                     .correctAnswer(a.getCorrectFormIast())
                                                                     .userAnswer(a.getSelectedAnswer())
                                                                     .correct(a.getIsCorrect() != null && a.getIsCorrect())
                                                                     .build())
                                                             .collect(Collectors.toList());
                                                     return QuestionAnswerHistory.builder()
-                                                            .questionId(null)
+                                                        .questionId(null)
                                                             .textRu(caseType + ", " + numberType)
                                                             .lessonId(lessonSummary.getId())
                                                             .entries(entries)
@@ -118,7 +118,7 @@ public class LessonService {
     }
 
     private Mono<LessonItemDto> enrichLessonWithProgress(LessonItemResponse lesson, UUID userId) {
-        if (userId != null && LessonType.isVocabulary(lesson.getLessonType())) {
+                                if (userId != null && LessonType.isVocabulary(lesson.getLessonType())) {
             return vocabularyProgressService.enrichWithProgress(lesson, userId);
         }
         if (userId != null && !LessonType.isVocabulary(lesson.getLessonType())) {

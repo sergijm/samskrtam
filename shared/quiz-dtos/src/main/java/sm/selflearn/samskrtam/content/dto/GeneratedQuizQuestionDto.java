@@ -3,8 +3,8 @@ package sm.selflearn.samskrtam.content.dto;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
-import sm.selflearn.samskrtam.content.model.Case; // Corrected import
-import sm.selflearn.samskrtam.content.model.Number; // Corrected import
+import sm.selflearn.samskrtam.content.model.CaseType;
+import sm.selflearn.samskrtam.content.model.NumberType;
 
 import java.util.UUID;
 
@@ -12,16 +12,16 @@ import java.util.UUID;
 @Builder
 @Jacksonized
 public class GeneratedQuizQuestionDto {
-    UUID id; // Unique ID for this generated question
-    UUID generatedQuizDataId; // New field to link to GeneratedQuizDataRecord
-    UUID quizId; // The quiz this question belongs to
-    int questionNumber; // New field for the order of the question
-    String text; // This will be a more general question text, not containing stem/case/number
+    UUID id;
+    UUID generatedQuizDataId;
+    UUID quizId;
+    int questionNumber;
+    String text;
     String explanationRu;
     String explanationEn;
     UUID declensionStemId;
-    Case targetCase;
-    Number targetNumber;
+    CaseType targetCase;
+    NumberType targetNumber;
     String correctFormIast;
     String correctFormDevanagari;
     UUID vocabularyWordId;
@@ -29,10 +29,12 @@ public class GeneratedQuizQuestionDto {
     QuestionLanguage questionTargetLanguage;
     String correctTranslationRu;
     String correctTranslationEn;
-    String userLocale; // The locale for which this question was generated
-
-    // New fields for structured question data
+    String userLocale;
     String stem;
     String caseType;
     String numberType;
+
+    /** Gender from the declension stem, used by quiz-service for progress aggregation */
+    String gender;
 }
+

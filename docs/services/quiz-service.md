@@ -197,7 +197,15 @@ WHERE qs.user_id = :userId
 
 ---
 
-## 8. Kafka (ReactiveKafkaProducerTemplate)
+"## 7a. Депрекация correctAnswerRu/correctAnswerEn в пользу caseEnding
+
+Поле `caseEnding` теперь является единственным источником эталонного окончания для грамматических вопросов.
+- Поля `correctAnswerRu` и `correctAnswerEn` помечены как `deprecated` в OpenAPI-спецификации.
+- **Builder:** `GrammarProgressBuilder` использует метод `findCaseEnding(gender, form, caseEndings)`, который матчит `CaseEndingDto` по `(gender, caseType, numberType)`.
+- **Frontend:** должен использовать `caseEnding` для отображения правильного окончания.
+- `correctAnswerRu/En` оставлены для обратной совместимости, но больше не заполняются.
+
+## 8. Kafka (ReactiveKafkaProducerTemplate)"
 
 Публикация событий реализована через **Outbox Pattern** — запись в таблицу `quiz.outbox_events` в той же транзакции что и сохранение ответа/завершение сессии. Это гарантирует что событие не потеряется при перезапуске сервиса между сохранением и отправкой в Kafka.
 

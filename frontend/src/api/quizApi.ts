@@ -10,7 +10,7 @@ export const quizApi = {
     return api.get<LessonListResponse>(url);
   },
 
-  getQuizBySlug: (slug: string) => api.get<QuizSummaryDto>(`/api/v1/content/lessons/by-slug/${slug}`),
+  getQuizBySlug: (slug: string) => api.get<QuizSummaryDto>(`/api/v1/content/lessons/${slug}`),
 
   startSession: (quizId: string, lessonType: LessonType, userLocale: string) => {
     const slug = lessonType.toLowerCase();

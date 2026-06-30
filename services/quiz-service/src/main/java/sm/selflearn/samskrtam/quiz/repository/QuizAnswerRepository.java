@@ -64,19 +64,21 @@ public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer,
 
     @Query("""
             SELECT qa.id, qa.is_correct AS isCorrect, qa.answered_at AS answeredAt,
-                   sq.correct_form_iast AS correctFormIast, qa.selected_answer AS selectedAnswer
+                   sq.correct_form_iast AS correctFormIast, qa.selected_answer AS selectedAnswer,
+                   sq.target_gender AS targetGender
             FROM quiz.quiz_answers qa
             JOIN quiz.session_questions sq ON qa.question_id = sq.id
             JOIN quiz.quiz_session qs ON qa.session_id = qs.id
             WHERE sq.target_case = :caseType
               AND sq.target_number = :numberType
+              AND sq.target_gender = :gender
               AND qs.user_id = :userId
               AND qs.lesson_id = :lessonId
             ORDER BY qa.answered_at DESC
             LIMIT :size OFFSET :offset
             """)
     Flux<QuizAnswerHistoryProjection> findGrammarHistory(
-            String caseType, String numberType, UUID userId, UUID lessonId, int size, long offset);
+            String caseType, String numberType, String gender, UUID userId, UUID lessonId, int size, long offset);
 
     @Query("""
             SELECT COUNT(*)
@@ -85,10 +87,11 @@ public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer,
             JOIN quiz.quiz_session qs ON qa.session_id = qs.id
             WHERE sq.target_case = :caseType
               AND sq.target_number = :numberType
+              AND sq.target_gender = :gender
               AND qs.user_id = :userId
               AND qs.lesson_id = :lessonId
             """)
     Mono<Long> countGrammarHistory(
-            String caseType, String numberType, UUID userId, UUID lessonId);
+            String caseType, String numberType, String gender, UUID userId, UUID lessonId);
 }
 

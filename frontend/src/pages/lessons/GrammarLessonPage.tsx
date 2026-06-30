@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useGrammarLesson } from '../../hooks/useLessons';
-import { useQuestionHistory } from '../../hooks/useLessons';
+
 import { LessonHeader } from '../../components/lesson/LessonHeader';
 import { WordStatusIcon } from '../../components/lesson/WordStatusIcon';
 import { QuestionHistoryDialog } from '../../components/lesson/QuestionHistoryDialog';
@@ -19,13 +19,18 @@ const GrammarLessonPage = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { data: lesson, isLoading, isError } = useGrammarLesson(slug || '');
-  const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
+
+  const [selectedCaseType, setSelectedCaseType] = useState<string>('');
+  const [selectedNumberType, setSelectedNumberType] = useState<string>('');
+  const [selectedGender, setSelectedGender] = useState<string>('');
   const [questionHistoryDialogVisible, setQuestionHistoryDialogVisible] = useState(false);
   const [sortField, setSortField] = useState<string>('caseType');
   const [sortOrder, setSortOrder] = useState<number>(1);
-  
-  const handleQuestionHistoryClick = (questionId: string) => {
-    setSelectedQuestion(questionId);
+
+  const handleQuestionHistoryClick = (caseType: string, numberType: string, gender: string) => {
+    setSelectedCaseType(caseType);
+    setSelectedNumberType(numberType);
+    setSelectedGender(gender);
     setQuestionHistoryDialogVisible(true);
   };
   
@@ -144,23 +149,18 @@ const GrammarLessonPage = () => {
                 onSort={() => handleSort('gender')}
               />
               <Column 
-                header="Форма (IAST)" 
+                header="Окончание" 
                 body={(rowData) => (
-                  <div>
-                    <div className="font-bold">{rowData.correctAnswerRu}</div>
-                    {rowData.correctAnswerEn && rowData.correctAnswerEn !== rowData.correctAnswerRu && (
-                      <div className="text-sm text-color-secondary">{rowData.correctAnswerEn}</div>
-                    )}
-                  </div>
+                  <span className="font-bold">{rowData.caseEnding ?? '-'}</span>
                 )}
-                style={{ width: '25%' }}
+                style={{ width: '15%' }}
               />
               <Column 
                 header="Изучено" 
                 body={(rowData) => (
                   <span 
                     className="cursor-pointer underline text-primary"
-                    onClick={() => handleQuestionHistoryClick(rowData.questionId)}
+                    onClick={() => handleQuestionHistoryClick(rowData.caseType, rowData.numberType, rowData.gender)}
                   >
                     {rowData.successRate > 0 ? `${rowData.successRate.toFixed(0)}%` : '0%'}
                   </span>
@@ -176,8 +176,10 @@ const GrammarLessonPage = () => {
           <QuestionHistoryDialog 
             visible={questionHistoryDialogVisible} 
             onHide={() => setQuestionHistoryDialogVisible(false)} 
-            questionId={selectedQuestion} 
             lessonSlug={slug}
+            caseType={selectedCaseType}
+            numberType={selectedNumberType}
+            gender={selectedGender}
           />
         </>
       )}

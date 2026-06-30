@@ -1,6 +1,7 @@
 package sm.selflearn.samskrtam.quiz.service.strategy;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
@@ -11,6 +12,7 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class GrammarFormScoreUpdateStrategy implements ScoreUpdateStrategy {
 
     private final GrammarFormScoreService grammarFormScoreService;
@@ -25,8 +27,10 @@ public class GrammarFormScoreUpdateStrategy implements ScoreUpdateStrategy {
         if (generatedQuestion.getTargetCase() == null || generatedQuestion.getTargetNumber() == null) {
             return Mono.empty();
         }
+        String gender = generatedQuestion.getGender() != null ? generatedQuestion.getGender() : "UNSPECIFIED";
         return grammarFormScoreService.upsertScore(
                 userId, lessonId,
+                gender,
                 generatedQuestion.getTargetCase().name(),
                 generatedQuestion.getTargetNumber().name(),
                 isCorrect

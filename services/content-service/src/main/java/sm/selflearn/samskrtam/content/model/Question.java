@@ -36,11 +36,11 @@ public class Question {
 
     @Enumerated(EnumType.STRING) // New field for declension quizzes
     @Column(name = "target_case")
-    private Case targetCase;
+    private CaseType targetCase;
 
     @Enumerated(EnumType.STRING) // New field for declension quizzes
     @Column(name = "target_number")
-    private Number targetNumber;
+    private NumberType targetNumber;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();

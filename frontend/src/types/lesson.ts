@@ -16,8 +16,8 @@ export interface GrammarQuestionProgress {
   questionId:     string;
   textRu:         string;
   textEn:         string;
-  correctAnswerRu: string;
-  correctAnswerEn: string;
+  correctAnswerRu?: string;
+  correctAnswerEn?: string;
   nSuccess:       number;
   nAll:           number;
   successRate:    number;
@@ -31,6 +31,7 @@ export interface GrammarQuestionProgress {
   gender:         string;
   genderRu:       string;
   genderEn:       string;
+  caseEnding:     string | null;
 }
 
 export interface VocabularyLesson {

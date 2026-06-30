@@ -133,14 +133,15 @@ paths:
   /lessons/grammar/{slug}/questions/history:
     get:
       tags: [word-history]
-      summary: История ответов пользователя на грамматический вопрос по падежу и числу
+      summary: История ответов пользователя на грамматический вопрос по падежу, числу и роду
       description: >
         Возвращает хронологию попыток ответить на грамматический вопрос
-        по комбинации падежа (caseType) и числа (numberType) в рамках
+        по комбинации падежа (caseType), числа (numberType) и рода (gender) в рамках
         конкретного урока. Отображается в QuestionHistoryDialog.
 
-        Больше не использует questionId (UUID), так как вопрос не уникален —
-        одна комбинация падежа/числа может встречаться у разных основ.
+        Gender обязателен (MASCULINE, FEMININE, NEUTER, UNSPECIFIED), так как для уроков
+        declensions-i, declensions-u, declensions-r одна комбинация (caseType, numberType)
+        существует для двух родов с разными группами слов.
       operationId: getQuestionAnswerHistory
       parameters:
         - name: slug
@@ -164,6 +165,17 @@ paths:
           schema:
             type: string
             example: SINGULAR
+        - name: gender
+          in: query
+          required: true
+          description: >
+            Грамматический род (MASCULINE, FEMININE, NEUTER, UNSPECIFIED).
+            Для уроков с одним родом (declensions-a-masc и т.д.) передаётся фактический род.
+            Для уроков с двумя родами (declensions-i, declensions-u, declensions-r)
+            передаётся MASCULINE или FEMININE — история фильтруется по gender.
+          schema:
+            type: string
+            example: MASCULINE
         - $ref: 'openapi/parameters.yaml#/PageParam'
         - $ref: 'openapi/parameters.yaml#/SizeParam'
       responses:
