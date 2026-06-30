@@ -115,7 +115,7 @@ public class KafkaStreamsConfig {
                             if (aggregate.getUserId() == null) {
                                 aggregate.setId(UUID.randomUUID());
                                 aggregate.setUserId(event.userId());
-                                aggregate.setQuizId(event.lessonId());
+                                aggregate.setLessonId(event.lessonId());
                                 aggregate.setLessonType(event.lessonType());
                                 aggregate.setTotalSessions(0);
                                 aggregate.setTotalQuestionsAnswered(0);

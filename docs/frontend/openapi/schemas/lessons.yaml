@@ -1,0 +1,43 @@
+# Lesson listing schemas
+
+LessonType:
+  type: string
+  enum: [VOCABULARY, VOCABULARY_BASIC, VOCABULARY_TEXTS, DECLENSIONS, CONJUGATIONS]
+
+LessonItemDto:
+  type: object
+  required: [id, slug, titleRu, titleEn, descriptionRu, descriptionEn, lessonType, difficulty, totalQuestions, totalWordsOwn, learnedWords]
+  properties:
+    id:
+      type: string
+      format: uuid
+    slug:
+      type: string
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    descriptionRu:
+      type: string
+    descriptionEn:
+      type: string
+    lessonType:
+      $ref: './lessons.yaml#/LessonType'
+    difficulty:
+      type: string
+      enum: [BEGINNER, INTERMEDIATE, ADVANCED]
+    totalQuestions:
+      type: integer
+    totalWordsOwn:
+      type: integer
+    learnedWords:
+      type: integer
+
+LessonListResponse:
+  type: object
+  required: [lessons]
+  properties:
+    lessons:
+      type: array
+      items:
+        $ref: './lessons.yaml#/LessonItemDto'

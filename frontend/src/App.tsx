@@ -285,7 +285,7 @@ export default function App() {
                                 }
                             />
                             <Route
-                                path="/lessons/grammar/:type"
+                                path="/lessons/grammar/:slug"
                                 element={
                                     <ProtectedRoute>
                                         <AppLayout>

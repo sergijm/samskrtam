@@ -14,6 +14,28 @@ export const useQuizList = (category?: string) => {
   });
 };
 
+export const useDeclensionLessons = () => {
+  const { locale } = useLocaleStore();
+  return useQuery<LessonItemDto[], Error>({
+    queryKey: ['quizzes', 'list', 'DECLENSIONS', locale],
+    queryFn: async () => {
+      const response = await quizApi.getQuizList('DECLENSIONS');
+      return response.data.lessons;
+    },
+  });
+};
+
+export const useConjugationLessons = () => {
+  const { locale } = useLocaleStore();
+  return useQuery<LessonItemDto[], Error>({
+    queryKey: ['quizzes', 'list', 'CONJUGATIONS', locale],
+    queryFn: async () => {
+      const response = await quizApi.getQuizList('CONJUGATIONS');
+      return response.data.lessons;
+    },
+  });
+};
+
 export const useQuizBySlug = (slug: string) => {
   const { locale } = useLocaleStore();
   return useQuery<QuizSummaryDto, Error>({

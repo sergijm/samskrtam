@@ -1,72 +1,118 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card } from 'primereact/card';
 import { useNavigate } from 'react-router-dom';
+import { useDeclensionLessons, useConjugationLessons } from '../../hooks/useQuiz';
+import { Skeleton } from 'primereact/skeleton';
+import { Message } from 'primereact/message';
+import { QuizListItem } from '../../types/quiz';
 
 const GrammarPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
-  const grammarSections = [
-    {
-      title: t('grammar.sandhiExercisesTitle'),
-      description: t('grammar.sandhiExercisesDescription'),
-      link: '/grammar/emeneau-exercises',
-      icon: 'pi pi-pencil'
-    },
-    {
-      title: t('grammar.sandhiQuizzesTitle'),
-      description: t('grammar.sandhiQuizzesDescription'),
-      link: '/grammar/emeneau-quizzes',
-      icon: 'pi pi-question-circle'
-    },
-    {
-      title: t('grammar.sandhiRulesTitle'),
-      description: t('grammar.sandhiRulesDescription'),
-      link: '/grammar/emeneau-rules',
-      icon: 'pi pi-book'
-    },
-    {
-      title: t('grammar.declensionsTitle'),
-      description: t('grammar.declensionsDescription'),
-      link: '/lessons/grammar/declensions', // Changed to lesson page
-      icon: 'pi pi-table'
-    },
-    {
-      title: t('grammar.conjugationsTitle'),
-      description: t('grammar.conjugationsDescription'),
-      link: '/lessons/grammar/conjugations', // Changed to lesson page
-      icon: 'pi pi-share-alt'
-    },
+  // Данные с бэкенда
+  const { data: declensions = [], isLoading: declLoading } = useDeclensionLessons();
+  const { data: conjugations = [], isLoading: conjLoading } = useConjugationLessons();
+
+  // Хардкодные секции Сандхи — остаются как есть
+  const sandhiItems = [
+    { title: t('grammar.sandhiExercisesTitle'), description: t('grammar.sandhiExercisesDescription'), link: '/grammar/emeneau-exercises', icon: 'pi pi-pencil' },
+    { title: t('grammar.sandhiQuizzesTitle'),   description: t('grammar.sandhiQuizzesDescription'),   link: '/grammar/emeneau-quizzes',   icon: 'pi pi-question-circle' },
+    { title: t('grammar.sandhiRulesTitle'),     description: t('grammar.sandhiRulesDescription'),     link: '/grammar/emeneau-rules',     icon: 'pi pi-book' },
   ];
 
-  const handleSectionClick = (link: string) => {
-    navigate(link);
-  };
-
-  return (
-    <div className="flex flex-column align-items-center justify-content-center p-4">
-      <h1 className="text-center mb-5">{t('nav.grammar')}</h1>
-      <div className="grid justify-content-center w-full" style={{ maxWidth: '1600px' }}>
-        {grammarSections.map((section, index) => (
-          <div key={index} className="col-12 sm:col-6 md:col-4 lg:col-3 p-2 flex">
-            <div
-              onClick={() => handleSectionClick(section.link)}
+  // Рендер одной карточки из API (склонения / спряжения)
+  const renderLessonCard = (lesson: QuizListItem) => {
+    const title = i18n.language === 'ru' ? lesson.titleRu : lesson.titleEn;
+    const description = i18n.language === 'ru' ? lesson.descriptionRu : lesson.descriptionEn;
+    return (
+      <div key={lesson.id} className="col-12 sm:col-6 md:col-4 lg:col-3 p-2 flex">
+        <div
+          onClick={() => navigate(`/lessons/grammar/${lesson.slug}`)}
               className="p-card p-component lesson-card flex flex-column text-center h-full cursor-pointer hover:shadow-8 transition-all transition-duration-200 w-full"
             >
               <div className="p-card-body flex flex-column flex-grow-1">
-                <div className="p-card-title">{section.title}</div>
-                <div className="p-card-subtitle">{section.description}</div>
-                <div className="flex-grow-1 flex align-items-center justify-content-center">
-                  <i className={`${section.icon} text-5xl text-primary`} />
-                </div>
+            <div className="p-card-title">{title}</div>
+            <div className="p-card-subtitle">{description}</div>
+            <div className="p-card-footer" style={{ marginTop: 'auto' }}>
+              <span className="text-lg font-bold">
+                {lesson.totalQuestions} {t('quizzes.questions')}
+              </span>
               </div>
             </div>
           </div>
-        ))}
       </div>
+  );
+};
+
+  // Рендер хардкодной карточки (Сандхи)
+  const renderStaticCard = (item: typeof sandhiItems[0], index: number) => (
+    <div key={index} className="col-12 sm:col-6 md:col-4 lg:col-3 p-2 flex">
+      <div
+        onClick={() => navigate(item.link)}
+        className="p-card p-component lesson-card flex flex-column text-center h-full cursor-pointer hover:shadow-8 transition-all transition-duration-200 w-full"
+      >
+        <div className="p-card-body flex flex-column flex-grow-1">
+          <div className="p-card-title">{item.title}</div>
+          <div className="p-card-subtitle">{item.description}</div>
+          <div className="flex-grow-1 flex align-items-center justify-content-center">
+            <i className={`${item.icon} text-5xl text-primary`} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-column p-4" style={{ maxWidth: '1600px', margin: '0 auto' }}>
+      <h1 className="text-center mb-5">{t('nav.grammar')}</h1>
+
+      {/* Секция 1: Сандхи по Эмено */}
+      <section className="mb-5">
+        <h2 className="mb-3">{t('grammar.sandhiSectionTitle')}</h2>
+        <div className="grid">
+          {sandhiItems.map(renderStaticCard)}
+        </div>
+      </section>
+
+      {/* Секция 2: Склонения */}
+      <section className="mb-5">
+        <h2 className="mb-3">{t('grammar.declensionsSectionTitle')}</h2>
+        {declLoading ? (
+          <div className="grid">
+            {[1,2,3].map(i => (
+              <div key={i} className="col-12 sm:col-6 md:col-4 lg:col-3 p-2">
+                <Skeleton width="100%" height="120px" />
+              </div>
+            ))}
+          </div>
+        ) : declensions.length === 0 ? (
+          <Message severity="info" text={t('grammar.noLessonsFound')} />
+        ) : (
+          <div className="grid">{declensions.map(renderLessonCard)}</div>
+        )}
+      </section>
+
+      {/* Секция 3: Спряжения */}
+      <section className="mb-5">
+        <h2 className="mb-3">{t('grammar.conjugationsSectionTitle')}</h2>
+        {conjLoading ? (
+          <div className="grid">
+            {[1,2].map(i => (
+              <div key={i} className="col-12 sm:col-6 md:col-4 lg:col-3 p-2">
+                <Skeleton width="100%" height="120px" />
+              </div>
+            ))}
+          </div>
+        ) : conjugations.length === 0 ? (
+          <Message severity="info" text={t('grammar.noLessonsFound')} />
+        ) : (
+          <div className="grid">{conjugations.map(renderLessonCard)}</div>
+        )}
+      </section>
     </div>
   );
 };
 
 export default GrammarPage;
+

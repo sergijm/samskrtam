@@ -82,7 +82,7 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Public user profile found")
     @ApiResponse(responseCode = "404", description = "User not found")
     public ResponseEntity<PublicProfileResponse> getPublicProfile(@PathVariable UUID id) {
-        return ResponseEntity.ok(userProfileService.mapUserProfileToPublicResponse(userProfileService.getUserProfile(id)));
+        return ResponseEntity.ok(userProfileService.getPublicProfileResponse(id));
     }
 
     // GET /api/v1/users/{id}/groups

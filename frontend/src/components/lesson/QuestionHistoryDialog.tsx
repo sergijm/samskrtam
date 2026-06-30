@@ -9,16 +9,16 @@ interface QuestionHistoryDialogProps {
   visible: boolean;
   onHide: () => void;
   questionId: string | null;
-  quizId: string;
+  lessonSlug: string | undefined;
 }
 
 export const QuestionHistoryDialog = ({ 
   visible, 
   onHide, 
   questionId, 
-  quizId 
+  lessonSlug 
 }: QuestionHistoryDialogProps) => {
-  const { data: history, isLoading } = useQuestionHistory(quizId, questionId || '');
+  const { data: history, isLoading } = useQuestionHistory(lessonSlug ?? '', questionId || '');
   
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);

@@ -1,0 +1,52 @@
+# Answer history schemas
+
+WordAnswerHistory:
+  type: object
+  required: [wordId, word, quizId, entries, page, size, total]
+  properties:
+    wordId:
+      type: string
+      format: uuid
+    word:
+      type: string
+    quizId:
+      type: string
+      format: uuid
+    entries:
+      type: array
+      items:
+        $ref: '../schemas/common.yaml#/AnswerHistoryEntry'
+    page:
+      type: integer
+    size:
+      type: integer
+    total:
+      type: integer
+
+QuestionAnswerHistory:
+  type: object
+  required: [textRu, quizId, entries, page, size, total]
+  properties:
+    questionId:
+      type:
+        - string
+        - 'null'
+      format: uuid
+      description: Всегда null — история группируется по caseType+numberType
+    textRu:
+      type: string
+      example: "NOMINATIVE, SINGULAR"
+    quizId:
+      type: string
+      format: uuid
+      description: ID урока
+    entries:
+      type: array
+      items:
+        $ref: '../schemas/common.yaml#/AnswerHistoryEntry'
+    page:
+      type: integer
+    size:
+      type: integer
+    total:
+      type: integer

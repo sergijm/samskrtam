@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useGrammarLesson } from '../../hooks/useLessons';
 import { useQuestionHistory } from '../../hooks/useLessons';
@@ -12,13 +12,17 @@ import { ProgressBar } from 'primereact/progressbar';
 import { Tag } from 'primereact/tag';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from 'primereact/skeleton';
+import { useTranslation } from 'react-i18next';
 
 const GrammarLessonPage = () => {
-  const { type } = useParams<{ type: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { data: lesson, isLoading, isError } = useGrammarLesson(type || '');
+  const { t, i18n } = useTranslation();
+  const { data: lesson, isLoading, isError } = useGrammarLesson(slug || '');
   const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
   const [questionHistoryDialogVisible, setQuestionHistoryDialogVisible] = useState(false);
+  const [sortField, setSortField] = useState<string>('caseType');
+  const [sortOrder, setSortOrder] = useState<number>(1);
   
   const handleQuestionHistoryClick = (questionId: string) => {
     setSelectedQuestion(questionId);
@@ -27,9 +31,36 @@ const GrammarLessonPage = () => {
   
   const handleStartQuiz = () => {
     if (lesson) {
-      navigate(`/quiz/grammar/${type}`);
+      navigate(`/quiz/grammar/${slug}`);
     }
   };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 1 ? -1 : 1);
+    } else {
+      setSortField(field);
+      setSortOrder(1);
+    }
+  };
+
+  const sortedForms = useMemo(() => {
+    if (!lesson?.questions) return [];
+    const forms = [...lesson.questions];
+    if (sortField) {
+      forms.sort((a, b) => {
+        let valueA: any = a[sortField as keyof typeof a];
+        let valueB: any = b[sortField as keyof typeof b];
+        if (typeof valueA === 'string' && typeof valueB === 'string') {
+          return sortOrder * valueA.localeCompare(valueB);
+        }
+        if (valueA < valueB) return sortOrder * -1;
+        if (valueA > valueB) return sortOrder * 1;
+        return 0;
+      });
+    }
+    return forms;
+  }, [lesson?.questions, sortField, sortOrder]);
   
   if (isError) {
     return (
@@ -71,47 +102,73 @@ const GrammarLessonPage = () => {
             </div>
             
             <DataTable 
-              value={lesson.questions}
+              value={sortedForms}
               paginator 
-              rows={10}
+              rows={20}
               responsiveLayout="scroll"
             >
               <Column 
                 header="Статус" 
                 body={(rowData) => <WordStatusIcon status={rowData.status} />} 
-                style={{ width: '10%' }}
+                style={{ width: '8%' }}
+                sortable
+                sortField="status"
+                onSort={() => handleSort('status')}
               />
               <Column 
-                header="Вопрос" 
+                header="Падеж" 
                 body={(rowData) => (
                   <div>
-                    <div>{rowData.textRu}</div>
-                    <div className="text-sm text-color-secondary">{rowData.textEn}</div>
+                    <div>{i18n.language === 'ru' ? rowData.caseRu : rowData.caseEn}</div>
                   </div>
-                )} 
-                style={{ width: '40%' }}
+                )}
+                style={{ width: '15%' }}
+                sortable
+                sortField="caseType"
+                onSort={() => handleSort('caseType')}
               />
               <Column 
-                header="Правильный ответ" 
+                header="Число" 
+                body={(rowData) => (i18n.language === 'ru' ? rowData.numberRu : rowData.numberEn)}
+                style={{ width: '12%' }}
+                sortable
+                sortField="numberType"
+                onSort={() => handleSort('numberType')}
+              />
+              <Column 
+                header="Род" 
+                body={(rowData) => (i18n.language === 'ru' ? rowData.genderRu : rowData.genderEn)}
+                style={{ width: '12%' }}
+                sortable
+                sortField="gender"
+                onSort={() => handleSort('gender')}
+              />
+              <Column 
+                header="Форма (IAST)" 
                 body={(rowData) => (
                   <div>
-                    <div>{rowData.correctAnswerRu}</div>
-                    <div className="text-sm text-color-secondary">{rowData.correctAnswerEn}</div>
+                    <div className="font-bold">{rowData.correctAnswerRu}</div>
+                    {rowData.correctAnswerEn && rowData.correctAnswerEn !== rowData.correctAnswerRu && (
+                      <div className="text-sm text-color-secondary">{rowData.correctAnswerEn}</div>
+                    )}
                   </div>
-                )} 
-                style={{ width: '30%' }}
+                )}
+                style={{ width: '25%' }}
               />
               <Column 
-                header="Попытки" 
+                header="Изучено" 
                 body={(rowData) => (
                   <span 
                     className="cursor-pointer underline text-primary"
                     onClick={() => handleQuestionHistoryClick(rowData.questionId)}
                   >
-                    {rowData.nSuccess}/{rowData.nAll}
+                    {rowData.successRate > 0 ? `${rowData.successRate.toFixed(0)}%` : '0%'}
                   </span>
-                )} 
-                style={{ width: '20%' }}
+                )}
+                style={{ width: '13%' }}
+                sortable
+                sortField="successRate"
+                onSort={() => handleSort('successRate')}
               />
             </DataTable>
           </div>
@@ -120,7 +177,7 @@ const GrammarLessonPage = () => {
             visible={questionHistoryDialogVisible} 
             onHide={() => setQuestionHistoryDialogVisible(false)} 
             questionId={selectedQuestion} 
-            quizId={lesson.quizId}
+            lessonSlug={slug}
           />
         </>
       )}
@@ -129,4 +186,3 @@ const GrammarLessonPage = () => {
 };
 
 export default GrammarLessonPage;
-

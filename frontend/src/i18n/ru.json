@@ -255,11 +255,14 @@
     "sandhiQuizzesTitle": "Сандхи - Эмено (Квизы)",
     "sandhiQuizzesDescription": "Практикуйте правила сандхи по системе Эмено.",
     "sandhiRulesTitle": "Сандхи - Эмено (Правила)",
-    "sandhiRulesDescription": "Изучите подробные правила сандхи по Эмено.",
-    "declensionsTitle": "Склонения",
-    "declensionsDescription": "Практикуйте склонения существительных и прилагательных.",
-    "conjugationsTitle": "Спряжения",
-    "conjugationsDescription": "Изучите спряжения глаголов."
+    "sandhiRulesDescription": "Изучите подробные правила сандхи по Эмено.","sandhiSectionTitle": "Сандхи по Эмено",
+        "declensionsSectionTitle": "Склонения",
+        "conjugationsSectionTitle": "Спряжения",
+        "noLessonsFound": "Уроки ещё не добавлены",
+        "declensionsTitle": "Склонения",
+        "declensionsDescription": "Практикуйте склонения существительных и прилагательных.",
+        "conjugationsTitle": "Спряжения",
+        "conjugationsDescription": "Изучите спряжения глаголов."
   },
   "vocabulary": {
     "basicVocabularyTitle": "Базовая лексика (Фриш)",

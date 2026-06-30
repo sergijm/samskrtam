@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.content.dto.SandhiRuleDto;
 import sm.selflearn.samskrtam.content.dto.SandhiRuleGroupDto;
-import sm.selflearn.samskrtam.eamenau.model.SandhiRule;
-import sm.selflearn.samskrtam.eamenau.model.SandhiRuleGroup;
-import sm.selflearn.samskrtam.eamenau.repository.SandhiRuleRepository;
+import sm.selflearn.samskrtam.emenau.model.SandhiRule;
+import sm.selflearn.samskrtam.emenau.model.SandhiRuleGroup;
+import sm.selflearn.samskrtam.emenau.repository.SandhiRuleRepository;
 
 import java.util.List;
 import java.util.Set;

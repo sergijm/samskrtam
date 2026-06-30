@@ -1,13 +1,6 @@
 // Все типы как enum (доступны и во время компиляции, и во время выполнения)
 export enum LessonType {
     DECLENSIONS = 'DECLENSIONS',
-    A_STEM_DECLENSIONS = 'A_STEM_DECLENSIONS',
-    AA_STEM_DECLENSIONS = 'AA_STEM_DECLENSIONS',
-    I_STEM_DECLENSIONS = 'I_STEM_DECLENSIONS',
-    II_STEM_DECLENSIONS = 'II_STEM_DECLENSIONS',
-    U_STEM_DECLENSIONS = 'U_STEM_DECLENSIONS',
-    UU_STEM_DECLENSIONS = 'UU_STEM_DECLENSIONS',
-    R_STEM_DECLENSIONS = 'R_STEM_DECLENSIONS',
     CONJUGATIONS = 'CONJUGATIONS',
     VOCABULARY = 'VOCABULARY',
     VOCABULARY_BASIC = 'VOCABULARY_BASIC',
@@ -150,13 +143,6 @@ export interface AnswerResult {
 export const isDeclensionsQuiz = (lessonType: LessonType): boolean => {
   return [
     'DECLENSIONS',
-    'A_STEM_DECLENSIONS',
-    'AA_STEM_DECLENSIONS',
-    'I_STEM_DECLENSIONS',
-    'II_STEM_DECLENSIONS',
-    'U_STEM_DECLENSIONS',
-    'UU_STEM_DECLENSIONS',
-    'R_STEM_DECLENSIONS'
   ].includes(lessonType);
 };
 

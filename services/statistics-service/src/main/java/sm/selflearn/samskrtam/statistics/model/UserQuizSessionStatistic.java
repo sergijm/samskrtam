@@ -18,8 +18,8 @@ public class UserQuizSessionStatistic {
     private UUID id;
 @Column(nullable = false)
     private UUID userId;
-@Column(nullable = false)
-    private UUID quizId;
+@Column(name = "quiz_id", nullable = false)
+    private UUID lessonId;
 @Enumerated(EnumType.STRING)
 @Column(name = "lesson_type", nullable = false)
     private LessonType lessonType;

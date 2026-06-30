@@ -37,7 +37,6 @@ public class WordScoreService {
                 .switchIfEmpty(Mono.defer(() -> {
                     int initialScore = calculateScore(0, isCorrect);
                     WordScore newScore = WordScore.builder()
-                            .id(UUID.randomUUID())
                             .userId(userId)
                             .wordId(wordId)
                             .lessonId(lessonId)

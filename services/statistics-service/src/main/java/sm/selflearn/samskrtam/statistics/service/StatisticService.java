@@ -22,11 +22,11 @@ public class StatisticService {
     }
 
     public Optional<UserQuizSessionStatistic> getUserQuizStatistic(UUID userId, UUID quizId) {
-        return statisticRepository.findByUserIdAndQuizId(userId, quizId);
+        return statisticRepository.findByUserIdAndLessonId(userId, quizId);
     }
     public UserQuizStatisticDto toDto(UserQuizSessionStatistic statistic) {
         return UserQuizStatisticDto.builder()
-                .quizId(statistic.getQuizId())
+                .lessonId(statistic.getLessonId())
                 .lessonType(statistic.getLessonType())
                 .totalSessions(statistic.getTotalSessions())
                 .totalQuestionsAnswered(statistic.getTotalQuestionsAnswered())

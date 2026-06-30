@@ -35,11 +35,11 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AdminUserService {
 
-    private final UserProfileRepository userProfileRepository;
+        private final UserProfileRepository userProfileRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
     private final AvatarService avatarService;
-    private final UserProfileService userProfileService;
+    private final UserProfileMapper profileMapper;
 
     public AdminUserListResponse getAllUsers(int page, int size, String sortBy, String sortDirection,
                                              String search, UserRole role, Boolean blocked) {
@@ -52,7 +52,7 @@ public class AdminUserService {
 
         return new AdminUserListResponse(
                 userPage.getContent().stream()
-                        .map(userProfileService::mapUserProfileToResponse)
+                        .map(profileMapper::toResponse)
                         .collect(Collectors.toList()),
                 userPage.getTotalPages(),
                 userPage.getTotalElements(),
@@ -66,7 +66,7 @@ public class AdminUserService {
     public UserProfileResponse getUserProfile(UUID userId) {
         UserProfile profile = userProfileRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
-        return userProfileService.mapUserProfileToResponse(profile);
+                return profileMapper.toResponse(profile);
     }
 
     @Transactional
@@ -95,7 +95,7 @@ public class AdminUserService {
                 .build());
 
         log.debug("Admin updated profile and outbox event created: userId={}", userId);
-        return userProfileService.mapUserProfileToResponse(profile);
+        return profileMapper.toResponse(profile);
     }
 
     public String generateAvatarUploadUrl(UUID userId, String contentType) {
@@ -115,3 +115,4 @@ public class AdminUserService {
         }
     }
 }
+

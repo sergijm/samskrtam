@@ -33,7 +33,7 @@ const QuizzesPage: React.FC<QuizzesPageProps> = ({ category: propCategory }) => 
 
     // For grammar quizzes, navigate to lesson page instead of lesson page
     if (isDeclensionsQuiz(lesson.lessonType)) {
-      navigate(`/lessons/grammar/${lesson.type.toLowerCase()}`);
+      navigate(`/lessons/grammar/${lesson.slug}`);
       return;
     }
 

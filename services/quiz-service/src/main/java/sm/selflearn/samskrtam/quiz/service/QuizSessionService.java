@@ -1,14 +1,10 @@
 package sm.selflearn.samskrtam.quiz.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
-import sm.selflearn.samskrtam.content.dto.GeneratedQuizData;
-import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.quiz.dto.AnswerRequest;
 import sm.selflearn.samskrtam.quiz.dto.AnswerResponse;
@@ -18,6 +14,7 @@ import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse;
 import sm.selflearn.samskrtam.quiz.event.QuizAnsweredEvent;
 import sm.selflearn.samskrtam.quiz.event.QuizSessionStatusChangedEvent;
 import sm.selflearn.samskrtam.quiz.mapper.QuizAnswerMapper;
+import sm.selflearn.samskrtam.quiz.mapper.SessionQuestionMapper;
 import sm.selflearn.samskrtam.quiz.model.QuizAnswer;
 import sm.selflearn.samskrtam.quiz.model.QuizSession;
 import sm.selflearn.samskrtam.quiz.model.SessionQuestion;
@@ -25,12 +22,14 @@ import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
 import sm.selflearn.samskrtam.quiz.repository.SessionQuestionRepository;
+import sm.selflearn.samskrtam.quiz.service.strategy.ScoreUpdateStrategyRegistry;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,10 +41,13 @@ public class QuizSessionService {
     private final ContentClient contentClient;
     private final QuizDataAssembler quizDataAssembler;
     private final OutboxEventCreator outboxEventCreator;
-        private final QuizAnswerMapper quizAnswerMapper;
-    private final ObjectMapper objectMapper;
+    private final QuizAnswerMapper quizAnswerMapper;
+    private final SessionQuestionMapper sessionQuestionMapper;
     private final SessionQuestionRepository sessionQuestionRepository;
-    private final WordScoreService wordScoreService;
+    private final SessionFactory sessionFactory;
+    private final SessionPublisher sessionPublisher;
+    private final VocabularyWordsSerializer vocabularyWordsSerializer;
+    private final ScoreUpdateStrategyRegistry scoreUpdateStrategyRegistry;
 
     public Mono<StartOrResumeResponse> startOrResumeSession(UUID lessonId, UUID userId, String userLocale) {
         return quizSessionRepository.findTopByUserIdAndLessonIdAndStatusOrderByStartedAtDesc(userId, lessonId, SessionStatus.IN_PROGRESS)
@@ -120,16 +122,12 @@ public class QuizSessionService {
                             .isCorrect(isCorrect)
                             .responseTimeMs(request.getResponseTimeMs())
                             .answeredAt(Instant.now())
-                                                        .build();
+                            .build();
 
                     return quizAnswerRepository.save(newAnswer)
                             .then(quizSessionRepository.incrementAnsweredQuestionsAndScore(session.getId(), isCorrect))
-                            .then(Mono.defer(() -> {
-                                if (LessonType.isVocabulary(session.getLessonType()) && generatedQuestion.getVocabularyWordId() != null) {
-                                    return wordScoreService.upsertScore(userId, generatedQuestion.getVocabularyWordId(), session.getLessonId(), isCorrect).then();
-                                }
-                                return Mono.empty();
-                            }))
+                            .then(scoreUpdateStrategyRegistry.getStrategy(session.getLessonType())
+                                    .updateScore(userId, session.getLessonId(), generatedQuestion, isCorrect))
                             .then(outboxEventCreator.createAndSaveQuizAnsweredEvent(
                                     new QuizAnsweredEvent(session.getId(), userId, session.getLessonId(),
                                             session.getLessonType(), request.getQuestionId(),
@@ -149,49 +147,26 @@ public class QuizSessionService {
                         .thenReturn(savedSession));
     }
 
-        private Mono<StartOrResumeResponse> createNewSessionAndBuildStartOrResumeResponse(UUID lessonId, UUID userId, String userLocale) {
-            return contentClient.generateQuizData(lessonId, userLocale)
-                    .flatMap(generatedQuizData -> {
-                        String vocabularyWordsJson = serializeVocabularyWords(generatedQuizData.getVocabularyWords());
-                        QuizSession newSession = buildNewQuizSession(lessonId, userId, generatedQuizData, vocabularyWordsJson);
-                        return quizSessionRepository.save(newSession)
-                                .flatMap(savedSession -> {
-                                    List<SessionQuestion> sessionQuestions = generatedQuizData.getGeneratedQuestions().stream()
-                                            .map(q -> SessionQuestion.builder()
-                                                    .sessionId(savedSession.getId())
-                                                    .questionId(q.getId())
-                                                    .questionNumber(q.getQuestionNumber())
-                                                    .text(q.getText())
-                                                    .explanationRu(q.getExplanationRu())
-                                                    .explanationEn(q.getExplanationEn())
-                                                    .declensionStemId(q.getDeclensionStemId())
-                                                    .targetCase(q.getTargetCase() != null ? q.getTargetCase().name() : null)
-                                                    .targetNumber(q.getTargetNumber() != null ? q.getTargetNumber().name() : null)
-                                                    .correctFormIast(q.getCorrectFormIast())
-                                                    .correctFormDevanagari(q.getCorrectFormDevanagari())
-                                                    .vocabularyWordId(q.getVocabularyWordId())
-                                                    .questionSourceLanguage(q.getQuestionSourceLanguage() != null ? q.getQuestionSourceLanguage().name() : null)
-                                                    .questionTargetLanguage(q.getQuestionTargetLanguage() != null ? q.getQuestionTargetLanguage().name() : null)
-                                                    .correctTranslationRu(q.getCorrectTranslationRu())
-                                                    .correctTranslationEn(q.getCorrectTranslationEn())
-                                                    .build())
-                                            .collect(java.util.stream.Collectors.toList());
+    private Mono<StartOrResumeResponse> createNewSessionAndBuildStartOrResumeResponse(UUID lessonId, UUID userId, String userLocale) {
+        return contentClient.generateQuizData(lessonId, userLocale)
+                .flatMap(generatedQuizData -> {
+                    QuizSession newSession = sessionFactory.createSession(lessonId, userId, generatedQuizData);
+                    return quizSessionRepository.save(newSession)
+                            .flatMap(savedSession -> {
+                                List<SessionQuestion> sessionQuestions = generatedQuizData.getGeneratedQuestions().stream()
+                                        .map(q -> sessionQuestionMapper.fromDto(q, savedSession.getId()))
+                                        .collect(Collectors.toList());
 
-                                    return sessionQuestionRepository.saveAll(sessionQuestions).then(
-                                            outboxEventCreator.createAndSaveSessionStatusChangedEvent(
-                                                    new QuizSessionStatusChangedEvent(
-                                                            savedSession.getId(), userId, lessonId,
-                                                            savedSession.getLessonType(), null,
-                                                            SessionStatus.IN_PROGRESS.name(), Instant.now()))
-                                                    .then(quizDataAssembler.assembleResponse(
-                                                            savedSession,
-                                                            generatedQuizData.getGeneratedQuestions(),
-                                                            generatedQuizData.getVocabularyWords(),
-                                                            userLocale))
-                                    );
-                                });
-                    });
-        }
+                                return sessionQuestionRepository.saveAll(sessionQuestions)
+                                        .then(sessionPublisher.publishStarted(savedSession))
+                                        .then(quizDataAssembler.assembleResponse(
+                                                savedSession,
+                                                generatedQuizData.getGeneratedQuestions(),
+                                                generatedQuizData.getVocabularyWords(),
+                                                userLocale));
+                            });
+                });
+    }
 
     private Mono<StartOrResumeResponse> resume(UUID sessionId, UUID userId, String userLocale) {
         return quizSessionRepository.findByIdAndUserId(sessionId, userId)
@@ -232,42 +207,14 @@ public class QuizSessionService {
                         .then(fetchGeneratedQuizDataAndBuildResponse(updatedSession, userLocale)));
     }
 
-    private String serializeVocabularyWords(List<VocabularyWordDto> allVocabularyWords) {
-        if (allVocabularyWords == null || allVocabularyWords.isEmpty()) {
-            return null;
+    private Mono<List<VocabularyWordDto>> getVocabularyWords(QuizSession session) {
+        if (session.getVocabularyWordsJson() == null) {
+            return Mono.just(Collections.emptyList());
         }
         try {
-            return objectMapper.writeValueAsString(allVocabularyWords);
-        } catch (JsonProcessingException e) {
-            throw new SamskrtamException("JSON_PROCESSING_ERROR", "Failed to serialize vocabulary words", e);
+            return Mono.just(vocabularyWordsSerializer.deserialize(session.getVocabularyWordsJson()));
+        } catch (Exception e) {
+            return Mono.error(new SamskrtamException("JSON_PROCESSING_ERROR", "Failed to deserialize vocabulary words", e));
         }
-    }
-
-        private QuizSession buildNewQuizSession(UUID lessonId, UUID userId, GeneratedQuizData generatedQuizData, String vocabularyWordsJson) {
-        return QuizSession.builder()
-                .id(null)
-                .userId(userId)
-                .lessonId(lessonId)
-                .lessonType(generatedQuizData.getLessonType())
-                .totalQuestions(generatedQuizData.getQuestionsPerSession())
-                .answeredQuestions(0)
-                .score(0)
-                .status(SessionStatus.IN_PROGRESS)
-                .startedAt(Instant.now())
-                .vocabularyWordsJson(vocabularyWordsJson)
-                .generatedQuizDataId(generatedQuizData.getGeneratedQuizDataId())
-                .build();
-    }
-
-    private Mono<List<VocabularyWordDto>> getVocabularyWords(QuizSession session) {
-        if (LessonType.isVocabulary(session.getLessonType()) && session.getVocabularyWordsJson() != null) {
-            try {
-                return Mono.just(objectMapper.readValue(session.getVocabularyWordsJson(),
-                        objectMapper.getTypeFactory().constructCollectionType(List.class, VocabularyWordDto.class)));
-            } catch (JsonProcessingException e) {
-                return Mono.error(new SamskrtamException("JSON_PROCESSING_ERROR", "Failed to deserialize vocabulary words", e));
-            }
-        }
-        return Mono.just(Collections.emptyList());
     }
 }

@@ -252,11 +252,14 @@
     "sandhiQuizzesTitle": "Sandhi - Emeneau (Quizzes)",
     "sandhiQuizzesDescription": "Practice Sandhi rules according to Emeneau's system.",
     "sandhiRulesTitle": "Sandhi - Emeneau (Rules)",
-    "sandhiRulesDescription": "Explore the detailed Sandhi rules by Emeneau.",
-    "declensionsTitle": "Declensions",
-    "declensionsDescription": "Practice declensions of nouns and adjectives.",
-    "conjugationsTitle": "Conjugations",
-    "conjugationsDescription": "Learn and practice verb conjugations."
+    "sandhiRulesDescription": "Explore the detailed Sandhi rules by Emeneau.","sandhiSectionTitle": "Sandhi by Emeneau",
+        "declensionsSectionTitle": "Declensions",
+        "conjugationsSectionTitle": "Conjugations",
+        "noLessonsFound": "No lessons available yet",
+        "declensionsTitle": "Declensions",
+        "declensionsDescription": "Practice declensions of nouns and adjectives.",
+        "conjugationsTitle": "Conjugations",
+        "conjugationsDescription": "Learn and practice verb conjugations."
   },
   "vocabulary": {
     "basicVocabularyTitle": "Basic Vocabulary (Frisch)",

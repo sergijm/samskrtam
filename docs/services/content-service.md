@@ -1,6 +1,6 @@
 # content-service
 
-> Домен: Quiz Content — настройки и содержание квизов
+> Домен: Lesson Content — настройки и содержание уроков (см. ADR-002)
 > Язык: **Java 21 + Virtual Threads**
 > Модуль: `services/content-service`
 > Порт: 8081
@@ -228,10 +228,10 @@ VALUES
 
 > Полная OpenAPI спецификация для Lesson Pages: [lesson-openapi.yaml](../frontend/lesson-openapi.yaml)
 
-### Управление квизами (ADMIN)
+### Управление уроками (ADMIN)
 
 ```
-GET    /api/v1/content/quizzes                          → список квизов (фильтр по lessonType)
+GET    /api/v1/content/quizzes                          → список уроков (фильтр по lessonType)
 GET    /api/v1/content/quizzes/{id}                     → детали квиза
 POST   /api/v1/content/quizzes                          → создать квиз
 PUT    /api/v1/content/quizzes/{id}                     → обновить квиз
@@ -286,17 +286,17 @@ GET /api/v1/content/quizzes/{id}/session-data           → всё необхо�
 sm/selflearn/samskrtam/content/
 ├── Application.java
 ├── controller/
-│   ├── QuizController.java
+│   ├── LessonController.java
 │   ├── QuestionController.java
 │   ├── VocabularyController.java
 │   └── internal/
 │       └── SessionDataController.java    ← /session-data для quiz-service
 ├── service/
-│   ├── QuizService.java
+│   ├── LessonService.java
 │   ├── QuestionService.java
 │   └── VocabularyService.java
 ├── repository/
-│   ├── QuizRepository.java
+│   ├── LessonRepository.java
 │   ├── QuestionRepository.java
 │   ├── QuestionOptionRepository.java
 │   └── VocabularyWordRepository.java

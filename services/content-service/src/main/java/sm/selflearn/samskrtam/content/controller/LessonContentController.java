@@ -10,7 +10,7 @@ import sm.selflearn.samskrtam.content.dto.*;
 import sm.selflearn.samskrtam.content.model.DeclensionForm;
 import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
 import sm.selflearn.samskrtam.content.service.QuestionGenerationService;
-import sm.selflearn.samskrtam.content.service.QuizContentService;
+import sm.selflearn.samskrtam.content.service.LessonContentService;
 
 import java.util.List;
 import java.util.Locale;
@@ -23,15 +23,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class LessonContentController {
 
-    private final QuizContentService quizContentService;
+    private final LessonContentService lessonContentService;
     private final DeclensionFormRepository declensionFormRepository;
     private final QuestionGenerationService questionGenerationService;
 
-    @GetMapping("/quizzes")
+    @GetMapping("/lessons")
     @Operation(summary = "Get a list of available quizzes")
     @ApiResponse(responseCode = "200", description = "List of quizzes retrieved successfully")
-    public List<LessonItemResponse> getQuizList(@RequestParam(required = false) String category) {
-        return quizContentService.getLessonsList(category);
+    public List<LessonItemResponse> getLessonsList(@RequestParam(required = false) String category) {
+        return lessonContentService.getLessonsList(category);
     }
 
     @PostMapping("/lessons/{quizId}/generate-quiz-data")
@@ -41,7 +41,7 @@ public class LessonContentController {
     public GeneratedQuizData generateQuizData(
             @PathVariable UUID quizId,
             @RequestHeader(value = "X-User-Locale", defaultValue = "en") Locale locale) {
-        return quizContentService.generateQuizData(quizId, locale);
+        return lessonContentService.generateQuizData(quizId, locale);
     }
 
     @GetMapping("/generated-quiz-data/{id}")
@@ -49,23 +49,31 @@ public class LessonContentController {
     @ApiResponse(responseCode = "200", description = "Generated quiz data retrieved successfully")
     @ApiResponse(responseCode = "404", description = "Generated quiz data not found")
     public GeneratedQuizData getGeneratedQuizData(@PathVariable UUID id) {
-        return quizContentService.getGeneratedQuizData(id);
+        return lessonContentService.getGeneratedQuizData(id);
     }
 
-    @GetMapping("/lessons/by-slug/{slug}")
+    @GetMapping("/lessons/{slug}")
     @Operation(summary = "Get quiz summary by slug")
     @ApiResponse(responseCode = "200", description = "Quiz summary retrieved successfully")
     @ApiResponse(responseCode = "404", description = "Quiz not found")
     public LessonItemResponse getLessonBySlug(@PathVariable String slug) {
-        return quizContentService.getLessonItemBySlug(slug);
+        return lessonContentService.getLessonItemBySlug(slug);
     }
 
-    @GetMapping("/lessons/{id}/summary")
+    @GetMapping(value = "/lessons", params = "id")
     @Operation(summary = "Get quiz summary by ID")
     @ApiResponse(responseCode = "200", description = "Quiz summary retrieved successfully")
     @ApiResponse(responseCode = "404", description = "Quiz not found")
-    public LessonItemResponse getLessonSummaryById(@PathVariable UUID id) {
-        return quizContentService.getLessonItemById(id);
+    public LessonItemResponse getLessonSummaryById(@RequestParam UUID id) {
+        return lessonContentService.getLessonItemById(id);
+    }
+
+    @GetMapping("/lessons/{slug}/declension-stems")
+    @Operation(summary = "Get all declension stems for a lesson by slug")
+    @ApiResponse(responseCode = "200", description = "List of declension stems retrieved successfully")
+    @ApiResponse(responseCode = "404", description = "Lesson not found")
+    public List<DeclensionStemDto> getDeclensionStemsForLesson(@PathVariable String slug) {
+        return lessonContentService.getDeclensionStemsForLesson(slug);
     }
 
     @GetMapping("/declension-stems/{stemId}/forms")

@@ -1,0 +1,26 @@
+# Common/shared schemas for lesson API
+
+ErrorResponse:
+  type: object
+  required: [errorCode, message, traceId]
+  properties:
+    errorCode:
+      type: string
+    message:
+      type: string
+    traceId:
+      type: string
+
+AnswerHistoryEntry:
+  type: object
+  required: [answeredAt, correctAnswer, userAnswer, isCorrect]
+  properties:
+    answeredAt:
+      type: string
+      format: date-time
+    correctAnswer:
+      type: string
+    userAnswer:
+      type: string
+    isCorrect:
+      type: boolean

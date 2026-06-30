@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.*;
@@ -29,7 +30,7 @@ public class ContentClient {
     public Mono<List<LessonItemResponse>> getQuizzesByCategory(String category) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/api/v1/content/quizzes")
+                        .path("/api/v1/content/lessons")
                         .queryParam("category", category)
                         .build())
                 .retrieve()
@@ -101,7 +102,10 @@ public class ContentClient {
 
     public Mono<LessonItemResponse> getLessonItem(UUID lessonId) {
         return webClient.get()
-                .uri("/api/v1/content/lessons/{id}/summary", lessonId)
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/v1/content/lessons")
+                        .queryParam("id", lessonId)
+                        .build())
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError,
                         r -> Mono.error(new SamskrtamException("LESSON_NOT_FOUND", "Lesson summary not found in content-service: " + lessonId)))
@@ -110,11 +114,20 @@ public class ContentClient {
 
     public Mono<LessonItemResponse> getLessonItemBySlug(String slug) {
         return webClient.get()
-                .uri("/api/v1/content/lessons/by-slug/{slug}", slug)
+                .uri("/api/v1/content/lessons/{slug}", slug)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError,
                         r -> Mono.error(new SamskrtamException("LESSON_NOT_FOUND", "Lesson summary not found for slug: " + slug)))
                 .bodyToMono(LessonItemResponse.class);
     }
-}
 
+    public Mono<List<DeclensionStemDto>> getDeclensionStemsForLesson(String slug) {
+        return webClient.get()
+                .uri("/api/v1/content/lessons/by-slug/{slug}/declension-stems", slug)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("STEMS_NOT_FOUND", "Declension stems not found for lesson slug: " + slug)))
+                .bodyToFlux(DeclensionStemDto.class)
+                .collectList();
+    }
+}

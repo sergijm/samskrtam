@@ -548,6 +548,26 @@ PR в `main` требует: прохождения CI + одного code revie
 
 Спецификации api-gateway.md и user-service.md отражают это решение.
 
+### ADR-002: Семантика Quiz vs Lesson vs Activity
+
+**Статус:** Принято
+
+**Контекст:** Термин «quiz» использовался для обозначения и урока (единицы контента) и квиза (набора вопросов). Одновременно принято решение о будущей абстракции Activity.
+
+**Решение:**
+- **Lesson** = единица контента (`A_STEM_DECLENSIONS`, словарный урок)
+- **Quiz** = конкретная активность: случайная выборка вопросов из урока на одну сессию
+- **QuizSession** = прохождение квиза пользователем — правильное название, не трогать
+- **Activity** = будущая абстракция над `Quiz`, `Flashcard`, `RecallExercise` и др. (реализация в M5+)
+
+**Следствие:**
+- `QuizRepository`/`QuizContentService` переименовываются в `LessonRepository`/`LessonContentService`
+- `QuizSession`/`QuizAnswer` — не переименовываются (семантически верны)
+- `quizId` в контексте статистики, указывающий на урок, переименовывается в `lessonId`
+- Kafka топики `quiz-answered-events`, `quiz-session-status-changed-events` — не переименовываются
+- Роут `/api/v1/quiz/` остаётся неизменным (принадлежит quiz-service)
+- `QuizListItemResponse` удаляется как дубль `LessonItemResponse`
+
 ---
 
 ## 15. Kafka

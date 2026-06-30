@@ -22,6 +22,15 @@ export interface GrammarQuestionProgress {
   nAll:           number;
   successRate:    number;
   status:         WordStatus;
+  caseType:       string;
+  caseRu:         string;
+  caseEn:         string;
+  numberType:     string;
+  numberRu:       string;
+  numberEn:       string;
+  gender:         string;
+  genderRu:       string;
+  genderEn:       string;
 }
 
 export interface VocabularyLesson {
@@ -37,7 +46,7 @@ export interface VocabularyLesson {
 }
 
 export interface GrammarLesson {
-  quizId:           string;
+  lessonId:         string;
   type:             string;
   titleRu:          string;
   titleEn:          string;
@@ -72,3 +81,4 @@ export interface QuestionAnswerHistory {
   page:         number;
   total:        number;
 }
+

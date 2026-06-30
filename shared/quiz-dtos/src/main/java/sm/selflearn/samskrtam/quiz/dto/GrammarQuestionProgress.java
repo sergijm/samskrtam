@@ -12,6 +12,15 @@ public class GrammarQuestionProgress {
     private int nAll;
     private float successRate;
     private WordStatus status;
+    private String caseType;
+    private String caseRu;
+    private String caseEn;
+    private String numberType;
+    private String numberRu;
+    private String numberEn;
+    private String gender;
+    private String genderRu;
+    private String genderEn;
 
     // Getters and setters
     public UUID getQuestionId() {
@@ -84,5 +93,77 @@ public class GrammarQuestionProgress {
 
     public void setStatus(WordStatus status) {
         this.status = status;
+    }
+
+    public String getCaseType() {
+        return caseType;
+    }
+
+    public void setCaseType(String caseType) {
+        this.caseType = caseType;
+    }
+
+    public String getCaseRu() {
+        return caseRu;
+    }
+
+    public void setCaseRu(String caseRu) {
+        this.caseRu = caseRu;
+    }
+
+    public String getCaseEn() {
+        return caseEn;
+    }
+
+    public void setCaseEn(String caseEn) {
+        this.caseEn = caseEn;
+    }
+
+    public String getNumberType() {
+        return numberType;
+    }
+
+    public void setNumberType(String numberType) {
+        this.numberType = numberType;
+    }
+
+    public String getNumberRu() {
+        return numberRu;
+    }
+
+    public void setNumberRu(String numberRu) {
+        this.numberRu = numberRu;
+    }
+
+    public String getNumberEn() {
+        return numberEn;
+    }
+
+    public void setNumberEn(String numberEn) {
+        this.numberEn = numberEn;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getGenderRu() {
+        return genderRu;
+    }
+
+    public void setGenderRu(String genderRu) {
+        this.genderRu = genderRu;
+    }
+
+    public String getGenderEn() {
+        return genderEn;
+    }
+
+    public void setGenderEn(String genderEn) {
+        this.genderEn = genderEn;
     }
 }

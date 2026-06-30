@@ -10,5 +10,5 @@ import java.util.UUID;
 public interface UserQuizSessionStatisticRepository
 extends JpaRepository<UserQuizSessionStatistic, UUID> {
 Page<UserQuizSessionStatistic> findByUserId(UUID userId, Pageable pageable);
-Optional<UserQuizSessionStatistic> findByUserIdAndQuizId(UUID userId, UUID quizId);
+Optional<UserQuizSessionStatistic> findByUserIdAndLessonId(UUID userId, UUID lessonId);
 }

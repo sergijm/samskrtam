@@ -6,8 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.*;
-import sm.selflearn.samskrtam.eamenau.model.*;
-import sm.selflearn.samskrtam.eamenau.repository.*;
+import sm.selflearn.samskrtam.emenau.model.*;
+import sm.selflearn.samskrtam.emenau.repository.*;
 
 import java.util.*;
 import java.util.stream.Collectors;

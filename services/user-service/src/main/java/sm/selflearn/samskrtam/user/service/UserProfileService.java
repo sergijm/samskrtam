@@ -19,14 +19,13 @@ import sm.selflearn.samskrtam.user.model.OutboxEvent;
 import sm.selflearn.samskrtam.user.model.OutboxEventType;
 import sm.selflearn.samskrtam.user.model.UserProfile;
 import sm.selflearn.samskrtam.user.model.UserRole;
-import sm.selflearn.samskrtam.user.outbox.KeycloakAdminService;
 import sm.selflearn.samskrtam.user.repository.GroupMemberRepository;
 import sm.selflearn.samskrtam.user.repository.OutboxEventRepository;
 import sm.selflearn.samskrtam.user.repository.UserProfileRepository;
 import sm.selflearn.samskrtam.user.repository.UserProfileSpecification;
 
 import java.time.Instant;
-import java.util.HashSet;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,12 +38,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class UserProfileService {
 
-    private final UserProfileRepository profileRepository;
+        private final UserProfileRepository profileRepository;
     private final OutboxEventRepository outboxRepository;
     private final ObjectMapper objectMapper;
-    private final KeycloakAdminService keycloakAdminService;
     private final GroupMemberRepository groupMemberRepository;
     private final JwtDecoder jwtDecoder;
+    private final UserProvisioningService provisioningService;
+    private final UserProfileMapper profileMapper;
+    private final RoleResolver roleResolver;
 
     @Transactional
     public UserProfileResponse updateProfile(UUID userId, UpdateProfileRequest request) {
@@ -72,7 +73,7 @@ public class UserProfileService {
                 .build());
 
         log.debug("Profile updated and outbox event created: userId={}", userId);
-        return mapUserProfileToResponse(profile);
+                return profileMapper.toResponse(profile);
     }
 
     @Transactional
@@ -83,29 +84,8 @@ public class UserProfileService {
             log.debug("UserProfile found locally for userId: {}. Roles: {}", userId, existingProfile.get().getRoles());
             return existingProfile.get();
         } else {
-            log.info("UserProfile not found locally for userId: {}. Attempting to provision from Keycloak.", userId);
-            Map<String, Object> keycloakUser;
-            try {
-                keycloakUser = keycloakAdminService.findUserById(userId);
-            } catch (Exception e) {
-                log.error("Failed to fetch user {} from Keycloak for provisioning: {}", userId, e.getMessage(), e);
-                throw new UserNotFoundException("User not found in Keycloak or failed to fetch for ID: " + userId, e);
-            }
-
-            UserProfile newProfile = UserProfile.builder()
-                    .id(userId)
-                    .username((String) keycloakUser.get("username"))
-                    .email((String) keycloakUser.get("email"))
-                    .firstName((String) keycloakUser.get("firstName"))
-                    .lastName((String) keycloakUser.get("lastName"))
-                    .avatarUrl((String) keycloakUser.get("picture"))
-                    .blocked(!(Boolean) keycloakUser.getOrDefault("enabled", true))
-                    .roles(determineUserRolesFromKeycloakMap(keycloakUser))
-                    .build();
-
-            profileRepository.save(newProfile);
-            log.info("Provisioned new UserProfile from Keycloak for userId: {}. Roles: {}", userId, newProfile.getRoles());
-            return newProfile;
+            log.info("UserProfile not found locally for userId: {}. Provisioning from Keycloak.", userId);
+            return provisioningService.provisionFromKeycloak(userId);
         }
     }
 
@@ -127,7 +107,7 @@ public class UserProfileService {
         String lastName = jwt.getClaimAsString("family_name");
         String avatarUrl = jwt.getClaimAsString("picture");
 
-        Set<UserRole> roles = determineUserRolesFromJwt(jwt);
+        Set<UserRole> roles = roleResolver.fromJwt(jwt.getClaimAsMap("realm_access"));
 
         Optional<UserProfile> existingProfile = profileRepository.findById(userId);
         UserProfile userProfile;
@@ -160,7 +140,7 @@ public class UserProfileService {
 
         UserProfile savedProfile = profileRepository.save(userProfile);
         log.info("OAuth2 profile synced successfully for userId: {}", savedProfile.getId());
-        return mapUserProfileToResponse(savedProfile);
+        return profileMapper.toResponse(savedProfile);
     }
 
     public List<UserGroupSummary> getUserGroups(UUID userId) {
@@ -189,84 +169,16 @@ public class UserProfileService {
                 .collect(Collectors.toList());
     }
 
-    public UserProfileResponse getProfileResponse(UUID userId) {
+        public UserProfileResponse getProfileResponse(UUID userId) {
         UserProfile userProfile = getUserProfile(userId);
-        return mapUserProfileToResponse(userProfile);
+        return profileMapper.toResponse(userProfile);
     }
 
-    public UserProfileResponse mapUserProfileToResponse(UserProfile userProfile) {
-        String avatarUrl = userProfile.getAvatarUrl();
-        if (avatarUrl != null && !avatarUrl.startsWith("http")) {
-            avatarUrl = "http://" + avatarUrl;
-        }
-
-        return UserProfileResponse.builder()
-                .id(userProfile.getId())
-                .username(userProfile.getUsername())
-                .email(userProfile.getEmail())
-                .firstName(userProfile.getFirstName())
-                .lastName(userProfile.getLastName())
-                .avatarUrl(avatarUrl)
-                .roles(userProfile.getRoles().stream().map(UserRole::name).collect(Collectors.toSet()))
-                .quizSize(userProfile.getQuizSize())
-                .build();
+    public PublicProfileResponse getPublicProfileResponse(UUID userId) {
+        UserProfile userProfile = getUserProfile(userId);
+        return profileMapper.toPublicResponse(userProfile);
     }
 
-    public PublicProfileResponse mapUserProfileToPublicResponse(UserProfile userProfile) {
-        String avatarUrl = userProfile.getAvatarUrl();
-        if (avatarUrl != null && !avatarUrl.startsWith("http")) {
-            avatarUrl = "http://" + avatarUrl;
-        }
-
-        return PublicProfileResponse.builder()
-                .id(userProfile.getId())
-                .username(userProfile.getUsername())
-                .firstName(userProfile.getFirstName())
-                .lastName(userProfile.getLastName())
-                .avatarUrl(avatarUrl)
-                .roles(userProfile.getRoles())
-                .createdAt(userProfile.getCreatedAt())
-                .build();
-    }
-
-    private Set<UserRole> determineUserRolesFromKeycloakMap(Map<String, Object> keycloakUser) {
-        Set<UserRole> roles = new HashSet<>();
-        @SuppressWarnings("unchecked")
-        List<String> realmRoles = (List<String>) keycloakUser.get("realmRoles");
-
-        log.debug("UserProfileService: Keycloak realmRoles received for user: {}", realmRoles);
-
-        if (realmRoles != null) {
-            if (realmRoles.contains("ADMIN")) {
-                roles.add(UserRole.ADMIN);
-            }
-            roles.add(UserRole.STUDENT);
-        } else {
-            roles.add(UserRole.STUDENT);
-        }
-        log.debug("UserProfileService: Determined roles for user: {}", roles);
-        return roles;
-    }
-
-    private Set<UserRole> determineUserRolesFromJwt(Jwt jwt) {
-        Set<UserRole> roles = new HashSet<>();
-        Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
-
-        if (realmAccess != null && realmAccess.containsKey("roles")) {
-            @SuppressWarnings("unchecked")
-            List<String> jwtRoles = (List<String>) realmAccess.get("roles");
-            log.debug("UserProfileService: JWT realm_access roles received for user: {}", jwtRoles);
-
-            if (jwtRoles.contains("ADMIN")) {
-                roles.add(UserRole.ADMIN);
-            }
-            roles.add(UserRole.STUDENT);
-        } else {
-            roles.add(UserRole.STUDENT);
-        }
-        log.debug("UserProfileService: Determined roles from JWT for user: {}", roles);
-        return roles;
-    }
 
     private String toJson(Object object) {
         try {

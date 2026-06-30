@@ -1,0 +1,105 @@
+# Grammar lesson schemas
+
+GrammarQuestionProgress:
+  type: object
+  required:
+    - questionId
+    - textRu
+    - textEn
+    - correctAnswerRu
+    - correctAnswerEn
+    - nSuccess
+    - nAll
+    - successRate
+    - status
+    - caseType
+    - caseRu
+    - caseEn
+    - numberType
+    - numberRu
+    - numberEn
+    - gender
+    - genderRu
+    - genderEn
+  properties:
+    questionId:
+      type: string
+      format: uuid
+    textRu:
+      type: string
+    textEn:
+      type: string
+    correctAnswerRu:
+      type: string
+    correctAnswerEn:
+      type: string
+    nSuccess:
+      type: integer
+      minimum: 0
+    nAll:
+      type: integer
+      minimum: 0
+    successRate:
+      type: number
+      format: float
+      minimum: 0
+      maximum: 100
+    status:
+      $ref: './vocabulary.yaml#/WordStatus'
+    caseType:
+      type: string
+      example: NOMINATIVE
+    caseRu:
+      type: string
+      example: Именительный
+    caseEn:
+      type: string
+      example: Nominative
+    numberType:
+      type: string
+      example: SINGULAR
+    numberRu:
+      type: string
+      example: Единственное
+    numberEn:
+      type: string
+      example: Singular
+    gender:
+      type: string
+    genderRu:
+      type: string
+    genderEn:
+      type: string
+
+GrammarLesson:
+  type: object
+  required: [lessonId, type, titleRu, titleEn, difficulty, totalQuestions, learnedQuestions, progressPercent, questions]
+  properties:
+    lessonId:
+      type: string
+      format: uuid
+    type:
+      type: string
+      enum: [DECLENSIONS, CONJUGATIONS]
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    difficulty:
+      type: string
+      enum: [BEGINNER, INTERMEDIATE, ADVANCED]
+    totalQuestions:
+      type: integer
+      minimum: 1
+    learnedQuestions:
+      type: integer
+      minimum: 0
+    progressPercent:
+      type: number
+      format: float
+      minimum: 0
+      maximum: 100
+    questions:
+      type: array
+      items:
+        $ref: './grammar.yaml#/GrammarQuestionProgress'

@@ -44,13 +44,14 @@ public class LessonHistoryController {
                 .map(ResponseEntity::ok);
     }
 
-    @GetMapping("/grammar/{type}/questions/{questionId}/history")
-    @Operation(summary = "Get answer history for a specific question in a grammar lesson")
+    @GetMapping("/grammar/{slug}/questions/history")
+    @Operation(summary = "Get answer history for a specific grammar question by case and number")
     @ApiResponse(responseCode = "200", description = "Question answer history retrieved successfully")
     @ApiResponse(responseCode = "404", description = "History not found")
     public Mono<ResponseEntity<QuestionAnswerHistory>> getQuestionAnswerHistory(
-            @PathVariable String type,
-            @PathVariable UUID questionId,
+            @PathVariable String slug,
+            @RequestParam String caseType,
+            @RequestParam String numberType,
             @RequestHeader("X-User-Id") UUID userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -59,7 +60,7 @@ public class LessonHistoryController {
         Sort sort = Sort.by(Sort.Direction.DESC, "answeredAt");
         Pageable pageable = PageRequest.of(page, size, sort);
         
-        return lessonService.getQuestionAnswerHistory(type, questionId, userId, pageable, locale)
+        return lessonService.getQuestionAnswerHistory(slug, caseType, numberType, userId, pageable, locale)
                 .map(ResponseEntity::ok);
     }
 }

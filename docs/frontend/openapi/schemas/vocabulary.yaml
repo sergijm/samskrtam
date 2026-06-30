@@ -1,0 +1,70 @@
+# Vocabulary lesson schemas
+
+WordStatus:
+  type: string
+  enum: [NEW, LEARNING, REVIEW, MASTERED]
+
+VocabularyWordProgress:
+  type: object
+  required: [wordId, word, translationRu, translationEn, nSuccess, nAll, successRate, status]
+  properties:
+    wordId:
+      type: string
+      format: uuid
+    word:
+      type: string
+      description: Слово в IAST транслитерации
+      example: mṛga
+    wordDevanagari:
+      type:
+        - string
+        - 'null'
+    translationRu:
+      type: string
+    translationEn:
+      type: string
+    nSuccess:
+      type: integer
+      minimum: 0
+    nAll:
+      type: integer
+      minimum: 0
+    successRate:
+      type: number
+      format: float
+      minimum: 0
+      maximum: 100
+    status:
+      $ref: './vocabulary.yaml#/WordStatus'
+
+VocabularyLesson:
+  type: object
+  required: [quizId, slug, titleRu, titleEn, difficulty, totalWords, learnedWords, progressPercent, words]
+  properties:
+    quizId:
+      type: string
+      format: uuid
+    slug:
+      type: string
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    difficulty:
+      type: string
+      enum: [BEGINNER, INTERMEDIATE, ADVANCED]
+    totalWords:
+      type: integer
+      minimum: 1
+    learnedWords:
+      type: integer
+      minimum: 0
+    progressPercent:
+      type: number
+      format: float
+      minimum: 0
+      maximum: 100
+    words:
+      type: array
+      items:
+        $ref: './vocabulary.yaml#/VocabularyWordProgress'

@@ -45,15 +45,15 @@ public class LessonController {
                 .map(ResponseEntity::ok);
     }
 
-    @GetMapping("/grammar/{type}")
+    @GetMapping("/grammar/{slug}")
     @Operation(summary = "Get grammar lesson with user progress")
     @ApiResponse(responseCode = "200", description = "Lesson with user progress retrieved successfully")
     @ApiResponse(responseCode = "404", description = "Lesson not found")
     public Mono<ResponseEntity<GrammarLesson>> getGrammarLesson(
-            @PathVariable LessonType type,
+            @PathVariable("slug") String slug,
             @RequestHeader(value = "X-User-Id", required = false) UUID userId )
     {
-        return lessonService.getGrammarLesson(type, userId)
+        return lessonService.getGrammarLesson(slug, userId)
                 .map(ResponseEntity::ok);
     }
 }

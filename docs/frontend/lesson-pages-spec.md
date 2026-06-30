@@ -193,6 +193,15 @@ export interface GrammarQuestionProgress {
   nAll:           number;
   successRate:    number;
   status:         WordStatus;
+  caseType:       string;
+  caseRu:         string;
+  caseEn:         string;
+  numberType:     string;
+  numberRu:       string;
+  numberEn:       string;
+  gender:         string;
+  genderRu:       string;
+  genderEn:       string;
 }
 
 export interface VocabularyLesson {

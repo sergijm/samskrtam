@@ -10,7 +10,7 @@ import java.util.UUID;
 @Value
 @Builder
 public class UserQuizStatisticDto {
-    UUID quizId;
+    UUID lessonId;
     LessonType lessonType;
     int totalSessions;
     int totalQuestionsAnswered;

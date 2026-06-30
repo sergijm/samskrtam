@@ -1,24 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { lessonApi } from '../api/lessonApi';
 
-// Урок по словарю — содержание + статистика пользователя
 export const useVocabularyLesson = (slug: string) =>
   useQuery({
     queryKey: ['lesson', 'vocabulary', slug],
     queryFn: () => lessonApi.getVocabularyLesson(slug).then(res => res.data),
-
     enabled: !!slug,
   });
 
-// Урок по грамматике — содержание + статистика пользователя
-export const useGrammarLesson = (type: string) =>
+export const useGrammarLesson = (slug: string) =>
   useQuery({
-    queryKey: ['lesson', 'grammar', type],
-    queryFn: () => lessonApi.getGrammarLesson(type).then(res => res.data),
-    enabled: !!type,
+    queryKey: ['lesson', 'grammar', slug],
+    queryFn: () => lessonApi.getGrammarLesson(slug).then(res => res.data),
+    enabled: !!slug,
   });
 
-// История ответов на конкретное слово в уроке
 export const useWordHistory = (slug: string, wordId: string) =>
   useQuery({
     queryKey: ['word-history', slug, wordId],
@@ -26,10 +22,9 @@ export const useWordHistory = (slug: string, wordId: string) =>
     enabled: !!wordId && !!slug,
   });
 
-// История ответов на конкретный вопрос в уроке
-export const useQuestionHistory = (quizId: string, questionId: string) =>
+export const useQuestionHistory = (slug: string, caseType: string, numberType: string) =>
   useQuery({
-    queryKey: ['question-history', quizId, questionId],
-    queryFn: () => lessonApi.getQuestionHistory(quizId, questionId).then(res => res.data),
-    enabled: !!questionId && !!quizId,
+    queryKey: ['question-history', slug, caseType, numberType],
+    queryFn: () => lessonApi.getQuestionHistory(slug, caseType, numberType).then(res => res.data),
+    enabled: !!slug && !!caseType && !!numberType,
   });

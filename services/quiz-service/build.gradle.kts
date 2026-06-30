@@ -36,4 +36,5 @@ dependencies {
     annotationProcessor(libs.lombok)
 
     testImplementation(libs.spring.test)
+    testImplementation(libs.reactor.test)
 }
