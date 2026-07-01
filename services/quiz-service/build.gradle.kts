@@ -27,10 +27,10 @@ dependencies {
     implementation(project(":shared:common-dtos"))
     implementation(project(":shared:quiz-dtos"))
 
-    // MapStruct dependencies
-    implementation("org.mapstruct:mapstruct:1.5.5.Final")
-    annotationProcessor("org.mapstruct:mapstruct-processor:1.5.5.Final")
-    annotationProcessor("org.projectlombok:lombok-mapstruct-binding:0.2.0")
+        // MapStruct
+    implementation(libs.mapstruct)
+    annotationProcessor(libs.mapstruct.processor)
+    annotationProcessor(libs.lombok.mapstruct.binding)
 
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)

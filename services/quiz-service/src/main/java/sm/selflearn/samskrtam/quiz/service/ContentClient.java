@@ -6,7 +6,6 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
@@ -15,8 +14,7 @@ import sm.selflearn.samskrtam.content.dto.GeneratedQuizData;
 import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
 import sm.selflearn.samskrtam.content.dto.LessonItemResponse;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
-import sm.selflearn.samskrtam.content.model.VowelType;
-import sm.selflearn.samskrtam.quiz.dto.CaseEndingDto;
+import sm.selflearn.samskrtam.content.dto.CaseEndingDto;
 
 import java.util.List;
 import java.util.UUID;

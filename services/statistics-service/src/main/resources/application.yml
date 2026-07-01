@@ -1,10 +1,11 @@
+server:
   port: ${STATISTICS_SERVICE_PORT}
   error:
     include-stacktrace: always
     include-exception: true
 
 
-  spring:
+spring:
   application:
     name: statistics-service
   config:

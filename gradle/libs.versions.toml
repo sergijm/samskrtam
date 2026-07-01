@@ -10,6 +10,8 @@ postgresql-jdbc = "42.7.3"
 postgresql-r2dbc = "1.0.4"
 flyway = "11.20.3" # Updated Flyway version to 10.11.0
 lombok = "1.18.32"
+mapstruct = "1.5.5.Final"
+lombok-mapstruct-binding = "0.2.0"
 logstash-logback = "7.4"
 spring-kafka = "3.1.5" # Explicitly define spring-kafka version to match spring-boot 3.3.0
 spring-kafka-streams = "3.8.0" # Added spring-kafka-streams version
@@ -41,6 +43,11 @@ spring-cloud-gateway = { module = "org.springframework.cloud:spring-cloud-starte
 
 # Lombok
 lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
+
+# MapStruct
+mapstruct = { module = "org.mapstruct:mapstruct", version.ref = "mapstruct" }
+mapstruct-processor = { module = "org.mapstruct:mapstruct-processor", version.ref = "mapstruct" }
+lombok-mapstruct-binding = { module = "org.projectlombok:lombok-mapstruct-binding", version.ref = "lombok-mapstruct-binding" }
 
 # Logging
 logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-logback" }

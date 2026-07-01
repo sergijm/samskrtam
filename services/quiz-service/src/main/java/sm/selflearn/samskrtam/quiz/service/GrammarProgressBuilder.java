@@ -6,9 +6,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.content.dto.*;
-import sm.selflearn.samskrtam.content.model.CaseType;
 import sm.selflearn.samskrtam.content.model.Gender;
-import sm.selflearn.samskrtam.content.model.NumberType;
 import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.quiz.constants.ProgressConstants;
 import sm.selflearn.samskrtam.quiz.dto.*;
@@ -180,28 +178,28 @@ public class GrammarProgressBuilder {
     private String findCaseEnding(Gender gender, DeclensionFormDto form, List<CaseEndingDto> caseEndings) {
         // Convert shared enums to content-service enums (same constant names)
         String targetCaseType = form.getCaseType().name();
-        String targetNumberType = form.getNumberType().name();
-        String targetGender = gender != null ? String.valueOf(gender) : null;
+                String targetNumberType = form.getNumberType().name();
+                String targetGender = gender != null ? gender.name() : null;
 
-        // 1. Точный матч по gender + caseType + numberType
-        for (CaseEndingDto ce : caseEndings) {
-            boolean genderMatch = targetGender == null ||
-                    ce.getGender() == null ||
-                    targetGender.equals(String.valueOf(ce.getGender()));
-            if (genderMatch &&
-                    targetCaseType.equals(ce.getCaseType()) &&
-                    targetNumberType.equals(ce.getNumberType())) {
-                return ce.getEndingIast();
-            }
-        }
+                // 1. Точный матч по gender + caseType + numberType
+                for (CaseEndingDto ce : caseEndings) {
+                    boolean genderMatch = targetGender == null ||
+                            ce.getGender() == null ||
+                            targetGender.equals(ce.getGender().name());
+                    if (genderMatch &&
+                            targetCaseType.equals(ce.getCaseType().name()) &&
+                            targetNumberType.equals(ce.getNumberType().name())) {
+                        return ce.getEndingIast();
+                    }
+                }
 
-        // 2. Fallback: матч без учёта gender для уроков -i, -u, -r
-        for (CaseEndingDto ce : caseEndings) {
-            if (targetCaseType.equals(ce.getCaseType()) &&
-                    targetNumberType.equals(ce.getNumberType())) {
-                return ce.getEndingIast();
-            }
-        }
+                // 2. Fallback: матч без учёта gender для уроков -i, -u, -r
+                for (CaseEndingDto ce : caseEndings) {
+                    if (targetCaseType.equals(ce.getCaseType().name()) &&
+                            targetNumberType.equals(ce.getNumberType().name())) {
+                        return ce.getEndingIast();
+                    }
+                }
 
         log.warn("No matching case ending found for gender={}, caseType={}, numberType={}",
                 targetGender, targetCaseType, targetNumberType);

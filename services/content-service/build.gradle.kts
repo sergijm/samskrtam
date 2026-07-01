@@ -21,8 +21,13 @@ dependencies {
     implementation(libs.flyway.postgresql)
     implementation(libs.postgresql.jdbc)
 
-    compileOnly(libs.lombok)
+        compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
+
+    // MapStruct
+    implementation(libs.mapstruct)
+    annotationProcessor(libs.mapstruct.processor)
+    annotationProcessor(libs.lombok.mapstruct.binding)
 
     implementation(project(":shared:quiz-dtos"))
     implementation(project(":shared:common-dtos"))
