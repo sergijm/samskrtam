@@ -42,6 +42,9 @@ import EmeneauExerciseDetailPage from './pages/eamenau/EmeneauExerciseDetailPage
 import DictionaryPage from './pages/dictionary/DictionaryPage';
 import VocabularyLessonPage from './pages/lessons/VocabularyLessonPage';
 import GrammarLessonPage from './pages/lessons/GrammarLessonPage';
+import WorksPage from './pages/sangraha/WorksPage';
+import WorkPage from './pages/sangraha/WorkPage';
+import VersePage from './pages/sangraha/VersePage';
 
 // Stores
 import { useThemeStore } from './store/themeStore';
@@ -301,6 +304,38 @@ export default function App() {
                                     <ProtectedRoute>
                                         <AppLayout>
                                             <QuizPage />
+                                        </AppLayout>
+                                    </ProtectedRoute>
+                                }
+                            />
+
+                            {/* Sangraha routes */}
+                            <Route
+                                path="/sangraha"
+                                element={
+                                    <ProtectedRoute>
+                                        <AppLayout>
+                                            <WorksPage />
+                                        </AppLayout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/sangraha/:workSlug"
+                                element={
+                                    <ProtectedRoute>
+                                        <AppLayout>
+                                            <WorkPage />
+                                        </AppLayout>
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/sangraha/:workSlug/verses/:verseId"
+                                element={
+                                    <ProtectedRoute>
+                                        <AppLayout>
+                                            <VersePage />
                                         </AppLayout>
                                     </ProtectedRoute>
                                 }

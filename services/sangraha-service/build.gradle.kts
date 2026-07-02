@@ -14,22 +14,31 @@ dependencies {
 
     implementation(libs.spring.web)
     implementation(libs.spring.data.jpa)
+
     implementation(libs.spring.kafka)
-    implementation(libs.springdoc.openapi.webmvc.ui)
+
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgresql)
     implementation(libs.postgresql.jdbc)
 
-        compileOnly(libs.lombok)
+    compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 
     implementation(libs.mapstruct)
     annotationProcessor(libs.mapstruct.processor)
     annotationProcessor(libs.lombok.mapstruct.binding)
 
+    implementation(libs.springdoc.openapi.webmvc.ui)
+
+    implementation(libs.logstash.logback.encoder)
+    implementation(libs.micrometer.tracing.bridge.otel)
+    implementation(libs.opentelemetry.exporter.otlp)
+    implementation(libs.micrometer.registry.prometheus)
+
+    implementation(libs.jackson.datatype.jsr310)
+
     implementation(project(":shared:samskrtam-dtos"))
     implementation(project(":shared:common-dtos"))
 
     testImplementation(libs.spring.test)
 }
-

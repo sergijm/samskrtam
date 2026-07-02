@@ -1,18 +1,9 @@
-server:
-  port: ${CONTENT_SERVICE_PORT}
+  port: ${SANGRAHA_SERVICE_PORT}
   shutdown: graceful
-  error:
-    include-stacktrace: always
-    include-exception: true
 
 spring:
   application:
-    name: content-service
-  config:
-    import: "optional:file:.env[.properties]"
-  threads:
-    virtual:
-      enabled: true
+    name: sangraha-service
   lifecycle:
     timeout-per-shutdown-phase: ${GRACEFUL_SHUTDOWN_TIMEOUT}
   datasource:
@@ -28,24 +19,29 @@ spring:
       ddl-auto: validate
     properties:
       hibernate:
-        default_schema: content
+        default_schema: sangraha
         jdbc:
           time_zone: UTC
   flyway:
-    url: ${SPRING_FLYWAY_URL}
-    user: ${DB_USER}
-    password: ${DB_PASSWORD}
-    schemas: content, eamenau
+    schemas: sangraha
+    locations: classpath:db/migration
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
-    consumer:
-      group-id: content-service
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
-        spring.json.trusted.packages: "*"
         spring.json.type.mapping: sangraha-vocabulary-event:sm.selflearn.samskrtam.sangraha.event.SangrahaVocabularyEvent
-      enable-auto-commit: false
+
+sangraha:
+  llm:
+    base-url: ${SANGRAHA_LLM_BASE_URL}
+    api-key: ${SANGRAHA_LLM_API_KEY}
+    model: ${SANGRAHA_LLM_MODEL}
+
+app:
+  outbox:
+    fixed-delay-ms: ${APP_OUTBOX_FIXED_DELAY_MS:5000}
 
 management:
   server:
@@ -63,8 +59,8 @@ management:
   propagation:
     type: w3c
 
-logging:
-  level:
-    root: WARN
-    sm.selflearn.samskrtam: DEBUG
-
+springdoc:
+  api-docs:
+    enabled: ${SPRINGDOC_ENABLED}
+  swagger-ui:
+    enabled: ${SPRINGDOC_ENABLED}

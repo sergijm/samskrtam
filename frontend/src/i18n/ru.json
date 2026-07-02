@@ -285,5 +285,72 @@
   },
   "dictionary": {
     "noWordsFound": "Слова не найдены."
+  },
+
+  "sangraha": {
+    "title": "Произведения",
+    "works": "Произведения",
+    "addWork": "Добавить произведение",
+    "editWork": "Редактировать произведение",
+    "deleteWork": "Удалить произведение",
+    "noWorks": "Нет произведений",
+    "work": "Произведение",
+    "chapters": "Главы",
+    "addChapter": "Добавить главу",
+    "editChapter": "Редактировать главу",
+    "deleteChapter": "Удалить главу",
+    "verses": "Стихи",
+    "addVerse": "Добавить стих",
+    "deleteVerse": "Удалить стих",
+    "verse": "Стих",
+    "status": {
+      "DRAFT": "Черновик",
+      "ANALYZING": "Анализ...",
+      "ANALYZED": "Проанализирован",
+      "FAILED": "Ошибка"
+    },
+    "action": {
+      "analyze": "Анализировать",
+      "edit": "Редактировать",
+      "save": "Сохранить",
+      "cancel": "Отмена"
+    },
+    "fields": {
+      "slug": "Код",
+      "titleRu": "Название (рус.)",
+      "titleEn": "Название (англ.)",
+      "descriptionRu": "Описание (рус.)",
+      "descriptionEn": "Описание (англ.)",
+      "author": "Автор",
+      "orderIndex": "Порядковый номер",
+      "textDevanagari": "Текст (деванагари)",
+      "textIast": "Текст (IAST)",
+      "versePreview": "Начало стиха"
+    },
+    "placeholder": {
+      "textDevanagari": "Введите текст на деванагари...",
+      "textIast": "Введите текст в транслитерации IAST..."
+    },
+    "translation": {
+      "ru": "Перевод (рус.)",
+      "en": "Перевод (англ.)"
+    },
+    "sandhiSplits": "Разбор сандхи",
+    "wordsTable": {
+      "position": "№",
+      "surface": "Словоформа",
+      "lemma": "Словарная форма",
+      "stem": "Основа",
+      "pos": "Часть речи",
+      "gender": "Род",
+      "case": "Падеж",
+      "number": "Число",
+      "person": "Лицо",
+      "tense": "Время",
+      "mood": "Наклонение",
+      "voice": "Залог",
+      "gloss": "Глосса"
+    },
+    "vocabularyQuiz": "Квиз по лексике"
   }
 }

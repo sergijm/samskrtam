@@ -10,5 +10,7 @@ include(
     ":services:content-service",
     ":services:quiz-service",
     ":services:statistics-service",
-    ":services:dictionary-service"
+    ":services:dictionary-service",
+    ":services:sangraha-service"
 )
+

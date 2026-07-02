@@ -2,12 +2,13 @@ package sm.selflearn.samskrtam.gateway.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
+import org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import lombok.extern.slf4j.Slf4j; // Import Slf4j
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Маршрутизация объявлена через Java DSL — не в application.yml.
@@ -18,7 +19,7 @@ import lombok.extern.slf4j.Slf4j; // Import Slf4j
  * <p>Если маршрут не проксируется — проверяй этот файл и SecurityConfig.
  */
 @Configuration
-@Slf4j // Add Slf4j annotation
+@Slf4j
 public class GatewayRoutesConfig {
 
     @Value("${USER_SERVICE_URL:http://user-service:8087}")
@@ -35,6 +36,12 @@ public class GatewayRoutesConfig {
 
     @Value("${STATISTICS_SERVICE_URL:http://statistics-service:8086}")
     private String statisticsServiceUrl;
+
+    @Value("${SANGRAHA_SERVICE_URL:http://sangraha-service:8089}")
+    private String sangrahaServiceUrl;
+
+    @Value("${RATE_LIMITING_SANGRAHA_ANALYZE_RPM:2}")
+    private int sangrahaAnalyzeRpm;
 
     @Bean
     public RouteLocator routes(RouteLocatorBuilder builder) {
@@ -60,9 +67,9 @@ public class GatewayRoutesConfig {
                         .path("/api/v1/auth/**")
                         .and().not(p -> p.path("/api/v1/auth/oauth2/**")
                                 .or().path("/api/v1/auth/login")
-                                                                .or().path("/api/v1/auth/refresh")
-                                                                .or().path("/api/v1/auth/register") // Exclude specific register path
-                                                                .or().path("/api/v1/auth/forgot-password")) // Exclude specific forgot-password path
+                                .or().path("/api/v1/auth/refresh")
+                                .or().path("/api/v1/auth/register") // Exclude specific register path
+                                .or().path("/api/v1/auth/forgot-password")) // Exclude specific forgot-password path
                         .uri(userServiceUrl))
 
                 // ── Admin Users (требует JWT и ADMIN роль) ──────────────────────────────────────────
@@ -115,6 +122,27 @@ public class GatewayRoutesConfig {
                 .route("dictionary", r -> r
                         .path("/api/v1/dictionary/**")
                         .uri(dictionaryServiceUrl))
+
+                // ── Sangraha Service ─────────────────────────────────────────────────────
+                // Базовая маршрутизация всех запросов к sangraha-service
+                // sangraha-service ожидает полный путь /api/v1/sangraha/**, поэтому RewritePath
+                .route("sangraha", r -> r
+                        .path("/api/v1/sangraha/**")
+                        .filters(f -> f.rewritePath("/api/v1/sangraha/(?<segment>.*)", "/${segment}"))
+                        .uri(sangrahaServiceUrl))
+
+                // ── Sangraha Analyze (rate-limited) ──────────────────────────────────────
+                // POST /api/v1/sangraha/verses/{verseId}/analyze — дорогой LLM-вызов
+                // Лимит конфигурируется через env RATE_LIMITING_SANGRAHA_ANALYZE_RPM (по умолч. 2 RPM)
+                // Feature-flag: RATE_LIMITING_ENABLED (общий) + RATE_LIMITING_SANGRAHA_ANALYZE (специфичный)
+                // Для отключения лимита: установить RATE_LIMITING_SANGRAHA_ANALYZE_ENABLED=false
+                .route("sangraha-analyze", r -> r
+                        .path("/api/v1/sangraha/verses/{verseId}/analyze")
+                        .and().method("POST")
+                        .filters(f -> f
+                                .rewritePath("/api/v1/sangraha/(?<segment>.*)", "/${segment}")
+                        )
+                        .uri(sangrahaServiceUrl))
 
                 // ── Statistics & Leaderboard ─────────────────────────────────────
                 .route("statistics", r -> r

@@ -13,8 +13,9 @@ export default function DashboardPage() {
   console.log('DashboardPage: Rendering...', { isLoading, isError, user });
 
   const learningModules = [
-    { title: t('nav.grammar'), description: t('dashboard.grammarDescription'), icon: 'pi pi-book', link: '/grammar' }, // Changed link to /grammar
+    { title: t('nav.grammar'), description: t('dashboard.grammarDescription'), icon: 'pi pi-book', link: '/grammar' },
     { title: t('nav.vocabulary'), description: t('dashboard.vocabularyDescription'), icon: 'pi pi-book', link: '/quizzes/vocabulary' },
+    { title: t('nav.sangraha'), description: t('dashboard.sangrahaDescription'), icon: 'pi pi-bookmark', link: '/sangraha' },
     { title: t('nav.dictionary'), description: t('dashboard.dictionaryDescription'), icon: 'pi pi-book', link: '/dictionary' },
   ];
 
@@ -31,7 +32,7 @@ export default function DashboardPage() {
   const renderRow = (items: any[]) => (
     <div className="grid justify-content-center w-full mb-4">
       {items.map((item, index) => (
-        <div key={index} className="col-12 sm:col-6 md:col-4 lg:col-4 p-2 flex">
+        <div key={index} className="col-12 sm:col-6 lg:col-3 p-2 flex">
           <Link to={item.link} className="no-underline h-full flex w-full">
             <Card
               title={item.title}
@@ -79,3 +80,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
