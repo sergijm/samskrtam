@@ -29,7 +29,7 @@ dependencies {
     annotationProcessor(libs.mapstruct.processor)
     annotationProcessor(libs.lombok.mapstruct.binding)
 
-    implementation(project(":shared:quiz-dtos"))
+    implementation(project(":shared:samskrtam-dtos"))
     implementation(project(":shared:common-dtos"))
 
     testImplementation(libs.spring.test)

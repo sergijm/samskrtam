@@ -82,6 +82,7 @@
 - `docs/services/dictionary-service.md`
 - `docs/services/statistics-service.md`
 - `docs/services/leaderboard.md`
+- `docs/services/sangraha-service.md`
 - `docs/quizzes/quiz-declension.md`
 - `docs/conventions.md`
 
@@ -113,6 +114,13 @@
 - Cache-aside: Redis → внешнее API (Sanskrit Heritage / Monier-Williams)
 - Fallback при недоступности внешнего API
 
+### sangraha-service (Java 21 + Virtual Threads, порт из env `SANGRAHA_SERVICE_PORT`)
+- Санскритские произведения: иерархия Work → Chapter → Verse
+- LLM-анализ стиха через OpenAI-совместимый API с tool calling (транслитерация, перевод ru/en, сандхи, пословная грамматика) — см. `sangraha-service.md §5`
+- Transactional Outbox → Kafka `sangraha-vocabulary-events` на каждый проанализированный стих (первый продюсер этого топика; content-service — первый в проекте `@KafkaListener`-консьюмер, см. `content-service.md §11`)
+- Никаких синхронных HTTP-вызовов в content-service/dictionary-service — только Kafka (ADR-006)
+- Разграничение доступа: весь write — ADMIN (роль «редактор/переводчик» отложена)
+
 ### statistics-service (Java 21 + Kafka Streams, порт 8086)
 - Потребление `quiz-answered-events` и `quiz-session-status-changed-events`
 - Агрегация статистики через Kafka Streams (`KafkaStreamsConfig`)
@@ -123,7 +131,7 @@
 - Реализованные сервисы с Flyway-миграциями
 - OpenAPI-спецификации (springdoc, `SPRINGDOC_ENABLED=true` в dev)
 - Kafka-топики: `quiz-answered-events`, `quiz-session-status-changed-events`, `user-quiz-statistics-output`
-- Shared-модули: `shared/quiz-dtos` (включает `LessonSummaryDto`, `QuizSessionDto`, `WordAnswerHistoryDto`), `shared/common-dto`
+- Shared-модули: `shared/samskrtam-dtos` (включает `LessonSummaryDto`, `QuizSessionDto`, `WordAnswerHistoryDto`), `shared/common-dto`
 
 **Ограничения:**
 - quiz-service: только R2DBC (JPA несовместима с WebFlux)
@@ -142,6 +150,7 @@
 - `docs/frontend/feature-flags-frontend.md`
 - `docs/frontend/lesson-pages-spec.md`
 - `docs/frontend/lesson-openapi.yaml`
+- `docs/services/sangraha-service.md` (§7 — фронтенд-эскиз: WorksPage, WorkPage/TreeGrid, VersePage)
 - `docs/conventions.md` (i18n, git)
 
 **Ответственность:**
@@ -286,7 +295,7 @@
 - Генерирует или валидирует OpenAPI YAML/JSON для каждого сервиса
 
 ### Shared DTOs
-- Поддерживает актуальность `shared/quiz-dtos` и `shared/common-dto`
+- Поддерживает актуальность `shared/samskrtam-dtos` и `shared/common-dto`
 - Следит за консистентностью событий Kafka: `QuizAnsweredEvent`, `QuizSessionStatusChangedEvent`, `StatisticEvent`
 - Именование топиков: `<domain>-<event>-events` (конвенция из `conventions.md §15`)
 

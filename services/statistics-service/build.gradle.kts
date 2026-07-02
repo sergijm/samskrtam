@@ -27,7 +27,7 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     implementation(project(":shared:common-dtos"))
-    implementation(project(":shared:quiz-dtos"))
+    implementation(project(":shared:samskrtam-dtos"))
 
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)

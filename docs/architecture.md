@@ -25,9 +25,10 @@
 | content-service | Java 21 | `sm.selflearn.samskrtam.samskrtam.content` | Логика генерации и данные для квизов.                                                                                                               |                                                                                                             |
 | quiz-service | Java 21 + WebFlux + R2DBC | `sm.selflearn.samskrtam.quiz` | m.quiz.outbox`.                                                                                                                                     | Логика прохождения квизов.
 | statistics-service | Java 21 + Kafka Streams | `sm.selflearn.samskrtam.statistics` | Расчет статистики с использованием Kafka Streams.                                                                                                   |
-| shared/quiz-dtos | Java 21 | `sm.selflearn.samskrtam.quiz` | Содержит внешние DTO для квизов, контента, статистики и **Kafka-событий** (`QuizAnsweredEvent`, `QuizSessionStatusChangedEvent`, `StatisticEvent`). |
+| shared/samskrtam-dtos | Java 21 | `sm.selflearn.samskrtam.quiz` | Содержит внешние DTO для квизов, контента, статистики и **Kafka-событий** (`QuizAnsweredEvent`, `QuizSessionStatusChangedEvent`, `StatisticEvent`). |
 | shared/common-dto | Java 21 | `sm.selflearn.samskrtam.common` |                                                                                                                                                     |
 | dictionary-service | Java 21 | `sm.selflearn.samskrtam.dictionary` | Словари санскрита.                                                                                                                                  |
+| sangraha-service | Java 21 | `sm.selflearn.samskrtam.sangraha` | Санскритские произведения (Work → Chapter → Verse), LLM-анализ стихов. См. [services/sangraha-service.md](services/sangraha-service.md), ADR-006.  |
 
 ---
 

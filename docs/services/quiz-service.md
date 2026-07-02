@@ -86,7 +86,7 @@ dependencies {
     implementation(libs.spring.kafka)
     implementation(libs.flyway.core)
     implementation(libs.postgresql)
-    implementation(project(":shared:quiz-dtos"))
+    implementation(project(":shared:samskrtam-dtos"))
 }
 ```
 

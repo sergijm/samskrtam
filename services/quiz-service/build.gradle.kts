@@ -25,7 +25,7 @@ dependencies {
     implementation(libs.springdoc.openapi.webflux.ui)
 
     implementation(project(":shared:common-dtos"))
-    implementation(project(":shared:quiz-dtos"))
+    implementation(project(":shared:samskrtam-dtos"))
 
         // MapStruct
     implementation(libs.mapstruct)

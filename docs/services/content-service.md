@@ -375,11 +375,13 @@ spring:
 |---|---|
 | Модели (13 классов) | `services/content-service/src/main/java/sm/selflearn/samskrtam/eamenau/model/` |
 | Репозитории (12 интерфейсов) | `services/content-service/src/main/java/sm/selflearn/samskrtam/eamenau/repository/` |
-| Сервисы | `EamenauService.java`, `EamenauExerciseService.java` в пакете `content/service/` |
-| Контроллеры | `EamenauController.java`, `EamenauExerciseController.java` в пакете `content/controller/` |
-| Shared DTOs | `shared/quiz-dtos/` — `EamenauExerciseDto`, `EamenauExerciseDetailDto`, `EamenauTaskDto`, `SandhiRuleDto` и др. |
+| Сервисы | `EamenauService.java`, `EamenauExerciseService.java` в пакете `eamenau/service/` |
+| Контроллеры | `EamenauController.java`, `EamenauExerciseController.java` в пакете `eamenau/controller/` |
+| Shared DTOs | `shared/samskrtam-dtos/` — `EamenauExerciseDto`, `EamenauExerciseDetailDto`, `EamenauTaskDto`, `SandhiRuleDto` и др. |
 | Миграция | `V2__create_eamenau_schema_and_sandhi_rules_table.sql` |
 | Фронтенд | `frontend/src/pages/eamenau/`, `frontend/src/components/eamenau/` |
+
+> Домен полностью консолидирован в один пакет `sm.selflearn.samskrtam.eamenau.*` (модели, репозитории, сервисы, контроллеры). Ранее в коде существовал раздвоенный вариант — пакет `emenau` (контроллеры/модели/репозитории, без «a») рядом с `content.service.Eamenau*` (сервисы, с «a») и shared DTO `EmenauExerciseDto`/`EmenauExerciseDetailDto` (без «a»); расхождение устранено переименованием (см. `conventions.md`, раздел "Известные проблемы" ниже — актуальные, ещё не устранённые).
 
 ### Endpoints (краткий список)
 
@@ -397,3 +399,52 @@ PUT  /api/v1/eamenau/exercises/solutions/{solutionId}      → обновить 
 - `PUT /solutions/{id}` не защищён `@PreAuthorize("hasRole('ADMIN')")` — авторизация отсутствует
 - `Answer` (варианты ответа) реализован в модели и репозитории, но не используется ни в одном endpoint'е
 - `Phoneme` и связанные классы артикуляции реализованы, но не имеют API endpoint'а
+
+---
+
+## 11. Kafka Consumer: sangraha-vocabulary-events
+
+**Контекст:** `sangraha-service` (см. [services/sangraha-service.md](./sangraha-service.md), ADR-006 в `docs/conventions.md`) анализирует санскритские стихи через LLM и на каждый проанализированный стих публикует извлечённые слова. `content-service` — единственный текущий consumer; это **первый `@KafkaListener` в проекте** (до сих пор все сервисы только продюсили события через Outbox).
+
+```
+topic: sangraha-vocabulary-events
+key:   verseId (String, UUID)
+group: content-service
+```
+
+### Payload (см. точную схему в sangraha-service.md §6)
+
+```json
+{
+  "eventType": "VERSE_VOCABULARY_EXTRACTED",
+  "verseId": "uuid",
+  "workSlug": "bhagavad-gita",
+  "workTitleRu": "Бхагавад-гита", "workTitleEn": "Bhagavad Gita",
+  "chapterSlug": "1",
+  "chapterTitleRu": "Глава 1", "chapterTitleEn": "Chapter 1",
+  "words": [
+    {
+      "wordIast": "dhṛtarāṣṭraḥ", "wordDevanagari": "धृतराष्ट्रः",
+      "stem": "dhṛtarāṣṭra", "root": null, "gender": "MASCULINE",
+      "translationRu": "Дхритараштра", "translationEn": "Dhritarashtra",
+      "explanationRu": "...", "explanationEn": "..."
+    }
+  ]
+}
+```
+
+### Обработка (`SangrahaVocabularyEventListener` → `VocabularySyncService`)
+
+Идемпотентно (топик может redeliver-ить при ребалансе/ретрае):
+
+1. `VocabularyCategory` root: `findByCodeIgnoreCase(workSlug)`, если нет — создать (`nameRu = workTitleRu`, `nameEn = workTitleEn`, `parentId = null`).
+2. `VocabularyCategory` chapter: `findByCodeIgnoreCase("{workSlug}.{chapterSlug}")`, если нет — создать с `parentId = root.id`.
+3. Для root и/или chapter-категории — `upsert Quiz(quizType = VOCABULARY, slug = code)`, если квиза с таким `slug` ещё нет (`titleRu/En` берём из `workTitleRu/En`/`chapterTitleRu/En`). Решение — заводить квиз на уровне произведения, главы или обоих — принимает Агент 2 при реализации (открытый вопрос, см. §9 sangraha-service.md).
+4. Для каждого слова из `words[]`: dedup по `(wordIast, stem)` — `findByWordIastAndStem`. Если найдено — не создавать новый `VocabularyWord`; если связи `VocabularyWordCategory(wordId, chapterCategory.id)` ещё нет — создать. Если не найдено — создать `VocabularyWord` (`wordIast`, `wordDevanagari`, `stem`, `root`, `gender`, `translationRu/En`, `explanationRu/En`) и сразу связать с категорией главы.
+5. Ошибки обработки события (например, невалидный payload) — не ретраятся бесконечно; после N попыток — в DLQ-топик `sangraha-vocabulary-events-dlq` (конвенция DLQ — на усмотрение Агента 5 DevOps, если Kafka error handling ещё не типизирован в проекте).
+
+### Открытые вопросы (для Агента 2 при реализации)
+
+- [ ] Квиз заводится на уровне работы, главы или обоих одновременно?
+- [ ] Нужен ли consumer-level retry/backoff и DLQ-топик, или на этом этапе допустим simple log-and-skip?
+- [ ] `gender = null` от sangraha (для indeclinable-слов) — как мапится в `VocabularyWord.gender` (там `nullable = false`)? Вероятно `UNSPECIFIED` — подтвердить при реализации.

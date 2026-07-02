@@ -80,9 +80,39 @@
 - Агент 2 (Domain) решает: хранить одну запись (UNSPECIFIED) или две (MASCULINE=FEMININE).
 - Агент 3 (Frontend) получает `caseEnding` одинаковый для обоих родов в рамках одного (caseType, numberType), но прогресс агрегирует раздельно по роду.
 
+### ADR-006: sangraha-service — произведения, LLM-анализ стихов, синхронизация лексики через Kafka
+
+**Статус:** Принято
+
+**Контекст:** Нужен функционал работы с санскритскими текстами (произведения → главы →
+стихи), LLM-анализ стиха (транслитерация, перевод, сандхи, грамматика) и передача
+извлечённой лексики в существующий механизм VOCABULARY-квизов content-service
+(`VocabularyCategory`/`VocabularyWord`/`VocabularyWordCategory`, дерево категорий уже
+поддерживает агрегацию слов по поддереву — см. `VocabularyService.getVocabularyWordsForQuiz`).
+
+**Решение:**
+- Заводится новый сервис **`sangraha-service`** (Java 21 + Virtual Threads, схема БД `sangraha`), а не домен внутри `content-service` — см. `docs/services/sangraha-service.md`.
+- LLM (OpenAI-совместимый API) вызывается напрямую из `sangraha-service`, конфигурация только через env (`SANGRAHA_LLM_*`), без дефолтов в yml. Ответ модели принимается строго через **tool calling** (один tool `submit_verse_analysis` со строгой JSON-схемой) — свободный текст не парсится.
+- Никаких синхронных HTTP-вызовов между `sangraha-service` и `content-service`/`dictionary-service`. Единственный канал — **Kafka**, topic `sangraha-vocabulary-events` (transactional outbox, как в `user-service`/`quiz-service`), событие публикуется **на каждый проанализированный стих**.
+- Иерархия `work.slug` → `chapter.slug` используется как `code` в дереве `VocabularyCategory` content-service (`categoryCode = "{workSlug}.{chapterSlug}"`), что даёт VOCABULARY-квиз «бесплатно» через уже существующий механизм агрегации по поддереву.
+- Дедупликация слов в content-service — по `(wordIast, stem)`: при совпадении не создаём новый `VocabularyWord`, только добавляем связь `VocabularyWordCategory`.
+- Связь слов стиха со словарными статьями `dictionary-service` (`slp1`) **не делается** в этой итерации.
+- Версии `VerseAnalysis`/`VerseWord` не хранятся — повторный анализ перезаписывает предыдущий результат.
+- Права доступа: весь write-контур `sangraha-service` — только `ADMIN`. Отдельная роль «редактор/переводчик» — отложена.
+
+**Следствие:**
+- Агент 2 (Domain), назначенный на `sangraha-service`, должен завести первый в проекте `@KafkaListener` — в `content-service` (consumer `sangraha-vocabulary-events`).
+- **Shared DTO**: заведён `sm.selflearn.samskrtam.sangraha.event.SangrahaVocabularyEvent` в `shared/samskrtam-dtos` (пакет `sangraha`). Решение Агента 6: событие используется двумя сервисами (producer + consumer), локальный DTO создал бы дублирование и риск рассинхронизации.
+- **Порт**: фиксирован `8089`, согласован с Агентом 5 DevOps.
+- **Quiz(VOCABULARY) — только на уровне произведения**: Quiz заводится с `slug = workSlug`. Главы не получают отдельного Quiz — агрегация слов по поддереву категорий (`VocabularyService.getVocabularyWordsForQuiz`) уже поддерживает фильтрацию по `categoryCode = "{workSlug}.{chapterSlug}"` через дерево категорий. Отдельный Quiz на главу создал бы дублирование набора слов.
+
 ---
 
 ## 15. Kafka
+
+- Топики именуются `<domain>-<событие-во-множественном-числе>-events`, kebab-case: `quiz-answered-events`, `quiz-session-status-changed-events`, `sangraha-vocabulary-events`.
+- Публикация — только через Transactional Outbox Pattern (таблица `outbox_events` в схеме сервиса-источника + плановый publisher), см. пример в `user-service`/`quiz-service`. Прямая публикация в Kafka из бизнес-логики без outbox — запрещена.
+- Синхронные вызовы между доменными сервисами (Domain ↔ Domain) по HTTP не приветствуются там, где можно обойтись асинхронным событием — см. ADR-006.
 
 ## 16. Мапперы Entity/DTO
 
@@ -92,12 +122,18 @@
 
 ### 16.2 Запрещённые паттерны
 
-- Ручные мапперы в виде `@Component` с вызовом `.builder()` / конструктора — **code smell** (исключение: DTO → Entity для persistence-слоя вне сервисов, например, `RowMapper`).
-- Маппинг entity → DTO внутри `*Service` или `*Controller` — запрещён, вся логика преобразования только в `mapper/`.
 - `abstract class` с `@Autowired` внутри маппера — запрещён (нарушает Single Responsibility, смешивает маппинг и бизнес-логику).
+- Полная реализация entity → DTO вручную (десятки строк `.builder()...build()`, дублирующие структуру MapStruct-маппера) внутри `*Service`/`*Controller` — блокирующее замечание на code review для **нового** кода: такой маппинг выносится в `mapper/`.
 
-### 16.3 Допустимые исключения
+> **Пересмотрено:** первоначальная версия правила («любой `.builder()` вне `mapper/` — нарушение») оказалась нереалистичной — на момент пересмотра `.builder()` присутствует в сервисном слое всех сервисов (~30 файлов), в основном там, где DTO собирается из **нескольких источников** (агрегат + вычисляемые поля + данные другого сервиса), что MapStruct не выражает естественно. Требовать 1:1-маппер под каждый такой случай означало плодить мапперы с одним полем и вызовом сервиса внутри — то, что сам же п. 16.2 запрещает. Существующий код **не переписывается ретроактивно**; правило действует вперёд, см. §16.3.
 
+### 16.3 Когда `.builder()` в сервисном слое — нормально, а когда выносить в `mapper/`
+
+Критерий — **источник данных**, а не факт использования `.builder()`:
+
+- **Простой 1:1 маппинг** entity/model → DTO (поля переносятся почти без трансформации) — выносится в `mapper/` через MapStruct. Если видите `.builder()`, где просто одно поле в одно, без вызова сервисов/репозиториев — это кандидат на вынос.
+- **DTO собирается из нескольких источников** (несколько entity, plus данные из другого сервиса/HTTP-клиента, plus вычисляемые/агрегированные поля) — `.builder()` прямо в `*Service` **допустим**. Пример: `QuizDataAssembler`, `SessionFactory` — там сборка DTO неотделима от бизнес-логики сборки сессии.
+- **Практическое правило:** если тело маппинга можно описать одной MapStruct-аннотацией `@Mapping` — это mapper. Если требуется `if`/цикл/вызов другого бина — это часть сервисной логики, и `.builder()` в `*Service` — нормальный способ собрать результат, не обязательно продукт для `mapper/`.
 - `@Mapper(uses = {OtherMapper.class})` — допустимо для композиции мапперов.
 - Default-методы и `@AfterMapping` / `@BeforeMapping` — допустимы для пост-обработки полей, не требующих вызова сервисов.
 - Маппинг DTO ↔ Entity внутри `*Repository` (например, `RowMapper`) — не подпадает под это правило.

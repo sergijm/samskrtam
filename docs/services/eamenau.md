@@ -272,7 +272,7 @@ Phoneme >── PlaceOfArticulation
 - `EamenauController.java` — `GET /api/v1/eamenau/sandhi-rules`
 - `EamenauExerciseController.java` — все `/api/v1/eamenau/exercises/**`
 
-**Shared DTOs** (`shared/quiz-dtos/src/main/java/sm/selflearn/samskrtam/content/dto/`)
+**Shared DTOs** (`shared/samskrtam-dtos/src/main/java/sm/selflearn/samskrtam/content/dto/`)
 - `EamenauExerciseDto.java`
 - `EamenauExerciseDetailDto.java`
 - `EamenauTaskDto.java`

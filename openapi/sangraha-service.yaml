@@ -1,0 +1,615 @@
+openapi: "3.1.0"
+info:
+  title: Sangraha Service API
+  description: |
+    API для управления санскритскими произведениями (Work → Chapter → Verse),
+    LLM-анализа стихов и синхронизации лексики через Kafka.
+    
+    Все write-эндпоинты требуют роль ADMIN.
+  version: "1.0.0"
+  contact:
+    name: Samskrtam Team
+
+servers:
+  - url: /api/v1/sangraha
+    description: Через API Gateway (prefix /api/v1/sangraha)
+
+paths:
+  /works:
+    get:
+      operationId: listWorks
+      summary: Плитки произведений
+      tags: [Works]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список произведений
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkSummary'
+    post:
+      operationId: createWork
+      summary: Создать произведение
+      tags: [Works]
+      security:
+        - bearerAuth:
+            - ADMIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkRequest'
+      responses:
+        '201':
+          description: Произведение создано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkSummary'
+        '400':
+          description: Некорректные данные
+
+  /works/{workId}:
+    get:
+      operationId: getWorkTree
+      summary: Произведение + дерево глав/стихов
+      tags: [Works]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: workId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Дерево произведения
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkTree'
+        '404':
+          description: Произведение не найдено
+    put:
+      operationId: updateWork
+      summary: Обновить метаданные произведения
+      tags: [Works]
+      security:
+        - bearerAuth:
+            - ADMIN
+      parameters:
+        - name: workId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkRequest'
+      responses:
+        '200':
+          description: Произведение обновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkSummary'
+    delete:
+      operationId: deleteWork
+      summary: Soft delete произведения
+      tags: [Works]
+      security:
+        - bearerAuth:
+            - ADMIN
+      parameters:
+        - name: workId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Произведение помечено как удалённое
+
+  /works/{workId}/chapters:
+    post:
+      operationId: createChapter
+      summary: Добавить главу
+      tags: [Chapters]
+      security:
+        - bearerAuth:
+            - ADMIN
+      parameters:
+        - name: workId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChapterRequest'
+      responses:
+        '201':
+          description: Глава создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterSummary'
+
+  /chapters/{chapterId}:
+    put:
+      operationId: updateChapter
+      summary: Обновить главу
+      tags: [Chapters]
+      security:
+        - bearerAuth:
+            - ADMIN
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateChapterRequest'
+      responses:
+        '200':
+          description: Глава обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterSummary'
+    delete:
+      operationId: deleteChapter
+      summary: Soft delete главы
+      tags: [Chapters]
+      security:
+        - bearerAuth:
+            - ADMIN
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Глава помечена как удалённая
+
+  /chapters/{chapterId}/verses:
+    post:
+      operationId: createVerse
+      summary: Добавить стих (пустой, DRAFT)
+      tags: [Verses]
+      security:
+        - bearerAuth:
+            - ADMIN
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Стих создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerseSummary'
+
+  /verses/{verseId}:
+    get:
+      operationId: getVerse
+      summary: Получить стих (текст + анализ, если ANALYZED)
+      tags: [Verses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: verseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Детали стиха
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerseDetail'
+        '404':
+          description: Стих не найден
+    delete:
+      operationId: deleteVerse
+      summary: Soft delete стиха
+      tags: [Verses]
+      security:
+        - bearerAuth:
+            - ADMIN
+      parameters:
+        - name: verseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Стих помечен как удалённый
+
+  /verses/{verseId}/text:
+    put:
+      operationId: updateVerseText
+      summary: Сохранить введённый текст стиха (devanagari и/или iast)
+      tags: [Verses]
+      security:
+        - bearerAuth:
+            - ADMIN
+      parameters:
+        - name: verseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateVerseTextRequest'
+      responses:
+        '200':
+          description: Текст сохранён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerseSummary'
+
+  /verses/{verseId}/analyze:
+    post:
+      operationId: analyzeVerse
+      summary: Запустить LLM-анализ стиха
+      description: |
+        Запускает LLM-анализ стиха. Возвращает 202 Accepted, анализ выполняется асинхронно.
+        Статус можно получить через GET /verses/{verseId} (поле status).
+      tags: [Verses]
+      security:
+        - bearerAuth:
+            - ADMIN
+      parameters:
+        - name: verseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Анализ запущен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verseId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    example: ANALYZING
+        '404':
+          description: Стих не найден
+        '409':
+          description: Стих уже анализируется (status = ANALYZING)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    WorkSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        titleRu:
+          type: string
+        titleEn:
+          type: string
+        descriptionRu:
+          type: string
+          nullable: true
+        descriptionEn:
+          type: string
+          nullable: true
+        author:
+          type: string
+          nullable: true
+
+    WorkTree:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        titleRu:
+          type: string
+        titleEn:
+          type: string
+        chapters:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChapterWithVerses'
+
+    ChapterWithVerses:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        orderIndex:
+          type: integer
+        titleRu:
+          type: string
+        titleEn:
+          type: string
+        categoryCode:
+          type: string
+          description: "{workSlug}.{chapterSlug} — код категории лексики"
+        verses:
+          type: array
+          items:
+            $ref: '#/components/schemas/VersePreview'
+
+    VersePreview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderIndex:
+          type: integer
+        textIastPreview:
+          type: string
+          description: Первые ~50 символов textIast для отображения в дереве
+          nullable: true
+        status:
+          $ref: '#/components/schemas/VerseStatus'
+
+    VerseSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        chapterId:
+          type: string
+          format: uuid
+        orderIndex:
+          type: integer
+        status:
+          $ref: '#/components/schemas/VerseStatus'
+
+    VerseDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        chapterId:
+          type: string
+          format: uuid
+        orderIndex:
+          type: integer
+        textDevanagari:
+          type: string
+          nullable: true
+        textIast:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/VerseStatus'
+        analysis:
+          $ref: '#/components/schemas/VerseAnalysisDto'
+          nullable: true
+        words:
+          type: array
+          items:
+            $ref: '#/components/schemas/VerseWordDto'
+          nullable: true
+
+    VerseAnalysisDto:
+      type: object
+      properties:
+        translationRu:
+          type: string
+        translationEn:
+          type: string
+        sandhiSplits:
+          type: array
+          items:
+            type: object
+            properties:
+              surface:
+                type: string
+              components:
+                type: array
+                items:
+                  type: string
+        modelName:
+          type: string
+        analyzedAt:
+          type: string
+          format: date-time
+
+    VerseWordDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        position:
+          type: integer
+        surfaceIast:
+          type: string
+        surfaceDevanagari:
+          type: string
+        lemmaIast:
+          type: string
+        stem:
+          type: string
+        root:
+          type: string
+          nullable: true
+        pos:
+          type: string
+          nullable: true
+        gender:
+          type: string
+          nullable: true
+        caseType:
+          type: string
+          nullable: true
+        numberType:
+          type: string
+          nullable: true
+        person:
+          type: string
+          nullable: true
+        tense:
+          type: string
+          nullable: true
+        mood:
+          type: string
+          nullable: true
+        voice:
+          type: string
+          nullable: true
+        glossRu:
+          type: string
+        glossEn:
+          type: string
+
+    VerseStatus:
+      type: string
+      enum: [DRAFT, ANALYZING, ANALYZED, FAILED]
+
+    CreateWorkRequest:
+      type: object
+      required: [slug, titleRu, titleEn]
+      properties:
+        slug:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]*$'
+        titleRu:
+          type: string
+        titleEn:
+          type: string
+        descriptionRu:
+          type: string
+        descriptionEn:
+          type: string
+        author:
+          type: string
+
+    UpdateWorkRequest:
+      type: object
+      properties:
+        titleRu:
+          type: string
+        titleEn:
+          type: string
+        descriptionRu:
+          type: string
+        descriptionEn:
+          type: string
+        author:
+          type: string
+
+    CreateChapterRequest:
+      type: object
+      required: [slug, titleRu, titleEn]
+      properties:
+        slug:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]*$'
+        orderIndex:
+          type: integer
+        titleRu:
+          type: string
+        titleEn:
+          type: string
+
+    UpdateChapterRequest:
+      type: object
+      properties:
+        slug:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]*$'
+        orderIndex:
+          type: integer
+        titleRu:
+          type: string
+        titleEn:
+          type: string
+
+    UpdateVerseTextRequest:
+      type: object
+      properties:
+        textDevanagari:
+          type: string
+        textIast:
+          type: string
+
+    ChapterSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workId:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        orderIndex:
+          type: integer
+        titleRu:
+          type: string
+        titleEn:
+          type: string

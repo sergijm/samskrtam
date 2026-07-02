@@ -64,7 +64,7 @@ public void processOutbox() {
 | `quiz-session-status-changed-events` | quiz-service (Outbox) | statistics-service |
 | `user-quiz-statistics-output` | statistics-service (Kafka Streams output) | — |
 
-Классы событий живут в `shared/quiz-dtos`:
+Классы событий живут в `shared/samskrtam-dtos`:
 - `QuizAnsweredEvent`
 - `QuizSessionStatusChangedEvent`
 - `StatisticEvent`

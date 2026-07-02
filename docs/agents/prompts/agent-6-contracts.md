@@ -70,7 +70,7 @@ components:
 
 ### 2. Shared DTO контракт
 
-Файлы в `shared/quiz-dtos/` и `shared/common-dto/`:
+Файлы в `shared/samskrtam-dtos/` и `shared/common-dto/`:
 - При любом изменении DTO-класса — обновить YAML-схему
 - Версионировать Breaking Changes: добавить поле → OK, удалить поле → новая версия API
 

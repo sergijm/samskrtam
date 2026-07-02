@@ -58,3 +58,12 @@ spring:
           filters:
             - RewritePath=/api/.*, /$1
 
+        # Sangraha (произведения, главы, стихи, LLM-анализ) — см. docs/services/sangraha-service.md
+        # sangraha-service ожидает полный путь /api/v1/sangraha/**, поэтому без StripPrefix
+        - id: sangraha
+          uri: lb://sangraha-service:8089
+          predicates:
+            - Path=/api/v1/sangraha/**
+          filters:
+            - RewritePath=/api/.*, /$1
+
