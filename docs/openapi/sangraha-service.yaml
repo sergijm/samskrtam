@@ -41,8 +41,8 @@ paths:
                 oneOf:
                   - type: array
                     items:
-                      $ref: '#/components/schemas/WorkSummary'
-                  - $ref: '#/components/schemas/WorkTree'
+                      $ref: 'sangraha-schemas.yaml#/WorkSummary'
+                  - $ref: 'sangraha-schemas.yaml#/WorkTree'
         '404':
           description: Произведение с указанным id не найдено
     post:
@@ -57,14 +57,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateWorkRequest'
+              $ref: 'sangraha-schemas.yaml#/CreateWorkRequest'
       responses:
         '201':
           description: Произведение создано
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkSummary'
+                $ref: 'sangraha-schemas.yaml#/WorkSummary'
         '400':
           description: Некорректные данные
 
@@ -75,8 +75,6 @@ paths:
       description: |
         Основной эндпоинт для страницы произведения (фронтенд: /sangraha/{workSlug}).
         Возвращает id, slug, titleRu/En и chapters[].verses[] — двухуровневое дерево.
-        Slug уже известен из URL, UUID ещё не получен.
-        Аналог паттерна content-service, где сущности идентифицируются по slug.
       tags: [Works]
       security:
         - bearerAuth: []
@@ -93,11 +91,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkTree'
+                $ref: 'sangraha-schemas.yaml#/WorkTree'
         '404':
           description: Произведение не найдено
 
-  /works/{workId}:
     put:
       operationId: updateWork
       summary: Обновить метаданные произведения
@@ -106,26 +103,27 @@ paths:
         - bearerAuth:
             - ADMIN
       parameters:
-        - name: workId
+        - name: workSlug
           in: path
           required: true
-          description: UUID произведения
+          description: Slug произведения
           schema:
             type: string
-            format: uuid
+            pattern: '^[a-z0-9][a-z0-9-]*$'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateWorkRequest'
+              $ref: 'sangraha-schemas.yaml#/UpdateWorkRequest'
       responses:
         '200':
           description: Произведение обновлено
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkSummary'
+                $ref: 'sangraha-schemas.yaml#/WorkSummary'
+
     delete:
       operationId: deleteWork
       summary: Soft delete произведения
@@ -134,18 +132,18 @@ paths:
         - bearerAuth:
             - ADMIN
       parameters:
-        - name: workId
+        - name: workSlug
           in: path
           required: true
-          description: UUID произведения
+          description: Slug произведения
           schema:
             type: string
-            format: uuid
+            pattern: '^[a-z0-9][a-z0-9-]*$'
       responses:
         '204':
           description: Произведение помечено как удалённое
 
-  /works/{workId}/chapters:
+  /works/{workSlug}/chapters:
     post:
       operationId: createChapter
       summary: Добавить главу
@@ -154,25 +152,26 @@ paths:
         - bearerAuth:
             - ADMIN
       parameters:
-        - name: workId
+        - name: workSlug
           in: path
           required: true
+          description: Slug произведения
           schema:
             type: string
-            format: uuid
+            pattern: '^[a-z0-9][a-z0-9-]*$'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateChapterRequest'
+              $ref: 'sangraha-schemas.yaml#/CreateChapterRequest'
       responses:
         '201':
           description: Глава создана
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChapterSummary'
+                $ref: 'sangraha-schemas.yaml#/ChapterSummary'
 
   /chapters/{chapterId}:
     put:
@@ -194,14 +193,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateChapterRequest'
+              $ref: 'sangraha-schemas.yaml#/UpdateChapterRequest'
       responses:
         '200':
           description: Глава обновлена
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChapterSummary'
+                $ref: 'sangraha-schemas.yaml#/ChapterSummary'
     delete:
       operationId: deleteChapter
       summary: Soft delete главы
@@ -241,7 +240,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VerseSummary'
+                $ref: 'sangraha-schemas.yaml#/VerseSummary'
 
   /verses/{verseId}:
     get:
@@ -263,7 +262,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VerseDetail'
+                $ref: 'sangraha-schemas.yaml#/VerseDetail'
         '404':
           description: Стих не найден
     delete:
@@ -304,14 +303,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateVerseTextRequest'
+              $ref: 'sangraha-schemas.yaml#/UpdateVerseTextRequest'
       responses:
         '200':
           description: Текст сохранён
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VerseSummary'
+                $ref: 'sangraha-schemas.yaml#/VerseSummary'
 
   /verses/{verseId}/analyze:
     post:
@@ -356,283 +355,3 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-
-  schemas:
-    WorkSummary:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        slug:
-          type: string
-        titleRu:
-          type: string
-        titleEn:
-          type: string
-        descriptionRu:
-          type: string
-          nullable: true
-        descriptionEn:
-          type: string
-          nullable: true
-        author:
-          type: string
-          nullable: true
-
-    WorkTree:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        slug:
-          type: string
-        titleRu:
-          type: string
-        titleEn:
-          type: string
-        chapters:
-          type: array
-          items:
-            $ref: '#/components/schemas/ChapterWithVerses'
-
-    ChapterWithVerses:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        slug:
-          type: string
-        orderIndex:
-          type: integer
-        titleRu:
-          type: string
-        titleEn:
-          type: string
-        categoryCode:
-          type: string
-          description: "{workSlug}.{chapterSlug} — код категории лексики"
-        verses:
-          type: array
-          items:
-            $ref: '#/components/schemas/VersePreview'
-
-    VersePreview:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        orderIndex:
-          type: integer
-        textIastPreview:
-          type: string
-          description: Первые ~50 символов textIast для отображения в дереве
-          nullable: true
-        status:
-          $ref: '#/components/schemas/VerseStatus'
-
-    VerseSummary:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        chapterId:
-          type: string
-          format: uuid
-        orderIndex:
-          type: integer
-        status:
-          $ref: '#/components/schemas/VerseStatus'
-
-    VerseDetail:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        chapterId:
-          type: string
-          format: uuid
-        orderIndex:
-          type: integer
-        textDevanagari:
-          type: string
-          nullable: true
-        textIast:
-          type: string
-          nullable: true
-        status:
-          $ref: '#/components/schemas/VerseStatus'
-        analysis:
-          $ref: '#/components/schemas/VerseAnalysisDto'
-          nullable: true
-        words:
-          type: array
-          items:
-            $ref: '#/components/schemas/VerseWordDto'
-          nullable: true
-
-    VerseAnalysisDto:
-      type: object
-      properties:
-        translationRu:
-          type: string
-        translationEn:
-          type: string
-        sandhiSplits:
-          type: array
-          items:
-            type: object
-            properties:
-              surface:
-                type: string
-              components:
-                type: array
-                items:
-                  type: string
-        modelName:
-          type: string
-        analyzedAt:
-          type: string
-          format: date-time
-
-    VerseWordDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        position:
-          type: integer
-        surfaceIast:
-          type: string
-        surfaceDevanagari:
-          type: string
-        lemmaIast:
-          type: string
-        stem:
-          type: string
-        root:
-          type: string
-          nullable: true
-        pos:
-          type: string
-          nullable: true
-        gender:
-          type: string
-          nullable: true
-        caseType:
-          type: string
-          nullable: true
-        numberType:
-          type: string
-          nullable: true
-        person:
-          type: string
-          nullable: true
-        tense:
-          type: string
-          nullable: true
-        mood:
-          type: string
-          nullable: true
-        voice:
-          type: string
-          nullable: true
-        glossRu:
-          type: string
-        glossEn:
-          type: string
-
-    VerseStatus:
-      type: string
-      enum: [DRAFT, ANALYZING, ANALYZED, FAILED]
-
-    CreateWorkRequest:
-      type: object
-      required: [slug, titleRu, titleEn]
-      properties:
-        slug:
-          type: string
-          pattern: '^[a-z0-9][a-z0-9-]*$'
-        titleRu:
-          type: string
-        titleEn:
-          type: string
-        descriptionRu:
-          type: string
-        descriptionEn:
-          type: string
-        author:
-          type: string
-
-    UpdateWorkRequest:
-      type: object
-      properties:
-        titleRu:
-          type: string
-        titleEn:
-          type: string
-        descriptionRu:
-          type: string
-        descriptionEn:
-          type: string
-        author:
-          type: string
-
-    CreateChapterRequest:
-      type: object
-      required: [slug, titleRu, titleEn]
-      properties:
-        slug:
-          type: string
-          pattern: '^[a-z0-9][a-z0-9-]*$'
-        orderIndex:
-          type: integer
-        titleRu:
-          type: string
-        titleEn:
-          type: string
-
-    UpdateChapterRequest:
-      type: object
-      properties:
-        slug:
-          type: string
-          pattern: '^[a-z0-9][a-z0-9-]*$'
-        orderIndex:
-          type: integer
-        titleRu:
-          type: string
-        titleEn:
-          type: string
-
-    UpdateVerseTextRequest:
-      type: object
-      properties:
-        textDevanagari:
-          type: string
-        textIast:
-          type: string
-
-    ChapterSummary:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        workId:
-          type: string
-          format: uuid
-        slug:
-          type: string
-        orderIndex:
-          type: integer
-        titleRu:
-          type: string
-        titleEn:
-          type: string

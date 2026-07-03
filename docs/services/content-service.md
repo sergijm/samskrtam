@@ -48,7 +48,8 @@
 
 ## 5. API
 
-> Полная OpenAPI спецификация для Lesson Pages: [lesson-openapi.yaml](../frontend/lesson-openapi.yaml)
+
+> Полная OpenAPI спецификация для Lesson Pages: [lesson-openapi.yaml](../openapi/lesson-openapi.yaml)
 
 ### Управление уроками (ADMIN)
 

@@ -98,7 +98,7 @@ const WorksPage = () => {
                       className="p-button-danger p-button-text"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setDeleteWorkId(work.id);
+                        setDeleteWorkId(work.slug);
                       }}
                     />
                   </div>

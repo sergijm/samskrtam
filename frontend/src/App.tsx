@@ -48,6 +48,10 @@ import VersePage from './pages/sangraha/VersePage';
 
 // Stores
 import { useThemeStore } from './store/themeStore';
+import { useAuthStore } from './store/authStore';
+
+// Hooks
+import { useMe } from './hooks/useUser';
 
 // i18n
 import './i18n';
@@ -56,10 +60,20 @@ const queryClient = new QueryClient();
 
 export default function App() {
     const { theme, setTheme } = useThemeStore();
+    const { isAuthenticated } = useAuthStore();
+    const { data: userData } = useMe();
+    const setUser = useAuthStore((s) => s.setUser);
 
     useEffect(() => {
         setTheme(theme);
     }, [theme, setTheme]);
+
+    // Sync user from useMe into authStore for already logged-in users
+    useEffect(() => {
+        if (isAuthenticated && userData) {
+            setUser(userData);
+        }
+    }, [isAuthenticated, userData, setUser]);
 
     return (
         <ErrorBoundary>

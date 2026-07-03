@@ -50,7 +50,7 @@ export const useCreateWork = () => {
 export const useDeleteWork = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (workId: string) => sangrahaApi.deleteWork(workId),
+    mutationFn: (workSlug: string) => sangrahaApi.deleteWork(workSlug),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sangraha', 'works'] }),
   });
 };
@@ -58,8 +58,8 @@ export const useDeleteWork = () => {
 export const useCreateChapter = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ workId, data }: { workId: string; data: CreateChapterRequest }) =>
-      sangrahaApi.createChapter(workId, data),
+    mutationFn: ({ workSlug, data }: { workSlug: string; data: CreateChapterRequest }) =>
+      sangrahaApi.createChapter(workSlug, data),
     onSuccess: (_data, variables) =>
       qc.invalidateQueries({ queryKey: ['sangraha', 'work'] }),
   });

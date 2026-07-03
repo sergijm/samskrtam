@@ -4,12 +4,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { useAuthStore } from '../store/authStore';
 import { AuthTokens } from '../types/user';
+import { userApi } from '../api/userApi';
 
 const AuthCallbackPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const { login, setRedirectPath } = useAuthStore();
+  const { login, setUser, setRedirectPath } = useAuthStore();
 
   const hasHandledCallback = useRef(false);
 
@@ -36,14 +37,23 @@ const AuthCallbackPage = () => {
           login(tokens);
           console.log('AuthCallbackPage: Tokens stored and user is authenticated.');
 
-          // 2. Invalidate 'me' query to force a refetch of user data everywhere
+          // 2. Fetch user profile and update store
+          try {
+            const userResponse = await userApi.getMe();
+            setUser(userResponse.data);
+            console.log('AuthCallbackPage: User profile fetched and stored.');
+        } catch (err) {
+            console.error('AuthCallbackPage: Failed to fetch user profile:', err);
+        }
+
+          // 3. Invalidate 'me' query to force a refetch of user data everywhere
           await queryClient.invalidateQueries(['me']);
           console.log('AuthCallbackPage: "me" query invalidated.');
 
-          // 3. Handle redirection
+          // 4. Handle redirection
           const storedRedirectPath = localStorage.getItem('redirectPath');
-          localStorage.removeItem('redirectPath');
-          setRedirectPath(null);
+        localStorage.removeItem('redirectPath');
+        setRedirectPath(null);
 
           const targetPath = storedRedirectPath || '/dashboard';
           console.log('AuthCallbackPage: Redirecting to:', targetPath);
@@ -52,12 +62,12 @@ const AuthCallbackPage = () => {
         } catch (err) {
           console.error('AuthCallbackPage: OAuth callback error:', err);
           logoutAndClear();
-        }
+    }
       } else {
         console.error('AuthCallbackPage: OAuth callback error from fragment:', error);
         logoutAndClear();
       }
-    };
+};
 
     const logoutAndClear = () => {
         useAuthStore.getState().logout();
@@ -67,7 +77,7 @@ const AuthCallbackPage = () => {
     }
 
     handleCallback();
-  }, [location, navigate, login, setRedirectPath, queryClient]);
+  }, [location, navigate, login, setUser, setRedirectPath, queryClient]);
 
   return (
     <div className="flex justify-content-center align-items-center h-screen">
@@ -77,3 +87,4 @@ const AuthCallbackPage = () => {
 };
 
 export default AuthCallbackPage;
+

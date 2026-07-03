@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import sm.selflearn.samskrtam.sangraha.dto.WorkTreeDto;
 import sm.selflearn.samskrtam.sangraha.model.Chapter;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
 import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
@@ -19,6 +20,7 @@ import sm.selflearn.samskrtam.sangraha.model.Work;
 import sm.selflearn.samskrtam.sangraha.service.ChapterService;
 import sm.selflearn.samskrtam.sangraha.service.VerseService;
 import sm.selflearn.samskrtam.sangraha.service.WorkService;
+import sm.selflearn.samskrtam.sangraha.service.WorkTreeService;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +33,7 @@ public class SangrahaController {
     private final WorkService workService;
     private final ChapterService chapterService;
     private final VerseService verseService;
+    private final WorkTreeService workTreeService;
 
     // ── Works ─────────────────────────────────────────────────────
 
@@ -44,27 +47,30 @@ public class SangrahaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(workService.createWork(work));
     }
 
-    @GetMapping("/works/{workId}")
-    public ResponseEntity<Work> getWork(@PathVariable UUID workId) {
-        return ResponseEntity.ok(workService.getWorkById(workId));
+    /**
+     * Get a work tree (work + chapters + verses) by slug.
+     */
+    @GetMapping("/works/{workSlug}")
+    public ResponseEntity<WorkTreeDto> getWorkTree(@PathVariable String workSlug) {
+        return ResponseEntity.ok(workTreeService.getWorkTreeBySlug(workSlug));
     }
 
-    @PutMapping("/works/{workId}")
-    public ResponseEntity<Work> updateWork(@PathVariable UUID workId, @RequestBody Work work) {
-        return ResponseEntity.ok(workService.updateWork(workId, work));
+    @PutMapping("/works/{workSlug}")
+    public ResponseEntity<Work> updateWork(@PathVariable String workSlug, @RequestBody Work work) {
+        return ResponseEntity.ok(workService.updateWorkBySlug(workSlug, work));
     }
 
-    @DeleteMapping("/works/{workId}")
-    public ResponseEntity<Void> deleteWork(@PathVariable UUID workId) {
-        workService.deleteWork(workId);
+    @DeleteMapping("/works/{workSlug}")
+    public ResponseEntity<Void> deleteWork(@PathVariable String workSlug) {
+        workService.deleteWorkBySlug(workSlug);
         return ResponseEntity.noContent().build();
     }
 
     // ── Chapters ──────────────────────────────────────────────────
 
-    @PostMapping("/works/{workId}/chapters")
-    public ResponseEntity<Chapter> createChapter(@PathVariable UUID workId, @RequestBody Chapter chapter) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(chapterService.createChapter(workId, chapter));
+    @PostMapping("/works/{workSlug}/chapters")
+    public ResponseEntity<Chapter> createChapter(@PathVariable String workSlug, @RequestBody Chapter chapter) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(chapterService.createChapterBySlug(workSlug, chapter));
     }
 
     @PutMapping("/chapters/{chapterId}")

@@ -1,129 +1,247 @@
-# statistics-service
+# Frontend Overview — Стек, Структура, Роуты
 
-> Домен: Statistics
-> Язык: **Java 21 + Virtual Threads**
-> Модуль: `services/statistics-service`
-> Порт: 8086
-> Status: **DRAFT**
+> Модуль: `frontend/`
+> Связанные файлы: [frontend.md](frontend.md) (индекс) · [frontend-pages.md](frontend-pages.md) · [frontend-state.md](frontend-state.md) · [frontend-conventions.md](frontend-conventions.md)
+> Status: **DRAFT** (выделен из frontend.md)
 
 ---
 
-## 1. Описание
+## 1. Стек
 
-Получает события из Kafka и строит аналитику. Нет синхронной связи с Quiz сервисами — только через очередь. Java 21 Virtual Threads упрощают Kafka consumer — обычный блокирующий код.
+| Технология | Версия | Назначение |
+|---|---|---|
+| React | 18 | UI фреймворк |
+| TypeScript | 5 | Язык |
+| Vite | 5 | Сборщик |
+| React Router | 6 | Маршрутизация |
+| React Query (TanStack) | 5 | Server state, кэширование |
+| Zustand | 4 | Client state (auth, locale) |
+| i18next + react-i18next | latest | Интернационализация ru/en |
+| PrimeReact ThemeProvider | — | Переключение светлой/тёмной темы |
+| Axios | latest | HTTP клиент |
+| **PrimeReact** | **10.x** | **UI компоненты** |
+| **PrimeFlex** | **3.x** | **CSS утилиты (grid, spacing)** |
+| **PrimeIcons** | **6.x** | **Иконки** |
 
----
+### Почему PrimeReact
 
-## 2. Сущности
+PrimeReact — React-версия PrimeFaces от той же компании (PrimeTek). API и набор компонентов намеренно похожи, что даёт знакомый опыт разработки.
 
-**AnswerRecord** (таблица answer_records): id (UUID), eventId (UUID, unique — идемпотентность), userId, lessonType, quizId, questionId, selectedOptionId, correct (boolean), responseTimeMs (int), occurredAt
+### Маппинг компонентов PrimeFaces → PrimeReact
 
-**SessionRecord** (таблица session_records): id (UUID), eventId (UUID, unique), userId, lessonType, quizId, score (int), totalQuestions (int), durationMs (long), occurredAt
+| PrimeFaces | PrimeReact | Где используется |
+|---|---|---|
+| `<p:dataTable>` | `<DataTable>` | Лидерборд, история сессий, админка |
+| `<p:card>` | `<Card>` | QuizCard, WordCard, ScoreSummary |
+| `<p:steps>` | `<Steps>` | Прогресс квиза (1/10 ... 10/10) |
+| `<p:tabView>` | `<TabPanel>` | AdminPage вкладки |
+| `<p:autoComplete>` | `<AutoComplete>` | Поиск в словаре |
+| `<p:dialog>` | `<Dialog>` | Создание квиза в админке |
+| `<p:button>` | `<Button>` | Везде |
+| `<p:progressBar>` | `<ProgressBar>` | Прогресс сессии |
+| `<p:chart>` | `<Chart>` | Тепловая карта ошибок (Chart.js) |
 
----
+### Тема
 
-## 3. Flyway Migrations
+PrimeReact поддерживает динамическую смену темы через `<link id="theme-link">` без перезагрузки страницы. Используются две темы из стандартного набора:
 
-3 миграции: V1 — schema statistics; V2 — answer_records (event_id UNIQUE для идемпотентности, индексы по user_id, question_id, occurred_at); V3 — session_records (event_id UNIQUE, индексы по user_id, occurred_at).
+| Режим | Тема PrimeReact |
+|---|---|
+| Светлая (по умолчанию) | `lara-light-blue` |
+| Тёмная | `lara-dark-blue` |
 
----
+Вместо статического `import` в `main.tsx` тема подключается динамически — `themeStore` меняет `href` у тега `<link>`:
 
-## 4. Kafka Consumers
-
-Consumer должен быть **идемпотентным**: повторная доставка одного и того же события (rebalance, retry после DLQ) не должна создавать дублирующую запись. Идемпотентность реализована через `UNIQUE (event_id)` в БД и `INSERT ... ON CONFLICT DO NOTHING` в репозитории.
-
-Два Kafka consumer: `AnswerSubmittedConsumer` (topic: quiz.answer.submitted) и `SessionCompletedConsumer` (topic: quiz.session.completed), оба с groupId = statistics-service. Вызывают `StatisticsService.recordAnswer()` / `StatisticsService.recordSession()`.
-
-`StatisticsService`: метод `recordAnswer` — INSERT с ON CONFLICT (event_id) DO NOTHING в answer_records; `recordSession` — аналогично в session_records. Если inserted == 0, лог WARN с eventId.
-
-Репозитории: `AnswerRecordRepository` с `insertIfNotExists` (native query, ON CONFLICT), `findByUserId`, `findByUserIdAndQuizId`. `SessionRecordRepository` с `insertIfNotExists`, `findByUserId`.
-
----
-
-## 5. API
-
-```
-GET /api/v1/statistics/me              → личная статистика
-GET /api/v1/statistics/me/heatmap      → тепловая карта ошибок
-GET /api/v1/statistics/me/history      → история сессий
-GET /api/v1/statistics/attempts/{id}   → детали попытки
-GET /api/v1/leaderboard                → лидерборд (алгоритмы в leaderboard.md)
-  ?type=xp|elo|accuracy|streak|skill|composite
-  &period=all|weekly|monthly
-  &lessonType=DECLENSIONS|CONJUGATIONS|VOCABULARY
-  &groupId=<uuid>
-  &limit=1-100
-```
-
-### GET /api/v1/statistics/leaderboard — Response
-
-Ответ: { entries[{rank, username, totalPoints, totalSessions, isCurrentUser}] }. Алгоритмы лидерборда — в [leaderboard.md](leaderboard.md).
-
----
-
-## 6. Backend структура
-
-Пакет `consumer/`: AnswerSubmittedConsumer, SessionCompletedConsumer.
-`controller/`: StatisticsController.
-`service/`: StatisticsService, LeaderboardService.
-`algorithm/`: XpService, EloService, EloCalculator, AccuracyService, StreakService, SkillRatingService, CompositeScoreService.
-`scheduler/`: LeaderboardRefreshScheduler.
-`repository/`: AnswerRecordRepository, SessionRecordRepository, XpLedgerRepository, XpTotalsRepository, EloRatingRepository, EloHistoryRepository, UserStreakRepository, SkillRatingRepository, AccuracyCacheRepository.
-`model/`: AnswerRecord, SessionRecord, XpLedger, XpTotals, EloRating, EloHistory, UserStreak, SkillRating.
-`dto/`: PersonalStatsResponse, HeatmapResponse, LeaderboardResponse, LeaderboardEntry, AttemptDetailResponse.
-
----
-
-## 7. application.yml
-
-Порт 8086, virtual threads enabled, datasource через env, default_schema: statistics, Kafka consumer (group-id: statistics-service, auto-offset-reset: earliest, trusted packages: sm.selflearn.samskrtam.events). JWT не валидируется — сервис доверяет X-User-Id от Gateway.
-
----
-
-## 8. Acceptance Criteria
-
-- [ ] AnswerSubmitted из Kafka → сохраняется в answer_records
-- [ ] SessionCompleted из Kafka → сохраняется в session_records
-- [ ] При недоступности сервиса события ждут в Kafka (не теряются)
-- [ ] Повторная доставка одного события не создаёт дублирующую запись (ON CONFLICT DO NOTHING по event_id)
-- [ ] Дубликат логируется на уровне WARN с eventId для диагностики
-- [ ] Лидерборд: очки = сумма лучших результатов по каждому квизу
-- [ ] Тепловая карта показывает вопросы с correctRate < 0.5
-
----
-
-
-## Lesson History API
-
-> Спецификация: [lesson-pages-spec.md](../frontend/lesson-pages-spec.md) · [lesson-openapi.yaml](../frontend/lesson-openapi.yaml)
-
-Для страниц уроков `VocabularyLessonPage` и `GrammarLessonPage` statistics-service предоставляет агрегированную статистику по отдельным словам и вопросам.
-
-**Новые эндпоинты:**
-
-```
-GET /api/v1/statistics/lessons/vocabulary/{slug}
-    → VocabularyLesson с nSuccess/nAll/status по каждому слову
-
-GET /api/v1/statistics/lessons/grammar/{type}
-    → GrammarLesson с nSuccess/nAll/status по каждому вопросу
-
-GET /api/v1/statistics/lessons/vocabulary/{slug}/words/{wordId}/history
-    → история ответов пользователя на слово в уроке (paginated)
-
-GET /api/v1/statistics/lessons/grammar/{type}/questions/{questionId}/history
-    → история ответов пользователя на вопрос в уроке (paginated)
+```typescript
+// main.tsx — только базовые стили, без темы
+import 'primereact/resources/primereact.min.css';
+import 'primeicons/primeicons.css';
+import 'primeflex/primeflex.css';
+// Тема подключается динамически через themeStore при монтировании App
 ```
 
-Данные агрегируются из таблицы `quiz_answers` с JOIN на `quiz_session` для фильтрации по `quizId`. Статус слова/вопроса вычисляется на лету по формуле:
-- `MASTERED`: `nAll > 0` и `successRate >= 80%`
-- `LEARNING`: `nAll > 0` и `successRate >= 50%` и `successRate < 80%`
-- `REVIEW`: `nAll > 0` и `successRate < 50%`
-- `NEW`: `nAll = 0`
+```html
+<!-- index.html — placeholder для динамической темы -->
+<link id="theme-link" rel="stylesheet" href="/themes/lara-light-blue/theme.css" />
+```
 
+---
 
-## 9. Открытые вопросы
+## 2. Структура проекта
 
-- [ ] Кэшировать лидерборд в Redis?
-- [ ] Недельный/месячный рейтинг?
-- [ ] CQRS для read-моделей статистики?
+```
+frontend/
+├── index.html
+├── vite.config.ts
+├── tsconfig.json
+├── package.json
+│
+└── src/
+    ├── main.tsx                    ← точка входа
+    ├── App.tsx                     ← роутер + провайдеры
+    │
+    ├── pages/                      ← страницы (один файл = один роут)
+    │   ├── HomePage.tsx            ← публичная landing для незалогиненных (новое)
+    │   ├── LoginPage.tsx
+    │   ├── RegisterPage.tsx
+    │   ├── ForgotPasswordPage.tsx
+    │   ├── AuthCallbackPage.tsx
+    │   ├── ChangePasswordPage.tsx  ← спецификация в user-frontend.md
+    │   ├── SettingsPage.tsx        ← спецификация в user-frontend.md
+    │   ├── UserProfilePage.tsx     ← спецификация в user-frontend.md
+    │   ├── GroupListPage.tsx       ← спецификация в user-frontend.md
+    │   ├── GroupPage.tsx           ← спецификация в user-frontend.md
+    │   ├── GroupCreatePage.tsx     ← спецификация в user-frontend.md
+    │   ├── GroupEditPage.tsx       ← спецификация в user-frontend.md
+    │   ├── DashboardPage.tsx
+    │   ├── QuizListPage.tsx
+    │   ├── QuizPage.tsx
+    │   ├── VocabularyLessonPage.tsx  ← спецификация в lesson-pages-spec.md
+    │   ├── GrammarLessonPage.tsx     ← спецификация в lesson-pages-spec.md
+    │   ├── ResultPage.tsx
+    │   ├── DictionaryPage.tsx
+    │   ├── StatisticsPage.tsx
+    │   ├── LeaderboardPage.tsx
+    │   └── AdminPage.tsx
+    │
+    ├── components/                 ← переиспользуемые компоненты
+    │   ├── layout/
+    │   │   ├── AppLayout.tsx       ← шапка + навигация + контент (только для залогиненных)
+    │   │   ├── PublicLayout.tsx    ← шапка для незалогиненных (кнопка Войти)
+    │   │   ├── Header.tsx          ← шапка залогиненного: лого + навигация + ThemeSwitcher + LocaleSwitcher + кнопка Выйти
+    │   │   ├── PublicHeader.tsx    ← шапка публичная: лого + ThemeSwitcher + LocaleSwitcher + кнопка Войти
+    │   │   └── Sidebar.tsx
+    │   ├── auth/
+    │   │   └── ProtectedRoute.tsx  ← HOC для защищённых роутов
+    │   ├── quiz/
+    │   │   ├── QuizCard.tsx        ← карточка квиза в списке
+    │   │   ├── QuestionCard.tsx    ← вопрос + варианты ответа
+    │   │   ├── OptionButton.tsx    ← кнопка варианта ответа
+    │   │   ├── FeedbackPanel.tsx   ← правильно/нет + объяснение
+    │   │   └── ProgressBar.tsx     ← прогресс 3/10
+    │   ├── statistics/
+    │   │   ├── ScoreSummary.tsx    ← итог сессии
+    │   │   ├── AnswerReview.tsx    ← разбор вопросов
+    │   │   ├── HeatmapChart.tsx    ← тепловая карта ошибок
+    │   │   └── LeaderboardTable.tsx
+    │   ├── dictionary/
+    │   │   ├── WordCard.tsx        ← статья словаря
+    │   │   └── SearchInput.tsx     ← поиск с автодополнением
+    │   ├── lesson/                   ← компоненты уроков (lesson-pages-spec.md)
+    │   │   ├── LessonHeader.tsx
+    │   │   ├── WordStatusIcon.tsx
+    │   │   ├── WordHistoryDialog.tsx
+    │   │   └── QuestionHistoryDialog.tsx
+    │   └── common/
+    │       ├── LocaleSwitcher.tsx  ← переключатель ru/en
+    │       ├── ThemeSwitcher.tsx   ← переключатель светлая/тёмная
+    │       ├── LoadingSpinner.tsx
+    │       └── ErrorMessage.tsx
+    │   ├── user/                   ← компоненты профиля (user-frontend.md)
+    │   │   ├── UserGroupChips.tsx
+    │   │   └── UserAvatar.tsx
+    │   └── group/                  ← компоненты групп (user-frontend.md)
+    │       ├── GroupMembersTable.tsx
+    │       ├── GroupCuratorBadge.tsx
+    │       └── AddMemberDialog.tsx
+    │
+    ├── api/                        ← HTTP клиенты по доменам
+    │   ├── axios.ts                ← настройка axios + interceptors
+    │   ├── authApi.ts
+    │   ├── userApi.ts              ← пользователи и группы (user-frontend.md)
+    │   ├── quizApi.ts
+    │   ├── lessonApi.ts              ← lesson-pages-spec.md раздел 6
+    │   ├── dictionaryApi.ts
+    │   └── statisticsApi.ts
+    │
+    ├── store/                      ← Zustand stores
+    │   ├── authStore.ts            ← токены, текущий пользователь
+    │   ├── localeStore.ts          ← текущий язык
+    │   └── themeStore.ts           ← текущая тема
+    │
+    ├── hooks/                      ← React Query хуки
+    │   ├── useUser.ts              ← пользователи (user-frontend.md)
+    │   ├── useGroups.ts            ← группы (user-frontend.md)
+    │   ├── useQuizzes.ts
+    │   ├── useLessons.ts             ← lesson-pages-spec.md раздел 6
+    │   ├── useQuizSession.ts
+    │   ├── useDictionary.ts
+    │   └── useStatistics.ts
+    │
+    ├── types/                      ← TypeScript типы
+    │   ├── user.ts                 ← User, Group, GroupMember (user-frontend.md)
+    │   ├── quiz.ts
+    │   ├── lesson.ts                 ← lesson-pages-spec.md раздел 7
+    │   ├── dictionary.ts
+    │   └── statistics.ts
+    │
+    └── i18n/
+        ├── index.ts                ← настройка i18next
+        ├── ru.json                 ← русские переводы
+        └── en.json                 ← английские переводы
+```
+
+---
+
+## 3. Роуты
+
+| Path | Компонент | Auth | Role |
+|---|---|---|---|
+| `/login` | LoginPage | Нет | — |
+| `/register` | RegisterPage | Нет | — |
+| `/forgot-password` | ForgotPasswordPage | Нет | — |
+| `/auth/callback` | AuthCallbackPage | Нет | — |
+| `/` | **HomePage** (не залогинен) / **DashboardPage** (залогинен) | Нет | — |
+| `/quizzes` | QuizListPage | Да | STUDENT |
+| `/lessons/vocabulary/:slug` | VocabularyLessonPage | Да | STUDENT |
+| `/lessons/grammar/:type` | GrammarLessonPage | Да | STUDENT |
+| `/quiz/grammar/:type` | QuizPage | Да | STUDENT |
+| `/quiz/vocabulary/:slug` | QuizPage | Да | STUDENT |
+| `/quiz/*/result/:attemptId` | ResultPage | Да | STUDENT |
+| `/dictionary` | DictionaryPage | Да | STUDENT |
+| `/statistics` | StatisticsPage | Да | STUDENT |
+| `/leaderboard` | LeaderboardPage | Да | STUDENT |
+| `/settings/password` | ChangePasswordPage | Да | STUDENT, ADMIN |
+| `/settings` | SettingsPage | Да | STUDENT, ADMIN |
+| `/users/:id` | UserProfilePage | Да | STUDENT, ADMIN |
+| `/groups` | GroupListPage | Да | ADMIN |
+| `/groups/new` | GroupCreatePage | Да | ADMIN |
+| `/groups/:id` | GroupPage | Да | STUDENT, ADMIN |
+| `/groups/:id/edit` | GroupEditPage | Да | ADMIN, CURATOR |
+| `/admin` | AdminPage | Да | ADMIN |
+| `/admin/flags` | FeatureFlagsPage | Да | ADMIN |
+| `/admin/flags/:name/history` | FlagHistoryPage | Да | ADMIN |
+
+> Маршрут `/` — единственный с условным рендером: `isAuthenticated ? <DashboardPage/> : <HomePage/>`.
+> HomePage не требует авторизации и доступна по прямой ссылке.
+
+Роуты `/settings`, `/users/:id`, `/groups/*` — подробная спецификация в [user-frontend.md](user-frontend.md).
+Роуты `/admin/flags/*` — подробная спецификация в [feature-flags-frontend.md](feature-flags-frontend.md).
+
+Роуты `/lessons/*` — подробная спецификация в [lesson-pages-spec.md](lesson-pages-spec.md). OpenAPI: [lesson-openapi.yaml](../openapi/lesson-openapi.yaml).
+    ├──► API Contract Agent (6)          ← первый: контракты
+    │         │
+    │         ▼
+    ├──► Gateway & Infra Agent (1)        ← параллельно с Domain Agent
+    │         │
+    │         ▼
+    ├──► Domain Services Agent (2)        ← после контрактов
+    │         │
+    │         ├──► Frontend Agent (3)     ← после domain API
+    │         │
+    │         └──► Testing Agent (4)      ← параллельно с frontend
+    │
+    └──► DevOps Agent (5)                 ← параллельно
+```
+
+**Критические зависимости:** Frontend (3) ждёт от Contract (6) OpenAPI и от Domain (2) endpoints; Testing (4) ждёт Domain (2); DevOps (5) ждёт всех; Gateway (1) ждёт Contract (6).
+
+---
+
+## Соглашения для агентов
+
+**Именование веток:** feat/fix/test/chore(<scope>): description. Scope: quiz-service, gateway, content-service, frontend, shared.
+
+**Конфигурация:** без дефолтов в application.yml — только ${ENV_VAR}, секреты только через env, .env.example актуален.
+
+**Definition of Done:** 1) реализация соответствует docs/; 2) тесты + покрытие ≥ 80% сервисного слоя; 3) Checkstyle и SpotBugs чисты; 4) OpenAPI обновлён; 5) Dockerfile работает; 6) PR прошёл CI + code review.

@@ -47,7 +47,6 @@ SamskrtamApp построен как production-grade референсная р�
 | content-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов. Поддерживает иерархические категории для VOCABULARY квизов. Содержит домен Eamenau (упражнения по сандхи). |
 | quiz-service | Java 21 | WebFlux (Reactor) + R2DBC | Единый сервис прохождения всех квизов. Использует Outbox Pattern для публикации событий в Kafka. |
 | **dictionary-service** | Java 21 | Virtual Threads|
-| sangraha-service | Java 21 | Virtual Threads | Санскритские произведения (Work → Chapter → Verse), LLM-анализ стихов (транслитерация, перевод, сандхи, грамматика), публикует лексику в content-service через Kafka. См. ADR-006. |
 | statistics-service | Java 21 | Kafka Streams | Расчет статистики с использованием Kafka Streams. |
 | shared/samskrtam-dtos | Java 21 | — | Объединенный модуль для всех DTO и событий квизов, контента и статистики |
 | shared/common-dto | Java 21 | — | Совместимость со всеми сервисами |
@@ -90,10 +89,6 @@ graph TD
     ST[statistics-service]
   end
 
-  subgraph Sangraha ["📜 Sangraha — Java 21 + Virtual Threads"]
-    SG[sangraha-service\nпроизведения, LLM-анализ стихов]
-  end
-
   Browser --> GW
   GW -->|валидирует JWT| KC
   GW --> US
@@ -103,13 +98,9 @@ graph TD
   GW --> CS
   GW --> DS
   GW --> ST
-  GW --> SG
   QS -->|читает квизы и вопросы| CS
   QS -->|публикует QuizAnsweredEvent, QuizSessionStatusChangedEvent| Kafka
   Kafka --> ST
-  SG -->|OpenAI-совместимый API| LLM[(LLM Provider)]
-  SG -->|публикует VERSE_VOCABULARY_EXTRACTED| Kafka
-  Kafka -->|sangraha-vocabulary-events| CS
 ```
 
 ---
@@ -130,6 +121,10 @@ graph TD
 ### Per-Service Specifications
 | Файл | Содержание |
 |---|---|
+| [sangraha-service.md](./services/sangraha-service.md) | Java 21 + VT | Санскритские произведения, LLM-анализ стихов |
+| [openapi/](./openapi/) | OpenAPI спецификации для всех сервисов |
+| Файл | Содержание |
+|---|---|
 | [services/api-gateway.md](./services/api-gateway.md) | Java 21 + WebFlux | Spring Cloud Gateway |
 | [services/feature-flag-service.md](./services/feature-flag-service.md) | Java 21 + VT | Feature Flag Service |
 | [services/user-service.md](./services/user-service.md) | Java 21 + VT | Логин, регистрация, OAuth, управление паролем |
@@ -137,7 +132,6 @@ graph TD
 | [services/eamenau.md](./services/eamenau.md) | — (домен content-service) | Упражнения по сандхи, фонемная система |
 | [services/quiz-service.md](./services/quiz-service.md) | Java 21 + VT | Прохождение квизов пользователем |
 | [services/dictionary-service.md](./services/dictionary-service.md) | Java 21 + Virtual Threads | Словарь + внешнее API |
-| [services/sangraha-service.md](./services/sangraha-service.md) | Java 21 + VT | Произведения (Work → Chapter → Verse), LLM-анализ стихов |
 | [services/statistics-service.md](./services/statistics-service.md) | Java 21 + VT | Статистика |
 | [services/leaderboard.md](./services/leaderboard.md) | — | Алгоритмы лидерборда (XP, Elo, Skill, Composite) |
 
@@ -162,7 +156,6 @@ graph TD
 | **M5 — More Quizzes** | quiz-service (conjugations + vocabulary) | Масштабирование паттерна |
 | **M6 — Observability** | все сервисы | Distributed tracing, structured logging, metrics |
 | **M7 — Polish** | все сервисы | i18n, UX, CI/CD финализация, load testing |
-| **M8 — Sangraha** | sangraha-service + content-service (consumer) | Произведения, LLM-анализ стихов, синхронизация лексики через Kafka — см. [services/sangraha-service.md](./services/sangraha-service.md), ADR-006 |
 
 ---
 
@@ -174,10 +167,9 @@ graph TD
 - [ ] Mail.ru OAuth: актуальны ли endpoints в 2025?
 - [ ] Автоматический деплой на main или только ручной (when: manual)?
 - [ ] **Eamenau:** нужен ли API для фонемной системы (`GET /api/v1/eamenau/phonemes`)? — см. [services/eamenau.md](./services/eamenau.md)
-- [x] **Eamenau (backend):** унификация написания `Eamenau` в Java-коде — сделано: пакет `emenau` (модели/репозитории/контроллеры) и сервисы из `content.service` объединены в один пакет `sm.selflearn.samskrtam.eamenau.*`, shared DTO `EmenauExerciseDto`/`EmenauExerciseDetailDto` переименованы в `Eamenau...`
-- [ ] **Eamenau (frontend):** во фронтенде используется написание `Emeneau` в именах файлов — унифицировать с backend (`Eamenau`) отдельной задачей для Агента 3
+- [ ] **Eamenau:** унифицировать написание `Eamenau` / `Emeneau` во всём проекте (в именах файлов фронтенда — `Emeneau`, в Java-коде — `Eamenau`)
 - [x] **Семантика Quiz/Lesson/Activity** — закрыто ADR-002, см. [conventions.md §14](./conventions.md#14-архитектурные-решения-adr)
-- [x] **sangraha-service: архитектура и синхронизация лексики** — закрыто ADR-006, см. [conventions.md §14](./conventions.md#14-архитектурные-решения-adr) и [services/sangraha-service.md §8](./services/sangraha-service.md)
-- [ ] **sangraha-service:** роль «редактор/переводчик» (не ADMIN, но может вводить/анализировать стихи) — отложено, см. sangraha-service.md §8
-- [ ] **sangraha-service:** заводить VOCABULARY-квиз на уровне главы, произведения или обоих — решает Агент 2 при реализации consumer'а в content-service
 - [ ] **Eamenau:** `Answer` (варианты ответа к задаче) — реализован в модели, не используется в API. Планируется ли режим с выбором варианта?
+- [x] **sangraha-service порт 8089** — фиксирован, согласован с Агентом 5 DevOps. Пометка «предварительно» снята.
+- [x] **sangraha-service §6.3: Quiz(VOCABULARY) на уровне главы?** — решено: Quiz заводится только на уровне произведения (workSlug). Главы не получают отдельного Quiz.
+- [x] **sangraha-service shared DTO для Kafka-события** — решено: заведён `SangrahaVocabularyEvent` в `shared/samskrtam-dtos` (пакет `sangraha`).

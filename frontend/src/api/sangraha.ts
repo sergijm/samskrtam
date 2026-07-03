@@ -23,14 +23,14 @@ export const sangrahaApi = {
   createWork: (data: CreateWorkRequest) =>
     api.post<WorkSummaryDto>(`${BASE}/works`, data),
 
-  updateWork: (workId: string, data: UpdateWorkRequest) =>
-    api.put<WorkSummaryDto>(`${BASE}/works/${workId}`, data),
+  updateWork: (workSlug: string, data: UpdateWorkRequest) =>
+    api.put<WorkSummaryDto>(`${BASE}/works/${workSlug}`, data),
 
-  deleteWork: (workId: string) => api.delete(`${BASE}/works/${workId}`),
+  deleteWork: (workSlug: string) => api.delete(`${BASE}/works/${workSlug}`),
 
   // Chapters
-  createChapter: (workId: string, data: CreateChapterRequest) =>
-    api.post(`${BASE}/works/${workId}/chapters`, data),
+  createChapter: (workSlug: string, data: CreateChapterRequest) =>
+    api.post(`${BASE}/works/${workSlug}/chapters`, data),
 
   updateChapter: (chapterId: string, data: UpdateChapterRequest) =>
     api.put(`${BASE}/chapters/${chapterId}`, data),

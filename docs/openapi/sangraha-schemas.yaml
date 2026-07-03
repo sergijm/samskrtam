@@ -1,0 +1,281 @@
+# Схемы sangraha-service
+# Импортируются из sangraha-service.yaml через $ref: 'sangraha-schemas.yaml#/WorkSummary'
+
+WorkSummary:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    slug:
+      type: string
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    descriptionRu:
+      type: string
+      nullable: true
+    descriptionEn:
+      type: string
+      nullable: true
+    author:
+      type: string
+      nullable: true
+
+WorkTree:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    slug:
+      type: string
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    chapters:
+      type: array
+      items:
+        $ref: '#/ChapterWithVerses'
+
+ChapterWithVerses:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    slug:
+      type: string
+    orderIndex:
+      type: integer
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    categoryCode:
+      type: string
+      description: "{workSlug}.{chapterSlug} — код категории лексики"
+    verses:
+      type: array
+      items:
+        $ref: '#/VersePreview'
+
+VersePreview:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    orderIndex:
+      type: integer
+    textIastPreview:
+      type: string
+      description: Первые ~50 символов textIast для отображения в дереве
+      nullable: true
+    status:
+      $ref: '#/VerseStatus'
+
+VerseSummary:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    chapterId:
+      type: string
+      format: uuid
+    orderIndex:
+      type: integer
+    status:
+      $ref: '#/VerseStatus'
+
+VerseDetail:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    chapterId:
+      type: string
+      format: uuid
+    orderIndex:
+      type: integer
+    textDevanagari:
+      type: string
+      nullable: true
+    textIast:
+      type: string
+      nullable: true
+    status:
+      $ref: '#/VerseStatus'
+    analysis:
+      $ref: '#/VerseAnalysisDto'
+      nullable: true
+    words:
+      type: array
+      items:
+        $ref: '#/VerseWordDto'
+      nullable: true
+
+VerseAnalysisDto:
+  type: object
+  properties:
+    translationRu:
+      type: string
+    translationEn:
+      type: string
+    sandhiSplits:
+      type: array
+      items:
+        type: object
+        properties:
+          surface:
+            type: string
+          components:
+            type: array
+            items:
+              type: string
+    modelName:
+      type: string
+    analyzedAt:
+      type: string
+      format: date-time
+
+VerseWordDto:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    position:
+      type: integer
+    surfaceIast:
+      type: string
+    surfaceDevanagari:
+      type: string
+    lemmaIast:
+      type: string
+    stem:
+      type: string
+    root:
+      type: string
+      nullable: true
+    pos:
+      type: string
+      nullable: true
+    gender:
+      type: string
+      nullable: true
+    caseType:
+      type: string
+      nullable: true
+    numberType:
+      type: string
+      nullable: true
+    person:
+      type: string
+      nullable: true
+    tense:
+      type: string
+      nullable: true
+    mood:
+      type: string
+      nullable: true
+    voice:
+      type: string
+      nullable: true
+    glossRu:
+      type: string
+    glossEn:
+      type: string
+
+VerseStatus:
+  type: string
+  enum: [DRAFT, ANALYZING, ANALYZED, FAILED]
+
+CreateWorkRequest:
+  type: object
+  required: [slug, titleRu, titleEn]
+  properties:
+    slug:
+      type: string
+      pattern: '^[a-z0-9][a-z0-9-]*$'
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    descriptionRu:
+      type: string
+    descriptionEn:
+      type: string
+    author:
+      type: string
+
+UpdateWorkRequest:
+  type: object
+  properties:
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    descriptionRu:
+      type: string
+    descriptionEn:
+      type: string
+    author:
+      type: string
+
+CreateChapterRequest:
+  type: object
+  required: [slug, titleRu, titleEn]
+  properties:
+    slug:
+      type: string
+      pattern: '^[a-z0-9][a-z0-9-]*$'
+    orderIndex:
+      type: integer
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+
+UpdateChapterRequest:
+  type: object
+  properties:
+    slug:
+      type: string
+      pattern: '^[a-z0-9][a-z0-9-]*$'
+    orderIndex:
+      type: integer
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+
+UpdateVerseTextRequest:
+  type: object
+  properties:
+    textDevanagari:
+      type: string
+    textIast:
+      type: string
+
+ChapterSummary:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    workId:
+      type: string
+      format: uuid
+    slug:
+      type: string
+    orderIndex:
+      type: integer
+    titleRu:
+      type: string
+    titleEn:
+      type: string

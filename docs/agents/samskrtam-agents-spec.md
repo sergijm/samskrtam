@@ -107,7 +107,7 @@
 
 **Роль:** Контракты, OpenAPI, документация.
 
-**Входные документы:** docs/frontend/lesson-openapi.yaml, docs/services/*.md, docs/README.md.
+**Входные документы:** docs/openapi/lesson-openapi.yaml, docs/services/*.md, docs/README.md.
 
 **Ответственность:** Contract-First (изменение API начинается с docs, а не с кода), OpenAPI YAML/JSON для каждого сервиса, shared DTO актуальность, консистентность Kafka-событий, именование топиков (<domain>-<event>-events), актуализация docs/ при изменении API, проверка open questions и ADR, контроль Gateway маршрутов.
 

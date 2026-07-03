@@ -217,4 +217,4 @@ frontend/
 
 Роуты `/settings`, `/users/:id`, `/groups/*` — подробная спецификация в [user-frontend.md](user-frontend.md).
 Роуты `/admin/flags/*` — подробная спецификация в [feature-flags-frontend.md](feature-flags-frontend.md).
-Роуты `/lessons/*` — подробная спецификация в [lesson-pages-spec.md](lesson-pages-spec.md). OpenAPI: [lesson-openapi.yaml](lesson-openapi.yaml).
+Роуты `/lessons/*` — подробная спецификация в [lesson-pages-spec.md](lesson-pages-spec.md). OpenAPI: [lesson-openapi.yaml](../openapi/lesson-openapi.yaml).
