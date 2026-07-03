@@ -1,0 +1,25 @@
+{
+  "groups": {
+    "title": "Группы",
+    "createGroup": "Создать группу",
+    "editGroup": "Редактировать группу",
+    "groupName": "Название группы",
+    "noGroups": "Не состоит ни в одной группе",
+    "addMember": "Добавить участника",
+    "removeMember": "Удалить из группы",
+    "setCurator": "Назначить куратором",
+    "curator": "Куратор",
+    "member": "Участник",
+    "memberCount": "Участников",
+    "searchUser": "Поиск по имени или email",
+    "table": {
+      "name": "Имя",
+      "role": "Роль в группе",
+      "joined": "Дата вступления"
+    },
+    "confirm": {
+      "remove": "Удалить {{username}} из группы?",
+      "setCurator": "Назначить {{username}} куратором группы?"
+    }
+  }
+}

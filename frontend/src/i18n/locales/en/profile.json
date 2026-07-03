@@ -1,0 +1,28 @@
+{
+  "userProfile": {
+    "errorLoadingUser": "Error loading user profile.",
+    "quizStatistics": "Quiz Statistics",
+    "errorLoadingStatistics": "Error loading quiz statistics.",
+    "noStatistics": "No quiz statistics available.",
+    "quizId": "Quiz ID",
+    "quizType": "Quiz Type",
+    "totalSessions": "Total Sessions",
+    "totalQuestionsAnswered": "Questions Answered",
+    "totalCorrectAnswers": "Correct Answers",
+    "totalScore": "Total Score",
+    "averageScore": "Average Score",
+    "lastCompletedAt": "Last Completed",
+    "quizSessions": "Quiz Sessions",
+    "noQuizSessionsFound": "No quiz sessions found.",
+    "quizTitle": "Quiz Title",
+    "score": "Score",
+    "totalQuestions": "Total Questions",
+    "status": "Status",
+    "startedAt": "Started At",
+    "completedAt": "Completed At",
+    "duration": "Duration",
+    "noAnswerHistory": "No answer history available for this quiz session.",
+    "errorParsingAnswerHistory": "Error parsing answer history.",
+    "answerHistoryForQuiz": "Answer History for Quiz {{quizId}}"
+  }
+}

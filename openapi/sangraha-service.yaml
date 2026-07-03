@@ -22,15 +22,29 @@ paths:
       tags: [Works]
       security:
         - bearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          required: false
+          description: UUID произведения (для получения дерева по UUID, административный доступ)
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
-          description: Список произведений
+          description: |
+            Если id не указан — список произведений (WorkSummary[]).
+            Если id указан — дерево произведения (WorkTree).
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/WorkSummary'
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/WorkSummary'
+                  - $ref: '#/components/schemas/WorkTree'
+        '404':
+          description: Произведение с указанным id не найдено
     post:
       operationId: createWork
       summary: Создать произведение
@@ -54,20 +68,25 @@ paths:
         '400':
           description: Некорректные данные
 
-  /works/{workId}:
+  /works/{workSlug}:
     get:
-      operationId: getWorkTree
-      summary: Произведение + дерево глав/стихов
+      operationId: getWorkTreeBySlug
+      summary: Произведение + дерево глав/стихов по slug
+      description: |
+        Основной эндпоинт для страницы произведения (фронтенд: /sangraha/{workSlug}).
+        Возвращает id, slug, titleRu/En и chapters[].verses[] — двухуровневое дерево.
+        Slug уже известен из URL, UUID ещё не получен.
+        Аналог паттерна content-service, где сущности идентифицируются по slug.
       tags: [Works]
       security:
         - bearerAuth: []
       parameters:
-        - name: workId
+        - name: workSlug
           in: path
           required: true
           schema:
             type: string
-            format: uuid
+            pattern: '^[a-z0-9][a-z0-9-]*$'
       responses:
         '200':
           description: Дерево произведения
@@ -77,6 +96,8 @@ paths:
                 $ref: '#/components/schemas/WorkTree'
         '404':
           description: Произведение не найдено
+
+  /works/{workId}:
     put:
       operationId: updateWork
       summary: Обновить метаданные произведения
@@ -88,6 +109,7 @@ paths:
         - name: workId
           in: path
           required: true
+          description: UUID произведения
           schema:
             type: string
             format: uuid
@@ -115,6 +137,7 @@ paths:
         - name: workId
           in: path
           required: true
+          description: UUID произведения
           schema:
             type: string
             format: uuid

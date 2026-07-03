@@ -1,0 +1,59 @@
+{
+  "quiz": {
+    "start": "Начать квиз",
+    "next": "Следующий вопрос",
+    "correct": "Верно!",
+    "incorrect": "Неверно",
+    "correctAnswerIs": "Правильный ответ",
+    "question": "Вопрос {{current}} из {{total}}",
+    "explanation": "Объяснение",
+    "title": "Квизы",
+    "fetchError": "Не удалось загрузить квизы: {{message}}",
+    "totalQuestions": "Всего вопросов: {{count}}",
+    "noQuizzesFound": "Квизы не найдены.",
+    "startError": "Не удалось начать сессию квиза: {{message}}",
+    "submitAnswer": "Ответить",
+    "noQuestions": "В этом квизе нет вопросов.",
+    "noExplanation": "Объяснение недоступно.",
+    "completeQuiz": "Завершить квиз",
+    "completeSessionError": "Не удалось завершить сессию квиза: {{message}}",
+    "retakeQuiz": "Повторить квиз",
+    "startNewQuiz": "Начать новый"
+  },
+  "quizzes": {
+    "title": "Список квизов",
+    "words": "слов",
+    "questions": "вопросов"
+  },
+  "quizType": {
+    "VOCABULARY": "Лексика",
+    "DECLENSIONS": "Склонения",
+    "CONJUGATIONS": "Спряжения",
+    "A_STEM_DECLENSIONS": "Склонения на -а",
+    "AA_STEM_DECLENSIONS": "Склонения на -ā",
+    "I_STEM_DECLENSIONS": "Склонения на -i",
+    "II_STEM_DECLENSIONS": "Склонения на -ī",
+    "U_STEM_DECLENSIONS": "Склонения на -u",
+    "UU_STEM_DECLENSIONS": "Склонения на -ū",
+    "R_STEM_DECLENSIONS": "Склонения на -ṛ"
+  },
+  "sessionStatus": {
+    "IN_PROGRESS": "В процессе",
+    "COMPLETED": "Завершено",
+    "ABANDONED": "Заброшено"
+  },
+  "sessionHistory": {
+    "title": "История сессии ({{sessionId}})",
+    "errorLoadingHistory": "Ошибка загрузки истории сессии.",
+    "noAnswersFound": "Ответы для этой сессии не найдены.",
+    "question": "Вопрос",
+    "yourAnswer": "Ваш ответ",
+    "correctAnswer": "Правильный ответ",
+    "result": "Результат",
+    "responseTime": "Время ответа (мс)",
+    "answeredAt": "Отвечено",
+    "explanation": "Объяснение",
+    "notAnswered": "Нет ответа",
+    "notApplicable": "Н/Д"
+  }
+}

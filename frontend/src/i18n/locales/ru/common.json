@@ -1,0 +1,52 @@
+{
+  "nav": {
+    "dashboard": "Главная",
+    "quizzes": "Квизы",
+    "dictionary": "Словарь",
+    "statistics": "Статистика",
+    "leaderboard": "Рейтинг",
+    "settings": "Настройки",
+    "admin": "Администрирование",
+    "grammar": "Грамматика",
+    "vocabulary": "Лексика"
+  },
+  "common": {
+    "search": "Поиск",
+    "edit": "Редактировать",
+    "create": "Создать",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "add": "Добавить",
+    "createdAt": "Дата создания",
+    "or": "или",
+    "go": "Перейти",
+    "all": "Все",
+    "inProgress": "В процессе",
+    "filterByQuizType": "Фильтр по типу квиза",
+    "filterByStatus": "Фильтр по статусу",
+    "viewDetails": "Посмотреть детали",
+    "correct": "Верно",
+    "incorrect": "Неверно",
+    "actions": "Действия",
+    "back": "Назад",
+    "continue": "Продолжить",
+    "previous": "Назад",
+    "next": "Вперед"
+  },
+  "validation": {
+    "usernameRequired": "Требуется Email или логин.",
+    "emailRequired": "Требуется Email.",
+    "invalidEmail": "Неверный формат Email.",
+    "passwordRequired": "Требуется пароль.",
+    "confirmPasswordRequired": "Пожалуйста, подтвердите пароль.",
+    "passwordsDoNotMatch": "Пароли не совпадают.",
+    "currentPasswordRequired": "Требуется текущий пароль.",
+    "newPasswordRequired": "Новый пароль.",
+    "confirmNewPasswordRequired": "Пожалуйста, подтвердите новый пароль.",
+    "groupNameRequired": "Требуется название группы."
+  },
+  "underConstruction": {
+    "title": "Страница в разработке",
+    "message": "Эта страница находится в активной разработке. Пожалуйста, зайдите позже!"
+  }
+}

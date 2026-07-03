@@ -1,0 +1,31 @@
+{
+  "admin": {
+    "tabs": {
+      "quizzes": "Quizzes",
+      "questions": "Questions",
+      "users": "Users",
+      "groups": "Groups"
+    },
+    "users": {
+      "title": "User Management",
+      "fetchError": "Failed to fetch users.",
+      "searchPlaceholder": "Search by username, email, name...",
+      "filterByRole": "Filter by Role",
+      "filterByStatus": "Filter by Status",
+      "noUsersFound": "No users found.",
+      "role": {
+        "column-title": "Role",
+        "all": "All Roles",
+        "student": "Student",
+        "admin": "Admin"
+      },
+      "status": "Status",
+      "blocked": {
+        "all": "All Statuses",
+        "true": "Blocked",
+        "false": "Active"
+      },
+      "active": "Active"
+    }
+  }
+}

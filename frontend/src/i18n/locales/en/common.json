@@ -1,0 +1,52 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "quizzes": "Quizzes",
+    "dictionary": "Dictionary",
+    "statistics": "Statistics",
+    "leaderboard": "Leaderboard",
+    "settings": "Settings",
+    "admin": "Administration",
+    "grammar": "Grammar",
+    "vocabulary": "Vocabulary"
+  },
+  "common": {
+    "search": "Search",
+    "edit": "Edit",
+    "create": "Create",
+    "save": "Save",
+    "cancel": "Cancel",
+    "add": "Add",
+    "createdAt": "Created At",
+    "or": "or",
+    "go": "Go",
+    "all": "All",
+    "inProgress": "In Progress",
+    "filterByQuizType": "Filter by Quiz Type",
+    "filterByStatus": "Filter by Status",
+    "viewDetails": "View Details",
+    "correct": "Correct",
+    "incorrect": "Incorrect",
+    "actions": "Actions",
+    "back": "Back",
+    "continue": "Continue",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "validation": {
+    "usernameRequired": "Email or Username is required.",
+    "emailRequired": "Email is required.",
+    "invalidEmail": "Invalid email address.",
+    "passwordRequired": "Password is required.",
+    "confirmPasswordRequired": "Passwords do not match.",
+    "passwordsDoNotMatch": "Passwords do not match.",
+    "currentPasswordRequired": "Current password is required.",
+    "newPasswordRequired": "New password is required.",
+    "confirmNewPasswordRequired": "Please confirm your new password.",
+    "groupNameRequired": "Group name is required."
+  },
+  "underConstruction": {
+    "title": "Page Under Construction",
+    "message": "This page is currently under active development. Please check back later!"
+  }
+}

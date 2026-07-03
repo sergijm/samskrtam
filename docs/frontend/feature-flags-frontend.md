@@ -64,86 +64,23 @@ src/
 
 ## 4. TypeScript типы
 
-```typescript
-// types/featureFlag.ts
+**FeatureFlag:** name (string), enabled (boolean), description, updatedAt (ISO 8601), updatedBy (email)
 
-export interface FeatureFlag {
-  name:        string;           // 'RATE_LIMITING_ENABLED'
-  enabled:     boolean;
-  description: string;
-  updatedAt:   string;           // ISO 8601
-  updatedBy:   string;           // email администратора
-}
+**FlagHistoryEntry:** changedAt, changedBy, oldValue, newValue, reason (string|null)
 
-export interface FlagHistoryEntry {
-  changedAt:  string;            // ISO 8601
-  changedBy:  string;
-  oldValue:   boolean;
-  newValue:   boolean;
-  reason:     string | null;
-}
-
-export interface FlagUpdateRequest {
-  enabled: boolean;
-}
-```
+**FlagUpdateRequest:** enabled (boolean)
 
 ---
 
 ## 5. API клиент
 
-```typescript
-// api/featureFlagApi.ts
-
-export const featureFlagApi = {
-
-  getAll: () =>
-    api.get<FeatureFlag[]>('/api/v1/flags'),
-
-  get: (name: string) =>
-    api.get<FeatureFlag>(`/api/v1/flags/${name}`),
-
-  update: (name: string, enabled: boolean) =>
-    api.patch<FeatureFlag>(`/api/v1/flags/${name}`, { enabled }),
-
-  getHistory: (name: string) =>
-    api.get<FlagHistoryEntry[]>(`/api/v1/flags/${name}/history`),
-};
-```
+featureFlagApi.getAll() → GET /api/v1/flags; .get(name) → GET /api/v1/flags/{name}; .update(name, enabled) → PATCH /api/v1/flags/{name}; .getHistory(name) → GET /api/v1/flags/{name}/history
 
 ---
 
 ## 6. React Query хуки
 
-```typescript
-// hooks/useFeatureFlags.ts
-
-export const useFeatureFlags = () =>
-  useQuery({
-    queryKey: ['feature-flags'],
-    queryFn:  featureFlagApi.getAll,
-    // Не кешируем долго — состояние флагов должно быть актуальным
-    staleTime: 10_000,
-  });
-
-export const useFlagHistory = (name: string) =>
-  useQuery({
-    queryKey: ['feature-flags', name, 'history'],
-    queryFn:  () => featureFlagApi.getHistory(name),
-    enabled:  !!name,
-  });
-
-export const useUpdateFlag = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ name, enabled }: { name: string; enabled: boolean }) =>
-      featureFlagApi.update(name, enabled),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['feature-flags'] });
-    },
-  });
-};
-```
+**useFeatureFlags:** queryKey ['feature-flags'], staleTime 10s. **useFlagHistory(name):** queryKey ['feature-flags', name, 'history'], enabled: !!name. **useUpdateFlag:** mutation, onSuccess invalidates ['feature-flags'].
 
 ---
 
@@ -153,145 +90,11 @@ export const useUpdateFlag = () => {
 
 **Назначение:** управление всеми feature flags. Только для ADMIN.
 
-**Layout:**
-```
-┌─────────────────────────────────────────────────────┐
-│  ⚑ Feature Flags                                    │
-│  Управляйте поведением системы без перезапуска      │
-├─────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────┐   │
-│  │  Rate Limiting                              │   │
-│  │  Включает Redis Rate Limiting в api-gateway │   │
-│  │                                             │   │
-│  │  ● Включён     [  ●  ]    Изменён: 2 ч назад│   │
-│  │  Администратор: admin@samskrtam.local        │   │
-│  │                              [История →]    │   │
-│  └─────────────────────────────────────────────┘   │
-│                                                     │
-│  ┌─────────────────────────────────────────────┐   │
-│  │  Email Notifications                        │   │
-│  │  Отправка email (регистрация, сброс пароля) │   │
-│  │                                             │   │
-│  │  ○ Выключен   [○    ]    Никогда не менялся │   │
-│  │  Значение по умолчанию                      │   │
-│  │                              [История →]    │   │
-│  └─────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────┘
-```
+**FlagCard:** название (читаемое), описание, FlagToggle (InputSwitch с ConfirmDialog), время изменения, автор, кнопка "История →". Маппинг имён: FLAG_LABELS (RATE_LIMITING_ENABLED → 'Rate Limiting' и т.д.).
 
-**Компонент FlagCard:**
-- Название флага (человекочитаемое, не `SCREAMING_SNAKE_CASE`)
-- Описание из БД
-- `FlagToggle` — InputSwitch с визуальным состоянием включён/выключен
-- Время последнего изменения (relative: "2 ч назад") и автор
-- Кнопка "История →" → `/admin/flags/:name/history`
+**FlagToggle:** InputSwitch, при изменении — ConfirmDialog (подтверждение: включить/выключить, иконка, цвет кнопки). Причина: переключение влияет на всех пользователей, случайное нажатие — production инцидент.
 
-**Маппинг имён флагов для отображения** (локализован):
-```typescript
-// Читаемые названия вместо SCREAMING_SNAKE_CASE
-const FLAG_LABELS: Record<string, string> = {
-  RATE_LIMITING_ENABLED:       'Rate Limiting',
-  EMAIL_NOTIFICATIONS_ENABLED: 'Email Notifications',
-};
-```
-
----
-
-### FlagToggle — подтверждение перед изменением
-
-Изменение флага — потенциально опасное действие (можно сломать production).
-Поэтому переключение требует подтверждения через `ConfirmDialog`:
-
-```typescript
-// components/featureFlags/FlagToggle.tsx
-export const FlagToggle = ({ flag }: { flag: FeatureFlag }) => {
-  const { mutate: updateFlag, isPending } = useUpdateFlag();
-  const { t } = useTranslation();
-
-  const handleChange = (newValue: boolean) => {
-    confirmDialog({
-      message: newValue
-        ? t('flags.confirmEnable',  { name: FLAG_LABELS[flag.name] })
-        : t('flags.confirmDisable', { name: FLAG_LABELS[flag.name] }),
-      header:  t('flags.confirmHeader'),
-      icon:    newValue ? 'pi pi-check-circle' : 'pi pi-exclamation-triangle',
-      acceptClassName: newValue ? 'p-button-success' : 'p-button-danger',
-      accept:  () => updateFlag({ name: flag.name, enabled: newValue }),
-    });
-  };
-
-  return (
-    <div className="flex align-items-center gap-3">
-      <span className={flag.enabled ? 'text-green-500' : 'text-color-secondary'}>
-        {flag.enabled ? t('flags.enabled') : t('flags.disabled')}
-      </span>
-      <InputSwitch
-        checked={flag.enabled}
-        onChange={e => handleChange(e.value)}
-        disabled={isPending}
-      />
-    </div>
-  );
-};
-```
-
-**Почему ConfirmDialog а не просто Toast:**
-- Переключение флага применяется немедленно и влияет на всех пользователей
-- `EMAIL_NOTIFICATIONS_ENABLED: false` → все письма перестают уходить
-- `RATE_LIMITING_ENABLED: false` → система открыта для flood-атак
-- Одно случайное нажатие без подтверждения — Production инцидент
-
----
-
-### FlagHistoryPage (`/admin/flags/:name/history`)
-
-**Назначение:** аудит изменений конкретного флага.
-
-**Layout:**
-```
-┌──────────────────────────────────────────────────────────────┐
-│  ← Назад к флагам                                           │
-│                                                              │
-│  История: Rate Limiting                                      │
-│  Текущее состояние: ● Включён                               │
-├──────────────────────────────────────────────────────────────┤
-│  Когда           Кто                  Было  →  Стало        │
-│  01.05.24 12:00  admin@...local       ○ выкл   ● вкл        │
-│  30.04.24 09:15  admin@...local       ● вкл    ○ выкл       │
-│  29.04.24 15:00  admin@...local       ○ выкл   ● вкл        │
-└──────────────────────────────────────────────────────────────┘
-```
-
-**FlagHistoryTable** использует PrimeReact DataTable:
-- Колонка "Когда" — форматированная дата + время, сортировка DESC
-- Колонка "Кто" — email из `changedBy`
-- Колонка "Было → Стало" — цветные бейджи: зелёный `●` включён, серый `○` выключен
-- Пагинация: 20 строк
-
-```typescript
-// components/featureFlags/FlagHistoryTable.tsx
-const statusTemplate = (value: boolean) => (
-  <Tag
-    value={value ? t('flags.enabled') : t('flags.disabled')}
-    severity={value ? 'success' : 'secondary'}
-    icon={value ? 'pi pi-check' : 'pi pi-times'}
-  />
-);
-
-<DataTable value={history} paginator rows={20}
-           defaultSortOrder={-1} sortField="changedAt">
-  <Column field="changedAt"  header={t('flags.history.when')}
-          body={row => formatDateTime(row.changedAt)} sortable />
-  <Column field="changedBy"  header={t('flags.history.who')} />
-  <Column header={t('flags.history.change')} body={row => (
-    <div className="flex align-items-center gap-2">
-      {statusTemplate(row.oldValue)}
-      <i className="pi pi-arrow-right text-color-secondary" />
-      {statusTemplate(row.newValue)}
-    </div>
-  )} />
-</DataTable>
-```
+**FlagHistoryPage:** таблица PrimeReact DataTable с колонками: Когда (форматированная дата, сортировка DESC), Кто (email), Было → Стало (цветные бейджи Tag: success/secondary с pi-check/pi-times). Пагинация 20 строк.
 
 ---
 
@@ -314,49 +117,13 @@ const adminMenuItems = [
 
 ## 9. i18n ключи
 
-```json
-// i18n/ru.json — раздел flags
-{
-  "flags": {
-    "title":          "Feature Flags",
-    "subtitle":       "Управляйте поведением системы без перезапуска",
-    "enabled":        "Включён",
-    "disabled":       "Выключен",
-    "neverChanged":   "Никогда не менялся",
-    "lastChanged":    "Изменён {{time}}",
-    "changedBy":      "Администратор: {{email}}",
-    "historyLink":    "История",
-    "confirmHeader":  "Подтвердите изменение",
-    "confirmEnable":  "Включить {{name}}? Изменение применится немедленно для всех пользователей.",
-    "confirmDisable": "Выключить {{name}}? Изменение применится немедленно для всех пользователей.",
-    "history": {
-      "title":  "История: {{name}}",
-      "when":   "Когда",
-      "who":    "Кто изменил",
-      "change": "Изменение"
-    }
-  },
-  "admin": {
-    "nav": {
-      "quizzes":  "Квизы",
-      "users":    "Пользователи",
-      "groups":   "Группы",
-      "flags":    "Feature Flags"
-    }
-  }
-}
-```
+Раздел flags: title, subtitle, enabled, disabled, neverChanged, lastChanged ({{time}}), changedBy ({{email}}), historyLink, confirmHeader, confirmEnable ({{name}}), confirmDisable ({{name}}), history.title ({{name}}), history.when, history.who, history.change. Ключи admin.nav: quizzes, users, groups, flags.
 
 ---
 
-## 10. Роуты — обновление frontend.md
+## 10. Роуты
 
-Добавить в общую таблицу роутов:
-
-| Path | Компонент | Auth | Role |
-|---|---|---|---|
-| `/admin/flags` | FeatureFlagsPage | Да | ADMIN |
-| `/admin/flags/:name/history` | FlagHistoryPage | Да | ADMIN |
+Добавить в общую таблицу: /admin/flags → FeatureFlagsPage (ADMIN), /admin/flags/:name/history → FlagHistoryPage (ADMIN).
 
 ---
 

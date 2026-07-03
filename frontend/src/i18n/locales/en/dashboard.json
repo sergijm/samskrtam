@@ -1,0 +1,15 @@
+{
+  "dashboard": {
+    "quizzesDescription": "Practice your knowledge with interactive quizzes.",
+    "dictionaryDescription": "Explore and learn new Sanskrit words.",
+    "statisticsDescription": "Track your progress and achievements.",
+    "leaderboardDescription": "Compete with others and see your ranking.",
+    "settingsDescription": "Manage your profile and application settings.",
+    "adminDescription": "Access administrative tools and features.",
+    "grammarDescription": "Grammar quizzes: declensions and conjugations.",
+    "vocabularyDescription": "Quizzes on vocabulary knowledge.",
+    "quizSessionsDescription": "View your past and ongoing quiz sessions.",
+    "quizProgress": "Progress: {{answered}}/{{total}} questions",
+    "noQuizInProgress": ""
+  }
+}

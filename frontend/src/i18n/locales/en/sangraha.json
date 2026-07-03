@@ -1,0 +1,68 @@
+{
+  "sangraha": {
+    "title": "Texts",
+    "works": "Works",
+    "addWork": "Add Work",
+    "editWork": "Edit Work",
+    "deleteWork": "Delete Work",
+    "noWorks": "No works found",
+    "work": "Work",
+    "chapters": "Chapters",
+    "addChapter": "Add Chapter",
+    "editChapter": "Edit Chapter",
+    "deleteChapter": "Delete Chapter",
+    "verses": "Verses",
+    "addVerse": "Add Verse",
+    "deleteVerse": "Delete Verse",
+    "verse": "Verse",
+    "status": {
+      "DRAFT": "Draft",
+      "ANALYZING": "Analyzing…",
+      "ANALYZED": "Analyzed",
+      "FAILED": "Failed"
+    },
+    "action": {
+      "analyze": "Analyze",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "fields": {
+      "slug": "Slug",
+      "titleRu": "Title (Russian)",
+      "titleEn": "Title (English)",
+      "descriptionRu": "Description (Russian)",
+      "descriptionEn": "Description (English)",
+      "author": "Author",
+      "orderIndex": "Order",
+      "textDevanagari": "Text (Devanagari)",
+      "textIast": "Text (IAST)",
+      "versePreview": "Verse Preview"
+    },
+    "placeholder": {
+      "textDevanagari": "Enter text in Devanagari…",
+      "textIast": "Enter text in IAST transliteration…"
+    },
+    "translation": {
+      "ru": "Translation (Russian)",
+      "en": "Translation (English)"
+    },
+    "sandhiSplits": "Sandhi Splits",
+    "wordsTable": {
+      "position": "#",
+      "surface": "Form",
+      "lemma": "Dictionary Form",
+      "stem": "Stem",
+      "pos": "POS",
+      "gender": "Gender",
+      "case": "Case",
+      "number": "Number",
+      "person": "Person",
+      "tense": "Tense",
+      "mood": "Mood",
+      "voice": "Voice",
+      "gloss": "Gloss"
+    },
+    "vocabularyQuiz": "Vocab Quiz"
+  }
+}

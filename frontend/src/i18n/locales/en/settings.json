@@ -1,0 +1,26 @@
+{
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "toggleTheme": "Toggle theme",
+    "save": "Save",
+    "saved": "Settings saved",
+    "saveError": "Failed to save settings.",
+    "languageRu": "Russian",
+    "languageEn": "English",
+    "username": "Username",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "quizSize": "Quiz Size",
+    "avatar": {
+      "title": "Avatar",
+      "upload": "Upload New Avatar",
+      "uploaded": "Avatar uploaded successfully!",
+      "invalidFileType": "Invalid file type. Only JPEG, PNG, WEBP images are allowed.",
+      "uploadError": "Failed to upload avatar."
+    }
+  }
+}

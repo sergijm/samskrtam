@@ -1,0 +1,28 @@
+{
+  "userProfile": {
+    "errorLoadingUser": "Ошибка загрузки профиля пользователя.",
+    "quizStatistics": "Статистика квизов",
+    "errorLoadingStatistics": "Ошибка загрузки статистики квизов.",
+    "noStatistics": "Статистика квизов недоступна.",
+    "quizId": "ID квиза",
+    "quizType": "Тип квиза",
+    "totalSessions": "Всего сессий",
+    "totalQuestionsAnswered": "Отвечено вопросов",
+    "totalCorrectAnswers": "Правильных ответов",
+    "totalScore": "Общий балл",
+    "averageScore": "Средний балл",
+    "lastCompletedAt": "Последнее завершение",
+    "quizSessions": "Сессии квизов",
+    "noQuizSessionsFound": "Сессии квизов не найдены.",
+    "quizTitle": "Название квиза",
+    "score": "Баллы",
+    "totalQuestions": "Всего вопросов",
+    "status": "Статус",
+    "startedAt": "Начато",
+    "completedAt": "Завершено",
+    "duration": "Длительность",
+    "noAnswerHistory": "История ответов для этой сессии квиза недоступна.",
+    "errorParsingAnswerHistory": "Ошибка при разборе истории ответов.",
+    "answerHistoryForQuiz": "История ответов для квиза {{quizId}}"
+  }
+}

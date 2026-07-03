@@ -7,9 +7,9 @@ DEFAULT_DIR = r"C:\MyDev\samskrtam"
 
 # Расширения файлов для анализа
 #EXTENSIONS = ('.java', '.ts', '.tsx', '.yaml', '.yml')
-EXTENSIONS = '.java'
+#EXTENSIONS = '.java'
 #EXTENSIONS = ( '.yaml')
-#EXTENSIONS = '.md'
+EXTENSIONS = '.md'
 
 # Директории для исключения при сканировании
 EXCLUDED_DIRS = {
@@ -212,9 +212,9 @@ def main():
 
     # Топ-10 самых больших файлов (всех)
     print("\n" + "="*80)
-    print("🏆 ТОП-10 САМЫХ БОЛЬШИХ ФАЙЛОВ")
+    print("🏆 ТОП-20 САМЫХ БОЛЬШИХ ФАЙЛОВ")
     print("="*80)
-    top_files = sorted(large_files, key=lambda x: x['lines'], reverse=True)[:10]
+    top_files = sorted(large_files, key=lambda x: x['lines'], reverse=True)[:20]
     for idx, file_info in enumerate(top_files, 1):
         java_marker = "☕" if file_info['extension'] == '.java' else "📄"
         print(f"  {idx:2d}. {java_marker} {file_info['rel_path']}")

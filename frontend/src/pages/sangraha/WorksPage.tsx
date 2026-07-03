@@ -62,9 +62,7 @@ const WorksPage = () => {
       <ConfirmDialog />
       <div className="flex justify-content-between align-items-center mb-4">
         <h1>{t('sangraha.works')}</h1>
-        {isAdmin && (
-          <Button label={t('sangraha.addWork')} icon="pi pi-plus" onClick={() => setDialogVisible(true)} />
-        )}
+        <Button label={t('sangraha.addWork')} icon="pi pi-plus" onClick={() => setDialogVisible(true)} />
       </div>
 
       {isLoading || !works ? (

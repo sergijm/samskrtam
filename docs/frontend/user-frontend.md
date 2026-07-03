@@ -29,242 +29,107 @@
 
 ## 2. Структура файлов
 
-```
-src/
-├── pages/
-│   ├── SettingsPage.tsx
-│   ├── ChangePasswordPage.tsx
-│   ├── UserProfilePage.tsx         ← профиль любого пользователя
-│   ├── AdminGroupsPage.tsx         // Новая страница для списка групп
-│   ├── GroupPage.tsx               ← страница группы
-│   ├── GroupCreatePage.tsx         ← создание группы (только ADMIN)
-│   └── GroupEditPage.tsx           ← редактирование названия (ADMIN / CURATOR)
-│
-├── components/
-│   ├── user/
-│   │   ├── UserGroupChips.tsx      ← горизонтальные чипсы групп
-│   │   └── UserAvatar.tsx          ← аватар + имя
-│   └── group/
-│       ├── GroupMembersTable.tsx   ← таблица с сортировкой, пагинацией, фильтром
-│       ├── GroupCuratorBadge.tsx   ← бейдж куратора в таблице
-│       └── AddMemberDialog.tsx     ← диалог добавления пользователя
-│
-├── api/
-│   └── userApi.ts                  ← все вызовы к user-service
-│
-├── hooks/
-│   ├── useUser.ts
-│   └── useGroups.ts
-│
-└── types/
-    └── user.ts                     ← User, Group, GroupMember, GroupRole
-```
+`pages/`: SettingsPage, ChangePasswordPage, UserProfilePage, AdminGroupsPage, GroupPage, GroupCreatePage, GroupEditPage
+
+`components/user/`: UserGroupChips, UserAvatar
+
+`components/group/`: GroupMembersTable, GroupCuratorBadge, AddMemberDialog
+
+`api/userApi.ts` — все вызовы к user-service
+
+`hooks/`: useUser.ts, useGroups.ts
+
+`types/user.ts` — User, Group, GroupMember, GroupRole
 
 ---
 
 ## 3. TypeScript типы
 
-```typescript
-// types/user.ts
+Сущности и их поля:
 
-export interface User {
-  id:       string;
-  username: string;
-  email:    string;
-  roles:    ('STUDENT' | 'ADMIN')[]; // Изменено: теперь массив ролей
-  locale:   'ru' | 'en';
-  theme:    'light' | 'dark';
-}
+**User:**
+- id: string — UUID
+- username: string — логин
+- email: string — email
+- roles: ('STUDENT' | 'ADMIN')[] — массив глобальных ролей
+- locale: 'ru' | 'en'
+- theme: 'light' | 'dark'
 
-export type Theme  = 'light' | 'dark';
-export type Locale = 'ru' | 'en';
+**AuthTokens:**
+- accessToken: string
+- refreshToken: string
 
-export interface AuthTokens {
-  accessToken:  string;
-  refreshToken: string;
-}
+**GroupRole:** 'CURATOR' | 'MEMBER' — роль внутри группы
 
-// Роль пользователя внутри группы (не путать с глобальной ролью ADMIN/STUDENT)
-export type GroupRole = 'CURATOR' | 'MEMBER';
+**Group:**
+- id: string
+- name: string — название группы
+- curatorId: string — UUID куратора
+- curatorName: string — имя куратора
+- memberCount: number
+- createdAt: string (ISO 8601)
 
-export interface Group {
-  id:          string;
-  name:        string;
-  curatorId:   string;             // userId куратора
-  curatorName: string;
-  memberCount: number;
-  createdAt:   string;             // ISO 8601
-}
+**GroupMember:**
+- userId: string
+- username: string
+- email: string
+- groupRole: GroupRole
+- joinedAt: string (ISO 8601)
 
-export interface GroupMember {
-  userId:    string;
-  username:  string;
-  email:     string;
-  groupRole: GroupRole;
-  joinedAt:  string;               // ISO 8601
-}
+**GroupDetail** extends Group:
+- members: GroupMember[]
 
-export interface GroupDetail extends Group {
-  members: GroupMember[];
-}
-
-// Для UserProfilePage — чипсы групп
-export interface UserGroupSummary {
-  groupId:   string;
-  groupName: string;
-  groupRole: GroupRole;            // чтобы показать куратора особым чипом
-}
-```
+**UserGroupSummary** (для чипсов):
+- groupId: string
+- groupName: string
+- groupRole: GroupRole
 
 ---
 
 ## 4. API клиент
 
-```typescript
-// api/userApi.ts
+Эндпоинты к user-service:
 
-export const userApi = {
+**Профиль:**
+- `GET /api/v1/users/me` — получить текущего пользователя
+- `PATCH /api/v1/users/me` — обновить locale/theme
+- `POST /api/v1/auth/change-password` — сменить пароль (currentPassword, newPassword)
+- `GET /api/v1/users/{userId}` — получить пользователя по ID
+- `GET /api/v1/users/{userId}/groups` — получить группы пользователя
 
-  // ── Профиль ──────────────────────────────────────────────
+**Группы:**
+- `GET /api/v1/groups` — список всех групп
+- `GET /api/v1/groups/{groupId}` — группа с участниками
+- `POST /api/v1/groups` — создать группу (name)
+- `PATCH /api/v1/groups/{groupId}` — переименовать (name)
 
-  getMe: () =>
-    api.get<User>('/api/v1/users/me'),
+**Участники:**
+- `POST /api/v1/groups/{groupId}/members` — добавить участника (userId)
+- `DELETE /api/v1/groups/{groupId}/members/{userId}` — удалить участника
 
-  updateMe: (data: { locale?: Locale; theme?: Theme }) =>
-    api.patch<User>('/api/v1/users/me', data),
-
-  changePassword: (currentPassword: string, newPassword: string) =>
-    api.post('/api/v1/auth/change-password', { currentPassword, newPassword }),
-
-  getUser: (userId: string) =>
-    api.get<User>(`/api/v1/users/${userId}`),
-
-  getUserGroups: (userId: string) =>
-    api.get<UserGroupSummary[]>(`/api/v1/users/${userId}/groups`),
-
-  // ── Группы ───────────────────────────────────────────────
-
-  getGroups: () =>
-    api.get<Group[]>('/api/v1/groups'),
-
-  getGroup: (groupId: string) =>
-    api.get<GroupDetail>(`/api/v1/groups/${groupId}`),
-
-  createGroup: (name: string) =>
-    api.post<Group>('/api/v1/groups', { name }),
-
-  renameGroup: (groupId: string, name: string) =>
-    api.patch<Group>(`/api/v1/groups/${groupId}`, { name }),
-
-  // ── Участники ────────────────────────────────────────────
-
-  addMember: (groupId: string, userId: string) =>
-    api.post(`/api/v1/groups/${groupId}/members`, { userId }),
-
-  removeMember: (groupId: string, userId: string) =>
-    api.delete(`/api/v1/groups/${groupId}/members/${userId}`),
-
-  // ── Куратор ──────────────────────────────────────────────
-
-  // ADMIN или текущий CURATOR назначает нового куратора из участников группы
-  setCurator: (groupId: string, userId: string) =>
-    api.put(`/api/v1/groups/${groupId}/curator`, { userId }),
-};
-```
+**Куратор:**
+- `PUT /api/v1/groups/{groupId}/curator` — назначить куратора (userId) — ADMIN или текущий CURATOR
 
 ---
 
 ## 5. React Query хуки
 
-```typescript
-// hooks/useUser.ts
+Описание хуков (каждый использует api из userApi.ts, инвалидирует кэш при мутациях):
 
-export const useMe = () =>
-  useQuery({
-    queryKey: ['users', 'me'],
-    queryFn:  () => userApi.getMe(),
-  });
+**useUser.ts:**
+- `useMe()` — GET /api/v1/users/me, queryKey: `['users', 'me']`
+- `useUser(userId)` — GET /api/v1/users/{userId}, enabled: !!userId
+- `useUserGroups(userId)` — GET /api/v1/users/{userId}/groups, enabled: !!userId
+- `useUpdateMe()` — мутация PATCH /api/v1/users/me, на успехе инвалидирует `['users', 'me']`
 
-export const useUser = (userId: string) =>
-  useQuery({
-    queryKey: ['users', userId],
-    queryFn:  () => userApi.getUser(userId),
-    enabled:  !!userId,
-  });
-
-export const useUserGroups = (userId: string) =>
-  useQuery({
-    queryKey: ['users', userId, 'groups'],
-    queryFn:  () => userApi.getUserGroups(userId),
-    enabled:  !!userId,
-  });
-
-export const useUpdateMe = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: { locale?: Locale; theme?: Theme }) =>
-      userApi.updateMe(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users', 'me'] });
-    },
-  });
-};
-
-// hooks/useGroups.ts
-
-export const useGroups = () =>
-  useQuery({
-    queryKey: ['groups'],
-    queryFn:  () => userApi.getGroups(),
-  });
-
-export const useGroup = (groupId: string) =>
-  useQuery({
-    queryKey: ['groups', groupId],
-    queryFn:  () => userApi.getGroup(groupId),
-    enabled:  !!groupId,
-  });
-
-export const useCreateGroup = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (name: string) => userApi.createGroup(name),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['groups'] }),
-  });
-};
-
-export const useRenameGroup = (groupId: string) => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (name: string) => userApi.renameGroup(groupId, name),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['groups', groupId] }),
-  });
-};
-
-export const useAddMember = (groupId: string) => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (userId: string) => userApi.addMember(groupId, userId),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['groups', groupId] }),
-  });
-};
-
-export const useRemoveMember = (groupId: string) => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (userId: string) => userApi.removeMember(groupId, userId),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['groups', groupId] }),
-  });
-};
-
-export const useSetCurator = (groupId: string) => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (userId: string) => userApi.setCurator(groupId, userId),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['groups', groupId] }),
-  });
-};
-```
+**useGroups.ts:**
+- `useGroups()` — GET /api/v1/groups, queryKey: `['groups']`
+- `useGroup(groupId)` — GET /api/v1/groups/{groupId}, enabled: !!groupId
+- `useCreateGroup()` — мутация POST /api/v1/groups, инвалидирует `['groups']`
+- `useRenameGroup(groupId)` — мутация PATCH /api/v1/groups/{groupId}, инвалидирует `['groups', groupId]`
+- `useAddMember(groupId)` — мутация POST /api/v1/groups/{groupId}/members, инвалидирует `['groups', groupId]`
+- `useRemoveMember(groupId)` — мутация DELETE /api/v1/groups/{groupId}/members/{userId}, инвалидирует `['groups', groupId]`
+- `useSetCurator(groupId)` — мутация PUT /api/v1/groups/{groupId}/curator, инвалидирует `['groups', groupId]`
 
 ---
 
@@ -284,29 +149,10 @@ export const useSetCurator = (groupId: string) => {
 
 Настройки применяются немедленно при выборе (предпросмотр), кнопка "Сохранить" синхронизирует с профилем:
 
-```
-Пользователь выбирает "Тёмная"
-  → themeStore.setTheme('dark')           [мгновенно]
-  → DOM: #theme-link href меняется на lara-dark-blue/theme.css
-
-Пользователь нажимает "Сохранить"
-  → PATCH /api/v1/users/me { locale, theme }
-  → при следующем входе настройки восстанавливаются из профиля
-```
+При выборе темы/языка — мгновенное применение через themeStore/localeStore. При сохранении — PATCH /api/v1/users/me.
 
 **Восстановление при логине:**
-```typescript
-// App.tsx
-const { user } = useAuthStore();
-useEffect(() => {
-  if (user) {
-    localeStore.setLocale(user.locale);
-    themeStore.setTheme(user.theme);
-  }
-}, [user]);
-```
-
-Для неавторизованных (LoginPage) — берётся из `localStorage`.
+При загрузке App.tsx, если пользователь авторизован (useAuthStore), вызывается useEffect, который устанавливает locale и тему из профиля пользователя. Для неавторизованных (LoginPage) — настройки берутся из `localStorage`.
 
 ---
 
@@ -340,31 +186,7 @@ useEffect(() => {
   - Клик на чип → `navigate('/groups/:groupId')`
   - Если групп нет — текст "Не состоит ни в одной группе"
 
-```typescript
-// components/user/UserGroupChips.tsx
-export const UserGroupChips = ({ userId }: { userId: string }) => {
-  const { data: groups } = useUserGroups(userId);
-  const navigate = useNavigate();
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {groups?.map(g => (
-        <Chip
-          key={g.groupId}
-          label={g.groupName}
-          icon={g.groupRole === 'CURATOR' ? 'pi pi-star' : undefined}
-          className={g.groupRole === 'CURATOR' ? 'p-chip-warning' : undefined}
-          onClick={() => navigate(`/groups/${g.groupId}`)}
-          style={{ cursor: 'pointer' }}
-        />
-      ))}
-      {groups?.length === 0 && (
-        <span className="text-color-secondary">{t('groups.noGroups')}</span>
-      )}
-    </div>
-  );
-};
-```
+Компонент: загружает группы пользователя через `useUserGroups(userId)`, отображает их в виде чипсов. Для куратора — иконка pi-star и стиль warning. Клик → переход на `/groups/{groupId}`. Если групп нет — текст-заглушка.
 
 ---
 
@@ -409,25 +231,7 @@ export const UserGroupChips = ({ userId }: { userId: string }) => {
 
 **Таблица участников (`GroupMembersTable`):**
 
-```typescript
-// components/group/GroupMembersTable.tsx
-// Использует PrimeReact DataTable
-<DataTable
-  value={members}
-  paginator rows={20}
-  sortField="username" sortOrder={1}
-  filters={filters}
-  filterDisplay="row"
-  globalFilterFields={['username', 'email']}
->
-  <Column field="username"  header={t('groups.table.name')}   sortable filter />
-  <Column field="email"     header="Email"                     sortable filter />
-  <Column field="groupRole" header={t('groups.table.role')}   body={roleTemplate} />
-  <Column field="joinedAt"  header={t('groups.table.joined')} sortable
-          body={row => formatDate(row.joinedAt)} />
-  <Column body={actionsTemplate} />  {/* Удалить / Назначить куратором */}
-</DataTable>
-```
+"GroupMembersTable использует PrimeReact DataTable с колонками: username, email, groupRole, joinedAt. Поддерживает сортировку, пагинацию (20 строк), глобальный фильтр. Для куратора — GroupCuratorBadge. В actionsTemplate — кнопки "Удалить" и "Сделать куратором"."
 
 - Сортировка: по имени, email, дате вступления
 - Пагинация: 20 строк на страницу
@@ -449,21 +253,7 @@ export const UserGroupChips = ({ userId }: { userId: string }) => {
 > Фронтенд скрывает кнопки согласно роли, но авторизацию проверяет user-service.
 
 **`AddMemberDialog`:**
-```typescript
-// components/group/AddMemberDialog.tsx
-// AutoComplete по username/email → POST /api/v1/groups/:id/members
-<Dialog header={t('groups.addMember')} visible={visible} onHide={onHide}>
-  <AutoComplete
-    value={query}
-    suggestions={suggestions}
-    completeMethod={searchUsers}   // GET /api/v1/users?search=...
-    field="username"
-    onChange={e => setQuery(e.value)}
-    placeholder={t('groups.searchUser')}
-  />
-  <Button label={t('common.add')} onClick={handleAdd} disabled={!selected} />
-</Dialog>
-```
+Диалог с AutoComplete для поиска пользователей по username/email (GET /api/v1/users?search=...). При выборе и нажатии "Добавить" → POST /api/v1/groups/:id/members.
 
 ---
 
@@ -486,17 +276,7 @@ export const UserGroupChips = ({ userId }: { userId: string }) => {
 
 `AdminPage` (`/admin`) получает новую вкладку "Группы":
 
-```typescript
-// pages/AdminPage.tsx
-<TabView>
-  <TabPanel header={t('admin.tabs.quizzes')}>   {/* существующая */} </TabPanel>
-  <TabPanel header={t('admin.tabs.questions')}>  {/* существующая */} </TabPanel>
-  <TabPanel header={t('admin.tabs.users')}>      {/* существующая */} </TabPanel>
-  <TabPanel header={t('admin.tabs.groups')}>
-    {/* Кнопка "Создать группу" + таблица групп с переходом на /groups/:id */}
-  </TabPanel>
-</TabView>
-```
+AdminPage использует TabView с четырьмя вкладками: quizzes, questions, users, groups. Вкладка "Группы" содержит кнопку "Создать группу" и таблицу групп с переходом на /groups/:id.
 
 Вкладка "Группы" в AdminPage — это облегчённая версия GroupListPage встроенная в таблицу (без отдельного роута). Полный функционал управления — на `/groups/:id`.
 
@@ -504,74 +284,9 @@ export const UserGroupChips = ({ userId }: { userId: string }) => {
 
 ## 8. i18n ключи (дополнение к frontend.md)
 
-```json
-// i18n/ru.json — раздел groups
-{
-  "groups": {
-    "title":         "Группы",
-    "createGroup":   "Создать группу",
-    "groupName":     "Название группы",
-    "noGroups":      "Не состоит ни в одной группе",
-    "addMember":     "Добавить участника",
-    "removeMember":  "Удалить из группы",
-    "setCurator":    "Назначить куратором",
-    "curator":       "Куратор",
-    "member":        "Участник",
-    "searchUser":    "Поиск по имени или email",
-    "table": {
-      "name":        "Имя",
-      "role":        "Роль в группе",
-      "joined":      "Дата вступления"
-    },
-    "confirm": {
-      "remove":      "Удалить {{username}} из группы?",
-      "setCurator":  "Назначить {{username}} куратором группы?"
-    }
-  },
-  "admin": {
-    "tabs": {
-      "quizzes":  "Квизы",
-      "questions": "Вопросы",
-      "users":    "Пользователи",
-      "groups":   "Группы"
-    },
-    "groups": { // Добавлен раздел для описания плитки групп
-      "description": "Управление группами пользователей."
-    }
-  }
-}
-```
+Добавлены i18n ключи в разделе groups: title, createGroup, groupName, noGroups, addMember, removeMember, setCurator, curator, member, searchUser, table (name, role, joined), confirm (remove, setCurator). В admin.tabs добавлена вкладка groups. В admin.groups — description.
 
 ---
 
-## 9. Acceptance Criteria
 
-### Пользователи
-- [ ] UserProfilePage показывает имя, email, глобальные роли
-- [ ] Секция "Группы" отображает горизонтальные чипсы групп пользователя
-- [ ] Чип куратора отличается визуально (иконка `pi-star`, другой цвет)
-- [ ] Клик на чип открывает `/groups/:groupId`
-- [ ] Если групп нет — отображается текст-заглушка
-
-### Группы
-- [ ] ADMIN может создать группу через `/groups/new`
-- [ ] GroupPage: таблица поддерживает сортировку по имени, email, дате
-- [ ] GroupPage: пагинация 20 строк на страницу
-- [ ] GroupPage: фильтрация по имени / email / роли работает без перезагрузки
-- [ ] Название группы редактируется inline для ADMIN и CURATOR
-- [ ] ADMIN и CURATOR могут добавить участника через `AddMemberDialog` с поиском
-- [ ] ADMIN и CURATOR могут удалить участника (с подтверждением через `ConfirmDialog`)
-- [ ] ADMIN может назначить любого участника куратором
-- [ ] CURATOR может назначить куратором другого участника (себя заменяет)
-- [ ] После смены куратора — старый куратор становится MEMBER, новый — CURATOR
-- [ ] Кнопки управления скрыты для MEMBER
-- [ ] AdminGroupsPage доступна только ADMIN (`ProtectedRoute allowedRoles={['ADMIN']}`)
-- [ ] GroupPage доступна STUDENT только если он является участником или куратором
-
-### Настройки
-- [ ] SettingsPage: тема применяется мгновенно (без Save)
-- [ ] SettingsPage: язык применяется мгновенно (без Save)
-- [ ] Кнопка "Сохранить" делает PATCH /api/v1/users/me и показывает Toast
-- [ ] После логина тема и язык восстанавливаются из профиля
-- [ ] ChangePasswordPage: успех показывает Toast, поля очищаются
 

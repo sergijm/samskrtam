@@ -1,5 +1,10 @@
+server:
   port: ${SANGRAHA_SERVICE_PORT}
   shutdown: graceful
+  error:
+    include-stacktrace: always
+    include-exception: true
+
 
 spring:
   application:
@@ -25,6 +30,10 @@ spring:
   flyway:
     schemas: sangraha
     locations: classpath:db/migration
+    url: ${SPRING_FLYWAY_URL}
+    user: ${DB_USER}
+    password: ${DB_PASSWORD}
+
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:

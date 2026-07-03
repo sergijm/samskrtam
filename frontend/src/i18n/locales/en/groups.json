@@ -1,0 +1,21 @@
+{
+  "groups": {
+    "title": "Groups",
+    "createGroup": "Create Group",
+    "editGroup": "Edit Group",
+    "groupName": "Group Name",
+    "noGroups": "Not a member of any group",
+    "addMember": "Add Member",
+    "removeMember": "Remove from group",
+    "setCurator": "Set as Curator",
+    "curator": "Curator",
+    "member": "Member",
+    "memberCount": "Members",
+    "searchUser": "Search by username or email",
+    "table": {
+      "name": "Name",
+      "role": "Role in group",
+      "joined": "Date joined"
+    }
+  }
+}

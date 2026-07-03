@@ -1,0 +1,40 @@
+{
+  "grammar": {
+    "sandhiExercisesTitle": "Сандхи - Эмено (Упражнения)",
+    "sandhiExercisesDescription": "Практикуйте правила сандхи с упражнениями из учебника Эмено.",
+    "sandhiQuizzesTitle": "Сандхи - Эмено (Квизы)",
+    "sandhiQuizzesDescription": "Практикуйте правила сандхи по системе Эмено.",
+    "sandhiRulesTitle": "Сандхи - Эмено (Правила)",
+    "sandhiRulesDescription": "Изучите подробные правила сандхи по Эмено.",
+    "sandhiSectionTitle": "Сандхи по Эмено",
+    "declensionsSectionTitle": "Склонения",
+    "conjugationsSectionTitle": "Спряжения",
+    "noLessonsFound": "Уроки ещё не добавлены",
+    "declensionsTitle": "Склонения",
+    "declensionsDescription": "Практикуйте склонения существительных и прилагательных.",
+    "conjugationsTitle": "Спряжения",
+    "conjugationsDescription": "Изучите спряжения глаголов."
+  },
+  "vocabulary": {
+    "basicVocabularyTitle": "Базовая лексика (Фриш)",
+    "basicVocabularyDescription": "Изучите базовую лексику санскрита по методу Фриша.",
+    "emeneauVocabularyTitle": "Лексика Эмено",
+    "emeneauVocabularyDescription": "Практикуйте лексику по системе Эмено.",
+    "panchatatraTitle": "Панчататра",
+    "panchatatraDescription": "Изучите лексику из текста Панчататра.",
+    "hitopadeshaTitle": "Хитопадеша",
+    "hitopadeshaDescription": "Изучите слова санскрита из историй Хитопадеша."
+  },
+  "eamenau": {
+    "exerciseNumber": "Упражнение №",
+    "exerciseLetter": "Буква",
+    "instructionText": "Инструкция",
+    "taskNumber": "Задание №",
+    "rules": "Правила",
+    "noSolutionFound": "Решение не найдено.",
+    "filterRules": "Фильтровать правила"
+  },
+  "dictionary": {
+    "noWordsFound": "Слова не найдены."
+  }
+}

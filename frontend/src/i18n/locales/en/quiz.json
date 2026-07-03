@@ -1,0 +1,59 @@
+{
+  "quiz": {
+    "start": "Start Quiz",
+    "next": "Next Question",
+    "correct": "Correct!",
+    "incorrect": "Incorrect",
+    "correctAnswerIs": "The correct answer is",
+    "question": "Question {{current}} of {{total}}",
+    "explanation": "Explanation",
+    "title": "Quizzes",
+    "fetchError": "Failed to load quizzes: {{message}}",
+    "totalQuestions": "Total Questions: {{count}}",
+    "noQuizzesFound": "No quizzes found.",
+    "startError": "Failed to start quiz session: {{message}}",
+    "submitAnswer": "Submit Answer",
+    "noQuestions": "This quiz has no questions.",
+    "noExplanation": "No explanation available.",
+    "completeQuiz": "Complete Quiz",
+    "completeSessionError": "Failed to complete quiz session: {{message}}",
+    "retakeQuiz": "Retake Quiz",
+    "startNewQuiz": "Start New Quiz"
+  },
+  "quizzes": {
+    "title": "List of Quizzes",
+    "words": "words",
+    "questions": "questions"
+  },
+  "quizType": {
+    "VOCABULARY": "Vocabulary",
+    "DECLENSIONS": "Declensions",
+    "CONJUGATIONS": "Conjugations",
+    "A_STEM_DECLENSIONS": "A-Stem Declensions",
+    "AA_STEM_DECLENSIONS": "Ā-Stem Declensions",
+    "I_STEM_DECLENSIONS": "I-Stem Declensions",
+    "II_STEM_DECLENSIONS": "Ī-Stem Declensions",
+    "U_STEM_DECLENSIONS": "U-Stem Declensions",
+    "UU_STEM_DECLENSIONS": "Ū-Stem Declensions",
+    "R_STEM_DECLENSIONS": "Ṛ-Stem Declensions"
+  },
+  "sessionStatus": {
+    "IN_PROGRESS": "In Progress",
+    "COMPLETED": "Completed",
+    "ABANDONED": "Abandoned"
+  },
+  "sessionHistory": {
+    "title": "Session History ({{sessionId}})",
+    "errorLoadingHistory": "Error loading session history.",
+    "noAnswersFound": "No answers found for this session.",
+    "question": "Question",
+    "yourAnswer": "Your Answer",
+    "correctAnswer": "Correct Answer",
+    "result": "Result",
+    "responseTime": "Response Time (ms)",
+    "answeredAt": "Answered At",
+    "explanation": "Explanation",
+    "notAnswered": "Not Answered",
+    "notApplicable": "N/A"
+  }
+}

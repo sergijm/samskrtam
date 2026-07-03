@@ -124,24 +124,8 @@ public class GatewayRoutesConfig {
                         .uri(dictionaryServiceUrl))
 
                 // ── Sangraha Service ─────────────────────────────────────────────────────
-                // Базовая маршрутизация всех запросов к sangraha-service
-                // sangraha-service ожидает полный путь /api/v1/sangraha/**, поэтому RewritePath
                 .route("sangraha", r -> r
                         .path("/api/v1/sangraha/**")
-                        .filters(f -> f.rewritePath("/api/v1/sangraha/(?<segment>.*)", "/${segment}"))
-                        .uri(sangrahaServiceUrl))
-
-                // ── Sangraha Analyze (rate-limited) ──────────────────────────────────────
-                // POST /api/v1/sangraha/verses/{verseId}/analyze — дорогой LLM-вызов
-                // Лимит конфигурируется через env RATE_LIMITING_SANGRAHA_ANALYZE_RPM (по умолч. 2 RPM)
-                // Feature-flag: RATE_LIMITING_ENABLED (общий) + RATE_LIMITING_SANGRAHA_ANALYZE (специфичный)
-                // Для отключения лимита: установить RATE_LIMITING_SANGRAHA_ANALYZE_ENABLED=false
-                .route("sangraha-analyze", r -> r
-                        .path("/api/v1/sangraha/verses/{verseId}/analyze")
-                        .and().method("POST")
-                        .filters(f -> f
-                                .rewritePath("/api/v1/sangraha/(?<segment>.*)", "/${segment}")
-                        )
                         .uri(sangrahaServiceUrl))
 
                 // ── Statistics & Leaderboard ─────────────────────────────────────

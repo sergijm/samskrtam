@@ -1,0 +1,40 @@
+================================================================================
+📊 ОТЧЕТ О ФАЙЛАХ С БОЛЕЕ 100 СТРОК КОДА
+================================================================================
+Директория: C:\MyDev\samskrtam
+Анализируемые расширения: ., m, d
+Всего файлов с >100 строк: 24
+Всего строк: 6,529
+
+================================================================================
+📄 ОСТАЛЬНЫЕ ФАЙЛЫ (НЕ JAVA)
+================================================================================
+
+.md (24 файлов):
+--------------------------------------------------------------------------------
+  docs\services\sangraha-service.md - 508 строк
+  docs\services\leaderboard.md - 470 строк
+  docs\services\content-service.md - 450 строк
+  docs\services\statistics-service.md - 435 строк
+  docs\frontend\user-frontend.md - 426 строк
+  docs\agents\samskrtam-agents-spec.md - 377 строк
+  docs\frontend\feature-flags-frontend.md - 374 строк
+  docs\services\quiz-service.md - 334 строк
+  docs\services\eamenau.md - 290 строк
+  docs\frontend\lesson-pages-spec.md - 269 строк
+  docs\agents\prompts\agent-5-devops.md - 268 строк
+  docs\frontend\frontend-state.md - 266 строк
+  docs\agents\prompts\agent-4-testing.md - 234 строк
+  docs\frontend\frontend-overview.md - 220 строк
+  docs\infra\keycloak.md - 216 строк
+  docs\README.md - 183 строк
+  docs\services\dictionary-service.md - 183 строк
+  docs\agents\prompts\agent-3-frontend.md - 181 строк
+  docs\agents\prompts\agent-6-contracts.md - 178 строк
+  docs\agents\prompts\agent-2-domain.md - 150 строк
+  docs\frontend\frontend-conventions.md - 147 строк
+  docs\services\user-service.md - 146 строк
+  docs\agents\prompts\agent-1-gateway.md - 115 строк
+  docs\agents\prompts\agent-0-orchestrator.md - 109 строк
+
+  Статистика: 24 файлов, 6,529 строк
