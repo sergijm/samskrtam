@@ -3,22 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { useWorkTree, useCreateChapter, useDeleteChapter, useCreateVerse, useDeleteVerse } from '../../hooks/useSangraha';
 import { useAuthStore } from '../../store/authStore';
 import { Button } from 'primereact/button';
-import { Dialog } from 'primereact/dialog';
-import { InputText } from 'primereact/inputtext';
-import { InputNumber } from 'primereact/inputnumber';
-import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
-import { useRef, useState, useMemo, useCallback } from 'react';
-import type { ChapterTreeDto, VerseTreeDto } from '../../types/sangraha';
-import './WorkPage.css';
+import { useRef, useState, useCallback } from 'react';
 
-const statusSeverity: Record<string, 'success' | 'info' | 'warn' | 'danger'> = {
-  ANALYZED: 'success',
-  ANALYZING: 'info',
-  DRAFT: 'warn',
-  FAILED: 'danger',
-};
+import ChapterTreeBrowser from '../../components/sangraha/ChapterTreeBrowser';
+import ChapterDialog from '../../components/sangraha/ChapterDialog';
+import VerseDialog from '../../components/sangraha/VerseDialog';
+import './WorkPage.css';
 
 const WorkPage = () => {
   const { t } = useTranslation();
@@ -38,16 +30,12 @@ const WorkPage = () => {
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [chapterForm, setChapterForm] = useState({ slug: '', titleRu: '', titleEn: '', orderIndex: 0 });
-  const [verseForm, setVerseForm] = useState({ orderIndex: 0 });
-
+  const [verseOrderIndex, setVerseOrderIndex] = useState(0);
   const toggleChapter = useCallback((chapterId: string) => {
     setExpandedChapters(prev => {
       const next = new Set(prev);
-      if (next.has(chapterId)) {
-        next.delete(chapterId);
-      } else {
-        next.add(chapterId);
-      }
+      if (next.has(chapterId)) next.delete(chapterId);
+      else next.add(chapterId);
       return next;
     });
   }, []);
@@ -60,41 +48,22 @@ const WorkPage = () => {
       setChapterForm({ slug: '', titleRu: '', titleEn: '', orderIndex: 0 });
       toast.current?.show({ severity: 'success', summary: t('common.success'), detail: t('sangraha.chapterAdded') });
     } catch {
-      toast.current?.show({ severity: 'error', summary: t('common.error'), detail: t('common.error') });
+      toast.current?.show({ severity: 'error', summary: t('common.error') });
     }
   }, [workSlug, chapterForm, createChapter, t]);
 
   const handleAddVerse = useCallback(async () => {
     if (!selectedChapterId) return;
     try {
-      await createVerse.mutateAsync({ chapterId: selectedChapterId, data: verseForm });
+      await createVerse.mutateAsync({ chapterId: selectedChapterId, data: { orderIndex: verseOrderIndex } });
       setVerseDialog(false);
       setSelectedChapterId(null);
-      setVerseForm({ orderIndex: 0 });
+      setVerseOrderIndex(0);
       toast.current?.show({ severity: 'success', summary: t('common.success'), detail: t('sangraha.verseAdded') });
     } catch {
-      toast.current?.show({ severity: 'error', summary: t('common.error'), detail: t('common.error') });
+      toast.current?.show({ severity: 'error', summary: t('common.error') });
     }
-  }, [selectedChapterId, verseForm, createVerse, t]);
-
-  const handleDeleteChapter = useCallback((chapterId: string) => {
-    deleteChapter.mutate(chapterId);
-  }, [deleteChapter]);
-
-  const handleDeleteVerse = useCallback((verseId: string) => {
-    deleteVerse.mutate(verseId);
-  }, [deleteVerse]);
-
-  const handleChapterDialog = useCallback(() => {
-    setChapterDialog(true);
-  }, []);
-
-  const handleVerseDialog = useCallback((chapterId: string) => {
-    setSelectedChapterId(chapterId);
-    setVerseDialog(true);
-  }, []);
-
-  const isExpanded = useCallback((chapterId: string) => expandedChapters.has(chapterId), [expandedChapters]);
+  }, [selectedChapterId, verseOrderIndex, createVerse, t]);
 
   if (isLoading) {
     return (
@@ -131,115 +100,39 @@ const WorkPage = () => {
           <Button
             label={t('sangraha.addChapter')}
             icon="pi pi-plus"
-            onClick={handleChapterDialog}
+            onClick={() => setChapterDialog(true)}
           />
         )}
       </div>
 
-      <div className="work-tree">
-        {work.chapters?.map((ch: ChapterTreeDto) => (
-          <div key={ch.id} className="work-tree-chapter">
-            <div className="work-tree-row" onClick={() => toggleChapter(ch.id)}>
-              <div className="work-tree-row-left">
-                <i className={`pi ${isExpanded(ch.id) ? 'pi-chevron-down' : 'pi-chevron-right'} text-sm`} />
-                <i className="pi pi-book text-primary" />
-                <span className="font-bold">{ch.titleEn} ({ch.titleRu})</span>
-              </div>
-              {isAdmin && (
-                <div className="work-tree-row-right">
-                  <Button
-                    icon="pi pi-plus"
-                    className="p-button-rounded p-button-text p-button-sm"
-                    tooltip={t('sangraha.addVerse')}
-                    onClick={(e) => { e.stopPropagation(); handleVerseDialog(ch.id); }}
-                  />
-                  <Button
-                    icon="pi pi-trash"
-                    className="p-button-rounded p-button-text p-button-sm p-button-danger"
-                    tooltip={t('common.delete')}
-                    onClick={(e) => { e.stopPropagation(); handleDeleteChapter(ch.id); }}
-                  />
-                </div>
-              )}
-            </div>
-            {isExpanded(ch.id) && ch.verses?.map((v: VerseTreeDto) => (
-              <div
-                key={v.id}
-                className="work-tree-row work-tree-verse"
-                onClick={() => navigate(`/sangraha/${workSlug}/verses/${v.id}`)}
-              >
-                <div className="work-tree-row-left">
-                  <i className="pi pi-file text-color-secondary" />
-                  <span className="text-sm">{v.textIastPreview || `Verse ${v.orderIndex}`}</span>
-                  <Tag value={t(`sangraha.status.${v.status}`)} severity={statusSeverity[v.status] || 'info'} />
-                </div>
-                {isAdmin && (
-                  <div className="work-tree-row-right">
-                    <Button
-                      icon="pi pi-trash"
-                      className="p-button-rounded p-button-text p-button-sm p-button-danger"
-                      tooltip={t('common.delete')}
-                      onClick={(e) => { e.stopPropagation(); handleDeleteVerse(v.id); }}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
+      <ChapterTreeBrowser
+        chapters={work.chapters || []}
+        workSlug={workSlug || ''}
+        isAdmin={isAdmin}
+        expandedChapters={expandedChapters}
+        onToggleChapter={toggleChapter}
+        onAddVerse={(chapterId) => { setSelectedChapterId(chapterId); setVerseDialog(true); }}
+        onDeleteChapter={(chapterId) => deleteChapter.mutate(chapterId)}
+        onDeleteVerse={(verseId) => deleteVerse.mutate(verseId)}
+      />
 
-      <Dialog
-        header={t('sangraha.addChapter')}
+      <ChapterDialog
         visible={chapterDialog}
         onHide={() => setChapterDialog(false)}
-        style={{ width: '400px' }}
-        footer={
-          <div>
-            <Button label={t('common.cancel')} icon="pi pi-times" className="p-button-text" onClick={() => setChapterDialog(false)} />
-            <Button label={t('common.save')} icon="pi pi-check" onClick={handleAddChapter} loading={createChapter.isPending} />
-          </div>
-        }
-      >
-        <div className="flex flex-column gap-3">
-          <div>
-            <label htmlFor="ch-slug">{t('sangraha.slug')}</label>
-            <InputText id="ch-slug" value={chapterForm.slug} onChange={(e) => setChapterForm({ ...chapterForm, slug: e.target.value })} className="w-full" />
-          </div>
-          <div>
-            <label htmlFor="ch-titleRu">{t('sangraha.titleRu')}</label>
-            <InputText id="ch-titleRu" value={chapterForm.titleRu} onChange={(e) => setChapterForm({ ...chapterForm, titleRu: e.target.value })} className="w-full" />
-          </div>
-          <div>
-            <label htmlFor="ch-titleEn">{t('sangraha.titleEn')}</label>
-            <InputText id="ch-titleEn" value={chapterForm.titleEn} onChange={(e) => setChapterForm({ ...chapterForm, titleEn: e.target.value })} className="w-full" />
-          </div>
-          <div>
-            <label htmlFor="ch-order">{t('sangraha.orderIndex')}</label>
-            <InputNumber id="ch-order" value={chapterForm.orderIndex} onValueChange={(e) => setChapterForm({ ...chapterForm, orderIndex: e.value ?? 0 })} className="w-full" />
-          </div>
-        </div>
-      </Dialog>
+        form={chapterForm}
+        onFormChange={setChapterForm}
+        onSave={handleAddChapter}
+        loading={createChapter.isPending}
+      />
 
-      <Dialog
-        header={t('sangraha.addVerse')}
+      <VerseDialog
         visible={verseDialog}
         onHide={() => { setVerseDialog(false); setSelectedChapterId(null); }}
-        style={{ width: '400px' }}
-        footer={
-          <div>
-            <Button label={t('common.cancel')} icon="pi pi-times" className="p-button-text" onClick={() => { setVerseDialog(false); setSelectedChapterId(null); }} />
-            <Button label={t('common.save')} icon="pi pi-check" onClick={handleAddVerse} loading={createVerse.isPending} />
-          </div>
-        }
-      >
-        <div className="flex flex-column gap-3">
-          <div>
-            <label htmlFor="v-order">{t('sangraha.orderIndex')}</label>
-            <InputNumber id="v-order" value={verseForm.orderIndex} onValueChange={(e) => setVerseForm({ orderIndex: e.value ?? 0 })} className="w-full" />
-          </div>
-        </div>
-      </Dialog>
+        orderIndex={verseOrderIndex}
+        onOrderIndexChange={setVerseOrderIndex}
+        onSave={handleAddVerse}
+        loading={createVerse.isPending}
+      />
     </div>
   );
 };

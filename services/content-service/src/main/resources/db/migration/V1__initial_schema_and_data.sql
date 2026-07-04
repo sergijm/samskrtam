@@ -12,11 +12,36 @@
  Target Server Version : 170009 (170009)
  File Encoding         : 65001
 
- Date: 27/06/2026 06:54:12
+ Date: 04/07/2026 18:56:26
 */
 
-CREATE SCHEMA IF NOT EXISTS "content";
 
+-- ----------------------------
+-- Sequence structure for case_endings_id_seq
+-- ----------------------------
+DROP SEQUENCE IF EXISTS "content"."case_endings_id_seq";
+CREATE SEQUENCE "content"."case_endings_id_seq"
+    INCREMENT 1
+    MINVALUE  1
+    MAXVALUE 9223372036854775807
+    START 1
+    CACHE 1;
+
+-- ----------------------------
+-- Table structure for case_endings
+-- ----------------------------
+DROP TABLE IF EXISTS "content"."case_endings";
+CREATE TABLE "content"."case_endings" (
+                                          "id" int8 NOT NULL DEFAULT nextval('"content".case_endings_id_seq'::regclass),
+                                          "vowel_type" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
+                                          "gender" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
+                                          "case_type" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
+                                          "number_type" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
+                                          "ending_iast" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
+                                          "ending_devanagari" varchar(20) COLLATE "pg_catalog"."default"
+)
+;
+COMMENT ON TABLE "content"."case_endings" IS 'Эталонные окончания склонений для всех типов основ (ADR-003)';
 
 -- ----------------------------
 -- Table structure for declension_forms
@@ -55,7 +80,6 @@ COMMENT ON COLUMN "content"."declension_stems"."stem_name_devanagari" IS 'Наз
 COMMENT ON COLUMN "content"."declension_stems"."vowel_type" IS 'Тип гласной основы';
 COMMENT ON COLUMN "content"."declension_stems"."gender" IS 'Грамматический род основы';
 COMMENT ON TABLE "content"."declension_stems" IS 'Таблица для хранения основ склонений';
-
 
 -- ----------------------------
 -- Table structure for generated_questions
@@ -238,10 +262,27 @@ COMMENT ON COLUMN "content"."vocabulary_words"."updated_at" IS 'Дата и вр
 COMMENT ON TABLE "content"."vocabulary_words" IS 'Таблица для хранения словарных слов';
 
 -- ----------------------------
+-- Alter sequences owned by
+-- ----------------------------
+ALTER SEQUENCE "content"."case_endings_id_seq"
+    OWNED BY "content"."case_endings"."id";
+SELECT setval('"content"."case_endings_id_seq"', 530, true);
+
+-- ----------------------------
+-- Uniques structure for table case_endings
+-- ----------------------------
+ALTER TABLE "content"."case_endings" ADD CONSTRAINT "uq_case_endings" UNIQUE ("vowel_type", "gender", "case_type", "number_type");
+
+-- ----------------------------
+-- Primary Key structure for table case_endings
+-- ----------------------------
+ALTER TABLE "content"."case_endings" ADD CONSTRAINT "pk_case_endings" PRIMARY KEY ("id");
+
+-- ----------------------------
 -- Checks structure for table declension_forms
 -- ----------------------------
-ALTER TABLE "content"."declension_forms" ADD CONSTRAINT "ck_case_type" CHECK (case_type::text = ANY (ARRAY['NOMINATIVE'::character varying, 'ACCUSATIVE'::character varying, 'INSTRUMENTAL'::character varying, 'DATIVE'::character varying, 'ABLATIVE'::character varying, 'GENITIVE'::character varying, 'LOCATIVE'::character varying, 'VOCATIVE'::character varying]::text[]));
-ALTER TABLE "content"."declension_forms" ADD CONSTRAINT "ck_number_type" CHECK (number_type::text = ANY (ARRAY['SINGULAR'::character varying, 'DUAL'::character varying, 'PLURAL'::character varying]::text[]));
+ALTER TABLE "content"."declension_forms" ADD CONSTRAINT "ck_case_type" CHECK (case_type::text = ANY (ARRAY['NOMINATIVE'::character varying::text, 'ACCUSATIVE'::character varying::text, 'INSTRUMENTAL'::character varying::text, 'DATIVE'::character varying::text, 'ABLATIVE'::character varying::text, 'GENITIVE'::character varying::text, 'LOCATIVE'::character varying::text, 'VOCATIVE'::character varying::text]));
+ALTER TABLE "content"."declension_forms" ADD CONSTRAINT "ck_number_type" CHECK (number_type::text = ANY (ARRAY['SINGULAR'::character varying::text, 'DUAL'::character varying::text, 'PLURAL'::character varying::text]));
 
 -- ----------------------------
 -- Primary Key structure for table declension_forms
@@ -256,8 +297,8 @@ ALTER TABLE "content"."declension_stems" ADD CONSTRAINT "declension_stems_stem_n
 -- ----------------------------
 -- Checks structure for table declension_stems
 -- ----------------------------
-ALTER TABLE "content"."declension_stems" ADD CONSTRAINT "ck_vowel_type" CHECK (vowel_type::text = ANY (ARRAY['A_STEM'::character varying, 'AA_STEM'::character varying, 'I_STEM'::character varying, 'II_STEM'::character varying, 'U_STEM'::character varying, 'UU_STEM'::character varying, 'R_STEM'::character varying]::text[]));
-ALTER TABLE "content"."declension_stems" ADD CONSTRAINT "ck_gender" CHECK (gender::text = ANY (ARRAY['MASCULINE'::character varying, 'FEMININE'::character varying, 'NEUTER'::character varying, 'UNKNOWN'::character varying]::text[]));
+ALTER TABLE "content"."declension_stems" ADD CONSTRAINT "ck_vowel_type" CHECK (vowel_type::text = ANY (ARRAY['A_STEM'::character varying::text, 'AA_STEM'::character varying::text, 'I_STEM'::character varying::text, 'II_STEM'::character varying::text, 'U_STEM'::character varying::text, 'UU_STEM'::character varying::text, 'R_STEM'::character varying::text]));
+ALTER TABLE "content"."declension_stems" ADD CONSTRAINT "ck_gender" CHECK (gender::text = ANY (ARRAY['MASCULINE'::character varying::text, 'FEMININE'::character varying::text, 'NEUTER'::character varying::text, 'UNKNOWN'::character varying::text]));
 
 -- ----------------------------
 -- Primary Key structure for table declension_stems
@@ -282,7 +323,7 @@ ALTER TABLE "content"."lesson" ADD CONSTRAINT "quizzes_slug_key" UNIQUE ("slug")
 -- ----------------------------
 -- Checks structure for table lesson
 -- ----------------------------
-ALTER TABLE "content"."lesson" ADD CONSTRAINT "ck_difficulty" CHECK (difficulty::text = ANY (ARRAY['BEGINNER'::character varying, 'INTERMEDIATE'::character varying, 'ADVANCED'::character varying]::text[]));
+ALTER TABLE "content"."lesson" ADD CONSTRAINT "ck_difficulty" CHECK (difficulty::text = ANY (ARRAY['BEGINNER'::character varying::text, 'INTERMEDIATE'::character varying::text, 'ADVANCED'::character varying::text]));
 ALTER TABLE "content"."lesson" ADD CONSTRAINT "ck_slug_format" CHECK (slug::text ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'::text);
 
 -- ----------------------------
@@ -293,8 +334,8 @@ ALTER TABLE "content"."lesson" ADD CONSTRAINT "quizzes_pkey" PRIMARY KEY ("id");
 -- ----------------------------
 -- Checks structure for table question
 -- ----------------------------
-ALTER TABLE "content"."question" ADD CONSTRAINT "ck_question_target_case" CHECK (target_case::text = ANY (ARRAY['NOMINATIVE'::character varying, 'ACCUSATIVE'::character varying, 'INSTRUMENTAL'::character varying, 'DATIVE'::character varying, 'ABLATIVE'::character varying, 'GENITIVE'::character varying, 'LOCATIVE'::character varying, 'VOCATIVE'::character varying]::text[]));
-ALTER TABLE "content"."question" ADD CONSTRAINT "ck_question_target_number" CHECK (target_number::text = ANY (ARRAY['SINGULAR'::character varying, 'DUAL'::character varying, 'PLURAL'::character varying]::text[]));
+ALTER TABLE "content"."question" ADD CONSTRAINT "ck_question_target_case" CHECK (target_case::text = ANY (ARRAY['NOMINATIVE'::character varying::text, 'ACCUSATIVE'::character varying::text, 'INSTRUMENTAL'::character varying::text, 'DATIVE'::character varying::text, 'ABLATIVE'::character varying::text, 'GENITIVE'::character varying::text, 'LOCATIVE'::character varying::text, 'VOCATIVE'::character varying::text]));
+ALTER TABLE "content"."question" ADD CONSTRAINT "ck_question_target_number" CHECK (target_number::text = ANY (ARRAY['SINGULAR'::character varying::text, 'DUAL'::character varying::text, 'PLURAL'::character varying::text]));
 
 -- ----------------------------
 -- Primary Key structure for table question
@@ -347,7 +388,7 @@ CREATE INDEX "idx_vocabulary_words_root" ON "content"."vocabulary_words" USING b
 -- ----------------------------
 -- Checks structure for table vocabulary_words
 -- ----------------------------
-ALTER TABLE "content"."vocabulary_words" ADD CONSTRAINT "ck_vocabulary_gender" CHECK (gender::text = ANY (ARRAY['MASCULINE'::character varying, 'FEMININE'::character varying, 'NEUTER'::character varying, 'UNKNOWN'::character varying]::text[]));
+ALTER TABLE "content"."vocabulary_words" ADD CONSTRAINT "ck_vocabulary_gender" CHECK (gender::text = ANY (ARRAY['MASCULINE'::character varying::text, 'FEMININE'::character varying::text, 'NEUTER'::character varying::text, 'UNKNOWN'::character varying::text]));
 
 -- ----------------------------
 -- Primary Key structure for table vocabulary_words

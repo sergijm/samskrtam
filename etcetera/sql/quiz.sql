@@ -12,7 +12,7 @@
  Target Server Version : 170009 (170009)
  File Encoding         : 65001
 
- Date: 27/06/2026 06:52:22
+ Date: 04/07/2026 18:57:18
 */
 
 
@@ -31,6 +31,22 @@ CREATE TABLE "quiz"."flyway_schema_history" (
   "installed_on" timestamp(6) NOT NULL DEFAULT now(),
   "execution_time" int4 NOT NULL,
   "success" bool NOT NULL
+)
+;
+
+-- ----------------------------
+-- Table structure for grammar_form_score
+-- ----------------------------
+DROP TABLE IF EXISTS "quiz"."grammar_form_score";
+CREATE TABLE "quiz"."grammar_form_score" (
+  "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL,
+  "lesson_id" uuid NOT NULL,
+  "case_type" varchar COLLATE "pg_catalog"."default" NOT NULL,
+  "number_type" varchar COLLATE "pg_catalog"."default" NOT NULL,
+  "score" int4 NOT NULL DEFAULT 0,
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "gender" varchar COLLATE "pg_catalog"."default"
 )
 ;
 
@@ -110,7 +126,22 @@ CREATE TABLE "quiz"."session_questions" (
   "question_source_language" varchar(50) COLLATE "pg_catalog"."default",
   "question_target_language" varchar(50) COLLATE "pg_catalog"."default",
   "correct_translation_ru" varchar(255) COLLATE "pg_catalog"."default",
-  "correct_translation_en" varchar(255) COLLATE "pg_catalog"."default"
+  "correct_translation_en" varchar(255) COLLATE "pg_catalog"."default",
+  "target_gender" varchar(50) COLLATE "pg_catalog"."default"
+)
+;
+
+-- ----------------------------
+-- Table structure for word_score
+-- ----------------------------
+DROP TABLE IF EXISTS "quiz"."word_score";
+CREATE TABLE "quiz"."word_score" (
+  "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL,
+  "word_id" uuid NOT NULL,
+  "lesson_id" uuid NOT NULL,
+  "score" int4 NOT NULL DEFAULT 0,
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now()
 )
 ;
 
@@ -125,6 +156,30 @@ CREATE INDEX "flyway_schema_history_s_idx" ON "quiz"."flyway_schema_history" USI
 -- Primary Key structure for table flyway_schema_history
 -- ----------------------------
 ALTER TABLE "quiz"."flyway_schema_history" ADD CONSTRAINT "flyway_schema_history_pk" PRIMARY KEY ("installed_rank");
+
+-- ----------------------------
+-- Indexes structure for table grammar_form_score
+-- ----------------------------
+CREATE INDEX "idx_gfs_user_lesson_gender" ON "quiz"."grammar_form_score" USING btree (
+  "user_id" "pg_catalog"."uuid_ops" ASC NULLS LAST,
+  "lesson_id" "pg_catalog"."uuid_ops" ASC NULLS LAST,
+  "gender" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
+);
+
+-- ----------------------------
+-- Uniques structure for table grammar_form_score
+-- ----------------------------
+ALTER TABLE "quiz"."grammar_form_score" ADD CONSTRAINT "uq_grammar_form_score" UNIQUE ("user_id", "lesson_id", "gender", "case_type", "number_type");
+
+-- ----------------------------
+-- Checks structure for table grammar_form_score
+-- ----------------------------
+ALTER TABLE "quiz"."grammar_form_score" ADD CONSTRAINT "grammar_form_score_score_check" CHECK (score >= 0 AND score <= 100);
+
+-- ----------------------------
+-- Primary Key structure for table grammar_form_score
+-- ----------------------------
+ALTER TABLE "quiz"."grammar_form_score" ADD CONSTRAINT "pk_grammar_form_score" PRIMARY KEY ("id");
 
 -- ----------------------------
 -- Indexes structure for table outbox_events
@@ -174,6 +229,12 @@ ALTER TABLE "quiz"."quiz_session" ADD CONSTRAINT "quiz_sessions_pkey" PRIMARY KE
 -- ----------------------------
 -- Indexes structure for table session_questions
 -- ----------------------------
+CREATE INDEX "idx_session_questions_gender" ON "quiz"."session_questions" USING btree (
+  "session_id" "pg_catalog"."uuid_ops" ASC NULLS LAST,
+  "target_gender" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST,
+  "target_case" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST,
+  "target_number" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
+);
 CREATE INDEX "idx_session_questions_question_number" ON "quiz"."session_questions" USING btree (
   "session_id" "pg_catalog"."uuid_ops" ASC NULLS LAST,
   "question_number" "pg_catalog"."int4_ops" ASC NULLS LAST
@@ -186,6 +247,24 @@ CREATE INDEX "idx_session_questions_session_id" ON "quiz"."session_questions" US
 -- Primary Key structure for table session_questions
 -- ----------------------------
 ALTER TABLE "quiz"."session_questions" ADD CONSTRAINT "session_questions_pkey" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Indexes structure for table word_score
+-- ----------------------------
+CREATE INDEX "idx_word_score_user_lesson" ON "quiz"."word_score" USING btree (
+  "user_id" "pg_catalog"."uuid_ops" ASC NULLS LAST,
+  "lesson_id" "pg_catalog"."uuid_ops" ASC NULLS LAST
+);
+
+-- ----------------------------
+-- Uniques structure for table word_score
+-- ----------------------------
+ALTER TABLE "quiz"."word_score" ADD CONSTRAINT "uq_word_score" UNIQUE ("user_id", "word_id", "lesson_id");
+
+-- ----------------------------
+-- Primary Key structure for table word_score
+-- ----------------------------
+ALTER TABLE "quiz"."word_score" ADD CONSTRAINT "word_score_pkey" PRIMARY KEY ("id");
 
 -- ----------------------------
 -- Foreign Keys structure for table quiz_answers

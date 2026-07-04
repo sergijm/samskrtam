@@ -2,23 +2,20 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from 'primereact/card';
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
-import { Paginator, PaginatorPageChangeEvent } from 'primereact/paginator';
-import { Dropdown } from 'primereact/dropdown';
-import { Button } from 'primereact/button';
-
+import { PaginatorPageChangeEvent } from 'primereact/paginator';
 import { useUserQuizSessions } from '../hooks/useUserQuizSessions';
-import { useMe } from '../hooks/useUser'; // Import useMe
-import { LessonType, SessionStatus, QuizSessionSummary } from '../types/quiz';
+import { useMe } from '../hooks/useUser';
+import { LessonType, SessionStatus } from '../types/quiz';
+
+import QuizSessionFilters from '../components/quiz/QuizSessionFilters';
+import QuizSessionsTable from '../components/quiz/QuizSessionsTable';
 
 const UserQuizSessionsPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { data: user, isLoading: isUserLoading } = useMe(); // Get user from useMe
-
+  const { data: user, isLoading: isUserLoading } = useMe();
   const currentUserId = user?.id;
 
   const [page, setPage] = useState(0);
@@ -30,104 +27,21 @@ const UserQuizSessionsPage = () => {
 
   const { data, isLoading: isSessionsLoading, isError, error } = useUserQuizSessions(
     currentUserId || '',
-    page,
-    size,
-    sortBy,
-    sortDirection,
-    quizTypeFilter,
-    statusFilter
+    page, size, sortBy, sortDirection, quizTypeFilter, statusFilter
   );
 
-  const onPageChange = (event: PaginatorPageChangeEvent) => {
+  const handlePageChange = (event: PaginatorPageChangeEvent) => {
     setPage(event.page);
     setSize(event.rows);
   };
 
-  const onSort = (event: any) => {
+  const handleSort = (event: { sortField: string; sortOrder: number }) => {
     setSortBy(event.sortField);
     setSortDirection(event.sortOrder === 1 ? 'asc' : 'desc');
   };
 
-  const quizTypeOptions = [
-    { label: t('common.all'), value: undefined },
-    { label: t('lessonType.VOCABULARY'), value: 'VOCABULARY' },
-    { label: t('lessonType.DECLENSIONS'), value: 'DECLENSIONS' },
-    { label: t('lessonType.CONJUGATIONS'), value: 'CONJUGATIONS' },
-    { label: t('lessonType.A_STEM_DECLENSIONS'), value: 'A_STEM_DECLENSIONS' },
-    { label: t('lessonType.AA_STEM_DECLENSIONS'), value: 'AA_STEM_DECLENSIONS' },
-    { label: t('lessonType.I_STEM_DECLENSIONS'), value: 'I_STEM_DECLENSIONS' },
-    { label: t('lessonType.II_STEM_DECLENSIONS'), value: 'II_STEM_DECLENSIONS' },
-    { label: t('lessonType.U_STEM_DECLENSIONS'), value: 'U_STEM_DECLENSIONS' },
-    { label: t('lessonType.UU_STEM_DECLENSIONS'), value: 'UU_STEM_DECLENSIONS' },
-    { label: t('lessonType.R_STEM_DECLENSIONS'), value: 'R_STEM_DECLENSIONS' },
-  ];
-
-  const sessionStatusOptions = [
-    { label: t('common.all'), value: undefined },
-    { label: t('sessionStatus.IN_PROGRESS'), value: 'IN_PROGRESS' },
-    { label: t('sessionStatus.COMPLETED'), value: 'COMPLETED' },
-    { label: t('sessionStatus.ABANDONED'), value: 'ABANDONED' },
-  ];
-
-  const quizTypeBodyTemplate = (rowData: QuizSessionSummary) => {
-    return t(`lessonType.${rowData.lessonType}`);
-  };
-
-  const statusBodyTemplate = (rowData: QuizSessionSummary) => {
-    return t(`sessionStatus.${rowData.status}`);
-  };
-
-  const startedAtBodyTemplate = (rowData: QuizSessionSummary) => {
-    return new Date(rowData.startedAt).toLocaleString();
-  };
-
-  const completedAtBodyTemplate = (rowData: QuizSessionSummary) => {
-    return rowData.completedAt ? new Date(rowData.completedAt).toLocaleString() : t('common.inProgress');
-  };
-
-  const durationBodyTemplate = (rowData: QuizSessionSummary) => {
-    if (rowData.durationMs) {
-      const seconds = Math.floor(rowData.durationMs / 1000);
-      const minutes = Math.floor(seconds / 60);
-      const remainingSeconds = seconds % 60;
-      return `${minutes}m ${remainingSeconds}s`;
-    }
-    return '';
-  };
-
-  const actionBodyTemplate = (rowData: QuizSessionSummary) => {
-    const isCompleted = rowData.status === SessionStatus.COMPLETED;
-    const quizCategory = rowData.lessonType.toLowerCase();
-
-    return (
-      <div className="flex gap-2">
-        <Button
-          icon="pi pi-info-circle"
-          className="p-button-rounded p-button-text"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/quiz-sessions/${rowData.sessionId}/history`);
-          }}
-          tooltip={t('common.viewDetails')}
-        />
-        {!isCompleted && (
-          <Button
-            icon="pi pi-play"
-            className="p-button-rounded p-button-text p-button-success"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/quiz/${quizCategory}/${rowData.slug}/${rowData.sessionId}`);
-            }}
-            tooltip={t('common.continue')}
-          />
-        )}
-      </div>
-    );
-  };
-
-  const onRowClick = (event: any) => {
-    const rowData: QuizSessionSummary = event.data;
-    navigate(`/quiz-sessions/${rowData.sessionId}/history`);
+  const handleRowClick = (sessionId: string) => {
+    navigate(`/quiz-sessions/${sessionId}/history`);
   };
 
   if (isUserLoading || isSessionsLoading) {
@@ -151,62 +65,24 @@ const UserQuizSessionsPage = () => {
   return (
     <div className="max-w-60rem mx-auto">
       <Card title={t('userProfile.quizSessions')} className="mb-4">
-        <div className="flex flex-wrap gap-3 mb-4">
-          <Dropdown
-            value={quizTypeFilter}
-            options={quizTypeOptions}
-            onChange={(e) => setQuizTypeFilter(e.value)}
-            placeholder={t('common.filterByQuizType')}
-            className="w-12rem"
-          />
-          <Dropdown
-            value={statusFilter}
-            options={sessionStatusOptions}
-            onChange={(e) => setStatusFilter(e.value)}
-            placeholder={t('common.filterByStatus')}
-            className="w-12rem"
-          />
-          <Button icon="pi pi-filter-slash" className="p-button-outlined" onClick={() => {
-            setQuizTypeFilter(undefined);
-            setStatusFilter(undefined);
-          }} />
-        </div>
-
-        <DataTable
-          value={sessions}
-          lazy
-          paginator={false}
-          first={page * size}
-          rows={size}
-          totalRecords={data?.totalElements}
-          onSort={onSort}
-          sortField={sortBy}
-          sortOrder={sortDirection === 'asc' ? 1 : -1}
+        <QuizSessionFilters
+          quizTypeFilter={quizTypeFilter}
+          statusFilter={statusFilter}
+          onQuizTypeChange={setQuizTypeFilter}
+          onStatusChange={setStatusFilter}
+          onReset={() => { setQuizTypeFilter(undefined); setStatusFilter(undefined); }}
+        />
+        <QuizSessionsTable
+          sessions={sessions}
+          totalRecords={data?.totalElements || 0}
+          page={page}
+          size={size}
+          sortBy={sortBy}
+          sortDirection={sortDirection}
           loading={isSessionsLoading}
-          emptyMessage={t('userProfile.noQuizSessionsFound')}
-          selectionMode="single"
-          onRowClick={onRowClick}
-          rowClassName={() => 'cursor-pointer'}
-        >
-          <Column field="quizTitle" header={t('userProfile.quizTitle')} sortable />
-          <Column field="lessonType" header={t('userProfile.lessonType')} body={quizTypeBodyTemplate} sortable />
-          <Column field="score" header={t('userProfile.score')} sortable />
-          <Column field="totalQuestions" header={t('userProfile.totalQuestions')} sortable />
-          <Column field="status" header={t('userProfile.status')} body={statusBodyTemplate} sortable />
-          <Column field="startedAt" header={t('userProfile.startedAt')} body={startedAtBodyTemplate} sortable />
-          <Column field="completedAt" header={t('userProfile.completedAt')} body={completedAtBodyTemplate} sortable />
-          <Column field="durationMs" header={t('userProfile.duration')} body={durationBodyTemplate} sortable />
-          <Column body={actionBodyTemplate} header={t('common.actions')} style={{ width: '8rem' }} />
-        </DataTable>
-
-        <Paginator
-          first={page * size}
-          rows={size}
-          totalRecords={data?.totalElements}
-          onPageChange={onPageChange}
-          rowsPerPageOptions={[10, 20, 50]}
-          template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-          currentPageReportTemplate="{first}-{last} of {totalRecords}"
+          onPageChange={handlePageChange}
+          onSort={handleSort}
+          onRowClick={handleRowClick}
         />
       </Card>
     </div>
@@ -214,3 +90,4 @@ const UserQuizSessionsPage = () => {
 };
 
 export default UserQuizSessionsPage;
+

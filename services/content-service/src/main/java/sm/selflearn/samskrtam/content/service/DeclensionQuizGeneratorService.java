@@ -64,7 +64,7 @@ public class DeclensionQuizGeneratorService {
                                 ", case: " + targetCase + ", number: " + targetNumber));
 
         String questionText = String.format(
-                locale.getLanguage().equals("ru") ? "Основа: %s, Падеж: %s, Число: %s" : "Stem: %s, Case: %s, Number: %s",
+                locale.getLanguage().equals("ru") ? "Основа: %s" : "Stem: %s",
                 stem.getStemNameIast(),
                 locale.getLanguage().equals("ru") ? targetCase.getRuName() : targetCase.getEnName(),
                 locale.getLanguage().equals("ru") ? targetNumber.getRuName() : targetNumber.getEnName()

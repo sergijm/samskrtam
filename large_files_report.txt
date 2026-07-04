@@ -3,15 +3,16 @@
 ================================================================================
 Директория: C:\MyDev\samskrtam
 Анализируемые расширения: .tsx, .ts
-Всего файлов с >100 строк: 26
-Всего строк: 4,655
+Всего файлов с >100 строк: 28
+Всего строк: 4,478
 
 ================================================================================
 📄 ОСТАЛЬНЫЕ ФАЙЛЫ (НЕ JAVA)
 ================================================================================
 
-.ts (6 файлов):
+.ts (7 файлов):
 --------------------------------------------------------------------------------
+  frontend\src\hooks\useQuizSession.ts - 200 строк
   frontend\src\types\quiz.ts - 179 строк
   frontend\src\hooks\useQuiz.ts - 151 строк
   frontend\src\types\sangraha.ts - 127 строк
@@ -19,12 +20,10 @@
   frontend\src\api\quizApi.ts - 112 строк
   frontend\src\hooks\useSangraha.ts - 112 строк
 
-  Статистика: 6 файлов, 804 строк
+  Статистика: 7 файлов, 1,004 строк
 
-.tsx (20 файлов):
+.tsx (21 файлов):
 --------------------------------------------------------------------------------
-  frontend\src\App.tsx - 444 строк
-  frontend\src\pages\QuizPage.tsx - 293 строк
   frontend\src\pages\sangraha\VersePage.tsx - 267 строк
   frontend\src\pages\SettingsPage.tsx - 265 строк
   frontend\src\pages\sangraha\WorkPage.tsx - 247 строк
@@ -40,8 +39,11 @@
   frontend\src\pages\EmeneauRulesPage.tsx - 136 строк
   frontend\src\pages\QuizzesPage.tsx - 130 строк
   frontend\src\pages\ResetPasswordPage.tsx - 130 строк
+  frontend\src\components\settings\PreferencesSection.tsx - 126 строк
   frontend\src\pages\LoginPage.tsx - 122 строк
+  frontend\src\routes\AppRoutes.tsx - 120 строк
   frontend\src\pages\grammar\GrammarPage.tsx - 118 строк
+  frontend\src\components\sangraha\VerseAnalysisPanel.tsx - 114 строк
   frontend\src\pages\GroupPage.tsx - 112 строк
 
-  Статистика: 20 файлов, 3,851 строк
+  Статистика: 21 файлов, 3,474 строк
