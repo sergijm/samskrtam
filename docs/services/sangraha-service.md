@@ -97,7 +97,7 @@ SANGRAHA_LLM_MODEL        # например gpt-4.1 / другая OpenAI-со�
 ```
 
 Backend вызывает `/chat/completions` (или `/responses`) с промптом (файл
-[`prompts/verse-analysis.md`](./prompts/verse-analysis.md)) и
+[`../prompts/verse-analysis.md`](../prompts/verse-analysis.md)) и
 **одним** объявленным tool — модель обязана вернуть результат через `tool_calls`,
 а не свободным текстом.
 
@@ -105,7 +105,20 @@ Tool `submit_verse_analysis` с параметрами: textDevanagari, textIast
 
 Backend:
 1. Валидирует `tool_calls[0].function.arguments` по этой схеме (например через JSON Schema validator, не доверяем модели).
-2. В одной транзакции: обновляет `Verse.textDevanagari/textIast` (если не были заданы вручную), пишет `VerseAnalysis` (перезаписывая предыдущую — см. §8), пересоздаёт `VerseWord[]` для стиха, переводит `Verse.status → ANALYZED`.
+2. В одной транзакции: обновляет `Verse.textDevanagari/textIast` (если не были заданы вручную), пишет `VerseAnalysis` (перезаписывая предыдущую — см. §8), пересоздаёт `VerseWord[]` (deleteAll + saveAll) для стиха.
+2e. Статус `Verse.status → ANALYZED` — **последним**.
+
+**Гарантии атомарности (контракт):**
+- Любое исключение на шагах 2a–2d откатывает транзакцию целиком.
+- Статус не становится ANALYZED, а возвращается в DRAFT (можно повторить).
+- `OutboxEvent` не публикуется частично: если payload не сериализовался — транзакция откатывается полностью.
+- Исключение пробрасывается наружу → HTTP 500.
+
+**Вне транзакции:**
+- Перед LLM → `ANALYZING` (блокировка повторов).
+- Ошибка LLM/невалид → `FAILED`.
+- Техническая ошибка → `DRAFT`.
+- Успех → `ANALYZED`.
 3. Пишет `OutboxEvent(VERSE_VOCABULARY_EXTRACTED)` в той же транзакции (transactional outbox).
 
 Если пользователь ввёл текст только в одном представлении (только devanagari или только
@@ -121,7 +134,8 @@ iast) — второе представление также генерируе�
 Devanagari-диапазон Unicode → `SANSKRIT`; кириллица → `RU`; латиница → `EN`.
 
 **Шаг 2 — LLM tool calling.** Один вызов `/chat/completions` с промптом (файл
-[`sangraha-prompts/work-metadata.md`](./sangraha-prompts/work-metadata.md)) и **один**
+
+[`docs/prompts/work-analysis.md`](../prompts/work-analysis.md)) и **один**
 объявленный tool — `submit_work_metadata`, модель обязана вернуть результат через
 `tool_calls`, а не свободным текстом.
 

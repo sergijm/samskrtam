@@ -1,0 +1,109 @@
+package sm.selflearn.samskrtam.sangraha.mapper;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import sm.selflearn.samskrtam.sangraha.dto.VerseAnalysisDto;
+import sm.selflearn.samskrtam.sangraha.dto.VerseAnalysisDto.SandhiSplitDto;
+import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
+import sm.selflearn.samskrtam.sangraha.dto.VerseWordDto;
+import sm.selflearn.samskrtam.sangraha.model.Verse;
+import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
+import sm.selflearn.samskrtam.sangraha.model.VerseWord;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class VerseMapper {
+
+    private final ObjectMapper objectMapper;
+
+    /**
+     * Build VerseDetailDto from Verse + optional analysis + optional words.
+     * Returns a DTO with analysis==null and words==null when not available.
+     */
+    public VerseDetailDto toDetailDto(Verse verse, VerseAnalysis analysis, List<VerseWord> words) {
+        VerseAnalysisDto analysisDto = null;
+        if (analysis != null) {
+            analysisDto = toAnalysisDto(analysis);
+        }
+
+        List<VerseWordDto> wordDtos = null;
+        if (words != null) {
+            wordDtos = words.stream()
+                .map(this::toWordDto)
+                .toList();
+        }
+
+        return new VerseDetailDto(
+            verse.getId(),
+            verse.getChapterId(),
+            verse.getOrderIndex(),
+            verse.getTextDevanagari(),
+            verse.getTextIast(),
+            verse.getStatus(),
+            analysisDto,
+            wordDtos
+        );
+    }
+
+    public VerseAnalysisDto toAnalysisDto(VerseAnalysis analysis) {
+        List<SandhiSplitDto> sandhiSplits = parseSandhiSplits(analysis.getSandhiSplits());
+
+        return new VerseAnalysisDto(
+            analysis.getTranslationRu(),
+            analysis.getTranslationEn(),
+            sandhiSplits,
+            analysis.getModelName(),
+            analysis.getAnalyzedAt()
+        );
+    }
+
+    public VerseWordDto toWordDto(VerseWord word) {
+        return new VerseWordDto(
+            word.getId(),
+            word.getPosition(),
+            word.getSurfaceIast(),
+            word.getSurfaceDevanagari(),
+            word.getLemmaIast(),
+            word.getStem(),
+            word.getRoot(),
+            word.getPos() != null ? word.getPos().name() : null,
+            word.getGender() != null ? word.getGender().name() : null,
+            word.getCaseType() != null ? word.getCaseType().name() : null,
+            word.getNumberType() != null ? word.getNumberType().name() : null,
+            word.getPerson() != null ? word.getPerson().name() : null,
+            word.getTense() != null ? word.getTense().name() : null,
+            word.getMood() != null ? word.getMood().name() : null,
+            word.getVoice() != null ? word.getVoice().name() : null,
+            word.getGlossRu(),
+            word.getGlossEn()
+        );
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<SandhiSplitDto> parseSandhiSplits(String json) {
+        if (json == null || json.isBlank()) {
+            return Collections.emptyList();
+        }
+        try {
+            List<Map<String, Object>> raw = objectMapper.readValue(json, new TypeReference<>() {});
+            return raw.stream()
+                .map(m -> {
+                    String surface = (String) m.getOrDefault("surface", "");
+                    List<String> components = (List<String>) m.getOrDefault("components", Collections.emptyList());
+                    return new SandhiSplitDto(surface, components);
+                })
+                .toList();
+        } catch (Exception e) {
+            log.warn("Failed to parse sandhi_splits JSON: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+}

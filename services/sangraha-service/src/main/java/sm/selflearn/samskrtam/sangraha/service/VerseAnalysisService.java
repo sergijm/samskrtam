@@ -12,7 +12,6 @@ import sm.selflearn.samskrtam.sangraha.repository.ChapterRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
 
-
 import java.time.Instant;
 import java.util.UUID;
 
@@ -29,19 +28,32 @@ public class VerseAnalysisService {
     private final LlmClient llmClient;
     private final VerseAnalysisSaver analysisSaver;
 
+    /**
+     * Запускает анализ стиха LLM.
+     * <p>
+     * Атомарность гарантируется:
+     * <ul>
+     *   <li>Статус ANALYZING выставляется вне транзакции — блокировка повторных вызовов.</li>
+     *   <li>saveResults() — единая транзакция: ANALYSIS + WORDS + OUTBOX + ANALYZED.</li>
+     *   <li>При технической ошибке сохранения статус возвращается в DRAFT (можно повторить).</li>
+     *   <li>При ошибке LLM/невалидном ответе статус → FAILED (повтор бесполезен).</li>
+     * </ul>
+     */
     public void analyze(UUID verseId) {
         Verse verse = verseRepository.findByIdAndDeletedAtIsNull(verseId)
                 .orElseThrow(() -> new IllegalArgumentException("Verse not found: " + verseId));
-
-        verse.setStatus(VerseStatus.ANALYZING);
-        verse.setUpdatedAt(Instant.now());
-        verseRepository.save(verse);
 
         Chapter chapter = chapterRepository.findByIdAndDeletedAtIsNull(verse.getChapterId())
                 .orElseThrow(() -> new IllegalArgumentException("Chapter not found: " + verse.getChapterId()));
         Work work = workRepository.findById(chapter.getWorkId())
                 .orElseThrow(() -> new IllegalArgumentException("Work not found: " + chapter.getWorkId()));
 
+        // 1. Помечаем ANALYZING — блокирует повторные запросы (статус проверяет вызывающая сторона)
+        verse.setStatus(VerseStatus.ANALYZING);
+        verse.setUpdatedAt(Instant.now());
+        verseRepository.save(verse);
+
+        // 2. LLM-вызов (может быть долгим, поэтому вне транзакции)
         JsonNode llmResponse;
         try {
             llmResponse = llmClient.call(verse);
@@ -81,13 +93,17 @@ public class VerseAnalysisService {
 
         String modelName = llmClient.extractModelName(llmResponse);
 
+        // 3. Сохранение в единой транзакции.
+        //    Технические ошибки (БД, outbox, сериализация) пробрасываются наружу — транзакция откатывается,
+        //    статус не становится ANALYZED. Исключение ловится здесь, статус возвращается в DRAFT.
         try {
-            analysisSaver.saveResults(verse, work, chapter,
-                    textDevanagari, textIast, translationRu, translationEn,
-                    sandhiSplitsNode, wordsNode, llmResponse.toString(), modelName);
+        analysisSaver.saveResults(verse, work, chapter,
+                textDevanagari, textIast, translationRu, translationEn,
+                sandhiSplitsNode, wordsNode, llmResponse.toString(), modelName);
         } catch (Exception e) {
-            log.error("Failed to save analysis results for verse {}", verseId, e);
-            analysisSaver.markFailed(verse);
-        }
+            log.error("Failed to save analysis results for verse {}, reverting to DRAFT", verseId, e);
+            analysisSaver.revertToDraft(verse);
+            throw e;
     }
+}
 }

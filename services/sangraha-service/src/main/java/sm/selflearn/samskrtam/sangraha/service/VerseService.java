@@ -3,6 +3,8 @@ package sm.selflearn.samskrtam.sangraha.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
+import sm.selflearn.samskrtam.sangraha.mapper.VerseMapper;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
 import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
 import sm.selflearn.samskrtam.sangraha.model.VerseStatus;
@@ -13,6 +15,7 @@ import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -23,11 +26,20 @@ public class VerseService {
     private final VerseAnalysisRepository verseAnalysisRepository;
     private final VerseWordRepository verseWordRepository;
     private final ChapterService chapterService;
+    private final VerseMapper verseMapper;
 
     @Transactional(readOnly = true)
     public List<Verse> getVersesByChapterId(UUID chapterId) {
         chapterService.getChapterById(chapterId);
         return verseRepository.findAllByChapterIdAndDeletedAtIsNullOrderByOrderIndexAsc(chapterId);
+    }
+
+    @Transactional(readOnly = true)
+    public VerseDetailDto getVerseDetail(UUID id) {
+        Verse verse = getVerseById(id);
+        Optional<VerseAnalysis> analysis = verseAnalysisRepository.findByVerseId(id);
+        List<VerseWord> words = verseWordRepository.findAllByVerseIdOrderByPositionAsc(id);
+        return verseMapper.toDetailDto(verse, analysis.orElse(null), words.isEmpty() ? null : words);
     }
 
     @Transactional(readOnly = true)

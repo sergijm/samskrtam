@@ -13,6 +13,11 @@ WorkSummary:
       type: string
     titleEn:
       type: string
+    titleSaIast:
+      type: string
+    titleSaDevanagari:
+      type: string
+      nullable: true
     descriptionRu:
       type: string
       nullable: true
@@ -35,6 +40,11 @@ WorkTree:
       type: string
     titleEn:
       type: string
+    titleSaIast:
+      type: string
+    titleSaDevanagari:
+      type: string
+      nullable: true
     chapters:
       type: array
       items:
@@ -93,6 +103,13 @@ VerseSummary:
 
 VerseDetail:
   type: object
+  description: |
+    Контракт nullable-полей analysis и words:
+    - analysis === null ДОПУСТИМО ТОЛЬКО если status != ANALYZED.
+    - Если status == ANALYZED, analysis ОБЯЗАТЕЛЕН (не null).
+    - words: аналогично — null только при status != ANALYZED.
+    Фронтенд (см. §7) должен показывать явный плейсхолдер/ошибку,
+    если status == ANALYZED, но analysis/words пришли как null.
   properties:
     id:
       type: string
@@ -197,21 +214,20 @@ VerseStatus:
 
 CreateWorkRequest:
   type: object
-  required: [slug, titleRu, titleEn]
+  required: [title]
   properties:
-    slug:
+    title:
       type: string
-      pattern: '^[a-z0-9][a-z0-9-]*$'
-    titleRu:
+      description: |
+        Сырой ввод пользователя на любом из трёх языков (деванагари, кириллица, латиница).
+        Backend сам детектит язык (см. sangraha-service.md §5.2) и через LLM
+        генерирует остальные поля. Slug вычисляется из titleSaIast через SLP1.
+    description:
       type: string
-    titleEn:
-      type: string
-    descriptionRu:
-      type: string
-    descriptionEn:
-      type: string
-    author:
-      type: string
+      description: |
+        Опциональное описание на языке, которым пользователь ввёл title.
+        Если указано — считается описанием на detectedLanguage; модель дополняет
+        второй перевод. Санскритское описание не хранится.
 
 UpdateWorkRequest:
   type: object
@@ -256,11 +272,14 @@ UpdateChapterRequest:
 
 UpdateVerseTextRequest:
   type: object
+  required: [text]
   properties:
-    textDevanagari:
+    text:
       type: string
-    textIast:
-      type: string
+      description: |
+        Единое поле ввода. Backend определяет письменность по Unicode-диапазону:
+        символы деванагари → textDevanagari, иначе → textIast.
+        Отсутствующее представление достраивает LLM при анализе (§5.1).
 
 ChapterSummary:
   type: object

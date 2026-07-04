@@ -26,6 +26,15 @@ public class VerseAnalysisSaver {
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Единственная транзакция анализа стиха. Порядок операций:
+     * 1. Заполнить текст стиха (если не был введён вручную)
+     * 2. Перезаписать VerseAnalysis (delete + insert)
+     * 3. Пересоздать VerseWord[] (deleteAll + saveAll)
+     * 4. Опубликовать OutboxEvent (rollback, если не удалось сериализовать/сохранить)
+     * 5. Перевести статус ANALYZED (последним — гарантия атомарности)
+     * Любой сбой на шагах 1–4 откатывает всю транзакцию — статус остаётся ANALYZING.
+     */
     @Transactional
     public void saveResults(
             Verse verse, Work work, Chapter chapter,
@@ -41,8 +50,6 @@ public class VerseAnalysisSaver {
         if (verse.getTextIast() == null || verse.getTextIast().isBlank()) {
             verse.setTextIast(textIast);
         }
-        verse.setStatus(VerseStatus.ANALYZED);
-        verse.setUpdatedAt(Instant.now());
 
         // 2. Перезаписываем VerseAnalysis
         verseAnalysisRepository.deleteByVerseId(verse.getId());
@@ -65,9 +72,12 @@ public class VerseAnalysisSaver {
         verseWordRepository.saveAll(words);
 
         // 4. Публикуем OutboxEvent для Kafka-синхронизации с content-service
+        //    Исключение при сериализации/сохранении летит вверх — транзакция откатывается целиком
         publishVocabularyEvent(verse, work, chapter, words);
 
-        // 5. Сохраняем финальное состояние стиха
+        // 5. Статус ANALYZED — последним, гарантия атомарности
+        verse.setStatus(VerseStatus.ANALYZED);
+        verse.setUpdatedAt(Instant.now());
         verseRepository.save(verse);
 
         log.info("Verse {} analyzed successfully, {} words extracted", verse.getId(), words.size());
@@ -76,6 +86,17 @@ public class VerseAnalysisSaver {
     @Transactional
     public void markFailed(Verse verse) {
         verse.setStatus(VerseStatus.FAILED);
+        verse.setUpdatedAt(Instant.now());
+        verseRepository.save(verse);
+    }
+
+    /**
+     * Возвращает статус в DRAFT — после технической ошибки сохранения (можно повторить).
+     * Вызывается из VerseAnalysisService.analyze() при исключении из saveResults.
+     */
+    @Transactional
+    public void revertToDraft(Verse verse) {
+        verse.setStatus(VerseStatus.DRAFT);
         verse.setUpdatedAt(Instant.now());
         verseRepository.save(verse);
     }
@@ -142,7 +163,7 @@ public class VerseAnalysisSaver {
                     .build();
             outboxEventRepository.save(outbox);
         } catch (Exception e) {
-            log.error("Failed to serialize vocabulary event for verse {}", verse.getId(), e);
+            throw new RuntimeException("Failed to serialize vocabulary event for verse " + verse.getId(), e);
         }
     }
 

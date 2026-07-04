@@ -10,12 +10,11 @@ import { Button } from 'primereact/button';
 import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
+import { InputTextarea } from 'primereact/inputtextarea';
 import { useRef, useState, useCallback, useEffect } from 'react';
 
-import VerseEditor from '../../components/sangraha/VerseEditor';
-import VerseAnalysisPanel from '../../components/sangraha/VerseAnalysisPanel';
 const VersePage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { workSlug, verseId } = useParams<{ workSlug: string; verseId: string }>();
   const navigate = useNavigate();
   const toast = useRef<Toast>(null);
@@ -26,13 +25,11 @@ const VersePage = () => {
   const isAdmin = user?.roles?.includes('ADMIN') ?? false;
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editDevanagari, setEditDevanagari] = useState('');
-  const [editIast, setEditIast] = useState('');
+  const [editText, setEditText] = useState('');
 
   useEffect(() => {
     if (verse) {
-      setEditDevanagari(verse.textDevanagari || '');
-      setEditIast(verse.textIast || '');
+      setEditText(verse.textDevanagari || verse.textIast || '');
       if (verse.status === 'DRAFT' || verse.status === 'FAILED') {
         setIsEditing(true);
       }
@@ -42,12 +39,12 @@ const VersePage = () => {
   const handleSaveText = useCallback(async () => {
     if (!verseId) return;
     try {
-      await updateText.mutateAsync({ verseId, data: { textDevanagari: editDevanagari, textIast: editIast } });
+      await updateText.mutateAsync({ verseId, data: { textDevanagari: editText, textIast: editText } });
       toast.current?.show({ severity: 'success', summary: t('common.saved') });
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     }
-  }, [verseId, editDevanagari, editIast, updateText, t]);
+  }, [verseId, editText, updateText, t]);
 
   const handleAnalyze = useCallback(async () => {
     if (!verseId) return;
@@ -60,9 +57,17 @@ const VersePage = () => {
     }
   }, [verseId, analyze, t]);
 
-  const isDraft = verse?.status === 'DRAFT' || verse?.status === 'FAILED';
+  const startEditing = useCallback(() => {
+    if (verse) {
+      setEditText(verse.textDevanagari || verse.textIast || '');
+    }
+    setIsEditing(true);
+  }, [verse]);
+
   const isAnalyzed = verse?.status === 'ANALYZED';
   const isAnalyzing = verse?.status === 'ANALYZING';
+
+  const statusSeverity = verse?.status === 'ANALYZED' ? 'success' : verse?.status === 'FAILED' ? 'danger' : 'warn';
 
   if (isError) {
     return (
@@ -92,44 +97,105 @@ const VersePage = () => {
           onClick={() => navigate(`/sangraha/${workSlug}`)}
         />
         <h2 className="m-0">{t('sangraha.verse')} #{verse.orderIndex}</h2>
-        <Tag
-          value={t(`sangraha.status.${verse.status}`)}
-          severity={verse.status === 'ANALYZED' ? 'success' : verse.status === 'FAILED' ? 'danger' : 'warn'}
-          className="ml-2"
-        />
+        <Tag value={t(`sangraha.status.${verse.status}`)} severity={statusSeverity} className="ml-2" />
       </div>
 
-      {(isEditing || isDraft) && (
-        <VerseEditor
-          editDevanagari={editDevanagari}
-          editIast={editIast}
-          onDevanagariChange={setEditDevanagari}
-          onIastChange={setEditIast}
-          isAdmin={isAdmin}
-          isAnalyzing={isAnalyzing}
-          onSave={handleSaveText}
-          onAnalyze={handleAnalyze}
-          savePending={updateText.isPending}
-          analyzePending={analyze.isPending}
-        />
-      )}
-      {isAnalyzed && verse.analysis && (
-        <VerseAnalysisPanel
-          textDevanagari={verse.textDevanagari}
-          textIast={verse.textIast}
-          analysis={verse.analysis}
-          words={verse.words}
-          isAdmin={isAdmin}
-          onEdit={() => {
-                  setEditDevanagari(verse.textDevanagari || '');
-                  setEditIast(verse.textIast || '');
-                  setIsEditing(true);
-                }}
-              />
-          )}
+      {isAnalyzing && (
+        <div className="mb-4">
+          <Skeleton width="100%" height="50px" />
+          <p className="mt-2 text-color-secondary">{t('sangraha.status.ANALYZING')}</p>
         </div>
+      )}
+
+      {/* Режим просмотра — два отдельных поля */}
+      {!isEditing && !isAnalyzing && (
+        <div className="mb-4">
+          <div className="mb-3">
+            <label className="block mb-1 font-semibold">{t('sangraha.fields.textDevanagari')}</label>
+            <div className="p-3 border-1 border-round surface-border surface-ground">
+              <p className="m-0 text-lg">{verse.textDevanagari || '-'}</p>
+            </div>
+          </div>
+          <div className="mb-3">
+            <label className="block mb-1 font-semibold">{t('sangraha.fields.textIast')}</label>
+            <div className="p-3 border-1 border-round surface-border surface-ground">
+              <p className="m-0 text-lg">{verse.textIast || '-'}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Режим редактирования — одно поле (деванагари, но можно ввести IAST) */}
+      {isEditing && !isAnalyzing && (
+        <div className="mb-4">
+          <label className="block mb-1 font-semibold">{t('sangraha.fields.text')}</label>
+          <InputTextarea
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            className="w-full"
+            rows={4}
+            placeholder={t('sangraha.placeholder.text')}
+          />
+        </div>
+      )}
+
+      {!isAnalyzing && isEditing && isAdmin && (
+        <div className="flex gap-2 mb-4">
+          <Button label={t('sangraha.action.save')} icon="pi pi-save" onClick={handleSaveText} loading={updateText.isPending} />
+          <Button label={t('sangraha.action.analyze')} icon="pi pi-robot" className="p-button-success" onClick={handleAnalyze} loading={analyze.isPending} />
+        </div>
+      )}
+
+      {isAnalyzed && !isEditing && (
+        <>
+          {verse.analysis && (
+            <div className="mb-4">
+                            <div className="mb-3">
+                <label className="block mb-1 font-semibold">{t('sangraha.fields.translation')}</label>
+                <div className="p-3 border-1 border-round surface-border surface-ground">
+                  <p className="m-0">{(i18n.language === 'ru' ? verse.analysis.translationRu : verse.analysis.translationEn) || '-'}</p>
+                </div>
+              </div>
+              {verse.analysis.sandhiSplits && verse.analysis.sandhiSplits.length > 0 && (
+                <div className="mb-3">
+                  <label className="block mb-1 font-semibold">{t('sangraha.fields.sandhiSplits')}</label>
+                  <div className="p-3 border-1 border-round surface-border surface-ground">
+                    {verse.analysis.sandhiSplits.map((s, i) => (
+                      <div key={i} className="mb-2">
+                        <span className="font-medium">{s.surface}</span>
+                        <span className="mx-2">→</span>
+                        <span>{s.components.join(' + ')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {verse.words && verse.words.length > 0 && (
+            <div className="mb-4">
+              <label className="block mb-1 font-semibold">{t('sangraha.fields.words')}</label>
+              <div className="p-3 border-1 border-round surface-border surface-ground">
+                {verse.words.map((w) => (
+                  <div key={w.id} className="flex align-items-center gap-2 mb-1">
+                    <span className="font-medium">{w.surfaceIast}</span>
+                    <span className="text-color-secondary">({w.pos || '-'})</span>
+                    {w.stem && <span className="text-sm">stem: {w.stem}</span>}
+                    {w.glossRu && <span className="text-sm">— {w.glossRu}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {isAdmin && (
+            <Button label={t('sangraha.action.edit')} icon="pi pi-pencil" className="p-button-outlined" onClick={startEditing} />
+          )}
+        </>
+      )}
+    </div>
   );
 };
 
 export default VersePage;
-

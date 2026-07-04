@@ -152,8 +152,7 @@ def main():
         print("-" * 80)
 
         for idx, file_info in enumerate(java_files, 1):
-            print(f"  {idx:3d}. {file_info['rel_path']}")
-            print(f"       📝 Строк: {file_info['lines']:,}")
+            print(f"  {idx:3d}. {file_info['rel_path']}  📝 Строк: {file_info['lines']:,}")
             total_large_files += 1
             total_large_lines += file_info['lines']
 
@@ -188,8 +187,7 @@ def main():
             print("-" * 80)
 
             for idx, file_info in enumerate(files_list, 1):
-                print(f"  {idx:2d}. {file_info['rel_path']}")
-                print(f"      📝 Строк: {file_info['lines']:,}")
+                print(f"  {idx:2d}. {file_info['rel_path']}     📝 Строк: {file_info['lines']:,}")
                 total_large_files += 1
                 total_large_lines += file_info['lines']
 
@@ -218,8 +216,7 @@ def main():
     top_files = sorted(large_files, key=lambda x: x['lines'], reverse=True)[:20]
     for idx, file_info in enumerate(top_files, 1):
         java_marker = "☕" if file_info['extension'] == '.java' else "📄"
-        print(f"  {idx:2d}. {java_marker} {file_info['rel_path']}")
-        print(f"      📝 {file_info['lines']:,} строк | 📁 {file_info['extension'] or 'без расширения'}")
+        print(f"  {idx:2d}. {java_marker} {file_info['rel_path']}   📝 {file_info['lines']:,} строк | 📁 {file_info['extension'] or 'без расширения'}")
 
     # Сохраняем результаты в файл
     output_file = os.path.join(directory, "large_files_report.txt")

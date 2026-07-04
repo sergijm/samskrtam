@@ -47,7 +47,11 @@ paths:
           description: Произведение с указанным id не найдено
     post:
       operationId: createWork
-      summary: Создать произведение
+      summary: Создать произведение (авто-детекция языка, LLM-генерация)
+      description: |
+        Принимает одно текстовое поле title (на любом из трёх языков) и опционально description.
+        Backend детектит язык, через LLM генерирует titleRu/En/SaIast/SaDevanagari,
+        вычисляет slug из titleSaIast через IAST→SLP1. См. §5.2 sangraha-service.md.
       tags: [Works]
       security:
         - bearerAuth:
@@ -60,13 +64,15 @@ paths:
               $ref: 'sangraha-schemas.yaml#/CreateWorkRequest'
       responses:
         '201':
-          description: Произведение создано
+          description: Произведение создано. WorkSummary содержит новые поля titleSaIast/titleSaDevanagari.
           content:
             application/json:
               schema:
                 $ref: 'sangraha-schemas.yaml#/WorkSummary'
         '400':
           description: Некорректные данные
+        '500':
+          description: Ошибка LLM — Work не создаётся
 
   /works/{workSlug}:
     get:
@@ -74,7 +80,7 @@ paths:
       summary: Произведение + дерево глав/стихов по slug
       description: |
         Основной эндпоинт для страницы произведения (фронтенд: /sangraha/{workSlug}).
-        Возвращает id, slug, titleRu/En и chapters[].verses[] — двухуровневое дерево.
+        Возвращает id, slug, titleSaIast, titleSaDevanagari, titleRu/En и chapters[].verses[] — двухуровневое дерево.
       tags: [Works]
       security:
         - bearerAuth: []
@@ -286,7 +292,7 @@ paths:
   /verses/{verseId}/text:
     put:
       operationId: updateVerseText
-      summary: Сохранить введённый текст стиха (devanagari и/или iast)
+      summary: Сохранить введённый текст стиха (единое поле text)
       tags: [Verses]
       security:
         - bearerAuth:

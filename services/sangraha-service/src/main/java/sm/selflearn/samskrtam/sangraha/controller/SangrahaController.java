@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorkTreeDto;
 import sm.selflearn.samskrtam.sangraha.model.Chapter;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
@@ -47,9 +48,6 @@ public class SangrahaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(workService.createWork(work));
     }
 
-    /**
-     * Get a work tree (work + chapters + verses) by slug.
-     */
     @GetMapping("/works/{workSlug}")
     public ResponseEntity<WorkTreeDto> getWorkTree(@PathVariable String workSlug) {
         return ResponseEntity.ok(workTreeService.getWorkTreeBySlug(workSlug));
@@ -92,8 +90,8 @@ public class SangrahaController {
     }
 
     @GetMapping("/verses/{verseId}")
-    public ResponseEntity<Verse> getVerse(@PathVariable UUID verseId) {
-        return ResponseEntity.ok(verseService.getVerseById(verseId));
+    public ResponseEntity<VerseDetailDto> getVerse(@PathVariable UUID verseId) {
+        return ResponseEntity.ok(verseService.getVerseDetail(verseId));
     }
 
     @PutMapping("/verses/{verseId}/text")
