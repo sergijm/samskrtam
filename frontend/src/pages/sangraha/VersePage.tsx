@@ -15,7 +15,7 @@ import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
 import { Panel } from 'primereact/panel';
 import { Divider } from 'primereact/divider';
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import type { VerseWordDto, SandhiSplit } from '../../types/sangraha';
 
 const posLabels: Record<string, string> = {
@@ -33,9 +33,19 @@ const VersePage = () => {
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.roles?.includes('ADMIN') ?? false;
 
-  const [isEditing, setIsEditing] = useState(!verse || verse.status === 'DRAFT' || verse.status === 'FAILED');
-  const [editDevanagari, setEditDevanagari] = useState(verse?.textDevanagari || '');
-  const [editIast, setEditIast] = useState(verse?.textIast || '');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDevanagari, setEditDevanagari] = useState('');
+  const [editIast, setEditIast] = useState('');
+
+  useEffect(() => {
+    if (verse) {
+      setEditDevanagari(verse.textDevanagari || '');
+      setEditIast(verse.textIast || '');
+      if (verse.status === 'DRAFT' || verse.status === 'FAILED') {
+        setIsEditing(true);
+      }
+    }
+  }, [verse]);
 
   const handleSaveText = useCallback(async () => {
     if (!verseId) return;
@@ -99,8 +109,9 @@ const VersePage = () => {
 
       {/* DRAFT / EDIT mode */}
       {(isEditing || isDraft) && (
-        <div className="mb-4">
-          <Panel header={t('sangraha.fields.textDevanagari')}>
+        <div className="mb-4 verse-editor">
+          <div className="mb-3">
+            <label className="block mb-1 font-semibold">{t('sangraha.fields.textDevanagari')}</label>
             <InputTextarea
               value={editDevanagari}
               onChange={(e) => setEditDevanagari(e.target.value)}
@@ -108,8 +119,9 @@ const VersePage = () => {
               rows={4}
               placeholder={t('sangraha.placeholder.textDevanagari')}
             />
-          </Panel>
-          <Panel header={t('sangraha.fields.textIast')} className="mt-2">
+          </div>
+          <div className="mb-3">
+            <label className="block mb-1 font-semibold">{t('sangraha.fields.textIast')}</label>
             <InputTextarea
               value={editIast}
               onChange={(e) => setEditIast(e.target.value)}
@@ -117,7 +129,7 @@ const VersePage = () => {
               rows={4}
               placeholder={t('sangraha.placeholder.textIast')}
             />
-          </Panel>
+          </div>
           {isAdmin && !isAnalyzing && (
             <div className="flex gap-2 mt-3">
               <Button

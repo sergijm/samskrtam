@@ -2,39 +2,46 @@
 📊 ОТЧЕТ О ФАЙЛАХ С БОЛЕЕ 100 СТРОК КОДА
 ================================================================================
 Директория: C:\MyDev\samskrtam
-Анализируемые расширения: ., m, d
-Всего файлов с >100 строк: 24
-Всего строк: 6,529
+Анализируемые расширения: .tsx, .ts
+Всего файлов с >100 строк: 26
+Всего строк: 4,655
 
 ================================================================================
 📄 ОСТАЛЬНЫЕ ФАЙЛЫ (НЕ JAVA)
 ================================================================================
 
-.md (24 файлов):
+.ts (6 файлов):
 --------------------------------------------------------------------------------
-  docs\services\sangraha-service.md - 508 строк
-  docs\services\leaderboard.md - 470 строк
-  docs\services\content-service.md - 450 строк
-  docs\services\statistics-service.md - 435 строк
-  docs\frontend\user-frontend.md - 426 строк
-  docs\agents\samskrtam-agents-spec.md - 377 строк
-  docs\frontend\feature-flags-frontend.md - 374 строк
-  docs\services\quiz-service.md - 334 строк
-  docs\services\eamenau.md - 290 строк
-  docs\frontend\lesson-pages-spec.md - 269 строк
-  docs\agents\prompts\agent-5-devops.md - 268 строк
-  docs\frontend\frontend-state.md - 266 строк
-  docs\agents\prompts\agent-4-testing.md - 234 строк
-  docs\frontend\frontend-overview.md - 220 строк
-  docs\infra\keycloak.md - 216 строк
-  docs\README.md - 183 строк
-  docs\services\dictionary-service.md - 183 строк
-  docs\agents\prompts\agent-3-frontend.md - 181 строк
-  docs\agents\prompts\agent-6-contracts.md - 178 строк
-  docs\agents\prompts\agent-2-domain.md - 150 строк
-  docs\frontend\frontend-conventions.md - 147 строк
-  docs\services\user-service.md - 146 строк
-  docs\agents\prompts\agent-1-gateway.md - 115 строк
-  docs\agents\prompts\agent-0-orchestrator.md - 109 строк
+  frontend\src\types\quiz.ts - 179 строк
+  frontend\src\hooks\useQuiz.ts - 151 строк
+  frontend\src\types\sangraha.ts - 127 строк
+  frontend\src\store\authStore.ts - 123 строк
+  frontend\src\api\quizApi.ts - 112 строк
+  frontend\src\hooks\useSangraha.ts - 112 строк
 
-  Статистика: 24 файлов, 6,529 строк
+  Статистика: 6 файлов, 804 строк
+
+.tsx (20 файлов):
+--------------------------------------------------------------------------------
+  frontend\src\App.tsx - 444 строк
+  frontend\src\pages\QuizPage.tsx - 293 строк
+  frontend\src\pages\sangraha\VersePage.tsx - 267 строк
+  frontend\src\pages\SettingsPage.tsx - 265 строк
+  frontend\src\pages\sangraha\WorkPage.tsx - 247 строк
+  frontend\src\pages\UserQuizSessionsPage.tsx - 216 строк
+  frontend\src\pages\SessionHistoryPage.tsx - 200 строк
+  frontend\src\pages\sangraha\WorksPage.tsx - 198 строк
+  frontend\src\pages\lessons\GrammarLessonPage.tsx - 190 строк
+  frontend\src\pages\lessons\VocabularyLessonPage.tsx - 182 строк
+  frontend\src\pages\AdminUsersPage.tsx - 165 строк
+  frontend\src\pages\dictionary\DictionaryPage.tsx - 149 строк
+  frontend\src\components\eamenau\SolutionPanel.tsx - 148 строк
+  frontend\src\pages\eamenau\EmeneauExerciseDetailPage.tsx - 139 строк
+  frontend\src\pages\EmeneauRulesPage.tsx - 136 строк
+  frontend\src\pages\QuizzesPage.tsx - 130 строк
+  frontend\src\pages\ResetPasswordPage.tsx - 130 строк
+  frontend\src\pages\LoginPage.tsx - 122 строк
+  frontend\src\pages\grammar\GrammarPage.tsx - 118 строк
+  frontend\src\pages\GroupPage.tsx - 112 строк
+
+  Статистика: 20 файлов, 3,851 строк

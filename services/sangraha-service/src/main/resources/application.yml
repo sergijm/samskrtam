@@ -1,9 +1,9 @@
+server:
   port: ${SANGRAHA_SERVICE_PORT}
   shutdown: graceful
   error:
     include-stacktrace: always
     include-exception: true
-
 
 spring:
   application:
@@ -43,9 +43,9 @@ spring:
 
 sangraha:
   llm:
-    base-url: ${SANGRAHA_LLM_BASE_URL:https://api.aitunnel.ru/v1}
-    api-key: ${SANGRAHA_LLM_API_KEY:sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk}
-    model: ${SANGRAHA_LLM_MODEL:gemini-2.5-pro}
+    base-url: ${SANGRAHA_LLM_BASE_URL}
+    api-key: ${SANGRAHA_LLM_API_KEY}
+    model: ${SANGRAHA_LLM_MODEL}
 
 app:
   outbox:
@@ -72,7 +72,6 @@ springdoc:
     enabled: ${SPRINGDOC_ENABLED}
   swagger-ui:
     enabled: ${SPRINGDOC_ENABLED}
-
 
 logging:
   level:

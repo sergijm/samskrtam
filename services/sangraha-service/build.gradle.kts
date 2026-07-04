@@ -37,6 +37,9 @@ dependencies {
 
     implementation(libs.jackson.datatype.jsr310)
 
+    // OpenAI SDK — замена самописного HTTP-клиента к LLM
+    implementation("com.openai:openai-java:4.41.0")
+
     implementation(project(":shared:samskrtam-dtos"))
     implementation(project(":shared:common-dtos"))
 

@@ -2,8 +2,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useWorkTree, useCreateChapter, useDeleteChapter, useCreateVerse, useDeleteVerse } from '../../hooks/useSangraha';
 import { useAuthStore } from '../../store/authStore';
-import { TreeTable } from 'primereact/treetable';
-import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
@@ -12,8 +10,8 @@ import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
 import { useRef, useState, useMemo, useCallback } from 'react';
-import type { TreeNode } from 'primereact/treenode';
 import type { ChapterTreeDto, VerseTreeDto } from '../../types/sangraha';
+import './WorkPage.css';
 
 const statusSeverity: Record<string, 'success' | 'info' | 'warn' | 'danger'> = {
   ANALYZED: 'success',
@@ -38,33 +36,21 @@ const WorkPage = () => {
   const [chapterDialog, setChapterDialog] = useState(false);
   const [verseDialog, setVerseDialog] = useState(false);
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [chapterForm, setChapterForm] = useState({ slug: '', titleRu: '', titleEn: '', orderIndex: 0 });
   const [verseForm, setVerseForm] = useState({ orderIndex: 0 });
 
-  const treeNodes: TreeNode[] = useMemo(() => {
-    if (!work?.chapters) return [];
-    return work.chapters.map((ch: ChapterTreeDto) => ({
-      key: `ch-${ch.id}`,
-      data: {
-        id: ch.id,
-        type: 'chapter',
-        title: `${ch.titleEn} (${ch.titleRu})`,
-        categoryCode: ch.categoryCode,
-        slug: ch.slug,
-        orderIndex: ch.orderIndex,
-      },
-      children: ch.verses.map((v: VerseTreeDto) => ({
-        key: `v-${v.id}`,
-        data: {
-          id: v.id,
-          type: 'verse',
-          textIastPreview: v.textIastPreview || '',
-          status: v.status,
-          orderIndex: v.orderIndex,
-        },
-      })),
-    }));
-  }, [work]);
+  const toggleChapter = useCallback((chapterId: string) => {
+    setExpandedChapters(prev => {
+      const next = new Set(prev);
+      if (next.has(chapterId)) {
+        next.delete(chapterId);
+      } else {
+        next.add(chapterId);
+      }
+      return next;
+    });
+  }, []);
 
   const handleAddChapter = useCallback(async () => {
     if (!workSlug) return;
@@ -91,76 +77,24 @@ const WorkPage = () => {
     }
   }, [selectedChapterId, verseForm, createVerse, t]);
 
-  const titleTemplate = useCallback((rowData: TreeNode) => {
-    const d = rowData?.data;
-    if (d?.type === 'chapter') {
-      return (
-        <div className="flex align-items-center gap-2">
-          <i className="pi pi-book text-primary" />
-          <span className="font-bold">{d.title}</span>
-        </div>
-      );
-    }
-    return (
-      <div
-        className="flex align-items-center gap-2 cursor-pointer hover:text-primary"
-        onClick={(e) => {
-          e.stopPropagation();
-          navigate(`/sangraha/${workSlug}/verses/${d.id}`);
-        }}
-      >
-        <i className="pi pi-file text-color-secondary" />
-        <span className="text-sm">{d?.textIastPreview || `Verse ${d?.orderIndex}`}</span>
-        <Tag value={t(`sangraha.status.${d?.status}`)} severity={statusSeverity[d?.status] || 'info'} />
-      </div>
-    );
-  }, [navigate, workSlug, t]);
+  const handleDeleteChapter = useCallback((chapterId: string) => {
+    deleteChapter.mutate(chapterId);
+  }, [deleteChapter]);
 
-  const quizTemplate = useCallback((rowData: TreeNode) => {
-    const d = rowData?.data;
-    if (d?.type !== 'verse') return null;
-    return (
-      <Tag severity={d.status === 'ANALYZED' ? 'success' : 'warn'}>
-        {d.status === 'ANALYZED' ? t('sangraha.quizReady') : t('sangraha.quizPending')}
-      </Tag>
-    );
-  }, [t]);
+  const handleDeleteVerse = useCallback((verseId: string) => {
+    deleteVerse.mutate(verseId);
+  }, [deleteVerse]);
 
-  const actionsTemplate = useCallback((rowData: TreeNode) => {
-    if (!isAdmin) return null;
-    const d = rowData?.data;
-    return (
-      <div className="flex gap-1">
-        <Button
-          icon="pi pi-plus"
-          className="p-button-rounded p-button-text p-button-sm"
-          tooltip={d?.type === 'chapter' ? t('sangraha.addVerse') : t('sangraha.addChapter')}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (d?.type === 'chapter') {
-              setSelectedChapterId(d.id);
-              setVerseDialog(true);
-            } else {
-              setChapterDialog(true);
-            }
-          }}
-        />
-        <Button
-          icon="pi pi-trash"
-          className="p-button-rounded p-button-text p-button-sm p-button-danger"
-          tooltip={t('common.delete')}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (d?.type === 'chapter') {
-              deleteChapter.mutate(d.id);
-            } else {
-              deleteVerse.mutate(d.id);
-            }
-          }}
-        />
-      </div>
-    );
-  }, [isAdmin, deleteChapter, deleteVerse, t]);
+  const handleChapterDialog = useCallback(() => {
+    setChapterDialog(true);
+  }, []);
+
+  const handleVerseDialog = useCallback((chapterId: string) => {
+    setSelectedChapterId(chapterId);
+    setVerseDialog(true);
+  }, []);
+
+  const isExpanded = useCallback((chapterId: string) => expandedChapters.has(chapterId), [expandedChapters]);
 
   if (isLoading) {
     return (
@@ -197,18 +131,63 @@ const WorkPage = () => {
           <Button
             label={t('sangraha.addChapter')}
             icon="pi pi-plus"
-            onClick={() => setChapterDialog(true)}
+            onClick={handleChapterDialog}
           />
         )}
       </div>
 
-      <TreeTable value={treeNodes} className="mt-3">
-        <Column field="title" header={t('sangraha.chapter')} body={titleTemplate} expander style={{ width: '60%' }} />
-        <Column header={t('sangraha.quiz')} body={quizTemplate} style={{ width: '20%' }} />
-        {isAdmin && (
-          <Column header={t('common.actions')} body={actionsTemplate} style={{ width: '20%' }} />
-        )}
-      </TreeTable>
+      <div className="work-tree">
+        {work.chapters?.map((ch: ChapterTreeDto) => (
+          <div key={ch.id} className="work-tree-chapter">
+            <div className="work-tree-row" onClick={() => toggleChapter(ch.id)}>
+              <div className="work-tree-row-left">
+                <i className={`pi ${isExpanded(ch.id) ? 'pi-chevron-down' : 'pi-chevron-right'} text-sm`} />
+                <i className="pi pi-book text-primary" />
+                <span className="font-bold">{ch.titleEn} ({ch.titleRu})</span>
+              </div>
+              {isAdmin && (
+                <div className="work-tree-row-right">
+                  <Button
+                    icon="pi pi-plus"
+                    className="p-button-rounded p-button-text p-button-sm"
+                    tooltip={t('sangraha.addVerse')}
+                    onClick={(e) => { e.stopPropagation(); handleVerseDialog(ch.id); }}
+                  />
+                  <Button
+                    icon="pi pi-trash"
+                    className="p-button-rounded p-button-text p-button-sm p-button-danger"
+                    tooltip={t('common.delete')}
+                    onClick={(e) => { e.stopPropagation(); handleDeleteChapter(ch.id); }}
+                  />
+                </div>
+              )}
+            </div>
+            {isExpanded(ch.id) && ch.verses?.map((v: VerseTreeDto) => (
+              <div
+                key={v.id}
+                className="work-tree-row work-tree-verse"
+                onClick={() => navigate(`/sangraha/${workSlug}/verses/${v.id}`)}
+              >
+                <div className="work-tree-row-left">
+                  <i className="pi pi-file text-color-secondary" />
+                  <span className="text-sm">{v.textIastPreview || `Verse ${v.orderIndex}`}</span>
+                  <Tag value={t(`sangraha.status.${v.status}`)} severity={statusSeverity[v.status] || 'info'} />
+                </div>
+                {isAdmin && (
+                  <div className="work-tree-row-right">
+                    <Button
+                      icon="pi pi-trash"
+                      className="p-button-rounded p-button-text p-button-sm p-button-danger"
+                      tooltip={t('common.delete')}
+                      onClick={(e) => { e.stopPropagation(); handleDeleteVerse(v.id); }}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
 
       <Dialog
         header={t('sangraha.addChapter')}

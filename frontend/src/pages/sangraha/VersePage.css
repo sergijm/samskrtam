@@ -1,0 +1,31 @@
+/* Remove borders and padding from InputTextarea in verse editor */
+.verse-editor .p-inputtextarea {
+  border: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.verse-editor .p-inputtextarea:enabled:focus {
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+/* Remove all borders from Panel inside verse editor */
+.verse-editor .p-panel.p-component {
+  border: none !important;
+  box-shadow: none !important;
+}
+.verse-editor .p-toggleable-content {
+  border: 0 !important;
+}
+.verse-editor .p-toggleable-content > .p-panel-content {
+  border: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+}
+.verse-editor .p-panel-header {
+  border: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}

@@ -12,6 +12,7 @@ import sm.selflearn.samskrtam.sangraha.repository.ChapterRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
 
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -25,7 +26,7 @@ public class VerseAnalysisService {
     private final VerseRepository verseRepository;
     private final ChapterRepository chapterRepository;
     private final WorkRepository workRepository;
-    private final LlmToolCaller llmToolCaller;
+    private final LlmClient llmClient;
     private final VerseAnalysisSaver analysisSaver;
 
     public void analyze(UUID verseId) {
@@ -43,14 +44,20 @@ public class VerseAnalysisService {
 
         JsonNode llmResponse;
         try {
-            llmResponse = llmToolCaller.call(verse);
+            llmResponse = llmClient.call(verse);
         } catch (Exception e) {
             log.error("LLM analysis failed for verse {}", verseId, e);
             analysisSaver.markFailed(verse);
             return;
         }
 
-        JsonNode arguments = llmToolCaller.extractToolArguments(llmResponse);
+        if (llmResponse == null) {
+            log.error("LLM returned null response for verse {}", verseId);
+            analysisSaver.markFailed(verse);
+            return;
+        }
+
+        JsonNode arguments = llmClient.extractToolArguments(llmResponse);
         if (arguments == null) {
             log.error("LLM did not return submit_verse_analysis tool call for verse {}", verseId);
             analysisSaver.markFailed(verse);
@@ -72,7 +79,7 @@ public class VerseAnalysisService {
             return;
         }
 
-        String modelName = llmToolCaller.extractModelName(llmResponse);
+        String modelName = llmClient.extractModelName(llmResponse);
 
         try {
             analysisSaver.saveResults(verse, work, chapter,
