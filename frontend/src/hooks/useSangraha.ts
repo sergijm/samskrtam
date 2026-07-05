@@ -5,6 +5,7 @@ import type {
   WorkTreeDto,
   VerseDetailDto,
   CreateWorkRequest,
+  UpdateWorkRequest,
   CreateChapterRequest,
   CreateVerseRequest,
   UpdateVerseTextRequest,
@@ -44,6 +45,18 @@ export const useCreateWork = () => {
   return useMutation({
     mutationFn: (data: CreateWorkRequest) => sangrahaApi.createWork(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sangraha', 'works'] }),
+  });
+};
+
+export const useUpdateWork = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ workSlug, data }: { workSlug: string; data: UpdateWorkRequest }) =>
+      sangrahaApi.updateWork(workSlug, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'works'] });
+      qc.invalidateQueries({ queryKey: ['sangraha', 'work'] });
+    },
   });
 };
 

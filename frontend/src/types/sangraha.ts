@@ -42,6 +42,7 @@ export interface WorkTreeDto {
 export interface SandhiSplit {
   surface: string;
   components: string[];
+  ruleNumbers?: number[];
 }
 
 export interface VerseWordDto {
@@ -62,6 +63,7 @@ export interface VerseWordDto {
   voice?: string | null;
   glossRu: string;
   glossEn: string;
+  formationRuleNumbers?: number[];
 }
 
 export interface VerseAnalysisDto {
@@ -85,12 +87,8 @@ export interface VerseDetailDto {
 }
 
 export interface CreateWorkRequest {
-  slug: string;
-  titleRu: string;
-  titleEn: string;
-  descriptionRu?: string;
-  descriptionEn?: string;
-  author?: string;
+  title: string;
+  description?: string;
 }
 
 export interface UpdateWorkRequest {
@@ -103,16 +101,14 @@ export interface UpdateWorkRequest {
 
 export interface CreateChapterRequest {
   slug: string;
-  orderIndex: number;
-  titleRu: string;
-  titleEn: string;
+  orderIndex?: number;
+  title: string;
 }
 
 export interface UpdateChapterRequest {
   slug?: string;
   orderIndex?: number;
-  titleRu?: string;
-  titleEn?: string;
+  title?: string;
 }
 
 export interface CreateVerseRequest {
@@ -122,6 +118,5 @@ export interface CreateVerseRequest {
 }
 
 export interface UpdateVerseTextRequest {
-  textDevanagari?: string;
-  textIast?: string;
+  text: string;
 }

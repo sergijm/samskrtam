@@ -33,7 +33,7 @@ sangraha-service публикует слова этого стиха, `content-s
 
 **Work** (таблица works): id (UUID), slug (string, unique), titleRu, titleEn, titleSaIast, titleSaDevanagari, descriptionRu, descriptionEn, author (nullable), createdAt, deletedAt
 
-**Chapter** (таблица chapters): id (UUID), workId (UUID), slug (string, unique в пределах work), orderIndex (int), titleRu, titleEn, deletedAt
+**Chapter** (таблица chapters): id (UUID), workId (UUID), slug (string, unique в пределах work), orderIndex (int, nullable — backend вычисляет автоматически при создании, см. §5.3), titleRu, titleEn, titleSaIast, titleSaDevanagari, deletedAt
 
 **Verse** (таблица verses): id (UUID), chapterId (UUID), orderIndex (int), textDevanagari (TEXT), textIast (TEXT), status (DRAFT|ANALYZING|ANALYZED|FAILED), createdAt, updatedAt, deletedAt
 
@@ -65,8 +65,10 @@ GET    /api/v1/sangraha/works/{workSlug}                        → ★ прои
 PUT    /api/v1/sangraha/works/{workId}                          → обновить метаданные (ADMIN)
 DELETE /api/v1/sangraha/works/{workId}                          → soft delete (ADMIN)
 
-POST   /api/v1/sangraha/works/{workId}/chapters                 → добавить главу (ADMIN)
-PUT    /api/v1/sangraha/chapters/{chapterId}                     → обновить главу (ADMIN)
+POST   /api/v1/sangraha/works/{workSlug}/chapters                → добавить главу (ADMIN), см. §5.3
+       Body: {"title": "...", "orderIndex": 123}  — title обязателен, orderIndex опционален
+PUT    /api/v1/sangraha/chapters/{chapterId}                     → обновить главу (ADMIN), см. §5.3
+       Body: {"title": "...", "orderIndex": 123}  — оба поля опциональны
 DELETE /api/v1/sangraha/chapters/{chapterId}                     → soft delete (ADMIN)
 
 POST   /api/v1/sangraha/chapters/{chapterId}/verses             → добавить стих (пустой, DRAFT) (ADMIN)
@@ -111,7 +113,7 @@ Tool `submit_verse_analysis` с параметрами: textDevanagari, textIast
 
 Справочник правил сандхи (нумерация 1–71, внутренние + внешние, из Эмено, с
 глоссарием фонетических терминов) —
-[`sangraha-data/emenau-sandhi-rules.json`](./sangraha-data/emenau-sandhi-rules.json).
+[`prompts/emenau-sandhi-rules.json`](./prompts/emenau-sandhi-rules.json).
 Правила `applicability=external` (41–71) — граница между словами, цитируются в
 `sandhiSplits.ruleNumbers`. Правила `applicability=internal` (1–40) — как образована
 сама словоформа из корня/основы (морфофонемные изменения при словообразовании),
@@ -166,6 +168,44 @@ Backend валидирует `tool_calls[0].function.arguments` по JSON Schema
 **Ошибки:** если LLM недоступна/вернула невалидный `tool_calls` — `POST /works`
 завершается ошибкой (5xx), Work не создаётся (никаких частично заполненных записей).
 
+### 5.3 Создание/редактирование главы: авто-перевод названия
+
+`POST /works/{workSlug}/chapters` принимает только `title` (сырой ввод пользователя на любом
+из трёх языков) и опционально `orderIndex`. Все остальные поля Chapter (`titleRu`, `titleEn`,
+`titleSaIast`, `titleSaDevanagari`, `slug`) заполняются автоматически, синхронно, в рамках
+одного HTTP-запроса — по тому же паттерну, что и §5.2 для Work.
+
+**Шаг 1 — детекция языка (без LLM, по алфавиту первого значимого символа `title`):**
+Devanagari-диапазон Unicode → `SANSKRIT`; кириллица → `RU`; латиница → `EN`.
+
+**Шаг 2 — LLM tool calling.** Один вызов `/chat/completions` с промптом (файл
+[`prompts/chapter-metadata.md`](./prompts/chapter-metadata.md)) и **один**
+объявленный tool — `submit_chapter_metadata`, модель обязана вернуть результат через
+`tool_calls`, а не свободным текстом.
+
+Параметры tool `submit_chapter_metadata`: titleRu, titleEn, titleSaIast, titleSaDevanagari.
+У главы нет author/description — эти поля отсутствуют.
+
+Backend валидирует `tool_calls[0].function.arguments` по JSON Schema (не доверяем
+модели, как и в §5.1). Поле языка, указанное пользователем (`detectedLanguage`),
+никогда не перезаписывается ответом модели — LLM только дополняет два оставшихся
+языковых представления.
+
+**Шаг 3 — slug.** Вычисляется **детерминированно, без LLM** — транслитерация
+`titleSaIast → SLP1` по той же схеме, что и для Work (см. §5.2). При коллизии в
+пределах workId (уникальность `(work_id, slug)`, а не глобально) — backend добавляет
+числовой суффикс (`-2`, `-3`, ...).
+
+**Шаг 4 — orderIndex.** Если `orderIndex` не передан в запросе — backend вычисляет его
+как `max(orderIndex) + 1` среди активных (не удалённых) глав того же произведения.
+
+**PUT /chapters/{chapterId}** принимает те же поля — `title` и опционально `orderIndex`.
+Оба поля опциональны: если `title` передан — выполняется LLM-перевод и обновляются
+все четыре title-поля; если `orderIndex` передан — обновляется только он.
+
+**Ошибки:** если LLM недоступна/вернула невалидный `tool_calls` — запрос завершается
+ошибкой (5xx), Chapter не создаётся/не обновляется (никаких частично заполненных записей).
+
 ---
 
 ## 6. Kafka: sangraha → content-service
@@ -209,7 +249,7 @@ Payload/типы события переиспользуются как shared D
     `words[]` из `VerseDetail`, см. `sangraha-schemas.yaml`):
     - **Перевод** — `translationRu` и `translationEn` (обе колонки/вкладки).
     - **Сандхи** — `sandhiSplits`: список `surface → components[]`, с номером(-ами)
-      правила `ruleNumbers` (по справочнику `sangraha-data/emenau-sandhi-rules.json`,
+      правила `ruleNumbers` (по справочнику `prompts/emenau-sandhi-rules.json`,
       §5.1) — показывать как краткую подпись/тултип у каждого перехода; если
       `ruleNumbers` пуст — просто не показывать номер, без плейсхолдера-ошибки (это
       штатный случай «модель не уверена», не баг).

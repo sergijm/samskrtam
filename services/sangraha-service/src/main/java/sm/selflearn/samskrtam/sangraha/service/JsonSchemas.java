@@ -27,10 +27,14 @@ public class JsonSchemas {
     @Getter
     private JsonNode verseAnalysisSchema;
 
+    @Getter
+    private JsonNode chapterMetadataSchema;
+
     @PostConstruct
     public void init() {
         this.workMetadataSchema = buildWorkMetadataSchema();
         this.verseAnalysisSchema = buildVerseAnalysisSchema();
+        this.chapterMetadataSchema = buildChapterMetadataSchema();
         log.info("JSON Schemas initialized");
     }
 
@@ -53,6 +57,28 @@ public class JsonSchemas {
         properties.putObject("descriptionRu").put("type", "string");
         properties.putObject("descriptionEn").put("type", "string");
         properties.putObject("author").put("type", "string");
+
+        schema.putObject("additionalProperties").put("type", "string");
+
+        return schema;
+    }
+
+    /**
+     * JSON Schema для submit_chapter_metadata tool.
+     */
+    private ObjectNode buildChapterMetadataSchema() {
+        ObjectNode schema = objectMapper.createObjectNode();
+        schema.put("$schema", "http://json-schema.org/draft-07/schema#");
+        schema.put("type", "object");
+
+        ArrayNode required = schema.putArray("required");
+        required.add("titleRu").add("titleEn").add("titleSaIast").add("titleSaDevanagari");
+
+        ObjectNode properties = schema.putObject("properties");
+        properties.putObject("titleRu").put("type", "string").put("minLength", 1);
+        properties.putObject("titleEn").put("type", "string").put("minLength", 1);
+        properties.putObject("titleSaIast").put("type", "string").put("minLength", 1);
+        properties.putObject("titleSaDevanagari").put("type", "string").put("minLength", 1);
 
         schema.putObject("additionalProperties").put("type", "string");
 

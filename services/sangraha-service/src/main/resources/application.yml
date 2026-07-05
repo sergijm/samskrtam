@@ -46,6 +46,7 @@ sangraha:
     base-url: ${SANGRAHA_LLM_BASE_URL}
     api-key: ${SANGRAHA_LLM_API_KEY}
     model: ${SANGRAHA_LLM_MODEL}
+    two-pass: ${SANGRAHA_LLM_TWO_PASS}
 
 app:
   outbox:
@@ -79,4 +80,5 @@ logging:
     sm.selflearn.samskrtam: DEBUG
     org.springframework.kafka: DEBUG
     org.apache.kafka: WARN
+
 

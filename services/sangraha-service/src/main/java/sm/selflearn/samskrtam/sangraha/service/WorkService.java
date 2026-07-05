@@ -168,19 +168,6 @@ public class WorkService {
     }
 
     @Transactional
-    public Work updateWork(UUID id, Work update) {
-        Work work = getWorkById(id);
-        work.setTitleRu(update.getTitleRu());
-        work.setTitleEn(update.getTitleEn());
-        work.setTitleSaIast(update.getTitleSaIast());
-        work.setTitleSaDevanagari(update.getTitleSaDevanagari());
-        work.setDescriptionRu(update.getDescriptionRu());
-        work.setDescriptionEn(update.getDescriptionEn());
-        work.setAuthor(update.getAuthor());
-        return workRepository.save(work);
-    }
-
-    @Transactional
     public Work updateWorkBySlug(String slug, Work update) {
         Work work = getWorkBySlug(slug);
         work.setTitleRu(update.getTitleRu());

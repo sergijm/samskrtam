@@ -81,6 +81,7 @@ public class VerseMapper {
     }
 
     public VerseWordDto toWordDto(VerseWord word) {
+        List<Integer> formationRuleNumbers = parseFormationRuleNumbers(word.getFormationRuleNumbers());
         return new VerseWordDto(
             word.getId(),
             word.getPosition(),
@@ -98,7 +99,8 @@ public class VerseMapper {
             word.getMood() != null ? word.getMood().name() : null,
             word.getVoice() != null ? word.getVoice().name() : null,
             word.getGlossRu(),
-            word.getGlossEn()
+            word.getGlossEn(),
+            formationRuleNumbers
         );
     }
 
@@ -113,11 +115,25 @@ public class VerseMapper {
                 .map(m -> {
                     String surface = (String) m.getOrDefault("surface", "");
                     List<String> components = (List<String>) m.getOrDefault("components", Collections.emptyList());
-                    return new SandhiSplitDto(surface, components);
+                    @SuppressWarnings("unchecked")
+                    List<Integer> ruleNumbers = (List<Integer>) m.getOrDefault("ruleNumbers", Collections.emptyList());
+                    return new SandhiSplitDto(surface, components, ruleNumbers);
                 })
                 .toList();
         } catch (Exception e) {
             log.warn("Failed to parse sandhi_splits JSON: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    private List<Integer> parseFormationRuleNumbers(String json) {
+        if (json == null || json.isBlank()) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<Integer>>() {});
+        } catch (Exception e) {
+            log.warn("Failed to parse formation_rule_numbers JSON: {}", e.getMessage());
             return Collections.emptyList();
         }
     }

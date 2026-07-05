@@ -81,8 +81,10 @@ export default function VerseAnalysisPanel({
                                     <span className="text-color-secondary">{'<'}</span>
                                     <span className="text-sm">{split.components.join(' + ')}</span>
                                     <span className="text-color-secondary">{'>'}</span>
-                                </div>
-                            ))}
+                                    {split.ruleNumbers && split.ruleNumbers.length > 0 && (
+                                        <span className="text-xs text-primary font-bold ml-1">
+                                            {split.ruleNumbers.join(', ')}
+                                        </span>
                         </div>
                     </Panel>
 
@@ -105,7 +107,11 @@ export default function VerseAnalysisPanel({
                                 body={(row: VerseWordDto) => (
                                     <div>
                                         <div>{row.lemmaIast}</div>
-                                        {row.root && <div className="text-xs">√{row.root}</div>}
+                                        {row.formationRuleNumbers && row.formationRuleNumbers.length > 0 && (
+                                            <div className="text-xs text-primary font-bold mt-1">
+                                                R.{row.formationRuleNumbers.join(', ')}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             />

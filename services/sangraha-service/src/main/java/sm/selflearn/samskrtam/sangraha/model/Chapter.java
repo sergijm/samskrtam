@@ -34,14 +34,20 @@ public class Chapter {
     @Column(nullable = false)
     private String slug;
 
-    @Column(name = "order_index", nullable = false)
-    private int orderIndex;
+    @Column(name = "order_index")
+    private Integer orderIndex;
 
     @Column(name = "title_ru", nullable = false)
     private String titleRu;
 
     @Column(name = "title_en", nullable = false)
     private String titleEn;
+
+    @Column(name = "title_sa_iast")
+    private String titleSaIast;
+
+    @Column(name = "title_sa_devanagari")
+    private String titleSaDevanagari;
 
     @Column(name = "deleted_at")
     private Instant deletedAt;

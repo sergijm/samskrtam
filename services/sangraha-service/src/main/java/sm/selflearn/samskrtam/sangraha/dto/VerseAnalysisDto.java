@@ -12,6 +12,7 @@ public record VerseAnalysisDto(
 ) {
     public record SandhiSplitDto(
         String surface,
-        List<String> components
+        List<String> components,
+        List<Integer> ruleNumbers
     ) {}
 }

@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import sm.selflearn.samskrtam.sangraha.dto.CreateChapterRequest;
 import sm.selflearn.samskrtam.sangraha.dto.CreateWorkRequest;
+import sm.selflearn.samskrtam.sangraha.dto.UpdateChapterRequest;
 import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorkTreeDto;
 import sm.selflearn.samskrtam.sangraha.model.Chapter;
@@ -70,13 +72,18 @@ public class SangrahaController {
     // ── Chapters ──────────────────────────────────────────────────
 
     @PostMapping("/works/{workSlug}/chapters")
-    public ResponseEntity<Chapter> createChapter(@PathVariable String workSlug, @RequestBody Chapter chapter) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(chapterService.createChapterBySlug(workSlug, chapter));
+    public ResponseEntity<Chapter> createChapter(
+            @PathVariable String workSlug,
+            @Valid @RequestBody CreateChapterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(chapterService.createChapterBySlug(workSlug, request));
     }
 
     @PutMapping("/chapters/{chapterId}")
-    public ResponseEntity<Chapter> updateChapter(@PathVariable UUID chapterId, @RequestBody Chapter chapter) {
-        return ResponseEntity.ok(chapterService.updateChapter(chapterId, chapter));
+    public ResponseEntity<Chapter> updateChapter(
+            @PathVariable UUID chapterId,
+            @RequestBody UpdateChapterRequest request) {
+        return ResponseEntity.ok(chapterService.updateChapterFromTitle(chapterId, request));
     }
 
     @DeleteMapping("/chapters/{chapterId}")
@@ -97,11 +104,6 @@ public class SangrahaController {
         return ResponseEntity.ok(verseService.getVerseDetail(verseId));
     }
 
-    /**
-     * PUT /verses/{id}/text — единое поле text, backend определяет письменность
-     * по Unicode-диапазону деванагари (\u0900–\u097F) и кладёт в textDevanagari
-     * либо textIast соответственно.
-     */
     @PutMapping("/verses/{verseId}/text")
     public ResponseEntity<Verse> updateVerseText(
             @PathVariable UUID verseId,

@@ -39,7 +39,7 @@ const VersePage = () => {
   const handleSaveText = useCallback(async () => {
     if (!verseId) return;
     try {
-      await updateText.mutateAsync({ verseId, data: { textDevanagari: editText, textIast: editText } });
+      await updateText.mutateAsync({ verseId, data: { text: editText } });
       toast.current?.show({ severity: 'success', summary: t('common.saved') });
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });

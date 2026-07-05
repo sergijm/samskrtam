@@ -122,6 +122,7 @@ public class VerseAnalysisSaver {
                     .voice(safeEnum(Voice.class, getString(w, "voice")))
                     .glossRu(getString(w, "glossRu"))
                     .glossEn(getString(w, "glossEn"))
+                    .formationRuleNumbers(getArrayAsString(w, "formationRuleNumbers"))
                     .build());
         }
         return words;
@@ -186,6 +187,22 @@ public class VerseAnalysisSaver {
             return Enum.valueOf(enumClass, value.toUpperCase());
         } catch (IllegalArgumentException e) {
             log.warn("Unknown enum value '{}' for {}, using null", value, enumClass.getSimpleName());
+            return null;
+        }
+    }
+
+    /**
+     * Сериализует JSON-массив целых чисел из node[field] в строку для TEXT-колонки.
+     */
+    public static String getArrayAsString(JsonNode node, String field) {
+        var arr = node.get(field);
+        if (arr == null || !arr.isArray() || arr.isEmpty()) {
+            return null;
+        }
+        try {
+            return new ObjectMapper().writeValueAsString(arr);
+        } catch (Exception e) {
+            log.warn("Failed to serialize array field '{}': {}", field, e.getMessage());
             return null;
         }
     }

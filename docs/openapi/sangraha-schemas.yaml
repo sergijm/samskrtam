@@ -58,10 +58,17 @@ ChapterWithVerses:
       type: string
     orderIndex:
       type: integer
+      nullable: true
     titleRu:
       type: string
     titleEn:
       type: string
+    titleSaIast:
+      type: string
+      nullable: true
+    titleSaDevanagari:
+      type: string
+      nullable: true
     categoryCode:
       type: string
       description: "{workSlug}.{chapterSlug} — код категории лексики"
@@ -150,7 +157,7 @@ VerseAnalysisDto:
             items:
               type: integer
             description: >-
-              Номера правил из sangraha-data/emenau-sandhi-rules.json (только
+              Номера правил из emenau-sandhi-rules.json (только
               applicability=external, диапазон 41–71), применённые к этому переходу,
               в порядке применения. Пустой массив — LLM не уверена в конкретном
               правиле (см. sangraha-prompts/verse-analysis.md).
@@ -212,7 +219,7 @@ VerseWordDto:
       items:
         type: integer
       description: >-
-        Номера правил из sangraha-data/emenau-sandhi-rules.json (только
+        Номера правил из emenau-sandhi-rules.json (только
         applicability=internal, диапазон 1–40), объясняющие, как образована именно
         эта словоформа из корня/основы (морфофонемные изменения при присоединении
         суффикса/окончания) — в порядке применения. Пустой массив, если словоформа
@@ -261,30 +268,34 @@ UpdateWorkRequest:
 
 CreateChapterRequest:
   type: object
-  required: [slug, titleRu, titleEn]
+  required: [title]
   properties:
-    slug:
+    title:
       type: string
-      pattern: '^[a-z0-9][a-z0-9-]*$'
+      description: >-
+        Сырой ввод названия на любом из трёх языков (ru/en/санскрит,
+        IAST или devanagari). Остальные поля Chapter генерируются через LLM
+        (см. sangraha-service.md §5.3).
     orderIndex:
       type: integer
-    titleRu:
-      type: string
-    titleEn:
-      type: string
+      nullable: true
+      description: >-
+        Опциональный порядковый номер. Если не передан — backend вычисляет
+        как max(orderIndex) + 1 среди глав произведения.
 
 UpdateChapterRequest:
   type: object
   properties:
-    slug:
+    title:
       type: string
-      pattern: '^[a-z0-9][a-z0-9-]*$'
+      description: >-
+        Сырой ввод названия на любом из трёх языков. Если передан — 
+        выполняется LLM-перевод и обновляются все четыре title-поля.
     orderIndex:
       type: integer
-    titleRu:
-      type: string
-    titleEn:
-      type: string
+      nullable: true
+      description: >-
+        Если передан — обновляется только порядковый номер.
 
 UpdateVerseTextRequest:
   type: object
@@ -310,7 +321,14 @@ ChapterSummary:
       type: string
     orderIndex:
       type: integer
+      nullable: true
     titleRu:
       type: string
     titleEn:
       type: string
+    titleSaIast:
+      type: string
+      nullable: true
+    titleSaDevanagari:
+      type: string
+      nullable: true

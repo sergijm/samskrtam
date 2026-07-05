@@ -5,10 +5,8 @@ import { InputNumber } from 'primereact/inputnumber';
 import { Button } from 'primereact/button';
 
 interface ChapterForm {
-  slug: string;
-  titleRu: string;
-  titleEn: string;
-  orderIndex: number;
+  title: string;
+  orderIndex: number | null;
 }
 
 interface ChapterDialogProps {
@@ -45,20 +43,14 @@ export default function ChapterDialog({
     >
       <div className="flex flex-column gap-3">
         <div>
-          <label htmlFor="ch-slug">{t('sangraha.slug')}</label>
-          <InputText id="ch-slug" value={form.slug} onChange={(e) => onFormChange({ ...form, slug: e.target.value })} className="w-full" />
+          <label htmlFor="ch-title">{t('sangraha.fields.title')}</label>
+          <InputText id="ch-title" value={form.title} onChange={(e) => onFormChange({ ...form, title: e.target.value })} className="w-full" />
+          <small className="text-color-secondary">{t('sangraha.placeholder.text')}</small>
         </div>
         <div>
-          <label htmlFor="ch-titleRu">{t('sangraha.titleRu')}</label>
-          <InputText id="ch-titleRu" value={form.titleRu} onChange={(e) => onFormChange({ ...form, titleRu: e.target.value })} className="w-full" />
-        </div>
-        <div>
-          <label htmlFor="ch-titleEn">{t('sangraha.titleEn')}</label>
-          <InputText id="ch-titleEn" value={form.titleEn} onChange={(e) => onFormChange({ ...form, titleEn: e.target.value })} className="w-full" />
-        </div>
-        <div>
-          <label htmlFor="ch-order">{t('sangraha.orderIndex')}</label>
-          <InputNumber id="ch-order" value={form.orderIndex} onValueChange={(e) => onFormChange({ ...form, orderIndex: e.value ?? 0 })} className="w-full" />
+          <label htmlFor="ch-order">{t('sangraha.fields.orderIndex')}</label>
+          <InputNumber id="ch-order" value={form.orderIndex} onValueChange={(e) => onFormChange({ ...form, orderIndex: e.value ?? null })} className="w-full" useGrouping={false} />
+          <small className="text-color-secondary">{t('sangraha.orderIndexOptional')}</small>
         </div>
       </div>
     </Dialog>

@@ -10,6 +10,7 @@ import { useAuthStore } from '../../store/authStore';
 import WorkCard from '../../components/sangraha/WorkCard';
 import WorkFormDialog from '../../components/sangraha/WorkFormDialog';
 import DeleteConfirmDialog from '../../components/sangraha/DeleteConfirmDialog';
+
 const WorksPage = () => {
   const { t } = useTranslation();
   const toast = useRef<Toast>(null);
@@ -21,13 +22,16 @@ const WorksPage = () => {
 
   const [dialogVisible, setDialogVisible] = useState(false);
   const [deleteSlug, setDeleteSlug] = useState<string | null>(null);
-  const [form, setForm] = useState({ slug: '', titleRu: '', titleEn: '', descriptionRu: '', descriptionEn: '', author: '' });
+  const [form, setForm] = useState({ title: '', description: '' });
 
   const handleCreate = async () => {
     try {
-      await createWork.mutateAsync(form);
+      await createWork.mutateAsync({
+        title: form.title,
+        description: form.description || undefined,
+      });
       setDialogVisible(false);
-      setForm({ slug: '', titleRu: '', titleEn: '', descriptionRu: '', descriptionEn: '', author: '' });
+      setForm({ title: '', description: '' });
       toast.current?.show({ severity: 'success', summary: t('common.success'), detail: t('sangraha.addWork') });
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
@@ -95,18 +99,17 @@ const WorksPage = () => {
         form={form}
         onFormChange={setForm}
         onSave={handleCreate}
-            loading={createWork.isPending}
-          />
+        loading={createWork.isPending}
+      />
 
       <DeleteConfirmDialog
         visible={!!deleteSlug}
         onHide={() => setDeleteSlug(null)}
         onConfirm={handleDelete}
-            loading={deleteWork.isPending}
-          />
-        </div>
+        loading={deleteWork.isPending}
+      />
+    </div>
   );
 };
 
 export default WorksPage;
-

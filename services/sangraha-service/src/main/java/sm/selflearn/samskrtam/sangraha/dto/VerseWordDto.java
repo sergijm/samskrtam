@@ -1,6 +1,7 @@
 package sm.selflearn.samskrtam.sangraha.dto;
 
 import java.util.UUID;
+import java.util.List;
 
 public record VerseWordDto(
     UUID id,
@@ -19,5 +20,6 @@ public record VerseWordDto(
     String mood,
     String voice,
     String glossRu,
-    String glossEn
+    String glossEn,
+    List<Integer> formationRuleNumbers
 ) {}

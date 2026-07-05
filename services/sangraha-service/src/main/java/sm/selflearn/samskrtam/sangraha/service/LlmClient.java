@@ -2,8 +2,6 @@ package sm.selflearn.samskrtam.sangraha.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.FunctionDefinition;
@@ -21,7 +19,15 @@ import java.util.List;
  * HTTP-клиент к OpenAI API для анализа санскритских стихов через tool calling.
  * Использует официальный OpenAI Java SDK (com.openai:openai-java).
  * Совместим с любым OpenAI-compatible endpoint (ADR-006).
- * Промпт загружается из classpath-ресурса (prompts/verse-analysis.md).
+ * <p>
+ * Поддерживает два режима работы, переключаемых флагом {@code llmProperties.twoPass}:
+ * <ul>
+ *   <li>{@code twoPass=false} (по умолчанию) — single-pass: один вызов с {@code tool_choice}=forced на
+ *       {@code submit_verse_analysis} с промптом {@code verse-analysis.md}.</li>
+ *   <li>{@code twoPass=true} — two-pass: первый вызов без tool_choice (свободное рассуждение
+ *       по шагам, промпт {@code verse-analysis-pass1-reasoning.md}), затем второй вызов
+ *       с {@code tool_choice}=forced (формализация, промпт {@code verse-analysis-pass2-formalize.md}).</li>
+ * </ul>
  */
 @Component
 @RequiredArgsConstructor
@@ -30,7 +36,8 @@ public class LlmClient {
 
     private final LlmProperties llmProperties;
     private final ObjectMapper objectMapper;
-    private final PromptLoader promptLoader;
+    private final LlmPromptBuilder promptBuilder;
+    private final LlmToolSchemaBuilder toolSchemaBuilder;
 
     private OpenAIClient openAIClient;
 
@@ -42,24 +49,132 @@ public class LlmClient {
                 .baseUrl(llmProperties.getBaseUrl())
                 .apiKey(llmProperties.getApiKey())
                 .build();
-        log.info("LlmClient initialized with baseUrl={}, model={}", llmProperties.getBaseUrl(), llmProperties.getModel());
+        log.info("LlmClient initialized with baseUrl={}, model={}, twoPass={}, maxCompletionTokens={}",
+                llmProperties.getBaseUrl(), llmProperties.getModel(), llmProperties.isTwoPass(),
+                llmProperties.getMaxCompletionTokens());
     }
 
     /**
-     * Вызывает LLM с tool calling через OpenAI SDK.
-     *
-     * @return полный ChatCompletion, сериализованный в JsonNode, или null при ошибке
+     * Вызывает LLM для анализа стиха — в зависимости от {@code llmProperties.twoPass}.
+     * <ul>
+     *   <li>{@code twoPass=false}: текущее поведение single-pass.</li>
+     *   <li>{@code twoPass=true}: two-pass (reasoning + formalize).</li>
+     * </ul>
      */
     public JsonNode call(Verse verse) {
+        if (llmProperties.isTwoPass()) {
+            return callTwoPass(verse);
+        }
+        return callSinglePass(verse);
+    }
+
+    /**
+     * Single-pass: один вызов с tool_choice forced.
+     */
+    private JsonNode callSinglePass(Verse verse) {
         try {
-            ChatCompletionCreateParams params = buildParams(verse);
+            ChatCompletionCreateParams params = buildSinglePassParams(verse);
+            if (log.isDebugEnabled()) {
+                var rawString = objectMapper.writeValueAsString(params._body());
+                log.debug(rawString);
+            }
+
             ChatCompletion response = openAIClient.chat().completions().create(params);
-            log.debug("LLM call successful, model={}, finishReason={}",
+            log.info("Single-pass LLM call successful, model={}, finishReason={}",
                     response.model(),
-                    response.choices().get(0).finishReason());
+                    response.choices().getFirst().finishReason());
+
+            if (log.isDebugEnabled()) {
+                var rawString = objectMapper.writeValueAsString(response);
+                log.debug(rawString);
+            }
+
             return objectMapper.valueToTree(response);
         } catch (Exception e) {
-            log.error("Failed to call LLM API for verse {}", verse.getId(), e);
+            log.error("Failed to call LLM API (single-pass) for verse {}", verse.getId(), e);
+            return null;
+        }
+    }
+
+    /**
+     * Two-pass: первый вызов — свободное рассуждение (без tools), второй — формализация с tool_choice forced.
+     * Оба прохода логируются отдельно.
+     * <p>
+     * Цепочка сообщений для второго вызова:
+     * <ol>
+     *   <li>system(pass2-formalize)</li>
+     *   <li>user(оригинальный стих + правила)</li>
+     *   <li>assistant(ответ pass1 — свободное рассуждение)</li>
+     *   <li>user(краткая инструкция "submit now")</li>
+     * </ol>
+     */
+    private JsonNode callTwoPass(Verse verse) {
+        try {
+            // --- Pass 1: свободное рассуждение без tool_choice ---
+            String pass1SystemPrompt = promptBuilder.extractPass1SystemPrompt();
+            String userPrompt = promptBuilder.buildUserPrompt(verse);
+            var pass1Builder = ChatCompletionCreateParams.builder()
+                    .model(llmProperties.getModel())
+                    .addSystemMessage(pass1SystemPrompt)
+                    .addUserMessage(userPrompt);
+            if (llmProperties.getMaxCompletionTokens() != null) {
+                pass1Builder.maxCompletionTokens(llmProperties.getMaxCompletionTokens());
+            }
+            ChatCompletionCreateParams pass1Params = pass1Builder.build();
+            ChatCompletion pass1Response = openAIClient.chat().completions().create(pass1Params);
+            String pass1Content = pass1Response.choices().get(0).message().content().orElse("");
+            log.info("Pass 1 (reasoning) for verse {}: {} chars, finishReason={}",
+                    verse.getId(), pass1Content.length(),
+                    pass1Response.choices().get(0).finishReason());
+
+            // --- Pass 2: формализация с tool_choice forced ---
+            String pass2SystemPrompt = promptBuilder.extractPass2SystemPrompt();
+            String pass2UserInstruction = "Please submit your analysis above through submit_verse_analysis now, " +
+                    "following the field-by-field mapping in the system instructions.";
+
+            String schemaJson = objectMapper.writeValueAsString(toolSchemaBuilder.buildFunctionDefinitionSchema());
+            FunctionParameters functionParameters = objectMapper.readValue(schemaJson, FunctionParameters.class);
+
+            var functionDefinition = FunctionDefinition.builder()
+                    .name(TOOL_NAME)
+                    .description("Submit complete verse analysis: transcription, translation, sandhi splits, and per-word grammar.")
+                    .parameters(functionParameters)
+                    .build();
+
+            ChatCompletionTool tool = ChatCompletionTool.ofFunction(
+                    ChatCompletionFunctionTool.builder()
+                            .function(functionDefinition)
+                            .build()
+            );
+
+            var pass2Builder = ChatCompletionCreateParams.builder()
+                    .model(llmProperties.getModel())
+                    .addSystemMessage(pass2SystemPrompt)
+                    .addUserMessage(promptBuilder.buildUserPrompt(verse))
+                    .addAssistantMessage(pass1Content)
+                    .addUserMessage(pass2UserInstruction)
+                    .tools(List.of(tool))
+                    .toolChoice(ChatCompletionToolChoiceOption.ofNamedToolChoice(
+                            ChatCompletionNamedToolChoice.builder()
+                                    .function(ChatCompletionNamedToolChoice.Function.builder()
+                                            .name(TOOL_NAME)
+                                            .build())
+                                    .build()
+                    ));
+            if (llmProperties.getMaxCompletionTokens() != null) {
+                pass2Builder.maxCompletionTokens(llmProperties.getMaxCompletionTokens());
+            }
+            ChatCompletionCreateParams pass2Params = pass2Builder.build();
+
+            ChatCompletion pass2Response = openAIClient.chat().completions().create(pass2Params);
+            log.info("Pass 2 (formalize) for verse {}: finishReason={}",
+                    verse.getId(),
+                    pass2Response.choices().get(0).finishReason());
+
+            return objectMapper.valueToTree(pass2Response);
+
+        } catch (Exception e) {
+            log.error("Failed to call LLM API (two-pass) for verse {}", verse.getId(), e);
             return null;
         }
     }
@@ -120,15 +235,16 @@ public class LlmClient {
     }
 
     /**
-     * Собирает ChatCompletionCreateParams: system message из ресурса prompts/verse-analysis.md,
-     * tool definition (submit_verse_analysis), принудительный tool_choice.
+     * Собирает ChatCompletionCreateParams для single-pass:
+     * system message из LlmPromptBuilder,
+     * tool definition (submit_verse_analysis) из LlmToolSchemaBuilder,
+     * принудительный tool_choice.
      */
-    private ChatCompletionCreateParams buildParams(Verse verse) throws Exception {
-        String systemPrompt = extractSystemPrompt(promptLoader.getVerseAnalysisPrompt());
-        String userPrompt = buildUserPrompt(verse);
+private ChatCompletionCreateParams buildSinglePassParams(Verse verse) throws Exception {
+        String systemPrompt = promptBuilder.extractSystemPrompt();
+        String userPrompt = promptBuilder.buildUserPrompt(verse);
 
-        ObjectNode schemaNode = buildJsonSchema();
-        String schemaJson = objectMapper.writeValueAsString(schemaNode);
+        String schemaJson = objectMapper.writeValueAsString(toolSchemaBuilder.buildFunctionDefinitionSchema());
         FunctionParameters functionParameters = objectMapper.readValue(schemaJson, FunctionParameters.class);
 
         var functionDefinition = FunctionDefinition.builder()
@@ -143,7 +259,7 @@ public class LlmClient {
                         .build()
         );
 
-        return ChatCompletionCreateParams.builder()
+        var builder = ChatCompletionCreateParams.builder()
                 .model(llmProperties.getModel())
                 .addSystemMessage(systemPrompt)
                 .addUserMessage(userPrompt)
@@ -154,147 +270,12 @@ public class LlmClient {
                                         .name(TOOL_NAME)
                                         .build())
                                 .build()
-                ))
-                .build();
-    }
-
-    /**
-     * Извлекает содержимое секции ## system из markdown-файла промпта.
-     */
-    private String extractSystemPrompt(String fullPrompt) {
-        int systemStart = fullPrompt.indexOf("## system\n");
-        if (systemStart < 0) return fullPrompt;
-        int codeStart = fullPrompt.indexOf("```\n", systemStart);
-        if (codeStart < 0) return fullPrompt;
-        int codeEnd = fullPrompt.indexOf("\n```", codeStart + 5);
-        if (codeEnd < 0) return fullPrompt;
-        return fullPrompt.substring(codeStart + 5, codeEnd).trim();
-    }
-
-    private String buildUserPrompt(Verse verse) {
-        var sb = new StringBuilder("Analyze the following Sanskrit verse:\n\n");
-        if (verse.getTextDevanagari() != null && !verse.getTextDevanagari().isBlank()) {
-            sb.append("Devanagari: ").append(verse.getTextDevanagari()).append("\n");
+                ));
+        if (llmProperties.getMaxCompletionTokens() != null) {
+            builder.maxCompletionTokens(llmProperties.getMaxCompletionTokens());
         }
-        if (verse.getTextIast() != null && !verse.getTextIast().isBlank()) {
-            sb.append("IAST: ").append(verse.getTextIast()).append("\n");
-        }
-        sb.append("\nProvide complete analysis using the submit_verse_analysis function.");
-
-        // Добавляем контекст внешних правил сандхи, если они загружены
-        JsonNode sandhiRulesNode = promptLoader.getEmenauSandhiRules();
-        if (sandhiRulesNode != null) {
-            try {
-                String sandhiRules = objectMapper.writeValueAsString(sandhiRulesNode);
-                if (!sandhiRules.isEmpty()) {
-                    sb.append("\n\n---\n");
-                    sb.append("External sandhi rules (rules 41–71) for sandhi split reference:\n");
-                    sb.append(sandhiRules);
-                    sb.append("\n\nIMPORTANT: Only use these external rules (41–71) for sandhi split analysis. ");
-                    sb.append("Internal rules (1–40) explain word-internal form changes and must NOT be cited in sandhi splits.");
-                }
-            } catch (Exception e) {
-                log.warn("Failed to serialize sandhi rules for verse {}", verse.getId(), e);
-            }
-        }
-
-        return sb.toString();
+        return builder.build();
     }
 
-    private ObjectNode buildJsonSchema() {
-        ObjectNode params = objectMapper.createObjectNode();
-        params.put("type", "object");
 
-        ArrayNode required = params.putArray("required");
-        required.add("textDevanagari").add("textIast").add("translationRu")
-                .add("translationEn").add("sandhiSplits").add("words");
-
-        ObjectNode properties = params.putObject("properties");
-        properties.putObject("textDevanagari").put("type", "string").put("description", "Verse text in Devanagari script");
-        properties.putObject("textIast").put("type", "string").put("description", "Verse text in IAST transliteration");
-        properties.putObject("translationRu").put("type", "string").put("description", "Russian translation");
-        properties.putObject("translationEn").put("type", "string").put("description", "English translation");
-
-        // sandhiSplits
-        ObjectNode sandhiItem = properties.putObject("sandhiSplits");
-        sandhiItem.put("type", "array");
-        sandhiItem.put("description", "Analysis of each sandhi split in the verse");
-        ObjectNode sandhiItemObj = sandhiItem.putObject("items");
-        sandhiItemObj.put("type", "object");
-        ArrayNode sandhiRequired = sandhiItemObj.putArray("required");
-        sandhiRequired.add("surface").add("components").add("ruleNumbers");
-        ObjectNode sandhiProps = sandhiItemObj.putObject("properties");
-        sandhiProps.putObject("surface").put("type", "string");
-        sandhiProps.putObject("components").put("type", "array").putObject("items").put("type", "string");
-        sandhiProps.putObject("ruleNumbers").put("type", "array").putObject("items").put("type", "integer");
-
-        // words
-        ObjectNode wordItem = properties.putObject("words");
-        wordItem.put("type", "array");
-        wordItem.put("description", "Grammatical analysis of each word");
-        ObjectNode wordItemObj = wordItem.putObject("items");
-        wordItemObj.put("type", "object");
-
-        ArrayNode wordRequired = wordItemObj.putArray("required");
-        wordRequired.add("position").add("surfaceIast").add("surfaceDevanagari")
-                .add("lemmaIast").add("stem").add("root").add("pos").add("glossRu").add("glossEn")
-                .add("formationRuleNumbers");
-
-        ObjectNode wordProps = wordItemObj.putObject("properties");
-        wordProps.putObject("position").put("type", "integer");
-        wordProps.putObject("surfaceIast").put("type", "string");
-        wordProps.putObject("surfaceDevanagari").put("type", "string");
-        wordProps.putObject("lemmaIast").put("type", "string");
-        wordProps.putObject("stem").put("type", "string");
-        wordProps.putObject("root").put("type", "string");
-
-        ObjectNode posField = wordProps.putObject("pos");
-        posField.put("type", "string");
-        posField.putArray("enum")
-                .add("NOUN").add("VERB").add("ADJECTIVE").add("ADVERB").add("PRONOUN")
-                .add("PARTICLE").add("CONJUNCTION").add("PREPOSITION").add("INTERJECTION").add("NUMERAL").add("OTHER");
-
-        ObjectNode genderField = wordProps.putObject("gender");
-        genderField.put("type", "string");
-        genderField.putArray("enum")
-                .add("MASCULINE").add("FEMININE").add("NEUTER").add("UNSPECIFIED");
-
-        ObjectNode caseField = wordProps.putObject("caseType");
-        caseField.put("type", "string");
-        caseField.putArray("enum")
-                .add("NOMINATIVE").add("ACCUSATIVE").add("INSTRUMENTAL").add("DATIVE")
-                .add("ABLATIVE").add("GENITIVE").add("LOCATIVE").add("VOCATIVE").add("UNSPECIFIED");
-
-        ObjectNode numField = wordProps.putObject("numberType");
-        numField.put("type", "string");
-        numField.putArray("enum")
-                .add("SINGULAR").add("DUAL").add("PLURAL").add("UNSPECIFIED");
-
-        ObjectNode personField = wordProps.putObject("person");
-        personField.put("type", "string");
-        personField.putArray("enum")
-                .add("FIRST").add("SECOND").add("THIRD").add("UNSPECIFIED");
-
-        ObjectNode tenseField = wordProps.putObject("tense");
-        tenseField.put("type", "string");
-        tenseField.putArray("enum")
-                .add("PRESENT").add("IMPERFECT").add("AORIST").add("PERFECT")
-                .add("PLUPERFECT").add("FUTURE").add("CONDITIONAL").add("BENEDICTIVE").add("UNSPECIFIED");
-
-        ObjectNode moodField = wordProps.putObject("mood");
-        moodField.put("type", "string");
-        moodField.putArray("enum")
-                .add("INDICATIVE").add("IMPERATIVE").add("OPTATIVE").add("CONDITIONAL").add("SUBJUNCTIVE").add("UNSPECIFIED");
-
-        ObjectNode voiceField = wordProps.putObject("voice");
-        voiceField.put("type", "string");
-        voiceField.putArray("enum")
-                .add("ACTIVE").add("MIDDLE").add("PASSIVE").add("UNSPECIFIED");
-
-        wordProps.putObject("glossRu").put("type", "string");
-        wordProps.putObject("glossEn").put("type", "string");
-        wordProps.putObject("formationRuleNumbers").put("type", "array").putObject("items").put("type", "integer");
-
-        return params;
-    }
 }

@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useWorkTree, useCreateChapter, useDeleteChapter, useCreateVerse, useDeleteVerse } from '../../hooks/useSangraha';
+import { useWorkTree, useCreateChapter, useDeleteChapter, useCreateVerse, useDeleteVerse, useUpdateWork } from '../../hooks/useSangraha';
 import { useAuthStore } from '../../store/authStore';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
@@ -10,6 +10,7 @@ import { useRef, useState, useCallback } from 'react';
 import ChapterTreeBrowser from '../../components/sangraha/ChapterTreeBrowser';
 import ChapterDialog from '../../components/sangraha/ChapterDialog';
 import VerseDialog from '../../components/sangraha/VerseDialog';
+import WorkEditDialog from '../../components/sangraha/WorkEditDialog';
 import './WorkPage.css';
 
 const WorkPage = () => {
@@ -22,6 +23,7 @@ const WorkPage = () => {
   const deleteChapter = useDeleteChapter();
   const createVerse = useCreateVerse();
   const deleteVerse = useDeleteVerse();
+  const updateWork = useUpdateWork();
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.roles?.includes('ADMIN') ?? false;
 
@@ -29,8 +31,34 @@ const WorkPage = () => {
   const [verseDialog, setVerseDialog] = useState(false);
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
-  const [chapterForm, setChapterForm] = useState({ slug: '', titleRu: '', titleEn: '', orderIndex: 0 });
+  const [chapterForm, setChapterForm] = useState({ title: '', orderIndex: null as number | null });
   const [verseOrderIndex, setVerseOrderIndex] = useState(0);
+  const [editDialogVisible, setEditDialogVisible] = useState(false);
+  const [editForm, setEditForm] = useState({ titleRu: '', titleEn: '', descriptionRu: '', descriptionEn: '', author: '' });
+
+  const openEditDialog = useCallback(() => {
+    if (!work) return;
+    setEditForm({
+      titleRu: work.titleRu || '',
+      titleEn: work.titleEn || '',
+      descriptionRu: work.descriptionRu || '',
+      descriptionEn: work.descriptionEn || '',
+      author: work.author || '',
+    });
+    setEditDialogVisible(true);
+  }, [work]);
+
+  const handleEditSave = useCallback(async () => {
+    if (!workSlug) return;
+    try {
+      await updateWork.mutateAsync({ workSlug, data: editForm });
+      setEditDialogVisible(false);
+      toast.current?.show({ severity: 'success', summary: t('common.success'), detail: t('sangraha.editWork') });
+    } catch {
+      toast.current?.show({ severity: 'error', summary: t('common.error') });
+    }
+  }, [workSlug, editForm, updateWork, t]);
+
   const toggleChapter = useCallback((chapterId: string) => {
     setExpandedChapters(prev => {
       const next = new Set(prev);
@@ -43,9 +71,9 @@ const WorkPage = () => {
   const handleAddChapter = useCallback(async () => {
     if (!workSlug) return;
     try {
-      await createChapter.mutateAsync({ workSlug, data: chapterForm });
-      setChapterDialog(false);
-      setChapterForm({ slug: '', titleRu: '', titleEn: '', orderIndex: 0 });
+      await createChapter.mutateAsync({ workSlug, data: { title: chapterForm.title, orderIndex: chapterForm.orderIndex ?? undefined } });
+            setChapterDialog(false);
+            setChapterForm({ title: '', orderIndex: null });
       toast.current?.show({ severity: 'success', summary: t('common.success'), detail: t('sangraha.chapterAdded') });
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
@@ -96,12 +124,20 @@ const WorkPage = () => {
           <Button icon="pi pi-arrow-left" className="p-button-rounded p-button-text" onClick={() => navigate('/sangraha')} />
           <h1 className="text-2xl font-bold m-0">{work.titleEn || work.titleRu}</h1>
         </div>
-        {isAdmin && (
-          <Button
-            label={t('sangraha.addChapter')}
-            icon="pi pi-plus"
-            onClick={() => setChapterDialog(true)}
-          />
+                {isAdmin && (
+          <div className="flex gap-2">
+            <Button
+              label={t('common.edit')}
+              icon="pi pi-pencil"
+              className="p-button-outlined"
+              onClick={openEditDialog}
+            />
+            <Button
+              label={t('sangraha.addChapter')}
+              icon="pi pi-plus"
+              onClick={() => setChapterDialog(true)}
+            />
+          </div>
         )}
       </div>
 
@@ -125,13 +161,22 @@ const WorkPage = () => {
         loading={createChapter.isPending}
       />
 
-      <VerseDialog
+            <VerseDialog
         visible={verseDialog}
         onHide={() => { setVerseDialog(false); setSelectedChapterId(null); }}
         orderIndex={verseOrderIndex}
         onOrderIndexChange={setVerseOrderIndex}
         onSave={handleAddVerse}
         loading={createVerse.isPending}
+      />
+
+      <WorkEditDialog
+        visible={editDialogVisible}
+        onHide={() => setEditDialogVisible(false)}
+        form={editForm}
+        onFormChange={setEditForm}
+        onSave={handleEditSave}
+        loading={updateWork.isPending}
       />
     </div>
   );

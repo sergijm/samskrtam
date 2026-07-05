@@ -13,4 +13,12 @@ public class LlmProperties {
     private String baseUrl;
     private String apiKey;
     private String model;
+    /** Если true — используется two-pass (reasoning → formalize), иначе single-pass (текущее поведение) */
+    private boolean twoPass = false;
+    /**
+     * Максимальное количество токенов на completion-ответ.
+     * Если null — используется дефолт провайдера.
+     * Рекомендуется 8192 для длинных стихов с two-pass.
+     */
+    private Long maxCompletionTokens;
 }

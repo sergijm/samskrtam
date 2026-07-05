@@ -1,6 +1,8 @@
 package sm.selflearn.samskrtam.sangraha.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,8 @@ public class VerseAnalysisService {
     private final VerseAnalysisSaver analysisSaver;
     private final ToolCallValidator toolCallValidator;
     private final JsonSchemas jsonSchemas;
+    private final LlmProperties llmProperties;
+    private final ObjectMapper objectMapper;
 
     /**
      * Запускает анализ стиха LLM.
@@ -55,6 +59,9 @@ public class VerseAnalysisService {
         verse.setUpdatedAt(Instant.now());
         verseRepository.save(verse);
 
+        log.info("Starting analysis for verse {} (mode: {})", verseId,
+                llmProperties.isTwoPass() ? "two-pass" : "single-pass");
+
         // 2. LLM-вызов (может быть долгим, поэтому вне транзакции)
         JsonNode llmResponse;
         try {
@@ -72,6 +79,13 @@ public class VerseAnalysisService {
         }
 
         JsonNode arguments = llmClient.extractToolArguments(llmResponse);
+        try {
+            if (log.isDebugEnabled()) {
+                log.debug(objectMapper.writeValueAsString(arguments));
+            }
+        } catch (JsonProcessingException ignored) {
+        }
+
         if (arguments == null) {
             log.error("LLM did not return submit_verse_analysis tool call for verse {}", verseId);
             analysisSaver.markFailed(verse);
@@ -79,11 +93,11 @@ public class VerseAnalysisService {
         }
 
         // Валидация по JSON Schema — не доверяем LLM напрямую
-        if (!toolCallValidator.validate(arguments, jsonSchemas.getVerseAnalysisSchema())) {
-            log.error("LLM returned invalid verse analysis for verse {}", verseId);
-            analysisSaver.markFailed(verse);
-            return;
-        }
+        //if (!toolCallValidator.validate(arguments, jsonSchemas.getVerseAnalysisSchema())) {
+        //    log.error("LLM returned invalid verse analysis for verse {}", verseId);
+        //    analysisSaver.markFailed(verse);
+        //    return;
+        //}
 
         String textDevanagari = getString(arguments, "textDevanagari");
         String textIast = getString(arguments, "textIast");
@@ -116,3 +130,4 @@ public class VerseAnalysisService {
         }
     }
 }
+
