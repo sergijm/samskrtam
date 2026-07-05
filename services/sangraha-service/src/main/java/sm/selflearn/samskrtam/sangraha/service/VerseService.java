@@ -27,6 +27,7 @@ public class VerseService {
     private final VerseWordRepository verseWordRepository;
     private final ChapterService chapterService;
     private final VerseMapper verseMapper;
+    private final TransliterationService transliterationService;
 
     @Transactional(readOnly = true)
     public List<Verse> getVersesByChapterId(UUID chapterId) {
@@ -68,14 +69,19 @@ public class VerseService {
         return verseRepository.save(verse);
     }
 
+    /**
+     * PUT /verses/{id}/text — единое поле text.
+     * Backend определяет письменность по Unicode-диапазону деванагари (\u0900–\u097F)
+     * и кладёт в textDevanagari либо textIast.
+     */
     @Transactional
-    public Verse updateVerseText(UUID id, String textDevanagari, String textIast) {
+    public Verse updateVerseText(UUID id, String text) {
         Verse verse = getVerseById(id);
-        if (textDevanagari != null) {
-            verse.setTextDevanagari(textDevanagari);
-        }
-        if (textIast != null) {
-            verse.setTextIast(textIast);
+        String script = transliterationService.detectScript(text);
+        if ("devanagari".equals(script)) {
+            verse.setTextDevanagari(text);
+        } else {
+            verse.setTextIast(text);
         }
         verse.setUpdatedAt(Instant.now());
         return verseRepository.save(verse);

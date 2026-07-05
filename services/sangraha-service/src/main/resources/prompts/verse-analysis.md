@@ -1,4 +1,4 @@
-﻿# Prompt: verse analysis (`submit_verse_analysis`)
+# Prompt: verse analysis (`submit_verse_analysis`)
 
 > Used in sangraha-service.md §5.1.
 > Tool: `submit_verse_analysis` — parameters: textDevanagari, textIast, translationRu,

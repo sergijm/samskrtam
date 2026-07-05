@@ -97,28 +97,32 @@ SANGRAHA_LLM_MODEL        # например gpt-4.1 / другая OpenAI-со�
 ```
 
 Backend вызывает `/chat/completions` (или `/responses`) с промптом (файл
-[`../prompts/verse-analysis.md`](../prompts/verse-analysis.md)) и
+[`prompts/verse-analysis.md`](./prompts/verse-analysis.md)) и
 **одним** объявленным tool — модель обязана вернуть результат через `tool_calls`,
 а не свободным текстом.
 
-Tool `submit_verse_analysis` с параметрами: textDevanagari, textIast, translationRu, translationEn, sandhiSplits (массив {surface, components[]}), words (массив: position, surfaceIast, surfaceDevanagari, lemmaIast, stem, root, pos, gender, caseType, numberType, person, tense, mood, voice, glossRu, glossEn)
+Tool `submit_verse_analysis` с параметрами: textDevanagari, textIast, translationRu, translationEn, sandhiSplits (массив {surface, components[], ruleNumbers[]}), words (массив: position, surfaceIast, surfaceDevanagari, lemmaIast, stem, root, pos, gender, caseType, numberType, person, tense, mood, voice, glossRu, glossEn, formationRuleNumbers[])
+
+**Письменность:** везде, кроме `textDevanagari` и `surfaceDevanagari`, — только IAST.
+В частности, `sandhiSplits.surface`/`components`, `lemmaIast`, `stem`, `root` — IAST,
+даже если исходный текст стиха был введён только в деванагари. Это нужно проверять
+при валидации ответа LLM (наличие символов деванагари в этих полях — признак ошибки
+модели).
+
+Справочник правил сандхи (нумерация 1–71, внутренние + внешние, из Эмено, с
+глоссарием фонетических терминов) —
+[`sangraha-data/emenau-sandhi-rules.json`](./sangraha-data/emenau-sandhi-rules.json).
+Правила `applicability=external` (41–71) — граница между словами, цитируются в
+`sandhiSplits.ruleNumbers`. Правила `applicability=internal` (1–40) — как образована
+сама словоформа из корня/основы (морфофонемные изменения при словообразовании),
+цитируются в `words[].formationRuleNumbers`; **не путать поля местами**. Если сандхи
+на стыке слов нет — граница не попадает в `sandhiSplits`; если словоформа не требует
+объяснения через внутренние сандхи — `formationRuleNumbers: []`. Если правило неясно
+в любом из двух случаев — пустой массив, не угадывать номер.
 
 Backend:
 1. Валидирует `tool_calls[0].function.arguments` по этой схеме (например через JSON Schema validator, не доверяем модели).
-2. В одной транзакции: обновляет `Verse.textDevanagari/textIast` (если не были заданы вручную), пишет `VerseAnalysis` (перезаписывая предыдущую — см. §8), пересоздаёт `VerseWord[]` (deleteAll + saveAll) для стиха.
-2e. Статус `Verse.status → ANALYZED` — **последним**.
-
-**Гарантии атомарности (контракт):**
-- Любое исключение на шагах 2a–2d откатывает транзакцию целиком.
-- Статус не становится ANALYZED, а возвращается в DRAFT (можно повторить).
-- `OutboxEvent` не публикуется частично: если payload не сериализовался — транзакция откатывается полностью.
-- Исключение пробрасывается наружу → HTTP 500.
-
-**Вне транзакции:**
-- Перед LLM → `ANALYZING` (блокировка повторов).
-- Ошибка LLM/невалид → `FAILED`.
-- Техническая ошибка → `DRAFT`.
-- Успех → `ANALYZED`.
+2. В одной транзакции: обновляет `Verse.textDevanagari/textIast` (если не были заданы вручную), пишет `VerseAnalysis` (перезаписывая предыдущую — см. §8), пересоздаёт `VerseWord[]` для стиха, переводит `Verse.status → ANALYZED`.
 3. Пишет `OutboxEvent(VERSE_VOCABULARY_EXTRACTED)` в той же транзакции (transactional outbox).
 
 Если пользователь ввёл текст только в одном представлении (только devanagari или только
@@ -134,8 +138,7 @@ iast) — второе представление также генерируе�
 Devanagari-диапазон Unicode → `SANSKRIT`; кириллица → `RU`; латиница → `EN`.
 
 **Шаг 2 — LLM tool calling.** Один вызов `/chat/completions` с промптом (файл
-
-[`docs/prompts/work-analysis.md`](../prompts/work-analysis.md)) и **один**
+[`prompts/work-metadata.md`](./prompts/work-metadata.md)) и **один**
 объявленный tool — `submit_work_metadata`, модель обязана вернуть результат через
 `tool_calls`, а не свободным текстом.
 
@@ -205,10 +208,17 @@ Payload/типы события переиспользуются как shared D
     отображаются результаты `GET /verses/{verseId}` (объект `analysis` +
     `words[]` из `VerseDetail`, см. `sangraha-schemas.yaml`):
     - **Перевод** — `translationRu` и `translationEn` (обе колонки/вкладки).
-    - **Сандхи** — `sandhiSplits`: список `surface → components[]`.
+    - **Сандхи** — `sandhiSplits`: список `surface → components[]`, с номером(-ами)
+      правила `ruleNumbers` (по справочнику `sangraha-data/emenau-sandhi-rules.json`,
+      §5.1) — показывать как краткую подпись/тултип у каждого перехода; если
+      `ruleNumbers` пуст — просто не показывать номер, без плейсхолдера-ошибки (это
+      штатный случай «модель не уверена», не баг).
     - **Грамматический разбор** — таблица `words[]` по `position`: поверхностная
       форма, лемма/основа, часть речи и морфологические признаки (падеж/число/род
-      либо лицо/время/наклонение/залог — в зависимости от pos), `glossRu`/`glossEn`.
+      либо лицо/время/наклонение/залог — в зависимости от pos), `glossRu`/`glossEn`,
+      и номер(-а) внутреннего правила `formationRuleNumbers` (тот же справочник,
+      §5.1) — как краткая подпись/тултип «как образована форма»; пустой массив —
+      штатно, без плейсхолдера-ошибки.
     - Если `status=ANALYZED`, но `analysis`/`words` не пришли (пустой ответ backend) —
       фронтенд должен показать явную ошибку/плейсхолдер, а не пустой блок молча.
   - Кнопка **«Редактировать»** видна только при `status=ANALYZED`: возвращает поле

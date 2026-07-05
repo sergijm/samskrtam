@@ -3,7 +3,6 @@ package sm.selflearn.samskrtam.sangraha.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
@@ -16,13 +15,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
 
-import java.time.Duration;
 import java.util.List;
 
 /**
  * HTTP-клиент к OpenAI API для анализа санскритских стихов через tool calling.
  * Использует официальный OpenAI Java SDK (com.openai:openai-java).
  * Совместим с любым OpenAI-compatible endpoint (ADR-006).
+ * Промпт загружается из classpath-ресурса (prompts/verse-analysis.md).
  */
 @Component
 @RequiredArgsConstructor
@@ -31,29 +30,17 @@ public class LlmClient {
 
     private final LlmProperties llmProperties;
     private final ObjectMapper objectMapper;
+    private final PromptLoader promptLoader;
 
     private OpenAIClient openAIClient;
 
     private static final String TOOL_NAME = "submit_verse_analysis";
-    private static final String SYSTEM_PROMPT = """
-            You are a Sanskrit linguistics expert. Your task is to analyze a Sanskrit verse.
-            
-            Given the verse text (in devanagari, IAST, or both), you must:
-            1. Transcribe between devanagari and IAST if one is missing
-            2. Provide Russian and English translations
-            3. Analyze sandhi splits (every word boundary, showing original surface form and its components)
-            4. For each word, provide full grammatical analysis
-            
-            You MUST respond using the 'submit_verse_analysis' function with ALL fields filled.
-            Do NOT respond with free text — only use the function.
-            """;
 
     @PostConstruct
     public void init() {
         this.openAIClient = OpenAIOkHttpClient.builder()
                 .baseUrl(llmProperties.getBaseUrl())
                 .apiKey(llmProperties.getApiKey())
-                //.connectTimeout(Duration.ofSeconds(30))
                 .build();
         log.info("LlmClient initialized with baseUrl={}, model={}", llmProperties.getBaseUrl(), llmProperties.getModel());
     }
@@ -83,7 +70,6 @@ public class LlmClient {
      */
     public JsonNode extractToolArguments(JsonNode response) {
         try {
-            // Идём по пути: choices[0].message.tool_calls[0].function.arguments
             var toolCallsNode = response.path("choices")
                     .path(0)
                     .path("message")
@@ -109,7 +95,6 @@ public class LlmClient {
                 return null;
             }
 
-            // Парсим строку аргументов в JsonNode
             return objectMapper.readTree(argsJson);
 
         } catch (Exception e) {
@@ -119,7 +104,7 @@ public class LlmClient {
     }
 
     /**
-     * Извлекает имя модели из ответа LLM через типизированный SDK-метод.
+     * Извлекает имя модели из ответа LLM.
      */
     public String extractModelName(JsonNode response) {
         try {
@@ -135,14 +120,14 @@ public class LlmClient {
     }
 
     /**
-     * Собирает ChatCompletionCreateParams с помощью типов SDK:
-     * system/user messages, tool definition (submit_verse_analysis),
-     * принудительный tool_choice.
+     * Собирает ChatCompletionCreateParams: system message из ресурса prompts/verse-analysis.md,
+     * tool definition (submit_verse_analysis), принудительный tool_choice.
      */
     private ChatCompletionCreateParams buildParams(Verse verse) throws Exception {
-        ObjectNode schemaNode = buildJsonSchema();
+        String systemPrompt = extractSystemPrompt(promptLoader.getVerseAnalysisPrompt());
+        String userPrompt = buildUserPrompt(verse);
 
-        // Сериализуем Jackson-схему в строку и десериализуем в FunctionParameters SDK
+        ObjectNode schemaNode = buildJsonSchema();
         String schemaJson = objectMapper.writeValueAsString(schemaNode);
         FunctionParameters functionParameters = objectMapper.readValue(schemaJson, FunctionParameters.class);
 
@@ -152,18 +137,16 @@ public class LlmClient {
                 .parameters(functionParameters)
                 .build();
 
-
-        // ✅ Исправлено: используем статический метод ofFunction, а не builder()
         ChatCompletionTool tool = ChatCompletionTool.ofFunction(
                 ChatCompletionFunctionTool.builder()
                         .function(functionDefinition)
                         .build()
         );
 
-        ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
+        return ChatCompletionCreateParams.builder()
                 .model(llmProperties.getModel())
-                .addSystemMessage(SYSTEM_PROMPT)
-                .addUserMessage(buildUserPrompt(verse))
+                .addSystemMessage(systemPrompt)
+                .addUserMessage(userPrompt)
                 .tools(List.of(tool))
                 .toolChoice(ChatCompletionToolChoiceOption.ofNamedToolChoice(
                         ChatCompletionNamedToolChoice.builder()
@@ -173,14 +156,51 @@ public class LlmClient {
                                 .build()
                 ))
                 .build();
-
-        return params;
     }
 
     /**
-     * Строит JSON Schema для tool submit_verse_analysis с помощью Jackson.
-     * Точный набор полей и enum'ов соответствует docs/services/sangraha-service.md §5.
+     * Извлекает содержимое секции ## system из markdown-файла промпта.
      */
+    private String extractSystemPrompt(String fullPrompt) {
+        int systemStart = fullPrompt.indexOf("## system\n");
+        if (systemStart < 0) return fullPrompt;
+        int codeStart = fullPrompt.indexOf("```\n", systemStart);
+        if (codeStart < 0) return fullPrompt;
+        int codeEnd = fullPrompt.indexOf("\n```", codeStart + 5);
+        if (codeEnd < 0) return fullPrompt;
+        return fullPrompt.substring(codeStart + 5, codeEnd).trim();
+    }
+
+    private String buildUserPrompt(Verse verse) {
+        var sb = new StringBuilder("Analyze the following Sanskrit verse:\n\n");
+        if (verse.getTextDevanagari() != null && !verse.getTextDevanagari().isBlank()) {
+            sb.append("Devanagari: ").append(verse.getTextDevanagari()).append("\n");
+        }
+        if (verse.getTextIast() != null && !verse.getTextIast().isBlank()) {
+            sb.append("IAST: ").append(verse.getTextIast()).append("\n");
+        }
+        sb.append("\nProvide complete analysis using the submit_verse_analysis function.");
+
+        // Добавляем контекст внешних правил сандхи, если они загружены
+        JsonNode sandhiRulesNode = promptLoader.getEmenauSandhiRules();
+        if (sandhiRulesNode != null) {
+            try {
+                String sandhiRules = objectMapper.writeValueAsString(sandhiRulesNode);
+                if (!sandhiRules.isEmpty()) {
+                    sb.append("\n\n---\n");
+                    sb.append("External sandhi rules (rules 41–71) for sandhi split reference:\n");
+                    sb.append(sandhiRules);
+                    sb.append("\n\nIMPORTANT: Only use these external rules (41–71) for sandhi split analysis. ");
+                    sb.append("Internal rules (1–40) explain word-internal form changes and must NOT be cited in sandhi splits.");
+                }
+            } catch (Exception e) {
+                log.warn("Failed to serialize sandhi rules for verse {}", verse.getId(), e);
+            }
+        }
+
+        return sb.toString();
+    }
+
     private ObjectNode buildJsonSchema() {
         ObjectNode params = objectMapper.createObjectNode();
         params.put("type", "object");
@@ -202,10 +222,11 @@ public class LlmClient {
         ObjectNode sandhiItemObj = sandhiItem.putObject("items");
         sandhiItemObj.put("type", "object");
         ArrayNode sandhiRequired = sandhiItemObj.putArray("required");
-        sandhiRequired.add("surface").add("components");
+        sandhiRequired.add("surface").add("components").add("ruleNumbers");
         ObjectNode sandhiProps = sandhiItemObj.putObject("properties");
         sandhiProps.putObject("surface").put("type", "string");
         sandhiProps.putObject("components").put("type", "array").putObject("items").put("type", "string");
+        sandhiProps.putObject("ruleNumbers").put("type", "array").putObject("items").put("type", "integer");
 
         // words
         ObjectNode wordItem = properties.putObject("words");
@@ -216,7 +237,8 @@ public class LlmClient {
 
         ArrayNode wordRequired = wordItemObj.putArray("required");
         wordRequired.add("position").add("surfaceIast").add("surfaceDevanagari")
-                .add("lemmaIast").add("stem").add("pos").add("glossRu").add("glossEn");
+                .add("lemmaIast").add("stem").add("root").add("pos").add("glossRu").add("glossEn")
+                .add("formationRuleNumbers");
 
         ObjectNode wordProps = wordItemObj.putObject("properties");
         wordProps.putObject("position").put("type", "integer");
@@ -271,19 +293,8 @@ public class LlmClient {
 
         wordProps.putObject("glossRu").put("type", "string");
         wordProps.putObject("glossEn").put("type", "string");
+        wordProps.putObject("formationRuleNumbers").put("type", "array").putObject("items").put("type", "integer");
 
         return params;
-    }
-
-    private String buildUserPrompt(Verse verse) {
-        var sb = new StringBuilder("Analyze the following Sanskrit verse:\n\n");
-        if (verse.getTextDevanagari() != null && !verse.getTextDevanagari().isBlank()) {
-            sb.append("Devanagari: ").append(verse.getTextDevanagari()).append("\n");
-        }
-        if (verse.getTextIast() != null && !verse.getTextIast().isBlank()) {
-            sb.append("IAST: ").append(verse.getTextIast()).append("\n");
-        }
-        sb.append("\nProvide complete analysis using the submit_verse_analysis function.");
-        return sb.toString();
     }
 }

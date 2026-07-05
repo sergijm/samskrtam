@@ -17,7 +17,6 @@ WorkSummary:
       type: string
     titleSaDevanagari:
       type: string
-      nullable: true
     descriptionRu:
       type: string
       nullable: true
@@ -44,7 +43,6 @@ WorkTree:
       type: string
     titleSaDevanagari:
       type: string
-      nullable: true
     chapters:
       type: array
       items:
@@ -103,13 +101,6 @@ VerseSummary:
 
 VerseDetail:
   type: object
-  description: |
-    Контракт nullable-полей analysis и words:
-    - analysis === null ДОПУСТИМО ТОЛЬКО если status != ANALYZED.
-    - Если status == ANALYZED, analysis ОБЯЗАТЕЛЕН (не null).
-    - words: аналогично — null только при status != ANALYZED.
-    Фронтенд (см. §7) должен показывать явный плейсхолдер/ошибку,
-    если status == ANALYZED, но analysis/words пришли как null.
   properties:
     id:
       type: string
@@ -154,6 +145,15 @@ VerseAnalysisDto:
             type: array
             items:
               type: string
+          ruleNumbers:
+            type: array
+            items:
+              type: integer
+            description: >-
+              Номера правил из sangraha-data/emenau-sandhi-rules.json (только
+              applicability=external, диапазон 41–71), применённые к этому переходу,
+              в порядке применения. Пустой массив — LLM не уверена в конкретном
+              правиле (см. sangraha-prompts/verse-analysis.md).
     modelName:
       type: string
     analyzedAt:
@@ -207,6 +207,17 @@ VerseWordDto:
       type: string
     glossEn:
       type: string
+    formationRuleNumbers:
+      type: array
+      items:
+        type: integer
+      description: >-
+        Номера правил из sangraha-data/emenau-sandhi-rules.json (только
+        applicability=internal, диапазон 1–40), объясняющие, как образована именно
+        эта словоформа из корня/основы (морфофонемные изменения при присоединении
+        суффикса/окончания) — в порядке применения. Пустой массив, если словоформа
+        не требует объяснения через внутренние сандхи (простое присоединение без
+        изменений) или модель не уверена (не угадывать номер).
 
 VerseStatus:
   type: string
@@ -218,16 +229,17 @@ CreateWorkRequest:
   properties:
     title:
       type: string
-      description: |
-        Сырой ввод пользователя на любом из трёх языков (деванагари, кириллица, латиница).
-        Backend сам детектит язык (см. sangraha-service.md §5.2) и через LLM
-        генерирует остальные поля. Slug вычисляется из titleSaIast через SLP1.
+      description: >-
+        Сырой ввод названия на любом из трёх языков (ru/en/санскрит,
+        IAST или devanagari). Язык определяется автоматически по алфавиту,
+        остальные поля Work генерируются через LLM (см. sangraha-service.md §5.2).
     description:
       type: string
-      description: |
-        Опциональное описание на языке, которым пользователь ввёл title.
-        Если указано — считается описанием на detectedLanguage; модель дополняет
-        второй перевод. Санскритское описание не хранится.
+      nullable: true
+      description: >-
+        Опциональное описание на языке title. Если не передано — генерируется
+        LLM на ru и en. Если передано — считается описанием на языке title,
+        второй язык дополняется переводом.
 
 UpdateWorkRequest:
   type: object
@@ -235,6 +247,10 @@ UpdateWorkRequest:
     titleRu:
       type: string
     titleEn:
+      type: string
+    titleSaIast:
+      type: string
+    titleSaDevanagari:
       type: string
     descriptionRu:
       type: string
@@ -276,10 +292,10 @@ UpdateVerseTextRequest:
   properties:
     text:
       type: string
-      description: |
-        Единое поле ввода. Backend определяет письменность по Unicode-диапазону:
-        символы деванагари → textDevanagari, иначе → textIast.
-        Отсутствующее представление достраивает LLM при анализе (§5.1).
+      description: >-
+        Единое поле ввода — может содержать текст на деванагари или в IAST.
+        Backend определяет письменность по Unicode-диапазону символов и
+        сохраняет значение в textDevanagari либо textIast (см. sangraha-service.md §4).
 
 ChapterSummary:
   type: object

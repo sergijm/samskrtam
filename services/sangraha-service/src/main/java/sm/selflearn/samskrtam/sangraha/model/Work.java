@@ -37,6 +37,12 @@ public class Work {
     @Column(name = "title_en", nullable = false)
     private String titleEn;
 
+    @Column(name = "title_sa_iast")
+    private String titleSaIast;
+
+    @Column(name = "title_sa_devanagari")
+    private String titleSaDevanagari;
+
     @Column(name = "description_ru")
     private String descriptionRu;
 

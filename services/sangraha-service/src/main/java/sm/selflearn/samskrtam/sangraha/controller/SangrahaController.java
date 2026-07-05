@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.sangraha.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import sm.selflearn.samskrtam.sangraha.dto.CreateWorkRequest;
 import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorkTreeDto;
 import sm.selflearn.samskrtam.sangraha.model.Chapter;
@@ -44,8 +46,9 @@ public class SangrahaController {
     }
 
     @PostMapping("/works")
-    public ResponseEntity<Work> createWork(@RequestBody Work work) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(workService.createWork(work));
+    public ResponseEntity<Work> createWork(@Valid @RequestBody CreateWorkRequest request) {
+        Work work = workService.createWorkFromTitle(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(work);
     }
 
     @GetMapping("/works/{workSlug}")
@@ -94,11 +97,16 @@ public class SangrahaController {
         return ResponseEntity.ok(verseService.getVerseDetail(verseId));
     }
 
+    /**
+     * PUT /verses/{id}/text — единое поле text, backend определяет письменность
+     * по Unicode-диапазону деванагари (\u0900–\u097F) и кладёт в textDevanagari
+     * либо textIast соответственно.
+     */
     @PutMapping("/verses/{verseId}/text")
     public ResponseEntity<Verse> updateVerseText(
             @PathVariable UUID verseId,
-            @RequestBody Verse verse) {
-        return ResponseEntity.ok(verseService.updateVerseText(verseId, verse.getTextDevanagari(), verse.getTextIast()));
+            @RequestBody VerseTextRequest request) {
+        return ResponseEntity.ok(verseService.updateVerseText(verseId, request.text()));
     }
 
     @DeleteMapping("/verses/{verseId}")

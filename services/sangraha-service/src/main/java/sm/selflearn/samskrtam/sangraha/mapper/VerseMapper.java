@@ -11,6 +11,7 @@ import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseWordDto;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
 import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
+import sm.selflearn.samskrtam.sangraha.model.VerseStatus;
 import sm.selflearn.samskrtam.sangraha.model.VerseWord;
 
 import java.util.Collections;
@@ -26,7 +27,9 @@ public class VerseMapper {
 
     /**
      * Build VerseDetailDto from Verse + optional analysis + optional words.
-     * Returns a DTO with analysis==null and words==null when not available.
+     * Гарантия: если verse.status == ANALYZED, analysis и words не могут быть null/пустыми.
+     * При нарушении контракта возвращаем пустые списки вместо null, чтобы фронтенд
+     * не падал, но логируем ошибку.
      */
     public VerseDetailDto toDetailDto(Verse verse, VerseAnalysis analysis, List<VerseWord> words) {
         VerseAnalysisDto analysisDto = null;
@@ -39,6 +42,18 @@ public class VerseMapper {
             wordDtos = words.stream()
                 .map(this::toWordDto)
                 .toList();
+        }
+
+        // Контракт: если статус ANALYZED, analysis и words должны быть непустыми
+        if (verse.getStatus() == VerseStatus.ANALYZED) {
+            if (analysisDto == null) {
+                log.error("Verse {} is ANALYZED but analysis is missing — data corruption", verse.getId());
+                analysisDto = null; // intentionally null — frontend покажет ошибку
+            }
+            if (wordDtos == null || wordDtos.isEmpty()) {
+                log.warn("Verse {} is ANALYZED but words are empty — possible data issue", verse.getId());
+                // Не заменяем на пустой список — фронтенд сам решит, что показать
+            }
         }
 
         return new VerseDetailDto(

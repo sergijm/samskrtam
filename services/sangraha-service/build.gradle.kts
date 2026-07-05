@@ -40,6 +40,12 @@ dependencies {
     // OpenAI SDK — замена самописного HTTP-клиента к LLM
     implementation("com.openai:openai-java:4.41.0")
 
+    // Sanscript.java для транслитерации санскрита
+    implementation("com.github.sanskrit:sanscript.java:0.1")
+
+    // NetworkNT JSON Schema validator
+    implementation("com.networknt:json-schema-validator:1.5.0")
+
     implementation(project(":shared:samskrtam-dtos"))
     implementation(project(":shared:common-dtos"))
 

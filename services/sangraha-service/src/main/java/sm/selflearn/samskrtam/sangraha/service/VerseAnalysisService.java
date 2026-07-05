@@ -27,6 +27,8 @@ public class VerseAnalysisService {
     private final WorkRepository workRepository;
     private final LlmClient llmClient;
     private final VerseAnalysisSaver analysisSaver;
+    private final ToolCallValidator toolCallValidator;
+    private final JsonSchemas jsonSchemas;
 
     /**
      * Запускает анализ стиха LLM.
@@ -76,6 +78,13 @@ public class VerseAnalysisService {
             return;
         }
 
+        // Валидация по JSON Schema — не доверяем LLM напрямую
+        if (!toolCallValidator.validate(arguments, jsonSchemas.getVerseAnalysisSchema())) {
+            log.error("LLM returned invalid verse analysis for verse {}", verseId);
+            analysisSaver.markFailed(verse);
+            return;
+        }
+
         String textDevanagari = getString(arguments, "textDevanagari");
         String textIast = getString(arguments, "textIast");
         String translationRu = getString(arguments, "translationRu");
@@ -97,13 +106,13 @@ public class VerseAnalysisService {
         //    Технические ошибки (БД, outbox, сериализация) пробрасываются наружу — транзакция откатывается,
         //    статус не становится ANALYZED. Исключение ловится здесь, статус возвращается в DRAFT.
         try {
-        analysisSaver.saveResults(verse, work, chapter,
-                textDevanagari, textIast, translationRu, translationEn,
-                sandhiSplitsNode, wordsNode, llmResponse.toString(), modelName);
+            analysisSaver.saveResults(verse, work, chapter,
+                    textDevanagari, textIast, translationRu, translationEn,
+                    sandhiSplitsNode, wordsNode, llmResponse.toString(), modelName);
         } catch (Exception e) {
             log.error("Failed to save analysis results for verse {}, reverting to DRAFT", verseId, e);
             analysisSaver.revertToDraft(verse);
             throw e;
+        }
     }
-}
 }
