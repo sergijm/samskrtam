@@ -8,7 +8,9 @@
     "settings": "Настройки",
     "admin": "Администрирование",
     "grammar": "Грамматика",
-    "vocabulary": "Лексика"
+    "vocabulary": "Лексика",
+    "sangraha": "Тексты"
+
   },
   "settings": {
     "title": "Настройки",

@@ -25,23 +25,28 @@ export default function DashboardPage() {
     { title: t('userProfile.quizSessions'), description: t('dashboard.quizSessionsDescription'), icon: 'pi pi-history', link: `/quiz-sessions` },
   ];
 
-  const administration = [
-    { title: t('nav.admin'), description: t('dashboard.adminDescription'), icon: 'pi pi-shield', link: '/admin' },
+    const administration = [
+    { title: t('nav.admin'), description: t('dashboard.adminDescription'), icon: 'pi pi-shield', link: '/admin', colClass: 'col-12 sm:col-6 lg:col-4' },
   ];
 
   const renderRow = (items: any[]) => (
     <div className="grid justify-content-center w-full mb-4">
       {items.map((item, index) => (
-        <div key={index} className="col-12 sm:col-6 lg:col-3 p-2 flex">
+        <div key={index} className={`${item.colClass || 'col-12 sm:col-6 lg:col-3'} p-2 flex`}>
           <Link to={item.link} className="no-underline h-full flex w-full">
-            <Card
+                        <Card
               title={item.title}
               subTitle={item.description}
               className="dashboard-card flex flex-column align-items-center justify-content-between text-center h-full cursor-pointer hover:shadow-8 transition-all transition-duration-200 w-full"
+                            pt={{
+                              body: { className: 'flex-grow-1 flex flex-column' },
+                              content: { className: 'flex-grow-1 flex flex-column' },
+                              title: { style: { overflowWrap: 'break-word', wordBreak: 'break-word' } },
+                              subtitle: { style: { overflowWrap: 'break-word', wordBreak: 'break-word' } },
+                            }}
             >
-              <div className="flex flex-column align-items-center justify-content-center flex-grow-1">
+              <div className="flex flex-column align-items-center justify-content-end flex-grow-1">
                 <i className={`${item.icon} text-5xl mb-3`} />
-                <p className="text-sm text-color-secondary">{item.description}</p>
               </div>
             </Card>
           </Link>

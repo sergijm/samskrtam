@@ -8,7 +8,8 @@
     "adminDescription": "Access administrative tools and features.",
     "grammarDescription": "Grammar quizzes: declensions and conjugations.",
     "vocabularyDescription": "Quizzes on vocabulary knowledge.",
-    "quizSessionsDescription": "View your past and ongoing quiz sessions.",
+        "quizSessionsDescription": "View your past and ongoing quiz sessions.",
+    "sangrahaDescription": "Explore Sanskrit texts with word-by-word analysis.",
     "quizProgress": "Progress: {{answered}}/{{total}} questions",
     "noQuizInProgress": ""
   }

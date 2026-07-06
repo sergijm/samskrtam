@@ -8,7 +8,8 @@
     "adminDescription": "Доступ к административным инструментам и функциям.",
     "grammarDescription": "Грамматика: склонения и спряжения.",
     "vocabularyDescription": "Квизы на знание лексики.",
-    "quizSessionsDescription": "Просмотр прошлых и текущих сессий квизов.",
+        "quizSessionsDescription": "Просмотр прошлых и текущих сессий квизов.",
+    "sangrahaDescription": "Изучайте санскритские тексты с пословным разбором.",
     "quizProgress": "Прогресс: {{answered}}/{{total}}",
     "noQuizInProgress": ""
   }

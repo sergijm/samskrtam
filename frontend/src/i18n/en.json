@@ -8,7 +8,8 @@
     "settings": "Settings",
     "admin": "Administration",
     "grammar": "Grammar",
-    "vocabulary": "Vocabulary"
+    "vocabulary": "Vocabulary",
+    "sangraha": "Texts"
   },
   "settings": {
     "title": "Settings",

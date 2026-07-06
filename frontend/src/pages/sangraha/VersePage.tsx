@@ -12,6 +12,8 @@ import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { useRef, useState, useCallback, useEffect } from 'react';
+import VerseWordsList from '../../components/sangraha/VerseWordsList';
+import SandhiSplitsList from '../../components/sangraha/SandhiSplitsList';
 
 const VersePage = () => {
   const { t, i18n } = useTranslation();
@@ -156,37 +158,12 @@ const VersePage = () => {
                   <p className="m-0">{(i18n.language === 'ru' ? verse.analysis.translationRu : verse.analysis.translationEn) || '-'}</p>
                 </div>
               </div>
-              {verse.analysis.sandhiSplits && verse.analysis.sandhiSplits.length > 0 && (
-                <div className="mb-3">
-                  <label className="block mb-1 font-semibold">{t('sangraha.fields.sandhiSplits')}</label>
-                  <div className="p-3 border-1 border-round surface-border surface-ground">
-                    {verse.analysis.sandhiSplits.map((s, i) => (
-                      <div key={i} className="mb-2">
-                        <span className="font-medium">{s.surface}</span>
-                        <span className="mx-2">→</span>
-                        <span>{s.components.join(' + ')}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                            <SandhiSplitsList sandhiSplits={verse.analysis.sandhiSplits} />
             </div>
           )}
 
-          {verse.words && verse.words.length > 0 && (
-            <div className="mb-4">
-              <label className="block mb-1 font-semibold">{t('sangraha.fields.words')}</label>
-              <div className="p-3 border-1 border-round surface-border surface-ground">
-                {verse.words.map((w) => (
-                  <div key={w.id} className="flex align-items-center gap-2 mb-1">
-                    <span className="font-medium">{w.surfaceIast}</span>
-                    <span className="text-color-secondary">({w.pos || '-'})</span>
-                    {w.stem && <span className="text-sm">stem: {w.stem}</span>}
-                    {w.glossRu && <span className="text-sm">— {w.glossRu}</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
+                    {verse.words && verse.words.length > 0 && (
+            <VerseWordsList words={verse.words} />
           )}
 
           {isAdmin && (
