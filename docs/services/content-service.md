@@ -38,7 +38,7 @@
 
 **VocabularyWord** (таблица vocabulary_words, только для VOCABULARY квизов): id (UUID), quizId (UUID), word (IAST), wordDevanagari, translationRu, translationEn, partOfSpeech, example
 
-**DeclensionStem** (таблица `content.declension_stems`, для DECLENSIONS квизов; **отсутствовала в этом документе — добавлено**): id (UUID), stemNameIast, stemNameDevanagari (колонка существует в БД, но не заполняется миграцией-сидом V2 — данных нет), vowelType (A_STEM|AA_STEM|I_STEM|II_STEM|U_STEM|UU_STEM|R_STEM), gender.
+**DeclensionStem** (таблица `content.declension_stems`, для DECLENSIONS квизов; **отсутствовала в этом документе — добавлено**): id (UUID), stemIast, stemDevanagari (колонка существует в БД, но не заполняется миграцией-сидом V2 — данных нет), vowelType (A_STEM|AA_STEM|I_STEM|II_STEM|U_STEM|UU_STEM|R_STEM), gender.
 **NEW (задача Агенту 2, см. ниже):** добавить `translationRu`, `translationEn` — сейчас перевода основы нет вообще ни в БД, ни в entity.
 
 **DeclensionForm** (таблица `content.declension_forms`): PK (declensionStemId, caseType, numberType), formIast, formDevanagari — уже заполнены (сид из `raw_data.sanskrit_declensions_enriched`).
@@ -51,7 +51,7 @@
 
 `declension_stems`/`declension_forms` создаются и заполняются отдельно, в `V2__init_grammar_quizzes.sql` (сид из `raw_data.sanskrit_declensions_enriched`), не входят в перечисление выше — **несоответствие в этом документе, зафиксировано, не исправляется в рамках текущей задачи**.
 
-**NEW, требуется новая миграция (Агент 2):** `ALTER TABLE content.declension_stems ADD COLUMN translation_ru VARCHAR(255), ADD COLUMN translation_en VARCHAR(255);` + data-fix UPDATE для заполнения `stem_name_devanagari` (уже существующая, но пустая колонка) и новых `translation_ru/en` по всем текущим строкам таблицы — данные предоставляет пользователь (см. §9).
+**NEW, требуется новая миграция (Агент 2):** `ALTER TABLE content.declension_stems ADD COLUMN translation_ru VARCHAR(255), ADD COLUMN translation_en VARCHAR(255);` + data-fix UPDATE для заполнения `stem_devanagari` и новых `translation_ru/en` по всем текущим строкам таблицы — данные предоставляет пользователь (см. §9).
 
 **NEW, требуется миграция на удаление (Агент 2):** `DROP TABLE content.generated_questions; DROP TABLE content.generated_quiz_data;` — таблицы persist-хранения сгенерированных вопросов сессии удаляются, т.к. это дублировало `quiz.session_questions` (см. §3а и quiz-service.md §12). Порядок важен — сначала дочерняя таблица (FK на generated_quiz_data_id).
 
@@ -119,7 +119,7 @@ correctTranslationEn, userLocale, stem, caseType, numberType, gender}`.
 
 **NEW (задача Агенту 2):** добавить в `QuestionResponse`/`GeneratedQuizQuestionDto` поля
 `stemDevanagari`, `stemTranslationRu`, `stemTranslationEn`, заполняемые из
-`DeclensionStem.stemNameDevanagari/translationRu/translationEn` в
+`DeclensionStem.stemDevanagari/translationRu/translationEn` в
 `DeclensionQuizGeneratorService.generateSingleQuestion(...)`.
 
 **Дистракторы (варианты ответа) НЕ входят в этот ответ и не хранятся здесь** — они

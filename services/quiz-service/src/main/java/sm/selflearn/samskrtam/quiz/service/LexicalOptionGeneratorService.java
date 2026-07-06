@@ -1,18 +1,19 @@
 package sm.selflearn.samskrtam.quiz.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.content.dto.QuestionLanguage;
-import sm.selflearn.samskrtam.content.dto.VocabularyWordDto; // Updated import
+import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.quiz.dto.QuestionOptionDto;
-
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LexicalOptionGeneratorService {
 
     private static final Random random = new Random();
@@ -25,29 +26,32 @@ public class LexicalOptionGeneratorService {
             String userLocale) {
 
         return Mono.fromCallable(() -> {
+            if (targetLang == null) {
+                log.error("targetLang is null for word: {}. sourceLang={}, userLocale={}", correctWord.getId(), sourceLang, userLocale);
+                throw new IllegalArgumentException("targetLang must not be null for word: " + correctWord.getId());
+            }
+
             List<QuestionOptionDto> options = new ArrayList<>();
 
             // 1. Add the correct option
             String correctOptionText = getTranslationForLanguage(correctWord, targetLang, userLocale);
-            String correctOptionDevanagari = getDevanagariForLanguage(correctWord, targetLang, userLocale); // Get Devanagari if applicable
+            String correctOptionDevanagari = getDevanagariForLanguage(correctWord, targetLang, userLocale);
 
             options.add(QuestionOptionDto.builder()
-                    .id(correctWord.getId()) // Use word ID as option ID
+                    .id(correctWord.getId())
                     .formIast(correctOptionText)
                     .formDevanagari(correctOptionDevanagari)
                     .build());
 
             // 2. Generate distractors
             List<VocabularyWordDto> potentialDistractors = allWords.stream()
-                    .filter(word -> !word.getId().equals(correctWord.getId())) // Exclude the correct word itself
+                    .filter(word -> !word.getId().equals(correctWord.getId()))
                     .collect(Collectors.toList());
 
-            // Filter for similar length and common letters
             List<VocabularyWordDto> filteredDistractors = potentialDistractors.stream()
                     .filter(word -> isSimilar(getTranslationForLanguage(word, targetLang, userLocale), correctOptionText))
                     .collect(Collectors.toList());
 
-            // If not enough filtered distractors, take from general pool
             if (filteredDistractors.size() < 3) {
                 List<VocabularyWordDto> remainingDistractors = potentialDistractors.stream()
                         .filter(word -> !filteredDistractors.contains(word))
@@ -56,9 +60,8 @@ public class LexicalOptionGeneratorService {
                 filteredDistractors.addAll(remainingDistractors.subList(0, Math.min(3 - filteredDistractors.size(), remainingDistractors.size())));
             }
 
-            Collections.shuffle(filteredDistractors); // Shuffle filtered distractors
+            Collections.shuffle(filteredDistractors);
             List<VocabularyWordDto> selectedDistractors = filteredDistractors.stream().limit(3).collect(Collectors.toList());
-
 
             for (VocabularyWordDto distractor : selectedDistractors) {
                 options.add(QuestionOptionDto.builder()
@@ -68,34 +71,42 @@ public class LexicalOptionGeneratorService {
                         .build());
             }
 
-            Collections.shuffle(options); // Shuffle all options (correct + distractors)
+            Collections.shuffle(options);
             return options;
         });
     }
 
     private String getTranslationForLanguage(VocabularyWordDto word, QuestionLanguage lang, String userLocale) {
+        if (lang == null) {
+            log.warn("getTranslationForLanguage called with null lang for word: {}. userLocale={}", word.getId(), userLocale);
+            return null;
+        }
         return switch (lang) {
-            case SANSKRIT -> word.getWordIast(); // Always return IAST for Sanskrit target language
+            case SANSKRIT -> word.getWordIast();
             case ENGLISH -> word.getTranslationEn();
             case RUSSIAN -> word.getTranslationRu();
         };
     }
 
     private String getDevanagariForLanguage(VocabularyWordDto word, QuestionLanguage lang, String userLocale) {
+        if (lang == null) {
+            log.warn("getDevanagariForLanguage called with null lang for word: {}. userLocale={}", word.getId(), userLocale);
+            return null;
+        }
         return switch (lang) {
-            case SANSKRIT -> word.getWordDevanagari(); // Return Devanagari for Sanskrit target language
-            default -> null; // Devanagari not applicable for English/Russian translations
+            case SANSKRIT -> word.getWordDevanagari();
+            default -> null;
         };
     }
 
     private boolean isSimilar(String distractorText, String correctText) {
-        // Simple similarity check: similar length and some common characters
         int lengthDiff = Math.abs(distractorText.length() - correctText.length());
-        if (lengthDiff > 3) return false; // Length difference threshold
+        if (lengthDiff > 3) return false;
 
         Set<Character> correctChars = correctText.chars().mapToObj(c -> (char) c).collect(Collectors.toSet());
         long commonChars = distractorText.chars().mapToObj(c -> (char) c).filter(correctChars::contains).count();
 
-        return commonChars >= 2; // At least 2 common characters
+        return commonChars >= 2;
     }
 }
+

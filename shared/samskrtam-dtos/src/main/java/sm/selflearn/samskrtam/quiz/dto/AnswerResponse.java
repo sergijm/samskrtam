@@ -9,8 +9,8 @@ import java.util.UUID;
 @Value
 @Builder
 public class AnswerResponse {
-    @JsonProperty("isCorrect") // Explicitly name the JSON property
-    boolean isCorrect;
+    @JsonProperty("isCorrect")
+    boolean correct;
     UUID correctOptionId;
     String correctAnswerText;
     String explanationRu;
@@ -18,3 +18,4 @@ public class AnswerResponse {
     int questionNumber;
     int totalQuestions;
 }
+

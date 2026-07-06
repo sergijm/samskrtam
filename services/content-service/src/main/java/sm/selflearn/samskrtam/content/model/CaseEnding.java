@@ -10,8 +10,8 @@ import java.util.UUID;
 public class CaseEnding {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", nullable = false)
+    private UUID id;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "vowel_type", nullable = false)

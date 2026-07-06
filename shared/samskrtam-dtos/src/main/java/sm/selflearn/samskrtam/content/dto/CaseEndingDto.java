@@ -9,6 +9,8 @@ import sm.selflearn.samskrtam.content.model.Gender;
 import sm.selflearn.samskrtam.content.model.NumberType;
 import sm.selflearn.samskrtam.content.model.VowelType;
 
+import java.util.UUID;
+
 /**
  * DTO для получения caseEndings из content-service.
  */
@@ -17,7 +19,7 @@ import sm.selflearn.samskrtam.content.model.VowelType;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CaseEndingDto {
-    private Long id;
+    private UUID id;
     private VowelType vowelType;
     private Gender gender;
     private CaseType caseType;

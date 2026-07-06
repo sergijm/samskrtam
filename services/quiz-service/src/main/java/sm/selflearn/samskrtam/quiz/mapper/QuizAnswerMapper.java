@@ -13,7 +13,7 @@ import java.util.UUID;
 @Mapper(componentModel = "spring")
 public interface QuizAnswerMapper {
 
-    @Mapping(target = "isCorrect", source = "isCorrect")
+    @Mapping(target = "correct", source = "isCorrect")
     @Mapping(target = "correctOptionId", source = "correctWordId")
     @Mapping(target = "correctAnswerText", source = "correctAnswerText")
     @Mapping(target = "explanationRu", source = "generatedQuestion.explanationRu")
@@ -22,11 +22,6 @@ public interface QuizAnswerMapper {
     @Mapping(target = "totalQuestions", source = "session.totalQuestions")
     AnswerResponse toAnswerResponse(boolean isCorrect, UUID correctWordId, String correctAnswerText, GeneratedQuizQuestionDto generatedQuestion, QuizSession session);
 
-    /**
-     * Маппинг QuizAnswer → AnswerHistoryEntry.
-     * Нарушение §16.4 (прямой маппинг Entity → DTO) было указано как проблема,
-     * теперь вынесено в выделенный mapper-метод.
-     */
     @Mapping(target = "answeredAt", expression = "java(qa.getAnsweredAt() != null ? java.time.LocalDateTime.ofInstant(qa.getAnsweredAt(), java.time.ZoneOffset.UTC) : null)")
     @Mapping(target = "correctAnswer", source = "qa.correctFormIast")
     @Mapping(target = "userAnswer", source = "qa.selectedFormIast")

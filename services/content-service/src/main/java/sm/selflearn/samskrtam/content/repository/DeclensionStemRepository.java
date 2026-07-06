@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Repository
 public interface DeclensionStemRepository extends JpaRepository<DeclensionStem, UUID> {
-    Optional<DeclensionStem> findByStemNameIast(String stemNameIast);
+    Optional<DeclensionStem> findByStemIast(String stemIast);
     List<DeclensionStem> findByVowelType(VowelType vowelType);
 }
 

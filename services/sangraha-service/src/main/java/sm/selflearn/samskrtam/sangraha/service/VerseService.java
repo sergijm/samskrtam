@@ -80,8 +80,10 @@ public class VerseService {
         String script = transliterationService.detectScript(text);
         if ("devanagari".equals(script)) {
             verse.setTextDevanagari(text);
+            verse.setTextIast(null);
         } else {
             verse.setTextIast(text);
+            verse.setTextDevanagari(null);
         }
         verse.setUpdatedAt(Instant.now());
         return verseRepository.save(verse);

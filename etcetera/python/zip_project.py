@@ -5,7 +5,7 @@ from pathlib import Path
 # ========== КОНСТАНТЫ ==========
 DEFAULT_DIR = r"C:\MyDev\samskrtam"
 DEST_FILE = r"C:\MyDev\samskrtam.zip"
-EXTENSIONS = ('.java', '.ts', '.tsx', '.yaml', '.yml', '.md', '.sql')
+EXTENSIONS = ('.java', '.ts', '.tsx', '.yaml', '.yml', '.md', '.sql', '.json')
 EXCLUDED_DIRS = {
     'node_modules', '.git', 'build', 'dist', 'target', '__pycache__',
     '.idea', '.vscode', 'venv', 'env', '.venv', 'logs', 'tmp', 'temp',

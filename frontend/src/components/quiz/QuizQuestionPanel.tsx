@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from 'primereact/button';
 import { LessonType } from '../../types/quiz';
 import type { SessionQuestion } from '../../types/quiz';
+import { lookup, FULL_CASE, FULL_NUMBER } from '../../utils/grammarTerms';
 
 interface QuizQuestionPanelProps {
   question: SessionQuestion;
@@ -29,6 +30,9 @@ export default function QuizQuestionPanel({
   const showStemDetails = lessonType === LessonType.DECLENSIONS || lessonType === LessonType.CONJUGATIONS;
   const stemTranslation = i18n.language === 'ru' ? question.stemTranslationRu : question.stemTranslationEn;
 
+  const caseFull = lookup(question.caseType, FULL_CASE);
+  const numberFull = lookup(question.numberType, FULL_NUMBER);
+
   return (
     <>
       <h2 className="text-center mb-4">
@@ -41,32 +45,30 @@ export default function QuizQuestionPanel({
           </span>
         ) : (
           <>
-            {question.stem && (
-              <>
-                <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>
-                  {question.text}
-                </span>
-                <br style={{ lineHeight: '1.5' }} />
-              </>
-            )}
-            {question.caseType && question.numberType && (
+            <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>
+              {question.text}
+            </span>
+            <br style={{ lineHeight: '1.5' }} />
+            {(caseFull || numberFull) && (
               <span style={{ fontSize: '1.5rem', fontStyle: 'italic' }}>
-                {question.caseType}, {question.numberType}
+                {[caseFull, numberFull].filter(Boolean).join(', ')}
               </span>
+            )}
+            {showStemDetails && (question.stemDevanagari || stemTranslation) && (
+              <div className="mt-2" style={{ fontSize: '1.25rem', color: 'var(--text-color-secondary)' }}>
+                {question.stemDevanagari && (
+                  <span style={{ fontFamily: '"Noto Sans Devanagari", sans-serif', fontSize: '1.5rem' }}>
+                    {question.stemDevanagari}
+                  </span>
+                )}
+                {stemTranslation && (
+                  <span className="ml-2" style={{ fontStyle: 'italic' }}>
+                    ({stemTranslation})
+                  </span>
+                )}
+              </div>
             )}
           </>
-        )}
-        {showStemDetails && question.stemDevanagari && (
-          <div className="mt-2" style={{ fontSize: '1.25rem', color: 'var(--text-color-secondary)' }}>
-            <span style={{ fontFamily: '"Noto Sans Devanagari", sans-serif', fontSize: '1.5rem' }}>
-              {question.stemDevanagari}
-            </span>
-            {stemTranslation && (
-              <span className="ml-2" style={{ fontStyle: 'italic' }}>
-                ({stemTranslation})
-              </span>
-            )}
-          </div>
         )}
       </div>
 

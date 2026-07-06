@@ -91,6 +91,7 @@ export interface SessionQuestion {
     stem: string;
     caseType: string;
     numberType: string;
+    gender: string;
     stemDevanagari?: string;
     stemTranslationRu?: string;
     stemTranslationEn?: string;

@@ -131,25 +131,27 @@ public class QuizDataAssembler {
                                 .stemDevanagari(generatedQuestion.getStemDevanagari())
                                 .stemTranslationRu(generatedQuestion.getStemTranslationRu())
                                 .stemTranslationEn(generatedQuestion.getStemTranslationEn())
-                                .build());
-                    } else {
-                        return declensionOptionGeneratorService.generateOptions(
-                                generatedQuestion.getDeclensionStemId(),
-                                generatedQuestion.getTargetCase(),
-                                generatedQuestion.getTargetNumber(),
-                                generatedQuestion.getCorrectFormIast()
-                        ).map(options -> QuestionDto.builder()
-                                .id(generatedQuestion.getId())
-                                .questionNumber(generatedQuestion.getQuestionNumber())
-                                .text(generatedQuestion.getText())
-                                .options(options)
-                                .stem(generatedQuestion.getStem())
-                                .caseType(generatedQuestion.getCaseType())
-                                .numberType(generatedQuestion.getNumberType())
-                                .stemDevanagari(generatedQuestion.getStemDevanagari())
-                                .stemTranslationRu(generatedQuestion.getStemTranslationRu())
-                                .stemTranslationEn(generatedQuestion.getStemTranslationEn())
-                                .build());
-                    }
-                }
-            }
+                                                                .gender(generatedQuestion.getGender())
+                                                                .build());
+                                                    } else {
+                                                        return declensionOptionGeneratorService.generateOptions(
+                                                                generatedQuestion.getDeclensionStemId(),
+                                                                generatedQuestion.getTargetCase(),
+                                                                generatedQuestion.getTargetNumber(),
+                                                                generatedQuestion.getCorrectFormIast()
+                                                        ).map(options -> QuestionDto.builder()
+                                                                .id(generatedQuestion.getId())
+                                                                .questionNumber(generatedQuestion.getQuestionNumber())
+                                                                .text(generatedQuestion.getText())
+                                                                .options(options)
+                                                                .stem(generatedQuestion.getStem())
+                                                                .caseType(generatedQuestion.getCaseType())
+                                                                .numberType(generatedQuestion.getNumberType())
+                                                                .stemDevanagari(generatedQuestion.getStemDevanagari())
+                                                                .stemTranslationRu(generatedQuestion.getStemTranslationRu())
+                                                                .stemTranslationEn(generatedQuestion.getStemTranslationEn())
+                                                                .gender(generatedQuestion.getGender())
+                                                                .build());
+                                                    }
+                                                }
+                                            }

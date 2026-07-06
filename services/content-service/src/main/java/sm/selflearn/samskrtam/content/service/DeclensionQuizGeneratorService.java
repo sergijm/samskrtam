@@ -59,19 +59,17 @@ public class DeclensionQuizGeneratorService {
         DeclensionForm correctForm = declensionFormRepository
                 .findByDeclensionStemIdAndCaseTypeAndNumberType(stem.getId(), targetCase, targetNumber)
                 .orElseThrow(() -> new SamskrtamException("DECLENSION_FORM_NOT_FOUND",
-                        "Declension form not found for stem: " + stem.getStemNameIast() +
+                        "Declension form not found for stem: " + stem.getStemIast() +
                                 ", case: " + targetCase + ", number: " + targetNumber));
 
         String questionText = String.format(
                 locale.getLanguage().equals("ru") ? "Основа: %s" : "Stem: %s",
-                stem.getStemNameIast(),
-                locale.getLanguage().equals("ru") ? targetCase.getRuName() : targetCase.getEnName(),
-                locale.getLanguage().equals("ru") ? targetNumber.getRuName() : targetNumber.getEnName()
+                stem.getStemIast()
         );
 
         String explanationTextRu = String.format(
                 "Правильная форма для основы '%s' в падеже '%s' и числе '%s' - '%s'.",
-                stem.getStemNameIast(),
+                stem.getStemIast(),
                 targetCase.getRuName(),
                 targetNumber.getRuName(),
                 correctForm.getFormIast()
@@ -79,7 +77,7 @@ public class DeclensionQuizGeneratorService {
 
         String explanationTextEn = String.format(
                 "The correct form for stem '%s' in case '%s' and number '%s' is '%s'.",
-                stem.getStemNameIast(),
+                stem.getStemIast(),
                 targetCase.getEnName(),
                 targetNumber.getEnName(),
                 correctForm.getFormIast()
@@ -96,8 +94,8 @@ public class DeclensionQuizGeneratorService {
                 .targetNumber(targetNumber)
                 .correctFormIast(correctForm.getFormIast())
                 .correctFormDevanagari(correctForm.getFormDevanagari())
-                .stem(stem.getStemNameIast())
-                .stemDevanagari(stem.getStemNameDevanagari())
+                .stem(stem.getStemIast())
+                .stemDevanagari(stem.getStemDevanagari())
                 .stemTranslationRu(stem.getTranslationRu())
                 .stemTranslationEn(stem.getTranslationEn())
                 .gender(stem.getGender() != null ? stem.getGender().name() : null)

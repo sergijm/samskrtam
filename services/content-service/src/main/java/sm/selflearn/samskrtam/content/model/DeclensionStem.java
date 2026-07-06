@@ -12,11 +12,10 @@ public class DeclensionStem {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "stem_name_iast", nullable = false, unique = true)
-    private String stemNameIast; // e.g., "deva", "agāra", "dhenu"
-
-    @Column(name = "stem_name_devanagari")
-    private String stemNameDevanagari;
+    @Column(name = "stem_iast", nullable = false, unique = true)
+    private String stemIast;
+    @Column(name = "stem_devanagari")
+    private String stemDevanagari;
 
     @Column(name = "translation_ru")
     private String translationRu;
@@ -26,10 +25,9 @@ public class DeclensionStem {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "vowel_type", nullable = false)
-    private VowelType vowelType; // e.g., A_STEM, I_STEM, U_STEM, R_STEM
-
+    private VowelType vowelType;
     @Enumerated(EnumType.STRING)
     @Column(name = "gender", nullable = false)
-    private Gender gender; // MASCULINE, FEMININE, NEUTER
+    private Gender gender;
 }
 

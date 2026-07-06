@@ -18,6 +18,7 @@ public interface SessionQuestionMapper {
     @Mapping(target = "explanationRu", source = "dto.explanationRu")
     @Mapping(target = "explanationEn", source = "dto.explanationEn")
     @Mapping(target = "declensionStemId", source = "dto.declensionStemId")
+    @Mapping(target = "stem", source = "dto.stem")
     @Mapping(target = "stemDevanagari", source = "dto.stemDevanagari")
     @Mapping(target = "stemTranslationRu", source = "dto.stemTranslationRu")
     @Mapping(target = "stemTranslationEn", source = "dto.stemTranslationEn")

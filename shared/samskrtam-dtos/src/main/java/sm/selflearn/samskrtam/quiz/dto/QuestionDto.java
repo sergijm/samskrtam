@@ -18,6 +18,7 @@ public class QuestionDto {
     String stem;
     String caseType;
     String numberType;
+    String gender;
 
     // NEW fields: devanagari and translations of the declension stem
     String stemDevanagari;       // devanagari of the stem (from declension_stems), empty for VOCABULARY

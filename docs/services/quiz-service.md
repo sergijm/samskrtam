@@ -188,7 +188,7 @@ quiz-service, ни в content-service.
 *   `explanation_ru`: TEXT
 *   `explanation_en`: TEXT
 *   `declension_stem_id`: UUID
-*   `stem_devanagari`: VARCHAR *(NEW — из content-service `DeclensionStem.stemNameDevanagari`, см. content-service.md)*
+*   `stem_devanagari`: VARCHAR *(NEW — из content-service `DeclensionStem.stemDevanagari`, см. content-service.md)*
 *   `stem_translation_ru`: VARCHAR *(NEW — из content-service `DeclensionStem.translationRu`)*
 *   `stem_translation_en`: VARCHAR *(NEW)*
 *   `target_case`: VARCHAR
@@ -391,7 +391,7 @@ complete), и для статистики/истории.
 *   `explanation_ru`: TEXT
 *   `explanation_en`: TEXT
 *   `declension_stem_id`: UUID
-*   `stem_devanagari`: VARCHAR(255) *(NEW, миграция V2 — из content-service `DeclensionStem.stemNameDevanagari`)*
+*   `stem_devanagari`: VARCHAR(255) *(NEW, миграция V2 — из content-service `DeclensionStem.stemDevanagari`)*
 *   `stem_translation_ru`: VARCHAR(255) *(NEW, миграция V2 — из content-service `DeclensionStem.translationRu`)*
 *   `stem_translation_en`: VARCHAR(255) *(NEW, миграция V2)*
 *   `target_case`: VARCHAR(50)
@@ -421,7 +421,7 @@ complete), и для статистики/истории.
 
 ## 13. Контракт вопроса для фронтенда — деванагари и перевод основы (итоговая версия)
 
-Путь данных целиком: `content.declension_stems.stem_name_devanagari/translation_ru/en` →
+Путь данных целиком: `content.declension_stems.stem_devanagari/translation_ru/en` →
 `DeclensionQuizGeneratorService.generateSingleQuestion(...)` копирует их в `QuestionResponse`
 (HTTP-ответ `generate-quiz-data`, ничего не сохраняющий) → quiz-service сохраняет их в свою
 `quiz.session_questions` (единственное хранилище, см. §12) → оттуда же отдаёт на
