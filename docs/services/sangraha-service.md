@@ -43,9 +43,9 @@ sangraha-service публикует слова этого стиха, `content-s
 
 ---
 
-## 3. Flyway Migrations (эскиз)
+## 3. Flyway Migrations
 
-7 миграций Flyway: `V1` — создание схемы sangraha; `V2` — таблица works; `V3` — chapters; `V4` — verses; `V5` — verse_analyses; `V6` — verse_words; `V7` — outbox_events (patent как в user-service/quiz-service, event_type: VERSE_VOCABULARY_EXTRACTED).
+4 миграции: V1 — вся схема sangraha (works, chapters, verses, verse_analyses, verse_words, outbox_events); V2 — санскритские названия (titleSaIast, titleSaDevanagari) для works; V3 — санскритские названия для chapters + orderIndex nullable; V4 — поле formation_rule_numbers в verse_words.
 
 ---
 

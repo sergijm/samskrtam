@@ -5,6 +5,8 @@ import type { SessionQuestion } from '../../types/quiz';
 
 interface QuizQuestionPanelProps {
   question: SessionQuestion;
+  currentQuestionIndex: number;
+  totalQuestions: number;
   selectedOptionId: string | null;
   disabled: boolean;
   lessonType: LessonType;
@@ -14,18 +16,23 @@ interface QuizQuestionPanelProps {
 
 export default function QuizQuestionPanel({
   question,
+  currentQuestionIndex,
+  totalQuestions,
   selectedOptionId,
   disabled,
   lessonType,
   feedback,
   onSelectOption,
 }: QuizQuestionPanelProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  const showStemDetails = lessonType === LessonType.DECLENSIONS || lessonType === LessonType.CONJUGATIONS;
+  const stemTranslation = i18n.language === 'ru' ? question.stemTranslationRu : question.stemTranslationEn;
 
   return (
     <>
       <h2 className="text-center mb-4">
-        {t('quiz.question', { current: 1, total: 1 })}
+        {t('quiz.question', { current: currentQuestionIndex + 1, total: totalQuestions })}
       </h2>
       <div className="text-2xl font-bold text-center mb-5">
         {lessonType === LessonType.VOCABULARY ? (
@@ -48,6 +55,18 @@ export default function QuizQuestionPanel({
               </span>
             )}
           </>
+        )}
+        {showStemDetails && question.stemDevanagari && (
+          <div className="mt-2" style={{ fontSize: '1.25rem', color: 'var(--text-color-secondary)' }}>
+            <span style={{ fontFamily: '"Noto Sans Devanagari", sans-serif', fontSize: '1.5rem' }}>
+              {question.stemDevanagari}
+            </span>
+            {stemTranslation && (
+              <span className="ml-2" style={{ fontStyle: 'italic' }}>
+                ({stemTranslation})
+              </span>
+            )}
+          </div>
         )}
       </div>
 

@@ -18,6 +18,12 @@ public class DeclensionStem {
     @Column(name = "stem_name_devanagari")
     private String stemNameDevanagari;
 
+    @Column(name = "translation_ru")
+    private String translationRu;
+
+    @Column(name = "translation_en")
+    private String translationEn;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "vowel_type", nullable = false)
     private VowelType vowelType; // e.g., A_STEM, I_STEM, U_STEM, R_STEM
@@ -26,3 +32,4 @@ public class DeclensionStem {
     @Column(name = "gender", nullable = false)
     private Gender gender; // MASCULINE, FEMININE, NEUTER
 }
+

@@ -23,4 +23,8 @@ public class QuestionResponse {
     String correctFormIast; // The correct form in IAST
     String correctFormDevanagari; // The correct form in Devanagari
     String stem; // New field
+    String stemDevanagari;
+    String stemTranslationRu;
+    String stemTranslationEn;
 }
+

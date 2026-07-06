@@ -60,11 +60,14 @@ public class QuestionGenerationService {
                             .userLocale(userLocale)
                             // Populate new fields
                             .stem(response.getStem())
-                            .caseType(response.getTargetCase()) // Assign Case enum directly
-                            .numberType(response.getTargetNumber()) // Assign Number enum directly
-                            .build())
-                    .collect(Collectors.<GeneratedQuestion>toList()));
-        } else if ( LessonType.isVocabulary(lesson.getLessonType() )) {
+                                                        .caseType(response.getTargetCase()) // Assign Case enum directly
+                                                        .numberType(response.getTargetNumber()) // Assign Number enum directly
+                                                        .stemDevanagari(response.getStemDevanagari())
+                                                        .stemTranslationRu(response.getStemTranslationRu())
+                                                        .stemTranslationEn(response.getStemTranslationEn())
+                                                        .build())
+                                                .collect(Collectors.<GeneratedQuestion>toList()));
+                                    } else if ( LessonType.isVocabulary(lesson.getLessonType() )) {
             List<VocabularyWordDto> vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(lesson.getSlug(), lesson.getQuestionsPerSession() * 4); // Changed to quiz.getSlug()
 
             for (VocabularyWordDto word : vocabularyWords) {
@@ -166,8 +169,11 @@ public class QuestionGenerationService {
                 .userLocale(question.getUserLocale())
                 // Map new fields
                 .stem(question.getStem())
-                .caseType(caseTypeString) // Convert Case enum to String
-                .numberType(numberTypeString) // Convert Number enum to String
-                .build();
+                                .caseType(caseTypeString) // Convert Case enum to String
+                                .numberType(numberTypeString) // Convert Number enum to String
+                                .stemDevanagari(question.getStemDevanagari())
+                                .stemTranslationRu(question.getStemTranslationRu())
+                                .stemTranslationEn(question.getStemTranslationEn())
+                                .build();
     }
 }

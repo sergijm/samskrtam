@@ -69,4 +69,10 @@ public class GeneratedQuestion {
     @Enumerated(EnumType.STRING) // Added annotation
     @Column
     private NumberType numberType; // Changed type to Number enum
+
+    // New fields for stem translations
+    private String stemDevanagari;
+    private String stemTranslationRu;
+    private String stemTranslationEn;
 }
+

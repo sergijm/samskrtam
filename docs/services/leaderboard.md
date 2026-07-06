@@ -121,7 +121,9 @@ Score = XP + 50 × current_streak + difficulty_bonus (+200 за каждый Har
 
 ---
 
-## 11. Flyway миграции: V1 — schema statistics, V2 — answer_records, V3 — session_records, V4 — quiz.outbox_events, V5 — xp_ledger/xp_totals, V6 — elo_ratings/elo_history, V7 — user_streaks, V8 — leaderboard_daily/views, V9 — skill_ratings, V10 — composite_scores view.
+## 11. Flyway миграции
+
+3 существующие миграции в statistics-service: V1 — user_quiz_session_statistics; V2 — answer_history; V3 — фикс схемы. Миграции для лидерборда (xp_ledger, elo, streaks, leaderboard views, skill_ratings, composite_scores) ещё не созданы — будут добавлены при реализации §2–8.
 
 ---
 

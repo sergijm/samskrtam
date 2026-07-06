@@ -19,4 +19,7 @@ public class DeclensionStemDto {
     private String slug;
     private Gender gender;
     private VowelType vowelType;
+    private String stemDevanagari;
+    private String translationRu;
+    private String translationEn;
 }

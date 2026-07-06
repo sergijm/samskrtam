@@ -71,7 +71,7 @@ GET    /api/v1/flags/{name}/history     → история изменений ф
 
 ## 7. Flyway миграции
 
-V1 — schema feature_flags; V2 — таблица feature_flags; V3 — таблица flag_history с FK на feature_flags.
+3 миграции: схема feature_flags, таблица feature_flags, таблица flag_history с FK на feature_flags.
 
 ---
 

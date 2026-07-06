@@ -91,6 +91,9 @@ export interface SessionQuestion {
     stem: string;
     caseType: string;
     numberType: string;
+    stemDevanagari?: string;
+    stemTranslationRu?: string;
+    stemTranslationEn?: string;
 }
 
 export interface QuestionOption {
@@ -108,7 +111,7 @@ export interface AnswerRequest {
 
 export interface AnswerResponse {
     isCorrect: boolean;
-    correctOptionId: string;
+  correctOptionId: string;
     correctAnswerText: string;
     explanationRu: string;
     explanationEn: string;

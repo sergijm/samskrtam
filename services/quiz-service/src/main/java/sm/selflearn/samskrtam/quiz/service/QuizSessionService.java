@@ -3,6 +3,7 @@ package sm.selflearn.samskrtam.quiz.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
@@ -15,10 +16,12 @@ import sm.selflearn.samskrtam.quiz.event.QuizAnsweredEvent;
 import sm.selflearn.samskrtam.quiz.event.QuizSessionStatusChangedEvent;
 import sm.selflearn.samskrtam.quiz.mapper.QuizAnswerMapper;
 import sm.selflearn.samskrtam.quiz.mapper.SessionQuestionMapper;
+import sm.selflearn.samskrtam.quiz.model.DeclensionStem;
 import sm.selflearn.samskrtam.quiz.model.QuizAnswer;
 import sm.selflearn.samskrtam.quiz.model.QuizSession;
 import sm.selflearn.samskrtam.quiz.model.SessionQuestion;
 import sm.selflearn.samskrtam.quiz.model.SessionStatus;
+import sm.selflearn.samskrtam.quiz.repository.DeclensionStemRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
 import sm.selflearn.samskrtam.quiz.repository.SessionQuestionRepository;
@@ -44,6 +47,7 @@ public class QuizSessionService {
     private final QuizAnswerMapper quizAnswerMapper;
     private final SessionQuestionMapper sessionQuestionMapper;
     private final SessionQuestionRepository sessionQuestionRepository;
+    private final DeclensionStemRepository declensionStemRepository;
     private final SessionFactory sessionFactory;
     private final SessionPublisher sessionPublisher;
     private final VocabularyWordsSerializer vocabularyWordsSerializer;
@@ -157,7 +161,11 @@ public class QuizSessionService {
                                         .map(q -> sessionQuestionMapper.fromDto(q, savedSession.getId()))
                                         .collect(Collectors.toList());
 
-                                return sessionQuestionRepository.saveAll(sessionQuestions)
+                                // enrich session questions with declension stem details (devanagari + translations)
+                                return enrichWithStemDetails(sessionQuestions)
+                                        .flatMapMany(Flux::fromIterable)
+                                        .collectList()
+                                        .flatMapMany(sessionQuestionRepository::saveAll)
                                         .then(sessionPublisher.publishStarted(savedSession))
                                         .then(quizDataAssembler.assembleResponse(
                                                 savedSession,
@@ -166,6 +174,29 @@ public class QuizSessionService {
                                                 userLocale));
                             });
                 });
+    }
+
+    /**
+     * For each SessionQuestion that has a non-null declensionStemId, look up the
+     * DeclensionStem from the local DB and copy stemDevanagari, stemTranslationRu,
+     * stemTranslationEn into the sessionQuestion.
+     */
+    private Mono<List<SessionQuestion>> enrichWithStemDetails(List<SessionQuestion> questions) {
+        return Flux.fromIterable(questions)
+                .flatMapSequential(q -> {
+                    if (q.getDeclensionStemId() == null) {
+                        return Mono.just(q);
+                    }
+                    return declensionStemRepository.findById(q.getDeclensionStemId())
+                            .map(stem -> {
+                                q.setStemDevanagari(stem.getStemDevanagari());
+                                q.setStemTranslationRu(stem.getTranslationRu());
+                                q.setStemTranslationEn(stem.getTranslationEn());
+                                return q;
+                            })
+                            .defaultIfEmpty(q); // if stem not found, keep defaults (null)
+                })
+                .collectList();
     }
 
     private Mono<StartOrResumeResponse> resume(UUID sessionId, UUID userId, String userLocale) {
@@ -192,7 +223,11 @@ public class QuizSessionService {
     private Mono<StartOrResumeResponse> fetchGeneratedQuizDataAndBuildResponse(QuizSession session, String userLocale) {
         return contentClient.getGeneratedQuizData(session.getGeneratedQuizDataId())
                 .flatMap(generatedQuizData -> getVocabularyWords(session)
-                        .flatMap(allVocabularyWords -> quizDataAssembler.assembleResponse(session, generatedQuizData.getGeneratedQuestions(), allVocabularyWords, userLocale)));
+                        .flatMap(allVocabularyWords -> quizDataAssembler.assembleResponse(
+                                session,
+                                generatedQuizData.getGeneratedQuestions(),
+                                allVocabularyWords,
+                                userLocale)));
     }
 
     private Mono<StartOrResumeResponse> resetAndPublishSessionStatus(QuizSession session, String userLocale) {

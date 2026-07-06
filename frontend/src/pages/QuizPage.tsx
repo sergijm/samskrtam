@@ -69,8 +69,10 @@ const QuizPage = () => {
         <ProgressBar value={progress} className="mb-4" />
         {currentQuestion && quizSummaryData && (
           <>
-            <QuizQuestionPanel
+                        <QuizQuestionPanel
               question={currentQuestion}
+              currentQuestionIndex={currentQuestionIndex}
+              totalQuestions={questions.length}
               selectedOptionId={selectedOptionId}
               disabled={!!feedback || isSubmittingAnswer}
               lessonType={quizSummaryData.lessonType}

@@ -20,6 +20,9 @@ public class GeneratedQuizQuestionDto {
     String explanationRu;
     String explanationEn;
     UUID declensionStemId;
+    String stemDevanagari;       // NEW: devanagari of the stem
+    String stemTranslationRu;    // NEW: russian translation of the stem
+    String stemTranslationEn;    // NEW: english translation of the stem
     CaseType targetCase;
     NumberType targetNumber;
     String correctFormIast;

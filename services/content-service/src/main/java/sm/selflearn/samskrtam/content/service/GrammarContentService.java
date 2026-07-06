@@ -42,11 +42,14 @@ public class GrammarContentService {
         return stems.stream()
                 .map(stem -> DeclensionStemDto.builder()
                         .id(stem.getId())
-                        .lessonId(lesson.getId())
-                        .slug(stem.getStemNameIast())
-                        .gender(stem.getGender())
-                        .vowelType(stem.getVowelType())
-                        .build())
+                                                .lessonId(lesson.getId())
+                                                .slug(stem.getStemNameIast())
+                                                .gender(stem.getGender())
+                                                .vowelType(stem.getVowelType())
+                                                .stemDevanagari(stem.getStemNameDevanagari())
+                                                .translationRu(stem.getTranslationRu())
+                                                .translationEn(stem.getTranslationEn())
+                                                .build())
                 .collect(Collectors.toList());
     }
 

@@ -5,7 +5,7 @@
     "correct": "Верно!",
     "incorrect": "Неверно",
     "correctAnswerIs": "Правильный ответ",
-    "q ": "Вопрос {{current}} из {{total}}",
+    "question": "Вопрос {{current}} из {{total}}",
     "explanation": "Объяснение",
     "title": "Квизы",
     "fetchError": "Не удалось загрузить квизы: {{message}}",

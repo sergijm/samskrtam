@@ -21,6 +21,9 @@ public class SessionQuestion {
     private String explanationRu;
     private String explanationEn;
     private UUID declensionStemId;
+    private String stemDevanagari;       // NEW: devanagari of the stem, copied from declension_stems at session start
+    private String stemTranslationRu;    // NEW: russian translation of the stem
+    private String stemTranslationEn;    // NEW: english translation of the stem
     private String targetCase;
     private String targetNumber;
     private String targetGender; // NEW: gender for the question (MASCULINE, FEMININE, NEUTER, UNSPECIFIED)

@@ -26,7 +26,20 @@ WebFlux выбран осознанно: quiz-service интенсивно ра�
 
 | Хранилище | Что хранит | Зачем |
 |---|---|---|
-| PostgreSQL/R2DBC (схема `quiz`) | активные и завершённые сессии, ответы, вопросы сессий, **события Outbox** | надёжность, возможность продолжить сессию, хранение всех данных сессии |
+| PostgreSQL/R2DBC (схема `quiz`) | активные и завершённые сессии (`quiz_session`), ответы пользователя (`quiz_answers`), вопросы сессии (`session_questions`), **события Outbox** | надёжность, возможность продолжить сессию, отображение вопроса на resume/answer/complete, SQL-статистика/история |
+
+> **Архитектурное решение (актуальная версия):** content-service — чистый генератор без
+> побочных эффектов записи: `generate-quiz-data` генерирует вопросы и сразу возвращает их,
+> ничего не сохраняя. quiz-service вызывает его **один раз, на старте сессии**, и сохраняет
+> результат целиком в `quiz.session_questions` (см. §12) — это единственное персистентное
+> хранилище вопросов сессии во всей системе. На resume/answer/complete quiz-service читает
+> вопросы из своей же БД, не обращаясь к content-service за данными вопроса (см. §3). Так было
+> не всегда: раньше content-service тоже сохранял копию (`generated_quiz_data`/
+> `generated_questions`), это было настоящим дублированием и удалено (см. content-service.md §3а).
+>
+> content-service тем не менее продолжает вызываться на resume — но не за вопросами, а за
+> данными для генерации дистракторов (`getDeclensionForms`), которые в quiz-service не
+> персистятся (см. §5а). Полной развязки от content-service на resume нет.
 
 ---
 
@@ -38,24 +51,35 @@ WebFlux выбран осознанно: quiz-service интенсивно ра�
 
 ```
 GET /api/v1/quiz/{type}/sessions/start[?quizId=uuid]
-  ↓ WebClient → content-service /session-data (реактивно)
-  ↓ для DECLENSIONS/CONJUGATIONS: генерирует N вопросов из sessionData.questions
-  ↓ для VOCABULARY: генерирует N вопросов из sessionData.vocabularyWords (Sanskrit->Translation или Translation->Sanskrit)
+  ↓ WebClient POST → content-service /api/v1/content/lessons/{id}/generate-quiz-data (реактивно)
+  ↓ content-service генерирует N вопросов (DECLENSIONS/CONJUGATIONS — из declension_stems/forms;
+    VOCABULARY — из vocabulary_words) и ВОЗВРАЩАЕТ их сразу, НЕ сохраняя у себя
+    (GeneratedQuizData, без generatedQuizDataId — не нужен для повторного запроса)
   ↓ flatMap: сохраняет сессию в Postgres (R2DBC) в `quiz.quiz_session`
-  ↓ flatMap: сохраняет сгенерированные вопросы в Postgres (R2DBC) в `quiz.session_questions`
+  ↓ flatMap: сохраняет ПОЛНЫЙ список полученных вопросов в `quiz.session_questions` —
+    единственное персистентное хранилище вопросов сессии во всей системе (см. §12)
+  ↓ для DECLENSIONS/CONJUGATIONS: варианты ответа (дистракторы) генерируются динамически
+    прямо в ответе (DeclensionOptionGeneratorService/LexicalOptionGeneratorService, см. §5а),
+    НЕ сохраняются нигде
   ↓ **Публикует QuizSessionStatusChangedEvent (status=IN_PROGRESS) через Outbox Pattern**
   → Mono<StartSessionResponse>
 
 GET /api/v1/quiz/{type}/sessions/{id}/resume
   ↓ R2DBC → Postgres, восстанавливает QuizSession
-  ↓ R2DBC → Postgres, получает все SessionQuestion для сессии
+  ↓ R2DBC → Postgres, получает все SessionQuestion сессии из `quiz.session_questions`
+    (findBySessionId) — content-service для этого больше НЕ вызывается
+  ↓ варианты ответа для текущего вопроса генерируются заново на лету — здесь content-service
+    всё же вызывается, но только за формами для дистракторов (getDeclensionForms, см. §5а)
   ↓ **Если статус сессии изменился на IN_PROGRESS, публикует QuizSessionStatusChangedEvent через Outbox Pattern**
   → Mono<ResumeSessionResponse>
 
 POST /api/v1/quiz/{type}/sessions/{id}/answer
   ↓ R2DBC → Postgres, получает QuizSession
-  ↓ R2DBC → Postgres, получает SessionQuestion для текущего вопроса
-  ↓ проверяет ответ (для VOCABULARY учитывает targetLanguage, используя vocabularyWordsJson из QuizSession)
+  ↓ R2DBC → Postgres, получает SessionQuestion для текущего вопроса из `quiz.session_questions`
+    (по question_id) — content-service НЕ вызывается
+  ↓ проверяет ответ по СТРОКЕ (для VOCABULARY учитывает targetLanguage, используя
+    vocabularyWordsJson из QuizSession); сверка не зависит от ID вариантов, т.к. дистракторы
+    не персистентны
   ↓ flatMap: R2DBC сохраняет QuizAnswer + обновляет QuizSession (answered_questions, score)
   ↓ **Публикует QuizAnsweredEvent через Outbox Pattern**
   → Mono<AnswerResponse>
@@ -63,7 +87,8 @@ POST /api/v1/quiz/{type}/sessions/{id}/answer
 POST /api/v1/quiz/{type}/sessions/{id}/complete
   ↓ R2DBC → Postgres, получает QuizSession
   ↓ R2DBC → Postgres, получает все QuizAnswer для сессии
-  ↓ R2DBC → Postgres, получает все SessionQuestion для сессии
+  ↓ R2DBC → Postgres, получает все SessionQuestion для сессии из `quiz.session_questions`
+    (для сборки отчёта history/summary) — content-service НЕ вызывается
   ↓ R2DBC обновляет статус QuizSession → COMPLETED
   ↓ **Публикует QuizSessionStatusChangedEvent (status=COMPLETED) через Outbox Pattern**
   → Mono<CompleteSessionResponse>
@@ -72,6 +97,12 @@ GET /api/v1/quiz-sessions/progress?userId={userId}&quizId={quizId}
   ↓ R2DBC → Postgres, находит последнюю незавершенную сессию для userId и quizId
   → Mono<QuizProgressDto>
 ```
+
+> **Итог решения:** content-service вызывается только **один раз на старте** (генерация
+> вопросов) и по требованию на **каждом рендере вопроса** (генерация дистракторов, start и
+> resume). Resume/answer/complete не запрашивают у content-service сами вопросы — они уже есть
+> в `quiz.session_questions`. Кэширование `getDeclensionForms` — отдельная задача на будущее
+> при появлении нагрузки (Redis ранее был удалён из quiz-service, см. §6).
 
 ---
 
@@ -121,7 +152,34 @@ dependencies {
 *   `selected_form_iast`: VARCHAR
 *   `correct_form_iast`: VARCHAR
 
+> `selected_option_id` — id варианта ответа, присвоенный на лету (см. §5а), не ссылается ни на какую персистентную таблицу опций. Проверка правильности идёт по `selected_form_iast`/`correct_form_iast` (строковое сравнение), поэтому персистентные ID вариантов не нужны.
+>
+> Помимо стандартных CRUD-методов, `QuizAnswerRepository` содержит нативные `@Query`-методы с JOIN на `quiz.session_questions`/`quiz.quiz_session` для статистики: `findByWordIdAndUserIdAndLessonId`, `countByWordIdAndUserIdAndLessonId`, `calculateWordScore` (см. §6а), `findGrammarHistory`, `countGrammarHistory`. Это основной живой читатель `session_questions` (см. §12).
+
+### 5а. Генерация вариантов ответа (дистракторы) — generate-on-read, не персистится
+
+`DeclensionOptionGeneratorService` (для DECLENSIONS/CONJUGATIONS) и `LexicalOptionGeneratorService`
+(для VOCABULARY), вызываемые из `QuizDataAssembler`, генерируют варианты ответа заново при
+**каждом** обращении к вопросу (start/resume): запрашивают у content-service все формы
+основы (`getDeclensionForms`) или слова урока, выбирают до 3 дистракторов, шафлят и
+присваивают каждому варианту `UUID.randomUUID()`. Ничего не сохраняется — ни в БД
+quiz-service, ни в content-service.
+
+**Последствие:** при повторном рендере ещё не отвеченного вопроса (например, обновление
+страницы до ответа) набор неправильных вариантов может отличаться от предыдущего показа —
+правильный ответ и его проверка от этого не зависят, но стоит иметь это в виду при
+проектировании UX (открытый вопрос: сидировать `Random` от `questionId` для стабильности
+между повторными показами — не реализовано).
+
 ### `SessionQuestionRepository`
+
+Единственное персистентное хранилище вопросов сессии во всей системе (см. §1, §3). Пишется на
+`start` (из ответа `generate-quiz-data`), читается на `resume`/`answer`/`complete`
+(`findBySessionId`, а также нужен метод поиска по `question_id` для answer — **задача Агенту 2**,
+т.к. `findBySessionId` в текущем коде объявлен, но нигде не вызывается: он был "мёртвым" до
+этого решения, теперь должен реально вызываться в `QuizSessionService`). Также читается через
+`QuizAnswerRepository` (SQL `@Query` с JOIN) для статистики/истории — см. ниже.
+
 *   `id`: UUID
 *   `session_id`: UUID
 *   `question_id`: UUID
@@ -130,8 +188,12 @@ dependencies {
 *   `explanation_ru`: TEXT
 *   `explanation_en`: TEXT
 *   `declension_stem_id`: UUID
+*   `stem_devanagari`: VARCHAR *(NEW — из content-service `DeclensionStem.stemNameDevanagari`, см. content-service.md)*
+*   `stem_translation_ru`: VARCHAR *(NEW — из content-service `DeclensionStem.translationRu`)*
+*   `stem_translation_en`: VARCHAR *(NEW)*
 *   `target_case`: VARCHAR
 *   `target_number`: VARCHAR
+*   `target_gender`: VARCHAR
 *   `correct_form_iast`: VARCHAR
 *   `correct_form_devanagari`: VARCHAR
 *   `vocabulary_word_id`: UUID
@@ -192,8 +254,13 @@ WHERE qs.user_id = :userId
 *   `webClient`: WebClient
 *   `contentBaseUrl`: String
 
-Методы:
-*   `getSessionData(UUID quizId)`: Mono<SessionDataResponse>
+Реальные методы (было неточно описано — раньше указывался несуществующий `getSessionData`):
+*   `generateQuizData(UUID lessonId, String userLocale)`: Mono<GeneratedQuizData> — `POST /api/v1/content/lessons/{id}/generate-quiz-data`, вызывается **только на `start`**, ничего не сохраняет в content-service
+*   ~~`getGeneratedQuizData`~~/~~`getGeneratedQuestion`~~ — **удалены** вместе с соответствующими эндпоинтами content-service (задача Агенту 2): resume/answer/complete теперь читают вопросы из своей БД (`SessionQuestionRepository`), см. §3, §5
+*   `getDeclensionForms(UUID declensionStemId)`: Mono<List<DeclensionFormDto>> — используется `DeclensionOptionGeneratorService` для генерации дистракторов (см. §5а)
+*   `getDeclensionStemsForLesson(String slug)`, `getCaseEndingsByVowelType(String vowelType)` — вспомогательные для грамматики
+*   `getVocabularyWordsForLesson(UUID lessonId, int limit)`, `getVocabularyWordById(UUID wordId)` — для VOCABULARY квизов
+*   `getLessonItem(UUID lessonId)`, `getLessonItemBySlug(String slug)`, `getQuizzesByCategory(String category)` — метаданные уроков
 
 ---
 
@@ -255,14 +322,19 @@ WHERE qs.user_id = :userId
 Методы `QuizSessionService` используют реактивные цепочки для обработки логики сессий, включая сохранение данных и публикацию событий Outbox.
 
 ### `startSession(UUID quizId, UUID userId, String userLocale)`
-*   Получает данные квиза из `content-service`.
+*   Получает сгенерированные вопросы из `content-service` (`generate-quiz-data`, ничего не сохраняющий вызов).
 *   Генерирует и сохраняет новую сессию в `quiz.quiz_session`.
+*   Сохраняет полученные вопросы в `quiz.session_questions` (единственное персистентное хранилище).
 *   Публикует `QuizSessionStatusChangedEvent` (статус `IN_PROGRESS`) через Outbox Pattern.
+
+### `resumeSession(UUID sessionId, UUID userId)`
+*   Восстанавливает `QuizSession` и читает вопросы сессии из `quiz.session_questions` — content-service для вопросов не вызывается.
+*   Генерирует дистракторы на лету через `QuizDataAssembler` (см. §5а) — здесь content-service вызывается за формами.
 
 ### `submitAnswer(UUID sessionId, UUID userId, AnswerRequest request, String userLocale)`
 *   Проверяет существование сессии и принадлежность пользователю.
 *   Проверяет, не был ли вопрос уже отвечен.
-*   Получает детали вопроса из `content-service`.
+*   Получает детали вопроса из `quiz.session_questions` (не из content-service).
 *   Сохраняет ответ пользователя в `quiz.quiz_answers` и обновляет `quiz.quiz_session`.
 *   Публикует `QuizAnsweredEvent` через Outbox Pattern.
 
@@ -289,7 +361,7 @@ WHERE qs.user_id = :userId
 *   `started_at`: TIMESTAMP WITH TIME ZONE
 *   `completed_at`: TIMESTAMP WITH TIME ZONE
 *   `vocabulary_words_json`: TEXT
-*   `generated_quiz_data_id`: UUID
+*   `generated_quiz_data_id`: UUID *(становится внутренним group-id quiz-service, а не внешним FK на content-service — там больше нет `generated_quiz_data`, см. content-service.md §3а; можно оставить как есть или убрать в будущей чистке, не блокирует текущую задачу)*
 
 ### `quiz.quiz_answers`
 *   `id`: UUID (PK)
@@ -302,7 +374,15 @@ WHERE qs.user_id = :userId
 *   `selected_form_iast`: VARCHAR(255)
 *   `correct_form_iast`: VARCHAR(255)
 
-### `quiz.session_questions`
+### `quiz.session_questions` — ЕДИНСТВЕННОЕ хранилище вопросов сессии (итоговая версия)
+
+История правок этого раздела (для прозрачности): изначально предполагалось, что stem-поля
+добавляются в content-service; затем — что таблица не нужна вообще и должна быть удалена
+(ошибка — не учли живые SQL-джойны в `QuizAnswerRepository`, см. §5); итоговое решение —
+content-service ничего не хранит, а эта таблица становится единственным персистентным
+хранилищем вопросов сессии во всей системе, используется и для отображения (resume/answer/
+complete), и для статистики/истории.
+
 *   `id`: UUID (PK)
 *   `session_id`: UUID (FK на `quiz.quiz_session`)
 *   `question_id`: UUID
@@ -311,8 +391,12 @@ WHERE qs.user_id = :userId
 *   `explanation_ru`: TEXT
 *   `explanation_en`: TEXT
 *   `declension_stem_id`: UUID
+*   `stem_devanagari`: VARCHAR(255) *(NEW, миграция V2 — из content-service `DeclensionStem.stemNameDevanagari`)*
+*   `stem_translation_ru`: VARCHAR(255) *(NEW, миграция V2 — из content-service `DeclensionStem.translationRu`)*
+*   `stem_translation_en`: VARCHAR(255) *(NEW, миграция V2)*
 *   `target_case`: VARCHAR(50)
 *   `target_number`: VARCHAR(50)
+*   `target_gender`: VARCHAR(50)
 *   `correct_form_iast`: VARCHAR(255)
 *   `correct_form_devanagari`: VARCHAR(255)
 *   `vocabulary_word_id`: UUID
@@ -332,3 +416,30 @@ WHERE qs.user_id = :userId
 *   `error_message`: TEXT
 *   `retry_count`: INTEGER
 *   `processed_at`: TIMESTAMP WITH TIME ZONE
+
+---
+
+## 13. Контракт вопроса для фронтенда — деванагари и перевод основы (итоговая версия)
+
+Путь данных целиком: `content.declension_stems.stem_name_devanagari/translation_ru/en` →
+`DeclensionQuizGeneratorService.generateSingleQuestion(...)` копирует их в `QuestionResponse`
+(HTTP-ответ `generate-quiz-data`, ничего не сохраняющий) → quiz-service сохраняет их в свою
+`quiz.session_questions` (единственное хранилище, см. §12) → оттуда же отдаёт на
+`StartSessionResponse`/`ResumeSessionResponse`/`AnswerResponse` во фронтенд-DTO
+`SessionQuestion` (`frontend/src/types/quiz.ts`).
+
+Три новых поля:
+
+*   `stemDevanagari`: string
+*   `stemTranslationRu`: string
+*   `stemTranslationEn`: string
+
+Заполняются только для DECLENSIONS/CONJUGATIONS; для VOCABULARY остаются пустыми — перевод
+слова приходит отдельно через `VocabularyWord.translationRu/En`.
+
+**Затронутые компоненты:**
+*   content-service: `DeclensionStem` (entity), `QuestionResponse`/`GeneratedQuizQuestionDto` (DTO) — Агент 2
+*   quiz-service: `SessionQuestion` (model), `SessionQuestionMapper`, `quiz.session_questions` (миграция) — Агент 2
+*   frontend: `SessionQuestion` в `types/quiz.ts`, рендер в `QuizQuestionPanel.tsx` — Агент 3
+
+**AnswerResponse:** без изменений — там уже есть `correctAnswerText`, перевод основы для него не требуется (только для варианта ответа).

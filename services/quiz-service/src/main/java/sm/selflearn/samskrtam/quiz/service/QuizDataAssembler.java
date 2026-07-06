@@ -121,29 +121,35 @@ public class QuizDataAssembler {
                     generatedQuestion.getQuestionTargetLanguage(),
                     userLocale
             ).map(options -> QuestionDto.builder()
-                    .id(generatedQuestion.getId())
-                    .questionNumber(generatedQuestion.getQuestionNumber())
-                    .text(generatedQuestion.getText())
-                    .options(options)
-                    .stem(generatedQuestion.getStem())
-                    .caseType(generatedQuestion.getCaseType())
-                    .numberType(generatedQuestion.getNumberType())
-                    .build());
-        } else {
-            return declensionOptionGeneratorService.generateOptions(
-                    generatedQuestion.getDeclensionStemId(),
-                    generatedQuestion.getTargetCase(),
-                    generatedQuestion.getTargetNumber(),
-                    generatedQuestion.getCorrectFormIast()
-            ).map(options -> QuestionDto.builder()
-                    .id(generatedQuestion.getId())
-                    .questionNumber(generatedQuestion.getQuestionNumber())
-                    .text(generatedQuestion.getText())
-                    .options(options)
-                    .stem(generatedQuestion.getStem())
-                    .caseType(generatedQuestion.getCaseType())
-                    .numberType(generatedQuestion.getNumberType())
-                    .build());
-        }
-    }
-}
+                                .id(generatedQuestion.getId())
+                                .questionNumber(generatedQuestion.getQuestionNumber())
+                                .text(generatedQuestion.getText())
+                                .options(options)
+                                .stem(generatedQuestion.getStem())
+                                .caseType(generatedQuestion.getCaseType())
+                                .numberType(generatedQuestion.getNumberType())
+                                .stemDevanagari(generatedQuestion.getStemDevanagari())
+                                .stemTranslationRu(generatedQuestion.getStemTranslationRu())
+                                .stemTranslationEn(generatedQuestion.getStemTranslationEn())
+                                .build());
+                    } else {
+                        return declensionOptionGeneratorService.generateOptions(
+                                generatedQuestion.getDeclensionStemId(),
+                                generatedQuestion.getTargetCase(),
+                                generatedQuestion.getTargetNumber(),
+                                generatedQuestion.getCorrectFormIast()
+                        ).map(options -> QuestionDto.builder()
+                                .id(generatedQuestion.getId())
+                                .questionNumber(generatedQuestion.getQuestionNumber())
+                                .text(generatedQuestion.getText())
+                                .options(options)
+                                .stem(generatedQuestion.getStem())
+                                .caseType(generatedQuestion.getCaseType())
+                                .numberType(generatedQuestion.getNumberType())
+                                .stemDevanagari(generatedQuestion.getStemDevanagari())
+                                .stemTranslationRu(generatedQuestion.getStemTranslationRu())
+                                .stemTranslationEn(generatedQuestion.getStemTranslationEn())
+                                .build());
+                    }
+                }
+            }

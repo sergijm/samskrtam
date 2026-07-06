@@ -18,6 +18,9 @@ public interface SessionQuestionMapper {
     @Mapping(target = "explanationRu", source = "dto.explanationRu")
     @Mapping(target = "explanationEn", source = "dto.explanationEn")
     @Mapping(target = "declensionStemId", source = "dto.declensionStemId")
+    @Mapping(target = "stemDevanagari", source = "dto.stemDevanagari")
+    @Mapping(target = "stemTranslationRu", source = "dto.stemTranslationRu")
+    @Mapping(target = "stemTranslationEn", source = "dto.stemTranslationEn")
     @Mapping(target = "targetCase", expression = "java(dto.getTargetCase() != null ? dto.getTargetCase().name() : null)")
     @Mapping(target = "targetNumber", expression = "java(dto.getTargetNumber() != null ? dto.getTargetNumber().name() : null)")
     @Mapping(target = "correctFormIast", source = "dto.correctFormIast")
@@ -29,3 +32,4 @@ public interface SessionQuestionMapper {
     @Mapping(target = "correctTranslationEn", source = "dto.correctTranslationEn")
     SessionQuestion fromDto(GeneratedQuizQuestionDto dto, UUID sessionId);
 }
+

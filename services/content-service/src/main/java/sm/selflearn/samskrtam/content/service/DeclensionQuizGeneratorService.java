@@ -98,6 +98,9 @@ public class DeclensionQuizGeneratorService {
                 .correctFormIast(correctForm.getFormIast())
                 .correctFormDevanagari(correctForm.getFormDevanagari())
                 .stem(stem.getStemNameIast())
+                .stemDevanagari(stem.getStemNameDevanagari())
+                .stemTranslationRu(stem.getTranslationRu())
+                .stemTranslationEn(stem.getTranslationEn())
                 .build();
     }
 
@@ -112,3 +115,4 @@ public class DeclensionQuizGeneratorService {
         if (slug.startsWith("declensions-r-")  || slug.equals("declensions-r"))  return VowelType.R_STEM;
         return null; // declensions-all или неизвестный slug → все основы
     }}
+
