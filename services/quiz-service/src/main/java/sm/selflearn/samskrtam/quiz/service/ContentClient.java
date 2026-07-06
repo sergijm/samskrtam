@@ -11,10 +11,10 @@ import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionStemDto;
 import sm.selflearn.samskrtam.content.dto.GeneratedQuizData;
-import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
 import sm.selflearn.samskrtam.content.dto.LessonItemResponse;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.content.dto.CaseEndingDto;
+
 
 import java.util.List;
 import java.util.UUID;
@@ -55,23 +55,7 @@ public class ContentClient {
                 .bodyToMono(GeneratedQuizData.class);
     }
 
-    public Mono<GeneratedQuizData> getGeneratedQuizData(UUID generatedQuizDataId) {
-        return webClient.get()
-                .uri("/api/v1/content/generated-quiz-data/{id}", generatedQuizDataId)
-                .retrieve()
-                .onStatus(HttpStatusCode::is4xxClientError,
-                        r -> Mono.error(new SamskrtamException("GENERATED_QUIZ_DATA_NOT_FOUND", "Generated quiz data not found in content-service: " + generatedQuizDataId)))
-                .bodyToMono(GeneratedQuizData.class);
-    }
-
-    public Mono<GeneratedQuizQuestionDto> getGeneratedQuestion(UUID questionId) {
-        return webClient.get()
-                .uri("/api/v1/content/generated-questions/{id}", questionId)
-                .retrieve()
-                .onStatus(HttpStatusCode::is4xxClientError,
-                        r -> Mono.error(new SamskrtamException("QUESTION_NOT_FOUND", "Generated question not found in content-service: " + questionId)))
-                .bodyToMono(GeneratedQuizQuestionDto.class);
-    }
+    
 
     public Mono<List<DeclensionFormDto>> getDeclensionForms(UUID declensionStemId) {
         return webClient.get()

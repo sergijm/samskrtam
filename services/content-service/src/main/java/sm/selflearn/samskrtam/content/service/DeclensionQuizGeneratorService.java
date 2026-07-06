@@ -54,7 +54,6 @@ public class DeclensionQuizGeneratorService {
 
     private QuestionResponse generateSingleQuestion(DeclensionStem stem, Locale locale, int questionNumber) {
         CaseType targetCase = CaseType.values()[random.nextInt(CaseType.values().length)];
-        // Assuming Number is in the same package as Case
         NumberType targetNumber = NumberType.values()[random.nextInt(NumberType.values().length)];
 
         DeclensionForm correctForm = declensionFormRepository
@@ -101,6 +100,7 @@ public class DeclensionQuizGeneratorService {
                 .stemDevanagari(stem.getStemNameDevanagari())
                 .stemTranslationRu(stem.getTranslationRu())
                 .stemTranslationEn(stem.getTranslationEn())
+                .gender(stem.getGender() != null ? stem.getGender().name() : null)
                 .build();
     }
 

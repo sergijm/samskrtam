@@ -26,5 +26,7 @@ public class QuestionResponse {
     String stemDevanagari;
     String stemTranslationRu;
     String stemTranslationEn;
+    /** Gender from the declension stem, used by quiz-service for progress aggregation */
+    String gender; // Added field
 }
 

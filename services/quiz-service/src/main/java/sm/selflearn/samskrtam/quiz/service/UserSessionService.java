@@ -1,6 +1,5 @@
 package sm.selflearn.samskrtam.quiz.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -18,8 +17,9 @@ import sm.selflearn.samskrtam.quiz.mapper.UserSessionMapper;
 import sm.selflearn.samskrtam.quiz.model.*;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
+import sm.selflearn.samskrtam.quiz.repository.SessionQuestionRepository;
+import sm.selflearn.samskrtam.quiz.mapper.SessionQuestionToDtoMapper;
 import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
-
 
 import java.time.Duration;
 import java.util.*;
@@ -31,10 +31,11 @@ import java.util.stream.Collectors;
 @Slf4j
 public class UserSessionService {
 
-    private final QuizSessionRepository quizSessionRepository;
+        private final QuizSessionRepository quizSessionRepository;
     private final QuizAnswerRepository quizAnswerRepository;
     private final ContentClient contentClient;
-    private final ObjectMapper objectMapper;
+        private final SessionQuestionRepository sessionQuestionRepository;
+    private final SessionQuestionToDtoMapper sessionQuestionToDtoMapper;
     private final UserSessionMapper userSessionMapper;
     
 
@@ -127,13 +128,14 @@ public class UserSessionService {
             Locale locale) {
         return quizSessionRepository.findByIdAndUserId(sessionId, userId)
                 .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Session not found or does not belong to user: " + sessionId)))
-                .flatMap(session -> Mono.zip(
-                                        contentClient.getGeneratedQuizData(session.getGeneratedQuizDataId()),
+                                .flatMap(session -> Mono.zip(
+                                        sessionQuestionRepository.findBySessionId(session.getId())
+                                                .map(sessionQuestionToDtoMapper::toDto)
+                                                .collectList(),
                                         quizAnswerRepository.findBySessionId(sessionId).collectList()
                                 )
                                 .flatMap(tuple -> {
-                                    GeneratedQuizData generatedQuizData = tuple.getT1();
-                                    List<GeneratedQuizQuestionDto> generatedQuestions = generatedQuizData.getGeneratedQuestions();
+                                    List<GeneratedQuizQuestionDto> generatedQuestions = tuple.getT1();
                                     List<QuizAnswer> quizAnswers = tuple.getT2();
 
                                     Map<UUID, QuizAnswer> answersMap = quizAnswers.stream()

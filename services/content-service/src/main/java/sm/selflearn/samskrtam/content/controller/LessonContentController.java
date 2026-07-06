@@ -9,7 +9,6 @@ import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionStemDto;
 import sm.selflearn.samskrtam.content.dto.GeneratedQuizData;
-import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
 import sm.selflearn.samskrtam.content.dto.LessonItemResponse;
 import sm.selflearn.samskrtam.content.dto.CaseEndingDto;
 import sm.selflearn.samskrtam.content.model.DeclensionForm;
@@ -18,7 +17,6 @@ import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
 import sm.selflearn.samskrtam.content.service.GenerateQuizService;
 import sm.selflearn.samskrtam.content.service.GrammarContentService;
 import sm.selflearn.samskrtam.content.service.LessonContentService;
-import sm.selflearn.samskrtam.content.service.QuestionGenerationService;
 
 import java.util.List;
 import java.util.Locale;
@@ -35,7 +33,6 @@ public class LessonContentController {
     private final GenerateQuizService generateQuizService;
     private final GrammarContentService grammarContentService;
     private final DeclensionFormRepository declensionFormRepository;
-    private final QuestionGenerationService questionGenerationService;
 
     @GetMapping("/lessons")
     @Operation(summary = "Get a list of available quizzes")
@@ -82,46 +79,30 @@ public class LessonContentController {
     public GeneratedQuizData generateQuizData(
             @PathVariable UUID quizId,
             @RequestHeader(value = "X-User-Locale", defaultValue = "en") Locale locale) {
-                    return generateQuizService.generateQuizData(quizId, locale);
-}
-
-@GetMapping("/generated-quiz-data/{id}")
-@Operation(summary = "Get generated quiz data by ID")
-@ApiResponse(responseCode = "200", description = "Generated quiz data retrieved successfully")
-@ApiResponse(responseCode = "404", description = "Generated quiz data not found")
-public GeneratedQuizData getGeneratedQuizData(@PathVariable UUID id) {
-    return generateQuizService.getGeneratedQuizData(id);
-}
-
-@GetMapping("/declension-stems/{stemId}/forms")
-@Operation(summary = "Get all declension forms for a specific stem")
-@ApiResponse(responseCode = "200", description = "List of declension forms retrieved successfully")
-@ApiResponse(responseCode = "404", description = "Declension stem not found")
-public List<DeclensionFormDto> getDeclensionForms(@PathVariable UUID stemId) {
-    List<DeclensionForm> forms = declensionFormRepository.findByDeclensionStemId(stemId);
-    if (forms.isEmpty()) {
-        throw new SamskrtamException("DECLENSION_STEM_NOT_FOUND", "Declension stem not found with ID: " + stemId);
+        return generateQuizService.generateQuizData(quizId, locale);
     }
-    return forms.stream()
-            .map(this::mapToDeclensionFormDto)
-            .collect(Collectors.toList());
-}
 
-@GetMapping("/generated-questions/{questionId}")
-@Operation(summary = "Get a specific generated question by ID")
-@ApiResponse(responseCode = "200", description = "Generated question retrieved successfully")
-@ApiResponse(responseCode = "404", description = "Generated question not found")
-public GeneratedQuizQuestionDto getGeneratedQuestion(@PathVariable UUID questionId) {
-    return questionGenerationService.getGeneratedQuestionById(questionId);
-}
+    @GetMapping("/declension-stems/{stemId}/forms")
+    @Operation(summary = "Get all declension forms for a specific stem")
+    @ApiResponse(responseCode = "200", description = "List of declension forms retrieved successfully")
+    @ApiResponse(responseCode = "404", description = "Declension stem not found")
+    public List<DeclensionFormDto> getDeclensionForms(@PathVariable UUID stemId) {
+        List<DeclensionForm> forms = declensionFormRepository.findByDeclensionStemId(stemId);
+        if (forms.isEmpty()) {
+            throw new SamskrtamException("DECLENSION_STEM_NOT_FOUND", "Declension stem not found with ID: " + stemId);
+        }
+        return forms.stream()
+                .map(this::mapToDeclensionFormDto)
+                .collect(Collectors.toList());
+    }
 
-private DeclensionFormDto mapToDeclensionFormDto(DeclensionForm form) {
-    return DeclensionFormDto.builder()
-            .declensionStemId(form.getDeclensionStemId())
-            .caseType(form.getCaseType())
-            .numberType(form.getNumberType())
-            .formIast(form.getFormIast())
-            .formDevanagari(form.getFormDevanagari())
-            .build();
-}
+    private DeclensionFormDto mapToDeclensionFormDto(DeclensionForm form) {
+        return DeclensionFormDto.builder()
+                .declensionStemId(form.getDeclensionStemId())
+                .caseType(form.getCaseType())
+                .numberType(form.getNumberType())
+                .formIast(form.getFormIast())
+                .formDevanagari(form.getFormDevanagari())
+                .build();
+    }
 }

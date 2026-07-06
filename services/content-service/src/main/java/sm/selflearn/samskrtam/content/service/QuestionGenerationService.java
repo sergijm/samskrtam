@@ -3,53 +3,35 @@ package sm.selflearn.samskrtam.content.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import sm.selflearn.samskrtam.common.SamskrtamException;
+import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
 import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.dto.QuestionLanguage;
 import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
-import sm.selflearn.samskrtam.content.model.GeneratedQuestion;
 import sm.selflearn.samskrtam.content.model.Lesson;
-import sm.selflearn.samskrtam.content.repository.GeneratedQuestionRepository;
-import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class QuestionGenerationService {
 
-    private final GeneratedQuestionRepository generatedQuestionRepository;
     private final DeclensionQuizGeneratorService declensionQuizGeneratorService;
     private final VocabularyService vocabularyService;
 
-    public List<GeneratedQuizQuestionDto> generateQuestions(UUID generatedQuizDataId, Lesson lesson, String userLocale) {
-
+    public List<GeneratedQuizQuestionDto> generateQuestions(Lesson lesson, String userLocale) {
         log.debug("Generating new questions for quizId: {} and locale: {}", lesson.getId(), userLocale);
-        List<GeneratedQuestion> newQuestions = generateAndSaveQuestions(generatedQuizDataId, lesson, userLocale);
-        return newQuestions.stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
-    }
 
-    public GeneratedQuizQuestionDto getGeneratedQuestionById(UUID questionId) {
+        var builders = new ArrayList<GeneratedQuizQuestionDto.GeneratedQuizQuestionDtoBuilder>();
 
-        GeneratedQuestion question = generatedQuestionRepository.findById(questionId)
-                .orElseThrow(() -> new SamskrtamException("QUESTION_NOT_FOUND", "Generated question not found with ID: " + questionId));
-        return mapToDto(question);
-    }
-
-    private List<GeneratedQuestion> generateAndSaveQuestions(UUID generatedQuizDataId, Lesson lesson, String userLocale) {
-        List<GeneratedQuestion> questionsToSave = new ArrayList<>();
-
-        if ( LessonType.isDeclensions(lesson.getLessonType())) {
-            questionsToSave.addAll(declensionQuizGeneratorService.generateDeclensionQuestions(lesson, new Locale(userLocale)).stream()
-                    .map(response -> GeneratedQuestion.builder()
+        if (LessonType.isDeclensions(lesson.getLessonType())) {
+            builders.addAll(declensionQuizGeneratorService.generateDeclensionQuestions(lesson, new Locale(userLocale)).stream()
+                    .map(response -> GeneratedQuizQuestionDto.builder()
                             .id(UUID.randomUUID())
-                            .generatedQuizDataId(generatedQuizDataId)
                             .quizId(lesson.getId())
-                            .text(response.getText()) // Keep original text for now, can be refined
+                            .text(response.getText())
                             .explanationRu(response.getExplanationRu())
                             .explanationEn(response.getExplanationEn())
                             .declensionStemId(response.getDeclensionStemId())
@@ -58,29 +40,25 @@ public class QuestionGenerationService {
                             .correctFormIast(response.getCorrectFormIast())
                             .correctFormDevanagari(response.getCorrectFormDevanagari())
                             .userLocale(userLocale)
-                            // Populate new fields
                             .stem(response.getStem())
-                                                        .caseType(response.getTargetCase()) // Assign Case enum directly
-                                                        .numberType(response.getTargetNumber()) // Assign Number enum directly
-                                                        .stemDevanagari(response.getStemDevanagari())
+                            .caseType(response.getTargetCase() != null ? response.getTargetCase().getRuName() : null)
+                            .numberType(response.getTargetNumber() != null ? response.getTargetNumber().getRuName() : null)
+                            .stemDevanagari(response.getStemDevanagari())
                                                         .stemTranslationRu(response.getStemTranslationRu())
                                                         .stemTranslationEn(response.getStemTranslationEn())
-                                                        .build())
-                                                .collect(Collectors.<GeneratedQuestion>toList()));
-                                    } else if ( LessonType.isVocabulary(lesson.getLessonType() )) {
-            List<VocabularyWordDto> vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(lesson.getSlug(), lesson.getQuestionsPerSession() * 4); // Changed to quiz.getSlug()
+                            .gender(response.getGender()))
+                    .collect(Collectors.toList()));
+        } else if (LessonType.isVocabulary(lesson.getLessonType())) {
+            List<VocabularyWordDto> vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(lesson.getSlug(), lesson.getQuestionsPerSession() * 4);
 
             for (VocabularyWordDto word : vocabularyWords) {
                 // Sanskrit to Translation
-                String questionTextSanskritToTranslation = String.format(
-                        userLocale.equals("ru") ? "Как переводится слово '%s'?" : "How is the word '%s' translated?",
-                        word.getWordIast()
-                );
-                questionsToSave.add(GeneratedQuestion.builder()
+                builders.add(GeneratedQuizQuestionDto.builder()
                         .id(UUID.randomUUID())
-                        .generatedQuizDataId(generatedQuizDataId)
                         .quizId(lesson.getId())
-                        .text(questionTextSanskritToTranslation)
+                        .text(String.format(
+                                userLocale.equals("ru") ? "Как переводится слово '%s'?" : "How is the word '%s' translated?",
+                                word.getWordIast()))
                         .explanationRu(word.getExplanationRu())
                         .explanationEn(word.getExplanationEn())
                         .vocabularyWordId(word.getId())
@@ -90,22 +68,15 @@ public class QuestionGenerationService {
                         .correctTranslationEn(word.getTranslationEn())
                         .correctFormIast(userLocale.equals("ru") ? word.getTranslationRu() : word.getTranslationEn())
                         .userLocale(userLocale)
-                        // For vocabulary, these fields might not be directly applicable, or can be null/empty
-                        .stem(word.getWordIast()) // Use word IAST as stem for vocabulary
-                        .caseType(null)
-                        .numberType(null)
-                        .build());
+                        .stem(word.getWordIast()));
 
                 // Translation to Sanskrit
-                String questionTextTranslationToSanskrit = String.format(
-                        userLocale.equals("ru") ? "Как будет '%s' на санскрите?" : "How is '%s' in Sanskrit?",
-                        userLocale.equals("ru") ? word.getTranslationRu() : word.getTranslationEn()
-                );
-                questionsToSave.add(GeneratedQuestion.builder()
+                builders.add(GeneratedQuizQuestionDto.builder()
                         .id(UUID.randomUUID())
-                        .generatedQuizDataId(generatedQuizDataId)
                         .quizId(lesson.getId())
-                        .text(questionTextTranslationToSanskrit)
+                        .text(String.format(
+                                userLocale.equals("ru") ? "Как будет '%s' на санскрите?" : "How is '%s' in Sanskrit?",
+                                userLocale.equals("ru") ? word.getTranslationRu() : word.getTranslationEn()))
                         .explanationRu(word.getExplanationRu())
                         .explanationEn(word.getExplanationEn())
                         .vocabularyWordId(word.getId())
@@ -115,65 +86,17 @@ public class QuestionGenerationService {
                         .correctTranslationEn(word.getTranslationEn())
                         .correctFormIast(word.getWordIast())
                         .userLocale(userLocale)
-                        // For vocabulary, these fields might not be directly applicable, or can be null/empty
-                        .stem(word.getWordIast()) // Use word IAST as stem for vocabulary
-                        .caseType(null)
-                        .numberType(null)
-                        .build());
+                        .stem(word.getWordIast()));
             }
         }
 
-        Collections.shuffle(questionsToSave);
-        // Assign question numbers after shuffling
-        for (int i = 0; i < questionsToSave.size(); i++) {
-            questionsToSave.get(i).setQuestionNumber(i + 1);
-        }
-
-        // Limit to questionsPerSession if more were generated
-        List<GeneratedQuestion> finalQuestions = questionsToSave.stream()
-                .limit(lesson.getQuestionsPerSession())
+        // Shuffle and assign question numbers
+        Collections.shuffle(builders);
+        List<GeneratedQuizQuestionDto> questions = IntStream.range(0, Math.min(builders.size(), lesson.getQuestionsPerSession()))
+                .mapToObj(i -> builders.get(i).questionNumber(i + 1).build())
                 .collect(Collectors.toList());
 
-        return generatedQuestionRepository.saveAll(finalQuestions);
-    }
-
-    private GeneratedQuizQuestionDto mapToDto(GeneratedQuestion question) {
-        String caseTypeString = null;
-        String numberTypeString = null;
-
-        if (question.getCaseType() != null) {
-            caseTypeString = question.getUserLocale().equals("ru") ? question.getCaseType().getRuName() : question.getCaseType().getEnName();
-        }
-        if (question.getNumberType() != null) {
-            numberTypeString = question.getUserLocale().equals("ru") ? question.getNumberType().getRuName() : question.getNumberType().getEnName();
-        }
-
-        return GeneratedQuizQuestionDto.builder()
-                .id(question.getId())
-                .generatedQuizDataId(question.getGeneratedQuizDataId())
-                .quizId(question.getQuizId())
-                .questionNumber(question.getQuestionNumber()) // Map questionNumber
-                .text(question.getText())
-                .explanationRu(question.getExplanationRu())
-                .explanationEn(question.getExplanationEn())
-                .declensionStemId(question.getDeclensionStemId())
-                .targetCase(question.getTargetCase())
-                .targetNumber(question.getTargetNumber())
-                .correctFormIast(question.getCorrectFormIast())
-                .correctFormDevanagari(question.getCorrectFormDevanagari())
-                .vocabularyWordId(question.getVocabularyWordId())
-                .questionSourceLanguage(question.getQuestionSourceLanguage())
-                .questionTargetLanguage(question.getQuestionTargetLanguage())
-                .correctTranslationRu(question.getCorrectTranslationRu())
-                .correctTranslationEn(question.getCorrectTranslationEn())
-                .userLocale(question.getUserLocale())
-                // Map new fields
-                .stem(question.getStem())
-                                .caseType(caseTypeString) // Convert Case enum to String
-                                .numberType(numberTypeString) // Convert Number enum to String
-                                .stemDevanagari(question.getStemDevanagari())
-                                .stemTranslationRu(question.getStemTranslationRu())
-                                .stemTranslationEn(question.getStemTranslationEn())
-                                .build();
+        return questions;
     }
 }
+

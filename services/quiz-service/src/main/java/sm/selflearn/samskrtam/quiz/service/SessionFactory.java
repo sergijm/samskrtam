@@ -9,6 +9,7 @@ import sm.selflearn.samskrtam.quiz.model.QuizSession;
 import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,7 +20,8 @@ public class SessionFactory {
     private final VocabularyWordsSerializer vocabularyWordsSerializer;
 
     public QuizSession createSession(UUID lessonId, UUID userId, GeneratedQuizData generatedQuizData) {
-        String vocabularyWordsJson = vocabularyWordsSerializer.serialize(generatedQuizData.getVocabularyWords());
+        List<VocabularyWordDto> vocabularyWords = generatedQuizData.getVocabularyWords() != null ? generatedQuizData.getVocabularyWords() : Collections.emptyList();
+        String vocabularyWordsJson = vocabularyWordsSerializer.serialize(vocabularyWords);
 
         return QuizSession.builder()
                 .id(null)
@@ -32,7 +34,6 @@ public class SessionFactory {
                 .status(SessionStatus.IN_PROGRESS)
                 .startedAt(Instant.now())
                 .vocabularyWordsJson(vocabularyWordsJson)
-                .generatedQuizDataId(generatedQuizData.getGeneratedQuizDataId())
                 .build();
     }
 }

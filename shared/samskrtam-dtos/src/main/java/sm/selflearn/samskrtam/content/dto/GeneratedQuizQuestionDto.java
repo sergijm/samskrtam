@@ -13,7 +13,6 @@ import java.util.UUID;
 @Jacksonized
 public class GeneratedQuizQuestionDto {
     UUID id;
-    UUID generatedQuizDataId;
     UUID quizId;
     int questionNumber;
     String text;

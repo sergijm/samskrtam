@@ -11,7 +11,6 @@ import java.util.UUID;
 @Builder
 @Jacksonized
 public class GeneratedQuizData {
-    UUID generatedQuizDataId;
     UUID lessonId;
     LessonType lessonType;
     int questionsPerSession;
