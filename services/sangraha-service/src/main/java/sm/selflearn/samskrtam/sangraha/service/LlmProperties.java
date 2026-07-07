@@ -20,5 +20,5 @@ public class LlmProperties {
      * Если null — используется дефолт провайдера.
      * Рекомендуется 8192 для длинных стихов с two-pass.
      */
-    private Long maxCompletionTokens;
+    private Integer maxCompletionTokens;
 }

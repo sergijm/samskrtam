@@ -45,7 +45,7 @@ public class VerseAnalysisService {
      *   <li>При ошибке LLM/невалидном ответе статус → FAILED (повтор бесполезен).</li>
      * </ul>
      */
-    public void analyze(UUID verseId) {
+    public void analyze(UUID verseId, String rawText) {
         Verse verse = verseRepository.findByIdAndDeletedAtIsNull(verseId)
                 .orElseThrow(() -> new IllegalArgumentException("Verse not found: " + verseId));
 
@@ -53,6 +53,11 @@ public class VerseAnalysisService {
                 .orElseThrow(() -> new IllegalArgumentException("Chapter not found: " + verse.getChapterId()));
         Work work = workRepository.findById(chapter.getWorkId())
                 .orElseThrow(() -> new IllegalArgumentException("Work not found: " + chapter.getWorkId()));
+
+        // 0. Сохраняем сырой ввод пользователя в rawText
+        if (rawText != null && !rawText.isBlank()) {
+            verse.setRawText(rawText);
+        }
 
         // 1. Помечаем ANALYZING — блокирует повторные запросы (статус проверяет вызывающая сторона)
         verse.setStatus(VerseStatus.ANALYZING);

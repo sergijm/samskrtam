@@ -62,6 +62,7 @@ public class VerseMapper {
             verse.getOrderIndex(),
             verse.getTextDevanagari(),
             verse.getTextIast(),
+            verse.getRawText(),
             verse.getStatus(),
             analysisDto,
             wordDtos

@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Квиз по склонению санскритских существительных</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --container-bg: #1e1e1e;
+            --primary-orange: #ff6600;
+            --dark-orange: #cc5200;
+            --text-light: #e0e0e0;
+            --text-dark: #121212;
+            --border-color: #333333;
+            --correct-color: #2e7d32;
+            --incorrect-color: #c62828;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-light);
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-orange);
+            text-align: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        /* Tabs styling */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary-orange);
+            background-color: rgba(255, 102, 0, 0.1);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-orange);
+            border-bottom: 3px solid var(--primary-orange);
+            background-color: rgba(255, 102, 0, 0.05);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Filters Section */
+        .filter-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+
+        .filter-title {
+            font-weight: bold;
+            color: var(--primary-orange);
+            margin-bottom: 10px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .checkbox-label input {
+            margin-right: 6px;
+            accent-color: var(--primary-orange);
+        }
+
+        /* Buttons */
+        .btn {
+            background-color: var(--primary-orange);
+            color: var(--text-dark);
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            background-color: var(--dark-orange);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn-danger {
+            background-color: #772222;
+            color: var(--text-light);
+        }
+        .btn-danger:hover {
+            background-color: #993333;
+        }
+
+        /* Quiz UI */
+        .quiz-controls {
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .question-card {
+            background-color: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .question-text {
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+
+        .question-meta {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        @media(max-width: 600px) {
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .option-btn {
+            background-color: #2a2a2a;
+            color: var(--text-light);
+            border: 2px solid var(--border-color);
+            padding: 15px;
+            font-size: 18px;
+            font-family: 'Arial', sans-serif;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn:hover:not([disabled]) {
+            border-color: var(--primary-orange);
+            background-color: #333;
+        }
+
+        .option-btn.correct {
+            background-color: var(--correct-color) !important;
+            color: white !important;
+            border-color: #4caf50 !important;
+        }
+
+        .option-btn.incorrect {
+            background-color: var(--incorrect-color) !important;
+            color: white !important;
+            border-color: #f44336 !important;
+        }
+
+        .progress-bar {
+            background-color: #222;
+            border-radius: 4px;
+            height: 10px;
+            width: 100%;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background-color: var(--primary-orange);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Tables / Paradigms */
+        .paradigm-container {
+            margin-top: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+            background-color: #161616;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+            font-family: 'Arial', sans-serif;
+        }
+
+        th {
+            background-color: rgba(255, 102, 0, 0.15);
+            color: var(--primary-orange);
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(255,255,255,0.01);
+        }
+
+        .table-title {
+            background-color: #252525;
+            padding: 8px 12px;
+            font-weight: bold;
+            border-left: 4px solid var(--primary-orange);
+            margin-top: 15px;
+        }
+
+        /* Stats & Logs */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media(max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .log-table th {
+            background-color: #222;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Sanskrit Declension Quiz</h1>
+
+    <!-- Tabs Header -->
+    <div class="tabs">
+        <button class="tab-btn" onclick="switchTab('filters')">Фильтры</button>
+        <button class="tab-btn" onclick="switchTab('quiz')">Квиз</button>
+        <button class="tab-btn" onclick="switchTab('stats')">Статистика</button>
+        <button class="tab-btn" onclick="switchTab('errors')">Ошибки</button>
+    </div>
+
+    <!-- TAB 1: FILTERS & PARADIGMS -->
+    <div id="tab-filters" class="tab-content">
+        <h2>Настройки выборки</h2>
+        
+        <div class="filter-section">
+            <div class="filter-title">Тематические гласные основ</div>
+            <div class="checkbox-group" id="filter-vowels"></div>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-title">Числа</div>
+            <div class="checkbox-group" id="filter-numbers"></div>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-title">Падежи</div>
+            <div class="checkbox-group" id="filter-cases"></div>
+        </div>
+
+        <h2>Предпросмотр парадигм выбранных слов</h2>
+        <div id="paradigms-preview" class="paradigm-container"></div>
+    </div>
+
+    <!-- TAB 2: QUIZ -->
+    <div id="tab-quiz" class="tab-content">
+        <div class="quiz-controls">
+            <button class="btn" onclick="startQuiz('new')">Начать заново</button>
+            <button class="btn" id="btn-continue" onclick="startQuiz('continue')">Продолжить</button>
+            <button class="btn" id="btn-errors-only" onclick="startQuiz('errors')">Только ошибки</button>
+            <button class="btn btn-danger" onclick="clearAllData()">Очистить все данные</button>
+        </div>
+
+        <div id="quiz-playground" style="display: none;">
+            <div id="quiz-info" style="margin-bottom: 10px; font-weight: bold; color: var(--primary-orange);"></div>
+            <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+            
+            <div class="question-card">
+                <div class="question-meta" id="q-meta"></div>
+                <div class="question-text" id="q-text"></div>
+                <div class="options-grid" id="q-options"></div>
+            </div>
+            <div style="text-align: center;">
+                <button class="btn" id="btn-next" onclick="nextQuestion()" style="display: none;">Следующий вопрос</button>
+            </div>
+        </div>
+        <div id="quiz-msg" style="text-align: center; color: #888; padding: 40px 0;">
+            Выберите режим выше, чтобы запустить квиз.
+        </div>
+    </div>
+
+    <!-- TAB 3: STATISTICS -->
+    <div id="tab-stats" class="tab-content">
+        <h2>Глобальная статистика</h2>
+        <div id="global-stats-summary" style="font-size: 18px; margin-bottom: 20px; border-left: 4px solid var(--primary-orange); padding-left: 10px;"></div>
+        
+        <div class="stats-grid">
+            <div>
+                <h3>По типам основ</h3>
+                <table id="stats-vowels-table">
+                    <thead><tr><th>Основа</th><th>Попытки</th><th>Ошибки</th><th>% Верно</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div>
+                <h3>По падежам</h3>
+                <table id="stats-cases-table">
+                    <thead><tr><th>Падеж</th><th>Попытки</th><th>Ошибки</th><th>% Верно</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: ERRORS LOG -->
+    <div id="tab-errors" class="tab-content">
+        <h2>Журнал ошибочных ответов</h2>
+        <table class="log-table" id="errors-log-table">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Слово</th>
+                    <th>Падеж</th>
+                    <th>Число</th>
+                    <th>Правильный ответ</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+// --- ИСХОДНЫЕ ДАННЫЕ СУЩЕСТВИТЕЛЬНЫХ И ПАРАДИГМ С КЛАССИЧЕСКИМИ ОКОНЧАНИЯМИ ---
+const VOWELS = ['-a', '-ā', '-i', '-ī', '-u', '-ū', '-ṛ'];
+const NUMBERS = ['Единственное', 'Двойственное', 'Множественное'];
+const CASES = ['Именительный', 'Винительный', 'Творительный', 'Дательный', 'Отложительный', 'Родительный', 'Местный', 'Звательный'];
+
+const rawWords = [
+    { stem: "aṅga-", translation: "член, часть" }, { stem: "añjana-", translation: "мазь" }, { stem: "atithi-", translation: "гость" },
+    { stem: "adri-", translation: "гора, камень" }, { stem: "anila-", translation: "ветер" }, { stem: "annā-", translation: "еда" },
+    { stem: "antarikṣa-", translation: "воздушное пространство" }, { stem: "antarāla-", translation: "промежуток" }, { stem: "anya-", translation: "другой" },
+    { stem: "aparānta-", translation: "западная граница" }, { stem: "apūpa-", translation: "лепёшка" }, { stem: "amara-", translation: "бессмертный, бог" },
+    { stem: "amṛta-", translation: "амрита, напиток бессмертия" }, { stem: "araṇi-", translation: "кусок дерева" }, { stem: "aranyā-", translation: "богиня леса" },
+    { stem: "argha-", translation: "цена, стоимость" }, { stem: "arhaṇa-", translation: "почитание" }, { stem: "artha-", translation: "значение, цель" },
+    { stem: "aśva-", translation: "конь" }, { stem: "asura-", translation: "асура, демон" }, { stem: "āditya-", translation: "Адитья" },
+    { stem: "ānanda-", translation: "радость, блаженство" }, { stem: "āraṇyaka-", translation: "араньяка" }, { stem: "āśā-", translation: "надежда, сторона света" },
+    { stem: "indra-", translation: "Индра" }, { stem: "indu-", translation: "луна" }, { stem: "indriya-", translation: "орган чувств" },
+    { stem: "ṛtu-", translation: "время года" }, { stem: "ṛṣi-", translation: "провидец, мудрец" }, { stem: "ṛkṣa-", translation: "медведь" },
+    { stem: "eka-", translation: "один" }, { stem: "eṇī-", translation: "самка антилопы" }, { stem: "oṣadhi-", translation: "лекарственное растение" },
+    { stem: "kanyā-", translation: "девушка" }, { stem: "kavi-", translation: "поэт, мудрец" }, { stem: "kāla-", translation: "время" },
+    { stem: "kāma-", translation: "желание, любовь" }, { stem: "kṣatra-", translation: "кшатра" }, { stem: "kṣiti-", translation: "земля, мир" },
+    { stem: "kṣīra-", translation: "молоко" }, { stem: "gaja-", translation: "слон" }, { stem: "gaṇa-", translation: "группа, войско" },
+    { stem: "gandha-", translation: "запах" }, { stem: "garbha-", translation: "чрево, зародыш" }, { stem: "giri-", translation: "гора" },
+    { stem: "gṛha-", translation: "дом" }, { stem: "gaura-", translation: "светлый, белый" }, { stem: "gāyatrī-", translation: "гаятри" },
+    { stem: "gārgī-", translation: "Гарги" }, { stem: "gārhapatya-", translation: "гархапатья" }, { stem: "grāma-", translation: "деревня" },
+    { stem: "ghoṣa-", translation: "шум" }, { stem: "chāyā-", translation: "тень" }, { stem: "jala-", translation: "вода" },
+    { stem: "jīvana-", translation: "жизнь" }, { stem: "jīvita-", translation: "жизнь" }, { stem: "jñāna-", translation: "знание" },
+    { stem: "tata-", translation: "отец" }, { stem: "tathāgata-", translation: "Татхагата" }, { stem: "tandrā-", translation: "усталость, сонливость" },
+    { stem: "tāra-", translation: "звезда" }, { stem: "tīra-", translation: "берег" }, { stem: "tṛṇa-", translation: "трава" },
+    { stem: "dāra-", translation: "жена, супруга" }, { stem: "dāru-", translation: "дрова" }, { stem: "divasa-", translation: "день" },
+    { stem: "dīkṣā-", translation: "посвящение, обет" }, { stem: "duṣṭa-", translation: "дурной, злой" }, { stem: "deśa-", translation: "область, страна" },
+    { stem: "deva-", translation: "бог" }, { stem: "daiva-", translation: "судьба" }, { stem: "dravya-", translation: "вещество, имущество" },
+    { stem: "dvāra-", translation: "дверь, врата" }, { stem: "dvija-", translation: "дваждырождённый" }, { stem: "dhana-", translation: "богатство" },
+    { stem: "dharma-", translation: "дхарма, закон" }, { stem: "dhātu-", translation: "элемент, корень" }, { stem: "dhīra-", translation: "мудрый, смелый" },
+    { stem: "nara-", translation: "человек" }, { stem: "nakṣatra-", translation: "созвездие" }, { stem: "nagarī-", translation: "город" },
+    { stem: "nadi-", translation: "река" }, { stem: "nadī-", translation: "река" }, { stem: "nala-", translation: "Нала" },
+    { stem: "nāga-", translation: "змей, нага" }, { stem: "nārī-", translation: "женщина" }, { stem: "nidrā-", translation: "сон" },
+    { stem: "nirvāṇa-", translation: "нирвана" }, { stem: "nīla-", translation: "тёмно-синий" }, { stem: "nṛ-", translation: "человек" },
+    { stem: "paṅkti-", translation: "ряд, десяток" }, { stem: "paṇḍita-", translation: "учёный, мудрец" }, { stem: "patha-", translation: "путь" },
+    { stem: "para-", translation: "другой, иной" }, { stem: "parśu-", translation: "топор" }, { stem: "pādapa-", translation: "дерево" },
+    { stem: "pāpa-", translation: "зло, грех" }, { stem: "pāra-", translation: "берег, предел" }, { stem: "pitṛ-", translation: "отец" },
+    { stem: "puṇya-", translation: "чистый, священный" }, { stem: "puruṣa-", translation: "человек, мужчина" }, { stem: "pūrva-", translation: "передний" },
+    { stem: "pṛthivī-", translation: "земля" }, { stem: "pṛṣṭa-", translation: "спина" }, { stem: "pṛṣṭha-", translation: "спина" },
+    { stem: "prajā-", translation: "потомство, народ" }, { stem: "prajāpati-", translation: "Праджапати" }, { stem: "pratiṣṭhā-", translation: "основание" },
+    { stem: "prathama-", translation: "первый" }, { stem: "pravāha-", translation: "течение, поток" }, { stem: "praśna-", translation: "вопрос" },
+    { stem: "prāṇa-", translation: "дыхание жизни" }, { stem: "priya-", translation: "любимый, дорогой" }, { stem: "pūrṇa-", translation: "полный" },
+    { stem: "pṛthu-", translation: "широкий, великий" }, { stem: "bandhu-", translation: "родственник, друг" }, { stem: "bala-", translation: "сила" },
+    { stem: "bahu-", translation: "много" }, { stem: "bāla-", translation: "ребёнок, мальчик" }, { stem: "bālā-", translation: "девочка" },
+    { stem: "bīja-", translation: "семя" }, { stem: "brāhmaṇa-", translation: "брахман" }, { stem: "bhaginī-", translation: "сестра" },
+    { stem: "bhāva-", translation: "состояние, бытие" }, { stem: "bhikṣu-", translation: "монах" }, { stem: "bhūta-", translation: "существо" },
+    { stem: "bhūmi-", translation: "земля" }, { stem: "bheṣaja-", translation: "лекарство" }, { stem: "bhrātṛ-", translation: "брат" },
+    { stem: "makara-", translation: "макара" }, { stem: "maṇḍala-", translation: "круг" }, { stem: "mata-", translation: "мысль, мнение" },
+    { stem: "mada-", translation: "опьянение, гордость" }, { stem: "madhu-", translation: "мёд" }, { stem: "madhyama-", translation: "средний" },
+    { stem: "muni-", translation: "мудрец" }, { stem: "mṛga-", translation: "зверь" }, { stem: "mṛdaṅga-", translation: "мриданга" },
+    { stem: "mṛdu-", translation: "мякгий" }, { stem: "medha-", translation: "жертвоприношение" }, { stem: "mitra-", translation: "друг" },
+    { stem: "mukha-", translation: "лицо, рот" }, { stem: "muhūrta-", translation: "мгновение, час" }, { stem: "mūla-", translation: "корень" },
+    { stem: "yajña-", translation: "жертвоприношение" }, { stem: "yajamāna-", translation: "жертвователь" }, { stem: "yama-", translation: "Яма" },
+    { stem: "yavana-", translation: "грек" }, { stem: "yoga-", translation: "йога" }, { stem: "yodha-", translation: "воин" },
+    { stem: "raśmi-", translation: "верёвка, луч" }, { stem: "rājaputra-", translation: "царевич" }, { stem: "rājñī-", translation: "царица" },
+    { stem: "rātri-", translation: "ночь" }, { stem: "ratha-", translation: "колесница" }, { stem: "ratna-", translation: "драгоценность" },
+    { stem: "rasa-", translation: "сок, вкус" }, { stem: "rudhira-", translation: "кровь" }, { stem: "rūpa-", translation: "форма, образ" },
+    { stem: "loka-", translation: "мир" }, { stem: "vacana-", translation: "речь, слово" }, { stem: "vajra-", translation: "ваджра" },
+    { stem: "vana-", translation: "лес" }, { stem: "varṇa-", translation: "цвет, сословие" }, { stem: "vatsa-", translation: "телёнок, дитя" },
+    { stem: "vadhū-", translation: "невеста, жена" }, { stem: "vāda-", translation: "речь, спор" }, { stem: "vāri-", translation: "вода" },
+    { stem: "vāsa-", translation: "одежда" }, { stem: "vikrama-", translation: "мужество" }, { stem: "vidyā-", translation: "знание" },
+    { stem: "vipra-", translation: "мудрец, брахман" }, { stem: "vira-", translation: "герой, муж" }, { stem: "vīra-", translation: "герой" },
+    { stem: "vṛkṣa-", translation: "дерево" }, { stem: "veda-", translation: "Веда" }, { stem: "vaidya-", translation: "врач" },
+    { stem: "śakti-", translation: "сила, энергия" }, { stem: "śatru-", translation: "враг" }, { stem: "śabda-", translation: "слово" },
+    { stem: "śā 🙏stra-", translation: "священное писание" }, { stem: "śiśu-", translation: "дитя" }, { stem: "śīrṣa-", translation: "голова" },
+    { stem: "śīla-", translation: "нрав, обычай" }, { stem: "śukra-", translation: "светлый" }, { stem: "śūdra-", translation: "шудра" },
+    { stem: "śūra-", translation: "герой" }, { stem: "śūla-", translation: "копьё" }, { stem: "śṛṅga-", translation: "рог" },
+    { stem: "śvetā-", translation: "белая женщина" }, { stem: "saṅkalpa-", translation: "воля, намерение" }, { stem: "sandhi-", translation: "сандхи" },
+    { stem: "sama-", translation: "равный" }, { stem: "samudra-", translation: "океан" }, { stem: "sara-", translation: "озеро" },
+    { stem: "sarpa-", translation: "змея" }, { stem: "sarga-", translation: "творение" }, { stem: "sādhaka-", translation: "достигающий" },
+    { stem: "siṃha-", translation: "лев" }, { stem: "siṃhikā-", translation: "Симхика" }, { stem: "sita-", translation: "белый" },
+    { stem: "snātaka-", translation: "совершивший омовение" }, { stem: "strī-", translation: "женщина" }, { stem: "sthāna-", translation: "место" },
+    { stem: "snāna-", translation: "омовение" }, { stem: "sūkta-", translation: "гимн" }, { stem: "sūrya-", translation: "солнце" },
+    { stem: "sṛṣṭi-", translation: "творение" }, { stem: "senā-", translation: "войско" }, { stem: "soma-", translation: "сома" },
+    { stem: "svarga-", translation: "небо" }, { stem: "hamsa-", translation: "лебедь" }, { stem: "hasta-", translation: "рука" },
+    { stem: "hiraṇya-", translation: "золото" }, { stem: "hṛdaya-", translation: "сердце" }
+];
+
+// Матрицы флексий и сандхи для правильного формирования словоформ
+const SUFFIX_MAP = {
+    '-a': { // Пример: deva (м.р.)
+        'Именительный': ['ḥ', 'u', 'āḥ'],     'Винительный': ['m', 'u', 'ān'],
+        'Творительный': ['na', 'bhyām', 'aiḥ'], 'Дательный': ['ya', 'bhyām', 'ebhyaḥ'],
+        'Отложительный': ['t', 'bhyām', 'ebhyaḥ'],'Родительный': ['sya', 'yoḥ', 'ānām'],
+        'Местный': ['e', 'yoḥ', 'eṣu'],          'Звательный': ['', 'u', 'āḥ']
+    },
+    '-ā': { // Пример: senā (ж.р.)
+        'Именительный': ['', 'e', 'āḥ'],        'Винительный': ['m', 'e', 'āḥ'],
+        'Творительный': ['yā', 'bhyām', 'bhiḥ'],'Дательный': ['yai', 'bhyām', 'bhyaḥ'],
+        'Отложительный': ['yāḥ', 'bhyām', 'bhyaḥ'],'Родительный': ['yāḥ', 'yoḥ', 'nām'],
+        'Местный': ['yām', 'yoḥ', 'su'],         'Звательный': ['e', 'e', 'āḥ']
+    },
+    '-i': { // Пример: kavi (м.р.)
+        'Именительный': ['ḥ', 'ī', 'ayaḥ'],      'Винительный': ['m', 'ī', 'īn'],
+        'Творительный': ['nā', 'bhyām', 'bhiḥ'], 'Дательный': ['aye', 'bhyām', 'bhyaḥ'],
+        'Отложительный': ['eḥ', 'bhyām', 'bhyaḥ'],'Родительный': ['eḥ', 'yoḥ', 'īnām'],
+        'Местный': ['āu', 'yoḥ', 'ṣu'],          'Звательный': ['e', 'ī', 'ayaḥ']
+    },
+    '-ī': { // Пример: nadī (ж.р.)
+        'Именительный': ['ḥ', 'āu', 'aḥ'],       'Винительный': ['m', 'āu', 'ḥ'],
+        'Творительный': ['ā', 'bhyām', 'bhiḥ'],  'Дательный': ['ai', 'bhyām', 'bhyaḥ'],
+        'Отложительный': ['āḥ', 'bhyām', 'bhyaḥ'],'Родительный': ['āḥ', 'oḥ', 'nām'],
+        'Местный': ['ām', 'oḥ', 'ṣu'],           'Звательный': ['i', 'āu', 'aḥ']
+    },
+    '-u': { // Пример: hetu / dhenu
+        'Именительный': ['ḥ', 'ū', 'avaḥ'],      'Винительный': ['m', 'ū', 'ūn'],
+        'Творительный': ['nā', 'bhyām', 'bhiḥ'], 'Дательный': ['ave', 'bhyām', 'bhyaḥ'],
+        'Отложительный': ['oḥ', 'bhyām', 'bhyaḥ'],'Родительный': ['oḥ', 'voḥ', 'ūnām'],
+        'Местный': ['āu', 'voḥ', 'ṣu'],          'Звательный': ['o', 'ū', 'avaḥ']
+    },
+    '-ū': { // Пример: vadhū (ж.р.)
+        'Именительный': ['ḥ', 'āu', 'aḥ'],       'Винительный': ['m', 'āu', 'ḥ'],
+        'Творительный': ['ā', 'bhyām', 'bhiḥ'],  'Дательный': ['ai', 'bhyām', 'bhyaḥ'],
+        'Отложительный': ['āḥ', 'bhyām', 'bhyaḥ'],'Родительный': ['āḥ', 'oḥ', 'nām'],
+        'Местный': ['ām', 'oḥ', 'ṣu'],           'Звательный': ['u', 'āu', 'aḥ']
+    },
+    '-ṛ': { // Пример: pitṛ (м.р.)
+        'Именительный': ['ā', 'arāu', 'araḥ'],    'Винительный': ['aram', 'arāu', 'ṝn'],
+        'Творительный': ['rā', 'bhyām', 'bhiḥ'],  'Дательный': ['re', 'bhyām', 'bhyaḥ'],
+        'Отложительный': ['uḥ', 'bhyām', 'bhyaḥ'], 'Родительный': ['uḥ', 'roḥ', 'ṝṇām'],
+        'Местный': ['ari', 'roḥ', 'ṣu'],          'Звательный': ['ar', 'arāu', 'araḥ']
+    }
+};
+
+function getWordType(stem) {
+    if (stem.endsWith('ā-')) return '-ā';
+    if (stem.endsWith('a-')) return '-a';
+    if (stem.endsWith('ī-')) return '-ī';
+    if (stem.endsWith('i-')) return '-i';
+    if (stem.endsWith('ū-')) return '-ū';
+    if (stem.endsWith('u-')) return '-u';
+    if (stem.endsWith('ṛ-')) return '-ṛ';
+    return null;
+}
+
+function declineWord(stem, type, caseName, numIdx) {
+    let base = stem.slice(0, -1); 
+    let suffix = SUFFIX_MAP[type][caseName][numIdx];
+
+    // Базовые правила сандхи для плавного слияния основ
+    if (type === '-a') {
+        if (caseName === 'Именительный' && numIdx === 1) return base + 'āu';
+        if (caseName === 'Винительный' && numIdx === 1) return base + 'āu';
+        if (caseName === 'Звательный' && numIdx === 1) return base + 'āu';
+        if (caseName === 'Дательный' && numIdx === 0) return base + 'āya';
+        if (caseName === 'Отложительный' && numIdx === 0) return base + 'āt';
+        if (caseName === 'Местный' && numIdx === 0) return base + 'e';
+        if (caseName === 'Родительный' && numIdx === 1 || caseName === 'Местный' && numIdx === 1) return base + 'ayoḥ';
+        if (['Дательный','Отложительный','Местный'].includes(caseName) && numIdx === 2) return base + 'e' + suffix;
+        if (caseName === 'Родительный' && numIdx === 2) return base + 'ā' + suffix;
+    }
+    if (type === '-ā') {
+        if (['Именительный','Винительный','Звательный'].includes(caseName) && numIdx === 1) return base.slice(0,-1) + 'e';
+        if (caseName === 'Творительный' && numIdx === 0) return base.slice(0,-1) + 'ayā';
+        if (caseName === 'Звательный' && numIdx === 0) return base.slice(0,-1) + 'e';
+    }
+    if (type === '-i') {
+        if (['Родительный','Местный'].includes(caseName) && numIdx === 1) return base.slice(0,-1) + 'yoḥ';
+    }
+    if (type === '-ī') {
+        if (['Именительный','Винительный','Звательный'].includes(caseName) && numIdx === 1) return base.slice(0,-1) + 'yāu';
+        if (caseName === 'Именительный' && numIdx === 2) return base.slice(0,-1) + 'yaḥ';
+        if (caseName === 'Винительный' && numIdx === 2) return base.slice(0,-1) + 'īḥ';
+        if (caseName === 'Творительный' && numIdx === 0) return base.slice(0,-1) + 'yā';
+        if (caseName === 'Дательный' && numIdx === 0) return base.slice(0,-1) + 'yai';
+        if (['Отложительный','Родительный'].includes(caseName) && numIdx === 0) return base.slice(0,-1) + 'yāḥ';
+        if (caseName === 'Местный' && numIdx === 0) return base.slice(0,-1) + 'yām';
+        if (['Родительный','Местный'].includes(caseName) && numIdx === 1) return base.slice(0,-1) + 'yoḥ';
+    }
+    if (type === '-u') {
+        if (['Родительный','Местный'].includes(caseName) && numIdx === 1) return base.slice(0,-1) + 'voḥ';
+    }
+    if (type === '-ū') {
+        if (['Именительный','Винительный','Звательный'].includes(caseName) && numIdx === 1) return base.slice(0,-1) + 'vāu';
+        if (caseName === 'Именительный' && numIdx === 2) return base.slice(0,-1) + 'vaḥ';
+        if (caseName === 'Винительный' && numIdx === 2) return base.slice(0,-1) + 'ūḥ';
+        if (caseName === 'Творительный' && numIdx === 0) return base.slice(0,-1) + 'vā';
+        if (caseName === 'Дательный' && numIdx === 0) return base.slice(0,-1) + 'vai';
+        if (['Отложительный','Родительный'].includes(caseName) && numIdx === 0) return base.slice(0,-1) + 'vāḥ';
+        if (caseName === 'Местный' && numIdx === 0) return base.slice(0,-1) + 'vām';
+        if (['Родительный','Местный'].includes(caseName) && numIdx === 1) return base.slice(0,-1) + 'voḥ';
+    }
+    if (type === '-ṛ') {
+        if (['Именительный','Винительный','Творительный','Дательный','Отложительный','Родительный','Местный','Звательный'].includes(caseName)) {
+            return base.slice(0,-1) + suffix; 
+        }
+    }
+
+    return base + suffix;
+}
+
+// --- СОСТОЯНИЕ И ХРАНИЛИЩЕ (LOCALSTORAGE) ---
+let appState = {
+    selectedVowels: ['-a', '-ā'],
+    selectedNumbers: ['Единственное'],
+    selectedCases: ['Именительный', 'Винительный'],
+    currentTab: 'filters',
+    quizSession: null // Для хранения текущего прогресса вопросов
+};
+
+let globalStats = {
+    attempts: 0, errors: 0,
+    byVowel: {}, byCase: {}
+};
+let errorsLog = [];
+let chosenWords = {}; // Отобранные 3 слова на каждый тип основы
+
+// Инициализация структуры статистики
+VOWELS.forEach(v => { globalStats.byVowel[v] = { attempts: 0, errors: 0 }; });
+CASES.forEach(c => { globalStats.byCase[c] = { attempts: 0, errors: 0 }; });
+
+// Распределение лексем по категориям и их случайный выбор
+function initChosenWords() {
+    let categorized = {};
+    VOWELS.forEach(v => categorized[v] = []);
+    
+    rawWords.forEach(w => {
+        let t = getWordType(w.stem);
+        if (t) categorized[t].push(w);
+    });
+
+    VOWELS.forEach(v => {
+        let pool = categorized[v];
+        // Перемешивание пула для обеспечения максимальной вариативности
+        pool.sort(() => 0.5 - Math.random());
+        chosenWords[v] = pool.slice(0, 3);
+    });
+}
+
+function saveToLocalStorage() {
+    localStorage.setItem('san_quiz_state', JSON.stringify(appState));
+    localStorage.setItem('san_quiz_stats', JSON.stringify(globalStats));
+    localStorage.setItem('san_quiz_errors', JSON.stringify(errorsLog));
+    localStorage.setItem('san_quiz_chosen', JSON.stringify(chosenWords));
+}
+
+function loadFromLocalStorage() {
+    if (localStorage.getItem('san_quiz_state')) appState = JSON.parse(localStorage.getItem('san_quiz_state'));
+    if (localStorage.getItem('san_quiz_stats')) globalStats = JSON.parse(localStorage.getItem('san_quiz_stats'));
+    if (localStorage.getItem('san_quiz_errors')) errorsLog = JSON.parse(localStorage.getItem('san_quiz_errors'));
+    if (localStorage.getItem('san_quiz_chosen')) {
+        chosenWords = JSON.parse(localStorage.getItem('san_quiz_chosen'));
+    } else {
+        initChosenWords();
+        saveToLocalStorage();
+    }
+}
+
+function clearAllData() {
+    if (confirm("Вы действительно хотите очистить всю статистику, логи ошибок и сбросить настройки?")) {
+        localStorage.clear();
+        location.reload();
+    }
+}
+
+// --- УПРАВЛЕНИЕ ИНТЕРФЕЙСОМ И ВКЛАДКАМИ ---
+function switchTab(tabId) {
+    appState.currentTab = tabId;
+    saveToLocalStorage();
+
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+    const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+    if (activeBtn) activeBtn.classList.add('active');
+    
+    const activeContent = document.getElementById(`tab-${tabId}`);
+    if (activeContent) activeContent.classList.add('active');
+
+    if (tabId === 'filters') renderParadigms();
+    if (tabId === 'stats') renderStats();
+    if (tabId === 'errors') renderErrorsLog();
+    updateQuizButtons();
+}
+
+function initFiltersUI() {
+    const createCheckboxes = (containerId, items, storageArray) => {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        items.forEach(item => {
+            const lbl = document.createElement('label');
+            lbl.className = 'checkbox-label';
+            const chk = document.createElement('input');
+            chk.type = 'checkbox';
+            chk.value = item;
+            chk.checked = storageArray.includes(item);
+            chk.addEventListener('change', () => {
+                if (chk.checked) {
+                    if (!storageArray.includes(item)) storageArray.push(item);
+                } else {
+                    const idx = storageArray.indexOf(item);
+                    if (idx > -1) storageArray.splice(idx, 1);
+                }
+                saveToLocalStorage();
+                renderParadigms();
+            });
+            lbl.appendChild(chk);
+            lbl.appendChild(document.createTextNode(item));
+            container.appendChild(lbl);
+        });
+    };
+
+    createCheckboxes('filter-vowels', VOWELS, appState.selectedVowels);
+    createCheckboxes('filter-numbers', NUMBERS, appState.selectedNumbers);
+    createCheckboxes('filter-cases', CASES, appState.selectedCases);
+}
+
+// Рендеринг таблиц парадигм на основе активных фильтров
+function renderParadigms() {
+    const preview = document.getElementById('paradigms-preview');
+    preview.innerHTML = '';
+
+    if (appState.selectedVowels.length === 0) {
+        preview.innerHTML = '<p style="color: #888;">Выберите хотя бы один тип основы для отображения парадигм.</p>';
+        return;
+    }
+
+    appState.selectedVowels.forEach(vowel => {
+        const words = chosenWords[vowel] || [];
+        words.forEach(w => {
+            const title = document.createElement('div');
+            title.className = 'table-title';
+            title.innerText = `Основа: ${w.stem} (${w.translation})`;
+            preview.appendChild(title);
+
+            const table = document.createElement('table');
+            let headerRow = '<tr><th>Падеж</th>';
+            NUMBERS.forEach(n => {
+                if (appState.selectedNumbers.includes(n)) {
+                    headerRow += `<th>${n}</th>`;
+                }
+            });
+            headerRow += '</tr>';
+            table.innerHTML = headerRow;
+
+            CASES.forEach(c => {
+                if (appState.selectedCases.includes(c)) {
+                    let row = `<tr><td><strong>${c}</strong></td>`;
+                    NUMBERS.forEach((n, nIdx) => {
+                        if (appState.selectedNumbers.includes(n)) {
+                            row += `<td>${declineWord(w.stem, vowel, c, nIdx)}</td>`;
+                        }
+                    });
+                    row += '</tr>';
+                    table.innerHTML += row;
+                }
+            });
+            preview.appendChild(table);
+        });
+    });
+}
+
+// --- ЛОГИКА КВИЗА ---
+function updateQuizButtons() {
+    document.getElementById('btn-continue').style.display = appState.quizSession ? 'inline-block' : 'none';
+    document.getElementById('btn-errors-only').style.display = errorsLog.length > 0 ? 'inline-block' : 'none';
+}
+
+function generateQuizQuestions(mode) {
+    let list = [];
+
+    if (mode === 'errors') {
+        // Формирование квиза исключительно по накопленным ошибкам
+        errorsLog.forEach(err => {
+            let type = getWordType(err.stem);
+            if (type) {
+                list.push({ stem: err.stem, type: type, caseName: err.caseName, number: err.number });
+            }
+        });
+        if (list.length === 0) {
+            alert("Журнал ошибок пуст!");
+            return [];
+        }
+    } else {
+        // Стандартная генерация по активным фильтрам
+        if (appState.selectedVowels.length === 0 || appState.selectedNumbers.length === 0 || appState.selectedCases.length === 0) {
+            alert("Пожалуйста, выберите в фильтрах хотя бы по одному значению для каждого параметра!");
+            return [];
+        }
+
+        appState.selectedVowels.forEach(v => {
+            let words = chosenWords[v] || [];
+            words.forEach(w => {
+                appState.selectedCases.forEach(c => {
+                    appState.selectedNumbers.forEach(n => {
+                        list.push({ stem: w.stem, type: v, caseName: c, number: n });
+                    });
+                });
+            });
+        });
+    }
+
+    // Рандомизация порядка следования вопросов
+    list.sort(() => 0.5 - Math.random());
+    return list;
+}
+
+function startQuiz(mode) {
+    if (mode === 'new' || mode === 'errors') {
+        let qs = generateQuizQuestions(mode);
+        if (qs.length === 0) return;
+        appState.quizSession = {
+            questions: qs,
+            currentIndex: 0,
+            mode: mode
+        };
+        saveToLocalStorage();
+    } else if (mode === 'continue') {
+        if (!appState.quizSession) return;
+    }
+
+    document.getElementById('quiz-msg').style.display = 'none';
+    document.getElementById('quiz-playground').style.display = 'block';
+    renderCurrentQuestion();
+}
+
+function renderCurrentQuestion() {
+    let session = appState.quizSession;
+    if (!session || session.currentIndex >= session.questions.length) {
+        // Сессия завершена
+        document.getElementById('quiz-playground').style.display = 'none';
+        document.getElementById('quiz-msg').style.display = 'block';
+        document.getElementById('quiz-msg').innerHTML = `<h3>Квиз успешно завершен!</h3><p>Пройдено вопросов: ${session ? session.questions.length : 0}. Вы можете посмотреть детальную аналитику во вкладке "Статистика".</p>`;
+        appState.quizSession = null;
+        saveToLocalStorage();
+        updateQuizButtons();
+        return;
+    }
+
+    let q = session.questions[session.currentIndex];
+    let numIdx = NUMBERS.indexOf(q.number);
+    let correctForm = declineWord(q.stem, q.type, q.caseName, numIdx);
+
+    // Сбор неправильных альтернативных вариантов из той же парадигмы существительного
+    let incorrectPool = new Set();
+    CASES.forEach(c => {
+        NUMBERS.forEach((n, nIdx) => {
+            let f = declineWord(q.stem, q.type, c, nIdx);
+            if (f !== correctForm) {
+                incorrectPool.add(f);
+            }
+        });
+    });
+
+    let incorrectArr = Array.from(incorrectPool);
+    incorrectArr.sort(() => 0.5 - Math.random());
+    let options = [correctForm, ...incorrectArr.slice(0, 3)];
+    options.sort(() => 0.5 - Math.random());
+
+    // Отрисовка метаданных и интерфейса карточки вопроса
+    document.getElementById('quiz-info').innerText = `Режим: ${session.mode === 'errors' ? 'Только ошибки' : 'По фильтрам'} | Вопрос ${session.currentIndex + 1} из ${session.questions.length}`;
+    document.getElementById('progress-fill').style.width = `${(session.currentIndex / session.questions.length) * 100}%`;
+
+    document.getElementById('q-meta').innerText = `Тип основы: ${q.type}`;
+    document.getElementById('q-text').innerHTML = `Слово: <strong>${q.stem}</strong><br>Падеж: <strong>${q.caseName}</strong>, Число: <strong>${q.number}</strong>`;
+
+    const optGrid = document.getElementById('q-options');
+    optGrid.innerHTML = '';
+    
+    document.getElementById('btn-next').style.display = 'none';
+
+    options.forEach(opt => {
+        let btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = opt;
+        btn.onclick = () => handleAnswer(btn, opt, correctForm, q);
+        optGrid.appendChild(btn);
+    });
+}
+
+function handleAnswer(selectedBtn, chosenOpt, correctForm, question) {
+    const grid = document.getElementById('q-options');
+    const buttons = grid.querySelectorAll('.option-btn');
+    
+    // Блокировка повторных кликов
+    buttons.forEach(b => b.disabled = true);
+
+    let isCorrect = (chosenOpt === correctForm);
+
+    // Обновление локальной и глобальной статистики ответов
+    globalStats.attempts++;
+    globalStats.byVowel[question.type].attempts++;
+    globalStats.byCase[question.caseName].attempts++;
+
+    if (isCorrect) {
+        selectedBtn.classList.add('correct');
+        // Если слово было в ошибках, удаляем его из журнала при верном ответе
+        errorsLog = errorsLog.filter(e => !(e.stem === question.stem && e.caseName === question.caseName && e.number === question.number));
+    } else {
+        selectedBtn.classList.add('incorrect');
+        // Подсвечиваем правильный вариант для визуального запоминания
+        Array.from(buttons).find(b => b.innerText === correctForm).classList.add('correct');
+
+        globalStats.errors++;
+        globalStats.byVowel[question.type].errors++;
+        globalStats.byCase[question.caseName].errors++;
+
+        // Добавляем запись в журнал ошибок
+        errorsLog.unshift({
+            date: new Date().toLocaleString(),
+            stem: question.stem,
+            caseName: question.caseName,
+            number: question.number,
+            correctForm: correctForm
+        });
+    }
+
+    saveToLocalStorage();
+    document.getElementById('btn-next').style.display = 'inline-block';
+}
+
+function nextQuestion() {
+    if (appState.quizSession) {
+        appState.quizSession.currentIndex++;
+        saveToLocalStorage();
+        renderCurrentQuestion();
+    }
+}
+
+// --- РЕНДЕРИНГ СТАТИСТИКИ И ЖУРНАЛА ОШИБОК ---
+function renderStats() {
+    let totalCorrect = globalStats.attempts - globalStats.errors;
+    let totalPercent = globalStats.attempts > 0 ? Math.round((totalCorrect / globalStats.attempts) * 100) : 0;
+    
+    document.getElementById('global-stats-summary').innerHTML = `
+        Всего попыток: <strong>${globalStats.attempts}</strong><br>
+        Всего ошибок: <strong>${globalStats.errors}</strong><br>
+        Общая точность ответов: <strong>${totalPercent}%</strong>
+    `;
+
+    const vBody = document.querySelector('#stats-vowels-table tbody');
+    vBody.innerHTML = '';
+    VOWELS.forEach(v => {
+        let s = globalStats.byVowel[v];
+        let p = s.attempts > 0 ? Math.round(((s.attempts - s.errors) / s.attempts) * 100) : 0;
+        vBody.innerHTML += `<tr><td>${v}</td><td>${s.attempts}</td><td>${s.errors}</td><td>${p}%</td></tr>`;
+    });
+
+    const cBody = document.querySelector('#stats-cases-table tbody');
+    cBody.innerHTML = '';
+    CASES.forEach(c => {
+        let s = globalStats.byCase[c];
+        let p = s.attempts > 0 ? Math.round(((s.attempts - s.errors) / s.attempts) * 100) : 0;
+        cBody.innerHTML += `<tr><td>${c}</td><td>${s.attempts}</td><td>${s.errors}</td><td>${p}%</td></tr>`;
+    });
+}
+
+function renderErrorsLog() {
+    const tbody = document.querySelector('#errors-log-table tbody');
+    tbody.innerHTML = '';
+    
+    if (errorsLog.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888;">Ошибок пока нет. Отличная работа!</td></tr>';
+        return;
+    }
+
+    errorsLog.forEach(err => {
+        tbody.innerHTML += `
+            <tr>
+                <td>${err.date}</td>
+                <td><strong>${err.stem}</strong></td>
+                <td>${err.caseName}</td>
+                <td>${err.number}</td>
+                <td style="color: var(--primary-orange); font-weight:bold;">${err.correctForm}</td>
+            </tr>
+        `;
+    });
+}
+
+// --- ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ ---
+window.onload = function() {
+    loadFromLocalStorage();
+    initFiltersUI();
+    switchTab(appState.currentTab);
+};
+</script>
+</body>
+</html>

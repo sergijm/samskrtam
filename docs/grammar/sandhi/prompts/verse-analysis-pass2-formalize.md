@@ -50,8 +50,11 @@ Field-by-field mapping from your prior reasoning to the tool call:
 
 Do not silently change any rule number, sandhi split, or lemma between your reasoning
 and this tool call — this call is a transcription step, not a second independent
-analysis. If your prior reasoning was incomplete for some word or junction, it is
-better to submit an empty array for that item than to guess a new answer now.
+analysis. This includes rule numbers that are themselves variants of another rule
+(e.g. 22–26 vary rule 21): if your Pass-1 reasoning cited the variant's own number,
+carry over that exact number — do not "simplify" it to the base rule it varies. If
+your prior reasoning was incomplete for some word or junction, it is better to submit
+an empty array for that item than to guess a new answer now.
 
 Respond only by calling the function submit_verse_analysis, with no text outside the
 call.

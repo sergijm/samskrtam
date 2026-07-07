@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   useVerseDetail,
-  useUpdateVerseText,
   useAnalyzeVerse,
 } from '../../hooks/useSangraha';
 import { useAuthStore } from '../../store/authStore';
@@ -21,7 +20,6 @@ const VersePage = () => {
   const navigate = useNavigate();
   const toast = useRef<Toast>(null);
   const { data: verse, isLoading, isError } = useVerseDetail(verseId || '');
-  const updateText = useUpdateVerseText();
   const analyze = useAnalyzeVerse();
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.roles?.includes('ADMIN') ?? false;
@@ -31,40 +29,30 @@ const VersePage = () => {
 
   useEffect(() => {
     if (verse) {
-      setEditText(verse.textDevanagari || verse.textIast || '');
-      if (verse.status === 'DRAFT' || verse.status === 'FAILED') {
+      setEditText(verse.rawText ?? verse.textDevanagari ?? verse.textIast ?? '');
+            if (verse.status === 'DRAFT' || verse.status === 'FAILED') {
         setIsEditing(true);
       }
     }
   }, [verse]);
 
-  const handleSaveText = useCallback(async () => {
+    const handleAnalyze = useCallback(async () => {
     if (!verseId) return;
     try {
-      await updateText.mutateAsync({ verseId, data: { text: editText } });
-      toast.current?.show({ severity: 'success', summary: t('common.saved') });
-    } catch {
-      toast.current?.show({ severity: 'error', summary: t('common.error') });
-    }
-  }, [verseId, editText, updateText, t]);
-
-  const handleAnalyze = useCallback(async () => {
-    if (!verseId) return;
-    try {
-      await analyze.mutateAsync(verseId);
+      await analyze.mutateAsync({ verseId, data: { text: editText } });
       setIsEditing(false);
       toast.current?.show({ severity: 'success', summary: t('sangraha.action.analyze') });
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     }
-  }, [verseId, analyze, t]);
+  }, [verseId, editText, analyze, t]);
 
   const startEditing = useCallback(() => {
     if (verse) {
-      setEditText(verse.textDevanagari || verse.textIast || '');
-    }
-    setIsEditing(true);
-  }, [verse]);
+      setEditText(verse.rawText ?? verse.textDevanagari ?? verse.textIast ?? '');
+          }
+          setIsEditing(true);
+        }, [verse]);
 
   const isAnalyzed = verse?.status === 'ANALYZED';
   const isAnalyzing = verse?.status === 'ANALYZING';
@@ -143,9 +131,8 @@ const VersePage = () => {
 
       {!isAnalyzing && isEditing && isAdmin && (
         <div className="flex gap-2 mb-4">
-          <Button label={t('sangraha.action.save')} icon="pi pi-save" onClick={handleSaveText} loading={updateText.isPending} />
-          <Button label={t('sangraha.action.analyze')} icon="pi pi-robot" className="p-button-success" onClick={handleAnalyze} loading={analyze.isPending} />
-        </div>
+                  <Button label={t('sangraha.action.analyze')} icon="pi pi-robot" className="p-button-success" onClick={handleAnalyze} loading={analyze.isPending} />
+                </div>
       )}
 
       {isAnalyzed && !isEditing && (

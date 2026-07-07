@@ -81,6 +81,7 @@ export interface VerseDetailDto {
   orderIndex: number;
   textDevanagari?: string | null;
   textIast?: string | null;
+  rawText?: string | null;
   status: VerseStatus;
   analysis?: VerseAnalysisDto | null;
   words: VerseWordDto[];

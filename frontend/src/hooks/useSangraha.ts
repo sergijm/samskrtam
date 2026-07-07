@@ -116,10 +116,12 @@ export const useUpdateVerseText = () => {
 export const useAnalyzeVerse = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (verseId: string) => sangrahaApi.analyzeVerse(verseId),
-    onSuccess: (_data, verseId) => {
-      qc.invalidateQueries({ queryKey: ['sangraha', 'verse', verseId] });
+    mutationFn: ({ verseId, data }: { verseId: string; data: { text: string } }) =>
+      sangrahaApi.analyzeVerse(verseId, data),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'verse', variables.verseId] });
       qc.invalidateQueries({ queryKey: ['sangraha', 'work'] });
     },
   });
 };
+

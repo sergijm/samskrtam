@@ -42,6 +42,9 @@ public class Verse {
     @Column(name = "text_iast", columnDefinition = "TEXT")
     private String textIast;
 
+    @Column(name = "raw_text", columnDefinition = "TEXT")
+    private String rawText;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VerseStatus status;

@@ -9,7 +9,6 @@ import sm.selflearn.samskrtam.content.dto.*;
 import sm.selflearn.samskrtam.content.dto.CaseEndingDto;
 import sm.selflearn.samskrtam.content.model.Gender;
 import sm.selflearn.samskrtam.content.model.VowelType;
-import sm.selflearn.samskrtam.quiz.constants.ProgressConstants;
 import sm.selflearn.samskrtam.quiz.dto.*;
 import sm.selflearn.samskrtam.quiz.repository.GrammarFormScoreRepository;
 
@@ -22,6 +21,9 @@ import java.util.*;
  *
  * Группирует вопросы по (gender, caseType, numberType),
  * агрегирует successRate через БД и заполняет локализованные поля.
+ *
+ * Делегирует создание {@link GrammarQuestionProgress} в {@link GrammarQuestionProgressFactory}
+ * и поиск окончания в {@link CaseEndingMatcher}.
  */
 @Component
 @RequiredArgsConstructor
@@ -30,6 +32,7 @@ public class GrammarProgressBuilder {
 
     private final GrammarFormScoreRepository grammarFormScoreRepository;
     private final ContentClient contentClient;
+    private final GrammarQuestionProgressFactory progressFactory;
 
     /**
      * Основной метод: строит GrammarLesson для заданного slug.
@@ -90,122 +93,22 @@ public class GrammarProgressBuilder {
         }
     }
 
-    private Mono<GrammarQuestionProgress> buildGroupProgress(
+        private Mono<GrammarQuestionProgress> buildGroupProgress(
             LessonItemResponse lessonItem, VowelType vowelType,
             List<CaseEndingDto> caseEndings,
             Gender gender, DeclensionFormDto form,
             UUID userId) {
 
-        String genderStr = gender != null ? gender.name() : "UNSPECIFIED";
-        String caseStr = form.getCaseType().name();
-        String numberStr = form.getNumberType().name();
-        UUID questionId = deterministicId(genderStr, caseStr, numberStr);
-
         return grammarFormScoreRepository.aggregateSuccessRate(
-                        userId, lessonItem.getId(), genderStr, caseStr, numberStr)
-                .map(avgScore -> {
-                    float successRate = avgScore.floatValue();
-                    GrammarQuestionProgress p = new GrammarQuestionProgress();
-                    p.setQuestionId(questionId);
-                    p.setTextRu(form.getCaseType().getRuName() + ", " + form.getNumberType().getRuName());
-                    p.setTextEn(form.getCaseType().getEnName() + ", " + form.getNumberType().getEnName());
-                    p.setSuccessRate(successRate);
-                    p.setStatus(resolveGrammarStatus(successRate));
-
-                    p.setCaseType(caseStr);
-                    p.setCaseRu(form.getCaseType().getRuName());
-                    p.setCaseEn(form.getCaseType().getEnName());
-                    p.setNumberType(numberStr);
-                    p.setNumberRu(form.getNumberType().getRuName());
-                    p.setNumberEn(form.getNumberType().getEnName());
-                    p.setGender(genderStr);
-                    if (gender != null) {
-                        p.setGenderRu(gender.getRuName());
-                        p.setGenderEn(gender.getEnName());
-                        } else {
-                            p.setGenderRu(null);
-                            p.setGenderEn(null);
-                        }
-
-                        // Match case ending
-                        p.setCaseEnding(findCaseEnding(gender, form, caseEndings));
-                        return p;
-                })
-                .defaultIfEmpty(emptyGroupProgress(lessonItem, form, gender, questionId, caseEndings));
+                        userId, lessonItem.getId(),
+                        gender != null ? gender.name() : "UNSPECIFIED",
+                        form.getCaseType().name(),
+                        form.getNumberType().name())
+                .map(avgScore -> progressFactory.create(lessonItem, form, gender, caseEndings, avgScore.floatValue()))
+                .defaultIfEmpty(progressFactory.create(lessonItem, form, gender, caseEndings, 0f));
     }
 
-    private UUID deterministicId(String gender, String caseType, String numberType) {
-        return UUID.nameUUIDFromBytes(
-                (gender + ":" + caseType + ":" + numberType).getBytes(StandardCharsets.UTF_8));
-    }
-
-    private WordStatus resolveGrammarStatus(float score) {
-        if (score == 0) return WordStatus.NEW;
-        if (score < ProgressConstants.GRAMMAR_LEARNING_THRESHOLD) return WordStatus.REVIEW;
-        if (score < ProgressConstants.MASTERY_THRESHOLD) return WordStatus.LEARNING;
-        return WordStatus.MASTERED;
-    }
-
-    private GrammarQuestionProgress emptyGroupProgress(
-            LessonItemResponse lessonItem, DeclensionFormDto form,
-            Gender gender, UUID questionId, List<CaseEndingDto> caseEndings) {
-
-        GrammarQuestionProgress p = new GrammarQuestionProgress();
-        p.setQuestionId(questionId);
-        p.setTextRu(form.getCaseType().getRuName() + ", " + form.getNumberType().getRuName());
-        p.setTextEn(form.getCaseType().getEnName() + ", " + form.getNumberType().getEnName());
-        p.setSuccessRate(0f);
-        p.setStatus(WordStatus.NEW);
-
-        p.setCaseType(form.getCaseType().name());
-        p.setCaseRu(form.getCaseType().getRuName());
-        p.setCaseEn(form.getCaseType().getEnName());
-        p.setNumberType(form.getNumberType().name());
-        p.setNumberRu(form.getNumberType().getRuName());
-        p.setNumberEn(form.getNumberType().getEnName());
-        String genderStr = gender != null ? gender.name() : "UNSPECIFIED";
-        p.setGender(genderStr);
-        if (gender != null) {
-            p.setGenderRu(gender.getRuName());
-            p.setGenderEn(gender.getEnName());
-        } else {
-            p.setGenderRu(null);
-            p.setGenderEn(null);
-        }
-        p.setCaseEnding(findCaseEnding(gender, form, caseEndings));
-        return p;
-    }
-
-    private String findCaseEnding(Gender gender, DeclensionFormDto form, List<CaseEndingDto> caseEndings) {
-        // Convert shared enums to content-service enums (same constant names)
-        String targetCaseType = form.getCaseType().name();
-                String targetNumberType = form.getNumberType().name();
-                String targetGender = gender != null ? gender.name() : null;
-
-                // 1. Точный матч по gender + caseType + numberType
-                for (CaseEndingDto ce : caseEndings) {
-                    boolean genderMatch = targetGender == null ||
-                            ce.getGender() == null ||
-                            targetGender.equals(ce.getGender().name());
-                    if (genderMatch &&
-                            targetCaseType.equals(ce.getCaseType().name()) &&
-                            targetNumberType.equals(ce.getNumberType().name())) {
-                        return ce.getEndingIast();
-                    }
-                }
-
-                // 2. Fallback: матч без учёта gender для уроков -i, -u, -r
-                for (CaseEndingDto ce : caseEndings) {
-                    if (targetCaseType.equals(ce.getCaseType().name()) &&
-                            targetNumberType.equals(ce.getNumberType().name())) {
-                        return ce.getEndingIast();
-                    }
-                }
-
-        log.warn("No matching case ending found for gender={}, caseType={}, numberType={}",
-                targetGender, targetCaseType, targetNumberType);
-        return null;
-    }
+    
 
     private GrammarLesson emptyLesson(LessonItemResponse lessonItem) {
         GrammarLesson lesson = new GrammarLesson();

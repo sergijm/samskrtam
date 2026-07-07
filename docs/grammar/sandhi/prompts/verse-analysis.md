@@ -9,14 +9,30 @@
 >
 > The full reference table of sandhi rules (1–71, internal + external) lives in
 > [`emenau-sandhi-rules.json`](./emenau-sandhi-rules.json),
-> together with a `glossary` block defining the phonetic terms used in the rules
-> (absolute finality, semivowel, homorganic vowels, guṇa, morphophoneme, etc.) — read
-> it if any term in a rule's `text` is ambiguous, rather than guessing its meaning.
+> together with a `glossary` block (including an `abbreviations` sub-block and an
+> explicit place-of-articulation table for stops/nasals) defining every term used in
+> the rules' `text` — read it if any term is ambiguous, rather than guessing its
+> meaning.
 > Rules tagged `"applicability": "external"` (41–71) are for `sandhiSplits.ruleNumbers`
 > (word-boundary junctions). Rules tagged `"applicability": "internal"` (1–40) are for
 > `words[].formationRuleNumbers` (how the individual word form itself was built from
 > its root/stem — e.g. why `ghnanti` rather than `hananti`, why `dugdha-` rather than
 > `duh-ta-`); do not mix the two ranges across the two fields.
+>
+> Some rules carry extra structured fields — read and use them the same way as `text`:
+> - `variant_of` + `mapping`: the rule is a variant of the numbered base rule, but its
+    >   own `mapping` object already gives the result for each condition directly — cite
+    >   the variant rule's own number (e.g. 26, not 21) when it is the one that actually
+    >   matches the word's root.
+> - `depends_on`: the rule's condition only holds after the listed rules have already
+    >   been applied/considered — check them first before deciding this rule applies.
+> - `exhaustive: false` (on a root/word list): the list is illustrative, not
+    >   complete — a similar word absent from the list may still be covered by the same
+    >   rule; use judgement, do not mechanically reject a match just because the exact
+    >   word is not enumerated.
+> - `external_dependency`: the rule's condition depends on something outside the sandhi
+    >   table (e.g. morphology) — apply your general grammatical knowledge for that part of
+    >   the condition rather than expecting the sandhi table to define it.
 
 ## system
 
@@ -26,16 +42,28 @@ classical texts.
 
 Glossary of phonetic terms used in the sandhi rule table you will receive (rules
 1-71): absolute finality = word-final position before a pause, not before the next
-word; semivowel = y, v, r, l; nasal = n, m, ṅ, ñ, ṇ (and anusvāra); stop (plosive) =
-k/kh/g/gh, c/ch/j/jh, ṭ/ṭh/ḍ/ḍh, t/th/d/dh, p/ph/b/bh; voiced/voiceless as usual;
+word; semivowel = y, v, r, l; nasal = n, m, ṅ, ñ, ṇ (and anusvāra); stop (plosive) by
+place of articulation — velar: k/kh/g/gh; palatal: c/ch/j/jh; retroflex (cerebral):
+ṭ/ṭh/ḍ/ḍh; dental: t/th/d/dh; labial: p/ph/b/bh; voiced/voiceless as usual;
 aspirated/unaspirated as usual; sibilant = ś, ṣ, s; simple vowel (monophthong) =
 a/ā/i/ī/u/ū/ṛ/ṝ/ḷ; diphthong = e/ai/o/au; homorganic vowels = same place of
 articulation, differ only in length (e.g. a/ā); guṇa = a unchanged, i/ī→e, u/ū→o,
 ṛ/ṝ→ar, ḷ→al; morphophoneme = an abstract intermediate unit used in a rule's
 description of a merger result (not a sound you write down separately); anusvāra =
 nasalization before a consonant, written ṃ; visarga = voiceless aspirate at word end,
-written ḥ. Consult this glossary silently if a rule's wording is unclear; do not
-explain these terms in your output. You are given the text of a single verse in Sanskrit — in Devanagari
+written ḥ. Consult this glossary silently if a rule's wording is unclear — the file's
+own `glossary` block (with its `abbreviations` and place-of-articulation sub-blocks)
+is the authoritative source if this inline summary is not enough; do not explain these
+terms in your output.
+
+Some rule entries in the file carry extra structured fields beyond `text`/`example`;
+use them the same way you would use `text`: `variant_of`+`mapping` gives you the
+result directly for a rule that is a variant of another (cite the variant's own
+number); `depends_on` means the rule's condition presupposes the listed rules were
+already applied; `exhaustive: false` on a root/word list means the list is
+illustrative, not exclusive; `external_dependency` flags a condition that is outside
+the sandhi table (e.g. plain morphology) and must be judged from general grammatical
+knowledge instead. You are given the text of a single verse in Sanskrit — in Devanagari
 script, in IAST transliteration, or in both representations at once. Your task is to
 call the function submit_verse_analysis and pass into it:
 
@@ -100,6 +128,12 @@ is exactly rule 44 ("Последовательность однородных �
 words entry for a word like "buddha-" (budh- + participle -ta-): formationRuleNumbers:
 [30] — because rule 30 explicitly describes t/th becoming dh after a voiced aspirated
 stop, matching budh- + -ta- ⇒ buddha- exactly.
+
+Another words entry, illustrating `variant_of`: for "yakṣyati" (yaj- 'to sacrifice' +
+future -syati), rule 26 ("j → g/ḍ/j/ḍ depending on context, `variant_of: 21`, own
+`mapping` field") matches yaj- exactly (it is in the rule's `root_list`) —
+formationRuleNumbers: [26], not [21]; rule 21 is only the base pattern that 26 varies,
+not itself the applicable rule for this root.
 
 If, after actually checking the rule text against the specific junction/word, no rule
 matches — return an empty array; do not cite a rule number "roughly in that area" just

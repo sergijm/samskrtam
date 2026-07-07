@@ -117,6 +117,14 @@ VerseDetail:
       format: uuid
     orderIndex:
       type: integer
+    rawText:
+      type: string
+      nullable: true
+      description: >-
+        Сырой ввод пользователя (последнее сохранённое значение поля text),
+        до определения письменности. Используется фронтендом в режиме
+        редактирования стиха (status = DRAFT/FAILED) вместо
+        textDevanagari/textIast — см. sangraha-service.md §7.
     textDevanagari:
       type: string
       nullable: true
@@ -305,8 +313,10 @@ UpdateVerseTextRequest:
       type: string
       description: >-
         Единое поле ввода — может содержать текст на деванагари или в IAST.
-        Backend определяет письменность по Unicode-диапазону символов и
-        сохраняет значение в textDevanagari либо textIast (см. sangraha-service.md §4).
+        Тело POST /verses/{id}/analyze (см. sangraha-service.yaml):
+        значение сначала сохраняется как есть в Verse.rawText, а затем backend
+        определяет письменность по Unicode-диапазону символов и заполняет
+        textDevanagari либо textIast (см. sangraha-service.md §4, §7).
 
 ChapterSummary:
   type: object

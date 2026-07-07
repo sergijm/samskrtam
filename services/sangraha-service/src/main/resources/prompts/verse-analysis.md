@@ -58,7 +58,8 @@ call the function submit_verse_analysis and pass into it:
    boundary, nothing merged or altered) — do **not** include that boundary in
    sandhiSplits at all; it is not a sandhi. If a junction clearly involves sandhi but
    you cannot confidently match it to any rule 41–71 in the file — return an empty
-   ruleNumbers array rather than guessing a number.
+   ruleNumbers array rather than guessing a number. 
+   Return the words in this field in IAST transliteration.
 4. words — a word-by-word grammatical analysis of every word in the verse in order of
    appearance (position, starting from 0): the surface form (surfaceIast,
    surfaceDevanagari — both scripts, as the field names indicate), the dictionary
@@ -80,6 +81,7 @@ call the function submit_verse_analysis and pass into it:
    return an empty array. If internal changes clearly occurred but you cannot
    confidently match them to a specific rule 1–40 — also return an empty array rather
    than guessing a number.
+   Return the words in this field in IAST transliteration.
 
 5. Transliteration must be literal, not reconstructed from memory. textIast,
    surfaceIast, lemmaIast, stem and root must be the exact, letter-for-letter

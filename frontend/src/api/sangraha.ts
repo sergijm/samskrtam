@@ -54,3 +54,4 @@ export const sangrahaApi = {
   deleteVerse: (verseId: string) =>
     api.delete(`${BASE}/verses/${verseId}`),
 };
+

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
 interface SandhiSplit {
   surface: string;
@@ -15,9 +16,25 @@ const SandhiSplitsList = ({ sandhiSplits }: SandhiSplitsListProps) => {
 
   if (!sandhiSplits || sandhiSplits.length === 0) return null;
 
+  const allRuleNumbers = sandhiSplits
+    .flatMap(s => s.ruleNumbers ?? [])
+    .filter((v, i, a) => a.indexOf(v) === i);
+
   return (
     <div className="mb-3">
-      <label className="block mb-1 font-semibold">{t('sangraha.fields.sandhiSplits')}</label>
+      <label className="flex justify-content-between align-items-center mb-1 font-semibold">
+        <span>{t('sangraha.fields.sandhiSplits')}</span>
+        {allRuleNumbers.length > 0 && (
+          <Link
+            to={`/grammar/emeneau-rules?${allRuleNumbers.map(r => `rule=${r}`).join('&')}`}
+            className="text-sm text-primary"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {allRuleNumbers.join(', ')}
+          </Link>
+        )}
+      </label>
       <div className="p-3 border-1 border-round surface-border surface-ground">
         {sandhiSplits.map((s, i) => (
           <div key={i} className="mb-2">
@@ -37,3 +54,4 @@ const SandhiSplitsList = ({ sandhiSplits }: SandhiSplitsListProps) => {
 };
 
 export default SandhiSplitsList;
+

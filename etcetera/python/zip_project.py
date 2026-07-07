@@ -6,11 +6,16 @@ from pathlib import Path
 DEFAULT_DIR = r"C:\MyDev\samskrtam"
 DEST_FILE = r"C:\MyDev\samskrtam.zip"
 EXTENSIONS = ('.java', '.ts', '.tsx', '.yaml', '.yml', '.md', '.sql', '.json')
-EXCLUDED_DIRS = {
+EXCLUDED_DIRS1 = {
     'node_modules', '.git', 'build', 'dist', 'target', '__pycache__',
     '.idea', '.vscode', 'venv', 'env', '.venv', 'logs', 'tmp', 'temp',
     '.gradle', '.kotlin', 'gradle', 'etcetera'
 }
+EXCLUDED_DIRS2 = {
+    'frontend', 'services', 'shared'
+}
+
+EXCLUDED_DIRS =  EXCLUDED_DIRS1 | EXCLUDED_DIRS2
 
 def estimate_tokens(text: str) -> int:
     """Грубая оценка: 1 токен ≈ 4 символа."""

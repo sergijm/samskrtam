@@ -289,10 +289,18 @@ paths:
         '204':
           description: Стих помечен как удалённый
 
-  /verses/{verseId}/text:
-    put:
-      operationId: updateVerseText
-      summary: Сохранить введённый текст стиха (единое поле text)
+  /verses/{verseId}/analyze:
+    post:
+      operationId: analyzeVerse
+      summary: Сохранить raw_text и запустить LLM-анализ стиха
+      description: |
+        Единственная точка сохранения текста стиха (кнопка «Сохранить» удалена
+        из фронтенда, см. sangraha-service.md §5.1, §7). Тело обязательно —
+        `UpdateVerseTextRequest` (поле `text`). Backend в рамках запроса:
+        сохраняет `text` в `Verse.rawText`, определяет письменность и заполняет
+        textDevanagari/textIast, затем переводит статус в ANALYZING и
+        возвращает 202 — анализ асинхронный, статус опрашивается через
+        GET /verses/{verseId}.
       tags: [Verses]
       security:
         - bearerAuth:
@@ -311,34 +319,8 @@ paths:
             schema:
               $ref: 'sangraha-schemas.yaml#/UpdateVerseTextRequest'
       responses:
-        '200':
-          description: Текст сохранён
-          content:
-            application/json:
-              schema:
-                $ref: 'sangraha-schemas.yaml#/VerseSummary'
-
-  /verses/{verseId}/analyze:
-    post:
-      operationId: analyzeVerse
-      summary: Запустить LLM-анализ стиха
-      description: |
-        Запускает LLM-анализ стиха. Возвращает 202 Accepted, анализ выполняется асинхронно.
-        Статус можно получить через GET /verses/{verseId} (поле status).
-      tags: [Verses]
-      security:
-        - bearerAuth:
-            - ADMIN
-      parameters:
-        - name: verseId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
         '202':
-          description: Анализ запущен
+          description: raw_text сохранён, анализ запущен
           content:
             application/json:
               schema:

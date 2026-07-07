@@ -11,6 +11,7 @@ public record VerseDetailDto(
     int orderIndex,
     String textDevanagari,
     String textIast,
+    String rawText,
     VerseStatus status,
     VerseAnalysisDto analysis,
     List<VerseWordDto> words

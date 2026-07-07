@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
 // ── Словари грамматических терминов (латинские сокращения, 1–5 букв + точка) ──
 
@@ -97,9 +98,25 @@ const VerseWordsList = ({ words }: VerseWordsListProps) => {
 
   if (!words || words.length === 0) return null;
 
+  const allFormationRuleNumbers = words
+    .flatMap(w => w.formationRuleNumbers ?? [])
+    .filter((v, i, a) => a.indexOf(v) === i);
+
   return (
     <div className="mb-4">
-      <label className="block mb-1 font-semibold">{t('sangraha.fields.words')}</label>
+      <label className="flex justify-content-between align-items-center mb-1 font-semibold">
+        <span>{t('sangraha.fields.words')}</span>
+        {allFormationRuleNumbers.length > 0 && (
+          <Link
+            to={`/grammar/emeneau-rules?${allFormationRuleNumbers.map(r => `rule=${r}`).join('&')}`}
+            className="text-sm text-primary"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {allFormationRuleNumbers.join(', ')}
+          </Link>
+        )}
+      </label>
       <div className="p-3 border-1 border-round surface-border surface-ground">
         {words.map((w) => (
           <div key={w.id} className="flex align-items-center gap-2 mb-1 flex-wrap">

@@ -35,7 +35,7 @@ sangraha-service публикует слова этого стиха, `content-s
 
 **Chapter** (таблица chapters): id (UUID), workId (UUID), slug (string, unique в пределах work), orderIndex (int, nullable — backend вычисляет автоматически при создании, см. §5.3), titleRu, titleEn, titleSaIast, titleSaDevanagari, deletedAt
 
-**Verse** (таблица verses): id (UUID), chapterId (UUID), orderIndex (int), textDevanagari (TEXT), textIast (TEXT), status (DRAFT|ANALYZING|ANALYZED|FAILED), createdAt, updatedAt, deletedAt
+**Verse** (таблица verses): id (UUID), chapterId (UUID), orderIndex (int), rawText (VARCHAR, сырой ввод пользователя до определения письменности — см. §4, §7), textDevanagari (TEXT), textIast (TEXT), status (DRAFT|ANALYZING|ANALYZED|FAILED), createdAt, updatedAt, deletedAt
 
 **VerseAnalysis** (1:1 с Verse, таблица verse_analyses): verseId (UUID, PK), translationRu (TEXT), translationEn (TEXT), sandhiSplits (JSONB), rawModelResponse (JSONB, опционально), modelName, analyzedAt
 
@@ -45,7 +45,7 @@ sangraha-service публикует слова этого стиха, `content-s
 
 ## 3. Flyway Migrations
 
-4 миграции: V1 — вся схема sangraha (works, chapters, verses, verse_analyses, verse_words, outbox_events); V2 — санскритские названия (titleSaIast, titleSaDevanagari) для works; V3 — санскритские названия для chapters + orderIndex nullable; V4 — поле formation_rule_numbers в verse_words.
+4 миграции: V1 — вся схема sangraha (works, chapters, verses, verse_analyses, verse_words, outbox_events); V2 — санскритские названия (titleSaIast, titleSaDevanagari) для works; V3 — санскритские названия для chapters + orderIndex nullable; V4 — поле formation_rule_numbers в verse_words; V5 — поле raw_text (VARCHAR) в verses.
 
 ---
 
@@ -73,11 +73,11 @@ DELETE /api/v1/sangraha/chapters/{chapterId}                     → soft delete
 
 POST   /api/v1/sangraha/chapters/{chapterId}/verses             → добавить стих (пустой, DRAFT) (ADMIN)
 GET    /api/v1/sangraha/verses/{verseId}                         → стих: текст + (если ANALYZED) VerseAnalysis + VerseWord[]
-PUT    /api/v1/sangraha/verses/{verseId}/text                    → сохранить текст (ADMIN), единое поле `text` — backend
-                                                                     определяет письменность по Unicode-диапазону (наличие
-                                                                     символов деванагари → textDevanagari, иначе → textIast)
-POST   /api/v1/sangraha/verses/{verseId}/analyze                 → запустить LLM-анализ (ADMIN, см. §5); синхронный
-                                                                     ответ или 202 + опрос статуса — решает Агент 2
+POST   /api/v1/sangraha/verses/{verseId}/analyze                 → сохранить `raw_text` и запустить LLM-анализ (ADMIN, см. §5); тело —
+                                                                     единое поле `text` (обязательно, см. §7) — backend определяет
+                                                                     письменность по Unicode-диапазону (наличие символов деванагари →
+                                                                     textDevanagari, иначе → textIast); синхронный ответ или 202 +
+                                                                     опрос статуса — решает Агент 2
 DELETE /api/v1/sangraha/verses/{verseId}                         → soft delete (ADMIN)
 ```
 
@@ -89,6 +89,14 @@ DELETE /api/v1/sangraha/verses/{verseId}                         → soft delete
 ## 5. LLM-интеграция
 
 ### 5.1 Анализ стиха (tool calling)
+
+**Сохранение текста перед анализом.** `POST /verses/{verseId}/analyze` принимает обязательное
+тело с полем `text` — фронтенд всегда отправляет текущее значение единственного поля ввода.
+Backend сохраняет `text` как есть в `Verse.rawText`, затем детектирует письменность по
+Unicode-диапазону деванагари и заполняет `textDevanagari` либо `textIast` — до перехода
+статуса в `ANALYZING` и до вызова LLM. Это единственная точка сохранения текста стиха
+(кнопка «Сохранить» и отдельный эндпоинт `PUT /verses/{id}/text` удалены — write-контур
+текста стиха теперь состоит из одного эндпоинта, см. §7).
 
 Конфигурация — только через env, без дефолтов в yml (см. конвенцию по секретам):
 
@@ -237,14 +245,16 @@ Payload/типы события переиспользуются как shared D
 - **Страница стиха** (`/sangraha/{workSlug}/verses/{verseId}`):
   - Поле ввода текста — **одно** (не два раздельных для devanagari/iast). Пользователь
     может печатать в нём как деванагари, так и IAST — оба варианта допустимы в одном
-    и том же поле, backend сам определяет письменность (см. `PUT /verses/{id}/text` в
-    §4) и заполняет нужное из полей `textDevanagari`/`textIast`; отсутствующее
-    представление достраивает LLM при анализе (§5.1).
-  - `status=DRAFT` (или после нажатия «Редактировать» из ANALYZED — см. ниже) → поле
-    ввода активно + кнопка «Анализ» → `POST /verses/{id}/analyze`.
-  - `status=ANALYZING` → поле и кнопки заблокированы, индикатор загрузки.
-  - `status=ANALYZED` → поле ввода **read-only** (показывает сохранённый
-    `textDevanagari`/`textIast` — оба, если оба заполнены), и ниже обязательно
+    и том же поле; в режиме редактирования поле показывает сохранённое `rawText`
+    (а не `textDevanagari`/`textIast` — они актуальны только после анализа, см. ниже).
+  - `status=DRAFT` (или после нажатия «Редактировать» из ANALYZED/FAILED — см. ниже) →
+    поле ввода активно, кнопка **только одна** — «Анализ» → `POST /verses/{id}/analyze`
+    с телом `{ text }`. Отдельной кнопки «Сохранить» на странице нет: backend сохраняет
+    введённый текст в `rawText` и определяет письменность (`textDevanagari`/`textIast`,
+    §4/§5.1) в рамках того же запроса, до начала LLM-анализа.
+  - `status=ANALYZING` → поле и кнопка заблокированы, индикатор загрузки.
+  - `status=ANALYZED` → поле ввода **read-only** (показывает сохранённые
+    `textDevanagari`/`textIast` — оба, если оба заполнены, а не `rawText`), и ниже обязательно
     отображаются результаты `GET /verses/{verseId}` (объект `analysis` +
     `words[]` из `VerseDetail`, см. `sangraha-schemas.yaml`):
     - **Перевод** — `translationRu` и `translationEn` (обе колонки/вкладки).
