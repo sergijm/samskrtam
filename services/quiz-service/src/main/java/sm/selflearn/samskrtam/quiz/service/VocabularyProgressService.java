@@ -11,10 +11,12 @@ import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.quiz.constants.ProgressConstants;
 import sm.selflearn.samskrtam.quiz.dto.*;
 import sm.selflearn.samskrtam.quiz.mapper.QuizAnswerMapper;
-import sm.selflearn.samskrtam.quiz.repository.WordScoreRepository;
+import sm.selflearn.samskrtam.quiz.model.ItemType;
+import sm.selflearn.samskrtam.quiz.model.QuizItemScore;
+import sm.selflearn.samskrtam.quiz.repository.QuizItemScoreRepository;
 
-import java.util.List;
-import java.util.UUID;
+import java.time.Instant;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -26,7 +28,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class VocabularyProgressService {
 
-    private final WordScoreRepository wordScoreRepository;
+    private final QuizItemScoreRepository quizItemScoreRepository;
     private final UserSessionService userSessionService;
     private final QuizAnswerMapper quizAnswerMapper;
 
@@ -46,9 +48,9 @@ public class VocabularyProgressService {
                 .totalQuestions(lesson.getTotalQuestions())
                 .totalWordsOwn(lesson.getWordCount());
 
-        if (userId != null && LessonType.isVocabulary(lesson.getLessonType())) {
-            return wordScoreRepository.countLearnedWords(
-                            userId, lesson.getId(), (int) ProgressConstants.MASTERY_THRESHOLD)
+                if (userId != null && LessonType.isVocabulary(lesson.getLessonType())) {
+            return quizItemScoreRepository.countLearnedItems(
+                            userId, ItemType.VOCABULARY_WORD, ProgressConstants.MASTERED_LOWER_THRESHOLD)
                     .map(learnedCount -> builder
                             .learnedWords(learnedCount.intValue())
                             .build());
@@ -60,8 +62,10 @@ public class VocabularyProgressService {
                 .build());
     }
 
-    /**
+        /**
      * Создаёт VocabularyLessonDto с прогрессом по каждому слову.
+     * Статус и LessonStatusSummary вычисляются за один проход через QuizItemScoreRepository
+     * без отдельного запроса к word_score.
      */
     public Mono<VocabularyLessonDto> createVocabularyLesson(
             LessonItemResponse lessonItem,
@@ -76,41 +80,65 @@ public class VocabularyProgressService {
         lesson.setDifficulty(lessonItem.getDifficulty().toString());
         lesson.setTotalWords(vocabularyWords.size());
 
-        return Flux.fromIterable(vocabularyWords)
-                .flatMap(word ->
-                        userSessionService.getWordAnswers(userId, word.getId(), lessonItem.getId())
-                                .map(answers -> {
-                                    int nAll = answers.size();
-                                    int nSuccess = (int) answers.stream()
-                                            .filter(a -> Boolean.TRUE.equals(a.getIsCorrect()))
-                                            .count();
-                                    float successRate = nAll > 0 ? (float) nSuccess / nAll * 100f : 0f;
+        if (userId == null) {
+            lesson.setLearnedWords(0);
+            lesson.setProgressPercent(0f);
+            lesson.setWords(vocabularyWords.stream()
+                    .map(this::emptyWordProgress)
+                    .collect(Collectors.toList()));
+            return Mono.just(lesson);
+        }
 
-                                    VocabularyWordProgress progressItem = new VocabularyWordProgress();
-                                    progressItem.setWordId(word.getId());
-                                    progressItem.setWord(word.getWordIast());
-                                    progressItem.setWordDevanagari(word.getWordDevanagari());
-                                    progressItem.setTranslationRu(word.getTranslationRu());
-                                    progressItem.setTranslationEn(word.getTranslationEn());
-                                    progressItem.setNAll(nAll);
-                                    progressItem.setNSuccess(nSuccess);
-                                    progressItem.setSuccessRate(successRate);
-                                    progressItem.setStatus(resolveWordStatus(successRate, nAll));
-                                    return progressItem;
-                                })
-                                .onErrorReturn(emptyWordProgress(word))
-                )
-                .collectList()
-                .map(wordProgressList -> {
+        List<UUID> wordIds = vocabularyWords.stream()
+                .map(VocabularyWordDto::getId)
+                .collect(Collectors.toList());
+
+        Instant now = Instant.now();
+
+        return quizItemScoreRepository
+                .findByUserIdAndItemTypeAndExternalRefIdIn(userId, ItemType.VOCABULARY_WORD, wordIds)
+                .collectMap(QuizItemScore::getExternalRefId, score -> score)
+                .map(scoresMap -> {
+                    int newCount = 0;
+                    int learning = 0;
+                    int mastered = 0;
+                    int reviewDue = 0;
+
+                    List<VocabularyWordProgress> wordProgressList = new ArrayList<>();
+
+                    for (VocabularyWordDto word : vocabularyWords) {
+                        QuizItemScore itemScore = scoresMap.get(word.getId());
+                        WordStatus status = resolveStatus(itemScore, now);
+
+                        switch (status) {
+                            case NEW -> newCount++;
+                            case LEARNING -> learning++;
+                            case MASTERED -> mastered++;
+                            case REVIEW -> reviewDue++;
+                        }
+
+                        VocabularyWordProgress progressItem = new VocabularyWordProgress();
+                        progressItem.setWordId(word.getId());
+                        progressItem.setWord(word.getWordIast());
+                        progressItem.setWordDevanagari(word.getWordDevanagari());
+                        progressItem.setTranslationRu(word.getTranslationRu());
+                        progressItem.setTranslationEn(word.getTranslationEn());
+                        progressItem.setStatus(status);
+                        if (itemScore != null) {
+                            progressItem.setSuccessRate(itemScore.getScore());
+                        }
+                        wordProgressList.add(progressItem);
+                    }
+
                     lesson.setWords(wordProgressList);
-
-                    int learnedWords = (int) wordProgressList.stream()
-                            .filter(w -> WordStatus.LEARNING.equals(w.getStatus()))
-                            .count();
-                    lesson.setLearnedWords(learnedWords);
-                    lesson.setProgressPercent(lesson.getTotalWords() > 0
-                            ? (float) learnedWords / lesson.getTotalWords() * 100f
+                    int masteredTotal = mastered + reviewDue;
+                    lesson.setLearnedWords(masteredTotal);
+                    lesson.setProgressPercent(vocabularyWords.size() > 0
+                            ? (float) masteredTotal / vocabularyWords.size() * 100f
                             : 0f);
+                    lesson.setStatusSummary(new LessonStatusSummary(
+                            vocabularyWords.size(), newCount, learning, mastered, reviewDue));
+
                     return lesson;
                 });
     }
@@ -148,10 +176,25 @@ public class VocabularyProgressService {
                 });
     }
 
-    private WordStatus resolveWordStatus(float successRate, int nAll) {
-        if (nAll == 0) return WordStatus.NEW;
-        if (successRate >= ProgressConstants.MASTERY_THRESHOLD) return WordStatus.MASTERED;
-        return WordStatus.LEARNING;
+        /**
+     * Вычисляет статус QuizItem по хранимому score и nextReviewAt.
+     *
+     * @param itemScore строка из quiz_item_score или null
+     * @param now текущее время
+     * @return статус по правилам ADR-007
+     */
+    private WordStatus resolveStatus(QuizItemScore itemScore, Instant now) {
+        if (itemScore == null) {
+            return WordStatus.NEW;
+        }
+        if (itemScore.getScore() < ProgressConstants.MASTERED_LOWER_THRESHOLD) {
+            return WordStatus.LEARNING;
+        }
+        // score >= MASTERED_LOWER_THRESHOLD
+        if (itemScore.getNextReviewAt() != null && !itemScore.getNextReviewAt().isAfter(now)) {
+            return WordStatus.REVIEW;
+        }
+        return WordStatus.MASTERED;
     }
 
     private VocabularyWordProgress emptyWordProgress(VocabularyWordDto word) {

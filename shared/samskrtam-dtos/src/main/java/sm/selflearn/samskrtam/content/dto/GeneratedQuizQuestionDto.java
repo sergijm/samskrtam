@@ -36,7 +36,13 @@ public class GeneratedQuizQuestionDto {
     String caseType;
     String numberType;
 
-    /** Gender from the declension stem, used by quiz-service for progress aggregation */
+        /** Gender from the declension stem, used by quiz-service for progress aggregation */
     String gender;
+
+    /**
+     * ID соответствующего case_ending (для DECLENSION_FORM).
+     * Позволяет QuizItemScoreUpdateStrategy корректно разрешать externalRefId.
+     */
+    UUID caseEndingId;
 }
 

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { quizApi } from '../api/quizApi';
+import { quizApi, FilterParams } from '../api/quizApi';
 import { StartSessionResponse, AnswerRequest, AnswerResponse, QuizSummaryDto, LessonItemDto, LessonType, ResumeSessionResponse, StartOrResumeResponse } from '../types/quiz';
 import { useLocaleStore } from '../store/localeStore';
 
@@ -71,6 +71,20 @@ export const useStartOrResumeQuizSession = () => {
   >({
     mutationFn: async ({ quizId, lessonType }) => {
       const response = await quizApi.startOrResumeSession(quizId, lessonType, locale);
+      return response.data;
+    },
+  });
+};
+
+export const useStartOrResumeQuizSessionWithFilters = () => {
+  const { locale } = useLocaleStore();
+  return useMutation<
+    StartOrResumeResponse,
+    Error,
+    { quizId: string; lessonType: LessonType; filters: FilterParams }
+  >({
+    mutationFn: async ({ quizId, lessonType, filters }) => {
+      const response = await quizApi.startOrResumeSessionWithFilters(quizId, lessonType, locale, filters);
       return response.data;
     },
   });

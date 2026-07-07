@@ -2,6 +2,15 @@ import api from './axios';
 import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, LessonType, QuizSessionSummary, AnswerHistory, QuizProgress, ResumeSessionResponse, StartOrResumeResponse, LessonListResponse } from '../types/quiz';
 import { PaginatedResponse } from '../types/common';
 
+export type FilterScope = 'CASE_ONLY' | 'CASE_NUMBER_GENDER';
+
+export interface FilterParams {
+  filterScope?: 'CASE_ONLY' | 'CASE_NUMBER_GENDER';
+  filterCaseType?: string;
+  filterNumberType?: string;
+  filterGender?: string;
+}
+
 export const quizApi = {
   getQuizList: (category?: string) => {
     const url = category
@@ -34,6 +43,43 @@ export const quizApi = {
     });
   },
 
+  startOrResumeFilteredSession: (
+    lessonId: string,
+    userLocale: string,
+    filterScope: FilterScope,
+    filterCaseType: string,
+    filterNumberType?: string,
+    filterGender?: string
+  ) => {
+    const slug = 'declensions';
+    const url = `/api/v1/quiz/${slug}/sessions/start-or-resume`;
+    const params: Record<string, string> = {
+      lessonId,
+      filterScope,
+      filterCaseType,
+    };
+    if (filterNumberType) params.filterNumberType = filterNumberType;
+    if (filterGender) params.filterGender = filterGender;
+    return api.post<StartOrResumeResponse>(url, null, {
+      params,
+      headers: { 'X-User-Locale': userLocale },
+    });
+  },
+
+  startOrResumeSessionWithFilters: (quizId: string, lessonType: LessonType, userLocale: string, filters: FilterParams) => {
+    const slug = lessonType.toLowerCase();
+    const url = `/api/v1/quiz/${slug}/sessions/start-or-resume`;
+    const params: Record<string, string> = { lessonId: quizId };
+    if (filters.filterScope) params.filterScope = filters.filterScope;
+    if (filters.filterCaseType) params.filterCaseType = filters.filterCaseType;
+    if (filters.filterNumberType) params.filterNumberType = filters.filterNumberType;
+    if (filters.filterGender) params.filterGender = filters.filterGender;
+    return api.post<StartOrResumeResponse>(url, null, {
+        params,
+      headers: { 'X-User-Locale': userLocale },
+    });
+  },
+
   resumeSession: (sessionId: string, lessonType: LessonType, userLocale: string) => {
     const slug = lessonType.toLowerCase();
     const url = `/api/v1/quiz/${slug}/sessions/${sessionId}/resume`;
@@ -45,7 +91,6 @@ export const quizApi = {
   submitAnswer: (sessionId: string, quizId: string, lessonType: LessonType, answer: AnswerRequest, userLocale: string) => {
     const slug = lessonType.toLowerCase();
     const url = `/api/v1/quiz/${slug}/sessions/${sessionId}/answer`;
-
     return api.post<AnswerResponse>(url, answer, {
       headers: { 'X-User-Locale': userLocale },
     });
@@ -71,7 +116,7 @@ export const quizApi = {
     return api.post<StartOrResumeResponse>(url, null, {
       headers: { 'X-User-Locale': userLocale },
     });
-  },
+      },
 
   getUserQuizSessions: (userId: string, page: number, size: number, sortBy: string, sortDirection: string, lessonType?: LessonType, status?: SessionStatus) => {
     return api.get<PaginatedResponse<QuizSessionSummary>>(`/api/v1/quiz-sessions`, {
@@ -83,7 +128,7 @@ export const quizApi = {
         sortDirection,
         lessonType,
         status,
-      },
+  },
     });
   },
 

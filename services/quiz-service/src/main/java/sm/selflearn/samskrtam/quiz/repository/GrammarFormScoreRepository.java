@@ -21,6 +21,16 @@ public interface GrammarFormScoreRepository extends ReactiveCrudRepository<Gramm
     Flux<GrammarFormScore> findByUserIdAndLessonId(UUID userId, UUID lessonId);
 
     @Query("""
+            SELECT
+                CASE_TYPE AS caseType,
+                COUNT(*) AS totalCombinations,
+                COUNT(CASE WHEN score >= 80 THEN 1 END) AS learnedCombinations
+            FROM quiz.grammar_form_score
+            WHERE user_id = :userId AND lesson_id = :lessonId
+            GROUP BY CASE_TYPE
+            """)
+    Flux<CaseProgressProjection> getProgressByCaseType(UUID userId, UUID lessonId);
+    @Query("""
             SELECT COUNT(*) FROM quiz.grammar_form_score
             WHERE user_id = :userId AND lesson_id = :lessonId AND score >= :minScore
             """)
@@ -48,4 +58,14 @@ public interface GrammarFormScoreRepository extends ReactiveCrudRepository<Gramm
             """)
     Mono<Void> upsertScore(UUID id, UUID userId, UUID lessonId,
                            String gender, String caseType, String numberType, int score);
+
+    /**
+     * Прокси-интерфейс для Projection в getProgressByCaseType
+     */
+    interface CaseProgressProjection {
+        String caseType();
+        Long totalCombinations();
+        Long learnedCombinations();
+    }
 }
+

@@ -9,8 +9,10 @@ import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.quiz.dto.AnswerRequest;
 import sm.selflearn.samskrtam.quiz.dto.AnswerResponse;
 import sm.selflearn.samskrtam.quiz.dto.CompleteSessionResponse;
-import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse; // Import new DTO
-import sm.selflearn.samskrtam.quiz.service.QuizSessionService; // Changed from GrammarSessionService
+import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse;
+import sm.selflearn.samskrtam.quiz.model.FilterScope;
+import sm.selflearn.samskrtam.quiz.service.QuizSessionService;
+
 
 import java.util.UUID;
 
@@ -20,19 +22,23 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class QuizSessionController {
 
-    private final QuizSessionService quizSessionService; // Changed from GrammarSessionService
+    private final QuizSessionService quizSessionService;
 
     @PostMapping("/start")
     @Operation(summary = "Start a new quiz session (or resume if in progress)")
     @ApiResponse(responseCode = "200", description = "Session started or resumed successfully")
     @ApiResponse(responseCode = "404", description = "Quiz not found")
-    public Mono<StartOrResumeResponse> startSession( // Changed return type to StartOrResumeResponse
+    public Mono<StartOrResumeResponse> startSession(
                 @PathVariable String slug,
                 @RequestParam UUID lessonId,
                 @RequestHeader("X-User-Id") UUID userId,
-                @RequestHeader("X-User-Locale") String userLocale) {
-            // This endpoint now behaves like start-or-resume to simplify client logic
-            return quizSessionService.startOrResumeSession(lessonId, userId, userLocale); // Changed service call
+            @RequestHeader("X-User-Locale") String userLocale,
+            @RequestParam(required = false) FilterScope filterScope,
+            @RequestParam(required = false) String filterCaseType,
+            @RequestParam(required = false) String filterNumberType,
+            @RequestParam(required = false) String filterGender) {
+        return quizSessionService.startOrResumeSession(lessonId, userId, userLocale,
+                filterScope, filterCaseType, filterNumberType, filterGender);
         }
 
     @PostMapping("/start-or-resume")
@@ -43,23 +49,25 @@ public class QuizSessionController {
                 @PathVariable String slug,
                 @RequestParam UUID lessonId,
                 @RequestHeader("X-User-Id") UUID userId,
-                @RequestHeader("X-User-Locale") String userLocale) {
-            return quizSessionService.startOrResumeSession(lessonId, userId, userLocale); // Changed service call
+            @RequestHeader("X-User-Locale") String userLocale,
+            @RequestParam(required = false) FilterScope filterScope,
+            @RequestParam(required = false) String filterCaseType,
+            @RequestParam(required = false) String filterNumberType,
+            @RequestParam(required = false) String filterGender) {
+        return quizSessionService.startOrResumeSession(lessonId, userId, userLocale,
+                filterScope, filterCaseType, filterNumberType, filterGender);
         }
 
     @GetMapping("/{sessionId}/resume")
     @Operation(summary = "Resume an existing quiz session")
     @ApiResponse(responseCode = "200", description = "Session resumed successfully")
     @ApiResponse(responseCode = "404", description = "Session not found")
-    public Mono<StartOrResumeResponse> resumeSession( // Changed return type to StartOrResumeResponse
+    public Mono<StartOrResumeResponse> resumeSession(
             @PathVariable String slug,
             @PathVariable UUID sessionId,
             @RequestHeader("X-User-Id") UUID userId,
             @RequestHeader("X-User-Locale") String userLocale) {
-        // This method is now primarily for direct resume by sessionId,
-        // while start-or-resume handles the logic of finding the latest in-progress session.
-        // It's kept for backward compatibility or specific use cases.
-        return quizSessionService.resumeSession(sessionId, userId, userLocale); // Changed service call
+        return quizSessionService.resumeSession(sessionId, userId, userLocale);
     }
 
     @PostMapping("/{sessionId}/answer")
@@ -73,7 +81,7 @@ public class QuizSessionController {
             @RequestHeader("X-User-Id") UUID userId,
             @RequestHeader("X-User-Locale") String userLocale,
             @RequestBody AnswerRequest request) {
-        return quizSessionService.submitAnswer(sessionId, userId, request, userLocale); // Changed service call
+        return quizSessionService.submitAnswer(sessionId, userId, request, userLocale);
     }
 
     @PostMapping("/{sessionId}/complete")
@@ -84,7 +92,7 @@ public class QuizSessionController {
             @PathVariable String slug,
             @PathVariable UUID sessionId,
             @RequestHeader("X-User-Id") UUID userId) {
-        return quizSessionService.completeSession(sessionId, userId); // Changed service call
+        return quizSessionService.completeSession(sessionId, userId);
     }
 
     @PostMapping("/{sessionId}/retake")
@@ -111,3 +119,4 @@ public class QuizSessionController {
         return quizSessionService.startNewQuizFromExistingSession(sessionId, userId, userLocale);
     }
 }
+

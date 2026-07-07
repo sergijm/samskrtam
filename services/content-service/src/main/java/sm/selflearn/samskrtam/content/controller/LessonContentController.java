@@ -11,6 +11,7 @@ import sm.selflearn.samskrtam.content.dto.DeclensionStemDto;
 import sm.selflearn.samskrtam.content.dto.GeneratedQuizData;
 import sm.selflearn.samskrtam.content.dto.LessonItemResponse;
 import sm.selflearn.samskrtam.content.dto.CaseEndingDto;
+import sm.selflearn.samskrtam.content.model.*;
 import sm.selflearn.samskrtam.content.model.DeclensionForm;
 import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
@@ -63,6 +64,18 @@ public class LessonContentController {
     @ApiResponse(responseCode = "404", description = "Lesson not found")
     public List<DeclensionStemDto> getDeclensionStemsForLesson(@PathVariable String slug) {
         return grammarContentService.getDeclensionStemsForLesson(slug);
+    }
+
+    @GetMapping("/lessons/{slug}/case-endings")
+    @Operation(summary = "Get case endings for a lesson with optional filters")
+    @ApiResponse(responseCode = "200", description = "List of case endings retrieved successfully")
+    @ApiResponse(responseCode = "404", description = "Lesson not found")
+    public List<CaseEndingDto> getCaseEndingsForLesson(
+            @PathVariable String slug,
+            @RequestParam(required = false) CaseType caseType,
+            @RequestParam(required = false) NumberType numberType,
+            @RequestParam(required = false) Gender gender) {
+        return grammarContentService.getCaseEndingsForLesson(slug, caseType, numberType, gender);
     }
 
     @GetMapping("/case-endings")

@@ -27,6 +27,26 @@ public class VocabularyService {
     private final VocabularyWordCategoryRepository vocabularyWordCategoryRepository;
     private final LessonRepository lessonRepository;
 
+    /**
+     * Returns a flat set of vocabulary word IDs for the lesson/category identified by slug.
+     */
+    public Set<UUID> getVocabularyWordIdsForQuiz(String slug) {
+        VocabularyCategory rootCategory = vocabularyCategoryRepository.findByCodeIgnoreCase(slug)
+                .orElseThrow(() -> new SamskrtamException("VOCABULARY_CATEGORY_NOT_FOUND",
+                        "Vocabulary category not found for slug: " + slug));
+
+        List<UUID> allCategoryIds = vocabularyCategoryRepository.findAllChildrenIds(rootCategory.getId());
+
+        Set<UUID> vocabularyWordIds = new HashSet<>();
+        for (UUID categoryId : allCategoryIds) {
+            vocabularyWordCategoryRepository.findByCategoryId(categoryId).stream()
+                    .map(vwc -> vwc.getId().getVocabularyWordId())
+                    .forEach(vocabularyWordIds::add);
+        }
+
+        return vocabularyWordIds;
+    }
+
     public List<VocabularyWordDto> getVocabularyWordsForQuiz(String quizSlug, int limit) {
         // 1. Find the category by code (which matches quizSlug)
         VocabularyCategory rootCategory = vocabularyCategoryRepository.findByCodeIgnoreCase(quizSlug)

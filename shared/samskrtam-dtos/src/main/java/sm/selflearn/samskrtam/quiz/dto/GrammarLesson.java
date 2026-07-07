@@ -12,6 +12,7 @@ public class GrammarLesson {
     private int totalQuestions;
     private int learnedQuestions;
     private float progressPercent;
+    private LessonStatusSummary statusSummary;
     private List<GrammarQuestionProgress> questions;
 
     // Getters and setters
@@ -71,12 +72,20 @@ public class GrammarLesson {
         this.learnedQuestions = learnedQuestions;
     }
 
-    public float getProgressPercent() {
+        public float getProgressPercent() {
         return progressPercent;
     }
 
     public void setProgressPercent(float progressPercent) {
         this.progressPercent = progressPercent;
+    }
+
+    public LessonStatusSummary getStatusSummary() {
+        return statusSummary;
+    }
+
+    public void setStatusSummary(LessonStatusSummary statusSummary) {
+        this.statusSummary = statusSummary;
     }
 
     public List<GrammarQuestionProgress> getQuestions() {

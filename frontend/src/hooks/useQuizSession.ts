@@ -7,10 +7,12 @@ import {
   useQuizBySlug,
   useResumeQuizSession,
   useCompleteQuizSession,
+  useStartOrResumeQuizSessionWithFilters,
 } from './useQuiz';
+import type { FilterParams } from '../api/quizApi';
 import { AnswerRequest, SessionQuestion, StartOrResumeResponse, LessonType } from '../types/quiz';
 
-export function useQuizSession(slug: string | undefined, sessionIdFromParams: string | undefined) {
+export function useQuizSession(slug: string | undefined, sessionIdFromParams: string | undefined, filterParams?: FilterParams) {
   const navigate = useNavigate();
   const location = useLocation();
   const { i18n } = useTranslation();
@@ -36,6 +38,7 @@ export function useQuizSession(slug: string | undefined, sessionIdFromParams: st
   );
 
   const startSessionMutation = useStartQuizSession();
+  const startFilteredSessionMutation = useStartOrResumeQuizSessionWithFilters();
   const resumeSessionMutation = useResumeQuizSession();
   const submitAnswerMutation = useSubmitQuizAnswer();
   const completeSessionMutation = useCompleteQuizSession();
@@ -71,6 +74,23 @@ export function useQuizSession(slug: string | undefined, sessionIdFromParams: st
             onError: (err) => console.error('Failed to resume lesson session:', err),
           }
         );
+      } else if (filterParams && filterParams.filterScope) {
+        // Отфильтрованная сессия по падежу/роду/числу
+        startFilteredSessionMutation.mutate(
+          { quizId: fetchedQuizSummary.id, lessonType: fetchedQuizSummary.lessonType, filters: filterParams },
+          {
+            onSuccess: (data) => {
+              setSessionId(data.sessionId);
+              setQuestions(data.questions);
+              setCurrentQuestionIndex(data.currentQuestionIndex || 0);
+              setStartTime(Date.now());
+              setQuizSummaryData(data);
+              // URL без фильтров, но с sessionId
+              navigate(`/quiz/${fetchedQuizSummary.lessonType.toLowerCase()}/${fetchedQuizSummary.slug}/${data.sessionId}`, { replace: true });
+            },
+            onError: (err) => console.error('Failed to start filtered session:', err),
+          }
+        );
       } else {
         startSessionMutation.mutate(
           { quizIdentifier: fetchedQuizSummary.id, lessonType: fetchedQuizSummary.lessonType },
@@ -87,7 +107,7 @@ export function useQuizSession(slug: string | undefined, sessionIdFromParams: st
         );
       }
     }
-  }, [location.state, fetchedQuizSummary, sessionIdFromParams, startSessionMutation, resumeSessionMutation, hasAttemptedSessionLoad, navigate, location.pathname]);
+  }, [location.state, fetchedQuizSummary, sessionIdFromParams, startSessionMutation, startFilteredSessionMutation, resumeSessionMutation, hasAttemptedSessionLoad, navigate, location.pathname, filterParams]);
 
   useEffect(() => {
     const allQuestionsAnswered = questions.length > 0 && currentQuestionIndex >= questions.length;
@@ -180,17 +200,20 @@ export function useQuizSession(slug: string | undefined, sessionIdFromParams: st
     isLoading:
       isQuizSummaryLoading ||
       startSessionMutation.isPending ||
+      startFilteredSessionMutation.isPending ||
       resumeSessionMutation.isPending ||
       completeSessionMutation.isPending ||
       !sessionId,
     isError:
       isQuizSummaryError ||
       startSessionMutation.isError ||
+      startFilteredSessionMutation.isError ||
       resumeSessionMutation.isError ||
       completeSessionMutation.isError,
     errorMessage:
       quizSummaryError?.message ||
       startSessionMutation.error?.message ||
+      startFilteredSessionMutation.error?.message ||
       resumeSessionMutation.error?.message ||
       completeSessionMutation.error?.message,
     handleSubmitAnswer,

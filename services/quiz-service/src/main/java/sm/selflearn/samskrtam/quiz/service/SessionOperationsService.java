@@ -23,7 +23,7 @@ import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
 import sm.selflearn.samskrtam.quiz.repository.SessionQuestionRepository;
 import sm.selflearn.samskrtam.quiz.mapper.SessionQuestionToDtoMapper;
-import sm.selflearn.samskrtam.quiz.service.strategy.ScoreUpdateStrategyRegistry;
+import sm.selflearn.samskrtam.quiz.service.strategy.QuizItemScoreUpdateStrategy;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -47,7 +47,8 @@ public class SessionOperationsService {
     private final QuizAnswerMapper quizAnswerMapper;
     private final SessionQuestionRepository sessionQuestionRepository;
     private final SessionQuestionToDtoMapper sessionQuestionToDtoMapper;
-    private final ScoreUpdateStrategyRegistry scoreUpdateStrategyRegistry;
+
+    private final QuizItemScoreUpdateStrategy quizItemScoreUpdateStrategy;
     private final VocabularyWordsHelper vocabularyWordsHelper;
     private final ContentClient contentClient;
     private final SessionFactory sessionFactory;
@@ -120,8 +121,7 @@ public class SessionOperationsService {
 
                     return quizAnswerRepository.save(newAnswer)
                             .then(quizSessionRepository.incrementAnsweredQuestionsAndScore(session.getId(), isCorrect))
-                            .then(scoreUpdateStrategyRegistry.getStrategy(session.getLessonType())
-                                    .updateScore(userId, session.getLessonId(), generatedQuestion, isCorrect))
+                            .then(quizItemScoreUpdateStrategy.updateScore(userId, session.getLessonId(), generatedQuestion, isCorrect))
                             .then(outboxEventCreator.createAndSaveQuizAnsweredEvent(
                                     new QuizAnsweredEvent(session.getId(), userId, session.getLessonId(),
                                             session.getLessonType(), request.getQuestionId(),

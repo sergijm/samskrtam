@@ -50,7 +50,13 @@ GrammarQuestionProgress:
       minimum: 0
       maximum: 100
     status:
-      $ref: './vocabulary.yaml#/WordStatus'
+      allOf:
+        - $ref: './vocabulary.yaml#/WordStatus'
+      description: >
+        Вычисляемое поле ответа API, не хранится в БД. Определяется по правилам ADR-007
+        (единый порог 90 для DECLENSION_FORM и VOCABULARY_WORD).
+        Использует ту же схему WordStatus, что и лексические уроки.
+        Не путать с полем БД — БД хранит только score, статус вычисляется лениво.
     caseEnding:
       type: string
       description: Эталонное окончание для данного вопроса (caseType + numberType + gender). В IAST.
@@ -86,7 +92,7 @@ GrammarQuestionProgress:
 
 GrammarLesson:
   type: object
-  required: [lessonId, type, titleRu, titleEn, difficulty, totalQuestions, learnedQuestions, progressPercent, questions]
+  required: [lessonId, type, titleRu, titleEn, difficulty, totalQuestions, learnedQuestions, progressPercent, statusSummary, questions]
   properties:
     lessonId:
       type: string
@@ -107,11 +113,14 @@ GrammarLesson:
     learnedQuestions:
       type: integer
       minimum: 0
+      description: score >= 90 (masteredLowerThreshold), включая REVIEW. См. также statusSummary.mastered.
     progressPercent:
       type: number
       format: float
       minimum: 0
       maximum: 100
+    statusSummary:
+      $ref: './lessons.yaml#/LessonStatusSummary'
     questions:
       type: array
       items:

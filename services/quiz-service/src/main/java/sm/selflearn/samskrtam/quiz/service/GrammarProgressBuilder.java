@@ -10,7 +10,9 @@ import sm.selflearn.samskrtam.content.dto.CaseEndingDto;
 import sm.selflearn.samskrtam.content.model.Gender;
 import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.quiz.dto.*;
-import sm.selflearn.samskrtam.quiz.repository.GrammarFormScoreRepository;
+import sm.selflearn.samskrtam.quiz.model.ItemType;
+import sm.selflearn.samskrtam.quiz.model.QuizItemScore;
+import sm.selflearn.samskrtam.quiz.repository.QuizItemScoreRepository;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -30,7 +32,7 @@ import java.util.*;
 @Slf4j
 public class GrammarProgressBuilder {
 
-    private final GrammarFormScoreRepository grammarFormScoreRepository;
+    private final QuizItemScoreRepository quizItemScoreRepository;
     private final ContentClient contentClient;
     private final GrammarQuestionProgressFactory progressFactory;
 
@@ -93,19 +95,35 @@ public class GrammarProgressBuilder {
         }
     }
 
-        private Mono<GrammarQuestionProgress> buildGroupProgress(
+                private Mono<GrammarQuestionProgress> buildGroupProgress(
             LessonItemResponse lessonItem, VowelType vowelType,
             List<CaseEndingDto> caseEndings,
             Gender gender, DeclensionFormDto form,
             UUID userId) {
 
-        return grammarFormScoreRepository.aggregateSuccessRate(
-                        userId, lessonItem.getId(),
-                        gender != null ? gender.name() : "UNSPECIFIED",
-                        form.getCaseType().name(),
-                        form.getNumberType().name())
-                .map(avgScore -> progressFactory.create(lessonItem, form, gender, caseEndings, avgScore.floatValue()))
+        // Найти case_ending.id для данной (gender, caseType, numberType)
+        String genderStr = gender != null ? gender.name() : "UNSPECIFIED";
+        UUID externalRefId = caseEndings.stream()
+                .filter(ce -> matchingCaseEnding(ce, genderStr, form))
+                .findFirst()
+                .map(CaseEndingDto::getId)
+                .orElse(null);
+
+        if (externalRefId == null || userId == null) {
+            return Mono.just(progressFactory.create(lessonItem, form, gender, caseEndings, 0f));
+        }
+
+        return quizItemScoreRepository
+                .findByUserIdAndItemTypeAndExternalRefId(userId, ItemType.DECLENSION_FORM, externalRefId)
+                .map(itemScore -> progressFactory.create(lessonItem, form, gender, caseEndings, itemScore.getScore()))
                 .defaultIfEmpty(progressFactory.create(lessonItem, form, gender, caseEndings, 0f));
+    }
+
+    private boolean matchingCaseEnding(CaseEndingDto ce, String genderStr, DeclensionFormDto form) {
+        String ceGender = ce.getGender() != null ? ce.getGender().name() : "UNSPECIFIED";
+        return ceGender.equals(genderStr)
+                && ce.getCaseType().name().equals(form.getCaseType().name())
+                && ce.getNumberType().name().equals(form.getNumberType().name());
     }
 
     

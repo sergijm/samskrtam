@@ -8,23 +8,25 @@ import sm.selflearn.samskrtam.content.dto.LessonItemResponse;
 import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.quiz.constants.ProgressConstants;
 import sm.selflearn.samskrtam.quiz.dto.*;
-import sm.selflearn.samskrtam.quiz.repository.GrammarFormScoreRepository;
-
-import java.util.UUID;
+import sm.selflearn.samskrtam.quiz.model.ItemType;
+import sm.selflearn.samskrtam.quiz.repository.QuizItemScoreRepository;
 
 import java.util.UUID;
 
 /**
  * Сервис для работы с прогрессом по грамматическим урокам (declensions).
  * Делегирует построение GrammarLesson в {@link GrammarProgressBuilder}.
+ *
+ * <p>Статус вопросов вычисляется через единую таблицу quiz_item_score (ADR-007).
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class GrammarProgressService {
 
-    private final GrammarFormScoreRepository grammarFormScoreRepository;
+    private final QuizItemScoreRepository quizItemScoreRepository;
     private final GrammarProgressBuilder grammarProgressBuilder;
+
     /**
      * Обогащает список уроков прогрессом для грамматических уроков.
      */
@@ -42,8 +44,8 @@ public class GrammarProgressService {
                 .totalWordsOwn(lesson.getWordCount());
 
         if (userId != null && !LessonType.isVocabulary(lesson.getLessonType())) {
-            return grammarFormScoreRepository.countLearnedForms(
-                            userId, lesson.getId(), (int) ProgressConstants.MASTERY_THRESHOLD)
+            return quizItemScoreRepository.countLearnedItems(
+                            userId, ItemType.DECLENSION_FORM, ProgressConstants.MASTERED_LOWER_THRESHOLD)
                     .map(count -> builder
                             .learnedWords(count.intValue())
                             .totalWordsOwn(count.intValue())

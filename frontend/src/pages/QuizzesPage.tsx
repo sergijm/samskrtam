@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from 'primereact/card';
+import { ProgressBar } from 'primereact/progressbar';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuizList, useStartOrResumeQuizSession } from '../hooks/useQuiz';
 import { ProgressSpinner } from 'primereact/progressspinner';
@@ -100,13 +101,21 @@ const QuizzesPage: React.FC<QuizzesPageProps> = ({ category: propCategory }) => 
                   <div className="p-card-footer" style={{ marginTop: 'auto' }}>
                     <div className="text-lg font-bold">
                                             {isVocabularyQuiz(lesson.lessonType) ? (
-                        <span>
-                          <span style={{ color: 'var(--green-500)', fontWeight: 600 }}>
-                            {lesson.learnedWords}
-                          </span>
-                          /{lesson.totalWordsOwn} {t('quizzes.words')}
-                        </span>
-                      ) : (
+                                              <div>
+                                                <ProgressBar
+                                                  value={lesson.totalWordsOwn > 0 ? Math.round((lesson.learnedWords / lesson.totalWordsOwn) * 100) : 0}
+                                                  style={{ height: '8px', width: '100%' }}
+                                                  showValue={false}
+                                                  className="mb-1"
+                                                />
+                                                <span>
+                                                  <span style={{ color: 'var(--green-500)', fontWeight: 600 }}>
+                                                    {lesson.learnedWords}
+                                                  </span>
+                                                  /{lesson.totalWordsOwn} {t('quizzes.words')}
+                                                </span>
+                                              </div>
+                                            ) : (
                         <span>{lesson.totalQuestions} {t('quizzes.questions')}</span>
                       )}
                     </div>

@@ -4,67 +4,75 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import sm.selflearn.samskrtam.quiz.model.WordScore;
-import sm.selflearn.samskrtam.quiz.repository.WordScoreRepository;
+import sm.selflearn.samskrtam.quiz.model.ItemType;
+import sm.selflearn.samskrtam.quiz.model.QuizItemScore;
+import sm.selflearn.samskrtam.quiz.repository.QuizItemScoreRepository;
 
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Обёртка над QuizItemScoreRepository для vocabulary-слов.
+ * Заменяет старый WordScoreService, работавший через таблицу word_score.
+ *
+ * <p>Использует единую таблицу quiz.quiz_item_score (itemType = VOCABULARY_WORD).
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class WordScoreService {
 
-    private final WordScoreRepository wordScoreRepository;
+    private final QuizItemScoreRepository quizItemScoreRepository;
 
     /**
-     * Upsert word score with exponential rating algorithm.
-     * <p>
-     * Initial (no record): score = 0<br>
-     * First answer (score == 0): correct → 25, incorrect → 5<br>
-     * Subsequent (score > 0): correct → score + (100 - score) * 0.5, incorrect → score * 0.3<br>
-     * After calculation: round5(score), max(score, 5)<br>
-     * Async via reactive pipeline + atomic upsert (ON CONFLICT DO UPDATE).
+     * Upsert vocabulary word score using QuizItemScore upsert.
      */
-    public Mono<WordScore> upsertScore(UUID userId, UUID wordId, UUID lessonId, boolean isCorrect) {
-        return wordScoreRepository.findByUserIdAndWordIdAndLessonId(userId, wordId, lessonId)
+    public Mono<Void> upsertScore(UUID userId, UUID wordId, UUID lessonId, boolean isCorrect) {
+        return quizItemScoreRepository.findByUserIdAndItemTypeAndExternalRefId(
+                        userId, ItemType.VOCABULARY_WORD, wordId)
                 .flatMap(existing -> {
                     int newScore = calculateScore(existing.getScore(), isCorrect);
-                    existing.setScore(newScore);
-                    existing.setUpdatedAt(Instant.now());
-                    return wordScoreRepository.save(existing);
+                    Instant now = Instant.now();
+                    int newStability = isCorrect
+                            ? Math.min(10, existing.getStability() + 1)
+                            : Math.max(1, existing.getStability() - 2);
+                    int newConsecutiveMistakes = isCorrect ? 0 : existing.getConsecutiveMistakes() + 1;
+                    Instant lastMistakeAt = isCorrect ? existing.getLastMistakeAt() : now;
+
+                    return quizItemScoreRepository.upsertScore(
+                            existing.getId(), userId, ItemType.VOCABULARY_WORD.name(), wordId,
+                            newScore, newStability,
+                            now, lastMistakeAt, newConsecutiveMistakes,
+                            existing.getNextReviewAt());
                 })
                 .switchIfEmpty(Mono.defer(() -> {
                     int initialScore = calculateScore(0, isCorrect);
-                    WordScore newScore = WordScore.builder()
-                            .userId(userId)
-                            .wordId(wordId)
-                            .lessonId(lessonId)
-                            .score(initialScore)
-                            .updatedAt(Instant.now())
-                            .build();
-                    return wordScoreRepository.save(newScore);
+                    Instant now = Instant.now();
+
+                    return quizItemScoreRepository.upsertScore(
+                            UUID.randomUUID(), userId, ItemType.VOCABULARY_WORD.name(), wordId,
+                            initialScore, 1,
+                            now, isCorrect ? null : now,
+                            isCorrect ? 0 : 1,
+                            now.plusSeconds(86400L));
                 }));
     }
 
     /**
-     * Calculates the new score according to the exponential rating algorithm.
+     * Calculates the new score according to the quiz-generator-spec §2.5 formula.
      */
     public static int calculateScore(int currentScore, boolean isCorrect) {
         double raw;
-        if (currentScore == 0) {
-            // First answer
-            raw = isCorrect ? 25.0 : 5.0;
+        if (isCorrect) {
+            raw = currentScore + (100.0 - currentScore) * 0.5;
         } else {
-            if (isCorrect) {
-                raw = currentScore + (100.0 - currentScore) * 0.5;
-            } else {
-                raw = currentScore * 0.3;
-            }
+            double penalty = Math.max(0.15, 0.75 / Math.max(1, currentScore / 10));
+            raw = currentScore - (currentScore - 5) * penalty;
         }
-        // round5
-        int rounded = (int) Math.round(raw / 5.0) * 5;
-        // ensure >= 5
-        return Math.max(rounded, 5);
+        // round5 with special rule: < 50 floor, >= 50 ceil
+        int rounded = raw < 50
+                ? (int) Math.floor(raw / 5.0) * 5
+                : (int) Math.ceil(raw / 5.0) * 5;
+        return Math.max(0, Math.min(100, rounded));
     }
 }

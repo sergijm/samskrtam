@@ -16,11 +16,26 @@ import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.content.dto.CaseEndingDto;
 
 
+
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Component
 public class ContentClient {
+
+    public Mono<Set<UUID>> getVocabularyWordIdsForLesson(String slug) {
+        return webClient.get()
+                .uri("/api/v1/content/lessons/{slug}/vocabulary-word-ids", slug)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("VOCABULARY_WORDS_NOT_FOUND",
+                                "Vocabulary word IDs not found for lesson slug: " + slug)))
+                .bodyToFlux(UUID.class)
+                .collect(Collectors.toSet());
+    }
 
     private final WebClient webClient;
 
@@ -110,7 +125,7 @@ public class ContentClient {
                 .bodyToMono(LessonItemResponse.class);
     }
 
-    public Mono<List<DeclensionStemDto>> getDeclensionStemsForLesson(String slug) {
+        public Mono<List<DeclensionStemDto>> getDeclensionStemsForLesson(String slug) {
         return webClient.get()
                 .uri("/api/v1/content/lessons/{slug}/declension-stems", slug)
                 .retrieve()
@@ -128,7 +143,29 @@ public class ContentClient {
                         .build())
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError,
-                        r -> Mono.error(new SamskrtamException("CASE_ENDINGS_NOT_FOUND", "Case endings not found for vowelType: " + vowelType)))
+                        r -> Mono.error(new SamskrtamException("CASE_ENDINGS_NOT_FOUND",
+                                "Case endings not found for vowel type: " + vowelType)))
+                .bodyToFlux(CaseEndingDto.class)
+                .collectList();
+    }
+
+    public Mono<List<CaseEndingDto>> getCaseEndingsForLesson(
+            String slug,
+            String caseType,
+            String numberType,
+            String gender) {
+        return webClient.get()
+                .uri(uriBuilder -> {
+                    var builder = uriBuilder.path("/api/v1/content/lessons/{slug}/case-endings");
+                    if (caseType != null) builder.queryParam("caseType", caseType);
+                    if (numberType != null) builder.queryParam("numberType", numberType);
+                    if (gender != null) builder.queryParam("gender", gender);
+                    return builder.build(slug);
+                })
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("CASE_ENDINGS_NOT_FOUND",
+                                "Case endings not found for lesson slug: " + slug)))
                 .bodyToFlux(CaseEndingDto.class)
                 .collectList();
     }

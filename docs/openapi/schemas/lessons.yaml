@@ -4,6 +4,39 @@ LessonType:
   type: string
   enum: [VOCABULARY, VOCABULARY_BASIC, VOCABULARY_TEXTS, DECLENSIONS, CONJUGATIONS]
 
+LessonStatusSummary:
+  type: object
+  description: >
+    Сводка по статусам QuizItem урока для текущего пользователя (LessonPage).
+    Считается на бэкенде из quiz.quiz_item_score (ADR-007), не на фронтенде.
+  required: [total, newCount, learning, mastered, reviewDue]
+  properties:
+    total:
+      type: integer
+      minimum: 0
+      description: Количество QuizItem урока всего.
+    newCount:
+      type: integer
+      minimum: 0
+      description: Нет строки в quiz_item_score — обучение не начато. Кнопка "Изучить".
+    learning:
+      type: integer
+      minimum: 0
+      description: Есть строка, score < masteredLowerThreshold (90). Кнопка "Повторить".
+    mastered:
+      type: integer
+      minimum: 0
+      description: >
+        score >= masteredLowerThreshold (90). Включает элементы в статусе REVIEW
+        (см. WordStatus) — reviewDue является подмножеством mastered, не отдельной долей total.
+    reviewDue:
+      type: integer
+      minimum: 0
+      description: >
+        Подмножество mastered: score >= 90 и nextReviewAt <= now (просрочен контрольный
+        показ). reviewDue > 0 включает кнопку "Повторить" на LessonPage, запускающую
+        сессию с приоритетом due-элементов.
+
 LessonItemDto:
   type: object
   required: [id, slug, titleRu, titleEn, descriptionRu, descriptionEn, lessonType, difficulty, totalQuestions, totalWordsOwn, learnedWords]
@@ -32,6 +65,10 @@ LessonItemDto:
       type: integer
     learnedWords:
       type: integer
+      description: >
+        Количество QuizItem урока со score >= masteredLowerThreshold (90) в
+        quiz.quiz_item_score (включая REVIEW). 100% на плитке урока соответствует
+        learnedWords == totalWordsOwn, т.е. все QuizItem урока в статусе MASTERED.
 
 LessonListResponse:
   type: object

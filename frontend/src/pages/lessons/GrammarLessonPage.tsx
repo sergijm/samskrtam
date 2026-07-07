@@ -3,16 +3,53 @@ import { useParams } from 'react-router-dom';
 import { useGrammarLesson } from '../../hooks/useLessons';
 
 import { LessonHeader } from '../../components/lesson/LessonHeader';
+import { LessonStatusSummary } from '../../components/lesson/LessonStatusSummary';
 import { WordStatusIcon } from '../../components/lesson/WordStatusIcon';
 import { QuestionHistoryDialog } from '../../components/lesson/QuestionHistoryDialog';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { TabView, TabPanel } from 'primereact/tabview';
 import { Button } from 'primereact/button';
 import { ProgressBar } from 'primereact/progressbar';
 import { Tag } from 'primereact/tag';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from 'primereact/skeleton';
 import { useTranslation } from 'react-i18next';
+import type { WordStatus, GrammarQuestionProgress } from '../../types/lesson';
+
+const CASE_TYPES = ['NOMINATIVE', 'ACCUSATIVE', 'INSTRUMENTAL', 'DATIVE', 'ABLATIVE', 'GENITIVE', 'LOCATIVE', 'VOCATIVE'];
+const MASTERY_THRESHOLD = 90;
+
+interface CaseAggregation {
+  caseType: string;
+  caseRu: string;
+  caseEn: string;
+  aggregatedProgress: number;
+  totalCombinations: number;
+  learnedCombinations: number;
+  status: WordStatus;
+}
+
+const aggregateByCase = (questions: GrammarQuestionProgress[]): CaseAggregation[] => {
+  const grouped = new Map<string, GrammarQuestionProgress[]>();
+  for (const q of questions) {
+    const ct = q.caseType;
+    if (!grouped.has(ct)) grouped.set(ct, []);
+    grouped.get(ct)!.push(q);
+  }
+  const result: CaseAggregation[] = [];
+  for (const caseType of CASE_TYPES) {
+    const items = grouped.get(caseType);
+    if (!items || items.length === 0) continue;
+    const total = items.length;
+    const learned = items.filter(q => q.successRate >= MASTERY_THRESHOLD).length;
+    const progress = total > 0 ? Math.round((learned / total) * 100) : 0;
+    const firstItem = items[0];
+    const status: WordStatus = progress >= MASTERY_THRESHOLD ? 'MASTERED' : 'LEARNING';
+    result.push({ caseType, caseRu: firstItem.caseRu, caseEn: firstItem.caseEn, aggregatedProgress: progress, totalCombinations: total, learnedCombinations: learned, status });
+  }
+  return result;
+};
 
 const GrammarLessonPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -20,12 +57,18 @@ const GrammarLessonPage = () => {
   const { t, i18n } = useTranslation();
   const { data: lesson, isLoading, isError } = useGrammarLesson(slug || '');
 
-  const [selectedCaseType, setSelectedCaseType] = useState<string>('');
-  const [selectedNumberType, setSelectedNumberType] = useState<string>('');
-  const [selectedGender, setSelectedGender] = useState<string>('');
-  const [questionHistoryDialogVisible, setQuestionHistoryDialogVisible] = useState(false);
-  const [sortField, setSortField] = useState<string>('caseType');
-  const [sortOrder, setSortOrder] = useState<number>(1);
+    const [selectedCaseType, setSelectedCaseType] = useState<string>('');
+    const [selectedNumberType, setSelectedNumberType] = useState<string>('');
+    const [selectedGender, setSelectedGender] = useState<string>('');
+    const [activeTab, setActiveTab] = useState<number>(0);
+    const [questionHistoryDialogVisible, setQuestionHistoryDialogVisible] = useState(false);
+    const [sortField, setSortField] = useState<string>('caseType');
+    const [sortOrder, setSortOrder] = useState<number>(1);
+
+    const caseAggregations = useMemo(() => {
+      if (!lesson?.questions) return [];
+      return aggregateByCase(lesson.questions);
+    }, [lesson?.questions]);
 
   const handleQuestionHistoryClick = (caseType: string, numberType: string, gender: string) => {
     setSelectedCaseType(caseType);
@@ -34,9 +77,15 @@ const GrammarLessonPage = () => {
     setQuestionHistoryDialogVisible(true);
   };
   
-  const handleStartQuiz = () => {
+    const handleStartQuiz = () => {
     if (lesson) {
       navigate(`/quiz/grammar/${slug}`);
+    }
+  };
+
+  const handleReviewQuiz = () => {
+    if (lesson) {
+      navigate(`/quiz/grammar/${slug}?filterScope=REVIEW_DUE`);
     }
   };
 
@@ -86,7 +135,7 @@ const GrammarLessonPage = () => {
         </div>
       ) : (
         <>
-          <LessonHeader 
+                    <LessonHeader 
             title={lesson.titleRu} 
             titleEn={lesson.titleEn}
             difficulty={lesson.difficulty}
@@ -94,83 +143,147 @@ const GrammarLessonPage = () => {
             total={lesson.totalQuestions}
             learned={lesson.learnedQuestions}
           />
+
+          <div className="mt-1 mb-3">
+            <LessonStatusSummary statusSummary={lesson.statusSummary} total={lesson.totalQuestions} learned={lesson.learnedQuestions} />
+          </div>
           
           <div className="p-4 mt-4">
             <div className="flex justify-content-between align-items-center mb-4">
               <h3>Вопросы урока</h3>
-              <Button 
-                label="Начать квиз" 
-                icon="pi pi-play"
-                onClick={handleStartQuiz}
-                disabled={lesson.totalQuestions === 0}
-              />
+              <div className="flex gap-2">
+                {lesson.statusSummary && lesson.statusSummary.reviewDue > 0 && (
+                  <Button 
+                    label="Повторить"
+                    icon="pi pi-refresh"
+                    className="p-button-outlined p-button-warning"
+                    onClick={handleReviewQuiz}
+                  />
+                )}
+                <Button 
+                  label="Начать квиз" 
+                  icon="pi pi-play"
+                  onClick={handleStartQuiz}
+                  disabled={lesson.totalQuestions === 0}
+                />
+              </div>
             </div>
             
-            <DataTable 
-              value={sortedForms}
-              paginator 
-              rows={20}
-              responsiveLayout="scroll"
-            >
-              <Column 
-                header="Статус" 
-                body={(rowData) => <WordStatusIcon status={rowData.status} />} 
-                style={{ width: '8%' }}
-                sortable
-                sortField="status"
-                onSort={() => handleSort('status')}
-              />
-              <Column 
-                header="Падеж" 
-                body={(rowData) => (
-                  <div>
-                    <div>{i18n.language === 'ru' ? rowData.caseRu : rowData.caseEn}</div>
-                  </div>
-                )}
-                style={{ width: '15%' }}
-                sortable
-                sortField="caseType"
-                onSort={() => handleSort('caseType')}
-              />
-              <Column 
-                header="Число" 
-                body={(rowData) => (i18n.language === 'ru' ? rowData.numberRu : rowData.numberEn)}
-                style={{ width: '12%' }}
-                sortable
-                sortField="numberType"
-                onSort={() => handleSort('numberType')}
-              />
-              <Column 
-                header="Род" 
-                body={(rowData) => (i18n.language === 'ru' ? rowData.genderRu : rowData.genderEn)}
-                style={{ width: '12%' }}
-                sortable
-                sortField="gender"
-                onSort={() => handleSort('gender')}
-              />
-              <Column 
-                header="Окончание" 
-                body={(rowData) => (
-                  <span className="font-bold">{rowData.caseEnding ?? '-'}</span>
-                )}
-                style={{ width: '15%' }}
-              />
-              <Column 
-                header="Изучено" 
-                body={(rowData) => (
-                  <span 
-                    className="cursor-pointer underline text-primary"
-                    onClick={() => handleQuestionHistoryClick(rowData.caseType, rowData.numberType, rowData.gender)}
-                  >
-                    {rowData.successRate > 0 ? `${rowData.successRate.toFixed(0)}%` : '0%'}
-                  </span>
-                )}
-                style={{ width: '13%' }}
-                sortable
-                sortField="successRate"
-                onSort={() => handleSort('successRate')}
-              />
-            </DataTable>
+                        <TabView activeIndex={activeTab} onTabChange={(e) => setActiveTab(e.index)}>
+              <TabPanel header={i18n.language === 'ru' ? 'По падежам' : 'By Case'}>
+                <DataTable 
+                  value={caseAggregations}
+                  paginator 
+                  rows={20}
+                  responsiveLayout="scroll"
+                >
+                  <Column 
+                    header={i18n.language === 'ru' ? 'Статус' : 'Status'} 
+                    body={(rowData) => <WordStatusIcon status={rowData.status} />} 
+                    style={{ width: '10%' }}
+                    sortable
+                    sortField="status"
+                  />
+                  <Column 
+                    header={i18n.language === 'ru' ? 'Падеж' : 'Case'} 
+                    body={(rowData) => (
+                      <div>{i18n.language === 'ru' ? rowData.caseRu : rowData.caseEn}</div>
+                    )}
+                    style={{ width: '30%' }}
+                    sortable
+                    sortField="caseType"
+                  />
+                  <Column 
+                    header={i18n.language === 'ru' ? 'Изучено' : 'Learned'} 
+                    body={(rowData) => (
+                      <div className="flex align-items-center gap-2">
+                        <ProgressBar 
+                          value={rowData.aggregatedProgress} 
+                          style={{ height: '8px', width: '80px' }}
+                          showValue={false}
+                        />
+                        <span 
+                          className="cursor-pointer underline text-primary"
+                          onClick={() => navigate(`/quiz/grammar/${slug}?filterScope=CASE_ONLY&filterCaseType=${rowData.caseType}`)}
+                        >
+                          {rowData.aggregatedProgress}%
+                        </span>
+                      </div>
+                    )}
+                    style={{ width: '25%' }}
+                    sortable
+                    sortField="aggregatedProgress"
+                  />
+                </DataTable>
+              </TabPanel>
+              <TabPanel header={i18n.language === 'ru' ? 'Подробно' : 'Details'}>
+                <DataTable 
+                  value={sortedForms}
+                  paginator 
+                  rows={20}
+                  responsiveLayout="scroll"
+                >
+                  <Column 
+                    header={i18n.language === 'ru' ? 'Статус' : 'Status'} 
+                    body={(rowData) => <WordStatusIcon status={rowData.status} />} 
+                    style={{ width: '8%' }}
+                    sortable
+                    sortField="status"
+                    onSort={() => handleSort('status')}
+                  />
+                  <Column 
+                    header={i18n.language === 'ru' ? 'Падеж' : 'Case'} 
+                    body={(rowData) => (
+                      <div>
+                        <div>{i18n.language === 'ru' ? rowData.caseRu : rowData.caseEn}</div>
+                      </div>
+                    )}
+                    style={{ width: '15%' }}
+                    sortable
+                    sortField="caseType"
+                    onSort={() => handleSort('caseType')}
+                  />
+                  <Column 
+                    header={i18n.language === 'ru' ? 'Число' : 'Number'} 
+                    body={(rowData) => (i18n.language === 'ru' ? rowData.numberRu : rowData.numberEn)}
+                    style={{ width: '12%' }}
+                    sortable
+                    sortField="numberType"
+                    onSort={() => handleSort('numberType')}
+                  />
+                  <Column 
+                    header={i18n.language === 'ru' ? 'Род' : 'Gender'} 
+                    body={(rowData) => (i18n.language === 'ru' ? rowData.genderRu : rowData.genderEn)}
+                    style={{ width: '12%' }}
+                    sortable
+                    sortField="gender"
+                    onSort={() => handleSort('gender')}
+                  />
+                  <Column 
+                    header={i18n.language === 'ru' ? 'Окончание' : 'Ending'} 
+                    body={(rowData) => (
+                      <span className="font-bold">{rowData.caseEnding ?? '-'}</span>
+                    )}
+                    style={{ width: '15%' }}
+                  />
+                  <Column 
+                    header={i18n.language === 'ru' ? 'Изучено' : 'Learned'} 
+                    body={(rowData) => (
+                      <span 
+                        className="cursor-pointer underline text-primary"
+                        onClick={() => navigate(`/quiz/grammar/${slug}?filterScope=CASE_NUMBER_GENDER&filterCaseType=${rowData.caseType}&filterNumberType=${rowData.numberType}&filterGender=${rowData.gender}`)}
+                      >
+                        {rowData.successRate > 0 ? `${rowData.successRate.toFixed(0)}%` : '0%'}
+                      </span>
+                    )}
+                    style={{ width: '13%' }}
+                    sortable
+                    sortField="successRate"
+                    onSort={() => handleSort('successRate')}
+                  />
+                </DataTable>
+              </TabPanel>
+            </TabView>
           </div>
           
           <QuestionHistoryDialog 

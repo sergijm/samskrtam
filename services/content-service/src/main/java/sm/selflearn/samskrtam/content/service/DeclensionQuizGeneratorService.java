@@ -1,10 +1,12 @@
 package sm.selflearn.samskrtam.content.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.QuestionResponse;
 import sm.selflearn.samskrtam.content.model.*;
+import sm.selflearn.samskrtam.content.repository.CaseEndingRepository;
 import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
 import sm.selflearn.samskrtam.content.repository.DeclensionStemRepository;
 
@@ -13,10 +15,12 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DeclensionQuizGeneratorService {
 
-    private final DeclensionStemRepository declensionStemRepository;
+        private final DeclensionStemRepository declensionStemRepository;
     private final DeclensionFormRepository declensionFormRepository;
+    private final CaseEndingRepository caseEndingRepository;
 
     private static final Random random = new Random();
 
@@ -62,6 +66,9 @@ public class DeclensionQuizGeneratorService {
                         "Declension form not found for stem: " + stem.getStemIast() +
                                 ", case: " + targetCase + ", number: " + targetNumber));
 
+        // Определяем caseEndingId для прогресса
+        UUID caseEndingId = resolveCaseEndingId(stem.getVowelType(), stem.getGender(), targetCase, targetNumber);
+
         String questionText = String.format(
                 locale.getLanguage().equals("ru") ? "Основа: %s" : "Stem: %s",
                 stem.getStemIast()
@@ -98,8 +105,42 @@ public class DeclensionQuizGeneratorService {
                 .stemDevanagari(stem.getStemDevanagari())
                 .stemTranslationRu(stem.getTranslationRu())
                 .stemTranslationEn(stem.getTranslationEn())
-                .gender(stem.getGender() != null ? stem.getGender().name() : null)
+                                .gender(stem.getGender() != null ? stem.getGender().name() : null)
+                .caseEndingId(caseEndingId)
                 .build();
+    }
+
+    /**
+     * Определяет caseEndingId для (vowelType, gender, caseType, numberType).
+     * Для основ -i, -u, -ṛ ищет UNSPECIFIED gender.
+     */
+    private UUID resolveCaseEndingId(VowelType vowelType, Gender gender, CaseType caseType, NumberType numberType) {
+        if (gender == null) {
+            gender = Gender.UNSPECIFIED;
+        }
+        boolean isUnspecifiedGenderType = (vowelType == VowelType.I_STEM
+                || vowelType == VowelType.II_STEM
+                || vowelType == VowelType.U_STEM
+                || vowelType == VowelType.UU_STEM
+                || vowelType == VowelType.R_STEM);
+
+        if (isUnspecifiedGenderType) {
+            var endings = caseEndingRepository.findByVowelTypeAndGenderAndCaseTypeAndNumberType(
+                    vowelType, Gender.UNSPECIFIED, caseType, numberType);
+            if (!endings.isEmpty()) {
+                return endings.get(0).getId();
+            }
+        }
+
+        var endings = caseEndingRepository.findByVowelTypeAndGenderAndCaseTypeAndNumberType(
+                vowelType, gender, caseType, numberType);
+        if (!endings.isEmpty()) {
+            return endings.get(0).getId();
+        }
+
+        log.warn("Case ending not found for vowelType={}, gender={}, caseType={}, numberType={}",
+                vowelType, gender, caseType, numberType);
+        return null;
     }
 
     private VowelType mapSlugToVowelType(String slug) {

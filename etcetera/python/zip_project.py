@@ -15,7 +15,7 @@ EXCLUDED_DIRS2 = {
     'frontend', 'services', 'shared'
 }
 
-EXCLUDED_DIRS =  EXCLUDED_DIRS1 | EXCLUDED_DIRS2
+EXCLUDED_DIRS =  EXCLUDED_DIRS1 #| EXCLUDED_DIRS2
 
 def estimate_tokens(text: str) -> int:
     """Грубая оценка: 1 токен ≈ 4 символа."""

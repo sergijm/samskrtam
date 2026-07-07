@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useVocabularyLesson } from '../../hooks/useLessons';
 import { LessonHeader } from '../../components/lesson/LessonHeader';
+import { LessonStatusSummary } from '../../components/lesson/LessonStatusSummary';
 import { WordStatusIcon } from '../../components/lesson/WordStatusIcon';
 import { WordHistoryDialog } from '../../components/lesson/WordHistoryDialog';
 import { DataTable } from 'primereact/datatable';
@@ -26,9 +27,16 @@ export const VocabularyLessonPage = () => {
     setWordHistoryDialogVisible(true);
   };
   
-  const handleStartQuiz = () => {
+    const handleStartQuiz = () => {
     if (lesson) {
       navigate(`/quiz/vocabulary/${slug}`);
+    }
+  };
+
+  const handleReviewQuiz = () => {
+    if (lesson) {
+      // Уточнить у Агента 2 параметр запуска — используем filterScope=REVIEW_DUE
+      navigate(`/quiz/vocabulary/${slug}?filterScope=REVIEW_DUE`);
     }
   };
   
@@ -89,7 +97,7 @@ export const VocabularyLessonPage = () => {
         </div>
       ) : (
         <>
-          <LessonHeader 
+                    <LessonHeader 
             title={lesson.titleRu} 
             titleEn={lesson.titleEn}
             difficulty={lesson.difficulty}
@@ -97,16 +105,30 @@ export const VocabularyLessonPage = () => {
             total={lesson.totalWords}
             learned={lesson.learnedWords}
           />
+
+          <div className="mt-1 mb-3">
+            <LessonStatusSummary statusSummary={lesson.statusSummary} total={lesson.totalWords} learned={lesson.learnedWords} />
+          </div>
           
           <div className="p-4 mt-4">
             <div className="flex justify-content-between align-items-center mb-4">
               <h3>Слова урока</h3>
-              <Button 
-                label="Начать квиз" 
-                icon="pi pi-play"
-                onClick={handleStartQuiz}
-                disabled={lesson.totalWords === 0}
-              />
+              <div className="flex gap-2">
+                {lesson.statusSummary && lesson.statusSummary.reviewDue > 0 && (
+                  <Button 
+                    label="Повторить"
+                    icon="pi pi-refresh"
+                    className="p-button-outlined p-button-warning"
+                    onClick={handleReviewQuiz}
+                  />
+                )}
+                <Button 
+                  label="Начать квиз" 
+                  icon="pi pi-play"
+                  onClick={handleStartQuiz}
+                  disabled={lesson.totalWords === 0}
+                />
+              </div>
             </div>
             
             <DataTable 

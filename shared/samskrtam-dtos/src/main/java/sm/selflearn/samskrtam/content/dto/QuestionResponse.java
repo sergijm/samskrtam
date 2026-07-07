@@ -26,7 +26,13 @@ public class QuestionResponse {
     String stemDevanagari;
     String stemTranslationRu;
     String stemTranslationEn;
-    /** Gender from the declension stem, used by quiz-service for progress aggregation */
-    String gender; // Added field
+        /** Gender from the declension stem, used by quiz-service for progress aggregation */
+    String gender;
+
+    /**
+     * ID соответствующего case_ending (content.case_endings.id).
+     * Используется quiz-service как externalRefId для DECLENSION_FORM.
+     */
+    UUID caseEndingId; // Added field
 }
 

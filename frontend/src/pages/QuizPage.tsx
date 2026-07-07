@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
@@ -6,11 +6,29 @@ import { Card } from 'primereact/card';
 import { ProgressBar } from 'primereact/progressbar';
 
 import { useQuizSession } from '../hooks/useQuizSession';
+import { FilterParams } from '../api/quizApi';
 import QuizQuestionPanel from '../components/quiz/QuizQuestionPanel';
 import QuizFeedbackPanel from '../components/quiz/QuizFeedbackPanel';
+
 const QuizPage = () => {
   const { t, i18n } = useTranslation();
   const { slug, sessionId: sessionIdFromParams } = useParams<{ slug?: string; sessionId?: string }>();
+  const [searchParams] = useSearchParams();
+
+  // Считываем фильтры из query-параметров URL
+  const filterScope = searchParams.get('filterScope') as FilterParams['filterScope'] | null;
+  const filterCaseType = searchParams.get('filterCaseType') || undefined;
+  const filterNumberType = searchParams.get('filterNumberType') || undefined;
+  const filterGender = searchParams.get('filterGender') || undefined;
+
+  const filterParams: FilterParams | undefined = filterScope
+    ? {
+        filterScope,
+        filterCaseType,
+        filterNumberType: filterScope === 'CASE_NUMBER_GENDER' ? filterNumberType : undefined,
+        filterGender: filterScope === 'CASE_NUMBER_GENDER' ? filterGender : undefined,
+      }
+    : undefined;
 
   const {
     currentQuestionIndex,
@@ -27,7 +45,7 @@ const QuizPage = () => {
     handleSubmitAnswer,
     handleNextQuestion,
     hasAttemptedSessionLoad,
-  } = useQuizSession(slug, sessionIdFromParams);
+  } = useQuizSession(slug, sessionIdFromParams, filterParams);
 
   if (isLoading) {
     return (

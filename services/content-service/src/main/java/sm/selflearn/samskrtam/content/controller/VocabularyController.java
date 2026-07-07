@@ -7,6 +7,7 @@ import sm.selflearn.samskrtam.content.service.LessonContentService;
 import sm.selflearn.samskrtam.content.service.VocabularyService;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -32,4 +33,14 @@ public class VocabularyController {
         String quizSlug = lessonContentService.getLessonItemById(quizId).getSlug();
         return vocabularyService.getVocabularyWordsForQuiz(quizSlug, limit); // Pass quizSlug
     }
+
+    /**
+     * Возвращает плоский список word_id для урока/категории по slug.
+     * Используется QuizGenerator'ом для получения externalRefId без полных DTO.
+     */
+    @GetMapping("/lessons/{slug}/vocabulary-word-ids")
+    public Set<UUID> getVocabularyWordIdsForLesson(@PathVariable String slug) {
+        return vocabularyService.getVocabularyWordIdsForQuiz(slug);
+    }
 }
+

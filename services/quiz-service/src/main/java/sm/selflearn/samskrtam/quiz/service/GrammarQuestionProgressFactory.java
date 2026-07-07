@@ -68,10 +68,16 @@ public class GrammarQuestionProgressFactory {
                 (gender + ":" + caseType + ":" + numberType).getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Вычисляет статус по хранимому score.
+     * Используется для GrammarQuestionProgress, где статус определяется по среднему score.
+     *
+     * @param score значение 0-100, где 0 = нет попыток
+     * @return статус по единому порогу
+     */
     private WordStatus resolveGrammarStatus(float score) {
         if (score == 0) return WordStatus.NEW;
-        if (score < ProgressConstants.GRAMMAR_LEARNING_THRESHOLD) return WordStatus.REVIEW;
-        if (score < ProgressConstants.MASTERY_THRESHOLD) return WordStatus.LEARNING;
+        if (score < ProgressConstants.MASTERED_LOWER_THRESHOLD) return WordStatus.LEARNING;
         return WordStatus.MASTERED;
     }
 }

@@ -34,8 +34,27 @@
 **Шапка урока:**
 - Название урока (`titleRu` / `titleEn`)
 - Сложность (бейдж)
-- `ProgressBar` — процент изученных слов (слово считается изученным при `successRate >= 80%` минимум за 3 попытки)
 - Кнопка **«Начать квиз»** → `/quiz/vocabulary/:slug`
+
+**LessonStatsBadges (отдельный компонент, подключается над `LessonHeader`):** заменяет прежний `ProgressBar` в шапке — три кликабельных бейджа, см. §2.1.
+
+### 2.1. LessonStatsBadges
+
+Общий компонент для `VocabularyLessonPage` и `GrammarLessonPage`, подключается сверху страницы урока (над `LessonHeader`, вместо удалённого `ProgressBar`). Строится из `statusSummary: LessonStatusSummary` (см. §7) — отдельного запроса не требует, дублирует агрегаты, уже отдаваемые в `VocabularyLesson`/`GrammarLesson`.
+
+**Бейджи:**
+
+| Бейдж | Значение | Клик запускает/резюмирует квиз |
+|---|---|---|
+| Изучено | `{statusSummary.mastered}/{statusSummary.total}` | `statusFilter=REVIEW` — сессия по MASTERED-элементам в стадии review (`reviewDue > 0`; см. ADR-007 «Обновление 2026-07») |
+| Новые | `{statusSummary.newCount}` | `statusFilter=NEW` — сессия по неизученным элементам |
+| В процессе | `{statusSummary.learning}` | `statusFilter=LEARNING` — сессия по начатым, но не изученным элементам |
+
+**Поведение:**
+- Каждый клик вызывает `POST /quiz/{slug}/sessions/start-or-resume?lessonId=...&statusFilter=<NEW|LEARNING|REVIEW>` (см. quiz-generator-spec.md §3/§4, docs/openapi/quiz/parameters.yaml `StatusFilterParam`) и переходит на `/quiz/vocabulary/:slug` (или `/quiz/grammar/:type`) — квиз стартует или продолжается (resume) в зависимости от наличия IN_PROGRESS-сессии с тем же `statusFilter`.
+- Бейдж с нулевым значением (`total === 0`, `newCount === 0`, `learning === 0`, либо для «Изучено» — `reviewDue === 0`) недоступен для клика (`disabled`), но остаётся видимым.
+- Заменяет прежний placeholder `navigate('/quiz/vocabulary/:slug?filterScope=REVIEW_DUE')` из `VocabularyLessonPage`/`GrammarLessonPage` — параметр `filterScope` для этой цели **не используется** (он занят под фильтр падеж/число/род в `GrammarLessonPage`, см. quiz-declension.md §3.4); корректный параметр — `statusFilter`.
+- Кнопка «Повторить» рядом с «Начать квиз» (см. §1) становится избыточной и удаляется — её функцию берёт на себя бейдж «Изучено».
 
 **Таблица слов (`DataTable`):**
 
@@ -46,10 +65,15 @@
 | Перевод | `translationRu` или `translationEn` по локали |
 | Попытки | кликабельный текст `{nSuccess}/{nAll}` |
 
-**Правила статуса слова:**
-- **Не начато** — `nAll = 0`
-- **В процессе** — `nAll > 0` и `successRate < 80%`
-- **Изучено** — `nAll >= 3` и `successRate >= 80%`
+**Правила статуса слова (модель ADR-007, `quiz.quiz_item_score`, не successRate):**
+- **NEW** — нет строки `quiz_item_score` для `(userId, itemType, externalRefId)`
+- **LEARNING** — есть строка, `score < 90`
+- **MASTERED** — `score >= 90`
+- **REVIEW** (частный случай MASTERED, см. ADR-007 «Обновление 2026-07») — `score >= 90` и `nextReviewAt <= now`; отображается вместо MASTERED, включает кнопку «Повторить»
+
+`nSuccess`/`nAll`/`successRate` в таблице попыток остаются (on-the-fly агрегация по `quiz_answers`, не влияют на статус) — используются только в колонке «Попытки» и `WordHistoryDialog`.
+
+**LessonStatusSummary (шапка урока, под `LessonHeader`):** счётчики TOTAL / NEW / LEARNING / MASTERED (REVIEW складывается в MASTERED в этой сводке, но именно наличие REVIEW>0 включает кнопку «Повторить» рядом с «Начать квиз» — целевой запуск сессии с приоритетом due-элементов). Считается на бэкенде, отдаётся полем `statusSummary` в `VocabularyLesson`/`GrammarLesson` (см. §7).
 
 **Клик на `{nSuccess}/{nAll}`** → открывает `WordHistoryDialog` (диалог, не отдельная страница).
 
@@ -120,11 +144,14 @@ src/
 │   └── GrammarLessonPage.tsx
 └── components/
     └── lesson/
-        ├── LessonHeader.tsx          ← общая шапка с прогрессом и кнопкой квиза
+        ├── LessonStatsBadges.tsx     ← НОВЫЙ: три кликабельных бейджа (см. §2.1), заменяет ProgressBar и LessonStatusSummary
+        ├── LessonHeader.tsx          ← общая шапка (без прогресс-бара), с кнопкой «Начать квиз»
         ├── WordStatusIcon.tsx        ← иконка статуса слова/вопроса
         ├── WordHistoryDialog.tsx     ← история ответов на слово
         └── QuestionHistoryDialog.tsx ← история ответов на вопрос
 ```
+
+`LessonStatusSummary.tsx` и `ProgressBar` из `LessonHeader.tsx` удаляются (их обязанности переходят к `LessonStatsBadges`).
 
 ---
 
@@ -204,6 +231,14 @@ export interface GrammarQuestionProgress {
   genderEn:       string;
 }
 
+export interface LessonStatusSummary {
+  total:        number;
+  newCount:     number;   // JSON: "new" — зарезервированное слово в TS/JS
+  learning:     number;
+  mastered:     number;   // включает REVIEW (score >= 90)
+  reviewDue:    number;   // подмножество mastered с nextReviewAt <= now; >0 → показать кнопку "Повторить"
+}
+
 export interface VocabularyLesson {
   quizId:           string;
   slug:             string;
@@ -213,6 +248,7 @@ export interface VocabularyLesson {
   totalWords:       number;
   learnedWords:     number;
   progressPercent:  number;
+  statusSummary:    LessonStatusSummary;
   words:            VocabularyWordProgress[];
 }
 
@@ -225,6 +261,7 @@ export interface GrammarLesson {
   totalQuestions:   number;
   learnedQuestions: number;
   progressPercent:  number;
+  statusSummary:    LessonStatusSummary;
   questions:        GrammarQuestionProgress[];
 }
 
@@ -250,11 +287,13 @@ export interface WordAnswerHistory {
 ## 8. Acceptance Criteria
 
 - [ ] Клик на карточку квиза в QuizListPage ведёт на LessonPage, не на QuizPage
-- [ ] Прогресс-бар отражает реальный процент изученных слов/вопросов
+- [ ] `LessonStatsBadges` отображает три бейджа (mastered/total, new, learning) над `LessonHeader`; `ProgressBar` в шапке урока отсутствует
+- [ ] Клик по каждому из трёх бейджей запускает или резюмирует квиз с соответствующим `statusFilter` (REVIEW/NEW/LEARNING) и переходит на страницу квиза
+- [ ] Бейдж с нулевым значением недоступен для клика
 - [ ] Иконки статуса корректно отображаются для всех трёх состояний
 - [ ] Клик на `{nSuccess}/{nAll}` открывает диалог с историей
 - [ ] История фильтруется по `quizId` — слово из другого урока не попадает в историю
-- [ ] Кнопка «Начать квиз» ведёт на QuizPage и стартует сессию
+- [ ] Кнопка «Начать квиз» ведёт на QuizPage и стартует сессию без фильтра
 - [ ] Таблица поддерживает пагинацию при большом количестве слов/вопросов
 - [ ] Правильный ответ в GrammarLessonPage всегда виден (не скрыт)
 - [ ] Страницы корректно отображаются при `nAll = 0` (нет истории)
@@ -266,4 +305,3 @@ export interface WordAnswerHistory {
 - [ ] Нужна ли сортировка в таблице (по статусу, по алфавиту)?
 - [ ] Показывать ли слова/вопросы которые не вошли в последнюю сессию (если `questionsPerSession < totalWords`)?
 - [ ] Нужна ли кнопка «Повторить только ошибки»?
-

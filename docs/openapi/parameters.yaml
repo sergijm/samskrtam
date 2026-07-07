@@ -1,41 +1,169 @@
-# Shared parameters for lesson API endpoints
-# Referenced via $ref: '../openapi/parameters.yaml#/SlugParam'
+# Shared parameters for Quiz Sessions API
 
 SlugParam:
+
   name: slug
+
   in: path
-  required: true
-  description: Уникальный slug словарного квиза (например "animals", "1")
-  schema:
-    type: string
-    pattern: '^[a-z0-9][a-z0-9-]*$'
-    example: animals
 
-QuizTypeParam:
-  name: type
+  required: true
+
+  description: Slug of the quiz lesson (e.g. "declensions", "vocabulary")
+
+  schema:
+
+    type: string
+
+    example: declensions
+
+
+SessionIdParam:
+
+  name: sessionId
+
   in: path
+
   required: true
-  description: Тип грамматического квиза (DECLENSIONS, CONJUGATIONS)
+
+  description: UUID of the quiz session
+
   schema:
+
     type: string
-    enum: [DECLENSIONS, CONJUGATIONS]
-    example: DECLENSIONS
 
-PageParam:
-  name: page
-  in: query
-  required: false
-  schema:
-    type: integer
-    minimum: 0
-    default: 0
+    format: uuid
 
-SizeParam:
-  name: size
+
+LessonIdParam:
+
+  name: lessonId
+
   in: query
-  required: false
+
+  required: true
+
+  description: UUID of the lesson
+
   schema:
-    type: integer
-    minimum: 1
-    maximum: 50
-    default: 10
+
+    type: string
+
+    format: uuid
+
+
+XUserIdHeader:
+
+  name: X-User-Id
+
+  in: header
+
+  required: true
+
+  description: User ID (set by API Gateway)
+
+  schema:
+
+    type: string
+
+    format: uuid
+
+
+XUserLocaleHeader:
+
+  name: X-User-Locale
+
+  in: header
+
+  required: true
+
+  description: User locale (e.g. "ru", "en")
+
+  schema:
+
+    type: string
+
+    example: ru
+
+
+FilterScopeParam:
+
+  name: filterScope
+
+  in: query
+
+  required: false
+
+  description: Filter scope for quiz session (CASE_ONLY or CASE_NUMBER_GENDER)
+
+  schema:
+
+    type: string
+
+    enum: [CASE_ONLY, CASE_NUMBER_GENDER]
+
+
+FilterCaseTypeParam:
+
+  name: filterCaseType
+
+  in: query
+
+  required: false
+
+  description: Case type filter (NOMINATIVE, ACCUSATIVE, etc.)
+
+  schema:
+
+    type: string
+
+
+FilterNumberTypeParam:
+
+  name: filterNumberType
+
+  in: query
+
+  required: false
+
+  description: Number type filter (SINGULAR, DUAL, PLURAL)
+
+  schema:
+
+    type: string
+
+
+FilterGenderParam:
+
+  name: filterGender
+
+  in: query
+
+  required: false
+
+  description: Gender filter (MASCULINE, FEMININE, NEUTER, UNSPECIFIED)
+
+  schema:
+
+    type: string
+
+
+StatusFilterParam:
+
+  name: statusFilter
+
+  in: query
+
+  required: false
+
+  description: >
+    Manual bucket filter for session generation, independent of filterScope
+    (see quiz-generator-spec.md §3/§4). NEW - items without a quiz_item_score
+    row. LEARNING - started items not yet mastered (LEARNING or DIFFICULT
+    bucket). REVIEW - mastered items past nextReviewAt (ADR-007). Used by the
+    LessonStatsBadges component to start/resume a session scoped to one bucket.
+
+  schema:
+
+    type: string
+
+    enum: [NEW, LEARNING, REVIEW]

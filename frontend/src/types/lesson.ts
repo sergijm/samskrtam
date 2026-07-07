@@ -21,7 +21,7 @@ export interface GrammarQuestionProgress {
   nSuccess:       number;
   nAll:           number;
   successRate:    number;
-  status:         WordStatus;
+  status:       WordStatus;
   caseType:       string;
   caseRu:         string;
   caseEn:         string;
@@ -34,6 +34,15 @@ export interface GrammarQuestionProgress {
   caseEnding:     string | null;
 }
 
+export interface LessonStatusSummary {
+  total:        number;
+  /** JSON field name is "new" — reserved word in TS, mapped via backend */
+  newCount:     number;
+  learning:     number;
+  mastered:     number;
+  reviewDue:    number;
+}
+
 export interface VocabularyLesson {
   quizId:           string;
   slug:             string;
@@ -43,6 +52,7 @@ export interface VocabularyLesson {
   totalWords:       number;
   learnedWords:     number;
   progressPercent:  number;
+    statusSummary?:   LessonStatusSummary;
   words:            VocabularyWordProgress[];
 }
 
@@ -55,6 +65,7 @@ export interface GrammarLesson {
   totalQuestions:   number;
   learnedQuestions: number;
   progressPercent:  number;
+    statusSummary?:   LessonStatusSummary;
   questions:        GrammarQuestionProgress[];
 }
 

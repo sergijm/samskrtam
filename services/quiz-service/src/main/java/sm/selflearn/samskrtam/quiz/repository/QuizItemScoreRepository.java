@@ -1,0 +1,86 @@
+package sm.selflearn.samskrtam.quiz.repository;
+
+import org.springframework.data.r2dbc.repository.Modifying;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import sm.selflearn.samskrtam.quiz.model.ItemType;
+import sm.selflearn.samskrtam.quiz.model.QuizItemScore;
+
+import java.time.Instant;
+import java.util.UUID;
+
+/**
+ * Reactive repository for {@link QuizItemScore}.
+ *
+ * <p>Единая таблица для всех itemType (VOCABULARY_WORD, DECLENSION_FORM и т.д.).
+ * Заменяет {@link WordScoreRepository} и {@link GrammarFormScoreRepository}.
+ */
+@Repository
+public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItemScore, UUID> {
+
+    /** Найти единственную запись прогресса по составному ключу. */
+    Mono<QuizItemScore> findByUserIdAndItemTypeAndExternalRefId(
+            UUID userId, ItemType itemType, UUID externalRefId);
+
+    /** Найти все записи пользователя для данного itemType. */
+    Flux<QuizItemScore> findByUserIdAndItemType(UUID userId, ItemType itemType);
+
+    /** Найти все записи пользователя для нескольких externalRefId данного itemType (для джойна в генераторе). */
+    @Query("""
+            SELECT * FROM quiz.quiz_item_score
+            WHERE user_id = :userId
+              AND item_type = :itemType
+              AND external_ref_id IN (:externalRefIds)
+            """)
+    Flux<QuizItemScore> findByUserIdAndItemTypeAndExternalRefIdIn(
+            UUID userId, ItemType itemType, java.util.List<UUID> externalRefIds);
+
+    /** Найти просроченные записи (next_review_at <= now) для пользователя и itemType. */
+    @Query("""
+            SELECT * FROM quiz.quiz_item_score
+            WHERE user_id = :userId
+              AND item_type = :itemType
+              AND next_review_at <= :now
+            ORDER BY next_review_at ASC
+            """)
+    Flux<QuizItemScore> findDueItems(UUID userId, ItemType itemType, Instant now);
+
+    /** Upsert: атомарная вставка или обновление при конфликте по (user_id, item_type, external_ref_id). */
+    @Modifying
+    @Query("""
+            INSERT INTO quiz.quiz_item_score
+                (id, user_id, item_type, external_ref_id, score, stability,
+                 last_answered_at, last_mistake_at, consecutive_mistakes,
+                 next_review_at, updated_at)
+            VALUES
+                (:id, :userId, :itemType::text, :externalRefId, :score, :stability,
+                 :lastAnsweredAt, :lastMistakeAt, :consecutiveMistakes,
+                 :nextReviewAt, NOW())
+            ON CONFLICT (user_id, item_type, external_ref_id)
+            DO UPDATE SET
+                score = EXCLUDED.score,
+                stability = EXCLUDED.stability,
+                last_answered_at = EXCLUDED.last_answered_at,
+                last_mistake_at = EXCLUDED.last_mistake_at,
+                consecutive_mistakes = EXCLUDED.consecutive_mistakes,
+                next_review_at = EXCLUDED.next_review_at,
+                updated_at = NOW()
+            """)
+    Mono<Void> upsertScore(
+            UUID id, UUID userId, String itemType, UUID externalRefId,
+            int score, int stability,
+            Instant lastAnsweredAt, Instant lastMistakeAt,
+            int consecutiveMistakes, Instant nextReviewAt);
+
+    /** Подсчёт записей с score >= порога (для статистики MASTERED). */
+    @Query("""
+            SELECT COUNT(*) FROM quiz.quiz_item_score
+            WHERE user_id = :userId
+              AND item_type = :itemType
+              AND score >= :minScore
+            """)
+    Mono<Long> countLearnedItems(UUID userId, ItemType itemType, int minScore);
+}

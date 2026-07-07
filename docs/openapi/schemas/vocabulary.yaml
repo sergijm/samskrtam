@@ -3,6 +3,16 @@
 WordStatus:
   type: string
   enum: [NEW, LEARNING, REVIEW, MASTERED]
+  description: >
+    Вычисляемое поле ответа API, не хранится в БД. Определяется по правилам ADR-007
+    (обновление 2026-07, единый порог для VOCABULARY_WORD и DECLENSION_FORM):
+    нет строки в quiz_item_score → NEW; score < 90 → LEARNING; score >= 90 и
+    nextReviewAt > now (или не наступил masteredCooldown) → MASTERED; score >= 90 и
+    nextReviewAt <= now (просрочен контрольный показ) → REVIEW. REVIEW — частный
+    случай MASTERED по score, различается только по времени следующего показа;
+    в LessonStatusSummary REVIEW учитывается внутри mastered (см. lessons.yaml).
+    DIFFICULT (ADR-007 §2.4) в этом поле не используется — открытый бакет для
+    будущего расширения генератора, к статусу урока пока не относится.
 
 VocabularyWordProgress:
   type: object
@@ -39,7 +49,7 @@ VocabularyWordProgress:
 
 VocabularyLesson:
   type: object
-  required: [quizId, slug, titleRu, titleEn, difficulty, totalWords, learnedWords, progressPercent, words]
+  required: [quizId, slug, titleRu, titleEn, difficulty, totalWords, learnedWords, progressPercent, statusSummary, words]
   properties:
     quizId:
       type: string
@@ -59,11 +69,14 @@ VocabularyLesson:
     learnedWords:
       type: integer
       minimum: 0
+      description: score >= 90 (masteredLowerThreshold), включая REVIEW. См. также statusSummary.mastered.
     progressPercent:
       type: number
       format: float
       minimum: 0
       maximum: 100
+    statusSummary:
+      $ref: './lessons.yaml#/LessonStatusSummary'
     words:
       type: array
       items:

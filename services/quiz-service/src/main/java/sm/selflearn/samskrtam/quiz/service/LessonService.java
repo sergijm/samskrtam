@@ -16,8 +16,6 @@ import sm.selflearn.samskrtam.quiz.dto.WordAnswerHistory;
 import sm.selflearn.samskrtam.quiz.dto.GrammarLesson;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerHistoryProjection;
-import sm.selflearn.samskrtam.quiz.repository.WordScoreRepository;
-import sm.selflearn.samskrtam.quiz.repository.GrammarFormScoreRepository;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -30,10 +28,8 @@ import java.util.stream.Collectors;
 public class LessonService {
 
     private final ContentClient contentClient;
-    private final UserSessionService userSessionService;
+        private final UserSessionService userSessionService;
         private final QuizAnswerRepository quizAnswerRepository;
-    private final WordScoreRepository wordScoreRepository;
-    private final GrammarFormScoreRepository grammarFormScoreRepository;
 
     private final VocabularyProgressService vocabularyProgressService;
     private final GrammarProgressService grammarProgressService;

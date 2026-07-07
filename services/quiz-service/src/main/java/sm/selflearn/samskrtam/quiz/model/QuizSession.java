@@ -10,7 +10,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Data
-@Builder // Moved @Builder back to class level
+@Builder
 @Table(name = "quiz_session", schema = "quiz")
 public class QuizSession {
     @Id
@@ -24,5 +24,12 @@ public class QuizSession {
     private SessionStatus status;
     private Instant startedAt;
     private Instant completedAt;
-    private String vocabularyWordsJson; // JSON representation of vocabulary words
+    private String vocabularyWordsJson;
+
+    // Filter columns for filtered quiz sessions (see docs/quizzes/quiz-declension.md §3.4)
+    private FilterScope filterScope;
+    private String filterCaseType;
+    private String filterNumberType;
+    private String filterGender;
 }
+

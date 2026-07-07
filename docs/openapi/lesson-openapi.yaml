@@ -34,14 +34,14 @@ paths:
         для текущего пользователя.
       operationId: getVocabularyLesson
       parameters:
-        - $ref: 'openapi/parameters.yaml#/SlugParam'
+        - $ref: 'parameters.yaml#/SlugParam'
       responses:
         '200':
           description: Урок с прогрессом пользователя
           content:
             application/json:
               schema:
-                $ref: 'openapi/schemas/vocabulary.yaml#/VocabularyLesson'
+                $ref: 'schemas/vocabulary.yaml#/VocabularyLesson'
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -58,14 +58,14 @@ paths:
         индивидуальной статистикой каждого вопроса для текущего пользователя.
       operationId: getGrammarLesson
       parameters:
-        - $ref: 'openapi/parameters.yaml#/QuizTypeParam'
+        - $ref: 'parameters.yaml#/QuizTypeParam'
       responses:
         '200':
           description: Урок с прогрессом пользователя
           content:
             application/json:
               schema:
-                $ref: 'openapi/schemas/grammar.yaml#/GrammarLesson'
+                $ref: 'schemas/grammar.yaml#/GrammarLesson'
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -82,22 +82,22 @@ paths:
         в рамках конкретного урока (quizId из slug).
       operationId: getWordAnswerHistory
       parameters:
-        - $ref: 'openapi/parameters.yaml#/SlugParam'
+        - $ref: 'parameters.yaml#/SlugParam'
         - name: wordId
           in: path
           required: true
           schema:
             type: string
             format: uuid
-        - $ref: 'openapi/parameters.yaml#/PageParam'
-        - $ref: 'openapi/parameters.yaml#/SizeParam'
+        - $ref: 'parameters.yaml#/PageParam'
+        - $ref: 'parameters.yaml#/SizeParam'
       responses:
         '200':
           description: История ответов на слово
           content:
             application/json:
               schema:
-                $ref: 'openapi/schemas/history.yaml#/WordAnswerHistory'
+                $ref: 'schemas/history.yaml#/WordAnswerHistory'
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -117,14 +117,14 @@ paths:
           in: path
           required: true
           schema:
-            $ref: 'openapi/schemas/lessons.yaml#/LessonType'
+            $ref: 'schemas/lessons.yaml#/LessonType'
       responses:
         '200':
           description: List of lessons
           content:
             application/json:
               schema:
-                $ref: 'openapi/schemas/lessons.yaml#/LessonListResponse'
+                $ref: 'schemas/lessons.yaml#/LessonListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -176,15 +176,15 @@ paths:
           schema:
             type: string
             example: MASCULINE
-        - $ref: 'openapi/parameters.yaml#/PageParam'
-        - $ref: 'openapi/parameters.yaml#/SizeParam'
+        - $ref: 'parameters.yaml#/PageParam'
+        - $ref: 'parameters.yaml#/SizeParam'
       responses:
         '200':
           description: История ответов на вопрос
           content:
             application/json:
               schema:
-                $ref: 'openapi/schemas/history.yaml#/QuestionAnswerHistory'
+                $ref: 'schemas/history.yaml#/QuestionAnswerHistory'
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -200,14 +200,14 @@ components:
       content:
         application/json:
           schema:
-            $ref: 'openapi/schemas/common.yaml#/ErrorResponse'
+            $ref: 'schemas/common.yaml#/ErrorResponse'
 
     NotFound:
       description: Урок не найден
       content:
         application/json:
           schema:
-            $ref: 'openapi/schemas/common.yaml#/ErrorResponse'
+            $ref: 'schemas/common.yaml#/ErrorResponse'
 
   securitySchemes:
     bearerAuth:

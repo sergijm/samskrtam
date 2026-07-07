@@ -46,7 +46,8 @@ public class QuestionGenerationService {
                             .stemDevanagari(response.getStemDevanagari())
                                                         .stemTranslationRu(response.getStemTranslationRu())
                                                         .stemTranslationEn(response.getStemTranslationEn())
-                            .gender(response.getGender()))
+                            .gender(response.getGender())
+                            .caseEndingId(response.getCaseEndingId()))
                     .collect(Collectors.toList()));
         } else if (LessonType.isVocabulary(lesson.getLessonType())) {
             List<VocabularyWordDto> vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(lesson.getSlug(), lesson.getQuestionsPerSession() * 4);

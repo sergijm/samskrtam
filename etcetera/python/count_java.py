@@ -7,10 +7,10 @@ DEFAULT_DIR = r"C:\MyDev\samskrtam"
 
 # Расширения файлов для анализа
 #EXTENSIONS = ('.java', '.ts', '.tsx', '.yaml', '.yml')
-EXTENSIONS = '.java'
+#EXTENSIONS = '.java'
 #EXTENSIONS = ('.tsx', '.ts')
 #EXTENSIONS = ( '.yaml')
-#EXTENSIONS = '.md'
+EXTENSIONS = '.md'
 
 # Директории для исключения при сканировании
 EXCLUDED_DIRS = {

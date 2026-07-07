@@ -12,6 +12,7 @@ public class VocabularyLessonDto {
     private int totalWords;
     private int learnedWords;
     private float progressPercent;
+    private LessonStatusSummary statusSummary;
     private List<VocabularyWordProgress> words;
 
     // Getters and setters
@@ -71,12 +72,20 @@ public class VocabularyLessonDto {
         this.learnedWords = learnedWords;
     }
 
-    public float getProgressPercent() {
+        public float getProgressPercent() {
         return progressPercent;
     }
 
     public void setProgressPercent(float progressPercent) {
         this.progressPercent = progressPercent;
+    }
+
+    public LessonStatusSummary getStatusSummary() {
+        return statusSummary;
+    }
+
+    public void setStatusSummary(LessonStatusSummary statusSummary) {
+        this.statusSummary = statusSummary;
     }
 
     public List<VocabularyWordProgress> getWords() {
