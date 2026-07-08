@@ -32,7 +32,7 @@ public class GrammarQuestionProgressFactory {
             DeclensionFormDto form,
             Gender gender,
             List<CaseEndingDto> caseEndings,
-            float successRate) {
+            int score) {
 
         String genderStr = gender != null ? gender.name() : "UNSPECIFIED";
         UUID questionId = deterministicId(genderStr, form.getCaseType().name(), form.getNumberType().name());
@@ -41,8 +41,8 @@ public class GrammarQuestionProgressFactory {
         p.setQuestionId(questionId);
         p.setTextRu(form.getCaseType().getRuName() + ", " + form.getNumberType().getRuName());
         p.setTextEn(form.getCaseType().getEnName() + ", " + form.getNumberType().getEnName());
-        p.setSuccessRate(successRate);
-        p.setStatus(resolveGrammarStatus(successRate));
+        p.setScore(score);
+        p.setStatus(resolveGrammarStatus(score));
 
         p.setCaseType(form.getCaseType().name());
         p.setCaseRu(form.getCaseType().getRuName());
@@ -75,7 +75,7 @@ public class GrammarQuestionProgressFactory {
      * @param score значение 0-100, где 0 = нет попыток
      * @return статус по единому порогу
      */
-    private WordStatus resolveGrammarStatus(float score) {
+    private WordStatus resolveGrammarStatus(int score) {
         if (score == 0) return WordStatus.NEW;
         if (score < ProgressConstants.MASTERED_LOWER_THRESHOLD) return WordStatus.LEARNING;
         return WordStatus.MASTERED;

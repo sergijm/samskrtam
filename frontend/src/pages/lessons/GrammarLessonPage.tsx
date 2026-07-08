@@ -42,7 +42,7 @@ const aggregateByCase = (questions: GrammarQuestionProgress[]): CaseAggregation[
     const items = grouped.get(caseType);
     if (!items || items.length === 0) continue;
     const total = items.length;
-    const learned = items.filter(q => q.successRate >= MASTERY_THRESHOLD).length;
+    const learned = items.filter(q => q.score >= MASTERY_THRESHOLD).length;
     const progress = total > 0 ? Math.round((learned / total) * 100) : 0;
     const firstItem = items[0];
     const status: WordStatus = progress >= MASTERY_THRESHOLD ? 'MASTERED' : 'LEARNING';
@@ -273,13 +273,13 @@ const GrammarLessonPage = () => {
                         className="cursor-pointer underline text-primary"
                         onClick={() => navigate(`/quiz/grammar/${slug}?filterScope=CASE_NUMBER_GENDER&filterCaseType=${rowData.caseType}&filterNumberType=${rowData.numberType}&filterGender=${rowData.gender}`)}
                       >
-                        {rowData.successRate > 0 ? `${rowData.successRate.toFixed(0)}%` : '0%'}
+                        {rowData.score > 0 ? `${rowData.score}%` : '0%'}
                       </span>
                     )}
                     style={{ width: '13%' }}
                     sortable
-                    sortField="successRate"
-                    onSort={() => handleSort('successRate')}
+                                        sortField="score"
+                    onSort={() => handleSort('score')}
                   />
                 </DataTable>
               </TabPanel>

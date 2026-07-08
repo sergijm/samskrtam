@@ -178,13 +178,13 @@ export const VocabularyLessonPage = () => {
                     className="cursor-pointer underline text-primary"
                     onClick={() => handleWordHistoryClick(rowData.wordId)}
                   >
-                    {rowData.successRate > 0 ? `${rowData.successRate.toFixed(0)}%` : '0%'}
+                    {rowData.score > 0 ? `${rowData.score}%` : '0%'}
                   </span>
                 )}
                 style={{ width: '15%' }}
                 sortable
-                sortField="successRate"
-                onSort={(e) => handleSort('successRate')}
+                                sortField="score"
+                onSort={(e) => handleSort('score')}
               />
             </DataTable>
           </div>

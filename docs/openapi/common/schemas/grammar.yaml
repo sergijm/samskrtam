@@ -6,7 +6,7 @@ GrammarQuestionProgress:
     - questionId
     - textRu
     - textEn
-    - successRate
+    - score
     - status
     - caseType
     - caseRu
@@ -44,11 +44,11 @@ GrammarQuestionProgress:
       minimum: 0
       deprecated: true
       description: Вычисляется на стороне сервера, больше не требуется.
-    successRate:
-      type: number
-      format: float
+    score:
+      type: integer
       minimum: 0
       maximum: 100
+      description: Экспоненциальный счёт (0-100), вычисляется по формуле из спецификации §2.5 ScoreCalculator. Источник — quiz_item_score.score.
     status:
       allOf:
         - $ref: './vocabulary.yaml#/WordStatus'

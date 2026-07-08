@@ -125,7 +125,7 @@ public class VocabularyProgressService {
                         progressItem.setTranslationEn(word.getTranslationEn());
                         progressItem.setStatus(status);
                         if (itemScore != null) {
-                            progressItem.setSuccessRate(itemScore.getScore());
+                            progressItem.setScore(itemScore.getScore());
                         }
                         wordProgressList.add(progressItem);
                     }
@@ -206,7 +206,7 @@ public class VocabularyProgressService {
         p.setTranslationEn(word.getTranslationEn());
         p.setNSuccess(0);
         p.setNAll(0);
-        p.setSuccessRate(0);
+        p.setScore(0);
         p.setStatus(WordStatus.NEW);
         return p;
     }

@@ -22,7 +22,7 @@ import java.util.*;
  * и эталонных окончаний (CaseEndingDto) из content-service.
  *
  * Группирует вопросы по (gender, caseType, numberType),
- * агрегирует successRate через БД и заполняет локализованные поля.
+ * агрегирует score через БД и заполняет локализованные поля.
  *
  * Делегирует создание {@link GrammarQuestionProgress} в {@link GrammarQuestionProgressFactory}
  * и поиск окончания в {@link CaseEndingMatcher}.
@@ -110,13 +110,13 @@ public class GrammarProgressBuilder {
                 .orElse(null);
 
         if (externalRefId == null || userId == null) {
-            return Mono.just(progressFactory.create(lessonItem, form, gender, caseEndings, 0f));
+            return Mono.just(progressFactory.create(lessonItem, form, gender, caseEndings, 0));
         }
 
         return quizItemScoreRepository
                 .findByUserIdAndItemTypeAndExternalRefId(userId, ItemType.DECLENSION_FORM, externalRefId)
                 .map(itemScore -> progressFactory.create(lessonItem, form, gender, caseEndings, itemScore.getScore()))
-                .defaultIfEmpty(progressFactory.create(lessonItem, form, gender, caseEndings, 0f));
+                .defaultIfEmpty(progressFactory.create(lessonItem, form, gender, caseEndings, 0));
     }
 
     private boolean matchingCaseEnding(CaseEndingDto ce, String genderStr, DeclensionFormDto form) {
@@ -147,7 +147,7 @@ public class GrammarProgressBuilder {
         Map<UUID, GrammarQuestionProgress> byGroup = new LinkedHashMap<>();
         for (GrammarQuestionProgress p : allGroups) {
             byGroup.merge(p.getQuestionId(), p,
-                    (existing, newVal) -> existing.getSuccessRate() >= newVal.getSuccessRate()
+                    (existing, newVal) -> existing.getScore() >= newVal.getScore()
                             ? existing : newVal);
         }
         List<GrammarQuestionProgress> deduplicated = new ArrayList<>(byGroup.values());

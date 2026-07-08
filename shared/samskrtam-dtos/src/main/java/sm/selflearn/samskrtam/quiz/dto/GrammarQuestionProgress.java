@@ -10,7 +10,6 @@ public class GrammarQuestionProgress {
     private String correctAnswerEn;
     private int nSuccess;
     private int nAll;
-    private float successRate;
     private WordStatus status;
     private String caseEnding;
     private String caseType;
@@ -22,6 +21,7 @@ public class GrammarQuestionProgress {
     private String gender;
     private String genderRu;
     private String genderEn;
+    private int score;
 
     // Getters and setters
     public UUID getQuestionId() {
@@ -78,14 +78,6 @@ public class GrammarQuestionProgress {
 
     public void setNAll(int nAll) {
         this.nAll = nAll;
-    }
-
-    public float getSuccessRate() {
-        return successRate;
-    }
-
-    public void setSuccessRate(float successRate) {
-        this.successRate = successRate;
     }
 
     public WordStatus getStatus() {
@@ -174,5 +166,13 @@ public class GrammarQuestionProgress {
 
     public void setGenderEn(String genderEn) {
         this.genderEn = genderEn;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
     }
 }

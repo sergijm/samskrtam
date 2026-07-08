@@ -8,7 +8,7 @@ export interface VocabularyWordProgress {
   translationEn: string;
   nSuccess:     number;
   nAll:         number;
-  successRate:  number;   // 0-100
+  score:        number;   // 0-100, exponential score
   status:       WordStatus;
 }
 
@@ -20,7 +20,7 @@ export interface GrammarQuestionProgress {
   correctAnswerEn?: string;
   nSuccess:       number;
   nAll:           number;
-  successRate:    number;
+  score:          number;
   status:       WordStatus;
   caseType:       string;
   caseRu:         string;

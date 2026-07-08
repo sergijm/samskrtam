@@ -14,7 +14,8 @@ public class VocabularyWordProgress {
     private int nSuccess;
 
     @JsonProperty("nAll")
-    private int nAll;    private float successRate;
+    private int nAll;
+    private int score;
     private WordStatus status;
 
     // Getters and setters
@@ -74,12 +75,12 @@ public class VocabularyWordProgress {
         this.nAll = nAll;
     }
 
-    public float getSuccessRate() {
-        return successRate;
+        public int getScore() {
+        return score;
     }
 
-    public void setSuccessRate(float successRate) {
-        this.successRate = successRate;
+    public void setScore(int score) {
+        this.score = score;
     }
 
     public WordStatus getStatus() {

@@ -16,7 +16,7 @@ WordStatus:
 
 VocabularyWordProgress:
   type: object
-  required: [wordId, word, translationRu, translationEn, nSuccess, nAll, successRate, status]
+  required: [wordId, word, translationRu, translationEn, nSuccess, nAll, score, status]
   properties:
     wordId:
       type: string
@@ -39,11 +39,11 @@ VocabularyWordProgress:
     nAll:
       type: integer
       minimum: 0
-    successRate:
-      type: number
-      format: float
+    score:
+      type: integer
       minimum: 0
       maximum: 100
+      description: Экспоненциальный счёт (0-100), вычисляется по формуле из спецификации §2.5 ScoreCalculator. Источник — quiz_item_score.score.
     status:
       $ref: './vocabulary.yaml#/WordStatus'
 
