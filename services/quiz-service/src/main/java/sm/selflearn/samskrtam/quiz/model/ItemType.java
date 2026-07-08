@@ -8,8 +8,15 @@ package sm.selflearn.samskrtam.quiz.model;
  * <p>При добавлении нового типа:
  * <ol>
  *   <li>Добавить значение сюда</li>
+ *   <li>Добавить соответствующее *Id поле и заполнение itemType в {@code GeneratedQuizQuestionDto}</li>
+ *   <li>Добавить case в switch-выражения:
+ *     <ul>
+ *       <li>{@code QuizItemScoreUpdateStrategy.resolveExternalRefId()}</li>
+ *       <li>{@code QuizItemScoreUpdateStrategy.resolveItemType()}</li>
+ *       <li>{@code QuizSessionService.createFilteredSession()}</li>
+ *     </ul>
+ *   </li>
  *   <li>Реализовать модуль рендеринга по (itemType, externalRefId)</li>
- *   <li>Обеспечить content-side выдачу списка externalRefId под scope (§2.3 спеки)</li>
  * </ol>
  *
  * @see sm.selflearn.samskrtam.quiz.model.QuizItemScore

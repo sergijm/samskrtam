@@ -47,7 +47,8 @@ public class QuestionGenerationService {
                                                         .stemTranslationRu(response.getStemTranslationRu())
                                                         .stemTranslationEn(response.getStemTranslationEn())
                             .gender(response.getGender())
-                            .caseEndingId(response.getCaseEndingId()))
+                            .caseEndingId(response.getCaseEndingId())
+                            .itemType("DECLENSION_FORM"))
                     .collect(Collectors.toList()));
         } else if (LessonType.isVocabulary(lesson.getLessonType())) {
             List<VocabularyWordDto> vocabularyWords = vocabularyService.getVocabularyWordsForQuiz(lesson.getSlug(), lesson.getQuestionsPerSession() * 4);
@@ -69,7 +70,8 @@ public class QuestionGenerationService {
                         .correctTranslationEn(word.getTranslationEn())
                         .correctFormIast(userLocale.equals("ru") ? word.getTranslationRu() : word.getTranslationEn())
                         .userLocale(userLocale)
-                        .stem(word.getWordIast()));
+                        .stem(word.getWordIast())
+                        .itemType("VOCABULARY_WORD"));
 
                 // Translation to Sanskrit
                 builders.add(GeneratedQuizQuestionDto.builder()
@@ -87,7 +89,8 @@ public class QuestionGenerationService {
                         .correctTranslationEn(word.getTranslationEn())
                         .correctFormIast(word.getWordIast())
                         .userLocale(userLocale)
-                        .stem(word.getWordIast()));
+                        .stem(word.getWordIast())
+                        .itemType("VOCABULARY_WORD"));
             }
         }
 

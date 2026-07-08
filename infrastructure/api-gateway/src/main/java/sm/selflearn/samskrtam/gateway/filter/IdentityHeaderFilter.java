@@ -57,7 +57,11 @@ public class IdentityHeaderFilter implements GlobalFilter, Ordered {
                     return chain.filter(exchange.mutate().request(mutated).build());
                 })
                 // Нет principal — публичный маршрут, пропускаем без заголовков
-                .switchIfEmpty(chain.filter(exchange));
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.info("IdentityHeaderFilter: no principal for path={} — passing without X-User-Id",
+                            exchange.getRequest().getPath());
+                    return chain.filter(exchange);
+                }));
     }
 
     /**
@@ -79,3 +83,4 @@ public class IdentityHeaderFilter implements GlobalFilter, Ordered {
         return ORDER;
     }
 }
+

@@ -35,4 +35,16 @@ public class SessionQuestion {
     private String questionTargetLanguage;
     private String correctTranslationRu;
     private String correctTranslationEn;
+
+    /**
+     * ID соответствующего case_ending (для DECLENSION_FORM).
+     * Копируется из GeneratedQuizQuestionDto.caseEndingId при старте сессии.
+     */
+    private UUID caseEndingId;
+
+    /**
+     * Тип элемента квиза (VOCABULARY_WORD, DECLENSION_FORM, ...).
+     * Копируется из GeneratedQuizQuestionDto.itemType при старте сессии.
+     */
+    private String itemType;
 }

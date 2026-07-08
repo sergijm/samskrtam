@@ -1,187 +1,187 @@
-﻿# Answer DTOs
-
-AnswerRequest:
-  type: object
-  required: [questionId, selectedOptionId, responseTimeMs]
-  properties:
-    questionId:
-      $ref: 'common.yaml#/UUID'
-      description: ID of the question being answered
-    selectedOptionId:
-      $ref: 'common.yaml#/UUID'
-      description: ID of the selected option (generated on-the-fly, not persisted)
-    selectedFormIast:
-      type: string
-      description: IAST of the selected form (optional, for declension questions)
-    responseTimeMs:
-      type: integer
-      description: Time taken to answer in milliseconds
-      minimum: 0
-
-AnswerResponse:
-  type: object
-  required: [isCorrect, correctAnswerText, questionNumber, totalQuestions]
-  properties:
-    isCorrect:
-      type: boolean
-      description: Whether the submitted answer was correct
-    correctOptionId:
-      $ref: 'common.yaml#/UUID'
-      description: ID of the correct option (may be null for form-based questions)
-    correctAnswerText:
-      type: string
-      description: The correct answer text (IAST or translation)
-    explanationRu:
-      type: string
-      description: Russian explanation for the correct answer
-    explanationEn:
-      type: string
-      description: English explanation for the correct answer
-    questionNumber:
-      type: integer
-      description: Number of the question that was answered
-    totalQuestions:
-      type: integer
-      description: Total number of questions in the session
-
-CompleteSessionResponse:
-  type: object
-  required: [sessionId, score, totalQuestions, durationMs]
-  properties:
-    sessionId:
-      $ref: 'common.yaml#/UUID'
-    score:
-      type: integer
-      description: Final score achieved
-    totalQuestions:
-      type: integer
-      description: Total number of questions in the session
-    durationMs:
-      type: integer
-      description: Session duration in milliseconds
-
-QuizProgressDto:
-  type: object
-  required: [sessionId, answeredQuestions, totalQuestions, found]
-  properties:
-    sessionId:
-      $ref: 'common.yaml#/UUID'
-    answeredQuestions:
-      type: integer
-    totalQuestions:
-      type: integer
-    found:
-      type: boolean
-      description: Whether an in-progress session was found
-
-AnswerHistoryDto:
-  type: object
-  required: [questionId, questionText, isCorrect, answeredAt]
-  properties:
-    questionId:
-      $ref: 'common.yaml#/UUID'
-    questionText:
-      type: string
-      description: The question text
-    selectedAnswerIast:
-      type: string
-      description: IAST text of the answer selected by the user
-    correctOptionIast:
-      type: string
-      description: IAST text of the correct answer
-    isCorrect:
-      type: boolean
-      description: Whether the answer was correct
-    responseTimeMs:
-      type: integer
-      description: Time taken to answer in milliseconds
-    answeredAt:
-      type: string
-      format: date-time
-      description: When the answer was submitted
-    explanationRu:
-      type: string
-      description: Russian explanation for the correct answer
-    explanationEn:
-      type: string
-      description: English explanation for the correct answer
-
-QuizSummaryDto:
-  type: object
-  required: [sessionId, lessonId, slug, lessonType, score, totalQuestions, status, startedAt]
-  properties:
-    sessionId:
-      $ref: 'common.yaml#/UUID'
-    lessonId:
-      $ref: 'common.yaml#/UUID'
-    lessonTitle:
-      type: string
-    lessonTitleRu:
-      type: string
-    lessonTitleEn:
-      type: string
-    slug:
-      type: string
-    lessonType:
-      $ref: 'common.yaml#/LessonType'
-    score:
-      type: integer
-    totalQuestions:
-      type: integer
-    status:
-      $ref: 'common.yaml#/SessionStatus'
-    startedAt:
-      type: string
-      format: date-time
-    completedAt:
-      type: string
-      format: date-time
-      nullable: true
-    durationMs:
-      type: integer
-      nullable: true
-    # NEW: filter info for filtered quiz sessions
-    filterInfo:
-      $ref: 'session.yaml#/FilterInfo'
-      description: Filter criteria for the session (present only for filtered sessions)
-
-PageQuizSummaryDto:
-  type: object
-  required: [content, totalPages, totalElements, number, size]
-  properties:
-    content:
-      type: array
-      description: List of quiz summaries on this page
-      items:
-        $ref: '#/QuizSummaryDto'
-    totalPages:
-      type: integer
-      description: Total number of pages
-    totalElements:
-      type: integer
-      description: Total number of elements across all pages
-    number:
-      type: integer
-      description: Current page number (0-based)
-    size:
-      type: integer
-      description: Page size
-    numberOfElements:
-      type: integer
-      description: Number of elements on this page
-    first:
-      type: boolean
-      description: Whether this is the first page
-    last:
-      type: boolean
-      description: Whether this is the last page
-    sort:
-      type: object
-      properties:
-        sorted:
-          type: boolean
-        unsorted:
-          type: boolean
-        empty:
-          type: boolean
-
+# Answer DTOs
+
+AnswerRequest:
+  type: object
+  required: [questionId, selectedOptionId, responseTimeMs]
+  properties:
+    questionId:
+      $ref: 'common.yaml#/UUID'
+      description: ID of the question being answered
+    selectedOptionId:
+      $ref: 'common.yaml#/UUID'
+      description: ID of the selected option (generated on-the-fly, not persisted)
+    selectedFormIast:
+      type: string
+      description: IAST of the selected form (optional, for declension questions)
+    responseTimeMs:
+      type: integer
+      description: Time taken to answer in milliseconds
+      minimum: 0
+
+AnswerResponse:
+  type: object
+  required: [isCorrect, correctAnswerText, questionNumber, totalQuestions]
+  properties:
+    isCorrect:
+      type: boolean
+      description: Whether the submitted answer was correct
+    correctOptionId:
+      $ref: 'common.yaml#/UUID'
+      description: ID of the correct option (may be null for form-based questions)
+    correctAnswerText:
+      type: string
+      description: The correct answer text (IAST or translation)
+    explanationRu:
+      type: string
+      description: Russian explanation for the correct answer
+    explanationEn:
+      type: string
+      description: English explanation for the correct answer
+    questionNumber:
+      type: integer
+      description: Number of the question that was answered
+    totalQuestions:
+      type: integer
+      description: Total number of questions in the session
+
+CompleteSessionResponse:
+  type: object
+  required: [sessionId, score, totalQuestions, durationMs]
+  properties:
+    sessionId:
+      $ref: 'common.yaml#/UUID'
+    score:
+      type: integer
+      description: Final score achieved
+    totalQuestions:
+      type: integer
+      description: Total number of questions in the session
+    durationMs:
+      type: integer
+      description: Session duration in milliseconds
+
+QuizProgressDto:
+  type: object
+  required: [sessionId, answeredQuestions, totalQuestions, found]
+  properties:
+    sessionId:
+      $ref: 'common.yaml#/UUID'
+    answeredQuestions:
+      type: integer
+    totalQuestions:
+      type: integer
+    found:
+      type: boolean
+      description: Whether an in-progress session was found
+
+AnswerHistoryDto:
+  type: object
+  required: [questionId, questionText, isCorrect, answeredAt]
+  properties:
+    questionId:
+      $ref: 'common.yaml#/UUID'
+    questionText:
+      type: string
+      description: The question text
+    selectedAnswerIast:
+      type: string
+      description: IAST text of the answer selected by the user
+    correctOptionIast:
+      type: string
+      description: IAST text of the correct answer
+    isCorrect:
+      type: boolean
+      description: Whether the answer was correct
+    responseTimeMs:
+      type: integer
+      description: Time taken to answer in milliseconds
+    answeredAt:
+      type: string
+      format: date-time
+      description: When the answer was submitted
+    explanationRu:
+      type: string
+      description: Russian explanation for the correct answer
+    explanationEn:
+      type: string
+      description: English explanation for the correct answer
+
+QuizSummaryDto:
+  type: object
+  required: [sessionId, lessonId, slug, lessonType, score, totalQuestions, status, startedAt]
+  properties:
+    sessionId:
+      $ref: 'common.yaml#/UUID'
+    lessonId:
+      $ref: 'common.yaml#/UUID'
+    lessonTitle:
+      type: string
+    lessonTitleRu:
+      type: string
+    lessonTitleEn:
+      type: string
+    slug:
+      type: string
+    lessonType:
+      $ref: 'common.yaml#/LessonType'
+    score:
+      type: integer
+    totalQuestions:
+      type: integer
+    status:
+      $ref: 'common.yaml#/SessionStatus'
+    startedAt:
+      type: string
+      format: date-time
+    completedAt:
+      type: string
+      format: date-time
+      nullable: true
+    durationMs:
+      type: integer
+      nullable: true
+    # NEW: filter info for filtered quiz sessions
+    filterInfo:
+      $ref: 'session.yaml#/FilterInfo'
+      description: Filter criteria for the session (present only for filtered sessions)
+
+PageQuizSummaryDto:
+  type: object
+  required: [content, totalPages, totalElements, number, size]
+  properties:
+    content:
+      type: array
+      description: List of quiz summaries on this page
+      items:
+        $ref: '#/QuizSummaryDto'
+    totalPages:
+      type: integer
+      description: Total number of pages
+    totalElements:
+      type: integer
+      description: Total number of elements across all pages
+    number:
+      type: integer
+      description: Current page number (0-based)
+    size:
+      type: integer
+      description: Page size
+    numberOfElements:
+      type: integer
+      description: Number of elements on this page
+    first:
+      type: boolean
+      description: Whether this is the first page
+    last:
+      type: boolean
+      description: Whether this is the last page
+    sort:
+      type: object
+      properties:
+        sorted:
+          type: boolean
+        unsorted:
+          type: boolean
+        empty:
+          type: boolean
+

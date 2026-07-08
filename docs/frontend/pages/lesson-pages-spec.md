@@ -75,7 +75,6 @@
 
 **LessonStatusSummary (шапка урока, под `LessonHeader`):** счётчики TOTAL / NEW / LEARNING / MASTERED (REVIEW складывается в MASTERED в этой сводке, но именно наличие REVIEW>0 включает кнопку «Повторить» рядом с «Начать квиз» — целевой запуск сессии с приоритетом due-элементов). Считается на бэкенде, отдаётся полем `statusSummary` в `VocabularyLesson`/`GrammarLesson` (см. §7).
 
-**Клик на `{nSuccess}/{nAll}`** → открывает `WordHistoryDialog` (диалог, не отдельная страница).
 
 ### WordHistoryDialog
 

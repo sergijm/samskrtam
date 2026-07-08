@@ -95,7 +95,7 @@ public class GrammarProgressBuilder {
         }
     }
 
-                private Mono<GrammarQuestionProgress> buildGroupProgress(
+    private Mono<GrammarQuestionProgress> buildGroupProgress(
             LessonItemResponse lessonItem, VowelType vowelType,
             List<CaseEndingDto> caseEndings,
             Gender gender, DeclensionFormDto form,

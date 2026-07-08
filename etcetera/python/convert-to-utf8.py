@@ -30,7 +30,7 @@ def convert_file_to_utf8(file_path: str) -> bool:
         encoding = detect_encoding(file_path)
 
         # Пропускаем файлы, которые уже в UTF-8
-        if encoding and encoding.lower() in ('utf-8', 'ascii', 'utf-8-sig'):
+        if encoding and encoding.lower() in ('utf-8', 'ascii'):
             return False
 
         # Читаем файл в байтах
@@ -50,7 +50,7 @@ def convert_file_to_utf8(file_path: str) -> bool:
         content_text = content_bytes.decode(encoding, errors='replace')
 
         # Сохраняем как UTF-8 с BOM (для совместимости с Windows)
-        with open(file_path, 'w', encoding='utf-8-sig') as f:
+        with open(file_path, 'w', encoding='utf-8') as f:
             f.write(content_text)
 
         return True
@@ -128,10 +128,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Запрашиваем подтверждение
-    print(f"⚠️ ВНИМАНИЕ: Будет выполнена конвертация файлов в '{args.dir}'!")
-    confirm = input("Продолжить? (y/n): ").strip().lower()
-    if confirm == 'y':
-        scan_and_convert(args.dir)
-    else:
-        print("❌ Отменено.")
+    scan_and_convert(args.dir)

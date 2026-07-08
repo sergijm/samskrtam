@@ -27,8 +27,9 @@ public interface SessionQuestionMapper {
     @Mapping(target = "correctFormIast", source = "dto.correctFormIast")
     @Mapping(target = "correctFormDevanagari", source = "dto.correctFormDevanagari")
     @Mapping(target = "vocabularyWordId", source = "dto.vocabularyWordId")
+    @Mapping(target = "caseEndingId", source = "dto.caseEndingId")
+    @Mapping(target = "itemType", source = "dto.itemType")
     @Mapping(target = "questionSourceLanguage", expression = "java(dto.getQuestionSourceLanguage() != null ? dto.getQuestionSourceLanguage().name() : null)")
-    @Mapping(target = "questionTargetLanguage", expression = "java(dto.getQuestionTargetLanguage() != null ? dto.getQuestionTargetLanguage().name() : null)")
     @Mapping(target = "correctTranslationRu", source = "dto.correctTranslationRu")
     @Mapping(target = "correctTranslationEn", source = "dto.correctTranslationEn")
     SessionQuestion fromDto(GeneratedQuizQuestionDto dto, UUID sessionId);

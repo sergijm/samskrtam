@@ -132,7 +132,7 @@ public class QuizSessionService {
                 });
     }
 
-            private Mono<StartOrResumeResponse> createFilteredSession(
+    private Mono<StartOrResumeResponse> createFilteredSession(
             UUID lessonId, UUID userId, String userLocale,
             FilterScope filterScope, String filterCaseType,
             String filterNumberType, String filterGender) {
@@ -144,22 +144,12 @@ public class QuizSessionService {
                             filterScope, filterCaseType, filterNumberType, filterGender);
                     return quizSessionRepository.save(newSession)
                             .flatMap(savedSession -> {
-                                // 2. Фильтруем вопросы по scope через QuizGenerator
-                                // Scope определяется как caseEndingIds для DECLENSION_FORM
                                 List<GeneratedQuizQuestionDto> allQuestions = generatedQuizData.getGeneratedQuestions();
-                                
-                                // Собираем externalRefIds (caseEndingId для деклараций, vocabularyWordId для лексики)
-                                List<UUID> externalRefIds = allQuestions.stream()
-                                        .map(q -> {
-                                            if (q.getCaseEndingId() != null) return q.getCaseEndingId();
-                                            if (q.getVocabularyWordId() != null) return q.getVocabularyWordId();
-                                            return null;
-                                        })
-                                        .filter(id -> id != null)
-                                        .collect(Collectors.toList());
-                                
-                                if (externalRefIds.isEmpty()) {
-                                    // Для не-DECLENSION и не-VOCABULARY типов — сохраняем как есть
+
+                                // Определяем itemType по явному полю DTO
+                                ItemType itemType = resolveItemTypeFromQuestions(allQuestions, savedSession.getId());
+                                if (itemType == null) {
+                                    // Неизвестный тип или null — сохраняем все вопросы как есть
                                     List<SessionQuestion> sessionQuestions = allQuestions.stream()
                                             .map(q -> sessionQuestionMapper.fromDto(q, savedSession.getId()))
                                             .collect(Collectors.toList());
@@ -170,25 +160,39 @@ public class QuizSessionService {
                                                     generatedQuizData.getVocabularyWords(), userLocale));
                                 }
 
-                                ItemType itemType = allQuestions.get(0).getVocabularyWordId() != null
-                                        ? ItemType.VOCABULARY_WORD
-                                        : ItemType.DECLENSION_FORM;
+                                // Собираем externalRefIds по itemType
+                                List<UUID> externalRefIds = allQuestions.stream()
+                                        .map(q -> switch (itemType) {
+                                            case DECLENSION_FORM -> q.getCaseEndingId();
+                                            case VOCABULARY_WORD -> q.getVocabularyWordId();
+                                        })
+                                        .filter(id -> id != null)
+                                        .collect(Collectors.toList());
 
+                                if (externalRefIds.isEmpty()) {
+                                    List<SessionQuestion> sessionQuestions = allQuestions.stream()
+                                            .map(q -> sessionQuestionMapper.fromDto(q, savedSession.getId()))
+                                            .collect(Collectors.toList());
+                                    return sessionQuestionRepository.saveAll(sessionQuestions)
+                                            .then(sessionPublisher.publishStarted(savedSession))
+                                            .then(quizDataAssembler.assembleResponse(
+                                                    savedSession, allQuestions,
+                                                    generatedQuizData.getVocabularyWords(), userLocale));
+                                }
+
+                                // Фильтруем вопросы через QuizGenerator
                                 return quizGenerator.generate(userId, itemType, externalRefIds)
                                         .map(selectedItems -> {
-                                            // Собираем Set отобранных externalRefIds
                                             Set<UUID> selectedRefIds = selectedItems.stream()
                                                     .map(QuizItem::externalRefId)
                                                     .collect(Collectors.toSet());
                                             return allQuestions.stream()
                                                     .filter(q -> {
-                                                        if (q.getCaseEndingId() != null) {
-                                                            return selectedRefIds.contains(q.getCaseEndingId());
-                                                        }
-                                                        if (q.getVocabularyWordId() != null) {
-                                                            return selectedRefIds.contains(q.getVocabularyWordId());
-                                                        }
-                                                        return true; // fallback — включаем
+                                                        UUID refId = switch (itemType) {
+                                                            case DECLENSION_FORM -> q.getCaseEndingId();
+                                                            case VOCABULARY_WORD -> q.getVocabularyWordId();
+                                                        };
+                                                        return refId != null && selectedRefIds.contains(refId);
                                                     })
                                                     .collect(Collectors.toList());
                                         })
@@ -204,5 +208,30 @@ public class QuizSessionService {
                                         });
                             });
                 });
+    }
+
+    /**
+     * Определяет ItemType по явному полю itemType в DTO вопросов.
+     * Если поле отсутствует — fallback-эвристика для обратной совместимости.
+     */
+    private ItemType resolveItemTypeFromQuestions(List<GeneratedQuizQuestionDto> questions, UUID sessionId) {
+        if (questions.isEmpty()) {
+            log.warn("No questions in session {}, cannot resolve itemType", sessionId);
+            return null;
+        }
+        GeneratedQuizQuestionDto first = questions.get(0);
+        if (first.getItemType() != null) {
+            try {
+                return ItemType.valueOf(first.getItemType());
+            } catch (IllegalArgumentException e) {
+                log.warn("Unknown itemType '{}' in session {}, falling back to heuristics",
+                        first.getItemType(), sessionId);
+            }
+        }
+        // Fallback для обратной совместимости (пока content-service не обновлён)
+        if (first.getVocabularyWordId() != null) return ItemType.VOCABULARY_WORD;
+        if (first.getCaseEndingId() != null) return ItemType.DECLENSION_FORM;
+        log.error("Cannot resolve ItemType for session {}: no itemType and no known Id field", sessionId);
+        return null;
     }
 }

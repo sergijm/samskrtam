@@ -32,5 +32,8 @@ public interface SessionQuestionToDtoMapper {
     @Mapping(target = "stemTranslationRu", source = "stemTranslationRu")
     @Mapping(target = "stemTranslationEn", source = "stemTranslationEn")
     @Mapping(target = "gender", source = "targetGender")
+    @Mapping(target = "caseEndingId", source = "caseEndingId")
+    @Mapping(target = "itemType", source = "itemType")
     GeneratedQuizQuestionDto toDto(SessionQuestion sessionQuestion);
 }
+

@@ -44,5 +44,19 @@ public class GeneratedQuizQuestionDto {
      * Позволяет QuizItemScoreUpdateStrategy корректно разрешать externalRefId.
      */
     UUID caseEndingId;
+
+    /**
+     * Тип элемента квиза (VOCABULARY_WORD, DECLENSION_FORM, ...).
+     * Заполняется content-service. Позволяет quiz-service явно разрешать
+     * itemType без угадывания по null-полям.
+     *
+     * <p>При добавлении нового ItemType:
+     * <ol>
+     *   <li>Добавить значение в {@code sm.selflearn.samskrtam.quiz.model.ItemType}</li>
+     *   <li>Добавить заполнение этого поля в content-service</li>
+     *   <li>Добавить case в resolveExternalRefId/resolveItemType в QuizItemScoreUpdateStrategy</li>
+     * </ol>
+     */
+    String itemType;
 }
 

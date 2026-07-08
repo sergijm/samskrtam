@@ -43,34 +43,44 @@ public class QuizItemScoreUpdateStrategy implements ScoreUpdateStrategy {
     }
 
     /**
-     * Определяет externalRefId в зависимости от типа вопроса.
-     * Для лексики — vocabularyWordId; для грамматики — целевая caseEnding (vowel_type+gender+case_type+number_type).
-     * TODO: При добавлении новых itemType добавить ветку сюда.
+     * Определяет externalRefId по itemType + соответствующему полю DTO.
+     *
+     * <p>При добавлении нового ItemType: добавить case в switch и
+     * соответствующее *Id поле в {@link GeneratedQuizQuestionDto}.
      */
     private UUID resolveExternalRefId(GeneratedQuizQuestionDto question) {
-        if (question.getVocabularyWordId() != null) {
-            return question.getVocabularyWordId();
-        }
-        if (question.getCaseEndingId() != null) {
-            return question.getCaseEndingId();
-        }
-        if (question.getTargetCase() != null && question.getTargetNumber() != null) {
-            // Fallback: генерируем детерминированный UUID из компонентов
-            // TODO: В будущем получать от content-service caseEndingId
-            return UUID.nameUUIDFromBytes((question.getTargetCase().name()
-                    + "_" + (question.getGender() != null ? question.getGender() : "UNSPECIFIED")
-                    + "_" + question.getTargetNumber().name()).getBytes());
-        }
-        return null;
+        ItemType itemType = resolveItemType(question);
+        return switch (itemType) {
+            case VOCABULARY_WORD -> question.getVocabularyWordId();
+            case DECLENSION_FORM -> question.getCaseEndingId();
+        };
     }
 
     /**
-     * Определяет ItemType по типу вопроса.
+     * Определяет ItemType по явному полю itemType в DTO.
+     * Если поле отсутствует (обратная совместимость) — угадывает по *Id полям.
      */
     private ItemType resolveItemType(GeneratedQuizQuestionDto question) {
+        if (question.getItemType() != null) {
+            try {
+                return ItemType.valueOf(question.getItemType());
+            } catch (IllegalArgumentException e) {
+                log.warn("Unknown itemType from content-service: {}, falling back to heuristics",
+                        question.getItemType());
+            }
+        }
+        // Fallback для обратной совместимости (пока content-service не обновлён)
         if (question.getVocabularyWordId() != null) {
             return ItemType.VOCABULARY_WORD;
         }
-        return ItemType.DECLENSION_FORM;
+        if (question.getCaseEndingId() != null) {
+            return ItemType.DECLENSION_FORM;
+        }
+        log.error("Cannot resolve ItemType: no itemType field and no known Id field in question {}",
+                question.getId());
+        throw new IllegalStateException(
+                "Cannot resolve ItemType for question " + question.getId()
+                + ": no itemType field and no known Id field");
     }
 }
+

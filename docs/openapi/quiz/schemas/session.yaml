@@ -1,91 +1,91 @@
-﻿# Quiz Session DTOs
-
-QuestionOptionDto:
-  type: object
-  required: [id, formIast, formDevanagari]
-  properties:
-    id:
-      $ref: 'common.yaml#/UUID'
-    formIast:
-      type: string
-      description: IAST transliteration of the option
-    formDevanagari:
-      type: string
-      description: Devanagari script of the option
-
-QuestionDto:
-  type: object
-  required: [id, questionNumber, text, options]
-  properties:
-    id:
-      $ref: 'common.yaml#/UUID'
-    questionNumber:
-      type: integer
-      description: Sequential number of the question in the session
-    text:
-      type: string
-      description: General question text
-    options:
-      type: array
-      items:
-        $ref: '#/QuestionOptionDto'
-    stem:
-      type: string
-      description: Declension stem (for grammar questions)
-    caseType:
-      type: string
-      description: Grammatical case (NOMINATIVE, ACCUSATIVE, etc.)
-    numberType:
-      type: string
-      description: Number (SINGULAR, PLURAL, DUAL)
-    gender:
-      type: string
-      description: Grammatical gender (MASCULINE, FEMININE, NEUTER)
-    stemDevanagari:
-      type: string
-      description: Devanagari of the stem
-    stemTranslationRu:
-      type: string
-      description: Russian translation of the stem
-    stemTranslationEn:
-      type: string
-      description: English translation of the stem
-
-StartOrResumeResponse:
-  type: object
-  required: [sessionId, lessonId, lessonType, questions, totalQuestions, answeredQuestions, score, currentQuestionIndex, currentQuestionNumber, slug]
-  properties:
-    sessionId:
-      $ref: 'common.yaml#/UUID'
-    lessonId:
-      $ref: 'common.yaml#/UUID'
-    lessonType:
-      $ref: 'common.yaml#/LessonType'
-    questions:
-      type: array
-      description: Questions for the current session (only unanswered for resume)
-      items:
-        $ref: '#/QuestionDto'
-    totalQuestions:
-      type: integer
-    answeredQuestions:
-      type: integer
-    score:
-      type: integer
-    currentQuestionIndex:
-      type: integer
-      description: 0-based index of the current unanswered question
-    currentQuestionNumber:
-      type: integer
-      description: 1-based current question number
-    lessonTitleRu:
-      type: string
-    lessonTitleEn:
-      type: string
-    lessonDescriptionRu:
-      type: string
-    lessonDescriptionEn:
-      type: string
-    slug:
-      type: string
-      description: Slug of the quiz lesson
+# Quiz Session DTOs
+
+QuestionOptionDto:
+  type: object
+  required: [id, formIast, formDevanagari]
+  properties:
+    id:
+      $ref: 'common.yaml#/UUID'
+    formIast:
+      type: string
+      description: IAST transliteration of the option
+    formDevanagari:
+      type: string
+      description: Devanagari script of the option
+
+QuestionDto:
+  type: object
+  required: [id, questionNumber, text, options]
+  properties:
+    id:
+      $ref: 'common.yaml#/UUID'
+    questionNumber:
+      type: integer
+      description: Sequential number of the question in the session
+    text:
+      type: string
+      description: General question text
+    options:
+      type: array
+      items:
+        $ref: '#/QuestionOptionDto'
+    stem:
+      type: string
+      description: Declension stem (for grammar questions)
+    caseType:
+      type: string
+      description: Grammatical case (NOMINATIVE, ACCUSATIVE, etc.)
+    numberType:
+      type: string
+      description: Number (SINGULAR, PLURAL, DUAL)
+    gender:
+      type: string
+      description: Grammatical gender (MASCULINE, FEMININE, NEUTER)
+    stemDevanagari:
+      type: string
+      description: Devanagari of the stem
+    stemTranslationRu:
+      type: string
+      description: Russian translation of the stem
+    stemTranslationEn:
+      type: string
+      description: English translation of the stem
+
+StartOrResumeResponse:
+  type: object
+  required: [sessionId, lessonId, lessonType, questions, totalQuestions, answeredQuestions, score, currentQuestionIndex, currentQuestionNumber, slug]
+  properties:
+    sessionId:
+      $ref: 'common.yaml#/UUID'
+    lessonId:
+      $ref: 'common.yaml#/UUID'
+    lessonType:
+      $ref: 'common.yaml#/LessonType'
+    questions:
+      type: array
+      description: Questions for the current session (only unanswered for resume)
+      items:
+        $ref: '#/QuestionDto'
+    totalQuestions:
+      type: integer
+    answeredQuestions:
+      type: integer
+    score:
+      type: integer
+    currentQuestionIndex:
+      type: integer
+      description: 0-based index of the current unanswered question
+    currentQuestionNumber:
+      type: integer
+      description: 1-based current question number
+    lessonTitleRu:
+      type: string
+    lessonTitleEn:
+      type: string
+    lessonDescriptionRu:
+      type: string
+    lessonDescriptionEn:
+      type: string
+    slug:
+      type: string
+      description: Slug of the quiz lesson

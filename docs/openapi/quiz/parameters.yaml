@@ -1,148 +1,148 @@
-﻿# Shared parameters for Quiz Sessions API
-
-SlugParam:
-
-  name: slug
-
-  in: path
-
-  required: true
-
-  description: Slug of the quiz lesson (e.g. "declensions", "vocabulary")
-
-  schema:
-
-    type: string
-
-    example: declensions
-
-
-SessionIdParam:
-
-  name: sessionId
-
-  in: path
-
-  required: true
-
-  description: UUID of the quiz session
-
-  schema:
-
-    type: string
-
-    format: uuid
-
-
-LessonIdParam:
-
-  name: lessonId
-
-  in: query
-
-  required: true
-
-  description: UUID of the lesson
-
-  schema:
-
-    type: string
-
-    format: uuid
-
-
-XUserIdHeader:
-
-  name: X-User-Id
-
-  in: header
-
-  required: true
-
-  description: User ID (set by API Gateway)
-
-  schema:
-
-    type: string
-
-    format: uuid
-
-
-XUserLocaleHeader:
-
-  name: X-User-Locale
-
-  in: header
-
-  required: true
-
-  description: User locale (e.g. "ru", "en")
-
-  schema:
-
-    type: string
-
-    example: ru
-
-
-FilterScopeParam:
-
-  name: filterScope
-
-  in: query
-
-  required: false
-
-  description: Filter scope for quiz session (CASE_ONLY or CASE_NUMBER_GENDER)
-
-  schema:
-
-    type: string
-
-    enum: [CASE_ONLY, CASE_NUMBER_GENDER]
-
-
-FilterCaseTypeParam:
-
-  name: filterCaseType
-
-  in: query
-
-  required: false
-
-  description: Case type filter (NOMINATIVE, ACCUSATIVE, etc.)
-
-  schema:
-
-    type: string
-
-
-FilterNumberTypeParam:
-
-  name: filterNumberType
-
-  in: query
-
-  required: false
-
-  description: Number type filter (SINGULAR, DUAL, PLURAL)
-
-  schema:
-
-    type: string
-
-
-FilterGenderParam:
-
-  name: filterGender
-
-  in: query
-
-  required: false
-
-  description: Gender filter (MASCULINE, FEMININE, NEUTER, UNSPECIFIED)
-
-  schema:
-
-    type: string
-
+# Shared parameters for Quiz Sessions API
+
+SlugParam:
+
+  name: slug
+
+  in: path
+
+  required: true
+
+  description: Slug of the quiz lesson (e.g. "declensions", "vocabulary")
+
+  schema:
+
+    type: string
+
+    example: declensions
+
+
+SessionIdParam:
+
+  name: sessionId
+
+  in: path
+
+  required: true
+
+  description: UUID of the quiz session
+
+  schema:
+
+    type: string
+
+    format: uuid
+
+
+LessonIdParam:
+
+  name: lessonId
+
+  in: query
+
+  required: true
+
+  description: UUID of the lesson
+
+  schema:
+
+    type: string
+
+    format: uuid
+
+
+XUserIdHeader:
+
+  name: X-User-Id
+
+  in: header
+
+  required: true
+
+  description: User ID (set by API Gateway)
+
+  schema:
+
+    type: string
+
+    format: uuid
+
+
+XUserLocaleHeader:
+
+  name: X-User-Locale
+
+  in: header
+
+  required: true
+
+  description: User locale (e.g. "ru", "en")
+
+  schema:
+
+    type: string
+
+    example: ru
+
+
+FilterScopeParam:
+
+  name: filterScope
+
+  in: query
+
+  required: false
+
+  description: Filter scope for quiz session (CASE_ONLY or CASE_NUMBER_GENDER)
+
+  schema:
+
+    type: string
+
+    enum: [CASE_ONLY, CASE_NUMBER_GENDER]
+
+
+FilterCaseTypeParam:
+
+  name: filterCaseType
+
+  in: query
+
+  required: false
+
+  description: Case type filter (NOMINATIVE, ACCUSATIVE, etc.)
+
+  schema:
+
+    type: string
+
+
+FilterNumberTypeParam:
+
+  name: filterNumberType
+
+  in: query
+
+  required: false
+
+  description: Number type filter (SINGULAR, DUAL, PLURAL)
+
+  schema:
+
+    type: string
+
+
+FilterGenderParam:
+
+  name: filterGender
+
+  in: query
+
+  required: false
+
+  description: Gender filter (MASCULINE, FEMININE, NEUTER, UNSPECIFIED)
+
+  schema:
+
+    type: string
+

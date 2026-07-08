@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -19,6 +20,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/lessons")
 @Tag(name = "Lessons", description = "APIs for lesson-related endpoints")
 @RequiredArgsConstructor
+@Slf4j
 public class LessonController {
 
     private final LessonService lessonService;
@@ -31,7 +33,14 @@ public class LessonController {
             @PathVariable String slug,
             @RequestHeader(value = "X-User-Id", required = false) UUID userId )
     {
+        log.info("GET /vocabulary/{} — X-User-Id={}", slug, userId);
         return lessonService.getVocabularyLesson(slug, userId)
+                .doOnNext(lesson -> {
+                    int nonZeroScores = (int) lesson.getWords().stream()
+                            .filter(w -> w.getScore() > 0).count();
+                    log.info("GET /vocabulary/{} — response: totalWords={}, nonZeroScores={}",
+                            slug, lesson.getTotalWords(), nonZeroScores);
+                })
                 .map(ResponseEntity::ok);
     }
 
@@ -53,7 +62,18 @@ public class LessonController {
             @PathVariable("slug") String slug,
             @RequestHeader(value = "X-User-Id", required = false) UUID userId )
     {
+        log.info("GET /grammar/{} — X-User-Id={}", slug, userId);
         return lessonService.getGrammarLesson(slug, userId)
+                .doOnNext(lesson -> {
+                    int nonZeroScores = (int) lesson.getQuestions().stream()
+                            .filter(q -> q.getScore() > 0).count();
+                    log.info("GET /grammar/{} — response: totalQuestions={}, nonZeroScores={}, sampleScores={}",
+                            slug, lesson.getTotalQuestions(), nonZeroScores,
+                            lesson.getQuestions().stream().limit(5)
+                                    .map(q -> String.format("(gender=%s,case=%s,num=%s,score=%d)",
+                                            q.getGender(), q.getCaseType(), q.getNumberType(), q.getScore()))
+                                    .toList());
+                })
                 .map(ResponseEntity::ok);
     }
 }
