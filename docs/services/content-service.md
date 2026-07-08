@@ -60,7 +60,7 @@
 ## 5. API
 
 
-> Полная OpenAPI спецификация для Lesson Pages: [lesson-openapi.yaml](../openapi/lesson-openapi.yaml)
+> Полная OpenAPI спецификация для Lesson Pages: [lesson-aggregation-openapi.yaml](../openapi/lesson-aggregation-openapi.yaml)
 
 ### Управление уроками (ADMIN)
 
@@ -182,7 +182,7 @@ content-service.
 
 ## 10. Домен Eamenau
 
-Модуль упражнений по правилам сандхи санскрита. Полная спецификация: [services/eamenau.md](./eamenau.md).
+Модуль упражнений по правилам сандхи санскрита. Полная спецификация: [services/content-service/eamenau.md](./content-service/eamenau.md).
 
 Структура: модели (13 классов) в eamenau/model/, репозитории (12 интерфейсов) в eamenau/repository/, сервисы (EamenauService, EamenauExerciseService), контроллеры (EamenauController, EamenauExerciseController). Shared DTOs — в shared/samskrtam-dtos. Миграция: V2 — schema eamenau. Фронтенд: pages/eamenau/, components/eamenau/.
 

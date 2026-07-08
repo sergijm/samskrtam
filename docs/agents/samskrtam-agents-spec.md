@@ -65,7 +65,7 @@
 
 **Роль:** React/TypeScript фронтенд.
 
-**Входные документы:** docs/frontend/frontend.md, user-frontend.md, feature-flags-frontend.md, lesson-pages-spec.md, lesson-openapi.yaml, sangraha-service.md §7, docs/conventions.md (i18n, git).
+**Входные документы:** docs/frontend/frontend-overview.md, user-frontend.md, feature-flags-frontend.md, docs/frontend/pages/lesson-pages-spec.md, docs/openapi/lesson-aggregation-openapi.yaml, sangraha-service.md §7, docs/conventions.md (i18n, git).
 
 **Ответственность:** роутинг (публичные + защищённые), auth flow (Keycloak Authorization Code через Gateway, authStore, ProtectedRoute), компоненты по доменам, i18n ru/en, темы lara-light-blue/lara-dark-blue, React Query + Zustand, AdminPage.
 
@@ -107,7 +107,7 @@
 
 **Роль:** Контракты, OpenAPI, документация.
 
-**Входные документы:** docs/openapi/lesson-openapi.yaml, docs/services/*.md, docs/README.md.
+**Входные документы:** docs/openapi/lesson-aggregation-openapi.yaml, docs/services/*.md, docs/README.md.
 
 **Ответственность:** Contract-First (изменение API начинается с docs, а не с кода), OpenAPI YAML/JSON для каждого сервиса, shared DTO актуальность, консистентность Kafka-событий, именование топиков (<domain>-<event>-events), актуализация docs/ при изменении API, проверка open questions и ADR, контроль Gateway маршрутов.
 

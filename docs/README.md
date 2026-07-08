@@ -27,7 +27,7 @@ SamskrtamApp построен как production-grade референсная р�
 - Аутентификация: Keycloak (собственный аккаунт + Google + Mail.ru)
 - Горизонтальное масштабирование: stateless сервисы, Kafka для async
 - Bilingual UI (ru / en)
-- [Упражнения по сандхи (Eamenau)](./services/eamenau.md) — разбор правил сандхи на материале учебника Eméneau
+- [Упражнения по сандхи (Eamenau)](./services/content-service/eamenau.md) — разбор правил сандхи на материале учебника Eméneau
 
 ### Non-Goals (v1.0)
 - Mobile native app
@@ -121,13 +121,11 @@ graph TD
 |---|---|
 | [sangraha-service.md](./services/sangraha-service.md) | Java 21 + VT | Санскритские произведения, LLM-анализ стихов |
 | [openapi/](./openapi/) | OpenAPI спецификации для всех сервисов |
-| Файл | Содержание |
-|---|---|
 | [services/api-gateway.md](./services/api-gateway.md) | Java 21 + WebFlux | Spring Cloud Gateway |
 | [services/feature-flag-service.md](./services/feature-flag-service.md) | Java 21 + VT | Feature Flag Service |
 | [services/user-service.md](./services/user-service.md) | Java 21 + VT | Логин, регистрация, OAuth, управление паролем |
 | [services/content-service.md](./services/content-service.md) | Java 21 + VT | Настройки и содержание всех квизов |
-| [services/eamenau.md](./services/eamenau.md) | — (домен content-service) | Упражнения по сандхи, фонемная система |
+| [services/content-service/eamenau.md](./services/content-service/eamenau.md) | — (домен content-service) | Упражнения по сандхи, фонемная система |
 | [services/quiz-service.md](./services/quiz-service.md) | Java 21 + VT | Прохождение квизов пользователем |
 | [services/dictionary-service.md](./services/dictionary-service.md) | Java 21 + Virtual Threads | Словарь + внешнее API |
 | [services/statistics-service.md](./services/statistics-service.md) | Java 21 + VT | Статистика |
@@ -136,10 +134,12 @@ graph TD
 ### Frontend
 | Файл | Содержание |
 |---|---|
-| [frontend/frontend.md](./frontend/frontend.md) | Стек, роуты, компоненты, тема, i18n |
+| [frontend/frontend-overview.md](./frontend/frontend-overview.md) | Стек, структура, роуты, тема, i18n |
+| [frontend/frontend-conventions.md](./frontend/frontend-conventions.md) | i18n, env, coding conventions, acceptance criteria |
+| [frontend/frontend-state.md](./frontend/frontend-state.md) | TS-типы, API-хуки, Zustand stores |
 | [frontend/user-frontend.md](./frontend/user-frontend.md) | Пользователи, группы, настройки |
 | [frontend/feature-flags-frontend.md](./frontend/feature-flags-frontend.md) | UI управления feature flags (только ADMIN) |
-| [frontend/frontend.md](./frontend/frontend.md) | React/TypeScript — страницы, компоненты, типы, хуки, i18n |
+| [frontend/pages/lesson-pages-spec.md](./frontend/pages/lesson-pages-spec.md) | Страницы уроков (VocabularyLessonPage, GrammarLessonPage) |
 
 ---
 
@@ -164,7 +164,7 @@ graph TD
 - [ ] Внешнее API для словаря: Sanskrit Heritage или Monier-Williams приоритет?
 - [ ] Mail.ru OAuth: актуальны ли endpoints в 2025?
 - [ ] Автоматический деплой на main или только ручной (when: manual)?
-- [ ] **Eamenau:** нужен ли API для фонемной системы (`GET /api/v1/eamenau/phonemes`)? — см. [services/eamenau.md](./services/eamenau.md)
+- [ ] **Eamenau:** нужен ли API для фонемной системы (`GET /api/v1/eamenau/phonemes`)? — см. [services/content-service/eamenau.md](./services/content-service/eamenau.md)
 - [ ] **Eamenau:** унифицировать написание `Eamenau` / `Emeneau` во всём проекте (в именах файлов фронтенда — `Emeneau`, в Java-коде — `Eamenau`)
 - [x] **Семантика Quiz/Lesson/Activity** — закрыто ADR-002, см. [conventions.md §14](./conventions.md#14-архитектурные-решения-adr)
 - [ ] **Eamenau:** `Answer` (варианты ответа к задаче) — реализован в модели, не используется в API. Планируется ли режим с выбором варианта?

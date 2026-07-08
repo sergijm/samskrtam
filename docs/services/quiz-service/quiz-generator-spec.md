@@ -1,6 +1,6 @@
 ﻿# Спецификация: универсальный генератор вопросов квиза
 
-> Связанные файлы: [README.md](../README.md) · [quiz-declension.md](./quiz-declension.md) · [openapi/schemas/vocabulary.yaml](../openapi/schemas/vocabulary.yaml) · [services/quiz-service.md](../services/quiz-service.md) · [services/content-service.md](../services/content-service.md) · [conventions.md](../conventions.md#adr-007) (ADR-007)
+> Связанные файлы: [README.md](../README.md) · [quiz-declension.md](./quiz-declension.md) · [openapi/common/schemas/vocabulary.yaml](../openapi/common/schemas/vocabulary.yaml) · [services/quiz-service.md](../services/quiz-service.md) · [services/content-service.md](../services/content-service.md) · [conventions.md](../conventions.md#adr-007) (ADR-007)
 > Ответственный агент: Агент 6 (API Contract & Documentation) — контракт; реализация Агент 2 (Domain Services, quiz-service)
 > Статус: **АКТУАЛЕН**
 
