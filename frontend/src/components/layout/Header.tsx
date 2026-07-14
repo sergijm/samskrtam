@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { useMe } from '../../hooks/useUser'; // Import useMe
+import { useMe } from '../../hooks/useUser';
+import { useSidebarStore } from '../../store/sidebarStore';
 import { Button } from 'primereact/button';
 import { LocaleSwitcher } from '../common/LocaleSwitcher';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
@@ -9,7 +10,8 @@ import UserAvatar from '../user/UserAvatar';
 
 const Header = () => {
   const { isAuthenticated, logout } = useAuthStore();
-  const { data: user } = useMe(); // Get user data from react-query
+  const { data: user } = useMe();
+  const { collapsed, toggle } = useSidebarStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -19,10 +21,22 @@ const Header = () => {
 
   return (
     <div className="layout-topbar flex justify-content-between align-items-center">
-      <Link to="/" className="layout-topbar-logo no-underline text-xl font-bold flex align-items-center" style={{ padding: 0, margin: 0 }}>
-        <img src="/logo.png" alt="Aksharamārga Logo" style={{ height: '70px', width: '70px', marginRight: '0' }} />
-        <span className="text-3xl font-bold">Akshara Mārga</span>
-      </Link>
+      <div className="flex align-items-center gap-2">
+        <Link to="/" className="layout-topbar-logo no-underline text-xl font-bold flex align-items-center" style={{ padding: 0, margin: 0 }}>
+          <img src="/logo.png" alt="Aksharamārga Logo" style={{ height: '70px', width: '70px', marginRight: '0' }} />
+          <span className="text-3xl font-bold">Akshara Mārga</span>
+        </Link>
+        {isAuthenticated && (
+          <Button
+            icon={`pi ${collapsed ? 'pi-chevron-right' : 'pi-chevron-left'}`}
+            className="p-button-text p-button-rounded sidebar-toggle-btn ml-2"
+            onClick={toggle}
+            tooltip={collapsed ? 'Show sidebar' : 'Hide sidebar'}
+            tooltipOptions={{ position: 'bottom' }}
+            aria-label="Toggle sidebar"
+          />
+        )}
+      </div>
       <div className="layout-topbar-menu flex align-items-center gap-3">
         <ThemeSwitcher />
         <LocaleSwitcher />
@@ -46,3 +60,4 @@ const Header = () => {
 };
 
 export default Header;
+

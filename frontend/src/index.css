@@ -1,11 +1,8 @@
-/* src/index.css */
-
+/* src/inpudex.css */
 
 html {
     font-size: 20px;
-
 }
-
 
 /* Ensure quiz cards fill height and content is properly aligned */
 .quiz-card.p-card {
@@ -58,3 +55,105 @@ html {
     color: var(--primary-color-text); /* Adjust hover color if needed */
     text-decoration: none;
 }
+
+/* ─── Sidebar / Curriculum Tree Styles ─── */
+.layout-main-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.layout-sidebar-wrapper {
+    position: relative;
+    flex-shrink: 0;
+    overflow: hidden;
+    transition: width 0.25s ease;
+}
+
+.layout-sidebar-wrapper.collapsed {
+    width: 0 !important;
+    transition: width 0.25s ease;
+}
+
+.layout-sidebar-inner {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-right: 1px solid var(--surface-border, #dee2e6);
+    background: var(--surface-ground, #f8f9fa);
+}
+
+.layout-sidebar {
+    padding: 0.5rem;
+    min-width: 200px;
+}
+
+/* Resize handle */
+.layout-sidebar-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -3px;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 10;
+    background: transparent;
+}
+
+.layout-sidebar-resize-handle:hover,
+.layout-sidebar-resize-handle:active {
+    background: var(--primary-color, #6366f1);
+    opacity: 0.3;
+}
+
+/* Toggle button in header */
+.sidebar-toggle-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+/* ─── Curriculum Tree Styles ─── */
+.curriculum-tree {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.curriculum-tree .p-treenode-content {
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+}
+
+.curriculum-tree .p-treenode-content:hover {
+  background: var(--surface-hover, rgba(0,0,0,0.04));
+}
+
+/* Ветки (родительские узлы) — жирный шрифт, subtle accent */
+.curriculum-tree-branch > .p-treenode-content .p-treenode-label {
+  font-weight: 600;
+  color: var(--primary-color, #6366f1);
+}
+
+/* Кликабельные листья — pointer */
+.curriculum-tree-leaf > .p-treenode-content {
+  cursor: pointer;
+}
+
+/* Planned (недоступные) узлы — визуально приглушены */
+.curriculum-tree-node-planned {
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* Иконки в узлах */
+.curriculum-tree .p-treenode-content .p-tree-toggler {
+  margin-right: 0.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* Отступы дочерних узлов */
+.curriculum-tree .p-treenode-children {
+  padding-left: 0.75rem;
+}
+

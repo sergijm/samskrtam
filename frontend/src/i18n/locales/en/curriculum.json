@@ -1,0 +1,103 @@
+{
+  "section": {
+    "nouns": "Nouns (Declension)",
+    "adjectives": "Adjectives",
+    "pronouns": "Pronouns",
+    "numerals": "Numerals",
+    "verbs_present": "Verb: Present Tense",
+    "verbs_other": "Verb: Other Systems",
+    "verb_nominals": "Verbal Nouns",
+    "sandhi": "Sandhi",
+    "syntax": "Syntax",
+    "writing": "Writing & Pronunciation"
+  },
+  "nouns": {
+    "a_masc": "a-stems, masc.",
+    "a_neut": "a-stems, neut.",
+    "aa_fem": "ā-stems, fem.",
+    "i_stems": "i-stems",
+    "ii_stems": "ī-stems",
+    "u_stems": "u-stems",
+    "uu_stems": "ū-stems",
+    "r_stems": "ṛ-stems",
+    "cons_an": "Consonant: -an",
+    "cons_in_vant_mant": "Consonant: -in/-vant/-mant",
+    "cons_as_is_us": "Consonant: -as/-is/-us",
+    "cons_at_ant": "Consonant: -at/-ant",
+    "cons_simple_final": "Consonant: simple final",
+    "irregular": "Irregular stems"
+  },
+  "adjectives": {
+    "regular": "Regular (a-/ā-/i-/u- by gender)",
+    "comparison": "Degrees of comparison",
+    "numerals": "Numerals as adjectives"
+  },
+  "pronouns": {
+    "personal": "Personal",
+    "demonstrative": "Demonstrative",
+    "interrogative": "Interrogative",
+    "relative": "Relative",
+    "reflexive": "Reflexive"
+  },
+  "numerals": {
+    "cardinal_1_10": "Cardinal 1–10",
+    "cardinal_11_100": "Cardinal 11–100",
+    "ordinal": "Ordinal"
+  },
+  "verbs": {
+    "class1": "Class 1 (bhū-)",
+    "class2": "Class 2 (ad-)",
+    "class3": "Class 3 (hu-)",
+    "class4": "Class 4 (div-)",
+    "class5": "Class 5 (su-)",
+    "class6": "Class 6 (tud-)",
+    "class7": "Class 7 (rudh-)",
+    "class8": "Class 8 (tan-)",
+    "class9": "Class 9 (krī-)",
+    "class10": "Class 10 (cur-)",
+    "imperfect": "Imperfect",
+    "aorist": "Simple Aorist",
+    "perfect": "Perfect",
+    "future": "Future",
+    "optative": "Optative",
+    "imperative": "Imperative",
+    "causative": "Causative",
+    "passive": "Passive",
+    "desiderative": "Desiderative"
+  },
+  "verbNominals": {
+    "pres_part": "Present participles",
+    "past_part": "Past participles (-ta/-na)",
+    "absolutive": "Absolutive (-tvā/-ya)",
+    "infinitive": "Infinitive (-tum)",
+    "gerundive": "Gerundive"
+  },
+  "sandhi": {
+    "rules": "Rules",
+    "exercises": "Recognition exercises",
+    "vowel": "Vowel sandhi",
+    "consonant": "Consonant sandhi",
+    "visarga": "Visarga sandhi",
+    "segmentation": "Active segmentation"
+  },
+  "syntax": {
+    "adj_noun_agreement": "Adj.–noun agreement",
+    "subj_pred_agreement": "Subject–predicate agreement",
+    "case_roles": "Case roles in sentences",
+    "word_order": "Word order (SOV)",
+    "complex_sentence": "Complex sentence"
+  },
+  "writing": {
+    "alphabet": "Devanāgarī: alphabet",
+    "ligatures": "Ligatures",
+    "transliteration": "IAST↔Devanāgarī transliteration",
+    "prosody": "Vowel length & prosody"
+  },
+  "catalog": {
+    "lexicon": "Vocabulary",
+    "texts": "Texts"
+  },
+  "status": {
+    "planned": "soon"
+  }
+}

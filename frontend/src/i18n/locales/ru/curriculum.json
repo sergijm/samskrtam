@@ -1,0 +1,103 @@
+{
+  "section": {
+    "nouns": "Существительные (склонение)",
+    "adjectives": "Прилагательные",
+    "pronouns": "Местоимения",
+    "numerals": "Числительные",
+    "verbs_present": "Глагол: настоящее время",
+    "verbs_other": "Глагол: остальные системы",
+    "verb_nominals": "Именные формы глагола",
+    "sandhi": "Сандхи",
+    "syntax": "Синтаксис",
+    "writing": "Письмо и произношение"
+  },
+  "nouns": {
+    "a_masc": "a-основы, муж. род",
+    "a_neut": "a-основы, ср. род",
+    "aa_fem": "ā-основы, жен. род",
+    "i_stems": "i-основы",
+    "ii_stems": "ī-основы",
+    "u_stems": "u-основы",
+    "uu_stems": "ū-основы",
+    "r_stems": "ṛ-основы",
+    "cons_an": "Согласные: на -an",
+    "cons_in_vant_mant": "Согласные: на -in/-vant/-mant",
+    "cons_as_is_us": "Согласные: на -as/-is/-us",
+    "cons_at_ant": "Согласные: на -at/-ant",
+    "cons_simple_final": "Согласные: простой конечный",
+    "irregular": "Неправильные основы"
+  },
+  "adjectives": {
+    "regular": "Регулярные (a-/ā-/i-/u- по роду)",
+    "comparison": "Степени сравнения",
+    "numerals": "Числительные как прилагательные"
+  },
+  "pronouns": {
+    "personal": "Личные",
+    "demonstrative": "Указательные",
+    "interrogative": "Вопросительные",
+    "relative": "Относительные",
+    "reflexive": "Возвратное"
+  },
+  "numerals": {
+    "cardinal_1_10": "Количественные 1–10",
+    "cardinal_11_100": "Количественные 11–100",
+    "ordinal": "Порядковые"
+  },
+  "verbs": {
+    "class1": "Класс 1 (bhū-)",
+    "class2": "Класс 2 (ad-)",
+    "class3": "Класс 3 (hu-)",
+    "class4": "Класс 4 (div-)",
+    "class5": "Класс 5 (su-)",
+    "class6": "Класс 6 (tud-)",
+    "class7": "Класс 7 (rudh-)",
+    "class8": "Класс 8 (tan-)",
+    "class9": "Класс 9 (krī-)",
+    "class10": "Класс 10 (cur-)",
+    "imperfect": "Имперфект",
+    "aorist": "Простой аорист",
+    "perfect": "Перфект",
+    "future": "Будущее",
+    "optative": "Оптатив",
+    "imperative": "Императив",
+    "causative": "Каузатив",
+    "passive": "Пассив",
+    "desiderative": "Дезидератив"
+  },
+  "verbNominals": {
+    "pres_part": "Причастия наст. времени",
+    "past_part": "Причастия прош. времени (-ta/-na)",
+    "absolutive": "Абсолютив (-tvā/-ya)",
+    "infinitive": "Инфинитив (-tum)",
+    "gerundive": "Герундив"
+  },
+  "sandhi": {
+    "rules": "Правила",
+    "exercises": "Упражнения на распознавание",
+    "vowel": "Гласное сандхи",
+    "consonant": "Согласное сандхи",
+    "visarga": "Висарга-сандхи",
+    "segmentation": "Активная сегментация"
+  },
+  "syntax": {
+    "adj_noun_agreement": "Согласование прил.+сущ.",
+    "subj_pred_agreement": "Согласование подл.+сказ.",
+    "case_roles": "Падежные роли в предложении",
+    "word_order": "Порядок слов (SOV)",
+    "complex_sentence": "Сложное предложение"
+  },
+  "writing": {
+    "alphabet": "Деванагари: алфавит",
+    "ligatures": "Лигатуры",
+    "transliteration": "Транслитерация IAST↔Devanagari",
+    "prosody": "Долгота гласных и просодия"
+  },
+  "catalog": {
+    "lexicon": "Лексика",
+    "texts": "Тексты"
+  },
+  "status": {
+    "planned": "скоро"
+  }
+}
