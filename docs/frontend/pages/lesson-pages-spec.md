@@ -31,16 +31,15 @@
 
 ### Элементы страницы
 
-**Шапка урока:**
-- Название урока (`titleRu` / `titleEn`)
-- Сложность (бейдж)
-- Кнопка **«Начать квиз»** → `/quiz/vocabulary/:slug`
+**Шапка урока (одна строка, `justify-content-between`):**
+- Слева — название урока (`titleRu` / `titleEn`) через `LessonHeader` (без бейджа сложности/Difficulty)
+- Справа — панель статистики `LessonStatsBadges` (три кликабельных бейджа) и кнопка **«Начать квиз»** → `/quiz/vocabulary/:slug`
 
-**LessonStatsBadges (отдельный компонент, подключается над `LessonHeader`):** заменяет прежний `ProgressBar` в шапке — три кликабельных бейджа, см. §2.1.
+**LessonStatsBadges (отдельный компонент, на одном уровне с заголовком):** заменяет прежний `ProgressBar` в шапке — три кликабельных бейджа, см. §2.1. Не имеет собственной `card`-обёртки — рендерится как inline `flex`-контейнер.
 
 ### 2.1. LessonStatsBadges
 
-Общий компонент для `VocabularyLessonPage` и `GrammarLessonPage`, подключается сверху страницы урока (над `LessonHeader`, вместо удалённого `ProgressBar`). Строится из `statusSummary: LessonStatusSummary` (см. §7) — отдельного запроса не требует, дублирует агрегаты, уже отдаваемые в `VocabularyLesson`/`GrammarLesson`.
+Общий компонент для `VocabularyLessonPage` и `GrammarLessonPage`, располагается на одном уровне с `LessonHeader` в одной строке (выровнен вправо). Строится из `statusSummary: LessonStatusSummary` (см. §7) — отдельного запроса не требует, дублирует агрегаты, уже отдаваемые в `VocabularyLesson`/`GrammarLesson`.
 
 **Бейджи:**
 
@@ -96,7 +95,7 @@
 
 ### Элементы страницы
 
-**Шапка урока:** аналогична VocabularyLessonPage.
+**Шапка урока:** идентична VocabularyLessonPage — заголовок слева, панель статистики + кнопка «Начать квиз» справа.
 
 **Таблица вопросов (`DataTable`):**
 
@@ -143,8 +142,8 @@ src/
 │   └── GrammarLessonPage.tsx
 └── components/
     └── lesson/
-        ├── LessonStatsBadges.tsx     ← НОВЫЙ: три кликабельных бейджа (см. §2.1), заменяет ProgressBar и LessonStatusSummary
-        ├── LessonHeader.tsx          ← общая шапка (без прогресс-бара), с кнопкой «Начать квиз»
+                ├── LessonStatsBadges.tsx     ← панель статистики: три кликабельных бейджа (см. §2.1), inline (без card-обёртки)
+        ├── LessonHeader.tsx          ← заголовок урока: titleRu + titleEn (без бейджа сложности, без кнопки)
         ├── WordStatusIcon.tsx        ← иконка статуса слова/вопроса
         ├── WordHistoryDialog.tsx     ← история ответов на слово
         └── QuestionHistoryDialog.tsx ← история ответов на вопрос
@@ -286,7 +285,7 @@ export interface WordAnswerHistory {
 ## 8. Acceptance Criteria
 
 - [ ] Клик на карточку квиза в QuizListPage ведёт на LessonPage, не на QuizPage
-- [ ] `LessonStatsBadges` отображает три бейджа (mastered/total, new, learning) над `LessonHeader`; `ProgressBar` в шапке урока отсутствует
+- [ ] `LessonStatsBadges` отображает три бейджа (mastered/total, new, learning) на одном уровне с заголовком урока (выровнены вправо); `ProgressBar` в шапке урока отсутствует; лейбл сложности (BEGINNER) отсутствует
 - [ ] Клик по каждому из трёх бейджей запускает или резюмирует квиз с соответствующим `statusFilter` (REVIEW/NEW/LEARNING) и переходит на страницу квиза
 - [ ] Бейдж с нулевым значением недоступен для клика
 - [ ] Иконки статуса корректно отображаются для всех трёх состояний

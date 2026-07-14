@@ -15,6 +15,7 @@ import sm.selflearn.samskrtam.quiz.model.QuizItemScore;
 import sm.selflearn.samskrtam.quiz.repository.QuizItemScoreRepository;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -95,7 +96,7 @@ public class GrammarProgressBuilder {
         }
     }
 
-    private Mono<GrammarQuestionProgress> buildGroupProgress(
+        private Mono<GrammarQuestionProgress> buildGroupProgress(
             LessonItemResponse lessonItem, VowelType vowelType,
             List<CaseEndingDto> caseEndings,
             Gender gender, DeclensionFormDto form,
@@ -113,9 +114,10 @@ public class GrammarProgressBuilder {
             return Mono.just(progressFactory.create(lessonItem, form, gender, caseEndings, 0));
         }
 
+        Instant now = Instant.now();
         return quizItemScoreRepository
                 .findByUserIdAndItemTypeAndExternalRefId(userId, ItemType.DECLENSION_FORM, externalRefId)
-                .map(itemScore -> progressFactory.create(lessonItem, form, gender, caseEndings, itemScore.getScore()))
+                .map(itemScore -> progressFactory.create(lessonItem, form, gender, caseEndings, itemScore, now))
                 .defaultIfEmpty(progressFactory.create(lessonItem, form, gender, caseEndings, 0));
     }
 
@@ -128,7 +130,7 @@ public class GrammarProgressBuilder {
 
     
 
-    private GrammarLesson emptyLesson(LessonItemResponse lessonItem) {
+        private GrammarLesson emptyLesson(LessonItemResponse lessonItem) {
         GrammarLesson lesson = new GrammarLesson();
         lesson.setLessonId(lessonItem.getId());
         lesson.setType(lessonItem.getLessonType() != null ? lessonItem.getLessonType().name() : null);
@@ -139,10 +141,11 @@ public class GrammarProgressBuilder {
         lesson.setLearnedQuestions(0);
         lesson.setProgressPercent(0f);
         lesson.setQuestions(Collections.emptyList());
+        lesson.setStatusSummary(new LessonStatusSummary(0, 0, 0, 0, 0));
         return lesson;
     }
 
-    private GrammarLesson assembleGrammarLesson(
+        private GrammarLesson assembleGrammarLesson(
             LessonItemResponse lessonItem, List<GrammarQuestionProgress> allGroups) {
         Map<UUID, GrammarQuestionProgress> byGroup = new LinkedHashMap<>();
         for (GrammarQuestionProgress p : allGroups) {
@@ -151,9 +154,23 @@ public class GrammarProgressBuilder {
                             ? existing : newVal);
         }
         List<GrammarQuestionProgress> deduplicated = new ArrayList<>(byGroup.values());
+
         int total = deduplicated.size();
-        int learned = (int) deduplicated.stream()
-                .filter(p -> WordStatus.MASTERED.equals(p.getStatus())).count();
+        int newCount = 0;
+        int learning = 0;
+        int mastered = 0;
+        int reviewDue = 0;
+
+        for (GrammarQuestionProgress q : deduplicated) {
+            switch (q.getStatus()) {
+                case NEW -> newCount++;
+                case LEARNING -> learning++;
+                case MASTERED -> mastered++;
+                case REVIEW -> reviewDue++;
+            }
+        }
+
+        int learned = mastered + reviewDue;
 
         GrammarLesson lesson = new GrammarLesson();
         lesson.setLessonId(lessonItem.getId());
@@ -165,6 +182,7 @@ public class GrammarProgressBuilder {
         lesson.setLearnedQuestions(learned);
         lesson.setProgressPercent(total > 0 ? (float) learned / total * 100f : 0f);
         lesson.setQuestions(deduplicated);
+        lesson.setStatusSummary(new LessonStatusSummary(total, newCount, learning, mastered, reviewDue));
         return lesson;
     }
 }

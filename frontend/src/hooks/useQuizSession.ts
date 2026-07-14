@@ -7,12 +7,13 @@ import {
   useQuizBySlug,
   useResumeQuizSession,
   useCompleteQuizSession,
-  useStartOrResumeQuizSessionWithFilters,
+    useStartOrResumeQuizSessionWithFilters,
+  useStartOrResumeWithStatusFilter,
 } from './useQuiz';
 import type { FilterParams } from '../api/quizApi';
 import { AnswerRequest, SessionQuestion, StartOrResumeResponse, LessonType } from '../types/quiz';
 
-export function useQuizSession(slug: string | undefined, sessionIdFromParams: string | undefined, filterParams?: FilterParams) {
+export function useQuizSession(slug: string | undefined, sessionIdFromParams: string | undefined, filterParams?: FilterParams, statusFilter?: string) {
   const navigate = useNavigate();
   const location = useLocation();
   const { i18n } = useTranslation();
@@ -37,8 +38,9 @@ export function useQuizSession(slug: string | undefined, sessionIdFromParams: st
     shouldFetchQuizSummary ? slug || '' : ''
   );
 
-  const startSessionMutation = useStartQuizSession();
+    const startSessionMutation = useStartQuizSession();
   const startFilteredSessionMutation = useStartOrResumeQuizSessionWithFilters();
+  const startStatusFilterSessionMutation = useStartOrResumeWithStatusFilter();
   const resumeSessionMutation = useResumeQuizSession();
   const submitAnswerMutation = useSubmitQuizAnswer();
   const completeSessionMutation = useCompleteQuizSession();
@@ -74,6 +76,22 @@ export function useQuizSession(slug: string | undefined, sessionIdFromParams: st
             onError: (err) => console.error('Failed to resume lesson session:', err),
           }
         );
+      } else if (statusFilter) {
+        // Сессия с фильтром по статусу (NEW/LEARNING/REVIEW)
+        startStatusFilterSessionMutation.mutate(
+          { quizId: fetchedQuizSummary.id, lessonType: fetchedQuizSummary.lessonType, statusFilter },
+          {
+            onSuccess: (data) => {
+              setSessionId(data.sessionId);
+              setQuestions(data.questions);
+              setCurrentQuestionIndex(data.currentQuestionIndex || 0);
+              setStartTime(Date.now());
+              setQuizSummaryData(data);
+              navigate(`/quiz/${fetchedQuizSummary.lessonType.toLowerCase()}/${fetchedQuizSummary.slug}/${data.sessionId}`, { replace: true });
+            },
+            onError: (err) => console.error('Failed to start status-filtered session:', err),
+          }
+        );
       } else if (filterParams && filterParams.filterScope) {
         // Отфильтрованная сессия по падежу/роду/числу
         startFilteredSessionMutation.mutate(
@@ -107,7 +125,7 @@ export function useQuizSession(slug: string | undefined, sessionIdFromParams: st
         );
       }
     }
-  }, [location.state, fetchedQuizSummary, sessionIdFromParams, startSessionMutation, startFilteredSessionMutation, resumeSessionMutation, hasAttemptedSessionLoad, navigate, location.pathname, filterParams]);
+  }, [location.state, fetchedQuizSummary, sessionIdFromParams, statusFilter, startSessionMutation, startFilteredSessionMutation, startStatusFilterSessionMutation, resumeSessionMutation, hasAttemptedSessionLoad, navigate, location.pathname, filterParams]);
 
   useEffect(() => {
     const allQuestionsAnswered = questions.length > 0 && currentQuestionIndex >= questions.length;
@@ -197,17 +215,19 @@ export function useQuizSession(slug: string | undefined, sessionIdFromParams: st
     quizSummaryData,
     selectedOptionId,
     isSubmittingAnswer: submitAnswerMutation.isPending,
-    isLoading:
+        isLoading:
       isQuizSummaryLoading ||
       startSessionMutation.isPending ||
       startFilteredSessionMutation.isPending ||
+      startStatusFilterSessionMutation.isPending ||
       resumeSessionMutation.isPending ||
       completeSessionMutation.isPending ||
       !sessionId,
-    isError:
+        isError:
       isQuizSummaryError ||
       startSessionMutation.isError ||
       startFilteredSessionMutation.isError ||
+      startStatusFilterSessionMutation.isError ||
       resumeSessionMutation.isError ||
       completeSessionMutation.isError,
     errorMessage:

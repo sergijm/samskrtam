@@ -177,6 +177,13 @@ content-service.
 
 - [ ] Импорт вопросов и слов из CSV для массового добавления?
 - [ ] Кэшировать ли ответ `generate-quiz-data`/данные для дистракторов (`getDeclensionForms`) — актуально только для распределения нагрузки на content-service при большом числе одновременных `start`/`resume`; ответ `generate-quiz-data` теперь не переиспользуется (вызывается один раз на старте, дальше quiz-service хранит сам). Отложено до появления реальной нагрузки (см. quiz-service.md §3).
+- [ ] **Личные списки слов** (не реализовано) — новые сущности
+      `content.user_word_lists (id, userId, title, createdAt)` и
+      `content.user_word_list_items (listId, stemId|conjugationId, addedAt)`,
+      плюс режим выбора основ квиза "из списка пользователя" в
+      `DeclensionQuizGeneratorService`. Требования и открытые вопросы по
+      "сырым" элементам списка (слово без связи с `declension_stems`) —
+      см. [frontend/information-architecture.md §3.1](../frontend/information-architecture/02-catalog.md).
 
 ---
 

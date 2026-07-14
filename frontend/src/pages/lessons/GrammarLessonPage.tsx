@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useGrammarLesson } from '../../hooks/useLessons';
 
 import { LessonHeader } from '../../components/lesson/LessonHeader';
-import { LessonStatusSummary } from '../../components/lesson/LessonStatusSummary';
+import { LessonStatsBadges } from '../../components/lesson/LessonStatsBadges';
 import { WordStatusIcon } from '../../components/lesson/WordStatusIcon';
 import { QuestionHistoryDialog } from '../../components/lesson/QuestionHistoryDialog';
 import { DataTable } from 'primereact/datatable';
@@ -11,7 +11,6 @@ import { Column } from 'primereact/column';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { Button } from 'primereact/button';
 import { ProgressBar } from 'primereact/progressbar';
-import { Tag } from 'primereact/tag';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from 'primereact/skeleton';
 import { useTranslation } from 'react-i18next';
@@ -78,18 +77,12 @@ const GrammarLessonPage = () => {
   };
   
     const handleStartQuiz = () => {
-    if (lesson) {
-      navigate(`/quiz/grammar/${slug}`);
-    }
-  };
+      if (lesson) {
+        navigate(`/quiz/grammar/${slug}`);
+      }
+    };
 
-  const handleReviewQuiz = () => {
-    if (lesson) {
-      navigate(`/quiz/grammar/${slug}?filterScope=REVIEW_DUE`);
-    }
-  };
-
-  const handleSort = (field: string) => {
+    const handleSort = (field: string) => {
     if (sortField === field) {
       setSortOrder(sortOrder === 1 ? -1 : 1);
     } else {
@@ -134,32 +127,18 @@ const GrammarLessonPage = () => {
           <Skeleton width="100%" height="200px" />
         </div>
       ) : (
-        <>
-                    <LessonHeader 
-            title={lesson.titleRu} 
-            titleEn={lesson.titleEn}
-            difficulty={lesson.difficulty}
-            progress={lesson.progressPercent}
-            total={lesson.totalQuestions}
-            learned={lesson.learnedQuestions}
-          />
-
-          <div className="mt-1 mb-3">
-            <LessonStatusSummary statusSummary={lesson.statusSummary} total={lesson.totalQuestions} learned={lesson.learnedQuestions} />
-          </div>
-          
-          <div className="p-4 mt-4">
-            <div className="flex justify-content-between align-items-center mb-4">
-              <h3>Вопросы урока</h3>
-              <div className="flex gap-2">
-                {lesson.statusSummary && lesson.statusSummary.reviewDue > 0 && (
-                  <Button 
-                    label="Повторить"
-                    icon="pi pi-refresh"
-                    className="p-button-outlined p-button-warning"
-                    onClick={handleReviewQuiz}
-                  />
-                )}
+                <>
+                    <div className="card mb-3">
+            <div className="flex flex-wrap gap-3 align-items-center justify-content-between">
+              <LessonHeader 
+                title={lesson.titleRu} 
+                titleEn={lesson.titleEn}
+              />
+              <div className="flex flex-wrap gap-3 align-items-center">
+                <LessonStatsBadges 
+                  statusSummary={lesson.statusSummary} 
+                  quizPath={`/quiz/grammar/${slug}`}
+                />
                 <Button 
                   label="Начать квиз" 
                   icon="pi pi-play"
@@ -167,6 +146,12 @@ const GrammarLessonPage = () => {
                   disabled={lesson.totalQuestions === 0}
                 />
               </div>
+            </div>
+          </div>
+          
+          <div className="p-4 mt-4">
+            <div className="flex justify-content-between align-items-center mb-4">
+              <h3>Вопросы урока</h3>
             </div>
             
                         <TabView activeIndex={activeTab} onTabChange={(e) => setActiveTab(e.index)}>

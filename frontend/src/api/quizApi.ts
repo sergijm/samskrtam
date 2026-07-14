@@ -150,6 +150,21 @@ export const quizApi = {
     });
   },
 
+    startOrResumeWithStatusFilter: (
+    lessonId: string,
+    lessonType: LessonType,
+    userLocale: string,
+    statusFilter: string,
+  ) => {
+    const slug = lessonType.toLowerCase();
+    const url = `/api/v1/quiz/${slug}/sessions/start-or-resume`;
+    const params: Record<string, string> = { lessonId, statusFilter };
+    return api.post<StartOrResumeResponse>(url, null, {
+      params,
+      headers: { 'X-User-Locale': userLocale },
+    });
+  },
+
   getAllSandhiRules: () => {
     return api.get<SandhiRuleDto[]>('/api/v1/eamenau/sandhi-rules');
   },

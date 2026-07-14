@@ -15,11 +15,12 @@ const QuizPage = () => {
   const { slug, sessionId: sessionIdFromParams } = useParams<{ slug?: string; sessionId?: string }>();
   const [searchParams] = useSearchParams();
 
-  // Считываем фильтры из query-параметров URL
+    // Считываем фильтры из query-параметров URL
   const filterScope = searchParams.get('filterScope') as FilterParams['filterScope'] | null;
   const filterCaseType = searchParams.get('filterCaseType') || undefined;
   const filterNumberType = searchParams.get('filterNumberType') || undefined;
   const filterGender = searchParams.get('filterGender') || undefined;
+  const statusFilter = searchParams.get('statusFilter') || undefined;
 
   const filterParams: FilterParams | undefined = filterScope
     ? {
@@ -45,7 +46,7 @@ const QuizPage = () => {
     handleSubmitAnswer,
     handleNextQuestion,
     hasAttemptedSessionLoad,
-  } = useQuizSession(slug, sessionIdFromParams, filterParams);
+  } = useQuizSession(slug, sessionIdFromParams, filterParams, statusFilter);
 
   if (isLoading) {
     return (

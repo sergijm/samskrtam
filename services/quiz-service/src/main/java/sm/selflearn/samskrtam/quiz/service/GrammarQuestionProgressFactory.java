@@ -9,8 +9,10 @@ import sm.selflearn.samskrtam.content.model.Gender;
 import sm.selflearn.samskrtam.quiz.constants.ProgressConstants;
 import sm.selflearn.samskrtam.quiz.dto.GrammarQuestionProgress;
 import sm.selflearn.samskrtam.quiz.dto.WordStatus;
+import sm.selflearn.samskrtam.quiz.model.QuizItemScore;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,7 +27,7 @@ public class GrammarQuestionProgressFactory {
     private final CaseEndingMatcher caseEndingMatcher;
 
     /**
-     * Создаёт {@link GrammarQuestionProgress} с заданными параметрами.
+     * Создаёт {@link GrammarQuestionProgress} с заданным score (без REVIEW).
      */
     public GrammarQuestionProgress create(
             LessonItemResponse lessonItem,
@@ -33,6 +35,31 @@ public class GrammarQuestionProgressFactory {
             Gender gender,
             List<CaseEndingDto> caseEndings,
             int score) {
+        return build(lessonItem, form, gender, caseEndings, score, null);
+    }
+
+    /**
+     * Создаёт {@link GrammarQuestionProgress} из {@link QuizItemScore} (с учётом REVIEW).
+     */
+    public GrammarQuestionProgress create(
+            LessonItemResponse lessonItem,
+            DeclensionFormDto form,
+            Gender gender,
+            List<CaseEndingDto> caseEndings,
+            QuizItemScore scoreEntity,
+            Instant now) {
+        WordStatus status = resolveGrammarStatusFromEntity(scoreEntity, now);
+        int score = scoreEntity != null ? scoreEntity.getScore() : 0;
+        return build(lessonItem, form, gender, caseEndings, score, status);
+    }
+
+    private GrammarQuestionProgress build(
+            LessonItemResponse lessonItem,
+            DeclensionFormDto form,
+            Gender gender,
+            List<CaseEndingDto> caseEndings,
+            int score,
+            WordStatus forcedStatus) {
 
         String genderStr = gender != null ? gender.name() : "UNSPECIFIED";
         UUID questionId = deterministicId(genderStr, form.getCaseType().name(), form.getNumberType().name());
@@ -42,7 +69,7 @@ public class GrammarQuestionProgressFactory {
         p.setTextRu(form.getCaseType().getRuName() + ", " + form.getNumberType().getRuName());
         p.setTextEn(form.getCaseType().getEnName() + ", " + form.getNumberType().getEnName());
         p.setScore(score);
-        p.setStatus(resolveGrammarStatus(score));
+        p.setStatus(forcedStatus != null ? forcedStatus : resolveGrammarStatus(score));
 
         p.setCaseType(form.getCaseType().name());
         p.setCaseRu(form.getCaseType().getRuName());
@@ -67,7 +94,6 @@ public class GrammarQuestionProgressFactory {
         return UUID.nameUUIDFromBytes(
                 (gender + ":" + caseType + ":" + numberType).getBytes(StandardCharsets.UTF_8));
     }
-
     /**
      * Вычисляет статус по хранимому score.
      * Используется для GrammarQuestionProgress, где статус определяется по среднему score.
@@ -78,6 +104,19 @@ public class GrammarQuestionProgressFactory {
     private WordStatus resolveGrammarStatus(int score) {
         if (score == 0) return WordStatus.NEW;
         if (score < ProgressConstants.MASTERED_LOWER_THRESHOLD) return WordStatus.LEARNING;
+        return WordStatus.MASTERED;
+    }
+
+    /**
+     * Вычисляет статус из QuizItemScore с учётом nextReviewAt.
+     */
+    private WordStatus resolveGrammarStatusFromEntity(QuizItemScore itemScore, Instant now) {
+        if (itemScore == null) return WordStatus.NEW;
+        int score = itemScore.getScore();
+        if (score < ProgressConstants.MASTERED_LOWER_THRESHOLD) return WordStatus.LEARNING;
+        if (itemScore.getNextReviewAt() != null && !itemScore.getNextReviewAt().isAfter(now)) {
+            return WordStatus.REVIEW;
+        }
         return WordStatus.MASTERED;
     }
 }

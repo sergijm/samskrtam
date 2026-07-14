@@ -90,6 +90,20 @@ export const useStartOrResumeQuizSessionWithFilters = () => {
   });
 };
 
+export const useStartOrResumeWithStatusFilter = () => {
+  const { locale } = useLocaleStore();
+  return useMutation<
+    StartOrResumeResponse,
+    Error,
+    { quizId: string; lessonType: LessonType; statusFilter: string }
+  >({
+    mutationFn: async ({ quizId, lessonType, statusFilter }) => {
+      const response = await quizApi.startOrResumeWithStatusFilter(quizId, lessonType, locale, statusFilter);
+      return response.data;
+    },
+  });
+};
+
 export const useResumeQuizSession = () => {
   const { locale } = useLocaleStore();
   return useMutation<

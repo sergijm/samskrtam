@@ -140,6 +140,7 @@ graph TD
 | [frontend/user-frontend.md](./frontend/user-frontend.md) | Пользователи, группы, настройки |
 | [frontend/feature-flags-frontend.md](./frontend/feature-flags-frontend.md) | UI управления feature flags (только ADMIN) |
 | [frontend/pages/lesson-pages-spec.md](./frontend/pages/lesson-pages-spec.md) | Страницы уроков (VocabularyLessonPage, GrammarLessonPage) |
+| [frontend/information-architecture.md](./frontend/information-architecture.md) | UX и IA: дерево курикулума, каталог (словарь/тексты), онбординг, Dashboard, карта прогресса, источники текстов |
 
 ---
 
