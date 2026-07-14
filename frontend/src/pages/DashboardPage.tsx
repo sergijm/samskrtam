@@ -1,62 +1,40 @@
 import React from 'react';
-import { Card } from 'primereact/card';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useMe } from '../hooks/useUser';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
+import { useMe } from '../hooks/useUser';
+import { useDashboardSummary } from '../hooks/useDashboard';
+import ContinueCta from '../components/dashboard/ContinueCta';
+import StreakProgress from '../components/dashboard/StreakProgress';
+import WeakSpots from '../components/dashboard/WeakSpots';
+import ReadingPath from '../components/dashboard/ReadingPath';
+import ProgressMapLink from '../components/dashboard/ProgressMapLink';
+import CategoryTiles from '../components/dashboard/CategoryTiles';
 
+/**
+ * DashboardPage — «командный центр» (§5 IA).
+ *
+ * Структура:
+ *   1. Главный CTA «Продолжить» (ContinueCta)
+ *   2. Streak / общий прогресс (StreakProgress)
+ *   3. Слабые места (WeakSpots)
+ *   4. Путь к чтению (ReadingPath)
+ *   5. Ссылка на карту прогресса (ProgressMapLink)
+ *   6. Плитки категорий внизу (CategoryTiles)
+ *
+ * Пока backend-эндпоинты не готовы — каждый блок показывает «скоро»/skeleton
+ * вместо фиктивных данных.
+ */
 export default function DashboardPage() {
   const { t } = useTranslation();
-  const { data: user, isLoading, isError, error } = useMe();
+  const { data: user, isLoading: userLoading, isError: userError, error: userErr } = useMe();
+  const {
+    data: dashboardSummary,
+    isLoading: dashboardLoading,
+    isError: dashboardError,
+  } = useDashboardSummary();
 
-  console.log('DashboardPage: Rendering...', { isLoading, isError, user });
-
-  const learningModules = [
-    { title: t('nav.grammar'), description: t('dashboard.grammarDescription'), icon: 'pi pi-book', link: '/grammar' },
-    { title: t('nav.vocabulary'), description: t('dashboard.vocabularyDescription'), icon: 'pi pi-book', link: '/quizzes/vocabulary' },
-    { title: t('nav.sangraha'), description: t('dashboard.sangrahaDescription'), icon: 'pi pi-bookmark', link: '/sangraha' },
-    { title: t('nav.dictionary'), description: t('dashboard.dictionaryDescription'), icon: 'pi pi-book', link: '/dictionary' },
-  ];
-
-  const progressAndActivity = [
-    { title: t('nav.statistics'), description: t('dashboard.statisticsDescription'), icon: 'pi pi-chart-line', link: '/statistics' },
-    { title: t('nav.leaderboard'), description: t('dashboard.leaderboardDescription'), icon: 'pi pi-trophy', link: '/leaderboard' },
-    { title: t('userProfile.quizSessions'), description: t('dashboard.quizSessionsDescription'), icon: 'pi pi-history', link: `/quiz-sessions` },
-  ];
-
-    const administration = [
-    { title: t('nav.admin'), description: t('dashboard.adminDescription'), icon: 'pi pi-shield', link: '/admin', colClass: 'col-12 sm:col-6 lg:col-4' },
-  ];
-
-  const renderRow = (items: any[]) => (
-    <div className="grid justify-content-center w-full mb-4">
-      {items.map((item, index) => (
-        <div key={index} className={`${item.colClass || 'col-12 sm:col-6 lg:col-3'} p-2 flex`}>
-          <Link to={item.link} className="no-underline h-full flex w-full">
-                        <Card
-              title={item.title}
-              subTitle={item.description}
-              className="dashboard-card flex flex-column align-items-center justify-content-between text-center h-full cursor-pointer hover:shadow-8 transition-all transition-duration-200 w-full"
-                            pt={{
-                              body: { className: 'flex-grow-1 flex flex-column' },
-                              content: { className: 'flex-grow-1 flex flex-column' },
-                              title: { style: { overflowWrap: 'break-word', wordBreak: 'break-word' } },
-                              subtitle: { style: { overflowWrap: 'break-word', wordBreak: 'break-word' } },
-                            }}
-            >
-              <div className="flex flex-column align-items-center justify-content-end flex-grow-1">
-                <i className={`${item.icon} text-5xl mb-3`} />
-              </div>
-            </Card>
-          </Link>
-        </div>
-      ))}
-    </div>
-  );
-
-  if (isLoading) {
-    console.log('DashboardPage: Showing loading spinner.');
+  if (userLoading) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
         <ProgressSpinner />
@@ -64,25 +42,51 @@ export default function DashboardPage() {
     );
   }
 
-  if (isError) {
-    console.log('DashboardPage: Showing error message.');
+  if (userError) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
-        <Message severity="error" text={t('userProfile.errorLoadingUser', { message: error?.message })} />
+        <Message severity="error" text={t('userProfile.errorLoadingUser', { message: (userErr as Error)?.message })} />
       </div>
     );
   }
 
-  console.log('DashboardPage: Rendering content.');
   return (
-    <div className="flex flex-column align-items-center p-4">
-      <h1 className="text-center mb-5">{t('nav.dashboard')}</h1>
-      <div className="w-full" style={{ maxWidth: '1600px' }}>
-        {renderRow(learningModules)}
-        {renderRow(progressAndActivity)}
-        {user?.roles.includes('ADMIN') && renderRow(administration)}
-      </div>
+    <div className="dashboard-page p-3 md:p-4">
+      {/* Главный CTA «Продолжить» — §5.1 */}
+      <ContinueCta
+        data={dashboardSummary?.continueCta}
+        isLoading={dashboardLoading}
+        isError={dashboardError}
+      />
+
+      {/* Streak / общий прогресс — §5.2 */}
+      <StreakProgress
+        data={dashboardSummary?.streakProgress}
+        isLoading={dashboardLoading}
+        isError={dashboardError}
+      />
+
+      {/* Слабые места — §5.3 */}
+      <WeakSpots
+        data={dashboardSummary?.weakSpots}
+        isLoading={dashboardLoading}
+        isError={dashboardError}
+      />
+
+      {/* Путь к чтению — §5.4 */}
+      <ReadingPath
+        data={dashboardSummary?.readingPath}
+        isLoading={dashboardLoading}
+        isError={dashboardError}
+      />
+
+      {/* Ссылка на карту прогресса — §5.5 */}
+      <ProgressMapLink />
+
+      {/* Плитки категорий внизу — §5.6 */}
+      <CategoryTiles />
     </div>
   );
 }
+
 

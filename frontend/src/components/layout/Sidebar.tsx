@@ -57,6 +57,7 @@ const Sidebar: React.FC = () => {
       icon: "pi pi-home",
       data: { route: "/dashboard", status: "available" as const, isPlannedLeaf: false },
       leaf: true,
+      className: "curriculum-tree-leaf-highlighted",
     });
 
     for (const node of curriculumTree) {

@@ -134,9 +134,19 @@ html {
   color: var(--primary-color, #6366f1);
 }
 
-/* Кликабельные листья — pointer */
+/* Кликабельные листья — pointer, без выделения цветом/жирностью */
 .curriculum-tree-leaf > .p-treenode-content {
   cursor: pointer;
+}
+
+/* Выделенный лист (Главная) — жирный акцентный лейбл как у веток */
+.curriculum-tree-leaf-highlighted > .p-treenode-content {
+  cursor: pointer;
+}
+
+.curriculum-tree-leaf-highlighted > .p-treenode-content .p-treenode-label {
+  font-weight: 600;
+  color: var(--primary-color, #6366f1);
 }
 
 /* Planned (недоступные) узлы — визуально приглушены */

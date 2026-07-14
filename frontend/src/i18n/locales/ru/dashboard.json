@@ -8,9 +8,42 @@
     "adminDescription": "Доступ к административным инструментам и функциям.",
     "grammarDescription": "Грамматика: склонения и спряжения.",
     "vocabularyDescription": "Квизы на знание лексики.",
-        "quizSessionsDescription": "Просмотр прошлых и текущих сессий квизов.",
+    "quizSessionsDescription": "Просмотр прошлых и текущих сессий квизов.",
     "sangrahaDescription": "Изучайте санскритские тексты с пословным разбором.",
     "quizProgress": "Прогресс: {{answered}}/{{total}}",
-    "noQuizInProgress": ""
+    "noQuizInProgress": "",
+
+    "_comment_dashboard_v2": "=== Dashboard V2 blocks (§5 IA) ===",
+
+    "continueSubtitle": "Следующий шаг",
+    "continueLabel": "Продолжить обучение",
+    "continueSrsLabel": "{{count}} карточек на повторение сегодня",
+    "continueButton": "Продолжить",
+    "continueComingSoon": "Скоро",
+    "continueComingSoonDesc": "Ваш следующий шаг появится здесь, как только вы начнёте обучение.",
+
+    "streakCurrent": "Дней подряд",
+    "streakLongest": "Рекорд",
+    "streakFormsMastered": "Форм освоено",
+    "streakComingSoon": "Отслеживание серии занятий будет доступно позже.",
+
+    "weakSpotsTitle": "Слабые места",
+    "weakSpotsAttempts": "попыток",
+    "weakSpotsPractice": "Тренировать",
+    "weakSpotsComingSoon": "Анализ слабых мест будет доступен позже.",
+    "weakSpotsNone": "Слабых мест не найдено — отличная работа!",
+
+    "readingPathTitle": "Путь к чтению",
+    "readingPathCoverage": "Охват лексики",
+    "readingPathOpenText": "Открыть текст",
+    "readingPathComingSoon": "Скоро",
+    "readingPathComingSoonDesc": "Отслеживайте готовность к чтению настоящих санскритских текстов.",
+
+    "progressMapTitle": "Карта прогресса",
+    "progressMapDesc": "Полноэкранная диагностика по всем направлениям (радар-диаграмма).",
+    "progressMapButton": "Открыть карту прогресса",
+    "progressMapComingSoon": "Карта прогресса появится в следующем обновлении.",
+
+    "categoryTilesTitle": "Разделы"
   }
 }

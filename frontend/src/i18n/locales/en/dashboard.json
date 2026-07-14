@@ -8,9 +8,42 @@
     "adminDescription": "Access administrative tools and features.",
     "grammarDescription": "Grammar quizzes: declensions and conjugations.",
     "vocabularyDescription": "Quizzes on vocabulary knowledge.",
-        "quizSessionsDescription": "View your past and ongoing quiz sessions.",
+    "quizSessionsDescription": "View your past and ongoing quiz sessions.",
     "sangrahaDescription": "Explore Sanskrit texts with word-by-word analysis.",
     "quizProgress": "Progress: {{answered}}/{{total}} questions",
-    "noQuizInProgress": ""
+    "noQuizInProgress": "",
+
+    "_comment_dashboard_v2": "=== Dashboard V2 blocks (§5 IA) ===",
+
+    "continueSubtitle": "Your next step",
+    "continueLabel": "Resume learning",
+    "continueSrsLabel": "{{count}} cards due for review today",
+    "continueButton": "Continue",
+    "continueComingSoon": "Coming soon",
+    "continueComingSoonDesc": "Your personalized next step will appear here once you start learning.",
+
+    "streakCurrent": "Current streak",
+    "streakLongest": "Longest streak",
+    "streakFormsMastered": "Forms mastered",
+    "streakComingSoon": "Streak tracking will be available soon.",
+
+    "weakSpotsTitle": "Weak spots",
+    "weakSpotsAttempts": "attempts",
+    "weakSpotsPractice": "Practice",
+    "weakSpotsComingSoon": "Weak spot analysis will be available soon.",
+    "weakSpotsNone": "No weak spots found — keep it up!",
+
+    "readingPathTitle": "Path to reading",
+    "readingPathCoverage": "Vocabulary coverage",
+    "readingPathOpenText": "Open text",
+    "readingPathComingSoon": "Coming soon",
+    "readingPathComingSoonDesc": "Track your readiness to read real Sanskrit texts.",
+
+    "progressMapTitle": "Progress map",
+    "progressMapDesc": "Full-screen diagnostic radar chart across all skill areas.",
+    "progressMapButton": "Open progress map",
+    "progressMapComingSoon": "Progress map will be available in a future update.",
+
+    "categoryTilesTitle": "Explore"
   }
 }
