@@ -1,14 +1,14 @@
 import api from './axios';
-import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, LessonType, QuizSessionSummary, AnswerHistory, QuizProgress, ResumeSessionResponse, StartOrResumeResponse, LessonListResponse } from '../types/quiz';
-import { PaginatedResponse } from '../types/common';
+import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, LessonType, QuizSessionSummary, AnswerHistory, QuizProgress, ResumeSessionResponse, StartOrResumeResponse, LessonListResponse, PaginatedResponse } from '../types/quiz';
+import { SandhiRuleDto } from '../types/content';
 
-export type FilterScope = 'CASE_ONLY' | 'CASE_NUMBER_GENDER';
+export type FilterScope = 'CASE_ONLY' | 'NUMBER_ONLY' | 'CASE_NUMBER_GENDER';
 
 export interface FilterParams {
-  filterScope?: 'CASE_ONLY' | 'CASE_NUMBER_GENDER';
-  filterCaseType?: string;
-  filterNumberType?: string;
-  filterGender?: string;
+  filterScope?: FilterScope;
+  filterCaseTypes?: string;      // comma-separated caseType values
+  filterNumberTypes?: string;    // comma-separated numberType values
+  filterCombinations?: string;   // comma-separated "caseType:numberType:gender" triples
 }
 
 export const quizApi = {
@@ -43,37 +43,37 @@ export const quizApi = {
     });
   },
 
-  startOrResumeFilteredSession: (
+    startOrResumeFilteredSession: (
     lessonId: string,
     userLocale: string,
     filterScope: FilterScope,
-    filterCaseType: string,
-    filterNumberType?: string,
-    filterGender?: string
+    filterCaseTypes: string,
+    filterNumberTypes?: string,
+    filterCombinations?: string
   ) => {
     const slug = 'declensions';
     const url = `/api/v1/quiz/${slug}/sessions/start-or-resume`;
     const params: Record<string, string> = {
       lessonId,
       filterScope,
-      filterCaseType,
+      filterCaseTypes,
     };
-    if (filterNumberType) params.filterNumberType = filterNumberType;
-    if (filterGender) params.filterGender = filterGender;
+    if (filterNumberTypes) params.filterNumberTypes = filterNumberTypes;
+    if (filterCombinations) params.filterCombinations = filterCombinations;
     return api.post<StartOrResumeResponse>(url, null, {
       params,
       headers: { 'X-User-Locale': userLocale },
     });
   },
 
-  startOrResumeSessionWithFilters: (quizId: string, lessonType: LessonType, userLocale: string, filters: FilterParams) => {
+    startOrResumeSessionWithFilters: (quizId: string, lessonType: LessonType, userLocale: string, filters: FilterParams) => {
     const slug = lessonType.toLowerCase();
     const url = `/api/v1/quiz/${slug}/sessions/start-or-resume`;
     const params: Record<string, string> = { lessonId: quizId };
     if (filters.filterScope) params.filterScope = filters.filterScope;
-    if (filters.filterCaseType) params.filterCaseType = filters.filterCaseType;
-    if (filters.filterNumberType) params.filterNumberType = filters.filterNumberType;
-    if (filters.filterGender) params.filterGender = filters.filterGender;
+    if (filters.filterCaseTypes) params.filterCaseTypes = filters.filterCaseTypes;
+    if (filters.filterNumberTypes) params.filterNumberTypes = filters.filterNumberTypes;
+    if (filters.filterCombinations) params.filterCombinations = filters.filterCombinations;
     return api.post<StartOrResumeResponse>(url, null, {
         params,
       headers: { 'X-User-Locale': userLocale },
@@ -162,6 +162,13 @@ export const quizApi = {
     return api.post<StartOrResumeResponse>(url, null, {
       params,
       headers: { 'X-User-Locale': userLocale },
+    });
+  },
+
+    // Get sessions for a specific lesson (by quizId), used in SessionsTab
+  getLessonSessions: (quizId: string, userId: string, page: number = 0, size: number = 20) => {
+    return api.get<PaginatedResponse<QuizSessionSummary>>('/api/v1/quiz-sessions', {
+      params: { userId, quizId, page, size, sortBy: 'startedAt', sortDirection: 'desc' },
     });
   },
 

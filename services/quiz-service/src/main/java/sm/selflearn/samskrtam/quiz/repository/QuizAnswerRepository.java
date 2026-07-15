@@ -91,7 +91,11 @@ public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer,
               AND qs.user_id = :userId
               AND qs.lesson_id = :lessonId
             """)
-    Mono<Long> countGrammarHistory(
+        Mono<Long> countGrammarHistory(
             String caseType, String numberType, String gender, UUID userId, UUID lessonId);
+
+    /** Count correct answers for a specific session. */
+    @Query("SELECT CAST(COUNT(*) AS BIGINT) FROM quiz.quiz_answers WHERE session_id = :sessionId AND is_correct = true")
+    Mono<Long> countCorrectAnswersBySessionId(UUID sessionId);
 }
 

@@ -27,13 +27,15 @@
     "filterByQuizType": "Фильтр по типу квиза",
     "filterByStatus": "Фильтр по статусу",
     "viewDetails": "Посмотреть детали",
-    "correct": "Верно",
+        "correct": "Верно",
     "incorrect": "Неверно",
     "actions": "Действия",
     "back": "Назад",
     "continue": "Продолжить",
     "previous": "Назад",
-    "next": "Вперед"
+    "next": "Вперед",
+    "startQuiz": "Начать квиз",
+    "errorLoadingLesson": "Ошибка загрузки урока"
   },
   "validation": {
     "usernameRequired": "Требуется Email или логин.",

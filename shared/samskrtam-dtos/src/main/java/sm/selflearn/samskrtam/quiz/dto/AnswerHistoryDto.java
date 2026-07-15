@@ -10,12 +10,13 @@ import java.util.UUID;
 @Builder
 public class AnswerHistoryDto {
     UUID questionId;
+    int questionNumber;
     String questionText;
     String selectedAnswerIast;
     String correctOptionIast;
     Boolean isCorrect;
     Integer responseTimeMs;
     Instant answeredAt;
-    String explanationRu; // New field
-    String explanationEn; // New field
+    String explanationRu;
+    String explanationEn;
 }

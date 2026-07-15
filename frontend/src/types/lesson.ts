@@ -44,7 +44,7 @@ export interface LessonStatusSummary {
 }
 
 export interface VocabularyLesson {
-  quizId:           string;
+  lessonId:         string;
   slug:             string;
   titleRu:          string;
   titleEn:          string;

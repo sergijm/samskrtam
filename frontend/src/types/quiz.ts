@@ -1,25 +1,11 @@
-// Все типы как enum (доступны и во время компиляции, и во время выполнения)
-export enum LessonType {
-    DECLENSIONS = 'DECLENSIONS',
-    CONJUGATIONS = 'CONJUGATIONS',
-    VOCABULARY = 'VOCABULARY',
-    VOCABULARY_BASIC = 'VOCABULARY_BASIC',
-    VOCABULARY_TEXTS = 'VOCABULARY_TEXTS',
-}
+import type { LessonType } from './quizEnums';
+import { Difficulty } from './quizEnums';
 
-export enum Difficulty {
-    BEGINNER = 'BEGINNER',
-    INTERMEDIATE = 'INTERMEDIATE',
-    ADVANCED = 'ADVANCED',
-}
+// Re-exports from split files (so consumers don't break)
+export { LessonType, Difficulty, SessionStatus, isDeclensionsQuiz, isVocabularyQuiz, getQuizCategory } from './quizEnums';
+export type { QuizSessionSummary, AnswerHistory, QuizProgress, PaginatedResponse } from './quizSession';
 
-export enum SessionStatus {
-    IN_PROGRESS = 'IN_PROGRESS',
-    COMPLETED = 'COMPLETED',
-    ABANDONED = 'ABANDONED',
-}
-
-
+/* ═══════════════ core quiz interfaces ═══════════════ */
 export interface QuizListItem {
     id: string;
     title: string;
@@ -31,7 +17,7 @@ export interface QuizListItem {
     lessonType: LessonType;
     slug: string;
     totalQuestions: number;
-    wordCount: number; // New field for word count
+    wordCount: number;
 }
 
 export interface QuizSummaryDto {
@@ -112,7 +98,7 @@ export interface AnswerRequest {
 
 export interface AnswerResponse {
     isCorrect: boolean;
-  correctOptionId: string;
+    correctOptionId: string;
     correctAnswerText: string;
     explanationRu: string;
     explanationEn: string;
@@ -120,64 +106,15 @@ export interface AnswerResponse {
     totalQuestions: number;
 }
 
-export interface QuizSummary {
-  id:         string;
-  titleRu:    string;
-  titleEn:    string;
-  lessonType:   LessonType;
-  difficulty: Difficulty;
-  bestScore?: number;
-}
-
-export interface QuizSession {
-  sessionId:  string;
-  quizId:     string;
-  questions:  SessionQuestion[];
-}
-
-
-export interface AnswerResult {
-  isCorrect:       boolean;
-  correctOptionId: string;
-  explanation:     string;
-  questionNumber:  number;
-  totalQuestions:  number;
-}
-// Helper functions to check quiz types (similar to Java enum methods)
-export const isDeclensionsQuiz = (lessonType: LessonType): boolean => {
-  return [
-    'DECLENSIONS',
-  ].includes(lessonType);
-};
-
 export interface LessonListResponse {
     lessons: LessonItemDto[];
 }
 
 export interface LessonItemDto extends QuizListItem {
-    totalWordsOwn: number;
+        totalWordsOwn: number;
     learnedWords: number;
 }
 
-export const isVocabularyQuiz = (lessonType: LessonType): boolean => {
-  return [
-    'VOCABULARY',
-    'VOCABULARY_BASIC',
-    'VOCABULARY_TEXTS'
-  ].includes(lessonType);
-};
 
-// Alternative approach with more specific type checking
-export const getQuizCategory = (lessonType: LessonType): 'declensions' | 'conjugations' | 'vocabulary' | 'other' => {
-  if (isDeclensionsQuiz(lessonType)) {
-    return 'declensions';
-  }
-  if (isVocabularyQuiz(lessonType)) {
-    return 'vocabulary';
-  }
-  if (lessonType === 'CONJUGATIONS') {
-    return 'conjugations';
-  }
-  return 'other';
-};
+
 

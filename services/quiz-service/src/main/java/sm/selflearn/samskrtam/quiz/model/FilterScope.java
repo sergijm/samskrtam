@@ -2,18 +2,24 @@ package sm.selflearn.samskrtam.quiz.model;
 
 /**
  * Scope of filtering applied to a quiz session.
- * See: docs/quizzes/quiz-declension.md §3.4
+ * See: docs/services/quiz-service/quiz-declension.md §3.4
  */
 public enum FilterScope {
     /**
      * Filter only by case type (from the "By Case" tab).
-     * filterNumberType and filterGender are null.
+     * filterCaseTypes is non-empty, filterNumberTypes/filterCombinations are null.
      */
     CASE_ONLY,
 
     /**
-     * Detailed filter by case type, number type, and gender (from the "Details" tab).
-     * filterNumberType and filterGender are both set.
+     * Filter only by number type (from the "By Number" tab).
+     * filterNumberTypes is non-empty, filterCaseTypes/filterCombinations are null.
+     */
+    NUMBER_ONLY,
+
+    /**
+     * Detailed filter by combinations of case type, number type, and gender (from the "Details" tab).
+     * filterCombinations is non-empty, filterCaseTypes/filterNumberTypes are null.
      */
     CASE_NUMBER_GENDER
 }

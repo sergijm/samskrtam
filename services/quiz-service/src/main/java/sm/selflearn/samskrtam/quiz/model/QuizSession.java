@@ -26,10 +26,26 @@ public class QuizSession {
     private Instant completedAt;
     private String vocabularyWordsJson;
 
-    // Filter columns for filtered quiz sessions (see docs/quizzes/quiz-declension.md §3.4)
+    // Filter columns for filtered quiz sessions (see docs/services/quiz-service/quiz-declension.md §3.4)
     private FilterScope filterScope;
-    private String filterCaseType;
-    private String filterNumberType;
-    private String filterGender;
+
+    /**
+     * JSONB array of caseType strings. Non-null only when filterScope = CASE_ONLY.
+     * Example: ["NOMINATIVE","ACCUSATIVE"]
+     */
+    private String filterCaseTypes;
+
+    /**
+     * JSONB array of numberType strings. Non-null only when filterScope = NUMBER_ONLY.
+     * Example: ["SINGULAR","DUAL"]
+     */
+    private String filterNumberTypes;
+
+    /**
+     * JSONB array of {caseType,numberType,gender} objects.
+     * Non-null only when filterScope = CASE_NUMBER_GENDER.
+     * Example: [{"caseType":"NOMINATIVE","numberType":"SINGULAR","gender":"MASCULINE"}]
+     */
+    private String filterCombinations;
 }
 

@@ -7,8 +7,8 @@ DEFAULT_DIR = r"C:\MyDev\samskrtam"
 
 # Расширения файлов для анализа
 #EXTENSIONS = ('.java', '.ts', '.tsx', '.yaml', '.yml')
-EXTENSIONS = '.java'
-#EXTENSIONS = ('.tsx', '.ts')
+#EXTENSIONS = '.java'
+EXTENSIONS = ('.tsx', '.ts')
 #EXTENSIONS = ( '.yaml')
 #EXTENSIONS = '.md'
 

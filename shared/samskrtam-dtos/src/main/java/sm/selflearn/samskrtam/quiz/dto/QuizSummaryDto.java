@@ -21,6 +21,9 @@ public class QuizSummaryDto {
     LessonType lessonType;
     int score;
     int totalQuestions;
+    int answeredQuestions;
+    int correctAnswers;
+    int combinationsCount;
     SessionStatus status;
     Instant startedAt;
     Instant completedAt;

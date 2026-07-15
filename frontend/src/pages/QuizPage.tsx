@@ -20,14 +20,19 @@ const QuizPage = () => {
   const filterCaseType = searchParams.get('filterCaseType') || undefined;
   const filterNumberType = searchParams.get('filterNumberType') || undefined;
   const filterGender = searchParams.get('filterGender') || undefined;
+  const filterCombinations = searchParams.get('filterCombinations') || undefined;
   const statusFilter = searchParams.get('statusFilter') || undefined;
 
   const filterParams: FilterParams | undefined = filterScope
     ? {
         filterScope,
-        filterCaseType,
-        filterNumberType: filterScope === 'CASE_NUMBER_GENDER' ? filterNumberType : undefined,
-        filterGender: filterScope === 'CASE_NUMBER_GENDER' ? filterGender : undefined,
+        filterCaseTypes: filterScope === 'CASE_ONLY' ? filterCaseType : undefined,
+        filterNumberTypes: filterScope === 'NUMBER_ONLY' ? filterNumberType : undefined,
+        filterCombinations: filterScope === 'CASE_NUMBER_GENDER'
+          ? (filterCombinations || (filterCaseType && filterNumberType && filterGender
+              ? `${filterCaseType}:${filterNumberType}:${filterGender}`
+              : undefined))
+          : undefined,
       }
     : undefined;
 
@@ -81,8 +86,8 @@ const QuizPage = () => {
   const localizedDesc = i18n.language === 'ru' ? quizSummaryData?.quizDescriptionRu : quizSummaryData?.quizDescriptionEn;
 
   return (
-    <div className="flex flex-column align-items-center justify-content-center p-4">
-      <Card className="lesson-container" style={{ maxWidth: '800px', width: '100%' }}>
+        <div className="flex flex-column align-items-center p-4 w-full">
+      <Card className="lesson-container w-full" style={{ maxWidth: '800px' }}>
         {localizedTitle && <h1 className="text-center mb-3">{localizedTitle}</h1>}
         {localizedDesc && <p className="text-center text-color-secondary mb-4">{localizedDesc}</p>}
         <ProgressBar value={progress} className="mb-4" />

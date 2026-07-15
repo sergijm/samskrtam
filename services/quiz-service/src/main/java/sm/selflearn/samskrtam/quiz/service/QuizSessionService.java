@@ -21,6 +21,7 @@ import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
 import sm.selflearn.samskrtam.quiz.repository.SessionQuestionRepository;
 import sm.selflearn.samskrtam.quiz.mapper.SessionQuestionMapper;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -53,21 +54,44 @@ public class QuizSessionService {
                 .switchIfEmpty(Mono.defer(() -> createNewSession(lessonId, userId, userLocale)));
     }
 
+        /**
+     * Starts or resumes a filtered quiz session using JSONB sets.
+     *
+     * @param filterCaseTypes     comma-separated caseType values (CASE_ONLY)
+     * @param filterNumberTypes   comma-separated numberType values (NUMBER_ONLY)
+     * @param filterCombinations  comma-separated "caseType:numberType:gender" triples (CASE_NUMBER_GENDER)
+     */
     public Mono<StartOrResumeResponse> startOrResumeSession(
             UUID lessonId, UUID userId, String userLocale,
-            FilterScope filterScope, String filterCaseType,
-            String filterNumberType, String filterGender) {
+            FilterScope filterScope, String filterCaseTypes,
+            String filterNumberTypes, String filterCombinations) {
         if (filterScope == null) {
             return startOrResumeSession(lessonId, userId, userLocale);
         }
         String scope = filterScope.name();
-        String numberType = (filterScope == FilterScope.CASE_NUMBER_GENDER) ? filterNumberType : null;
-        String gender = (filterScope == FilterScope.CASE_NUMBER_GENDER) ? filterGender : null;
+        String canonicalCaseTypes = null;
+        String canonicalNumberTypes = null;
+        String canonicalCombinations = null;
+
+        switch (filterScope) {
+            case CASE_ONLY -> canonicalCaseTypes = buildCanonicalJsonArray(
+                    parseCsvToList(filterCaseTypes));
+            case NUMBER_ONLY -> canonicalNumberTypes = buildCanonicalJsonArray(
+                    parseCsvToList(filterNumberTypes));
+            case CASE_NUMBER_GENDER -> canonicalCombinations = buildCanonicalCombinationsJson(
+                    parseCombinations(filterCombinations));
+        }
+
+        final String finalCaseTypes = canonicalCaseTypes;
+        final String finalNumberTypes = canonicalNumberTypes;
+        final String finalCombinations = canonicalCombinations;
+
         return quizSessionRepository
-                .findInProgressByFilter(userId, lessonId, scope, filterCaseType, numberType, gender)
+                .findInProgressByFilter(userId, lessonId, scope,
+                        finalCaseTypes, finalNumberTypes, finalCombinations)
                 .flatMap(session -> sessionOperationsService.resume(session, userLocale))
                 .switchIfEmpty(Mono.defer(() -> createFilteredSession(lessonId, userId, userLocale,
-                        filterScope, filterCaseType, numberType, gender)));
+                        filterScope, finalCaseTypes, finalNumberTypes, finalCombinations)));
     }
 
     public Mono<StartOrResumeResponse> resumeSession(UUID sessionId, UUID userId, String userLocale) {
@@ -132,16 +156,16 @@ public class QuizSessionService {
                 });
     }
 
-    private Mono<StartOrResumeResponse> createFilteredSession(
+        private Mono<StartOrResumeResponse> createFilteredSession(
             UUID lessonId, UUID userId, String userLocale,
-            FilterScope filterScope, String filterCaseType,
-            String filterNumberType, String filterGender) {
+            FilterScope filterScope, String filterCaseTypes,
+            String filterNumberTypes, String filterCombinations) {
         // 1. Получаем все вопросы урока
         return contentClient.generateQuizData(lessonId, userLocale)
                 .flatMap(generatedQuizData -> {
-                    QuizSession newSession = sessionFactory.createFilteredSession(
+                                        QuizSession newSession = sessionFactory.createFilteredSession(
                             lessonId, userId, generatedQuizData,
-                            filterScope, filterCaseType, filterNumberType, filterGender);
+                            filterScope, filterCaseTypes, filterNumberTypes, filterCombinations);
                     return quizSessionRepository.save(newSession)
                             .flatMap(savedSession -> {
                                 List<GeneratedQuizQuestionDto> allQuestions = generatedQuizData.getGeneratedQuestions();
@@ -210,11 +234,7 @@ public class QuizSessionService {
                 });
     }
 
-    /**
-     * Определяет ItemType по явному полю itemType в DTO вопросов.
-     * Если поле отсутствует — fallback-эвристика для обратной совместимости.
-     */
-    private ItemType resolveItemTypeFromQuestions(List<GeneratedQuizQuestionDto> questions, UUID sessionId) {
+        private ItemType resolveItemTypeFromQuestions(List<GeneratedQuizQuestionDto> questions, UUID sessionId) {
         if (questions.isEmpty()) {
             log.warn("No questions in session {}, cannot resolve itemType", sessionId);
             return null;
@@ -228,10 +248,70 @@ public class QuizSessionService {
                         first.getItemType(), sessionId);
             }
         }
-        // Fallback для обратной совместимости (пока content-service не обновлён)
+        // Fallback для обратной совместимости
         if (first.getVocabularyWordId() != null) return ItemType.VOCABULARY_WORD;
         if (first.getCaseEndingId() != null) return ItemType.DECLENSION_FORM;
         log.error("Cannot resolve ItemType for session {}: no itemType and no known Id field", sessionId);
         return null;
+    }
+
+    // ================== JSON Helpers ==================
+
+    /** Builds a canonical sorted JSON array from a list of strings for set equality comparison. */
+    static String buildCanonicalJsonArray(List<String> items) {
+        if (items == null || items.isEmpty()) return null;
+        List<String> sorted = new ArrayList<>(items);
+        sorted.sort(String::compareTo);
+        return "[" + sorted.stream()
+                .map(s -> "\"" + escapeJson(s) + "\"")
+                .collect(Collectors.joining(",")) + "]";
+    }
+
+    /** Builds a canonical sorted JSON array of {caseType,numberType,gender} objects. */
+    static String buildCanonicalCombinationsJson(List<FilterCombination> combinations) {
+        if (combinations == null || combinations.isEmpty()) return null;
+        List<FilterCombination> sorted = new ArrayList<>(combinations);
+        sorted.sort(FilterCombination::compareTo);
+        return "[" + sorted.stream()
+                .map(c -> "{\"caseType\":\"" + escapeJson(c.caseType) + "\"," +
+                          "\"numberType\":\"" + escapeJson(c.numberType) + "\"," +
+                          "\"gender\":\"" + escapeJson(c.gender) + "\"}")
+                .collect(Collectors.joining(",")) + "]";
+    }
+
+    static List<String> parseCsvToList(String csv) {
+        if (csv == null || csv.isBlank()) return List.of();
+        return List.of(csv.split(","));
+    }
+
+    /** Parses comma-separated "caseType:numberType:gender" triples. */
+    static List<FilterCombination> parseCombinations(String csv) {
+        if (csv == null || csv.isBlank()) return List.of();
+        List<FilterCombination> result = new ArrayList<>();
+        for (String part : csv.split(",")) {
+            String[] fields = part.split(":");
+            if (fields.length >= 3) {
+                result.add(new FilterCombination(fields[0].trim(), fields[1].trim(), fields[2].trim()));
+            }
+        }
+        return result;
+    }
+
+    private static String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    /** Immutable triple for filter combinations. */
+    public record FilterCombination(String caseType, String numberType, String gender)
+            implements Comparable<FilterCombination> {
+        @Override
+        public int compareTo(FilterCombination o) {
+            int c = caseType.compareTo(o.caseType);
+            if (c != 0) return c;
+            c = numberType.compareTo(o.numberType);
+            if (c != 0) return c;
+            return gender.compareTo(o.gender);
+        }
     }
 }

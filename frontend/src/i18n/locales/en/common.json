@@ -27,13 +27,15 @@
     "filterByQuizType": "Filter by Quiz Type",
     "filterByStatus": "Filter by Status",
     "viewDetails": "View Details",
-    "correct": "Correct",
+        "correct": "Correct",
     "incorrect": "Incorrect",
     "actions": "Actions",
     "back": "Back",
     "continue": "Continue",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "startQuiz": "Start Quiz",
+    "errorLoadingLesson": "Error loading lesson"
   },
   "validation": {
     "usernameRequired": "Email or Username is required.",

@@ -1,243 +1,201 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import {
   useStartQuizSession,
-  useSubmitQuizAnswer,
   useQuizBySlug,
   useResumeQuizSession,
   useCompleteQuizSession,
-    useStartOrResumeQuizSessionWithFilters,
+  useStartOrResumeQuizSessionWithFilters,
   useStartOrResumeWithStatusFilter,
 } from './useQuiz';
+import { useQuizSessionState } from './useQuizSessionState';
+import { useSubmitAnswerHandler } from './useQuizSessionSubmit';
 import type { FilterParams } from '../api/quizApi';
-import { AnswerRequest, SessionQuestion, StartOrResumeResponse, LessonType } from '../types/quiz';
+import type { StartOrResumeResponse } from '../types/quiz';
 
-export function useQuizSession(slug: string | undefined, sessionIdFromParams: string | undefined, filterParams?: FilterParams, statusFilter?: string) {
+/**
+ * Оркестратор квиз-сессии:
+ *  - стейт        → useQuizSessionState
+ *  - инициализация → useEffect (5 веток: location.state / resume / statusFilter / filters / default)
+ *  - завершение    → useEffect (completeSession)
+ *  - отправка      → useSubmitAnswerHandler
+ *  - агрегация loading/error
+ */
+export function useQuizSession(
+  slug: string | undefined,
+  sessionIdFromParams: string | undefined,
+  filterParams?: FilterParams,
+  statusFilter?: string,
+) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { i18n } = useTranslation();
 
-  const [sessionId, setSessionId] = useState<string | null>(sessionIdFromParams || null);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [questions, setQuestions] = useState<SessionQuestion[]>([]);
-  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{
-    isCorrect: boolean;
-    correctOptionId: string;
-    correctAnswerText: string;
-    explanation: string;
-  } | null>(null);
-  const [startTime, setStartTime] = useState<number>(Date.now());
-  const [hasAttemptedSessionLoad, setHasAttemptedSessionLoad] = useState(false);
-  const [sessionCompletionAttempted, setSessionCompletionAttempted] = useState(false);
-  const [quizSummaryData, setQuizSummaryData] = useState<StartOrResumeResponse | null>(null);
+  /* ---- state ---- */
+  const state = useQuizSessionState();
 
-  const shouldFetchQuizSummary = !quizSummaryData && !location.state?.sessionData && !!slug;
-  const { data: fetchedQuizSummary, isLoading: isQuizSummaryLoading, isError: isQuizSummaryError, error: quizSummaryError } = useQuizBySlug(
-    shouldFetchQuizSummary ? slug || '' : ''
-  );
+  /* ---- mutations ---- */
+  const startSession = useStartQuizSession();
+  const startFilteredSession = useStartOrResumeQuizSessionWithFilters();
+  const startStatusFilterSession = useStartOrResumeWithStatusFilter();
+  const resumeSession = useResumeQuizSession();
+  const completeSession = useCompleteQuizSession();
 
-    const startSessionMutation = useStartQuizSession();
-  const startFilteredSessionMutation = useStartOrResumeQuizSessionWithFilters();
-  const startStatusFilterSessionMutation = useStartOrResumeWithStatusFilter();
-  const resumeSessionMutation = useResumeQuizSession();
-  const submitAnswerMutation = useSubmitQuizAnswer();
-  const completeSessionMutation = useCompleteQuizSession();
+  /* ---- quiz summary ---- */
+  const shouldFetch = !state.quizSummaryData && !location.state?.sessionData && !!slug;
+  const {
+    data: fetchedQuizSummary,
+    isLoading: isSummaryLoading,
+    isError: isSummaryError,
+    error: summaryError,
+  } = useQuizBySlug(shouldFetch ? slug || '' : '');
 
-  const currentQuestion = questions[currentQuestionIndex];
-  const isLastQuestion = questions.length > 0 && currentQuestionIndex === questions.length - 1;
+  /* ---- submit handlers ---- */
+  const { handleSubmitAnswer, handleNextQuestion, submitAnswerMutation } =
+    useSubmitAnswerHandler(state);
 
+  /* ═══════ init effect ═══════ */
   useEffect(() => {
+    // 1) navigation state
     if (location.state?.sessionData) {
-      const sessionDataFromState = location.state.sessionData as StartOrResumeResponse;
-      setQuizSummaryData(sessionDataFromState);
-      setSessionId(sessionDataFromState.sessionId);
-      setQuestions(sessionDataFromState.questions);
-      setCurrentQuestionIndex(sessionDataFromState.currentQuestionIndex);
-      setStartTime(Date.now());
-      setHasAttemptedSessionLoad(true);
+      const sd = location.state.sessionData as StartOrResumeResponse;
+      state.setQuizSummaryData(sd);
+      state.setSessionId(sd.sessionId);
+      state.setQuestions(sd.questions);
+      state.setCurrentQuestionIndex(sd.currentQuestionIndex);
+      state.setStartTime(Date.now());
+      state.setHasAttemptedSessionLoad(true);
       navigate(location.pathname, { replace: true, state: {} });
-    } else if (fetchedQuizSummary && !hasAttemptedSessionLoad) {
-      setHasAttemptedSessionLoad(true);
-      setQuizSummaryData(fetchedQuizSummary);
-
-      if (sessionIdFromParams) {
-        resumeSessionMutation.mutate(
-          { sessionId: sessionIdFromParams, lessonType: fetchedQuizSummary.lessonType },
-          {
-            onSuccess: (data) => {
-              setSessionId(data.sessionId);
-              setQuestions(data.questions);
-              setCurrentQuestionIndex(data.currentQuestionIndex);
-              setStartTime(Date.now());
-              setQuizSummaryData(data);
-            },
-            onError: (err) => console.error('Failed to resume lesson session:', err),
-          }
-        );
-      } else if (statusFilter) {
-        // Сессия с фильтром по статусу (NEW/LEARNING/REVIEW)
-        startStatusFilterSessionMutation.mutate(
-          { quizId: fetchedQuizSummary.id, lessonType: fetchedQuizSummary.lessonType, statusFilter },
-          {
-            onSuccess: (data) => {
-              setSessionId(data.sessionId);
-              setQuestions(data.questions);
-              setCurrentQuestionIndex(data.currentQuestionIndex || 0);
-              setStartTime(Date.now());
-              setQuizSummaryData(data);
-              navigate(`/quiz/${fetchedQuizSummary.lessonType.toLowerCase()}/${fetchedQuizSummary.slug}/${data.sessionId}`, { replace: true });
-            },
-            onError: (err) => console.error('Failed to start status-filtered session:', err),
-          }
-        );
-      } else if (filterParams && filterParams.filterScope) {
-        // Отфильтрованная сессия по падежу/роду/числу
-        startFilteredSessionMutation.mutate(
-          { quizId: fetchedQuizSummary.id, lessonType: fetchedQuizSummary.lessonType, filters: filterParams },
-          {
-            onSuccess: (data) => {
-              setSessionId(data.sessionId);
-              setQuestions(data.questions);
-              setCurrentQuestionIndex(data.currentQuestionIndex || 0);
-              setStartTime(Date.now());
-              setQuizSummaryData(data);
-              // URL без фильтров, но с sessionId
-              navigate(`/quiz/${fetchedQuizSummary.lessonType.toLowerCase()}/${fetchedQuizSummary.slug}/${data.sessionId}`, { replace: true });
-            },
-            onError: (err) => console.error('Failed to start filtered session:', err),
-          }
-        );
-      } else {
-        startSessionMutation.mutate(
-          { quizIdentifier: fetchedQuizSummary.id, lessonType: fetchedQuizSummary.lessonType },
-          {
-            onSuccess: (data) => {
-              setSessionId(data.sessionId);
-              setQuestions(data.questions);
-              setStartTime(Date.now());
-              setQuizSummaryData(data);
-              navigate(`/quiz/${fetchedQuizSummary.lessonType.toLowerCase()}/${fetchedQuizSummary.slug}/${data.sessionId}`, { replace: true });
-            },
-            onError: (err) => console.error('Failed to start lesson session:', err),
-          }
-        );
-      }
+      return;
     }
-  }, [location.state, fetchedQuizSummary, sessionIdFromParams, statusFilter, startSessionMutation, startFilteredSessionMutation, startStatusFilterSessionMutation, resumeSessionMutation, hasAttemptedSessionLoad, navigate, location.pathname, filterParams]);
 
-  useEffect(() => {
-    const allQuestionsAnswered = questions.length > 0 && currentQuestionIndex >= questions.length;
-    if (allQuestionsAnswered && sessionId && quizSummaryData?.lessonType && !sessionCompletionAttempted) {
-      setSessionCompletionAttempted(true);
-      completeSessionMutation.mutate(
-        { sessionId, lessonType: quizSummaryData.lessonType },
-        {
-          onSuccess: () => navigate(`/quiz-sessions/${sessionId}/history`, { state: { lessonType: quizSummaryData.lessonType } }),
-          onError: () => navigate(`/quiz-sessions/${sessionId}/history`, { state: { lessonType: quizSummaryData.lessonType } }),
-        }
-      );
-    }
-  }, [currentQuestionIndex, questions.length, sessionId, quizSummaryData?.lessonType, sessionCompletionAttempted, completeSessionMutation, navigate]);
+    if (!fetchedQuizSummary || state.hasAttemptedSessionLoad) return;
 
-  const handleSubmitAnswer = useCallback((optionIdToSubmit: string) => {
-    if (!sessionId || !optionIdToSubmit || !currentQuestion || !quizSummaryData) return;
+    state.setHasAttemptedSessionLoad(true);
+    state.setQuizSummaryData(fetchedQuizSummary as unknown as StartOrResumeResponse);
 
-    setSelectedOptionId(optionIdToSubmit);
-    const questionId = currentQuestion.id;
-    const responseTimeMs = Date.now() - startTime;
-    const selectedOption = currentQuestion.options.find((opt) => opt.id === optionIdToSubmit);
-    const selectedFormIast = selectedOption ? selectedOption.formIast : undefined;
+    const { lessonType, id: quizId, slug: quizSlug } = fetchedQuizSummary;
 
-    const answerRequest: AnswerRequest = {
-      questionId,
-      selectedOptionId: optionIdToSubmit,
-      selectedFormIast: quizSummaryData.lessonType !== LessonType.VOCABULARY ? selectedFormIast : undefined,
-      responseTimeMs,
+    const apply = (data: StartOrResumeResponse) => {
+      state.setSessionId(data.sessionId);
+      state.setQuestions(data.questions);
+      state.setCurrentQuestionIndex(data.currentQuestionIndex ?? 0);
+      state.setStartTime(Date.now());
+      state.setQuizSummaryData(data);
     };
 
-    submitAnswerMutation.mutate(
-      {
-        sessionId,
-        quizIdentifier: quizSummaryData.quizId,
-        lessonType: quizSummaryData.lessonType,
-        answerRequest,
-      },
-      {
-        onSuccess: (data) => {
-          if (data.isCorrect) {
-            setFeedback(null);
-            setSelectedOptionId(null);
-            if (currentQuestionIndex < questions.length - 1) {
-              setCurrentQuestionIndex((i) => i + 1);
-            } else {
-              setCurrentQuestionIndex(questions.length);
-              setSessionCompletionAttempted(false);
-            }
-          } else {
-            const explanation = i18n.language === 'ru' ? data.explanationRu : data.explanationEn;
-            setFeedback({
-              isCorrect: data.isCorrect,
-              correctOptionId: data.correctOptionId,
-              correctAnswerText: data.correctAnswerText,
-              explanation: explanation || 'No explanation',
-            });
-            setStartTime(Date.now());
-          }
-        },
-        onError: (err) => {
-          console.error('Failed to submit answer:', err);
-          setSelectedOptionId(null);
-        },
-      }
-    );
-  }, [sessionId, currentQuestion, quizSummaryData, startTime, submitAnswerMutation, i18n.language, currentQuestionIndex, questions.length]);
+    const applyAndNav = (data: StartOrResumeResponse) => {
+      apply(data);
+      navigate(`/quiz/${lessonType.toLowerCase()}/${quizSlug}/${data.sessionId}`, { replace: true });
+    };
 
-  const handleNextQuestion = useCallback(() => {
-    setFeedback(null);
-    setSelectedOptionId(null);
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((i) => i + 1);
-    } else {
-      setCurrentQuestionIndex(questions.length);
-      setSessionCompletionAttempted(false);
+    // 2) resume
+    if (sessionIdFromParams) {
+      resumeSession.mutate(
+        { sessionId: sessionIdFromParams, lessonType },
+        { onSuccess: apply, onError: (e) => console.error('resume failed:', e) },
+      );
+      return;
     }
-  }, [currentQuestionIndex, questions.length]);
+
+    // 3) status filter (NEW/LEARNING/REVIEW)
+    if (statusFilter) {
+      startStatusFilterSession.mutate(
+        { quizId, lessonType, statusFilter },
+        { onSuccess: applyAndNav, onError: (e) => console.error('status-filter start failed:', e) },
+      );
+      return;
+    }
+
+    // 4) declension filters
+    if (filterParams?.filterScope) {
+      startFilteredSession.mutate(
+        { quizId, lessonType, filters: filterParams },
+        { onSuccess: applyAndNav, onError: (e) => console.error('filtered start failed:', e) },
+      );
+      return;
+    }
+
+    // 5) default
+    startSession.mutate(
+      { quizIdentifier: quizId, lessonType },
+      { onSuccess: applyAndNav, onError: (e) => console.error('start failed:', e) },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, fetchedQuizSummary, sessionIdFromParams, statusFilter, filterParams, state.hasAttemptedSessionLoad]);
+
+  /* ═══════ completion effect ═══════ */
+  useEffect(() => {
+    const allDone =
+      state.questions.length > 0 &&
+      state.currentQuestionIndex >= state.questions.length;
+
+    if (allDone && state.sessionId && state.quizSummaryData?.lessonType && !state.sessionCompletionAttempted) {
+      state.setSessionCompletionAttempted(true);
+      completeSession.mutate(
+        { sessionId: state.sessionId, lessonType: state.quizSummaryData.lessonType },
+        {
+          onSuccess: () =>
+            navigate(`/quiz-sessions/${state.sessionId}/history`, {
+              state: { lessonType: state.quizSummaryData?.lessonType },
+            }),
+          onError: () =>
+            navigate(`/quiz-sessions/${state.sessionId}/history`, {
+              state: { lessonType: state.quizSummaryData?.lessonType },
+            }),
+        },
+      );
+    }
+  }, [
+    state.currentQuestionIndex,
+    state.questions.length,
+    state.sessionId,
+    state.quizSummaryData?.lessonType,
+    state.sessionCompletionAttempted,
+    completeSession,
+    navigate,
+  ]);
+
+  /* ---- aggregates ---- */
+  const isLoading =
+    isSummaryLoading ||
+    startSession.isPending ||
+    startFilteredSession.isPending ||
+    startStatusFilterSession.isPending ||
+    resumeSession.isPending ||
+    completeSession.isPending ||
+    !state.sessionId;
+
+  const isError =
+    isSummaryError ||
+    startSession.isError ||
+    startFilteredSession.isError ||
+    startStatusFilterSession.isError ||
+    resumeSession.isError ||
+    completeSession.isError;
+
+  const errorMessage =
+    summaryError?.message ||
+    startSession.error?.message ||
+    startFilteredSession.error?.message ||
+    startStatusFilterSession.error?.message ||
+    resumeSession.error?.message ||
+    completeSession.error?.message;
 
   return {
-    sessionId,
-    currentQuestionIndex,
-    questions,
-    currentQuestion,
-    feedback,
-    isLastQuestion,
-    quizSummaryData,
-    selectedOptionId,
+    sessionId: state.sessionId,
+    currentQuestionIndex: state.currentQuestionIndex,
+    questions: state.questions,
+    currentQuestion: state.currentQuestion,
+    feedback: state.feedback,
+    isLastQuestion: state.isLastQuestion,
+    quizSummaryData: state.quizSummaryData,
+    selectedOptionId: state.selectedOptionId,
     isSubmittingAnswer: submitAnswerMutation.isPending,
-        isLoading:
-      isQuizSummaryLoading ||
-      startSessionMutation.isPending ||
-      startFilteredSessionMutation.isPending ||
-      startStatusFilterSessionMutation.isPending ||
-      resumeSessionMutation.isPending ||
-      completeSessionMutation.isPending ||
-      !sessionId,
-        isError:
-      isQuizSummaryError ||
-      startSessionMutation.isError ||
-      startFilteredSessionMutation.isError ||
-      startStatusFilterSessionMutation.isError ||
-      resumeSessionMutation.isError ||
-      completeSessionMutation.isError,
-    errorMessage:
-      quizSummaryError?.message ||
-      startSessionMutation.error?.message ||
-      startFilteredSessionMutation.error?.message ||
-      resumeSessionMutation.error?.message ||
-      completeSessionMutation.error?.message,
+    isLoading,
+    isError,
+    errorMessage,
     handleSubmitAnswer,
     handleNextQuestion,
-    hasAttemptedSessionLoad,
+    hasAttemptedSessionLoad: state.hasAttemptedSessionLoad,
   };
 }

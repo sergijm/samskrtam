@@ -30,7 +30,7 @@ public class UserSessionController {
 
     private final UserSessionService userSessionService;
 
-    @GetMapping
+        @GetMapping
     @Operation(summary = "Get a paginated list of user's quiz sessions")
     @ApiResponse(responseCode = "200", description = "List of quiz sessions retrieved successfully")
     @ApiResponse(responseCode = "401", description = "Unauthorized")
@@ -41,12 +41,13 @@ public class UserSessionController {
             @RequestParam(defaultValue = "startedAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDirection,
             @RequestParam(required = false) LessonType lessonType,
-            @RequestParam(required = false) SessionStatus status
+            @RequestParam(required = false) SessionStatus status,
+            @RequestParam(required = false) UUID quizId
     ) {
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        return userSessionService.getUserQuizSessions(userId, lessonType, status, pageable)
+        return userSessionService.getUserQuizSessions(userId, lessonType, status, quizId, pageable)
                 .map(ResponseEntity::ok);
     }
 

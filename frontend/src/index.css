@@ -57,10 +57,23 @@ html {
 }
 
 /* ─── Sidebar / Curriculum Tree Styles ─── */
+/* layout-wrapper — занимает всю высоту viewport */
+.layout-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
 .layout-main-container {
     display: flex;
     flex: 1;
     overflow: hidden;
+}
+
+.layout-main {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .layout-sidebar-wrapper {

@@ -24,7 +24,7 @@ public class QuizSessionController {
 
     private final QuizSessionService quizSessionService;
 
-    @PostMapping("/start")
+        @PostMapping("/start")
     @Operation(summary = "Start a new quiz session (or resume if in progress)")
     @ApiResponse(responseCode = "200", description = "Session started or resumed successfully")
     @ApiResponse(responseCode = "404", description = "Quiz not found")
@@ -34,11 +34,11 @@ public class QuizSessionController {
                 @RequestHeader("X-User-Id") UUID userId,
             @RequestHeader("X-User-Locale") String userLocale,
             @RequestParam(required = false) FilterScope filterScope,
-            @RequestParam(required = false) String filterCaseType,
-            @RequestParam(required = false) String filterNumberType,
-            @RequestParam(required = false) String filterGender) {
+            @RequestParam(required = false) String filterCaseTypes,
+            @RequestParam(required = false) String filterNumberTypes,
+            @RequestParam(required = false) String filterCombinations) {
         return quizSessionService.startOrResumeSession(lessonId, userId, userLocale,
-                filterScope, filterCaseType, filterNumberType, filterGender);
+                filterScope, filterCaseTypes, filterNumberTypes, filterCombinations);
         }
 
     @PostMapping("/start-or-resume")
@@ -50,12 +50,12 @@ public class QuizSessionController {
                 @RequestParam UUID lessonId,
                 @RequestHeader("X-User-Id") UUID userId,
             @RequestHeader("X-User-Locale") String userLocale,
-            @RequestParam(required = false) FilterScope filterScope,
-            @RequestParam(required = false) String filterCaseType,
-            @RequestParam(required = false) String filterNumberType,
-            @RequestParam(required = false) String filterGender) {
+                        @RequestParam(required = false) FilterScope filterScope,
+            @RequestParam(required = false) String filterCaseTypes,
+            @RequestParam(required = false) String filterNumberTypes,
+            @RequestParam(required = false) String filterCombinations) {
         return quizSessionService.startOrResumeSession(lessonId, userId, userLocale,
-                filterScope, filterCaseType, filterNumberType, filterGender);
+                filterScope, filterCaseTypes, filterNumberTypes, filterCombinations);
         }
 
     @GetMapping("/{sessionId}/resume")

@@ -39,12 +39,16 @@ public class SessionFactory {
     }
 
     /**
-     * Creates a new filtered quiz session with filter scope.
-     * See docs/quizzes/quiz-declension.md §3.4
+     * Creates a new filtered quiz session with filter scope using JSONB sets.
+     * See docs/services/quiz-service/quiz-declension.md §3.4
+     *
+     * @param filterCaseTypes JSON array string for CASE_ONLY
+     * @param filterNumberTypes JSON array string for NUMBER_ONLY
+     * @param filterCombinations JSON array string for CASE_NUMBER_GENDER
      */
     public QuizSession createFilteredSession(UUID lessonId, UUID userId, GeneratedQuizData generatedQuizData,
-                                               FilterScope filterScope, String filterCaseType,
-                                               String filterNumberType, String filterGender) {
+                                               FilterScope filterScope, String filterCaseTypes,
+                                               String filterNumberTypes, String filterCombinations) {
         List<VocabularyWordDto> vocabularyWords = generatedQuizData.getVocabularyWords() != null ? generatedQuizData.getVocabularyWords() : Collections.emptyList();
         String vocabularyWordsJson = vocabularyWordsSerializer.serialize(vocabularyWords);
 
@@ -60,9 +64,10 @@ public class SessionFactory {
                 .startedAt(Instant.now())
                 .vocabularyWordsJson(vocabularyWordsJson)
                 .filterScope(filterScope)
-                .filterCaseType(filterCaseType)
-                .filterNumberType(filterNumberType)
-                .filterGender(filterGender)
+                .filterCaseTypes(filterCaseTypes)
+                .filterNumberTypes(filterNumberTypes)
+                .filterCombinations(filterCombinations)
                 .build();
     }
 }
+

@@ -39,14 +39,23 @@ public class UserSessionService {
     private final UserSessionMapper userSessionMapper;
     
 
-    public Mono<Page<QuizSummaryDto>> getUserQuizSessions(
+        public Mono<Page<QuizSummaryDto>> getUserQuizSessions(
             UUID userId,
             LessonType lessonType,
             SessionStatus status,
+            UUID quizId,
             Pageable pageable) {
 
-        Mono<Long> totalElementsMono = quizSessionRepository.countUserSessions(userId, lessonType, status);
-        Flux<QuizSession> sessionsFlux = quizSessionRepository.findUserSessions(userId, lessonType, status, pageable);
+        Flux<QuizSession> sessionsFlux;
+        Mono<Long> totalElementsMono;
+
+        if (quizId != null) {
+            sessionsFlux = quizSessionRepository.findUserSessionsByQuizId(userId, quizId, status, pageable);
+            totalElementsMono = quizSessionRepository.countUserSessionsByQuizId(userId, quizId, status);
+        } else {
+            sessionsFlux = quizSessionRepository.findUserSessions(userId, lessonType, status, pageable);
+            totalElementsMono = quizSessionRepository.countUserSessions(userId, lessonType, status);
+        }
 
                 Mono<Map<UUID, LessonItemResponse>> lessonSummariesMapMono = sessionsFlux
                 .map(QuizSession::getLessonId)
@@ -61,45 +70,73 @@ public class UserSessionService {
                 });
 
         return Mono.zip(sessionsFlux.collectList(), lessonSummariesMapMono, totalElementsMono)
-                .map(tuple -> {
+                .flatMap(tuple -> {
                     List<QuizSession> sessions = tuple.getT1();
                     Map<UUID, LessonItemResponse> lessonSummariesMap = tuple.getT2();
                     Long totalElements = tuple.getT3();
 
-                    List<QuizSummaryDto> dtoList = sessions.stream()
-                            .map(session -> {
-                                LessonItemResponse summary = lessonSummariesMap.get(session.getLessonId());
-                                Long durationMs = null;
-                                if (session.getStartedAt() != null && session.getCompletedAt() != null) {
-                                    durationMs = Duration.between(session.getStartedAt(), session.getCompletedAt()).toMillis();
-                                }
-                                return QuizSummaryDto.builder()
-                                        .sessionId(session.getId())
-                                        .lessonId(session.getLessonId())
-                                        .lessonTitle(summary != null ? summary.getTitleEn() : "Unknown Lesson")
-                                        .lessonTitleRu(summary != null ? summary.getTitleRu() : "Неизвестный урок")
-                                        .lessonTitleEn(summary != null ? summary.getTitleEn() : "Unknown Lesson")
-                                        .slug(summary != null ? summary.getSlug() : "")
-                                        .lessonType(session.getLessonType())
-                                        .score(session.getScore())
-                                        .totalQuestions(session.getTotalQuestions())
-                                        .status(session.getStatus())
-                                        .startedAt(session.getStartedAt())
-                                        .completedAt(session.getCompletedAt())
-                                        .durationMs(durationMs)
-                                        .build();
-                            })
+                    // Fetch correct answer counts for all sessions in parallel
+                    List<UUID> sessionIds = sessions.stream()
+                            .map(QuizSession::getId)
                             .collect(Collectors.toList());
 
-                    return new PageImpl<>(dtoList, pageable, totalElements);
+                    Mono<Map<UUID, Long>> correctAnswersMapMono;
+                    if (sessionIds.isEmpty()) {
+                        correctAnswersMapMono = Mono.just(Map.of());
+                    } else {
+                        correctAnswersMapMono = Flux.fromIterable(sessionIds)
+                                .flatMap(sid -> quizAnswerRepository.countCorrectAnswersBySessionId(sid)
+                                        .map(count -> Map.entry(sid, count)))
+                                .collectMap(Map.Entry::getKey, Map.Entry::getValue);
+                    }
+
+                    return correctAnswersMapMono.map(correctAnswersMap -> {
+                        List<QuizSummaryDto> dtoList = sessions.stream()
+                                .map(session -> {
+                                    LessonItemResponse summary = lessonSummariesMap.get(session.getLessonId());
+                                    Long durationMs = null;
+                                    if (session.getStartedAt() != null && session.getCompletedAt() != null) {
+                                        durationMs = Duration.between(session.getStartedAt(), session.getCompletedAt()).toMillis();
+                                    }
+                                    int combinationsCount = countFilterCombinations(session);
+                                    long correctAnswers = correctAnswersMap.getOrDefault(session.getId(), 0L);
+
+                                    return QuizSummaryDto.builder()
+                                            .sessionId(session.getId())
+                                            .lessonId(session.getLessonId())
+                                            .lessonTitle(summary != null ? summary.getTitleEn() : "Unknown Lesson")
+                                            .lessonTitleRu(summary != null ? summary.getTitleRu() : "Неизвестный урок")
+                                            .lessonTitleEn(summary != null ? summary.getTitleEn() : "Unknown Lesson")
+                                            .slug(summary != null ? summary.getSlug() : "")
+                                            .lessonType(session.getLessonType())
+                                            .score(session.getScore())
+                                            .totalQuestions(session.getTotalQuestions())
+                                            .answeredQuestions(session.getAnsweredQuestions())
+                                            .correctAnswers((int) correctAnswers)
+                                            .combinationsCount(combinationsCount)
+                                            .status(session.getStatus())
+                                            .startedAt(session.getStartedAt())
+                                            .completedAt(session.getCompletedAt())
+                                            .durationMs(durationMs)
+                                            .build();
+                                })
+                                .collect(Collectors.toList());
+
+                        return new PageImpl<>(dtoList, pageable, totalElements);
+                    });
                 });
     }
 
-        public Mono<QuizSummaryDto> getQuizSessionSummary(UUID sessionId, UUID userId) {
+                public Mono<QuizSummaryDto> getQuizSessionSummary(UUID sessionId, UUID userId) {
         return quizSessionRepository.findByIdAndUserId(sessionId, userId)
                 .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND", "Quiz session not found or does not belong to user: " + sessionId)))
-                .flatMap(session -> contentClient.getLessonItem(session.getLessonId())
-                        .map(lessonSummary -> {
+                .flatMap(session -> Mono.zip(
+                        contentClient.getLessonItem(session.getLessonId()),
+                        quizAnswerRepository.countCorrectAnswersBySessionId(sessionId)
+                )
+                        .map(tuple -> {
+                            LessonItemResponse lessonSummary = tuple.getT1();
+                            long correctAnswers = tuple.getT2();
                             Long durationMs = null;
                             if (session.getStartedAt() != null && session.getCompletedAt() != null) {
                                 durationMs = Duration.between(session.getStartedAt(), session.getCompletedAt()).toMillis();
@@ -114,6 +151,9 @@ public class UserSessionService {
                                     .lessonType(session.getLessonType())
                                     .score(session.getScore())
                                     .totalQuestions(session.getTotalQuestions())
+                                    .answeredQuestions(session.getAnsweredQuestions())
+                                    .correctAnswers((int) correctAnswers)
+                                    .combinationsCount(countFilterCombinations(session))
                                     .status(session.getStatus())
                                     .startedAt(session.getStartedAt())
                                     .completedAt(session.getCompletedAt())
@@ -141,7 +181,7 @@ public class UserSessionService {
                                     Map<UUID, QuizAnswer> answersMap = quizAnswers.stream()
                                             .collect(Collectors.toMap(QuizAnswer::getQuestionId, Function.identity()));
 
-                                    List<AnswerHistoryDto> fullHistory = generatedQuestions.stream()
+                                                                        List<AnswerHistoryDto> fullHistory = generatedQuestions.stream()
                                             .sorted(Comparator.comparing(GeneratedQuizQuestionDto::getId))
                                             .map(gq -> {
                                                 QuizAnswer answer = answersMap.get(gq.getId());
@@ -150,6 +190,7 @@ public class UserSessionService {
 
                                                 return AnswerHistoryDto.builder()
                                                         .questionId(gq.getId())
+                                                        .questionNumber(gq.getQuestionNumber())
                                                         .questionText(gq.getText())
                                                         .selectedAnswerIast(answer != null ? answer.getSelectedFormIast() : null)
                                                         .correctOptionIast(gq.getCorrectFormIast())
@@ -183,7 +224,38 @@ public class UserSessionService {
                 .collectList();
     }
 
-    public Mono<Long> countWordAnswers(UUID userId, UUID wordId, UUID lessonId) {
+        public Mono<Long> countWordAnswers(UUID userId, UUID wordId, UUID lessonId) {
         return quizAnswerRepository.countByWordIdAndUserIdAndLessonId(wordId, userId, lessonId);
+    }
+
+    /**
+     * Counts the number of filter combinations stored in the session's JSONB fields.
+     */
+    private int countFilterCombinations(QuizSession session) {
+        if (session.getFilterScope() == null) return 0;
+        try {
+            return switch (session.getFilterScope()) {
+                case CASE_ONLY -> parseJsonArrayLength(session.getFilterCaseTypes());
+                case NUMBER_ONLY -> parseJsonArrayLength(session.getFilterNumberTypes());
+                case CASE_NUMBER_GENDER -> parseJsonArrayLength(session.getFilterCombinations());
+            };
+        } catch (Exception e) {
+            log.warn("Failed to parse filter combinations for session {}", session.getId(), e);
+            return 0;
+        }
+    }
+
+    private int parseJsonArrayLength(String jsonArray) {
+        if (jsonArray == null || jsonArray.isBlank()) return 0;
+        // Simple count of "{" for objects or "," + 1 for flat arrays
+        int openBraces = 0;
+        for (char c : jsonArray.toCharArray()) {
+            if (c == '{') openBraces++;
+        }
+        if (openBraces > 0) return openBraces;
+        // Flat string array: count commas + 1, but only if non-empty
+        String stripped = jsonArray.replaceAll("[\\[\\]\"]", "").trim();
+        if (stripped.isEmpty()) return 0;
+        return (int) stripped.chars().filter(c -> c == ',').count() + 1;
     }
 }
