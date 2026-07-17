@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useGrammarLesson } from '../../hooks/useLessons';
 
 import { LessonHeader } from '../../components/lesson/LessonHeader';
-import { LessonStatsBadges } from '../../components/lesson/LessonStatsBadges';
+import { LessonStatsTab } from '../../components/lesson/LessonStatsTab';
 import { QuestionHistoryDialog } from '../../components/lesson/QuestionHistoryDialog';
 import { CaseAggregationTable } from '../../components/lesson/CaseAggregationTable';
 import { GrammarDetailsTable } from '../../components/lesson/GrammarDetailsTable';
@@ -82,10 +82,6 @@ const GrammarLessonPage = () => {
             <div className="flex flex-wrap gap-3 align-items-center justify-content-between">
               <LessonHeader title={lesson.titleRu} titleEn={lesson.titleEn} />
               <div className="flex flex-wrap gap-3 align-items-center">
-                <LessonStatsBadges
-                  statusSummary={lesson.statusSummary}
-                  quizPath={`/quiz/grammar/${slug}`}
-                />
                 <Button
                   label={i18n.language === 'ru' ? 'Начать квиз' : 'Start Quiz'}
                   icon="pi pi-play"
@@ -108,6 +104,12 @@ const GrammarLessonPage = () => {
                   sortField={sortField}
                   sortOrder={sortOrder}
                   onSort={handleSort}
+                />
+              </TabPanel>
+              <TabPanel header={i18n.language === 'ru' ? 'Статистика' : 'Statistics'}>
+                <LessonStatsTab
+                  statusSummary={lesson.statusSummary}
+                  quizPath={`/quiz/grammar/${slug}`}
                 />
               </TabPanel>
             </TabView>

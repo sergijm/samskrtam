@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { ProgressBar } from 'primereact/progressbar';
+import { Button } from 'primereact/button';
 import { WordStatusIcon } from './WordStatusIcon';
 import type { CaseAggregation } from '../../utils/grammarAggregation';
 
@@ -15,6 +16,12 @@ interface CaseAggregationTableProps {
 export const CaseAggregationTable: React.FC<CaseAggregationTableProps> = ({ aggregations, quizSlug }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+
+  const handleStartCaseQuiz = (caseType: string) => {
+                navigate(
+      `/quiz/grammar/${quizSlug}?filterScope=CASE_ONLY&filterCaseType=${caseType}`,
+  );
+};
 
   return (
     <DataTable value={aggregations} paginator rows={20} responsiveLayout="scroll">
@@ -30,7 +37,7 @@ export const CaseAggregationTable: React.FC<CaseAggregationTableProps> = ({ aggr
         body={(rowData: CaseAggregation) => (
           <div>{i18n.language === 'ru' ? rowData.caseRu : rowData.caseEn}</div>
         )}
-        style={{ width: '30%' }}
+        style={{ width: '25%' }}
         sortable
         sortField="caseType"
       />
@@ -40,16 +47,12 @@ export const CaseAggregationTable: React.FC<CaseAggregationTableProps> = ({ aggr
           <div className="flex align-items-center gap-2">
             <ProgressBar
               value={rowData.aggregatedProgress}
-              style={{ height: '8px', width: '80px' }}
+              style={{ height: '5px', width: '80px' }}
               showValue={false}
             />
             <span
               className="cursor-pointer underline text-primary"
-              onClick={() =>
-                navigate(
-                  `/quiz/grammar/${quizSlug}?filterScope=CASE_ONLY&filterCaseType=${rowData.caseType}`,
-                )
-              }
+              onClick={() => handleStartCaseQuiz(rowData.caseType)}
             >
               {rowData.aggregatedProgress}%
             </span>
@@ -59,6 +62,19 @@ export const CaseAggregationTable: React.FC<CaseAggregationTableProps> = ({ aggr
         sortable
         sortField="aggregatedProgress"
       />
+      <Column
+        body={(rowData: CaseAggregation) => (
+          <Button
+            icon="pi pi-play"
+            className="p-button-rounded p-button-text p-button-sm"
+            style={{ width: '1.6rem', height: '1.6rem', padding: 0 }}
+            onClick={() => handleStartCaseQuiz(rowData.caseType)}
+            tooltip={i18n.language === 'ru' ? 'Начать' : 'Start'}
+          />
+        )}
+        style={{ width: '10%' }}
+      />
     </DataTable>
   );
 };
+

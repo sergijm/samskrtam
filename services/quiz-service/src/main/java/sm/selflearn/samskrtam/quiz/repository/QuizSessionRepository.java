@@ -33,12 +33,18 @@ public interface QuizSessionRepository extends ReactiveCrudRepository<QuizSessio
 
     Mono<QuizSession> findTopByUserIdAndLessonTypeAndStatusOrderByStartedAtDesc(UUID userId, LessonType lessonType, SessionStatus status);
 
+    @Query("SELECT * FROM quiz.quiz_session " +
+            "WHERE user_id = :userId " +
+            "AND lesson_id = :lessonId " +
+            "AND status = 'IN_PROGRESS' " +
+            "AND filter_scope IS NULL " +
+            "AND status_filter IS NULL " +
+            "ORDER BY started_at DESC LIMIT 1")
     Mono<QuizSession> findTopByUserIdAndLessonIdAndStatusOrderByStartedAtDesc(UUID userId, UUID lessonId, SessionStatus status);
 
     @Modifying
     @Query("UPDATE quiz.quiz_session SET answered_questions = answered_questions + 1, score = CASE WHEN :isCorrect THEN score + 1 ELSE score END WHERE id = :sessionId")
     Mono<Void> incrementAnsweredQuestionsAndScore(UUID sessionId, boolean isCorrect);
-
     /**
      * Find an in-progress session matching the given filter scope and JSONB set.
      * The JSON strings must be canonical (sorted) for equality comparison.
@@ -47,10 +53,11 @@ public interface QuizSessionRepository extends ReactiveCrudRepository<QuizSessio
      * @param filterNumberTypes JSONB array string for NUMBER_ONLY, null otherwise
      * @param filterCombinations JSONB array string for CASE_NUMBER_GENDER, null otherwise
      */
-    @Query("SELECT * FROM quiz.quiz_session " +
+        @Query("SELECT * FROM quiz.quiz_session " +
             "WHERE user_id = :userId " +
             "AND lesson_id = :lessonId " +
             "AND status = 'IN_PROGRESS' " +
+            "AND status_filter IS NULL " +
             "AND filter_scope = CAST(:filterScope AS VARCHAR) " +
             "AND (:filterCaseTypes IS NULL OR filter_case_types = CAST(:filterCaseTypes AS JSONB)) " +
             "AND (:filterNumberTypes IS NULL OR filter_number_types = CAST(:filterNumberTypes AS JSONB)) " +
@@ -59,6 +66,21 @@ public interface QuizSessionRepository extends ReactiveCrudRepository<QuizSessio
     Mono<QuizSession> findInProgressByFilter(UUID userId, UUID lessonId, String filterScope,
                                               String filterCaseTypes, String filterNumberTypes,
                                               String filterCombinations);
+
+    /**
+     * Find an in-progress session matching the given statusFilter.
+     * Sessions without statusFilter (null) or with a different statusFilter are excluded.
+     *
+     * @param statusFilter NEW|LEARNING|REVIEW
+     */
+        @Query("SELECT * FROM quiz.quiz_session " +
+            "WHERE user_id = :userId " +
+            "AND lesson_id = :lessonId " +
+            "AND status = 'IN_PROGRESS' " +
+            "AND filter_scope IS NULL " +
+            "AND status_filter = CAST(:statusFilter AS VARCHAR) " +
+            "ORDER BY started_at DESC LIMIT 1")
+    Mono<QuizSession> findInProgressByStatusFilter(UUID userId, UUID lessonId, String statusFilter);
 
     /** Paginated sessions filtered by quizId (lessonId). */
     @Query("SELECT * FROM quiz.quiz_session " +

@@ -147,8 +147,16 @@ if consecutiveMistakes >= consecutiveMistakesThreshold:
 
 **Ручной фильтр по бакету (statusFilter) — старт квиза с LessonPage по клику на бейдж статистики:**
 - statusFilter — перечисление, опциональный параметр `start`/`start-or-resume`: `NEW`, `LEARNING`, `REVIEW`. Независим от `filterScope` (§3.4 quiz-declension.md), который фильтрует по грамматическому признаку (падеж/число/род) и применяется только к DECLENSION_FORM. `statusFilter` применим к любому itemType (в первую очередь VOCABULARY_WORD, но не ограничен им) и задаётся вместо обычного смешанного отбора due+new+reserve.
-- Соответствие бейджам LessonStatsBadges (frontend, см. lesson-pages-spec.md): бейдж `{mastered}/{total}` → `statusFilter=REVIEW`; бейдж `{new}` → `statusFilter=NEW`; бейдж `{learning}` → `statusFilter=LEARNING`.
+- Соответствие бейджам LessonStatsBadges/LessonStatsTab (frontend, см. lesson-pages-spec.md): бейдж/строка «Изучено» (`{mastered}/{total}`) → `statusFilter=REVIEW`; «Не изучено»/«Новые» (`{newCount}`) → `statusFilter=NEW`; «В процессе» (`{learning}`) → `statusFilter=LEARNING`.
 - `QuizSession` дополняется полем `statusFilter` (nullable) по аналогии с `filterScope` — участвует в поиске IN_PROGRESS-сессии для резюма: сессия с одним statusFilter не резюмируется кликом по бейджу с другим statusFilter (или без него).
+
+> ⚠️ **Расхождение контракт↔реализация (зафиксировано Агентом 6, 2026-07-17):** параметр `statusFilter` присутствует в OpenAPI (`openapi/common/parameters.yaml#StatusFilterParam`, подключён к обоим путям в `openapi/quiz/quiz-sessions.yaml`) и полностью описан в этом файле (здесь и в §4 п.«2а»), но не реализован в коде quiz-service — фронтенд передаёт параметр, бэкенд его молча игнорирует. Конкретно отсутствует:
+> - `@RequestParam statusFilter` в `QuizSessionController.startSession`/`startOrResumeSession`;
+> - перегрузка/ветка в `QuizSessionService.startOrResumeSession` для бакетного отбора (есть только ветка по `FilterScope`);
+> - колонка `status_filter` в `QuizSession` (модель + Flyway-миграция) и её учёт в поиске IN_PROGRESS-сессии для резюма;
+> - методы отбора NEW/LEARNING в `QuizItemScoreRepository` (есть только `findDueItems` для REVIEW и `countLearnedItems`).
+>
+> Задача на реализацию передана Агенту 2, тестовое покрытие — Агенту 4. Контракт (этот файл, `parameters.yaml`, `quiz-sessions.yaml`) изменений не требует — расхождение устраняется реализацией, не документацией. См. §7 п.5.
 
 ---
 
@@ -208,4 +216,5 @@ if consecutiveMistakes >= consecutiveMistakesThreshold:
 2. Реализация generate() в quiz-service (Агент 2) не содержит ветвлений по itemType внутри алгоритма §4.
 3. Хотя бы два типа квизов (лексика, склонения) проходят через один и тот же generate() без дублирования логики отбора.
 4. Реализация не содержит периодических джобов пересчёта статуса/score (ни cron, ни scheduled-миграций) — бакет и currentScore вычисляются лениво при чтении, согласно §2.4.
+5. Ветка `statusFilter` (§3 «Ручной фильтр по бакету», §4 п.«2а») реализована в `QuizSessionController`/`QuizSessionService`/`QuizItemScoreRepository`, `QuizSession.statusFilter` учитывается при резюме сессии. **Статус: НЕ ВЫПОЛНЕНО** (см. предупреждение в §3) — задача на реализацию у Агента 2, приёмка через тесты Агента 4 (см. §6 open questions не применимо, это не открытый вопрос дизайна, а долг реализации).
 5. Документ не превышает 350 строк (см. `conventions.md`, требование к компактности документации Агента 6).

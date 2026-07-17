@@ -28,6 +28,8 @@
 - `complete` — завершение сессии, публикация события
 - `progress` — проверка незавершённой сессии
 
+> ⚠️ Параметр `statusFilter` (`start`/`start-or-resume`, бакетный отбор NEW/LEARNING/REVIEW для LessonPage) описан в контракте, но не реализован — см. [quiz-generator-spec.md §3](quiz-service/quiz-generator-spec.md#3-quizgeneratorconfig--параметры-отбора) (предупреждение) и §7 п.5 (DoD).
+
 Подробнее: [quiz-service-sessions.md](quiz-service/quiz-service-sessions.md)
 
 ## 3. Репозитории и хранение данных

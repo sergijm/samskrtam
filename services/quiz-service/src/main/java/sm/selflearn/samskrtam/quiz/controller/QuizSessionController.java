@@ -11,6 +11,7 @@ import sm.selflearn.samskrtam.quiz.dto.AnswerResponse;
 import sm.selflearn.samskrtam.quiz.dto.CompleteSessionResponse;
 import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse;
 import sm.selflearn.samskrtam.quiz.model.FilterScope;
+import sm.selflearn.samskrtam.quiz.model.StatusFilter;
 import sm.selflearn.samskrtam.quiz.service.QuizSessionService;
 
 
@@ -25,37 +26,41 @@ public class QuizSessionController {
     private final QuizSessionService quizSessionService;
 
         @PostMapping("/start")
-    @Operation(summary = "Start a new quiz session (or resume if in progress)")
-    @ApiResponse(responseCode = "200", description = "Session started or resumed successfully")
-    @ApiResponse(responseCode = "404", description = "Quiz not found")
-    public Mono<StartOrResumeResponse> startSession(
+        @Operation(summary = "Start a new quiz session (or resume if in progress)")
+        @ApiResponse(responseCode = "200", description = "Session started or resumed successfully")
+        @ApiResponse(responseCode = "404", description = "Quiz not found")
+        public Mono<StartOrResumeResponse> startSession(
                 @PathVariable String slug,
                 @RequestParam UUID lessonId,
                 @RequestHeader("X-User-Id") UUID userId,
-            @RequestHeader("X-User-Locale") String userLocale,
-            @RequestParam(required = false) FilterScope filterScope,
-            @RequestParam(required = false) String filterCaseTypes,
-            @RequestParam(required = false) String filterNumberTypes,
-            @RequestParam(required = false) String filterCombinations) {
-        return quizSessionService.startOrResumeSession(lessonId, userId, userLocale,
-                filterScope, filterCaseTypes, filterNumberTypes, filterCombinations);
+                @RequestHeader("X-User-Locale") String userLocale,
+                @RequestParam(required = false) FilterScope filterScope,
+                @RequestParam(required = false) String filterCaseTypes,
+                @RequestParam(required = false) String filterNumberTypes,
+                @RequestParam(required = false) String filterCombinations,
+                @RequestParam(required = false) StatusFilter statusFilter) {
+            return quizSessionService.startOrResumeSession(lessonId, userId, userLocale,
+                    filterScope, filterCaseTypes, filterNumberTypes, filterCombinations,
+                    statusFilter);
         }
 
-    @PostMapping("/start-or-resume")
-    @Operation(summary = "Start a new quiz session or resume the latest in-progress session for a given quiz")
-    @ApiResponse(responseCode = "200", description = "Session started or resumed successfully")
-    @ApiResponse(responseCode = "404", description = "Quiz not found")
-    public Mono<StartOrResumeResponse> startOrResumeSession(
+        @PostMapping("/start-or-resume")
+        @Operation(summary = "Start a new quiz session or resume the latest in-progress session for a given quiz")
+        @ApiResponse(responseCode = "200", description = "Session started or resumed successfully")
+        @ApiResponse(responseCode = "404", description = "Quiz not found")
+        public Mono<StartOrResumeResponse> startOrResumeSession(
                 @PathVariable String slug,
                 @RequestParam UUID lessonId,
                 @RequestHeader("X-User-Id") UUID userId,
-            @RequestHeader("X-User-Locale") String userLocale,
-                        @RequestParam(required = false) FilterScope filterScope,
-            @RequestParam(required = false) String filterCaseTypes,
-            @RequestParam(required = false) String filterNumberTypes,
-            @RequestParam(required = false) String filterCombinations) {
-        return quizSessionService.startOrResumeSession(lessonId, userId, userLocale,
-                filterScope, filterCaseTypes, filterNumberTypes, filterCombinations);
+                @RequestHeader("X-User-Locale") String userLocale,
+                @RequestParam(required = false) FilterScope filterScope,
+                @RequestParam(required = false) String filterCaseTypes,
+                @RequestParam(required = false) String filterNumberTypes,
+                @RequestParam(required = false) String filterCombinations,
+                @RequestParam(required = false) StatusFilter statusFilter) {
+            return quizSessionService.startOrResumeSession(lessonId, userId, userLocale,
+                    filterScope, filterCaseTypes, filterNumberTypes, filterCombinations,
+                    statusFilter);
         }
 
     @GetMapping("/{sessionId}/resume")

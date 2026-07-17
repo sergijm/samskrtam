@@ -83,4 +83,28 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
               AND score >= :minScore
             """)
     Mono<Long> countLearnedItems(UUID userId, ItemType itemType, int minScore);
+
+    /** Найти записи LEARNING/DIFFICULT (score &lt; masteredLowerThreshold) — для statusFilter=LEARNING. */
+    @Query("""
+            SELECT * FROM quiz.quiz_item_score
+            WHERE user_id = :userId
+              AND item_type = :itemType
+              AND external_ref_id IN (:externalRefIds)
+              AND score < :masteredLowerThreshold
+            """)
+    Flux<QuizItemScore> findLearningItems(
+            UUID userId, ItemType itemType, java.util.List<UUID> externalRefIds, int masteredLowerThreshold);
+
+    /** Найти записи REVIEW (score &gt;= masteredLowerThreshold AND next_review_at &lt;= now) — для statusFilter=REVIEW. */
+    @Query("""
+            SELECT * FROM quiz.quiz_item_score
+            WHERE user_id = :userId
+              AND item_type = :itemType
+              AND external_ref_id IN (:externalRefIds)
+              AND score >= :masteredLowerThreshold
+              AND next_review_at <= :now
+            ORDER BY next_review_at ASC
+            """)
+    Flux<QuizItemScore> findReviewItems(
+            UUID userId, ItemType itemType, java.util.List<UUID> externalRefIds, int masteredLowerThreshold, Instant now);
 }

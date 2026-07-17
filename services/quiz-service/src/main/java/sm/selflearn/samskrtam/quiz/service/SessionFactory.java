@@ -8,6 +8,7 @@ import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.quiz.model.FilterScope;
 import sm.selflearn.samskrtam.quiz.model.QuizSession;
 import sm.selflearn.samskrtam.quiz.model.SessionStatus;
+import sm.selflearn.samskrtam.quiz.model.StatusFilter;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -63,10 +64,36 @@ public class SessionFactory {
                 .status(SessionStatus.IN_PROGRESS)
                 .startedAt(Instant.now())
                 .vocabularyWordsJson(vocabularyWordsJson)
-                .filterScope(filterScope)
+                                .filterScope(filterScope)
                 .filterCaseTypes(filterCaseTypes)
                 .filterNumberTypes(filterNumberTypes)
                 .filterCombinations(filterCombinations)
+                .build();
+    }
+
+    /**
+     * Creates a new quiz session with a status filter (NEW|LEARNING|REVIEW).
+     * See docs/services/quiz-service/quiz-generator-spec.md §3 (statusFilter).
+     */
+    public QuizSession createStatusFilteredSession(UUID lessonId, UUID userId,
+                                                    GeneratedQuizData generatedQuizData,
+                                                    StatusFilter statusFilter) {
+        List<VocabularyWordDto> vocabularyWords = generatedQuizData.getVocabularyWords() != null
+                ? generatedQuizData.getVocabularyWords() : Collections.emptyList();
+        String vocabularyWordsJson = vocabularyWordsSerializer.serialize(vocabularyWords);
+
+        return QuizSession.builder()
+                .id(null)
+                .userId(userId)
+                .lessonId(lessonId)
+                .lessonType(generatedQuizData.getLessonType())
+                .totalQuestions(generatedQuizData.getQuestionsPerSession())
+                .answeredQuestions(0)
+                .score(0)
+                .status(SessionStatus.IN_PROGRESS)
+                .startedAt(Instant.now())
+                .vocabularyWordsJson(vocabularyWordsJson)
+                .statusFilter(statusFilter)
                 .build();
     }
 }

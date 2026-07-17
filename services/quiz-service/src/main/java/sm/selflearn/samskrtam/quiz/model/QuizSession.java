@@ -47,5 +47,13 @@ public class QuizSession {
      * Example: [{"caseType":"NOMINATIVE","numberType":"SINGULAR","gender":"MASCULINE"}]
      */
     private String filterCombinations;
+
+    /**
+     * Status filter (NEW|LEARNING|REVIEW) for bucket-based quiz sessions.
+     * Null when no status filter applied. Participates in IN_PROGRESS session
+     * lookup for resume: a session with one statusFilter is not resumed
+     * by a click on a badge with a different statusFilter (or without one).
+     */
+    private StatusFilter statusFilter;
 }
 
