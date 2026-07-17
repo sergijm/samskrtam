@@ -96,11 +96,7 @@ const GrammarLessonPage = () => {
             </div>
           </div>
 
-          <div className="p-4 mt-4">
-            <div className="flex justify-content-between align-items-center mb-4">
-              <h3>{i18n.language === 'ru' ? 'Вопросы урока' : 'Lesson Questions'}</h3>
-            </div>
-
+                    <div className="p-4 mt-4">
             <TabView activeIndex={activeTab} onTabChange={(e) => setActiveTab(e.index)}>
               <TabPanel header={i18n.language === 'ru' ? 'По падежам' : 'By Case'}>
                 <CaseAggregationTable aggregations={caseAggregations} quizSlug={slug || ''} />
@@ -132,4 +128,6 @@ const GrammarLessonPage = () => {
 };
 
 export default GrammarLessonPage;
+
+
 

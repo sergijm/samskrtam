@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSubmitQuizAnswer } from './useQuiz';
-import type { AnswerRequest, LessonType } from '../types/quiz';
+import { LessonType } from '../types/quizEnums';
+import type { AnswerRequest } from '../types/quiz';
 import type { QuizSessionState } from './useQuizSessionState';
 
 /**
