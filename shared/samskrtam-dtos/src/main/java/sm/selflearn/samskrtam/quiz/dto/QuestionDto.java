@@ -10,19 +10,35 @@ import java.util.UUID;
 @Builder
 public class QuestionDto {
     UUID id;
-    int questionNumber; // New field for the order of the question
-    String text; // This will be a more general question text, not containing stem/case/number
+    int questionNumber;
+    String text;
     List<QuestionOptionDto> options;
 
-    // New fields for structured question data
+    // Existing structured question fields
     String stem;
     String caseType;
     String numberType;
     String gender;
+    String stemDevanagari;
+    String stemTranslationRu;
+    String stemTranslationEn;
 
-    // NEW fields: devanagari and translations of the declension stem
-    String stemDevanagari;       // devanagari of the stem (from declension_stems), empty for VOCABULARY
-    String stemTranslationRu;    // russian translation of the stem, empty for VOCABULARY
-    String stemTranslationEn;    // english translation of the stem, empty for VOCABULARY
+    /**
+     * Question type. When null, frontend treats as "FORM_BY_CASE".
+     * Supported: null/"FORM_BY_CASE", "CASE_BY_FORM", "MULTIPLE_CHOICE".
+     */
+    String questionType;
+
+    /** Whether this question supports multi-select (e.g. CASE_BY_FORM). Default false. */
+    boolean multiSelect;
+
+    /** Prompt form (IAST) for CASE_BY_FORM / MULTIPLE_CHOICE — the form the user must identify. */
+    String formIast;
+
+    /** Prompt form (Devanagari) for CASE_BY_FORM / MULTIPLE_CHOICE. */
+    String formDevanagari;
+
+    /** Case ending string for reference display. */
+    String caseEnding;
 }
 

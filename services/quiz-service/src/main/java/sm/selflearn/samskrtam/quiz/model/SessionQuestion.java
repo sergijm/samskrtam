@@ -35,6 +35,7 @@ public class SessionQuestion {
     private String questionTargetLanguage;
     private String correctTranslationRu;
     private String correctTranslationEn;
+    private String questionType;
 
     /**
      * ID соответствующего case_ending (для DECLENSION_FORM).

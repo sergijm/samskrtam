@@ -13,22 +13,32 @@ export function useSubmitAnswerHandler(s: QuizSessionState) {
   const { i18n } = useTranslation();
   const submitAnswerMutation = useSubmitQuizAnswer();
 
-  const handleSubmitAnswer = useCallback((optionIdToSubmit: string) => {
+  const handleSubmitAnswer = useCallback((optionIdToSubmit: string | string[]) => {
     const { sessionId, currentQuestion, quizSummaryData, startTime, questions, currentQuestionIndex } = s;
-    if (!sessionId || !optionIdToSubmit || !currentQuestion || !quizSummaryData) return;
+    if (!sessionId || !currentQuestion || !quizSummaryData) return;
 
-    s.setSelectedOptionId(optionIdToSubmit);
+    const isMultiSelect = currentQuestion.multiSelect === true;
+    const optionIdsArray = Array.isArray(optionIdToSubmit) ? optionIdToSubmit : [optionIdToSubmit];
+
+    if (isMultiSelect) {
+      // For multi-select, store array; single option stored as string for backward compat
+      s.setSelectedOptionIds(optionIdsArray);
+    } else {
+      const singleId = Array.isArray(optionIdToSubmit) ? optionIdToSubmit[0] : optionIdToSubmit;
+      s.setSelectedOptionId(singleId);
+    }
 
     const questionId = currentQuestion.id;
     const responseTimeMs = Date.now() - startTime;
-    const selectedOption = currentQuestion.options.find((opt) => opt.id === optionIdToSubmit);
+    const selectedOption = currentQuestion.options.find((opt) => opt.id === optionIdsArray[0]);
     const selectedFormIast = selectedOption?.formIast;
 
     const answerRequest: AnswerRequest = {
       questionId,
-      selectedOptionId: optionIdToSubmit,
+      selectedOptionId: isMultiSelect ? '' : optionIdsArray[0],
       selectedFormIast: quizSummaryData.lessonType !== LessonType.VOCABULARY ? selectedFormIast : undefined,
       responseTimeMs,
+      ...(isMultiSelect ? { selectedOptionIds: optionIdsArray } : {}),
     };
 
     submitAnswerMutation.mutate(
@@ -43,6 +53,7 @@ export function useSubmitAnswerHandler(s: QuizSessionState) {
           if (data.isCorrect) {
             s.setFeedback(null);
             s.setSelectedOptionId(null);
+            s.setSelectedOptionIds([]);
             if (currentQuestionIndex < questions.length - 1) {
               s.setCurrentQuestionIndex((i) => i + 1);
             } else {
@@ -62,6 +73,7 @@ export function useSubmitAnswerHandler(s: QuizSessionState) {
         onError: (err) => {
           console.error('Failed to submit answer:', err);
           s.setSelectedOptionId(null);
+          s.setSelectedOptionIds([]);
         },
       },
     );
@@ -71,6 +83,7 @@ export function useSubmitAnswerHandler(s: QuizSessionState) {
     const { currentQuestionIndex, questions } = s;
     s.setFeedback(null);
     s.setSelectedOptionId(null);
+    s.setSelectedOptionIds([]);
     if (currentQuestionIndex < questions.length - 1) {
       s.setCurrentQuestionIndex((i) => i + 1);
     } else {
@@ -81,3 +94,4 @@ export function useSubmitAnswerHandler(s: QuizSessionState) {
 
   return { handleSubmitAnswer, handleNextQuestion, submitAnswerMutation };
 }
+

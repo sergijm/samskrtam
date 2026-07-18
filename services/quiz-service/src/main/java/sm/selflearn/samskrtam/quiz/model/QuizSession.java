@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.quiz.model;
 
+import io.r2dbc.postgresql.codec.Json;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -33,20 +34,20 @@ public class QuizSession {
      * JSONB array of caseType strings. Non-null only when filterScope = CASE_ONLY.
      * Example: ["NOMINATIVE","ACCUSATIVE"]
      */
-    private String filterCaseTypes;
+    private Json filterCaseTypes;
 
     /**
      * JSONB array of numberType strings. Non-null only when filterScope = NUMBER_ONLY.
      * Example: ["SINGULAR","DUAL"]
      */
-    private String filterNumberTypes;
+    private Json filterNumberTypes;
 
     /**
      * JSONB array of {caseType,numberType,gender} objects.
      * Non-null only when filterScope = CASE_NUMBER_GENDER.
      * Example: [{"caseType":"NOMINATIVE","numberType":"SINGULAR","gender":"MASCULINE"}]
      */
-    private String filterCombinations;
+    private Json filterCombinations;
 
     /**
      * Status filter (NEW|LEARNING|REVIEW) for bucket-based quiz sessions.

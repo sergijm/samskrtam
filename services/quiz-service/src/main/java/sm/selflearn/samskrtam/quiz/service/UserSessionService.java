@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.quiz.service;
 
+import io.r2dbc.postgresql.codec.Json;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -243,6 +244,11 @@ public class UserSessionService {
             log.warn("Failed to parse filter combinations for session {}", session.getId(), e);
             return 0;
         }
+    }
+
+        private int parseJsonArrayLength(Json json) {
+        if (json == null) return 0;
+        return parseJsonArrayLength(json.asString());
     }
 
     private int parseJsonArrayLength(String jsonArray) {

@@ -12,27 +12,16 @@
  Target Server Version : 170009 (170009)
  File Encoding         : 65001
 
- Date: 04/07/2026 18:56:26
+ Date: 18/07/2026 07:04:12
 */
 
-
--- ----------------------------
--- Sequence structure for case_endings_id_seq
--- ----------------------------
-DROP SEQUENCE IF EXISTS "content"."case_endings_id_seq";
-CREATE SEQUENCE "content"."case_endings_id_seq" 
-INCREMENT 1
-MINVALUE  1
-MAXVALUE 9223372036854775807
-START 1
-CACHE 1;
 
 -- ----------------------------
 -- Table structure for case_endings
 -- ----------------------------
 DROP TABLE IF EXISTS "content"."case_endings";
 CREATE TABLE "content"."case_endings" (
-  "id" int8 NOT NULL DEFAULT nextval('"content".case_endings_id_seq'::regclass),
+  "id" uuid NOT NULL DEFAULT gen_random_uuid(),
   "vowel_type" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
   "gender" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
   "case_type" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
@@ -68,17 +57,21 @@ COMMENT ON TABLE "content"."declension_forms" IS 'Таблица для хран
 DROP TABLE IF EXISTS "content"."declension_stems";
 CREATE TABLE "content"."declension_stems" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid(),
-  "stem_name_iast" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-  "stem_name_devanagari" varchar(50) COLLATE "pg_catalog"."default",
+  "stem_iast" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
   "vowel_type" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-  "gender" varchar(20) COLLATE "pg_catalog"."default" NOT NULL
+  "gender" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
+  "translation_ru" varchar(255) COLLATE "pg_catalog"."default",
+  "translation_en" varchar(255) COLLATE "pg_catalog"."default",
+  "stem_devanagari" varchar(255) COLLATE "pg_catalog"."default"
 )
 ;
 COMMENT ON COLUMN "content"."declension_stems"."id" IS 'Уникальный идентификатор основы склонения';
-COMMENT ON COLUMN "content"."declension_stems"."stem_name_iast" IS 'Название основы в IAST';
-COMMENT ON COLUMN "content"."declension_stems"."stem_name_devanagari" IS 'Название основы в деванагари';
+COMMENT ON COLUMN "content"."declension_stems"."stem_iast" IS 'Название основы в IAST';
 COMMENT ON COLUMN "content"."declension_stems"."vowel_type" IS 'Тип гласной основы';
 COMMENT ON COLUMN "content"."declension_stems"."gender" IS 'Грамматический род основы';
+COMMENT ON COLUMN "content"."declension_stems"."translation_ru" IS 'Перевод основы на русский язык';
+COMMENT ON COLUMN "content"."declension_stems"."translation_en" IS 'Перевод основы на английский язык';
+COMMENT ON COLUMN "content"."declension_stems"."stem_devanagari" IS 'Название основы в деванагари';
 COMMENT ON TABLE "content"."declension_stems" IS 'Таблица для хранения основ склонений';
 
 -- ----------------------------
@@ -96,48 +89,6 @@ CREATE TABLE "content"."flyway_schema_history" (
   "installed_on" timestamp(6) NOT NULL DEFAULT now(),
   "execution_time" int4 NOT NULL,
   "success" bool NOT NULL
-)
-;
-
--- ----------------------------
--- Table structure for generated_questions
--- ----------------------------
-DROP TABLE IF EXISTS "content"."generated_questions";
-CREATE TABLE "content"."generated_questions" (
-  "id" uuid NOT NULL,
-  "generated_quiz_data_id" uuid NOT NULL,
-  "quiz_id" uuid NOT NULL,
-  "text" text COLLATE "pg_catalog"."default",
-  "explanation_ru" text COLLATE "pg_catalog"."default",
-  "explanation_en" text COLLATE "pg_catalog"."default",
-  "declension_stem_id" uuid,
-  "target_case" varchar COLLATE "pg_catalog"."default",
-  "target_number" varchar COLLATE "pg_catalog"."default",
-  "correct_form_iast" varchar COLLATE "pg_catalog"."default",
-  "correct_form_devanagari" varchar COLLATE "pg_catalog"."default",
-  "vocabulary_word_id" uuid,
-  "question_source_language" varchar COLLATE "pg_catalog"."default",
-  "question_target_language" varchar COLLATE "pg_catalog"."default",
-  "correct_translation_ru" text COLLATE "pg_catalog"."default",
-  "correct_translation_en" text COLLATE "pg_catalog"."default",
-  "user_locale" varchar COLLATE "pg_catalog"."default",
-  "stem" varchar(255) COLLATE "pg_catalog"."default",
-  "case_type" varchar(255) COLLATE "pg_catalog"."default",
-  "number_type" varchar(255) COLLATE "pg_catalog"."default",
-  "question_number" int4 NOT NULL DEFAULT 0
-)
-;
-
--- ----------------------------
--- Table structure for generated_quiz_data
--- ----------------------------
-DROP TABLE IF EXISTS "content"."generated_quiz_data";
-CREATE TABLE "content"."generated_quiz_data" (
-  "id" uuid NOT NULL,
-  "quiz_id" uuid NOT NULL,
-  "user_locale" varchar(10) COLLATE "pg_catalog"."default" NOT NULL,
-  "generated_at" timestamptz(6) NOT NULL,
-  "vocabulary_words_json" text COLLATE "pg_catalog"."default"
 )
 ;
 
@@ -171,56 +122,6 @@ COMMENT ON COLUMN "content"."lesson"."questions_per_session" IS 'Количес�
 COMMENT ON COLUMN "content"."lesson"."created_at" IS 'Дата и время создания записи';
 COMMENT ON COLUMN "content"."lesson"."deleted_at" IS 'Дата и время удаления записи (для мягкого удаления)';
 COMMENT ON TABLE "content"."lesson" IS 'Таблица для хранения информации о квизах';
-
--- ----------------------------
--- Table structure for question
--- ----------------------------
-DROP TABLE IF EXISTS "content"."question";
-CREATE TABLE "content"."question" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid(),
-  "quiz_id" uuid NOT NULL,
-  "text_ru" text COLLATE "pg_catalog"."default" NOT NULL,
-  "text_en" text COLLATE "pg_catalog"."default" NOT NULL,
-  "explanation_ru" text COLLATE "pg_catalog"."default" NOT NULL,
-  "explanation_en" text COLLATE "pg_catalog"."default" NOT NULL,
-  "correct_option_id" uuid,
-  "declension_stem_id" uuid,
-  "target_case" varchar(20) COLLATE "pg_catalog"."default",
-  "target_number" varchar(20) COLLATE "pg_catalog"."default",
-  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "deleted_at" timestamptz(6)
-)
-;
-COMMENT ON COLUMN "content"."question"."id" IS 'Уникальный идентификатор вопроса';
-COMMENT ON COLUMN "content"."question"."quiz_id" IS 'Идентификатор квиза, к которому относится вопрос';
-COMMENT ON COLUMN "content"."question"."text_ru" IS 'Текст вопроса на русском языке';
-COMMENT ON COLUMN "content"."question"."text_en" IS 'Текст вопроса на английском языке';
-COMMENT ON COLUMN "content"."question"."explanation_ru" IS 'Объяснение к вопросу на русском языке';
-COMMENT ON COLUMN "content"."question"."explanation_en" IS 'Объяснение к вопросу на английском языке';
-COMMENT ON COLUMN "content"."question"."correct_option_id" IS 'Идентификатор правильного варианта ответа';
-COMMENT ON COLUMN "content"."question"."declension_stem_id" IS 'Идентификатор основы склонения (для квизов по склонениям)';
-COMMENT ON COLUMN "content"."question"."target_case" IS 'Цележный падеж (для квизов по склонениям)';
-COMMENT ON COLUMN "content"."question"."target_number" IS 'Целевое число (для квизов по склонениям)';
-COMMENT ON COLUMN "content"."question"."created_at" IS 'Дата и время создания записи';
-COMMENT ON COLUMN "content"."question"."deleted_at" IS 'Дата и время удаления записи (для мягкого удаления)';
-COMMENT ON TABLE "content"."question" IS 'Таблица для хранения вопросов квизов';
-
--- ----------------------------
--- Table structure for question_options
--- ----------------------------
-DROP TABLE IF EXISTS "content"."question_options";
-CREATE TABLE "content"."question_options" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid(),
-  "question_id" uuid NOT NULL,
-  "form_iast" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-  "form_devanagari" varchar(255) COLLATE "pg_catalog"."default"
-)
-;
-COMMENT ON COLUMN "content"."question_options"."id" IS 'Уникальный идентификатор варианта ответа';
-COMMENT ON COLUMN "content"."question_options"."question_id" IS 'Идентификатор вопроса, к которому относится вариант ответа';
-COMMENT ON COLUMN "content"."question_options"."form_iast" IS 'Форма слова в IAST';
-COMMENT ON COLUMN "content"."question_options"."form_devanagari" IS 'Форма слова в деванагари';
-COMMENT ON TABLE "content"."question_options" IS 'Таблица для хранения вариантов ответов к вопросам';
 
 -- ----------------------------
 -- Table structure for vocabulary_categories
@@ -280,16 +181,21 @@ COMMENT ON COLUMN "content"."vocabulary_words"."updated_at" IS 'Дата и вр
 COMMENT ON TABLE "content"."vocabulary_words" IS 'Таблица для хранения словарных слов';
 
 -- ----------------------------
--- Alter sequences owned by
--- ----------------------------
-ALTER SEQUENCE "content"."case_endings_id_seq"
-OWNED BY "content"."case_endings"."id";
-SELECT setval('"content"."case_endings_id_seq"', 530, true);
-
--- ----------------------------
 -- Uniques structure for table case_endings
 -- ----------------------------
 ALTER TABLE "content"."case_endings" ADD CONSTRAINT "uq_case_endings" UNIQUE ("vowel_type", "gender", "case_type", "number_type");
+
+-- ----------------------------
+-- Checks structure for table case_endings
+-- ----------------------------
+ALTER TABLE "content"."case_endings" ADD CONSTRAINT "ck_vowel_type" CHECK (vowel_type::text = ANY (ARRAY['A_STEM'::character varying, 'AA_STEM'::character varying, 'I_STEM'::character varying, 'II_STEM'::character varying, 'U_STEM'::character varying, 'UU_STEM'::character varying, 'R_STEM'::character varying]::text[]));
+ALTER TABLE "content"."case_endings" ADD CONSTRAINT "ck_gender" CHECK (gender::text = ANY (ARRAY['MASCULINE'::character varying, 'FEMININE'::character varying, 'NEUTER'::character varying, 'UNKNOWN'::character varying, 'UNSPECIFIED'::character varying]::text[]));
+ALTER TABLE "content"."case_endings" ADD CONSTRAINT "ck_case_type" CHECK (case_type::text = ANY (ARRAY['NOMINATIVE'::character varying, 'ACCUSATIVE'::character varying, 'INSTRUMENTAL'::character varying, 'DATIVE'::character varying, 'ABLATIVE'::character varying, 'GENITIVE'::character varying, 'LOCATIVE'::character varying, 'VOCATIVE'::character varying]::text[]));
+ALTER TABLE "content"."case_endings" ADD CONSTRAINT "ck_number_type" CHECK (number_type::text = ANY (ARRAY['SINGULAR'::character varying, 'DUAL'::character varying, 'PLURAL'::character varying]::text[]));
+COMMENT ON CONSTRAINT "ck_vowel_type" ON "content"."case_endings" IS 'Допустимые типы гласных основ (Java enum VowelType)';
+COMMENT ON CONSTRAINT "ck_gender" ON "content"."case_endings" IS 'Допустимые роды (Java enum Gender)';
+COMMENT ON CONSTRAINT "ck_case_type" ON "content"."case_endings" IS 'Допустимые падежи (Java enum CaseType)';
+COMMENT ON CONSTRAINT "ck_number_type" ON "content"."case_endings" IS 'Допустимые числа (Java enum NumberType)';
 
 -- ----------------------------
 -- Primary Key structure for table case_endings
@@ -310,7 +216,7 @@ ALTER TABLE "content"."declension_forms" ADD CONSTRAINT "declension_forms_pkey" 
 -- ----------------------------
 -- Uniques structure for table declension_stems
 -- ----------------------------
-ALTER TABLE "content"."declension_stems" ADD CONSTRAINT "declension_stems_stem_name_iast_key" UNIQUE ("stem_name_iast");
+ALTER TABLE "content"."declension_stems" ADD CONSTRAINT "declension_stems_stem_iast_key" UNIQUE ("stem_iast");
 
 -- ----------------------------
 -- Checks structure for table declension_stems
@@ -336,16 +242,6 @@ CREATE INDEX "flyway_schema_history_s_idx" ON "content"."flyway_schema_history" 
 ALTER TABLE "content"."flyway_schema_history" ADD CONSTRAINT "flyway_schema_history_pk" PRIMARY KEY ("installed_rank");
 
 -- ----------------------------
--- Primary Key structure for table generated_questions
--- ----------------------------
-ALTER TABLE "content"."generated_questions" ADD CONSTRAINT "generated_questions_pkey" PRIMARY KEY ("id");
-
--- ----------------------------
--- Primary Key structure for table generated_quiz_data
--- ----------------------------
-ALTER TABLE "content"."generated_quiz_data" ADD CONSTRAINT "generated_quiz_data_pkey" PRIMARY KEY ("id");
-
--- ----------------------------
 -- Uniques structure for table lesson
 -- ----------------------------
 ALTER TABLE "content"."lesson" ADD CONSTRAINT "quizzes_slug_key" UNIQUE ("slug");
@@ -360,22 +256,6 @@ ALTER TABLE "content"."lesson" ADD CONSTRAINT "ck_slug_format" CHECK (slug::text
 -- Primary Key structure for table lesson
 -- ----------------------------
 ALTER TABLE "content"."lesson" ADD CONSTRAINT "quizzes_pkey" PRIMARY KEY ("id");
-
--- ----------------------------
--- Checks structure for table question
--- ----------------------------
-ALTER TABLE "content"."question" ADD CONSTRAINT "ck_question_target_case" CHECK (target_case::text = ANY (ARRAY['NOMINATIVE'::character varying::text, 'ACCUSATIVE'::character varying::text, 'INSTRUMENTAL'::character varying::text, 'DATIVE'::character varying::text, 'ABLATIVE'::character varying::text, 'GENITIVE'::character varying::text, 'LOCATIVE'::character varying::text, 'VOCATIVE'::character varying::text]));
-ALTER TABLE "content"."question" ADD CONSTRAINT "ck_question_target_number" CHECK (target_number::text = ANY (ARRAY['SINGULAR'::character varying::text, 'DUAL'::character varying::text, 'PLURAL'::character varying::text]));
-
--- ----------------------------
--- Primary Key structure for table question
--- ----------------------------
-ALTER TABLE "content"."question" ADD CONSTRAINT "questions_pkey" PRIMARY KEY ("id");
-
--- ----------------------------
--- Primary Key structure for table question_options
--- ----------------------------
-ALTER TABLE "content"."question_options" ADD CONSTRAINT "question_options_pkey" PRIMARY KEY ("id");
 
 -- ----------------------------
 -- Uniques structure for table vocabulary_categories
@@ -429,31 +309,6 @@ ALTER TABLE "content"."vocabulary_words" ADD CONSTRAINT "vocabulary_words_pkey" 
 -- Foreign Keys structure for table declension_forms
 -- ----------------------------
 ALTER TABLE "content"."declension_forms" ADD CONSTRAINT "declension_forms_declension_stem_id_fkey" FOREIGN KEY ("declension_stem_id") REFERENCES "content"."declension_stems" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- ----------------------------
--- Foreign Keys structure for table generated_questions
--- ----------------------------
-ALTER TABLE "content"."generated_questions" ADD CONSTRAINT "fk_generated_questions_declension_stem_id" FOREIGN KEY ("declension_stem_id") REFERENCES "content"."declension_stems" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-ALTER TABLE "content"."generated_questions" ADD CONSTRAINT "fk_generated_questions_generated_quiz_data_id" FOREIGN KEY ("generated_quiz_data_id") REFERENCES "content"."generated_quiz_data" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-ALTER TABLE "content"."generated_questions" ADD CONSTRAINT "fk_generated_questions_quiz_id" FOREIGN KEY ("quiz_id") REFERENCES "content"."lesson" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-ALTER TABLE "content"."generated_questions" ADD CONSTRAINT "fk_generated_questions_vocabulary_word_id" FOREIGN KEY ("vocabulary_word_id") REFERENCES "content"."vocabulary_words" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- ----------------------------
--- Foreign Keys structure for table generated_quiz_data
--- ----------------------------
-ALTER TABLE "content"."generated_quiz_data" ADD CONSTRAINT "fk_generated_quiz_data_quiz_id" FOREIGN KEY ("quiz_id") REFERENCES "content"."lesson" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- ----------------------------
--- Foreign Keys structure for table question
--- ----------------------------
-ALTER TABLE "content"."question" ADD CONSTRAINT "fk_correct_option" FOREIGN KEY ("correct_option_id") REFERENCES "content"."question_options" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-ALTER TABLE "content"."question" ADD CONSTRAINT "fk_declension_stem" FOREIGN KEY ("declension_stem_id") REFERENCES "content"."declension_stems" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-ALTER TABLE "content"."question" ADD CONSTRAINT "questions_quiz_id_fkey" FOREIGN KEY ("quiz_id") REFERENCES "content"."lesson" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- ----------------------------
--- Foreign Keys structure for table question_options
--- ----------------------------
-ALTER TABLE "content"."question_options" ADD CONSTRAINT "question_options_question_id_fkey" FOREIGN KEY ("question_id") REFERENCES "content"."question" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- ----------------------------
 -- Foreign Keys structure for table vocabulary_categories

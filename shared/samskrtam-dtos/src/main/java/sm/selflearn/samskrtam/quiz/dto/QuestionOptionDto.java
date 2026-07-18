@@ -9,6 +9,27 @@ import java.util.UUID;
 @Builder
 public class QuestionOptionDto {
     UUID id;
+
+    /**
+     * Option type: "FORM" (declension form, default) or "CASE_COMBINATION" (case×number×gender triple).
+     * When null, frontend treats as "FORM".
+     */
+    String optionType;
+
+    /** IAST form of the declension, used when optionType = "FORM" (default). */
     String formIast;
+
+    /** Devanagari form, used when optionType = "FORM" (default). */
     String formDevanagari;
+
+    // Fields for optionType = "CASE_COMBINATION"
+    String caseType;
+    String caseRu;
+    String caseEn;
+    String numberType;
+    String numberRu;
+    String numberEn;
+    String gender;
+    String genderRu;
+    String genderEn;
 }

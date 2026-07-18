@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.quiz.service;
 
+import io.r2dbc.postgresql.codec.Json;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -22,7 +23,7 @@ public class SessionFactory {
     private final VocabularyWordsSerializer vocabularyWordsSerializer;
 
     public QuizSession createSession(UUID lessonId, UUID userId, GeneratedQuizData generatedQuizData) {
-        List<VocabularyWordDto> vocabularyWords = generatedQuizData.getVocabularyWords() != null ? generatedQuizData.getVocabularyWords() : Collections.emptyList();
+                List<VocabularyWordDto> vocabularyWords = generatedQuizData.getVocabularyWords() != null ? generatedQuizData.getVocabularyWords() : Collections.emptyList();
         String vocabularyWordsJson = vocabularyWordsSerializer.serialize(vocabularyWords);
 
         return QuizSession.builder()
@@ -65,9 +66,9 @@ public class SessionFactory {
                 .startedAt(Instant.now())
                 .vocabularyWordsJson(vocabularyWordsJson)
                                 .filterScope(filterScope)
-                .filterCaseTypes(filterCaseTypes)
-                .filterNumberTypes(filterNumberTypes)
-                .filterCombinations(filterCombinations)
+                .filterCaseTypes(filterCaseTypes != null ? Json.of(filterCaseTypes) : null)
+                .filterNumberTypes(filterNumberTypes != null ? Json.of(filterNumberTypes) : null)
+                .filterCombinations(filterCombinations != null ? Json.of(filterCombinations) : null)
                 .build();
     }
 
@@ -78,7 +79,7 @@ public class SessionFactory {
     public QuizSession createStatusFilteredSession(UUID lessonId, UUID userId,
                                                     GeneratedQuizData generatedQuizData,
                                                     StatusFilter statusFilter) {
-        List<VocabularyWordDto> vocabularyWords = generatedQuizData.getVocabularyWords() != null
+                List<VocabularyWordDto> vocabularyWords = generatedQuizData.getVocabularyWords() != null
                 ? generatedQuizData.getVocabularyWords() : Collections.emptyList();
         String vocabularyWordsJson = vocabularyWordsSerializer.serialize(vocabularyWords);
 

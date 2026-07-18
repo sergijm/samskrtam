@@ -2,16 +2,23 @@ package sm.selflearn.samskrtam.quiz.dto;
 
 import lombok.Builder;
 import lombok.Value;
-import lombok.extern.jackson.Jacksonized; // Import Jacksonized
+import lombok.extern.jackson.Jacksonized;
 
+import java.util.List;
 import java.util.UUID;
 
 @Value
 @Builder
-@Jacksonized // Add Jacksonized annotation
+@Jacksonized
 public class AnswerRequest {
     UUID questionId;
+
+    /** Single selected option ID (for single-select questions, e.g. FORM_BY_CASE). */
     UUID selectedOptionId;
-    String selectedFormIast; // New optional field
+
+    /** Multiple selected option IDs (for multi-select questions, e.g. CASE_BY_FORM). */
+    List<UUID> selectedOptionIds;
+    String selectedFormIast;
     int responseTimeMs;
 }
+

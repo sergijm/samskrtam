@@ -21,6 +21,8 @@ export interface QuizSessionState {
   setQuestions: React.Dispatch<React.SetStateAction<SessionQuestion[]>>;
   selectedOptionId: string | null;
   setSelectedOptionId: React.Dispatch<React.SetStateAction<string | null>>;
+  selectedOptionIds: string[];
+  setSelectedOptionIds: React.Dispatch<React.SetStateAction<string[]>>;
   feedback: FeedbackState | null;
   setFeedback: React.Dispatch<React.SetStateAction<FeedbackState | null>>;
   startTime: number;
@@ -43,6 +45,7 @@ export function useQuizSessionState(): QuizSessionState {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<SessionQuestion[]>([]);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+  const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [hasAttemptedSessionLoad, setHasAttemptedSessionLoad] = useState(false);
@@ -64,6 +67,7 @@ export function useQuizSessionState(): QuizSessionState {
     currentQuestionIndex, setCurrentQuestionIndex,
     questions, setQuestions,
     selectedOptionId, setSelectedOptionId,
+    selectedOptionIds, setSelectedOptionIds,
     feedback, setFeedback,
     startTime, setStartTime,
     hasAttemptedSessionLoad, setHasAttemptedSessionLoad,
@@ -73,3 +77,4 @@ export function useQuizSessionState(): QuizSessionState {
     isLastQuestion,
   };
 }
+

@@ -9,6 +9,7 @@ import sm.selflearn.samskrtam.content.model.Gender;
 import sm.selflearn.samskrtam.quiz.constants.ProgressConstants;
 import sm.selflearn.samskrtam.quiz.dto.GrammarQuestionProgress;
 import sm.selflearn.samskrtam.quiz.dto.WordStatus;
+import sm.selflearn.samskrtam.quiz.localization.CaseNumberGenderLocalizer;
 import sm.selflearn.samskrtam.quiz.model.QuizItemScore;
 
 import java.nio.charset.StandardCharsets;
@@ -66,26 +67,22 @@ public class GrammarQuestionProgressFactory {
 
         GrammarQuestionProgress p = new GrammarQuestionProgress();
         p.setQuestionId(questionId);
-        p.setTextRu(form.getCaseType().getRuName() + ", " + form.getNumberType().getRuName());
-        p.setTextEn(form.getCaseType().getEnName() + ", " + form.getNumberType().getEnName());
+        p.setTextRu(CaseNumberGenderLocalizer.caseTypeRu(form.getCaseType()) + ", " +
+                     CaseNumberGenderLocalizer.numberTypeRu(form.getNumberType()));
+        p.setTextEn(CaseNumberGenderLocalizer.caseTypeEn(form.getCaseType()) + ", " +
+                     CaseNumberGenderLocalizer.numberTypeEn(form.getNumberType()));
         p.setScore(score);
         p.setStatus(forcedStatus != null ? forcedStatus : resolveGrammarStatus(score));
 
         p.setCaseType(form.getCaseType().name());
-        p.setCaseRu(form.getCaseType().getRuName());
-        p.setCaseEn(form.getCaseType().getEnName());
+        p.setCaseRu(CaseNumberGenderLocalizer.caseTypeRu(form.getCaseType()));
+        p.setCaseEn(CaseNumberGenderLocalizer.caseTypeEn(form.getCaseType()));
         p.setNumberType(form.getNumberType().name());
-        p.setNumberRu(form.getNumberType().getRuName());
-        p.setNumberEn(form.getNumberType().getEnName());
+        p.setNumberRu(CaseNumberGenderLocalizer.numberTypeRu(form.getNumberType()));
+        p.setNumberEn(CaseNumberGenderLocalizer.numberTypeEn(form.getNumberType()));
         p.setGender(genderStr);
-        if (gender != null) {
-            p.setGenderRu(gender.getRuName());
-            p.setGenderEn(gender.getEnName());
-        } else {
-            p.setGenderRu(null);
-            p.setGenderEn(null);
-        }
-
+        p.setGenderRu(CaseNumberGenderLocalizer.genderRu(gender));
+        p.setGenderEn(CaseNumberGenderLocalizer.genderEn(gender));
         p.setCaseEnding(caseEndingMatcher.find(gender, form, caseEndings));
         return p;
     }
@@ -120,3 +117,4 @@ public class GrammarQuestionProgressFactory {
         return WordStatus.MASTERED;
     }
 }
+

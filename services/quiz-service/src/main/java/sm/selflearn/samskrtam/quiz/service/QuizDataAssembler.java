@@ -107,7 +107,8 @@ public class QuizDataAssembler {
         return generatedQuestion.getCorrectFormIast();
     }
 
-    private Mono<QuestionDto> generateQuestionOptions(QuizSession session, GeneratedQuizQuestionDto generatedQuestion, List<VocabularyWordDto> allVocabularyWords, String userLocale) {
+        private Mono<QuestionDto> generateQuestionOptions(QuizSession session, GeneratedQuizQuestionDto generatedQuestion, List<VocabularyWordDto> allVocabularyWords, String userLocale) {
+        // --- Vocabulary branch ---
         if (LessonType.isVocabulary(session.getLessonType())) {
             VocabularyWordDto correctWord = allVocabularyWords.stream()
                     .filter(w -> w.getId().equals(generatedQuestion.getVocabularyWordId()))
@@ -121,37 +122,117 @@ public class QuizDataAssembler {
                     generatedQuestion.getQuestionTargetLanguage(),
                     userLocale
             ).map(options -> QuestionDto.builder()
-                                .id(generatedQuestion.getId())
-                                .questionNumber(generatedQuestion.getQuestionNumber())
-                                .text(generatedQuestion.getText())
-                                .options(options)
-                                .stem(generatedQuestion.getStem())
-                                .caseType(generatedQuestion.getCaseType())
-                                .numberType(generatedQuestion.getNumberType())
-                                .stemDevanagari(generatedQuestion.getStemDevanagari())
-                                .stemTranslationRu(generatedQuestion.getStemTranslationRu())
-                                .stemTranslationEn(generatedQuestion.getStemTranslationEn())
-                                                                .gender(generatedQuestion.getGender())
-                                                                .build());
-                                                    } else {
-                                                        return declensionOptionGeneratorService.generateOptions(
-                                                                generatedQuestion.getDeclensionStemId(),
-                                                                generatedQuestion.getTargetCase(),
-                                                                generatedQuestion.getTargetNumber(),
-                                                                generatedQuestion.getCorrectFormIast()
-                                                        ).map(options -> QuestionDto.builder()
-                                                                .id(generatedQuestion.getId())
-                                                                .questionNumber(generatedQuestion.getQuestionNumber())
-                                                                .text(generatedQuestion.getText())
-                                                                .options(options)
-                                                                .stem(generatedQuestion.getStem())
-                                                                .caseType(generatedQuestion.getCaseType())
-                                                                .numberType(generatedQuestion.getNumberType())
-                                                                .stemDevanagari(generatedQuestion.getStemDevanagari())
-                                                                .stemTranslationRu(generatedQuestion.getStemTranslationRu())
-                                                                .stemTranslationEn(generatedQuestion.getStemTranslationEn())
-                                                                .gender(generatedQuestion.getGender())
-                                                                .build());
-                                                    }
-                                                }
-                                            }
+                    .id(generatedQuestion.getId())
+                    .questionNumber(generatedQuestion.getQuestionNumber())
+                    .text(generatedQuestion.getText())
+                    .options(options)
+                    .stem(generatedQuestion.getStem())
+                    .caseType(generatedQuestion.getCaseType())
+                    .numberType(generatedQuestion.getNumberType())
+                    .stemDevanagari(generatedQuestion.getStemDevanagari())
+                    .stemTranslationRu(generatedQuestion.getStemTranslationRu())
+                    .stemTranslationEn(generatedQuestion.getStemTranslationEn())
+                    .gender(generatedQuestion.getGender())
+                    .build());
+        }
+
+        // --- Declension branch — dispatch by questionType ---
+        String qt = generatedQuestion.getQuestionType();
+
+        // FORM_BY_CASE (default, null)
+        if (qt == null || "FORM_BY_CASE".equals(qt)) {
+            return declensionOptionGeneratorService.generateOptions(
+                    generatedQuestion.getDeclensionStemId(),
+                    generatedQuestion.getTargetCase(),
+                    generatedQuestion.getTargetNumber(),
+                    generatedQuestion.getCorrectFormIast()
+            ).map(options -> QuestionDto.builder()
+                    .id(generatedQuestion.getId())
+                    .questionNumber(generatedQuestion.getQuestionNumber())
+                    .text(generatedQuestion.getText())
+                    .options(options)
+                    .stem(generatedQuestion.getStem())
+                    .caseType(generatedQuestion.getCaseType())
+                    .numberType(generatedQuestion.getNumberType())
+                    .stemDevanagari(generatedQuestion.getStemDevanagari())
+                    .stemTranslationRu(generatedQuestion.getStemTranslationRu())
+                    .stemTranslationEn(generatedQuestion.getStemTranslationEn())
+                    .gender(generatedQuestion.getGender())
+                    .build());
+        }
+
+        // CASE_BY_FORM: prompt = formIast/formDevanagari, single-select
+        if ("CASE_BY_FORM".equals(qt)) {
+            String gender = generatedQuestion.getGender() != null ? generatedQuestion.getGender() : "UNSPECIFIED";
+            return declensionOptionGeneratorService.generateCaseOptions(
+                    generatedQuestion.getDeclensionStemId(),
+                    generatedQuestion.getTargetCase(),
+                    generatedQuestion.getTargetNumber(),
+                    gender
+            ).map(options -> QuestionDto.builder()
+                    .id(generatedQuestion.getId())
+                    .questionNumber(generatedQuestion.getQuestionNumber())
+                    .text(generatedQuestion.getText())
+                    .questionType("CASE_BY_FORM")
+                    .multiSelect(false)
+                    .formIast(generatedQuestion.getCorrectFormIast())
+                    .formDevanagari(generatedQuestion.getCorrectFormDevanagari())
+                    .caseEnding(generatedQuestion.getCaseEnding())
+                    .options(options)
+                    .stem(generatedQuestion.getStem())
+                    // NOT setting caseType/numberType — prompt is the form, not the answer hint
+                    .stemDevanagari(generatedQuestion.getStemDevanagari())
+                    .stemTranslationRu(generatedQuestion.getStemTranslationRu())
+                    .stemTranslationEn(generatedQuestion.getStemTranslationEn())
+                    .gender(generatedQuestion.getGender())
+                    .build());
+        }
+
+        // ENDING_MATCH: prompt = ending, multi-select
+        if ("ENDING_MATCH".equals(qt)) {
+            String gender = generatedQuestion.getGender() != null ? generatedQuestion.getGender() : "UNSPECIFIED";
+            return declensionOptionGeneratorService.generateCaseOptions(
+                    generatedQuestion.getDeclensionStemId(),
+                    generatedQuestion.getTargetCase(),
+                    generatedQuestion.getTargetNumber(),
+                    gender
+            ).map(options -> QuestionDto.builder()
+                    .id(generatedQuestion.getId())
+                    .questionNumber(generatedQuestion.getQuestionNumber())
+                    .text(generatedQuestion.getText())
+                    .questionType("ENDING_MATCH")
+                    .multiSelect(true)
+                    .formIast(generatedQuestion.getCorrectFormIast())
+                    .formDevanagari(generatedQuestion.getCorrectFormDevanagari())
+                    .caseEnding(generatedQuestion.getCaseEnding())
+                    .options(options)
+                    .stem(generatedQuestion.getStem())
+                    // NOT setting caseType/numberType — prompt is the ending, not the answer hint
+                    .stemDevanagari(generatedQuestion.getStemDevanagari())
+                    .stemTranslationRu(generatedQuestion.getStemTranslationRu())
+                    .stemTranslationEn(generatedQuestion.getStemTranslationEn())
+                    .gender(generatedQuestion.getGender())
+                    .build());
+        }
+
+        // Fallback: unknown questionType → treat as FORM_BY_CASE
+        return declensionOptionGeneratorService.generateOptions(
+                generatedQuestion.getDeclensionStemId(),
+                generatedQuestion.getTargetCase(),
+                generatedQuestion.getTargetNumber(),
+                generatedQuestion.getCorrectFormIast()
+        ).map(options -> QuestionDto.builder()
+                .id(generatedQuestion.getId())
+                .questionNumber(generatedQuestion.getQuestionNumber())
+                .text(generatedQuestion.getText())
+                .options(options)
+                .stem(generatedQuestion.getStem())
+                .caseType(generatedQuestion.getCaseType())
+                .numberType(generatedQuestion.getNumberType())
+                .stemDevanagari(generatedQuestion.getStemDevanagari())
+                .stemTranslationRu(generatedQuestion.getStemTranslationRu())
+                .stemTranslationEn(generatedQuestion.getStemTranslationEn())
+                .gender(generatedQuestion.getGender())
+                                .build());
+    }
+}

@@ -58,5 +58,18 @@ public class GeneratedQuizQuestionDto {
      * </ol>
      */
     String itemType;
+
+    /**
+     * Question type for rendering: FORM_BY_CASE (default/null), CASE_BY_FORM, or ENDING_MATCH.
+     * Determines which option generator to use and how the frontend renders the prompt.
+     * Set by content-service; null means FORM_BY_CASE for backward compatibility.
+     */
+    String questionType;
+
+    /**
+     * Case ending string (e.g. "aḥ", "am", "ena") for ENDING_MATCH / CASE_BY_FORM display.
+     * Copied from content.case_endings.ending at generation time.
+     */
+    String caseEnding;
 }
 

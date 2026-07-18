@@ -8,6 +8,8 @@ import { ProgressBar } from 'primereact/progressbar';
 import { useQuizSession } from '../hooks/useQuizSession';
 import { FilterParams } from '../api/quizApi';
 import QuizQuestionPanel from '../components/quiz/QuizQuestionPanel';
+import QuizCaseSelectPanel from '../components/quiz/QuizCaseSelectPanel';
+import QuizEndingMatchPanel from '../components/quiz/QuizEndingMatchPanel';
 import QuizFeedbackPanel from '../components/quiz/QuizFeedbackPanel';
 
 const QuizPage = () => {
@@ -93,17 +95,34 @@ const QuizPage = () => {
         <ProgressBar value={progress} className="mb-4" />
         {currentQuestion && quizSummaryData && (
           <>
-                        <QuizQuestionPanel
+            {currentQuestion.questionType === 'CASE_BY_FORM' ? (
+              <QuizCaseSelectPanel
               question={currentQuestion}
-              currentQuestionIndex={currentQuestionIndex}
-              totalQuestions={questions.length}
-              selectedOptionId={selectedOptionId}
+                selectedOptionId={selectedOptionId}
               disabled={!!feedback || isSubmittingAnswer}
-              lessonType={quizSummaryData.lessonType}
               feedback={feedback}
               onSelectOption={handleSubmitAnswer}
             />
-        {feedback && (
+            ) : currentQuestion.questionType === 'ENDING_MATCH' ? (
+              <QuizEndingMatchPanel
+                question={currentQuestion}
+                disabled={!!feedback || isSubmittingAnswer}
+                feedback={feedback}
+                onSelectOption={handleSubmitAnswer}
+              />
+            ) : (
+              <QuizQuestionPanel
+                question={currentQuestion}
+                currentQuestionIndex={currentQuestionIndex}
+                totalQuestions={questions.length}
+                selectedOptionId={selectedOptionId}
+                disabled={!!feedback || isSubmittingAnswer}
+                lessonType={quizSummaryData.lessonType}
+                feedback={feedback}
+                onSelectOption={handleSubmitAnswer}
+              />
+        )}
+            {feedback && (
               <QuizFeedbackPanel
                 isCorrect={feedback.isCorrect}
                 correctAnswerText={feedback.correctAnswerText}
@@ -111,7 +130,7 @@ const QuizPage = () => {
                 isLastQuestion={isLastQuestion}
                 onNext={handleNextQuestion}
               />
-            )}
+        )}
           </>
         )}
       </Card>

@@ -81,12 +81,27 @@ export interface SessionQuestion {
     stemDevanagari?: string;
     stemTranslationRu?: string;
     stemTranslationEn?: string;
+    questionType?: 'FORM_BY_CASE' | 'CASE_BY_FORM' | 'ENDING_MATCH';
+    multiSelect?: boolean;
+    formIast?: string;
+    formDevanagari?: string;
+    caseEnding?: string;
 }
 
 export interface QuestionOption {
     id: string;
     formIast: string;
     formDevanagari: string;
+    optionType?: string;
+    caseType?: string;
+    caseRu?: string;
+    caseEn?: string;
+    numberType?: string;
+    numberRu?: string;
+    numberEn?: string;
+    gender?: string;
+    genderRu?: string;
+    genderEn?: string;
 }
 
 export interface AnswerRequest {
@@ -94,6 +109,7 @@ export interface AnswerRequest {
     selectedOptionId: string;
     selectedFormIast?: string;
     responseTimeMs: number;
+    selectedOptionIds?: string[];
 }
 
 export interface AnswerResponse {
