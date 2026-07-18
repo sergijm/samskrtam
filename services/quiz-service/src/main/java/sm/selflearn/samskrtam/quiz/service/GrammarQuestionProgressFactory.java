@@ -20,12 +20,14 @@ import java.util.UUID;
 /**
  * Фабрика для создания {@link GrammarQuestionProgress} — устраняет дублирование
  * между buildGroupProgress и emptyGroupProgress.
+ * Статус вычисляется через общий {@link WordStatusResolver}.
  */
 @Component
 @RequiredArgsConstructor
 public class GrammarQuestionProgressFactory {
 
     private final CaseEndingMatcher caseEndingMatcher;
+    private final WordStatusResolver wordStatusResolver;
 
     /**
      * Создаёт {@link GrammarQuestionProgress} с заданным score (без REVIEW).
@@ -49,7 +51,7 @@ public class GrammarQuestionProgressFactory {
             List<CaseEndingDto> caseEndings,
             QuizItemScore scoreEntity,
             Instant now) {
-        WordStatus status = resolveGrammarStatusFromEntity(scoreEntity, now);
+        WordStatus status = wordStatusResolver.resolve(scoreEntity, now);
         int score = scoreEntity != null ? scoreEntity.getScore() : 0;
         return build(lessonItem, form, gender, caseEndings, score, status);
     }
@@ -91,6 +93,7 @@ public class GrammarQuestionProgressFactory {
         return UUID.nameUUIDFromBytes(
                 (gender + ":" + caseType + ":" + numberType).getBytes(StandardCharsets.UTF_8));
     }
+
     /**
      * Вычисляет статус по хранимому score.
      * Используется для GrammarQuestionProgress, где статус определяется по среднему score.
@@ -101,19 +104,6 @@ public class GrammarQuestionProgressFactory {
     private WordStatus resolveGrammarStatus(int score) {
         if (score == 0) return WordStatus.NEW;
         if (score < ProgressConstants.MASTERED_LOWER_THRESHOLD) return WordStatus.LEARNING;
-        return WordStatus.MASTERED;
-    }
-
-    /**
-     * Вычисляет статус из QuizItemScore с учётом nextReviewAt.
-     */
-    private WordStatus resolveGrammarStatusFromEntity(QuizItemScore itemScore, Instant now) {
-        if (itemScore == null) return WordStatus.NEW;
-        int score = itemScore.getScore();
-        if (score < ProgressConstants.MASTERED_LOWER_THRESHOLD) return WordStatus.LEARNING;
-        if (itemScore.getNextReviewAt() != null && !itemScore.getNextReviewAt().isAfter(now)) {
-            return WordStatus.REVIEW;
-        }
         return WordStatus.MASTERED;
     }
 }

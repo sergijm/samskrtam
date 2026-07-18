@@ -3,21 +3,19 @@
 ================================================================================
 Директория: C:\MyDev\samskrtam
 Анализируемые расширения: ., j, a, v, a
-Всего файлов с >100 строк: 63
-Всего строк: 10,103
+Всего файлов с >100 строк: 66
+Всего строк: 9,838
 
 ================================================================================
 ☕ JAVA ФАЙЛЫ С БОЛЕЕ 100 СТРОК
 ================================================================================
-Всего Java файлов: 63
+Всего Java файлов: 66
 
-  services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\VocabularyProgressService.java - 430 строк
-  services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\QuizSessionService.java - 387 строк
-  services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\QuizGenerator.java - 376 строк
   services\quiz-service\src\test\java\sm\selflearn\samskrtam\quiz\service\ScoreCalculatorTest.java - 280 строк
-  services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\UserSessionService.java - 267 строк
+  services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\QuizGenerator.java - 247 строк
   services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\QuizDataAssembler.java - 238 строк
   services\user-service\src\main\java\sm\selflearn\samskrtam\user\outbox\KeycloakAdminService.java - 222 строк
+  services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\SessionCreationService.java - 212 строк
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\VerseAnalysisSaver.java - 209 строк
   services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\DeclensionOptionGeneratorService.java - 206 строк
   infrastructure\api-gateway\src\main\java\sm\selflearn\samskrtam\gateway\oauth2\OAuthController.java - 203 строк
@@ -29,6 +27,7 @@
   services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\ScoreCalculator.java - 181 строк
   services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\SessionOperationsService.java - 181 строк
   shared\samskrtam-dtos\src\main\java\sm\selflearn\samskrtam\quiz\dto\GrammarQuestionProgress.java - 178 строк
+  services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\QuizStatusFilteredGenerator.java - 176 строк
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\ChapterTitleService.java - 176 строк
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\WorkMetadataClient.java - 176 строк
   services\user-service\src\main\java\sm\selflearn\samskrtam\user\controller\UserController.java - 175 строк
@@ -40,7 +39,10 @@
   services\content-service\src\main\java\sm\selflearn\samskrtam\content\service\DeclensionQuizGeneratorService.java - 157 строк
   infrastructure\api-gateway\src\main\java\sm\selflearn\samskrtam\gateway\config\GatewayRoutesConfig.java - 156 строк
   services\statistics-service\src\main\java\sm\selflearn\samskrtam\statistics\config\KafkaStreamsConfig.java - 156 строк
+  services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\VocabularyLessonBuilder.java - 155 строк
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\JsonSchemas.java - 153 строк
+  services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\QuizSessionService.java - 147 строк
+  services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\SessionHistoryPaginationService.java - 143 строк
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\mapper\VerseMapper.java - 141 строк
   services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\LessonService.java - 138 строк
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\VerseAnalysisService.java - 138 строк
@@ -49,8 +51,8 @@
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\controller\SangrahaController.java - 131 строк
   services\dictionary-service\src\main\java\sm\selflearn\samskrtam\monierwilliams\service\MwTranslationExtractor.java - 130 строк
   services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\controller\QuizSessionController.java - 127 строк
+  services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\UserSessionService.java - 125 строк
   services\content-service\src\main\java\sm\selflearn\samskrtam\content\controller\LessonContentController.java - 121 строк
-  services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\GrammarQuestionProgressFactory.java - 120 строк
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\LlmToolSchemaBuilder.java - 120 строк
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\ChapterService.java - 119 строк
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\LlmClient.java - 119 строк
@@ -59,6 +61,7 @@
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\TransliterationService.java - 112 строк
   infrastructure\api-gateway\src\main\java\sm\selflearn\samskrtam\gateway\auth\AuthController.java - 111 строк
   services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\repository\QuizItemScoreRepository.java - 110 строк
+  services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\GrammarQuestionProgressFactory.java - 110 строк
   services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\QuizItemScoreService.java - 110 строк
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\strategy\TwoPassStrategy.java - 110 строк
   services\user-service\src\main\java\sm\selflearn\samskrtam\user\service\AvatarService.java - 110 строк
@@ -75,5 +78,5 @@
   services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\repository\QuizAnswerRepository.java - 101 строк
   services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\SessionFactory.java - 101 строк
 
-Статистика Java: 63 файлов, 10,103 строк
+Статистика Java: 66 файлов, 9,838 строк
 

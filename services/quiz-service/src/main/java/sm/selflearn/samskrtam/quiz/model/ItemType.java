@@ -13,7 +13,7 @@ package sm.selflearn.samskrtam.quiz.model;
  *     <ul>
  *       <li>{@code QuizItemScoreUpdateStrategy.resolveExternalRefId()}</li>
  *       <li>{@code QuizItemScoreUpdateStrategy.resolveItemType()}</li>
- *       <li>{@code QuizSessionService.createFilteredSession()}</li>
+ *       <li>{@code SessionCreationService.filterAndSaveQuestions()}</li>
  *     </ul>
  *   </li>
  *   <li>Реализовать модуль рендеринга по (itemType, externalRefId)</li>

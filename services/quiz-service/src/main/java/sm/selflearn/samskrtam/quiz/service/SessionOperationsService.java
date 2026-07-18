@@ -43,6 +43,7 @@ public class SessionOperationsService {
     private final QuizSessionRepository quizSessionRepository;
     private final QuizAnswerRepository quizAnswerRepository;
     private final QuizDataAssembler quizDataAssembler;
+    private final VocabularyAnswerResolver vocabularyAnswerResolver;
     private final OutboxEventCreator outboxEventCreator;
     private final QuizAnswerMapper quizAnswerMapper;
     private final SessionQuestionRepository sessionQuestionRepository;
@@ -102,10 +103,10 @@ public class SessionOperationsService {
                                                        GeneratedQuizQuestionDto generatedQuestion, String userLocale) {
         return vocabularyWordsHelper.getVocabularyWords(session)
                 .flatMap(allVocabularyWords -> {
-                    String selectedOptionIast = quizDataAssembler.determineSelectedOptionIast(request, generatedQuestion, allVocabularyWords);
+                    String selectedOptionIast = vocabularyAnswerResolver.determineSelectedOptionIast(request, generatedQuestion, allVocabularyWords);
                     boolean isCorrect = generatedQuestion.getCorrectFormIast().equals(selectedOptionIast);
-                    UUID correctWordId = quizDataAssembler.findCorrectWordId(generatedQuestion, allVocabularyWords);
-                    String correctAnswerText = quizDataAssembler.findCorrectAnswerText(generatedQuestion, allVocabularyWords, userLocale);
+                    UUID correctWordId = vocabularyAnswerResolver.findCorrectWordId(generatedQuestion, allVocabularyWords);
+                    String correctAnswerText = vocabularyAnswerResolver.findCorrectAnswerText(generatedQuestion, allVocabularyWords, userLocale);
 
                     QuizAnswer newAnswer = QuizAnswer.builder()
                             .id(null)
