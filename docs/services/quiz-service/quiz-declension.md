@@ -74,6 +74,19 @@
 
 Поиск существующей незавершённой сессии для резюма выполняется по равенству (`filterScope` + соответствующее множество, сравнение без учёта порядка) — это отдельная миграция Flyway в схеме quiz-service (ответственность Агента 2), отражается в OpenAPI при обновлении контракта старта квиза (ответственность Агента 6, см. `docs/openapi/quiz/parameters.yaml` и `quiz-sessions.yaml`).
 
+**ИЗМЕНЕНО:** сам алгоритм пре-фильтрации вопросов по `filterScope`/множеству (ранее —
+`SessionCreationService.applyScopeFilter` в quiz-service, применявшийся к уже полученному от
+content-service списку `generatedQuestions[]`) перенесён в content-service — см.
+`content-service.md` (раздел «Внутреннее API для quiz-service»). quiz-service лишь:
+1) хранит `filterScope`/множество в `QuizSession` (как описано выше, для резюма);
+2) прокидывает те же значения как query-параметры в `ContentClient.generateQuizData(...)`;
+3) получает от content-service уже отфильтрованный список и, если он пуст, отвечает
+   `SCOPE_FILTER_EMPTY` — эта проверка остаётся в quiz-service, так как это бизнес-ошибка
+   сессии, а не content-service.
+   Причина переноса: `generate-quiz-data` — единственная точка генерации вопросов, и фильтрация
+   по грамматическим признакам вопроса логически относится к домену контента, а не к домену
+   сессий квиза.
+
 ---
 
 ## 4. Типы вопросов (`questionType`)
@@ -95,6 +108,10 @@
 **Особый случай:** для vowel_type I/I_LONG/U/U_LONG/R (ADR-005, §2 этого документа) варианты-дистракторы всегда содержат `gender: UNSPECIFIED`; сама тройка не варьирует род, только caseType/numberType.
 
 **Локализация вариантов:** каждый `CASE_COMBINATION`-option обязан нести `caseRu/caseEn/numberRu/numberEn/genderRu/genderEn` — переиспользуются те же справочники, что и в `grammar.yaml#GrammarQuestionProgress` (не заводить второй источник переводов падежей).
+
+**BUGFIX (текст объяснения):** `GeneratedQuizQuestionDto.explanationRu/explanationEn` для `CASE_BY_FORM` **не должен** переиспользовать текст FORM_BY_CASE ("Правильная форма для основы '%s' в падеже '%s' и числе '%s' — '%s'"), поскольку в CASE_BY_FORM форма уже дана в условии, а угадывается падеж/число. Формулировка должна описывать обратную связь: для формы `correctFormIast` основы `stem` правильный ответ — падеж `targetCase`/число `targetNumber` (+ род, если применимо). Пример RU: «Форма 'daivam' основы 'daiva-' стоит в падеже 'Именительный', числе 'Единственное'». Формируется в `DeclensionQuizGeneratorService.generateSingleQuestion(...)` веткой по `questionType` (после назначения `questionType`, т.к. текст зависит от него); для `ENDING_MATCH` аналогично — объяснение должно говорить об окончании и всех тройках, которым оно соответствует, а не о конкретной форме.
+
+**BUGFIX (проверка ответа):** для `CASE_BY_FORM` сравнение `selectedFormIast == correctFormIast` в `SessionOperationsService.processAndSaveAnswer` **некорректно**, т.к. `correctFormIast` вопроса — это форма, данная в условии, а не идентификатор выбранного варианта; вдобавок допустимый омоним-дистрактор (§4.2 выше) может иметь тот же `formIast`, что и правильная тройка, из-за чего заведомо неверный вариант засчитается как верный при простом сравнении строк формы. Корректность для `CASE_BY_FORM` должна определяться сравнением выбранной тройки (`caseType`+`numberType`+`gender` выбранного `CASE_COMBINATION`-option) с тройкой `targetCase`/`targetNumber`/`gender` вопроса, а не сравнением текста формы. Аналогично для `ENDING_MATCH` — сравнение множеств троек (см. §4.3, «Оценка ответа»), а не текста.
 
 ### 4.3. ENDING_MATCH (омонимия окончаний, multi-select)
 
@@ -136,6 +153,9 @@
 
 - **Агент 6** (этот раздел + `openapi/quiz/schemas/session.yaml`, `answers.yaml`) — контракт: `QuestionType`, полиморфный `QuestionOptionDto`, `multiSelect`, `selectedOptionIds`/`correctOptionIds`. Сделано в рамках этой ревизии документа.
 - **Агент 2** — реализация:
+  - **(bugfix)** перенос `SessionCreationService.applyScopeFilter` (quiz-service) в content-service как `QuizScopeFilterService`, применяемый **внутри** `QuestionGenerationService`/`DeclensionQuizGeneratorService` **до** обрезки по `questionsPerSession` — см. `content-service.md` §5 «Внутреннее API для quiz-service»; текущий баг: content-service генерирует `questionsPerSession` вопросов **без учёта** фильтра, а quiz-service фильтрует их постфактум, из-за чего после фильтрации остаётся 0–1 вопрос вместо полных 10;
+  - **(bugfix)** текст `explanationRu/explanationEn` для `CASE_BY_FORM` (см. врезку выше в этом разделе) и его согласованность с фактическим направлением вопроса;
+  - **(bugfix)** проверка корректности ответа для `CASE_BY_FORM`/`ENDING_MATCH` — сравнение по тройке (падеж/число/род), а не по тексту формы (см. врезку выше);
   - расширение модуля рендеринга DECLENSION_FORM (`DeclensionOptionGeneratorService` или аналог, см. описание в `quiz-sessions.yaml`) для генерации CASE_BY_FORM и ENDING_MATCH вопросов и их дистракторов по правилам §4.2–4.3;
   - выбор constant/формулы размера пула ENDING_MATCH (§4.3) и её фиксация постфактум в этом документе;
   - логика сравнения множеств в `QuizSessionService.submitAnswer` для `multiSelect=true` (точное совпадение, без partial credit);

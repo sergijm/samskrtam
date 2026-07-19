@@ -1,44 +1,29 @@
 import React, { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useVocabularyLesson } from '../../hooks/useLessons';
 import { LessonHeader } from '../../components/lesson/LessonHeader';
-import { LessonStatsBadges } from '../../components/lesson/LessonStatsBadges';
+import { LessonStatsTab } from '../../components/lesson/LessonStatsTab';
 import { WordHistoryDialog } from '../../components/lesson/WordHistoryDialog';
 import { SessionsTab } from '../../components/lesson/SessionsTab';
-import { DataTable, DataTableSelectionMultipleChangeEvent } from 'primereact/datatable';
+import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { TabView, TabPanel } from 'primereact/tabview';
-import { Button } from 'primereact/button';
 import { Skeleton } from 'primereact/skeleton';
-import type { VocabularyWordProgress } from '../../types/lesson';
 
 export const VocabularyLessonPage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
+    const { t, i18n } = useTranslation();
   const { data: lesson, isLoading, isError } = useVocabularyLesson(slug || '');
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [wordHistoryDialogVisible, setWordHistoryDialogVisible] = useState(false);
   const [sortField, setSortField] = useState<string>('word');
   const [sortOrder, setSortOrder] = useState<number>(1);
   const [activeTab, setActiveTab] = useState<number>(0);
-  const [selectedWords, setSelectedWords] = useState<VocabularyWordProgress[]>([]);
 
-  const getQuizCount = (): number => {
-    const words = lesson?.words || [];
-    return selectedWords.length > 0 ? selectedWords.length : words.length;
-  };
-  
   const handleWordHistoryClick = (wordId: string) => {
     setSelectedWord(wordId);
     setWordHistoryDialogVisible(true);
-  };
-  
-    const handleStartQuiz = () => {
-    if (lesson) {
-      navigate(`/quiz/vocabulary/${slug}`);
-    }
   };
 
   const handleSort = (field: string) => {
@@ -87,28 +72,29 @@ export const VocabularyLessonPage = () => {
         </div>
       ) : (
                 <>
-          <div className="card mb-3">
-            <div className="flex flex-wrap gap-3 align-items-center justify-content-between">
+                    <div className="card mb-3">
+            <div className="flex align-items-center justify-content-between">
               <LessonHeader
                 title={lesson.titleRu}
                 titleEn={lesson.titleEn}
               />
-              <div className="flex flex-wrap gap-3 align-items-center">
-                                <LessonStatsBadges
-                  statusSummary={lesson.statusSummary}
-                  quizPath={`/quiz/vocabulary/${slug}`}
-                />
-                {activeTab !== 1 && (
-                  <Button
-                    label={`${t('common.startQuiz')} (${getQuizCount()})`}
-                    icon="pi pi-play"
-                    onClick={handleStartQuiz}
-                    disabled={lesson.totalWords === 0}
-                  />
-                )}
-              </div>
+              {lesson.statusSummary && (
+                <div className="flex align-items-center gap-1">
+                  <span className="text-2xl font-bold">{lesson.statusSummary.total}</span>
+                  <span className="text-base">{i18n.language === 'ru' ? 'Всего слов' : 'Total words'}</span>
+                </div>
+              )}
             </div>
           </div>
+
+          {lesson.statusSummary && (
+            <div className="mb-3">
+              <LessonStatsTab
+                statusSummary={lesson.statusSummary}
+                quizPath={`/quiz/vocabulary/${slug}`}
+              />
+            </div>
+          )}
 
                     <div className="p-4 mt-4">
             <TabView activeIndex={activeTab} onTabChange={(e) => setActiveTab(e.index)}>
@@ -118,19 +104,12 @@ export const VocabularyLessonPage = () => {
             </div>
 
                         <DataTable
-              value={sortedWords}
-              paginator
-              rows={10}
-              responsiveLayout="scroll"
-              selectionMode="multiple"
-              selection={selectedWords}
-              onSelectionChange={(e: DataTableSelectionMultipleChangeEvent<VocabularyWordProgress[]>) =>
-                setSelectedWords(e.value as VocabularyWordProgress[])
-              }
-              dataKey="wordId"
-            >
-              <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
-              <Column
+                          value={sortedWords}
+                          paginator
+                          rows={10}
+                          responsiveLayout="scroll"
+                        >
+                          <Column
                 header="Слово"
                 body={(rowData) => (
                   <div>

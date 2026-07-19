@@ -89,10 +89,15 @@ public class LessonContentController {
     @Operation(summary = "Generate quiz data for a specific quiz")
     @ApiResponse(responseCode = "200", description = "Quiz data generated successfully")
     @ApiResponse(responseCode = "404", description = "Quiz not found")
-    public GeneratedQuizData generateQuizData(
+        public GeneratedQuizData generateQuizData(
             @PathVariable UUID quizId,
-            @RequestHeader(value = "X-User-Locale", defaultValue = "en") Locale locale) {
-        return generateQuizService.generateQuizData(quizId, locale);
+            @RequestHeader(value = "X-User-Locale", defaultValue = "en") Locale locale,
+            @RequestParam(required = false) String filterScope,
+            @RequestParam(required = false) String filterCaseTypes,
+            @RequestParam(required = false) String filterNumberTypes,
+            @RequestParam(required = false) String filterCombinations) {
+        return generateQuizService.generateQuizData(quizId, locale,
+                filterScope, filterCaseTypes, filterNumberTypes, filterCombinations);
     }
 
     @GetMapping("/declension-stems/{stemId}/forms")

@@ -48,4 +48,10 @@ public class SessionQuestion {
      * Копируется из GeneratedQuizQuestionDto.itemType при старте сессии.
      */
     private String itemType;
+
+    /**
+     * Case ending string (e.g. "aḥ", "am", "ena") for ENDING_MATCH / CASE_BY_FORM display.
+     * Копируется из GeneratedQuizQuestionDto.caseEnding при старте сессии.
+     */
+    private String caseEnding;
 }

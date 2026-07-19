@@ -18,10 +18,12 @@ import java.util.stream.IntStream;
 @Slf4j
 public class QuestionGenerationService {
 
-    private final DeclensionQuizGeneratorService declensionQuizGeneratorService;
+        private final DeclensionQuizGeneratorService declensionQuizGeneratorService;
     private final VocabularyService vocabularyService;
+    private final QuizScopeFilterService quizScopeFilterService;
 
-    public List<GeneratedQuizQuestionDto> generateQuestions(Lesson lesson, String userLocale) {
+    public List<GeneratedQuizQuestionDto> generateQuestions(Lesson lesson, String userLocale,
+            String filterScope, String filterCaseTypes, String filterNumberTypes, String filterCombinations) {
         log.debug("Generating new questions for quizId: {} and locale: {}", lesson.getId(), userLocale);
 
         var builders = new ArrayList<GeneratedQuizQuestionDto.GeneratedQuizQuestionDtoBuilder>();
@@ -46,8 +48,10 @@ public class QuestionGenerationService {
                             .stemDevanagari(response.getStemDevanagari())
                                                         .stemTranslationRu(response.getStemTranslationRu())
                                                         .stemTranslationEn(response.getStemTranslationEn())
-                            .gender(response.getGender())
+                                                        .gender(response.getGender())
                             .caseEndingId(response.getCaseEndingId())
+                            .questionType(response.getQuestionType())
+                            .caseEnding(response.getCaseEnding())
                             .itemType("DECLENSION_FORM"))
                     .collect(Collectors.toList()));
         } else if (LessonType.isVocabulary(lesson.getLessonType())) {
@@ -94,10 +98,17 @@ public class QuestionGenerationService {
             }
         }
 
-        // Shuffle and assign question numbers
-        Collections.shuffle(builders);
-        List<GeneratedQuizQuestionDto> questions = IntStream.range(0, Math.min(builders.size(), lesson.getQuestionsPerSession()))
-                .mapToObj(i -> builders.get(i).questionNumber(i + 1).build())
+                // Build all candidates first (without question numbers), then filter by scope, THEN cut to questionsPerSession
+        List<GeneratedQuizQuestionDto> allCandidates = builders.stream()
+                .map(b -> b.questionNumber(0).build())
+                .collect(Collectors.toList());
+
+        List<GeneratedQuizQuestionDto> filteredCandidates = quizScopeFilterService.filterQuestions(
+                allCandidates, filterScope, filterCaseTypes, filterNumberTypes, filterCombinations);
+
+        Collections.shuffle(filteredCandidates);
+        List<GeneratedQuizQuestionDto> questions = IntStream.range(0, filteredCandidates.size())
+                .mapToObj(i -> filteredCandidates.get(i).toBuilder().questionNumber(i + 1).build())
                 .collect(Collectors.toList());
 
         return questions;

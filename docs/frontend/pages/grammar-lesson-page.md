@@ -21,18 +21,39 @@
 | 1 | Статистика | `LessonStatsTab` | статистика урока по статусам, см. §2.1 |
 | 2 | Парадигмы | `GrammarParadigmTable` | справочная таблица словоформ падеж×число (×род), см. §2.2 |
 | 3 | По падежам | `CaseAggregationTable` | агрегация вопросов по падежу |
-| 4 | Подробно | `GrammarDetailsTable` | таблица вопросов, см. ниже |
+| 4 | По числам | `NumberAggregationTable` | агрегация вопросов по числу (SINGULAR/DUAL/PLURAL), см. §2.1а |
+| 5 | Подробно | `GrammarDetailsTable` | таблица вопросов, см. ниже |
+
+**ИЗМЕНЕНО:** отдельной колонки «Статус» больше нет ни в одной из таблиц вкладок (`CaseAggregationTable`, `NumberAggregationTable`, `GrammarDetailsTable`) — тот же паттерн, что уже применён для вкладок «По падежам»/«По числам»/«Подробно» на стартовой странице квиза склонений (см. `quiz-declension.md` §3.1). Вместо неё статус кодируется цветом `ProgressBar` в колонке «Изучено»:
+
+| Статус (`WordStatus`) | Цвет `ProgressBar` |
+|---|---|
+| `NEW` | серый (`text-color-secondary` / нейтральный) |
+| `LEARNING` | синий (`text-primary`) |
+| `REVIEW` | жёлтый (`text-yellow-500`) |
+| `MASTERED` | зелёный (`text-green-500`) |
+
+Цвета переиспользуют ту же палитру, что и `WordStatusIcon` (см. `frontend/src/components/lesson/WordStatusIcon.tsx`), чтобы не заводить второй источник цветовой кодировки статуса. Реализация — через `PrimeReact ProgressBar` с кастомным CSS-классом на цвет заливки (`--progressbar-value-bg` / аналог, конкретный механизм окраски определяет Агент 3 при реализации, единственное требование — использовать один и тот же маппинг статус→цвет во всех трёх таблицах, вынесенный в общую утилиту, а не дублируемый в каждом компоненте).
 
 **Таблица вопросов (вкладка «Подробно», `DataTable`):**
 
 | Колонка | Содержимое |
 |---|---|
-| Статус | та же иконка что в VocabularyLessonPage |
 | Вопрос | `textRu` / `textEn` по локали |
 | Правильный ответ | текст правильного варианта (всегда виден) |
 | Попытки | кликабельный `{nSuccess}/{nAll}` |
 
 **Клик на `{nSuccess}/{nAll}`** → открывает `QuestionHistoryDialog` — аналог WordHistoryDialog для грамматических вопросов.
+
+## 2.1а. NumberAggregationTable (вкладка «По числам»)
+
+Зеркальная копия `CaseAggregationTable` (см. таблицу вкладок выше), но группировка — по `numberType` вместо `caseType`:
+- Источник данных и агрегация — тот же `lesson.questions: GrammarQuestionProgress[]`, новая функция `aggregateByNumber(questions)` в `utils/grammarAggregation.ts` (по аналогии с существующей `aggregateByCase`), константа `NUMBER_TYPES = ['SINGULAR', 'DUAL', 'PLURAL']` (фиксированный порядок строк, аналогично `CASE_TYPES`).
+- Колонки: **Число** (`numberRu`/`numberEn` по локали), **Изучено** (`ProgressBar` + процент, цвет по статусу — см. §2 выше), кнопка запуска квиза.
+- Строка таблицы отсутствует, если для данного `numberType` нет вопросов в уроке (как и в `CaseAggregationTable` для падежа без вопросов).
+- Клик по строке/кнопке запускает квиз с фильтром: `POST /quiz/{slug}/sessions/start-or-resume?...&filterScope=NUMBER_ONLY&filterNumberTypes=<numberType>` (те же `filterScope`-контракты, что уже реализованы на бэкенде для `CASE_ONLY`, см. `quiz-declension.md` §3.4 — дополнительных изменений на бэкенде не требуется, `NUMBER_ONLY` уже поддержан).
+
+
 
 ## 2.1. LessonStatsTab (вкладка «Статистика»)
 

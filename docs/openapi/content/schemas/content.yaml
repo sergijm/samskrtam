@@ -1,0 +1,171 @@
+# Schemas reverse-engineered from services/content-service/src/main/java/.../content/dto
+# and content/model (enums). Any drift found vs docs/services/content-service.md prose is
+# intentional and flagged inline — this file reflects the CODE, not the aspirational docs.
+
+LessonType:
+  type: string
+  description: sm.selflearn.samskrtam.content.dto.LessonType (shared/samskrtam-dtos).
+  enum: [DECLENSIONS, CONJUGATIONS, VOCABULARY, VOCABULARY_BASIC, VOCABULARY_TEXTS]
+
+Difficulty:
+  type: string
+  enum: [BEGINNER, INTERMEDIATE, ADVANCED]
+
+Gender:
+  type: string
+  description: >
+    content.model.Gender. Note UNKNOWN vs UNSPECIFIED both exist as distinct values in code
+    (docs elsewhere only mention UNSPECIFIED for genderless stems) — kept as-is, code is
+    the source of truth.
+  enum: [MASCULINE, FEMININE, NEUTER, UNKNOWN, UNSPECIFIED]
+
+VowelType:
+  type: string
+  enum: [A_STEM, AA_STEM, I_STEM, II_STEM, U_STEM, UU_STEM, R_STEM]
+
+CaseType:
+  type: string
+  enum: [NOMINATIVE, ACCUSATIVE, INSTRUMENTAL, DATIVE, ABLATIVE, GENITIVE, LOCATIVE, VOCATIVE]
+
+NumberType:
+  type: string
+  enum: [SINGULAR, DUAL, PLURAL]
+
+LessonItemResponse:
+  type: object
+  description: sm.selflearn.samskrtam.content.dto.LessonItemResponse (all fields non-null in code, @Data/@Builder without @NonNull annotations, so nullability not enforced by Lombok — modelled as required per constructor/builder convention used elsewhere in the project).
+  required: [id, lessonType, difficulty, slug, totalQuestions, wordCount]
+  properties:
+    id:
+      type: string
+      format: uuid
+    title:
+      type: string
+      description: Legacy/locale-agnostic title field, kept alongside titleRu/titleEn.
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    description:
+      type: string
+    descriptionRu:
+      type: string
+    descriptionEn:
+      type: string
+    lessonType:
+      $ref: '#/LessonType'
+    difficulty:
+      $ref: '#/Difficulty'
+    slug:
+      type: string
+    totalQuestions:
+      type: integer
+    wordCount:
+      type: integer
+
+DeclensionStemDto:
+  type: object
+  required: [id, lessonId, slug, vowelType]
+  properties:
+    id:
+      type: string
+      format: uuid
+    lessonId:
+      type: string
+      format: uuid
+    slug:
+      type: string
+    gender:
+      $ref: '#/Gender'
+    vowelType:
+      $ref: '#/VowelType'
+    stemDevanagari:
+      type:
+        - string
+        - 'null'
+    translationRu:
+      type:
+        - string
+        - 'null'
+    translationEn:
+      type:
+        - string
+        - 'null'
+
+CaseEndingDto:
+  type: object
+  required: [id, vowelType, caseType, numberType, endingIast]
+  properties:
+    id:
+      type: string
+      format: uuid
+    vowelType:
+      $ref: '#/VowelType'
+    gender:
+      $ref: '#/Gender'
+    caseType:
+      $ref: '#/CaseType'
+    numberType:
+      $ref: '#/NumberType'
+    endingIast:
+      type: string
+    endingDevanagari:
+      type:
+        - string
+        - 'null'
+
+DeclensionFormDto:
+  type: object
+  required: [declensionStemId, caseType, numberType, formIast, formDevanagari]
+  properties:
+    declensionStemId:
+      type: string
+      format: uuid
+    caseType:
+      $ref: '#/CaseType'
+    numberType:
+      $ref: '#/NumberType'
+    formIast:
+      type: string
+    formDevanagari:
+      type: string
+
+VocabularyWordDto:
+  type: object
+  required: [id, wordIast]
+  properties:
+    id:
+      type: string
+      format: uuid
+    wordIast:
+      type: string
+    wordDevanagari:
+      type:
+        - string
+        - 'null'
+    translationEn:
+      type:
+        - string
+        - 'null'
+    translationRu:
+      type:
+        - string
+        - 'null'
+    gender:
+      $ref: '#/Gender'
+    stem:
+      type:
+        - string
+        - 'null'
+    root:
+      type:
+        - string
+        - 'null'
+    explanationRu:
+      type:
+        - string
+        - 'null'
+    explanationEn:
+      type:
+        - string
+        - 'null'

@@ -5,7 +5,7 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { ProgressBar } from 'primereact/progressbar';
 import { Button } from 'primereact/button';
-import { WordStatusIcon } from './WordStatusIcon';
+import { statusToProgressColor } from '../../utils/statusColor';
 import type { CaseAggregation } from '../../utils/grammarAggregation';
 
 interface CaseAggregationTableProps {
@@ -14,7 +14,7 @@ interface CaseAggregationTableProps {
 }
 
 export const CaseAggregationTable: React.FC<CaseAggregationTableProps> = ({ aggregations, quizSlug }) => {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const navigate = useNavigate();
 
   const handleStartCaseQuiz = (caseType: string) => {
@@ -26,18 +26,11 @@ export const CaseAggregationTable: React.FC<CaseAggregationTableProps> = ({ aggr
   return (
     <DataTable value={aggregations} paginator rows={20} responsiveLayout="scroll">
       <Column
-        header={i18n.language === 'ru' ? 'Статус' : 'Status'}
-        body={(rowData: CaseAggregation) => <WordStatusIcon status={rowData.status} />}
-        style={{ width: '10%' }}
-        sortable
-        sortField="status"
-      />
-      <Column
         header={i18n.language === 'ru' ? 'Падеж' : 'Case'}
         body={(rowData: CaseAggregation) => (
           <div>{i18n.language === 'ru' ? rowData.caseRu : rowData.caseEn}</div>
         )}
-        style={{ width: '25%' }}
+        style={{ width: '30%' }}
         sortable
         sortField="caseType"
       />
@@ -47,6 +40,7 @@ export const CaseAggregationTable: React.FC<CaseAggregationTableProps> = ({ aggr
           <div className="flex align-items-center gap-2">
             <ProgressBar
               value={rowData.aggregatedProgress}
+              color={statusToProgressColor(rowData.status)}
               style={{ height: '5px', width: '80px' }}
               showValue={false}
             />
@@ -58,7 +52,7 @@ export const CaseAggregationTable: React.FC<CaseAggregationTableProps> = ({ aggr
             </span>
           </div>
         )}
-        style={{ width: '25%' }}
+        style={{ width: '30%' }}
         sortable
         sortField="aggregatedProgress"
       />

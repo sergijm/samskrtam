@@ -41,6 +41,38 @@ public final class QuizFilterJsonHelper {
         return List.of(csv.split(","));
     }
 
+    /**
+     * Parses a JSON array string like {@code ["NOMINATIVE","ACCUSATIVE"]} into a list of strings.
+     * Used by scope pre-filter to parse canonicalized filter values stored in QuizSession.
+     */
+    public static List<String> parseJsonArray(String jsonArray) {
+        if (jsonArray == null || jsonArray.isBlank()) return List.of();
+        // Strip brackets and extract quoted strings
+        String inner = jsonArray.trim();
+        if (inner.startsWith("[") && inner.endsWith("]")) {
+            inner = inner.substring(1, inner.length() - 1).trim();
+        }
+        if (inner.isEmpty()) return List.of();
+        List<String> result = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < inner.length(); i++) {
+            char ch = inner.charAt(i);
+            if (ch == '"' && (i == 0 || inner.charAt(i - 1) != '\\')) {
+                inQuotes = !inQuotes;
+            } else if (ch == ',' && !inQuotes) {
+                result.add(current.toString().trim());
+                current.setLength(0);
+            } else if (inQuotes) {
+                current.append(ch);
+            }
+        }
+        if (current.length() > 0) {
+            result.add(current.toString().trim());
+        }
+        return result.stream().filter(s -> !s.isEmpty()).collect(Collectors.toList());
+    }
+
     /** Parses comma-separated "caseType:numberType:gender" triples. */
     public static List<FilterCombination> parseCombinations(String csv) {
         if (csv == null || csv.isBlank()) return List.of();

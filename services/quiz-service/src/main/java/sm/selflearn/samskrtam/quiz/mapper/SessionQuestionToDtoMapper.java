@@ -35,6 +35,7 @@ public interface SessionQuestionToDtoMapper {
     @Mapping(target = "caseEndingId", source = "caseEndingId")
     @Mapping(target = "itemType", source = "itemType")
     @Mapping(target = "questionType", source = "questionType")
+    @Mapping(target = "caseEnding", source = "caseEnding")
     GeneratedQuizQuestionDto toDto(SessionQuestion sessionQuestion);
 }
 

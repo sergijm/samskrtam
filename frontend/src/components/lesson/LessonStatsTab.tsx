@@ -14,7 +14,6 @@ interface StatRowProps {
   className: string;
   label: string;
   value: number;
-  total?: number;
   severity: 'success' | 'warning' | 'info' | 'secondary';
   buttonLabel: string;
   buttonIcon: string;
@@ -22,28 +21,22 @@ interface StatRowProps {
   onClick: () => void;
 }
 
-const StatRow = ({ className, label, value, total, severity, buttonLabel, buttonIcon, disabled, onClick }: StatRowProps) => {
+const StatRow = ({ className, label, value, severity, buttonLabel, buttonIcon, disabled, onClick }: StatRowProps) => {
   const severityClass = disabled ? 'text-color-secondary' : `stat-row-${severity}`;
 
   return (
-    <div
-      className={`${className} flex align-items-center justify-content-between gap-1 p-1`}
-    >
-      <div className="flex align-items-center gap-1">
-        <span className={`text-2xl font-bold ${severityClass}`}>
-          {value}
-          {total !== undefined ? `/${total}` : ''}
-        </span>
+    <div className={`${className} card p-2 flex-1 flex align-items-center justify-content-between gap-2 border-1 border-200 border-round`}>
+      <div className="flex align-items-center gap-2">
+        <span className={`text-2xl font-bold ${severityClass}`}>{value}</span>
         <span className="text-base">{label}</span>
       </div>
-      <Button
+        <Button
         label={buttonLabel}
         icon={buttonIcon}
         size="small"
         outlined
         disabled={disabled}
         onClick={onClick}
-        style={{ width: '200px' }}
       />
     </div>
   );
@@ -58,18 +51,14 @@ export const LessonStatsTab = ({ statusSummary, quizPath }: LessonStatsTabProps)
     return null;
   }
 
-  const { total, newCount, learning, mastered, reviewDue } = statusSummary;
+  const { newCount, learning, mastered, reviewDue } = statusSummary;
 
   const handleStatusClick = (statusFilter: string) => {
     navigate(`${quizPath}?statusFilter=${statusFilter}`);
   };
 
   return (
-    <div className="flex flex-column gap-1" style={{ maxWidth: '480px' }}>
-      <div className="stats-tab-total flex align-items-center gap-1 p-1">
-        <span className="text-2xl font-bold">{total}</span>
-        <span className="text-base">{isRu ? 'Всего' : 'Total'}</span>
-      </div>
+    <div className="flex flex-wrap gap-3">
 
       <StatRow
         className="stats-tab-new"
@@ -99,7 +88,7 @@ export const LessonStatsTab = ({ statusSummary, quizPath }: LessonStatsTabProps)
         value={mastered}
         severity="success"
         buttonLabel={isRu ? 'Повторить' : 'Review'}
-        buttonIcon="pi pi-repeat"
+        buttonIcon="pi pi-history"
         disabled={reviewDue <= 0}
         onClick={() => handleStatusClick('REVIEW')}
       />

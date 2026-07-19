@@ -16,7 +16,6 @@ import sm.selflearn.samskrtam.content.dto.VocabularyWordDto;
 import sm.selflearn.samskrtam.content.dto.CaseEndingDto;
 
 
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -61,16 +60,26 @@ public class ContentClient {
     }
 
     public Mono<GeneratedQuizData> generateQuizData(UUID lessonId, String userLocale) {
+        return generateQuizData(lessonId, userLocale, null, null, null, null);
+    }
+
+    public Mono<GeneratedQuizData> generateQuizData(UUID lessonId, String userLocale,
+                                                    String filterScope, String filterCaseTypes, String filterNumberTypes, String filterCombinations) {
         return webClient.post()
-                .uri("/api/v1/content/lessons/{id}/generate-quiz-data", lessonId)
+                .uri(uriBuilder -> {
+                    var builder = uriBuilder.path("/api/v1/content/lessons/{id}/generate-quiz-data");
+                    if (filterScope != null) builder.queryParam("filterScope", filterScope);
+                    if (filterCaseTypes != null) builder.queryParam("filterCaseTypes", filterCaseTypes);
+                    if (filterNumberTypes != null) builder.queryParam("filterNumberTypes", filterNumberTypes);
+                    if (filterCombinations != null) builder.queryParam("filterCombinations", filterCombinations);
+                    return builder.build(lessonId);
+                })
                 .header("X-User-Locale", userLocale)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError,
                         r -> Mono.error(new SamskrtamException("LESSON_NOT_FOUND", "Lesson not found in content-service: " + lessonId)))
                 .bodyToMono(GeneratedQuizData.class);
     }
-
-    
 
     public Mono<List<DeclensionFormDto>> getDeclensionForms(UUID declensionStemId) {
         return webClient.get()
@@ -125,7 +134,7 @@ public class ContentClient {
                 .bodyToMono(LessonItemResponse.class);
     }
 
-        public Mono<List<DeclensionStemDto>> getDeclensionStemsForLesson(String slug) {
+    public Mono<List<DeclensionStemDto>> getDeclensionStemsForLesson(String slug) {
         return webClient.get()
                 .uri("/api/v1/content/lessons/{slug}/declension-stems", slug)
                 .retrieve()

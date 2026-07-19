@@ -104,7 +104,23 @@ public class SessionOperationsService {
         return vocabularyWordsHelper.getVocabularyWords(session)
                 .flatMap(allVocabularyWords -> {
                     String selectedOptionIast = vocabularyAnswerResolver.determineSelectedOptionIast(request, generatedQuestion, allVocabularyWords);
-                    boolean isCorrect = generatedQuestion.getCorrectFormIast().equals(selectedOptionIast);
+                    boolean isCorrect;
+                    String qType = generatedQuestion.getQuestionType();
+                    if (("CASE_BY_FORM".equals(qType) || "ENDING_MATCH".equals(qType))
+                            && request.getSelectedCaseType() != null
+                            && request.getSelectedNumberType() != null) {
+                        boolean caseMatches = generatedQuestion.getTargetCase() != null
+                                && generatedQuestion.getTargetCase().name().equals(request.getSelectedCaseType());
+                        boolean numberMatches = generatedQuestion.getTargetNumber() != null
+                                && generatedQuestion.getTargetNumber().name().equals(request.getSelectedNumberType());
+                        boolean genderMatches = request.getSelectedGender() == null
+                                || generatedQuestion.getGender() == null
+                                || generatedQuestion.getGender().equals(request.getSelectedGender());
+                        isCorrect = caseMatches && numberMatches && genderMatches;
+                    } else {
+                        // FORM_BY_CASE и обратная совместимость (старый фронтенд без новых полей)
+                        isCorrect = generatedQuestion.getCorrectFormIast().equals(selectedOptionIast);
+                    }
                     UUID correctWordId = vocabularyAnswerResolver.findCorrectWordId(generatedQuestion, allVocabularyWords);
                     String correctAnswerText = vocabularyAnswerResolver.findCorrectAnswerText(generatedQuestion, allVocabularyWords, userLocale);
 

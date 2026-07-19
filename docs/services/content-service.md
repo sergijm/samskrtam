@@ -61,6 +61,8 @@
 
 
 > Полная OpenAPI спецификация для Lesson Pages: [lesson-aggregation-openapi.yaml](../openapi/lesson-aggregation-openapi.yaml)
+> OpenAPI спецификация внутреннего API (generate-quiz-data, включая scope-фильтр): [openapi/content/content-service.yaml](../openapi/content/content-service.yaml)
+> OpenAPI спецификация остального API content-service (реверс-инжиниринг по коду, все остальные эндпоинты): [openapi/content/content-api.yaml](../openapi/content/content-api.yaml) — см. там же зафиксированное расхождение: ADMIN CRUD из §5 ниже в коде не реализован.
 
 ### Управление уроками (ADMIN)
 
@@ -111,6 +113,39 @@ questionsPerSession, generatedQuestions[...], vocabularyWords (null для не-
 запроса к content-service — quiz-service при желании может сохранить какой-то свой
 внутренний group-id, но это уже его внутреннее дело (см. quiz-service.md §12).
 
+**ИЗМЕНЕНО (перенос scope pre-filter из quiz-service, см. quiz-declension.md §3.4):**
+`generate-quiz-data` принимает опциональные query-параметры фильтрации, ранее применявшиеся
+на стороне quiz-service (`SessionCreationService.applyScopeFilter`) уже после получения
+полного списка вопросов от content-service:
+
+- `filterScope` — `CASE_ONLY` / `NUMBER_ONLY` / `CASE_NUMBER_GENDER` (те же значения, что и у
+  одноимённого параметра `quiz-sessions.yaml`/`FilterScopeParam`; в content-service
+  представлено обычной строкой, не связано с enum `FilterScope` из quiz-service — сервисы не
+  шарят доменные enum через HTTP-контракт).
+- `filterCaseTypes` — CSV/JSON-массив значений `CaseType`, используется при `CASE_ONLY`.
+- `filterNumberTypes` — CSV/JSON-массив значений `NumberType`, используется при `NUMBER_ONLY`.
+- `filterCombinations` — JSON-массив троек `{caseType,numberType,gender}`, используется при
+  `CASE_NUMBER_GENDER`.
+
+Если `filterScope` не передан — поведение не меняется, возвращаются все сгенерированные
+вопросы (как раньше). Если передан — content-service фильтрует `generatedQuestions[]` по тем
+же правилам, что ранее были в `applyScopeFilter` (сравнение `targetCase`/`targetNumber`/
+`gender` вопроса с разрешённым множеством), и возвращает уже отфильтрованный список;
+**критично:** фильтр обязан применяться к пулу кандидатов (комбинациям основа×падеж×число) **до**
+обрезки по `questionsPerSession` внутри `DeclensionQuizGeneratorService`/`QuestionGenerationService`,
+а не после генерации фиксированных `questionsPerSession` вопросов — иначе после фильтрации
+может остаться 0–1 вопрос вместо полного набора (это и есть баг, ради которого фильтр
+переносится из quiz-service: перенос сам по себе бесполезен, если порядок «генерация → фильтр
+→ обрезка» не изменить на «фильтр кандидатов → генерация ровно `questionsPerSession` вопросов
+из отфильтрованного пула, комбинируя разные вопросы»);
+`vocabularyWords` фильтр не затрагивает. Пустой результат фильтрации — не ошибка на уровне
+content-service (пустой список); обработку `SCOPE_FILTER_EMPTY` (бизнес-ошибка) по-прежнему
+выполняет quiz-service после получения ответа (см. quiz-service.md §6, quiz-service-sessions.md).
+Парсинг CSV/JSON-параметров — новая внутренняя утилита content-service, независимая от
+`QuizFilterJsonHelper` quiz-service (тот остаётся в quiz-service — используется для
+канонизации множеств `QuizSession.filterCaseTypes/filterNumberTypes/filterCombinations` при
+поиске сессии для резюма, что вне ответственности content-service).
+
 Для DECLENSIONS/CONJUGATIONS `generatedQuestions[]` — это `GeneratedQuizQuestionDto`:
 `{id, quizId, questionNumber, text, explanationRu, explanationEn,
 declensionStemId, targetCase, targetNumber, correctFormIast, correctFormDevanagari,
@@ -149,7 +184,7 @@ content-service.
 ## 6. Backend структура
 
 Пакет `controller/`: LessonController, QuestionController, VocabularyController, LessonContentController (только `generate-quiz-data` — единственный внутренний эндпоинт для quiz-service; ранее здесь ошибочно упоминался несуществующий `internal/SessionDataController`, а также два уже удалённых read-эндпоинта, см. §5).
-Пакет `service/`: LessonService, QuestionService, VocabularyService, DeclensionQuizGeneratorService, QuestionGenerationService (только генерация, персистентная часть удалена, см. §3а).
+Пакет `service/`: LessonService, QuestionService, VocabularyService, DeclensionQuizGeneratorService, QuestionGenerationService (только генерация, персистентная часть удалена, см. §3а), GenerateQuizService (оркестрирует генерацию + применяет scope pre-filter к `generatedQuestions[]`, см. §3), QuizScopeFilterService (новый — перенесённый из quiz-service `applyScopeFilter`/`parseCombinationsJson`, чистая функция без состояния).
 Пакет `repository/`: LessonRepository, QuestionRepository, QuestionOptionRepository, VocabularyWordRepository, DeclensionStemRepository, DeclensionFormRepository (`GeneratedQuizDataRecordRepository`/`GeneratedQuestionRepository` — удалены, см. §3а).
 Пакет `model/`: Quiz, Question, QuestionOption, VocabularyWord, LessonType, Difficulty, DeclensionStem, DeclensionForm (`GeneratedQuizDataRecord`/`GeneratedQuestion` — удалены, см. §3а).
 Пакет `dto/`: CreateQuizRequest, CreateQuestionRequest, QuizDetailResponse, VocabularyWordRequest, QuestionResponse, GeneratedQuizData, GeneratedQuizQuestionDto, DeclensionStemDto, DeclensionFormDto (DTO остаются — это транспортный формат ответа `generate-quiz-data`, просто больше не persist-ится).
@@ -166,6 +201,7 @@ content-service.
 
 - [ ] Только ADMIN получает доступ к write-операциям (403 для STUDENT)
 - [ ] `generate-quiz-data` доступен без роли ADMIN (для quiz-service) — единственный внутренний эндпоинт, не пишет в БД
+- [ ] `generate-quiz-data` c `filterScope`/`filterCaseTypes`/`filterNumberTypes`/`filterCombinations` возвращает только вопросы, соответствующие фильтру (логика перенесена из quiz-service `applyScopeFilter`, см. §2 выше); без `filterScope` — поведение не меняется
 - [ ] Нельзя сохранить вопрос без ровно 1 правильного варианта
 - [ ] Удаление квиза и вопроса — soft delete
 - [ ] `vocabulary_words` возвращаются только для квизов с `quiz_type = VOCABULARY`
@@ -178,12 +214,12 @@ content-service.
 - [ ] Импорт вопросов и слов из CSV для массового добавления?
 - [ ] Кэшировать ли ответ `generate-quiz-data`/данные для дистракторов (`getDeclensionForms`) — актуально только для распределения нагрузки на content-service при большом числе одновременных `start`/`resume`; ответ `generate-quiz-data` теперь не переиспользуется (вызывается один раз на старте, дальше quiz-service хранит сам). Отложено до появления реальной нагрузки (см. quiz-service.md §3).
 - [ ] **Личные списки слов** (не реализовано) — новые сущности
-      `content.user_word_lists (id, userId, title, createdAt)` и
-      `content.user_word_list_items (listId, stemId|conjugationId, addedAt)`,
-      плюс режим выбора основ квиза "из списка пользователя" в
-      `DeclensionQuizGeneratorService`. Требования и открытые вопросы по
-      "сырым" элементам списка (слово без связи с `declension_stems`) —
-      см. [frontend/information-architecture.md §3.1](../frontend/information-architecture/02-catalog.md).
+  `content.user_word_lists (id, userId, title, createdAt)` и
+  `content.user_word_list_items (listId, stemId|conjugationId, addedAt)`,
+  плюс режим выбора основ квиза "из списка пользователя" в
+  `DeclensionQuizGeneratorService`. Требования и открытые вопросы по
+  "сырым" элементам списка (слово без связи с `declension_stems`) —
+  см. [frontend/information-architecture.md §3.1](../frontend/information-architecture/02-catalog.md).
 
 ---
 

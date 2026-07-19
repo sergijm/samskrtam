@@ -69,7 +69,9 @@ public class SessionCreationService {
             UUID lessonId, UUID userId, String userLocale,
             FilterScope filterScope, String filterCaseTypes,
             String filterNumberTypes, String filterCombinations) {
-        return contentClient.generateQuizData(lessonId, userLocale)
+        String filterScopeStr = filterScope != null ? filterScope.name() : null;
+        return contentClient.generateQuizData(lessonId, userLocale,
+                        filterScopeStr, filterCaseTypes, filterNumberTypes, filterCombinations)
                 .flatMap(generatedQuizData -> {
                     QuizSession newSession = sessionFactory.createFilteredSession(
                             lessonId, userId, generatedQuizData,
@@ -77,6 +79,13 @@ public class SessionCreationService {
                     return quizSessionRepository.save(newSession)
                             .flatMap(savedSession -> {
                                 List<GeneratedQuizQuestionDto> allQuestions = generatedQuizData.getGeneratedQuestions();
+                                if (allQuestions.isEmpty()) {
+                                    return Mono.error(new SamskrtamException("SCOPE_FILTER_EMPTY",
+                                            "No questions match the filter scope: " + filterScope
+                                            + " filterCaseTypes=" + filterCaseTypes
+                                            + " filterNumberTypes=" + filterNumberTypes
+                                            + " filterCombinations=" + filterCombinations));
+                                }
                                 return filterAndSaveQuestions(savedSession, allQuestions,
                                         generatedQuizData, userId, userLocale, false);
                             });

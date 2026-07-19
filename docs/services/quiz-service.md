@@ -54,6 +54,8 @@
 
 WebClient с методами generateQuizData, getDeclensionForms, getVocabularyWordsForLesson и др. Полный список: [quiz-service-architecture.md](quiz-service/quiz-service-architecture.md)
 
+**ИЗМЕНЕНО:** `generateQuizData` дополнительно принимает `filterScope`/`filterCaseTypes`/`filterNumberTypes`/`filterCombinations` и прокидывает их как query-параметры в content-service — scope pre-filter вопросов теперь выполняется там (см. content-service.md, quiz-declension.md §3.4), quiz-service больше не содержит `SessionCreationService.applyScopeFilter`.
+
 ## 7. Зависимости (build.gradle.kts)
 
 spring-boot-webflux, spring-boot-r2dbc, r2dbc-postgresql, spring-kafka, flyway-core, postgresql (для Flyway), samskrtam-dtos(shared).

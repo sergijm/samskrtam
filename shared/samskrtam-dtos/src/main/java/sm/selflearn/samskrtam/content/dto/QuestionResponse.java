@@ -34,5 +34,14 @@ public class QuestionResponse {
      * Используется quiz-service как externalRefId для DECLENSION_FORM.
      */
     UUID caseEndingId; // Added field
+
+    /**
+     * Question type for rendering: FORM_BY_CASE (default/null), CASE_BY_FORM, or ENDING_MATCH.
+     * Assigned by DeclensionQuizGeneratorService at generation time.
+     */
+    String questionType;
+
+    /** Case ending string (e.g. "aḥ", "am", "ena") for ENDING_MATCH / CASE_BY_FORM display. */
+    String caseEnding;
 }
 

@@ -28,6 +28,9 @@ export default function QuizCaseSelectPanel({
   const getGenderLabel = (option: SessionQuestion['options'][number]) =>
     i18n.language === 'ru' ? option.genderRu : option.genderEn;
 
+  const stemTranslation =
+    i18n.language === 'ru' ? question.stemTranslationRu : question.stemTranslationEn;
+
   return (
     <>
       <div className="text-2xl font-bold text-center mb-5">
@@ -46,6 +49,11 @@ export default function QuizCaseSelectPanel({
               }}
             >
               {question.formDevanagari}
+              {stemTranslation && (
+                <span style={{ fontFamily: 'inherit', fontSize: '1.2rem', marginLeft: '0.5rem' }}>
+                  {' '}({stemTranslation})
+                </span>
+              )}
             </span>
           </>
         )}
@@ -98,3 +106,4 @@ export default function QuizCaseSelectPanel({
     </>
   );
 }
+

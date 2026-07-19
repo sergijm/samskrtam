@@ -1,0 +1,363 @@
+openapi: 3.1.0
+info:
+  title: content-service — Full API (reverse-engineered)
+  description: |
+    Reverse-engineered from the actual code at `services/content-service` (all four
+    @RestController classes: LessonContentController, VocabularyController,
+    EmenauController, EmenauExerciseController) as of this refactoring pass.
+    generate-quiz-data is intentionally NOT included here — see content-service.yaml.
+
+    ВАЖНО — расхождение с docs/services/content-service.md §5 "Управление уроками (ADMIN)":
+    ни один из write-эндпоинтов, перечисленных там (POST/PUT/DELETE для quizzes, questions,
+    vocabulary), в коде НЕ реализован. Реально в коде есть только read-эндпоинты (этот файл)
+    плюс generate-quiz-data (content-service.yaml) плюс Eamenau write-эндпоинт
+    PUT /eamenau/exercises/solutions/{solutionId}. Это расхождение зафиксировано как открытый
+    вопрос для Агента 6 (см. итоговый отчёт) — сама эта задача его не устраняла, только
+    подтвердила существование по факту чтения кода.
+  version: 1.0.0
+
+servers:
+  - url: http://content-service:8081/api/v1
+    description: Internal (from quiz-service / gateway, inside the cluster network)
+  - url: http://localhost:8081/api/v1
+    description: Local development (direct to content-service)
+
+tags:
+  - name: lessons
+    description: Lesson listing and summaries (LessonContentController)
+  - name: grammar
+    description: Declension stems, case endings, declension forms (LessonContentController)
+  - name: vocabulary
+    description: Vocabulary words (VocabularyController)
+  - name: eamenau
+    description: Sandhi rules and exercises (EmenauController, EmenauExerciseController)
+
+paths:
+  /content/lessons:
+    get:
+      tags: [lessons]
+      summary: Get a list of lessons, or a single lesson summary by id
+      description: |
+        Two Java handler methods share this path, dispatched by Spring on the presence
+        of the `id` query parameter (`params = "id"`):
+        - no `id` → LessonContentController#getLessonsList(category) → array of lessons.
+        - `id` present → LessonContentController#getLessonSummaryById(id) → single lesson.
+        OpenAPI 3.1 cannot express two distinct operations for one path+method, so both
+        are folded into this single `get` with a `oneOf` response and mutually exclusive
+        query parameters.
+      operationId: getLessonsListOrSummaryById
+      parameters:
+        - $ref: 'parameters.yaml#/CategoryQueryParam'
+        - name: id
+          in: query
+          required: false
+          description: If present, returns a single lesson (see LessonIdQueryParam) instead of a list; category is ignored in that case.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of lessons (no id) or a single lesson (id given)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: 'schemas/content.yaml#/LessonItemResponse'
+                  - $ref: 'schemas/content.yaml#/LessonItemResponse'
+        '404':
+          description: Lesson not found (only possible when id is given)
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/common.yaml#/ErrorResponse'
+
+  /content/lessons/{slug}:
+    get:
+      tags: [lessons]
+      summary: Get quiz summary by slug
+      operationId: getLessonBySlug
+      parameters:
+        - $ref: 'parameters.yaml#/SlugPathParam'
+      responses:
+        '200':
+          description: Quiz summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/content.yaml#/LessonItemResponse'
+        '404':
+          description: Quiz not found
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/common.yaml#/ErrorResponse'
+
+  /content/lessons/{slug}/declension-stems:
+    get:
+      tags: [grammar]
+      summary: Get all declension stems for a lesson by slug
+      operationId: getDeclensionStemsForLesson
+      parameters:
+        - $ref: 'parameters.yaml#/SlugPathParam'
+      responses:
+        '200':
+          description: List of declension stems retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/content.yaml#/DeclensionStemDto'
+        '404':
+          description: Lesson not found
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/common.yaml#/ErrorResponse'
+
+  /content/lessons/{slug}/case-endings:
+    get:
+      tags: [grammar]
+      summary: Get case endings for a lesson with optional filters
+      operationId: getCaseEndingsForLesson
+      parameters:
+        - $ref: 'parameters.yaml#/SlugPathParam'
+        - $ref: 'parameters.yaml#/CaseTypeQueryParam'
+        - $ref: 'parameters.yaml#/NumberTypeQueryParam'
+        - $ref: 'parameters.yaml#/GenderQueryParam'
+      responses:
+        '200':
+          description: List of case endings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/content.yaml#/CaseEndingDto'
+        '404':
+          description: Lesson not found
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/common.yaml#/ErrorResponse'
+
+  /content/case-endings:
+    get:
+      tags: [grammar]
+      summary: Get all case endings for a vowel type
+      operationId: getCaseEndingsByVowelType
+      parameters:
+        - $ref: 'parameters.yaml#/VowelTypeQueryParam'
+      responses:
+        '200':
+          description: List of case endings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/content.yaml#/CaseEndingDto'
+
+  /content/declension-stems/{stemId}/forms:
+    get:
+      tags: [grammar]
+      summary: Get all declension forms for a specific stem
+      description: >
+        This is the endpoint that quiz-service calls (ContentClient.getDeclensionForms)
+        to build distractors on-the-fly on resume/answer — see quiz-service.md §5а/§6.
+      operationId: getDeclensionForms
+      parameters:
+        - $ref: 'parameters.yaml#/DeclensionStemIdPathParam'
+      responses:
+        '200':
+          description: List of declension forms retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/content.yaml#/DeclensionFormDto'
+        '404':
+          description: Declension stem not found (empty repository result mapped to 404 in code, not "stem row missing" per se)
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/common.yaml#/ErrorResponse'
+
+  /content/vocabulary/words/{wordId}:
+    get:
+      tags: [vocabulary]
+      summary: Get a single vocabulary word by ID
+      operationId: getVocabularyWordById
+      parameters:
+        - $ref: 'parameters.yaml#/VocabularyWordIdPathParam'
+      responses:
+        '200':
+          description: Vocabulary word retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/content.yaml#/VocabularyWordDto'
+        '404':
+          description: Vocabulary word not found
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/common.yaml#/ErrorResponse'
+
+  /content/lessons/{quizId}/vocabulary-words:
+    get:
+      tags: [vocabulary]
+      summary: Get vocabulary words for a quiz/lesson
+      description: >
+        Used by quiz-service ContentClient.getVocabularyWordsForLesson. Internally resolves
+        quizId → slug via LessonContentService before delegating to VocabularyService.
+      operationId: getVocabularyWordsForQuiz
+      parameters:
+        - $ref: 'parameters.yaml#/QuizIdPathParam'
+        - $ref: 'parameters.yaml#/VocabularyLimitQueryParam'
+      responses:
+        '200':
+          description: List of vocabulary words
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/content.yaml#/VocabularyWordDto'
+        '404':
+          description: Lesson not found (thrown while resolving quizId to slug)
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/common.yaml#/ErrorResponse'
+
+  /content/lessons/{slug}/vocabulary-word-ids:
+    get:
+      tags: [vocabulary]
+      summary: Get vocabulary word IDs for a lesson/category by slug
+      description: >
+        Flat set of word IDs, used by QuizGenerator (quiz-service) to resolve externalRefId
+        without fetching full VocabularyWordDto objects — see ContentClient.getVocabularyWordIdsForLesson.
+      operationId: getVocabularyWordIdsForLesson
+      parameters:
+        - $ref: 'parameters.yaml#/SlugPathParam'
+      responses:
+        '200':
+          description: Set of vocabulary word IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                uniqueItems: true
+                items:
+                  type: string
+                  format: uuid
+        '404':
+          description: Not found for slug (per ContentClient error mapping; controller itself has no explicit 404 path — reflects Spring default for an unmapped/empty result if any is thrown downstream)
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/common.yaml#/ErrorResponse'
+
+  /eamenau/sandhi-rules:
+    get:
+      tags: [eamenau]
+      summary: Get all Sandhi Rules
+      operationId: getAllSandhiRules
+      responses:
+        '200':
+          description: List of Sandhi Rules retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/eamenau.yaml#/SandhiRuleDto'
+
+  /eamenau/exercises:
+    get:
+      tags: [eamenau]
+      summary: Get all Eamenau exercises
+      operationId: getAllExercises
+      responses:
+        '200':
+          description: List of exercises
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/eamenau.yaml#/EmenauExerciseDto'
+
+  /eamenau/exercises/{id}:
+    get:
+      tags: [eamenau]
+      summary: Get exercise detail by ID (including tasks and their solutions)
+      operationId: getExerciseById
+      parameters:
+        - $ref: 'parameters.yaml#/ExerciseIdPathParam'
+      responses:
+        '200':
+          description: Exercise detail
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/eamenau.yaml#/EmenauExerciseDetailDto'
+
+  /eamenau/exercises/tasks/{taskId}/solution:
+    get:
+      tags: [eamenau]
+      summary: Get solutions for a task
+      operationId: getSolutionsForTask
+      parameters:
+        - $ref: 'parameters.yaml#/TaskIdPathParam'
+      responses:
+        '200':
+          description: List of solutions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/eamenau.yaml#/SolutionDto'
+
+  /eamenau/exercises/{exerciseId}/sandhi-rules:
+    get:
+      tags: [eamenau]
+      summary: Get the unique set of sandhi rules referenced by an exercise
+      operationId: getUniqueSandhiRulesForExercise
+      parameters:
+        - $ref: 'parameters.yaml#/ExerciseIdForSandhiPathParam'
+      responses:
+        '200':
+          description: List of sandhi rule references
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/eamenau.yaml#/SandhiRuleInfo'
+
+  /eamenau/exercises/solutions/{solutionId}:
+    put:
+      tags: [eamenau]
+      summary: Update a solution (step-by-step text and referenced rule numbers)
+      description: >
+        The only write/mutating endpoint that actually exists in content-service today.
+        No authorization annotation found on this method in the code — see the "Known
+        issues" note in content-service.md §10 ("PUT /solutions/{id} без авторизации").
+      operationId: updateSolution
+      parameters:
+        - $ref: 'parameters.yaml#/SolutionIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/eamenau.yaml#/SolutionUpdateRequestDto'
+      responses:
+        '200':
+          description: Solution updated successfully (empty body, ResponseEntity.ok().build())

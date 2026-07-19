@@ -18,7 +18,16 @@ public class AnswerRequest {
 
     /** Multiple selected option IDs (for multi-select questions, e.g. CASE_BY_FORM). */
     List<UUID> selectedOptionIds;
-    String selectedFormIast;
+        String selectedFormIast;
     int responseTimeMs;
+
+    /** For CASE_BY_FORM/ENDING_MATCH: caseType of the selected option. */
+    String selectedCaseType;
+
+    /** For CASE_BY_FORM/ENDING_MATCH: numberType of the selected option. */
+    String selectedNumberType;
+
+    /** For CASE_BY_FORM/ENDING_MATCH: gender of the selected option. */
+    String selectedGender;
 }
 

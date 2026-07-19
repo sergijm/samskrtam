@@ -30,6 +30,7 @@ public interface SessionQuestionMapper {
     @Mapping(target = "caseEndingId", source = "dto.caseEndingId")
     @Mapping(target = "itemType", source = "dto.itemType")
     @Mapping(target = "questionType", source = "dto.questionType")
+        @Mapping(target = "caseEnding", source = "dto.caseEnding")
     @Mapping(target = "questionSourceLanguage", expression = "java(dto.getQuestionSourceLanguage() != null ? dto.getQuestionSourceLanguage().name() : null)")
     @Mapping(target = "questionTargetLanguage", expression = "java(dto.getQuestionTargetLanguage() != null ? dto.getQuestionTargetLanguage().name() : null)")
     @Mapping(target = "correctTranslationRu", source = "dto.correctTranslationRu")

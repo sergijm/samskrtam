@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info:
+  title: content-service — Internal API
+  description: |
+    Internal (non-ADMIN) API surface of content-service, called by quiz-service only.
+    Based on `services/content-service` — Java 21 + Virtual Threads (servlet, not WebFlux).
+
+    Scope of this file: `generate-quiz-data` — the single internal endpoint used by
+    quiz-service to generate session questions (see docs/services/content-service.md,
+    "Внутреннее API для quiz-service"). The public ADMIN CRUD API (quizzes, questions,
+    vocabulary) is documented in prose only in content-service.md and is out of scope here.
+
+    ИЗМЕНЕНО: generate-quiz-data now accepts filterScope/filterCaseTypes/filterNumberTypes/
+    filterCombinations and applies the scope pre-filter itself. This logic was previously
+    implemented in quiz-service (SessionCreationService.applyScopeFilter) and has been moved
+    here so that content-service remains the single source of truth for question generation
+    (see docs/services/quiz-service/quiz-declension.md §3.4).
+  version: 1.1.0
+
+servers:
+  - url: http://content-service:8081/api/v1
+    description: Internal (from quiz-service, inside the cluster network)
+  - url: http://localhost:8081/api/v1
+    description: Local development (direct to content-service)
+
+tags:
+  - name: internal
+    description: Internal endpoints called only by quiz-service, not exposed via api-gateway.
+
+paths:
+  /content/lessons/{quizId}/generate-quiz-data:
+    post:
+      tags: [internal]
+      summary: Generate quiz session questions for a lesson
+      description: |
+        Generates the questions for a new quiz session and returns them; nothing is
+        persisted in content-service (see content-service.md §3а). Called exactly once,
+        at session start, by quiz-service ContentClient.generateQuizData(...).
+
+        If filterScope is provided, the returned generatedQuestions[] are pre-filtered
+        by the corresponding grammatical criteria (case/number/gender) before being
+        returned — this is the former SessionCreationService.applyScopeFilter logic,
+        now executed here. If filterScope is absent, all generated questions are
+        returned unfiltered (unchanged pre-refactor behaviour).
+
+        An empty filtered result is NOT an error at this level — it is returned as an
+        empty generatedQuestions[] array. Translating "no questions match the filter"
+        into a session-level SCOPE_FILTER_EMPTY error remains the caller's (quiz-service)
+        responsibility.
+      operationId: generateQuizData
+      parameters:
+        - $ref: 'parameters.yaml#/LessonIdPathParam'
+        - $ref: 'parameters.yaml#/XUserLocaleHeader'
+        - $ref: 'parameters.yaml#/FilterScopeParam'
+        - $ref: 'parameters.yaml#/FilterCaseTypesParam'
+        - $ref: 'parameters.yaml#/FilterNumberTypesParam'
+        - $ref: 'parameters.yaml#/FilterCombinationsParam'
+      responses:
+        '200':
+          description: Quiz data generated successfully (possibly with an empty generatedQuestions[] if the filter matched nothing)
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/generated-quiz.yaml#/GeneratedQuizData'
+        '404':
+          description: Lesson not found
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/common.yaml#/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

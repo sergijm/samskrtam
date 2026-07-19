@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { WordStatusIcon } from './WordStatusIcon';
+import { ProgressBar } from 'primereact/progressbar';
+import { statusToProgressColor } from '../../utils/statusColor';
 import type { GrammarQuestionProgress } from '../../types/lesson';
 
 interface GrammarDetailsTableProps {
@@ -21,19 +22,14 @@ export const GrammarDetailsTable: React.FC<GrammarDetailsTableProps> = ({
   sortOrder,
   onSort,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const navigate = useNavigate();
+
+  const buildFilterUrl = (row: GrammarQuestionProgress) =>
+    `/quiz/grammar/${quizSlug}?filterScope=CASE_NUMBER_GENDER&filterCaseType=${row.caseType}&filterNumberType=${row.numberType}&filterGender=${row.gender}`;
 
   return (
     <DataTable value={forms} paginator rows={20} responsiveLayout="scroll">
-      <Column
-        header={i18n.language === 'ru' ? 'Статус' : 'Status'}
-        body={(rowData: GrammarQuestionProgress) => <WordStatusIcon status={rowData.status} />}
-        style={{ width: '8%' }}
-        sortable
-        sortField="status"
-        onSort={() => onSort('status')}
-      />
       <Column
         header={i18n.language === 'ru' ? 'Падеж' : 'Case'}
         body={(rowData: GrammarQuestionProgress) => (
@@ -74,18 +70,22 @@ export const GrammarDetailsTable: React.FC<GrammarDetailsTableProps> = ({
       <Column
         header={i18n.language === 'ru' ? 'Изучено' : 'Learned'}
         body={(rowData: GrammarQuestionProgress) => (
-          <span
-            className="cursor-pointer underline text-primary"
-            onClick={() =>
-              navigate(
-                `/quiz/grammar/${quizSlug}?filterScope=CASE_NUMBER_GENDER&filterCaseType=${rowData.caseType}&filterNumberType=${rowData.numberType}&filterGender=${rowData.gender}`,
-              )
-            }
-          >
-            {rowData.score > 0 ? `${rowData.score}%` : '0%'}
-          </span>
+          <div className="flex align-items-center gap-2">
+            <ProgressBar
+              value={rowData.score}
+              color={statusToProgressColor(rowData.status)}
+              style={{ height: '5px', width: '80px' }}
+              showValue={false}
+            />
+            <span
+              className="cursor-pointer underline text-primary"
+              onClick={() => navigate(buildFilterUrl(rowData))}
+            >
+              {rowData.score}%
+            </span>
+          </div>
         )}
-        style={{ width: '13%' }}
+        style={{ width: '18%' }}
         sortable
         sortField="score"
         onSort={() => onSort('score')}
@@ -93,3 +93,4 @@ export const GrammarDetailsTable: React.FC<GrammarDetailsTableProps> = ({
     </DataTable>
   );
 };
+

@@ -18,4 +18,10 @@ public interface CaseEndingRepository extends JpaRepository<CaseEnding, Long> {
             CaseType caseType,
             NumberType numberType
     );
+
+    /**
+     * Все окончания для vowel_type с заданным endingIast.
+     * Нужно для проверки «достаточно ли омонимов» для ENDING_MATCH.
+     */
+    List<CaseEnding> findByVowelTypeAndEndingIast(VowelType vowelType, String endingIast);
 }

@@ -9,7 +9,7 @@ import sm.selflearn.samskrtam.content.model.NumberType;
 import java.util.UUID;
 
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Jacksonized
 public class GeneratedQuizQuestionDto {
     UUID id;
