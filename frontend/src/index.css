@@ -1,4 +1,19 @@
-/* src/inpudex.css */
+/* src/index.css */
+
+/* ─── Theme-based body background ─── */
+html[data-theme="light"] body {
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.55)),
+        url('/bg-light.jpg') repeat left top fixed;
+    background-size: auto;
+}
+
+html[data-theme="dark"] body {
+    background:
+        linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)),
+        url('/bg-dark.jpg') repeat left top fixed;
+    background-size: auto;
+}
 
 html {
     font-size: 20px;
