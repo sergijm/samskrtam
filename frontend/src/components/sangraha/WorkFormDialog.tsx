@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
-import { Button } from 'primereact/button';
+import { PageButton } from '../common/buttons';
 
 interface WorkForm {
   title: string;
@@ -32,7 +32,7 @@ export default function WorkFormDialog({ visible, onHide, form, onFormChange, on
           <label>{t('sangraha.fields.description')}</label>
           <InputTextarea value={form.description} onChange={(e) => onFormChange({ ...form, description: e.target.value })} className="w-full" rows={3} />
         </div>
-        <Button label={t('common.create')} onClick={onSave} loading={loading} />
+        <PageButton variant="dialog-action" labelKey="common.create" onClick={onSave} loading={loading} />
       </div>
     </Dialog>
   );

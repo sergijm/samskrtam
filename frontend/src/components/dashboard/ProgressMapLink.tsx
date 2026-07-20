@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from 'primereact/card';
-import { Button } from 'primereact/button';
+import { PageButton } from '../common/buttons';
 
 /**
  * Блок «Карта прогресса» (§5.5 IA) — ссылка на полноэкранную диагностику.
@@ -30,13 +30,10 @@ const ProgressMapLink: React.FC = () => {
           </div>
           <p className="m-0 text-500 text-sm">{t('dashboard.progressMapDesc')}</p>
         </div>
-        <Button
-          outlined
-          icon="pi pi-arrow-right"
-          iconPos="right"
-          label={t('dashboard.progressMapButton')}
+        <PageButton
+          variant="navigation"
+          labelKey="dashboard.progressMapButton"
           onClick={handleClick}
-          // Пока маршрут не готов — кнопка disabled
           disabled
           title={t('dashboard.progressMapComingSoon')}
         />

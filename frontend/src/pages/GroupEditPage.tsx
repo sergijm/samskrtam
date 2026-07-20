@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Card } from 'primereact/card';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -8,6 +7,7 @@ import { useGroup, useRenameGroup } from '../hooks/useGroups';
 import { useTranslation } from 'react-i18next';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
+import { SubmitButton, CancelButton } from '../components/common/buttons';
 
 const GroupEditPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -61,9 +61,9 @@ const GroupEditPage = () => {
           {errors.name && <small className="p-error">{errors.name.message}</small>}
         </div>
 
-        <div className="mt-4">
-          <Button type="submit" label={t('common.save')} loading={renameGroupMutation.isLoading} />
-          <Button label={t('common.cancel')} className="p-button-text ml-2" onClick={() => navigate(`/groups/${id}`)} />
+                <div className="mt-4">
+          <SubmitButton labelKey="common.save" loading={renameGroupMutation.isLoading} />
+          <CancelButton labelKey="common.cancel" className="ml-2" onClick={() => navigate(`/groups/${id}`)} />
         </div>
       </form>
     </Card>

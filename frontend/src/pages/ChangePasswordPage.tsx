@@ -1,11 +1,11 @@
 import React, { useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Button } from 'primereact/button';
 import { Password } from 'primereact/password';
 import { Card } from 'primereact/card';
 import { useTranslation } from 'react-i18next';
 import { useChangePassword } from '../hooks/useUser';
 import { Toast } from 'primereact/toast';
+import { PageButton } from '../components/common/buttons';
 
 const ChangePasswordPage = () => {
   const { t } = useTranslation();
@@ -24,7 +24,7 @@ const ChangePasswordPage = () => {
         reset();
       },
       onError: (error: any) => {
-        toast.current?.show({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || t('auth.changePasswordError'), life: 3000 }); // Use translation key
+        toast.current?.show({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || t('auth.changePasswordError'), life: 3000 });
       }
     });
   };
@@ -37,7 +37,7 @@ const ChangePasswordPage = () => {
           <div className="field">
             <span className="p-float-label">
               <Controller name="currentPassword" control={control}
-                rules={{ required: t('validation.currentPasswordRequired') }} // Use translation key
+                rules={{ required: t('validation.currentPasswordRequired') }}
                 render={({ field, fieldState }) => <Password id={field.name} {...field} toggleMask className={fieldState.error ? 'p-invalid' : ''} />} />
               <label htmlFor="currentPassword">{t('auth.currentPassword')}</label>
             </span>
@@ -47,7 +47,7 @@ const ChangePasswordPage = () => {
           <div className="field">
             <span className="p-float-label">
               <Controller name="newPassword" control={control}
-                rules={{ required: t('validation.newPasswordRequired') }} // Use translation key
+                rules={{ required: t('validation.newPasswordRequired') }}
                 render={({ field, fieldState }) => <Password id={field.name} {...field} toggleMask className={fieldState.error ? 'p-invalid' : ''} />} />
               <label htmlFor="newPassword">{t('auth.newPassword')}</label>
             </span>
@@ -57,14 +57,14 @@ const ChangePasswordPage = () => {
           <div className="field">
             <span className="p-float-label">
               <Controller name="confirmPassword" control={control}
-                rules={{ required: t('validation.confirmNewPasswordRequired'), validate: value => value === newPassword || t('validation.passwordsDoNotMatch') }} // Use translation key
+                rules={{ required: t('validation.confirmNewPasswordRequired'), validate: value => value === newPassword || t('validation.passwordsDoNotMatch') }}
                 render={({ field, fieldState }) => <Password id={field.name} {...field} feedback={false} toggleMask className={fieldState.error ? 'p-invalid' : ''} />} />
               <label htmlFor="confirmPassword">{t('auth.confirmPassword')}</label>
             </span>
             {errors.confirmPassword && <small className="p-error">{errors.confirmPassword.message}</small>}
           </div>
 
-          <Button type="submit" label={t('auth.changePassword')} className="mt-2" loading={changePasswordMutation.isLoading} />
+          <PageButton variant="form-submit" labelKey="auth.changePassword" className="mt-2" loading={changePasswordMutation.isLoading} />
         </form>
       </Card>
     </>
@@ -72,3 +72,4 @@ const ChangePasswordPage = () => {
 };
 
 export default ChangePasswordPage;
+

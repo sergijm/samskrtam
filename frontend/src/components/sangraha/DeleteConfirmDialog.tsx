@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Dialog } from 'primereact/dialog';
-import { Button } from 'primereact/button';
+import { CancelButton, DangerButton } from '../common/buttons';
 
 interface DeleteConfirmDialogProps {
   visible: boolean;
@@ -16,8 +16,8 @@ export default function DeleteConfirmDialog({ visible, onHide, onConfirm, loadin
     <Dialog header={t('sangraha.deleteWork')} visible={visible} onHide={onHide} style={{ width: '400px' }}>
       <p>{t('common.confirm')}</p>
       <div className="flex justify-content-end gap-2 mt-3">
-        <Button label={t('common.cancel')} onClick={onHide} />
-        <Button label={t('common.delete')} className="p-button-danger" onClick={onConfirm} loading={loading} />
+        <CancelButton labelKey="common.cancel" onClick={onHide} />
+        <DangerButton labelKey="common.delete" onClick={onConfirm} loading={loading} />
       </div>
     </Dialog>
   );

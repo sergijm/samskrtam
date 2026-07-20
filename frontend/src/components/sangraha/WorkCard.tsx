@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Button } from 'primereact/button';
+import { IconButton } from '../common/buttons';
 
 interface WorkCardProps {
   id: string;
@@ -33,9 +33,9 @@ export default function WorkCard({ slug, titleEn, titleRu, author, descriptionEn
         </div>
         {isAdmin && (
           <div className="p-card-footer flex justify-content-end">
-            <Button
-              icon="pi pi-trash"
-              className="p-button-danger p-button-text"
+            <IconButton
+              iconName="pi-trash"
+              className="p-button-danger"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete(slug);

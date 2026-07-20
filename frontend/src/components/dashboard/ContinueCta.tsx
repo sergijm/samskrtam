@@ -1,10 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button } from 'primereact/button';
 import { Card } from 'primereact/card';
 import { Skeleton } from 'primereact/skeleton';
 import type { DashboardContinueCta } from '../../types/dashboard';
+import { CtaButton } from '../common/buttons';
 
 interface ContinueCtaProps {
   data: DashboardContinueCta | undefined;
@@ -68,11 +68,8 @@ const ContinueCta: React.FC<ContinueCtaProps> = ({ data, isLoading, isError }) =
             <span className="text-600">{data.titleKey}</span>
           )}
         </div>
-        <Button
-          label={t('dashboard.continueButton')}
-          icon="pi pi-play"
-          iconPos="right"
-          className="p-button-lg p-button-primary"
+        <CtaButton
+          labelKey="dashboard.continueButton"
           onClick={handleClick}
         />
       </div>

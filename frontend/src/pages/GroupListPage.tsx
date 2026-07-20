@@ -2,11 +2,11 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { Button } from 'primereact/button';
 import { Card } from 'primereact/card';
 import { useGroups } from '../hooks/useGroups';
 import { useTranslation } from 'react-i18next';
 import { ProgressSpinner } from 'primereact/progressspinner';
+import { CreateButton } from '../components/common/buttons';
 
 const GroupListPage = () => {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ const GroupListPage = () => {
   const header = (
     <div className="flex justify-content-between align-items-center">
       <h5 className="m-0">{t('groups.title')}</h5>
-      <Button label={t('groups.createGroup')} icon="pi pi-plus" onClick={() => navigate('/groups/new')} />
+      <CreateButton labelKey="groups.createGroup" onClick={() => navigate('/groups/new')} />
     </div>
   );
 

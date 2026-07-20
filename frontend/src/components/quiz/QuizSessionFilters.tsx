@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Dropdown } from 'primereact/dropdown';
-import { Button } from 'primereact/button';
 import { LessonType, SessionStatus } from '../../types/quiz';
+import { ResetFiltersButton } from '../common/buttons';
 
 interface QuizSessionFiltersProps {
   quizTypeFilter: LessonType | undefined;
@@ -57,7 +57,7 @@ export default function QuizSessionFilters({
         placeholder={t('common.filterByStatus')}
         className="w-12rem"
       />
-      <Button icon="pi pi-filter-slash" className="p-button-outlined" onClick={onReset} />
+      <ResetFiltersButton onClick={onReset} />
     </div>
   );
 }

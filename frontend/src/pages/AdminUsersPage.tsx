@@ -5,13 +5,13 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
-import { Button } from 'primereact/button';
 import { Tag } from 'primereact/tag';
 import { Paginator, PaginatorPageChangeEvent } from 'primereact/paginator';
 import { useAdminUsers } from '../hooks/useAdmin';
 import { UserRole } from '../types/user';
 import { Toast } from 'primereact/toast';
-import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
+import { Link, useNavigate } from 'react-router-dom';
+import { ResetFiltersButton } from '../components/common/buttons';
 
 const AdminUsersPage = () => {
   const { t } = useTranslation();
@@ -113,7 +113,7 @@ const AdminUsersPage = () => {
             placeholder={t('admin.users.filterByStatus')}
             className="w-12rem"
           />
-          <Button icon="pi pi-filter-slash" className="p-button-outlined" onClick={() => {
+                    <ResetFiltersButton onClick={() => {
             setSearch('');
             setRoleFilter(null);
             setBlockedFilter(null);

@@ -5,7 +5,8 @@ import { AutoComplete } from 'primereact/autocomplete';
 import { useTranslation } from 'react-i18next';
 import { userApi } from '../../api/userApi';
 import { useAddMember } from '../../hooks/useGroups';
-import { User } from '../../types/user'; // Added import for User type
+import { User } from '../../types/user';
+import { CancelButton, PageButton } from '../common/buttons';
 
 interface AddMemberDialogProps {
   groupId: string;
@@ -57,8 +58,8 @@ const AddMemberDialog = ({ groupId, visible, onHide }: AddMemberDialogProps) => 
         />
       </div>
       <div className="p-dialog-footer mt-4">
-        <Button label={t('common.cancel')} icon="pi pi-times" onClick={onHide} className="p-button-text" />
-        <Button label={t('common.add')} icon="pi pi-check" onClick={handleAdd} disabled={!selectedUser || addMemberMutation.isLoading} />
+                <CancelButton labelKey="common.cancel" onClick={onHide} />
+        <PageButton variant="dialog-action" labelKey="common.add" iconName="pi-check" onClick={handleAdd} disabled={!selectedUser || addMemberMutation.isLoading} />
       </div>
     </Dialog>
   );

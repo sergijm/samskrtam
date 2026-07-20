@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Card } from 'primereact/card';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -8,6 +7,7 @@ import { authApi } from '../api/authApi';
 import { useTranslation } from 'react-i18next';
 import { Password } from 'primereact/password';
 import { classNames } from 'primereact/utils';
+import { PageButton } from '../components/common/buttons';
 
 const ResetPasswordPage = () => {
   const { t } = useTranslation();
@@ -119,7 +119,7 @@ const ResetPasswordPage = () => {
               {getFormErrorMessage('confirmPassword')}
             </div>
 
-            <Button type="submit" label={t('resetPassword.resetButton')} className="mt-2" />
+            <PageButton variant="form-submit" labelKey="resetPassword.resetButton" className="mt-2" />
           </form>
         )}
       </Card>
@@ -128,3 +128,4 @@ const ResetPasswordPage = () => {
 };
 
 export default ResetPasswordPage;
+

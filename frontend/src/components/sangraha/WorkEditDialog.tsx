@@ -1,8 +1,8 @@
-import { useTranslation } from 'react-i18next';
+﻿import { useTranslation } from 'react-i18next';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
-import { Button } from 'primereact/button';
+import { PageButton } from '../common/buttons';
 
 interface WorkEditForm {
   titleRu: string;
@@ -25,7 +25,7 @@ export default function WorkEditDialog({ visible, onHide, form, onFormChange, on
   const { t } = useTranslation();
 
   return (
-    <Dialog header={t('sangraha.editWork')} visible={visible} onHide={onHide} style={{ width: '500px' }}>
+    <Dialog header={t('sangraha.editWork')} visible={visible} onHide={onHide} style={{ width: '800px' }}>
       <div className="flex flex-column gap-3">
         <div>
           <label>{t('sangraha.fields.titleRu')}</label>
@@ -47,7 +47,7 @@ export default function WorkEditDialog({ visible, onHide, form, onFormChange, on
           <label>{t('sangraha.fields.author')}</label>
           <InputText value={form.author} onChange={(e) => onFormChange({ ...form, author: e.target.value })} className="w-full" />
         </div>
-        <Button label={t('common.save')} onClick={onSave} loading={loading} />
+        <PageButton variant="dialog-action" labelKey="common.save" onClick={onSave} loading={loading} />
       </div>
     </Dialog>
   );

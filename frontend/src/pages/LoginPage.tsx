@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Password } from 'primereact/password';
 import { Card } from 'primereact/card';
@@ -12,13 +11,14 @@ import { useTranslation } from 'react-i18next';
 import { LocaleSwitcher } from '../components/common/LocaleSwitcher';
 import { ThemeSwitcher } from '../components/common/ThemeSwitcher';
 import { Divider } from 'primereact/divider';
+import { PageButton, CtaButton } from '../components/common/buttons';
 
 const LoginPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { login, redirectPath, setRedirectPath } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
-  const [showPasswordLoginForm, setShowPasswordLoginForm] = useState(false); // New state to toggle password login form
+  const [showPasswordLoginForm, setShowPasswordLoginForm] = useState(false);
 
   const { control, handleSubmit, formState: { errors } } = useForm({
     defaultValues: { username: '', password: '' }
@@ -64,17 +64,15 @@ const LoginPage = () => {
         </div>
 
         {!showPasswordLoginForm ? (
-          // Social login buttons and "Login with Password" button
           <div className="flex flex-column gap-3">
-            <Button label={t('auth.google')} icon="pi pi-google" className="p-button-outlined" onClick={authApi.loginWithGoogle} />
-            <Button label={t('auth.mailru')} icon="pi pi-envelope" className="p-button-outlined" onClick={authApi.loginWithMailRu} />
+            <PageButton variant="cta-primary" labelKey="auth.google" iconName="pi-google" className="p-button-outlined" onClick={authApi.loginWithGoogle} />
+            <PageButton variant="cta-primary" labelKey="auth.mailru" iconName="pi-envelope" className="p-button-outlined" onClick={authApi.loginWithMailRu} />
             <Divider align="center" className="my-2">
               <span>{t('common.or')}</span>
             </Divider>
-            <Button label={t('auth.loginWithPassword')} icon="pi pi-user" className="p-button-secondary" onClick={() => setShowPasswordLoginForm(true)} />
+            <PageButton variant="navigation" labelKey="auth.loginWithPassword" iconName="pi-user" className="p-button-secondary" onClick={() => setShowPasswordLoginForm(true)} />
           </div>
         ) : (
-          // Traditional login form, register and forgot password links
           <>
             <form onSubmit={handleSubmit(onSubmit)} className="p-fluid">
               <div className="field">
@@ -92,7 +90,7 @@ const LoginPage = () => {
               <div className="field">
                 <span className="p-float-label">
                   <Controller name="password" control={control}
-                    rules={{ required: t('validation.passwordRequired') }} // Use t() for validation message
+                    rules={{ required: t('validation.passwordRequired') }}
                     render={({ field, fieldState }) => (
                       <Password id={field.name} {...field} feedback={false} toggleMask className={fieldState.error ? 'p-invalid' : ''} />
                     )} />
@@ -103,14 +101,14 @@ const LoginPage = () => {
 
               {error && <div className="p-error mb-2">{error}</div>}
 
-              <Button type="submit" label={t('auth.login')} className="mt-2" />
+              <PageButton variant="form-submit" labelKey="auth.login" className="mt-2" />
             </form>
 
             <div className="mt-3 text-center">
               <Link to="/register">{t('auth.registerLink')}</Link> | <Link to="/forgot-password">{t('auth.forgotPasswordLink')}</Link>
             </div>
             <div className="mt-3 text-center">
-              <Button label={t('common.back')} icon="pi pi-arrow-left" className="p-button-text p-button-sm" onClick={() => setShowPasswordLoginForm(false)} />
+              <PageButton variant="form-cancel" labelKey="common.back" iconName="pi-arrow-left" className="p-button-sm" onClick={() => setShowPasswordLoginForm(false)} />
             </div>
           </>
         )}

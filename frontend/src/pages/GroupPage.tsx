@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card } from 'primereact/card';
-import { Button } from 'primereact/button';
 import { ProgressSpinner } from 'primereact/progressspinner';
-import { InputText } from 'primereact/inputtext'; // Import InputText
-import { useForm, Controller } from 'react-hook-form'; // Import useForm and Controller
+import { InputText } from 'primereact/inputtext';
+import { useForm, Controller } from 'react-hook-form';
 import { useGroup, useRenameGroup } from '../hooks/useGroups';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from 'react-i18next';
 import GroupMembersTable from '../components/group/GroupMembersTable';
 import AddMemberDialog from '../components/group/AddMemberDialog';
-import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'; // Import confirmDialog
-import { Toast } from 'primereact/toast'; // Import Toast
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
+import { Toast } from 'primereact/toast';
+import { CreateButton, IconButton } from '../components/common/buttons';
 
 const GroupPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -71,16 +71,16 @@ const GroupPage = () => {
             render={({ field, fieldState }) => (
               <InputText id={field.name} {...field} autoFocus className={fieldState.error ? 'p-invalid' : ''} />
             )} />
-          <Button icon="pi pi-check" className="p-button-text p-button-success" type="submit" loading={renameGroupMutation.isLoading} />
-          <Button icon="pi pi-times" className="p-button-text p-button-danger" onClick={() => setIsEditingName(false)} />
+                    <IconButton iconName="pi-check" className="p-button-success" type="submit" loading={renameGroupMutation.isLoading} />
+          <IconButton iconName="pi-times" className="p-button-danger" onClick={() => setIsEditingName(false)} />
         </form>
       ) : (
         <h2 className="m-0">{group.name}</h2>
       )}
       {canManage && !isEditingName && (
-        <div className="flex gap-2">
-          <Button label={t('groups.addMember')} icon="pi pi-plus" onClick={() => setAddMemberDialogVisible(true)} />
-          <Button icon="pi pi-pencil" className="p-button-text" onClick={() => setIsEditingName(true)} tooltip={t('common.edit')} />
+                <div className="flex gap-2">
+          <CreateButton labelKey="groups.addMember" onClick={() => setAddMemberDialogVisible(true)} />
+          <IconButton iconName="pi-pencil" onClick={() => setIsEditingName(true)} tooltip={t('common.edit')} />
         </div>
       )}
     </div>

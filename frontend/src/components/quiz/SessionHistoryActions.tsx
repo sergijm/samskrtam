@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { Button } from 'primereact/button';
 import { Message } from 'primereact/message';
+import { PageButton, CtaButton } from '../common/buttons';
 
 interface SessionHistoryActionsProps {
   isCompleted: boolean;
@@ -30,23 +30,22 @@ export default function SessionHistoryActions({
       )}
       <div className="flex justify-content-end mt-4 gap-2">
         {!isCompleted && (
-          <Button
-            label={t('common.continue')}
-            icon="pi pi-play"
+          <CtaButton
+            labelKey="common.continue"
             className="p-button-success"
             onClick={onResume}
           />
         )}
-        <Button
-          label={t('quiz.retakeQuiz')}
-          icon="pi pi-refresh"
+        <PageButton
+          variant="navigation"
+          labelKey="quiz.retakeQuiz"
           className="p-button-secondary"
           onClick={onRetake}
           loading={retakeLoading}
         />
-        <Button
-          label={t('quiz.startNewQuiz')}
-          icon="pi pi-plus"
+        <PageButton
+          variant="page-action"
+          labelKey="quiz.startNewQuiz"
           onClick={onStartNew}
           loading={startNewLoading}
         />

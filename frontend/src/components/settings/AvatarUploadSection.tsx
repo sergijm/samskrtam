@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from 'primereact/button';
 import { Avatar } from 'primereact/avatar';
+import { PageButton } from '../common/buttons';
 
 interface AvatarUploadSectionProps {
   avatarUrl?: string;
@@ -33,13 +33,13 @@ export default function AvatarUploadSection({ avatarUrl, onFileChange, isLoading
           accept="image/jpeg, image/png, image/webp"
           style={{ display: 'none' }}
         />
-        <Button
-          type="button"
-          label={t('settings.avatar.upload')}
-          icon="pi pi-upload"
+        <PageButton
+          variant="page-action"
+          labelKey="settings.avatar.upload"
+          iconName="pi-upload"
+          className="p-button-outlined"
           onClick={() => fileInputRef.current?.click()}
           loading={isLoading}
-          className="p-button-outlined"
         />
       </div>
     </div>

@@ -3,10 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useMe } from '../../hooks/useUser';
 import { useSidebarStore } from '../../store/sidebarStore';
-import { Button } from 'primereact/button';
 import { LocaleSwitcher } from '../common/LocaleSwitcher';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import UserAvatar from '../user/UserAvatar';
+import { IconButton } from '../common/buttons';
 
 const Header = () => {
   const { isAuthenticated, logout } = useAuthStore();
@@ -27,9 +27,9 @@ const Header = () => {
           <span className="text-3xl font-bold">Akshara Mārga</span>
         </Link>
         {isAuthenticated && (
-          <Button
-            icon={`pi ${collapsed ? 'pi-chevron-right' : 'pi-chevron-left'}`}
-            className="p-button-text p-button-rounded sidebar-toggle-btn ml-2"
+          <IconButton
+            iconName={`pi-chevron-${collapsed ? 'right' : 'left'}`}
+            className="sidebar-toggle-btn ml-2"
             onClick={toggle}
             tooltip={collapsed ? 'Show sidebar' : 'Hide sidebar'}
             tooltipOptions={{ position: 'bottom' }}
@@ -52,7 +52,7 @@ const Header = () => {
           </Link>
         )}
         {isAuthenticated && (
-          <Button icon="pi pi-sign-out" className="p-button-text" onClick={handleLogout} />
+          <IconButton iconName="pi-sign-out" onClick={handleLogout} />
         )}
       </div>
     </div>

@@ -10,6 +10,7 @@ import { useAuthStore } from '../../store/authStore';
 import WorkCard from '../../components/sangraha/WorkCard';
 import WorkFormDialog from '../../components/sangraha/WorkFormDialog';
 import DeleteConfirmDialog from '../../components/sangraha/DeleteConfirmDialog';
+import { CreateButton } from '../../components/common/buttons';
 
 const WorksPage = () => {
   const { t } = useTranslation();
@@ -62,7 +63,7 @@ const WorksPage = () => {
       <Toast ref={toast} />
       <div className="flex justify-content-between align-items-center mb-4">
         <h1>{t('sangraha.works')}</h1>
-        <Button label={t('sangraha.addWork')} icon="pi pi-plus" onClick={() => setDialogVisible(true)} />
+        <CreateButton labelKey="sangraha.addWork" onClick={() => setDialogVisible(true)} />
       </div>
 
       {isLoading || !works ? (

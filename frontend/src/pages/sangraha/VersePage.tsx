@@ -5,7 +5,6 @@ import {
   useAnalyzeVerse,
 } from '../../hooks/useSangraha';
 import { useAuthStore } from '../../store/authStore';
-import { Button } from 'primereact/button';
 import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
@@ -13,6 +12,7 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { useRef, useState, useCallback, useEffect } from 'react';
 import VerseWordsList from '../../components/sangraha/VerseWordsList';
 import SandhiSplitsList from '../../components/sangraha/SandhiSplitsList';
+import { IconButton, CtaButton, CreateButton } from '../../components/common/buttons';
 
 const VersePage = () => {
   const { t, i18n } = useTranslation();
@@ -81,9 +81,9 @@ const VersePage = () => {
     <div className="p-4">
       <Toast ref={toast} />
       <div className="flex align-items-center mb-3">
-        <Button
-          icon="pi pi-arrow-left"
-          className="p-button-text p-button-rounded mr-2"
+                <IconButton
+          iconName="pi-arrow-left"
+          className="p-button-rounded mr-2"
           onClick={() => navigate(`/sangraha/${workSlug}`)}
         />
         <h2 className="m-0">{t('sangraha.verse')} #{verse.orderIndex}</h2>
@@ -131,7 +131,7 @@ const VersePage = () => {
 
       {!isAnalyzing && isEditing && isAdmin && (
         <div className="flex gap-2 mb-4">
-                  <Button label={t('sangraha.action.analyze')} icon="pi pi-robot" className="p-button-success" onClick={handleAnalyze} loading={analyze.isPending} />
+                  <CtaButton labelKey="sangraha.action.analyze" iconName="pi-robot" className="p-button-success" onClick={handleAnalyze} loading={analyze.isPending} />
                 </div>
       )}
 
@@ -154,7 +154,7 @@ const VersePage = () => {
           )}
 
           {isAdmin && (
-            <Button label={t('sangraha.action.edit')} icon="pi pi-pencil" className="p-button-outlined" onClick={startEditing} />
+            <CreateButton labelKey="sangraha.action.edit" iconName="pi-pencil" className="p-button-outlined" onClick={startEditing} />
           )}
         </>
       )}

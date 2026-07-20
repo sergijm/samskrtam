@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Button } from 'primereact/button';
 import { Tag } from 'primereact/tag';
 import type { ChapterTreeDto, VerseTreeDto } from '../../types/sangraha';
+import { IconButton } from '../common/buttons';
 
 interface ChapterTreeBrowserProps {
   chapters: ChapterTreeDto[];
@@ -47,15 +47,15 @@ export default function ChapterTreeBrowser({
             </div>
             {isAdmin && (
               <div className="work-tree-row-right">
-                <Button
-                  icon="pi pi-plus"
-                  className="p-button-rounded p-button-text p-button-sm"
+                <IconButton
+                  iconName="pi-plus"
+                  className="p-button-sm"
                   tooltip={t('sangraha.addVerse')}
                   onClick={(e) => { e.stopPropagation(); onAddVerse(ch.id); }}
                 />
-                <Button
-                  icon="pi pi-trash"
-                  className="p-button-rounded p-button-text p-button-sm p-button-danger"
+                <IconButton
+                  iconName="pi-trash"
+                  className="p-button-sm p-button-danger"
                   tooltip={t('common.delete')}
                   onClick={(e) => { e.stopPropagation(); onDeleteChapter(ch.id); }}
                 />
@@ -75,9 +75,9 @@ export default function ChapterTreeBrowser({
               </div>
               {isAdmin && (
                 <div className="work-tree-row-right">
-                  <Button
-                    icon="pi pi-trash"
-                    className="p-button-rounded p-button-text p-button-sm p-button-danger"
+                  <IconButton
+                    iconName="pi-trash"
+                    className="p-button-sm p-button-danger"
                     tooltip={t('common.delete')}
                     onClick={(e) => { e.stopPropagation(); onDeleteVerse(v.id); }}
                   />

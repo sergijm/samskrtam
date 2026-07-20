@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Password } from 'primereact/password';
 import { Card } from 'primereact/card';
 import { Link } from 'react-router-dom';
 import { authApi } from '../api/authApi';
 import { useTranslation } from 'react-i18next';
+import { PageButton } from '../components/common/buttons';
 
 const RegisterPage = () => {
   const { t } = useTranslation();
@@ -18,11 +18,11 @@ const RegisterPage = () => {
   });
   const password = watch('password');
 
-  const onSubmit = async (data: any) => { // Use 'any' for now, or define a specific type for registration form data
+  const onSubmit = async (data: any) => {
     try {
       await authApi.register(data.username, data.email, data.password);
       setSuccess(true);
-    } catch (err: any) { // Use 'any' for error, or define a specific error type
+    } catch (err: any) {
       setError(err.response?.data?.message || t('auth.registerError'));
     }
   };
@@ -84,7 +84,7 @@ const RegisterPage = () => {
 
           {error && <div className="p-error mb-2">{error}</div>}
 
-          <Button type="submit" label={t('auth.register')} className="mt-2" />
+          <PageButton variant="form-submit" labelKey="auth.register" className="mt-2" />
         </form>
         <div className="mt-4 text-center">
           <Link to="/login">{t('auth.backToLogin')}</Link>
@@ -95,3 +95,4 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
+

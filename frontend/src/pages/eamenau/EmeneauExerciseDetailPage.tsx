@@ -5,11 +5,11 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { Button } from 'primereact/button';
 import { EamenauExerciseDetailDto, EamenauExerciseDto, EamenauTaskDto, SandhiRuleInfo } from '../../types';
 import { contentApi } from '../../api/contentApi';
 import SolutionPanel from '../../components/eamenau/SolutionPanel';
 import { Tooltip } from 'primereact/tooltip';
+import { IconButton } from '../../components/common/buttons';
 
 const EmeneauExerciseDetailPage = () => {
   const { t } = useTranslation();
@@ -82,9 +82,9 @@ const EmeneauExerciseDetailPage = () => {
     <div className="p-4">
       <div className="flex justify-content-between align-items-center mb-5">
         <div className="flex-1">
-          <Button icon="pi pi-chevron-left" onClick={handlePrev} disabled={currentExerciseIndex === 0} />
-          <Button icon="pi pi-chevron-up" onClick={handleGoUp} className="ml-2" />
-          <Button icon="pi pi-chevron-right" onClick={handleNext} disabled={currentExerciseIndex === (exercises?.length ?? 0) - 1} className="ml-2" />
+                    <IconButton iconName="pi-chevron-left" onClick={handlePrev} disabled={currentExerciseIndex === 0} />
+          <IconButton iconName="pi-chevron-up" onClick={handleGoUp} className="ml-2" />
+          <IconButton iconName="pi-chevron-right" onClick={handleNext} disabled={currentExerciseIndex === (exercises?.length ?? 0) - 1} className="ml-2" />
         </div>
         <h1 className="text-center flex-1 m-0">
           {t('eamenau.exerciseNumber')} {exercise.exerciseNumber}

@@ -1,22 +1,22 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button } from 'primereact/button';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '../store/authStore'; // Import useAuthStore
+import { useAuthStore } from '../store/authStore';
+import { PageButton } from '../components/common/buttons';
 
 const HomePage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore(); // Get isAuthenticated status
+  const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard', { replace: true }); // Redirect to dashboard if authenticated
+      navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, navigate]);
 
   if (isAuthenticated) {
-    return null; // Render nothing while redirecting
+    return null;
   }
 
   return (
@@ -26,12 +26,10 @@ const HomePage = () => {
     >
       <div className="absolute top-0 right-0 p-4">
         <Link to="/login">
-          <Button label={t('auth.login')} className="p-button-primary" />
+          <PageButton variant="page-action" labelKey="auth.login" />
         </Link>
       </div>
-      {/* You can add more content here later if needed */}
       <div className="flex flex-column align-items-center justify-content-center min-h-screen text-white">
-        {/* Example content */}
         <h1 className="text-6xl font-bold mb-3">Akshara Mārga</h1>
         <p className="text-xl mb-5">Learn Sanskrit with interactive quizzes and tools.</p>
       </div>
@@ -40,3 +38,4 @@ const HomePage = () => {
 };
 
 export default HomePage;
+

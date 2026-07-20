@@ -2,7 +2,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useWorkTree, useCreateChapter, useDeleteChapter, useCreateVerse, useDeleteVerse, useUpdateWork } from '../../hooks/useSangraha';
 import { useAuthStore } from '../../store/authStore';
-import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
 import { useRef, useState, useCallback } from 'react';
@@ -11,6 +10,7 @@ import ChapterTreeBrowser from '../../components/sangraha/ChapterTreeBrowser';
 import ChapterDialog from '../../components/sangraha/ChapterDialog';
 import VerseDialog from '../../components/sangraha/VerseDialog';
 import WorkEditDialog from '../../components/sangraha/WorkEditDialog';
+import { IconButton, CreateButton, PageButton } from '../../components/common/buttons';
 import './WorkPage.css';
 
 const WorkPage = () => {
@@ -110,7 +110,7 @@ const WorkPage = () => {
         <i className="pi pi-exclamation-triangle text-4xl text-red-500 mb-3" />
         <h3>{t('common.error')}</h3>
         <p>{t('sangraha.workNotFound')}</p>
-        <Button label={t('common.back')} icon="pi pi-arrow-left" onClick={() => navigate('/sangraha')} />
+        <PageButton variant="navigation" labelKey="common.back" onClick={() => navigate('/sangraha')} />
       </div>
     );
   }
@@ -121,22 +121,13 @@ const WorkPage = () => {
 
       <div className="flex align-items-center justify-content-between mb-3">
         <div className="flex align-items-center gap-3">
-          <Button icon="pi pi-arrow-left" className="p-button-rounded p-button-text" onClick={() => navigate('/sangraha')} />
+          <IconButton iconName="pi-arrow-left" className="p-button-rounded" onClick={() => navigate('/sangraha')} />
           <h1 className="text-2xl font-bold m-0">{work.titleEn || work.titleRu}</h1>
         </div>
                 {isAdmin && (
-          <div className="flex gap-2">
-            <Button
-              label={t('common.edit')}
-              icon="pi pi-pencil"
-              className="p-button-outlined"
-              onClick={openEditDialog}
-            />
-            <Button
-              label={t('sangraha.addChapter')}
-              icon="pi pi-plus"
-              onClick={() => setChapterDialog(true)}
-            />
+                    <div className="flex gap-2">
+            <CreateButton labelKey="common.edit" iconName="pi-pencil" className="p-button-outlined" onClick={openEditDialog} />
+            <CreateButton labelKey="sangraha.addChapter" onClick={() => setChapterDialog(true)} />
           </div>
         )}
       </div>

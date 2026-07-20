@@ -1,7 +1,7 @@
-import { useTranslation } from 'react-i18next';
+﻿import { useTranslation } from 'react-i18next';
 import { Dialog } from 'primereact/dialog';
 import { InputNumber } from 'primereact/inputnumber';
-import { Button } from 'primereact/button';
+import { CancelButton, PageButton } from '../common/buttons';
 
 interface VerseDialogProps {
   visible: boolean;
@@ -27,11 +27,11 @@ export default function VerseDialog({
       header={t('sangraha.addVerse')}
       visible={visible}
       onHide={onHide}
-      style={{ width: '400px' }}
+      style={{ width: '800px' }}
       footer={
         <div>
-          <Button label={t('common.cancel')} icon="pi pi-times" className="p-button-text" onClick={onHide} />
-          <Button label={t('common.save')} icon="pi pi-check" onClick={onSave} loading={loading} />
+          <CancelButton labelKey="common.cancel" onClick={onHide} />
+          <PageButton variant="dialog-action" labelKey="common.save" iconName="pi-check" onClick={onSave} loading={loading} />
         </div>
       }
     >

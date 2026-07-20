@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from 'primereact/card';
 import { ProgressBar } from 'primereact/progressbar';
-import { Button } from 'primereact/button';
 import { Skeleton } from 'primereact/skeleton';
 import type { DashboardWeakSpot } from '../../types/dashboard';
+import { PageButton } from '../common/buttons';
 
 interface WeakSpotsProps {
   data: DashboardWeakSpot[] | undefined;
@@ -88,12 +88,9 @@ const WeakSpots: React.FC<WeakSpotsProps> = ({ data, isLoading, isError }) => {
               style={{ height: '0.75rem' }}
             />
             {spot.route && (
-              <Button
-                link
-                size="small"
-                icon="pi pi-arrow-right"
-                iconPos="right"
-                label={t('dashboard.weakSpotsPractice')}
+              <PageButton
+                variant="navigation"
+                labelKey="dashboard.weakSpotsPractice"
                 className="align-self-start p-0 text-sm"
                 onClick={() => navigate(spot.route!)}
               />

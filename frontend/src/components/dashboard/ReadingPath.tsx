@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from 'primereact/card';
 import { ProgressBar } from 'primereact/progressbar';
-import { Button } from 'primereact/button';
 import { Skeleton } from 'primereact/skeleton';
 import type { DashboardReadingPath } from '../../types/dashboard';
+import { PageButton } from '../common/buttons';
 
 interface ReadingPathProps {
   data: DashboardReadingPath | null | undefined;
@@ -68,12 +68,9 @@ const ReadingPath: React.FC<ReadingPathProps> = ({ data, isLoading, isError }) =
           />
         </div>
         {data.route && (
-          <Button
-            link
-            size="small"
-            icon="pi pi-arrow-right"
-            iconPos="right"
-            label={t('dashboard.readingPathOpenText')}
+          <PageButton
+            variant="navigation"
+            labelKey="dashboard.readingPathOpenText"
             className="align-self-start p-0 text-sm"
             onClick={() => navigate(data.route!)}
           />

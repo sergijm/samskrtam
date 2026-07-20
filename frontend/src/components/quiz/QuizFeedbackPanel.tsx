@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Button } from 'primereact/button';
+import { CtaButton } from '../common/buttons';
 
 interface QuizFeedbackPanelProps {
   isCorrect: boolean;
@@ -35,10 +35,8 @@ export default function QuizFeedbackPanel({
         </p>
       )}
       {explanation && <p className="mt-2">{explanation}</p>}
-      <Button
-        label={isLastQuestion ? t('quiz.completeQuiz') : t('quiz.next')}
-        icon="pi pi-arrow-right"
-        iconPos="right"
+      <CtaButton
+        labelKey={isLastQuestion ? 'quiz.completeQuiz' : 'quiz.next'}
         className="mt-3 w-full"
         onClick={onNext}
       />

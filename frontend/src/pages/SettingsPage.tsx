@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button } from 'primereact/button';
 import { Card } from 'primereact/card';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import AvatarUploadSection from '../components/settings/AvatarUploadSection';
 import ProfileFieldsSection from '../components/settings/ProfileFieldsSection';
 import PreferencesSection from '../components/settings/PreferencesSection';
+import { SubmitButton } from '../components/common/buttons';
 
 interface FormValues {
   username: string;
@@ -117,9 +117,8 @@ const SettingsPage = () => {
               onLocaleChange={setLocale}
             />
             <div className="mt-4 flex flex-column gap-3">
-              <Button
-                type="submit"
-                label={t('settings.save')}
+                            <SubmitButton
+                labelKey="settings.save"
                 loading={updateProfileDetailsMutation.isPending}
                 className="max-w-15rem"
               />
