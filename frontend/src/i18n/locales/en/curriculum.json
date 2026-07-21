@@ -95,6 +95,8 @@
   },
   "catalog": {
     "lexicon": "Vocabulary",
+    "lexicon.basic": "Basic Vocabulary",
+    "lexicon.lists": "Lists",
     "texts": "Texts"
   },
   "status": {

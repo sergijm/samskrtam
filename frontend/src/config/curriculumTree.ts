@@ -184,13 +184,16 @@ export const curriculumTree: CurriculumNode[] = [
       { id: '2.12.4', titleKey: 'writing.prosody', status: 'planned' },
     ],
   },
-  // ─── Каталожные разделы (плоские, без children) ─────────────────────
+  // ─── Каталожные разделы ────────────────────────────────────────────
   {
     id: 'catalog.lexicon',
     titleKey: 'catalog.lexicon',
     status: 'available',
     icon: 'pi-book',
-    route: '/vocabulary',
+    children: [
+      { id: 'catalog.lexicon.basic', titleKey: 'catalog.lexicon.basic', status: 'available', route: '/vocabulary/basic' },
+      { id: 'catalog.lexicon.lists', titleKey: 'catalog.lexicon.lists', status: 'available', route: '/vocabulary/lists' },
+    ],
   },
   {
     id: 'catalog.texts',

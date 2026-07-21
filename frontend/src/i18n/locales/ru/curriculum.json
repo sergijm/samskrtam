@@ -95,9 +95,12 @@
   },
   "catalog": {
     "lexicon": "Лексика",
+    "lexicon.basic": "Базовая лексика",
+    "lexicon.lists": "Списки",
     "texts": "Тексты"
   },
   "status": {
     "planned": "скоро"
   }
 }
+
