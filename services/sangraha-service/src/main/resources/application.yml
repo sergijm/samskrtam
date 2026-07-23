@@ -40,6 +40,14 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         spring.json.type.mapping: sangraha-vocabulary-event:sm.selflearn.samskrtam.sangraha.event.SangrahaVocabularyEvent
+    consumer:
+      group-id: sangraha-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.type.mapping: vocabulary-sync-result:sm.selflearn.samskrtam.content.event.VocabularyWordSyncedEvent
+      enable-auto-commit: false
 
 sangraha:
   llm:

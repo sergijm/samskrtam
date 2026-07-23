@@ -43,7 +43,7 @@ public class Verse {
     private String textIast;
 
     @Column(name = "raw_text", columnDefinition = "TEXT")
-    private String rawText;
+    private String  rawText;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

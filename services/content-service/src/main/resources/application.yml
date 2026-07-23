@@ -46,6 +46,9 @@ spring:
         spring.json.trusted.packages: "*"
         spring.json.type.mapping: sangraha-vocabulary-event:sm.selflearn.samskrtam.sangraha.event.SangrahaVocabularyEvent
       enable-auto-commit: false
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 management:
   server:
@@ -67,4 +70,3 @@ logging:
   level:
     root: WARN
     sm.selflearn.samskrtam: DEBUG
-

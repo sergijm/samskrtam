@@ -54,6 +54,9 @@ public class SangrahaVocabularyEvent {
     @AllArgsConstructor
     public static class SangrahaVocabularyWord {
 
+        @JsonProperty("verseWordId")
+        private UUID verseWordId;
+
         @JsonProperty("wordIast")
         private String wordIast;
 

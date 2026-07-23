@@ -101,7 +101,9 @@ public class VerseMapper {
             word.getVoice() != null ? word.getVoice().name() : null,
             word.getGlossRu(),
             word.getGlossEn(),
-            formationRuleNumbers
+            formationRuleNumbers,
+            word.getVocabularyWordId(),
+            word.getVocabSyncStatus()
         );
     }
 

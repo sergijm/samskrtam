@@ -67,12 +67,10 @@ public class LlmPromptBuilder {
      */
     public String buildUserPrompt(Verse verse) {
         var sb = new StringBuilder("Analyze the following Sanskrit verse:\n\n");
-        if (verse.getTextDevanagari() != null && !verse.getTextDevanagari().isBlank()) {
-            sb.append("Devanagari: ").append(verse.getTextDevanagari()).append("\n");
+        if (verse.getRawText() != null && !verse.getRawText().isBlank()) {
+            sb.append("Devanagari or IAST: ").append(verse.getRawText()).append("\n");
         }
-        if (verse.getTextIast() != null && !verse.getTextIast().isBlank()) {
-            sb.append("IAST: ").append(verse.getTextIast()).append("\n");
-        }
+
         sb.append("\nProvide complete analysis using the submit_verse_analysis function.");
 
         JsonNode sandhiRulesNode = promptLoader.getEmenauSandhiRules();

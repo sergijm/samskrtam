@@ -131,6 +131,7 @@ public class VerseAnalysisSaver {
     private void publishVocabularyEvent(Verse verse, Work work, Chapter chapter, List<VerseWord> words) {
         var vocabWords = words.stream()
                 .map(w -> SangrahaVocabularyEvent.SangrahaVocabularyWord.builder()
+                        .verseWordId(w.getId())
                         .wordIast(w.getLemmaIast())
                         .wordDevanagari(w.getSurfaceDevanagari())
                         .stem(w.getStem())

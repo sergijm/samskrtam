@@ -16,10 +16,13 @@ import sm.selflearn.samskrtam.content.repository.VocabularyWordCategoryRepositor
 import sm.selflearn.samskrtam.content.repository.VocabularyWordRepository;
 import sm.selflearn.samskrtam.sangraha.event.SangrahaVocabularyEvent;
 import sm.selflearn.samskrtam.sangraha.event.SangrahaVocabularyEvent.SangrahaVocabularyWord;
+import sm.selflearn.samskrtam.content.event.VocabularyWordSyncedEvent;
 import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.dto.Difficulty;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,6 +35,7 @@ public class VocabularySyncService {
     private final VocabularyWordRepository wordRepository;
     private final VocabularyWordCategoryRepository wordCategoryRepository;
     private final LessonRepository lessonRepository;
+    private final VocabularyAckPublisher vocabularyAckPublisher;
 
     /**
      * Обрабатывает событие sangraha-vocabulary-events.
@@ -63,16 +67,29 @@ public class VocabularySyncService {
         // 3. Upsert Quiz (VOCABULARY) at work level (slug = workSlug)
         upsertQuiz(workSlug, event.getWorkTitleRu(), event.getWorkTitleEn());
 
-        // 4. Process each word
+        // 4. Process each word, collect WordSync for ack
+        List<VocabularyWordSyncedEvent.WordSync> wordSyncList = new ArrayList<>();
         if (event.getWords() != null) {
             for (SangrahaVocabularyWord w : event.getWords()) {
-                processWord(w, chapterCategory);
+                VocabularyWord savedWord = processWord(w, chapterCategory);
+                if (savedWord != null && w.getVerseWordId() != null) {
+                    wordSyncList.add(VocabularyWordSyncedEvent.WordSync.builder()
+                            .verseWordId(w.getVerseWordId())
+                            .vocabularyWordId(savedWord.getId())
+                            .build());
+                }
             }
         }
 
-        log.info("Processed sangraha event: verseId={}, workSlug={}, chapterSlug={}, wordsCount={}",
+        // 5. Publish ack to sangraha-service
+        if (!wordSyncList.isEmpty()) {
+            vocabularyAckPublisher.publish(event.getVerseId(), wordSyncList);
+        }
+
+        log.info("Processed sangraha event: verseId={}, workSlug={}, chapterSlug={}, wordsCount={}, syncedCount={}",
                 event.getVerseId(), workSlug, event.getChapterSlug(),
-                event.getWords() != null ? event.getWords().size() : 0);
+                event.getWords() != null ? event.getWords().size() : 0,
+                wordSyncList.size());
     }
 
     /**
@@ -119,13 +136,13 @@ public class VocabularySyncService {
      * связь VocabularyWordCategory, если её ещё нет.
      * Если слова нет — создаёт и сразу связывает с категорией главы.
      */
-    private void processWord(SangrahaVocabularyWord w, VocabularyCategory chapterCategory) {
+    private VocabularyWord processWord(SangrahaVocabularyWord w, VocabularyCategory chapterCategory) {
         String wordIast = w.getWordIast();
         String stem = w.getStem();
 
         if (wordIast == null || wordIast.isBlank()) {
             log.warn("Skipping word with empty wordIast");
-            return;
+            return null;
         }
         if (stem == null || stem.isBlank()) {
             stem = wordIast;
@@ -167,6 +184,7 @@ public class VocabularySyncService {
             wordCategoryRepository.save(link);
             log.debug("Linked word {} to category {}", word.getId(), chapterCategory.getId());
         }
+        return word;
     }
 
     /**

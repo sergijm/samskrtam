@@ -82,4 +82,11 @@ public class VerseWord {
     /** JSON-массив целых чисел (внутренние правила 1–40), сохраняется как текст */
     @Column(name = "formation_rule_numbers", columnDefinition = "TEXT")
     private String formationRuleNumbers;
+
+    @Column(name = "vocabulary_word_id")
+    private UUID vocabularyWordId;
+
+    @Column(name = "vocab_sync_status", nullable = false)
+    @Builder.Default
+    private String vocabSyncStatus = "PENDING";
 }
