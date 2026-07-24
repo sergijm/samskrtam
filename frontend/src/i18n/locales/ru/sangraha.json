@@ -7,14 +7,17 @@
     "deleteWork": "Удалить произведение",
     "noWorks": "Нет произведений",
     "work": "Произведение",
+    "workNotFound": "Произведение не найдено",
     "chapters": "Главы",
     "addChapter": "Добавить главу",
     "editChapter": "Редактировать главу",
     "deleteChapter": "Удалить главу",
+    "chapterAdded": "Глава добавлена",
     "verses": "Стихи",
     "addVerse": "Добавить стих",
     "deleteVerse": "Удалить стих",
     "verse": "Стих",
+    "verseAdded": "Стих добавлен",
     "status": {
       "DRAFT": "Черновик",
       "ANALYZING": "Анализ...",
@@ -80,4 +83,3 @@
     }
   }
 }
-

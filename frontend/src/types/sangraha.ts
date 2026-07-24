@@ -15,6 +15,10 @@ export interface VerseTreeDto {
   id: string;
   orderIndex: number;
   textIastPreview?: string | null;
+  textIast?: string | null;
+  textDevanagari?: string | null;
+  translationRu?: string | null;
+  translationEn?: string | null;
   status: VerseStatus;
 }
 
@@ -23,6 +27,8 @@ export interface ChapterTreeDto {
   slug: string;
   titleRu: string;
   titleEn: string;
+  titleIast?: string | null;
+  titleDevanagari?: string | null;
   orderIndex: number;
   categoryCode: string;
   verses: VerseTreeDto[];
@@ -120,4 +126,9 @@ export interface CreateVerseRequest {
 
 export interface UpdateVerseTextRequest {
   text: string;
+}
+
+export interface UpdateVerseRequest {
+  orderIndex: number;
+  rawText?: string;
 }

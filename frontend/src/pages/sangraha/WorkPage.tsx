@@ -8,7 +8,6 @@ import { useRef, useState, useCallback } from 'react';
 
 import ChapterTreeBrowser from '../../components/sangraha/ChapterTreeBrowser';
 import ChapterDialog from '../../components/sangraha/ChapterDialog';
-import VerseDialog from '../../components/sangraha/VerseDialog';
 import WorkEditDialog from '../../components/sangraha/WorkEditDialog';
 import { IconButton, CreateButton, PageButton } from '../../components/common/buttons';
 import './WorkPage.css';
@@ -27,12 +26,9 @@ const WorkPage = () => {
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.roles?.includes('ADMIN') ?? false;
 
-  const [chapterDialog, setChapterDialog] = useState(false);
-  const [verseDialog, setVerseDialog] = useState(false);
-  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+    const [chapterDialog, setChapterDialog] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [chapterForm, setChapterForm] = useState({ title: '', orderIndex: null as number | null });
-  const [verseOrderIndex, setVerseOrderIndex] = useState(0);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
   const [editForm, setEditForm] = useState({ titleRu: '', titleEn: '', descriptionRu: '', descriptionEn: '', author: '' });
 
@@ -80,18 +76,19 @@ const WorkPage = () => {
     }
   }, [workSlug, chapterForm, createChapter, t]);
 
-  const handleAddVerse = useCallback(async () => {
-    if (!selectedChapterId) return;
+        const handleAddVerse = useCallback(async (chapterId: string) => {
+    if (!workSlug) return;
     try {
-      await createVerse.mutateAsync({ chapterId: selectedChapterId, data: { orderIndex: verseOrderIndex } });
-      setVerseDialog(false);
-      setSelectedChapterId(null);
-      setVerseOrderIndex(0);
+      const verse = await createVerse.mutateAsync({
+        chapterId,
+        data: { orderIndex: 0 },
+      });
       toast.current?.show({ severity: 'success', summary: t('common.success'), detail: t('sangraha.verseAdded') });
+      navigate(`/sangraha/${workSlug}/verses/${verse.data.id}`);
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     }
-  }, [selectedChapterId, verseOrderIndex, createVerse, t]);
+  }, [workSlug, createVerse, navigate, t]);
 
   if (isLoading) {
     return (
@@ -138,7 +135,7 @@ const WorkPage = () => {
         isAdmin={isAdmin}
         expandedChapters={expandedChapters}
         onToggleChapter={toggleChapter}
-        onAddVerse={(chapterId) => { setSelectedChapterId(chapterId); setVerseDialog(true); }}
+        onAddVerse={handleAddVerse}
         onDeleteChapter={(chapterId) => deleteChapter.mutate(chapterId)}
         onDeleteVerse={(verseId) => deleteVerse.mutate(verseId)}
       />
@@ -150,15 +147,6 @@ const WorkPage = () => {
         onFormChange={setChapterForm}
         onSave={handleAddChapter}
         loading={createChapter.isPending}
-      />
-
-            <VerseDialog
-        visible={verseDialog}
-        onHide={() => { setVerseDialog(false); setSelectedChapterId(null); }}
-        orderIndex={verseOrderIndex}
-        onOrderIndexChange={setVerseOrderIndex}
-        onSave={handleAddVerse}
-        loading={createVerse.isPending}
       />
 
       <WorkEditDialog

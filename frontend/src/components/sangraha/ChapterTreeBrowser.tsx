@@ -32,8 +32,11 @@ export default function ChapterTreeBrowser({
   onDeleteChapter,
   onDeleteVerse,
 }: ChapterTreeBrowserProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+
+  const translationFor = (v: VerseTreeDto) =>
+    i18n.language === 'ru' ? v.translationRu : v.translationEn;
 
   return (
     <div className="work-tree">
@@ -43,7 +46,15 @@ export default function ChapterTreeBrowser({
             <div className="work-tree-row-left">
               <i className={`pi ${expandedChapters.has(ch.id) ? 'pi-chevron-down' : 'pi-chevron-right'} text-sm`} />
               <i className="pi pi-book text-primary" />
-              <span className="font-bold">{ch.titleEn} ({ch.titleRu})</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span className="font-bold">
+                  {ch.titleIast || ch.titleEn}
+                  {ch.titleDevanagari ? ` (${ch.titleDevanagari})` : ''}
+                </span>
+                <span className="text-xs text-color-secondary font-italic">
+                  {i18n.language === 'ru' ? ch.titleRu : ch.titleEn}
+                </span>
+              </div>
             </div>
             {isAdmin && (
               <div className="work-tree-row-right">
@@ -68,10 +79,20 @@ export default function ChapterTreeBrowser({
               className="work-tree-row work-tree-verse"
               onClick={() => navigate(`/sangraha/${workSlug}/verses/${v.id}`)}
             >
-              <div className="work-tree-row-left">
-                <i className="pi pi-file text-color-secondary" />
-                <span className="text-sm">{v.textIastPreview || `Verse ${v.orderIndex}`}</span>
-                <Tag value={t(`sangraha.status.${v.status}`)} severity={statusSeverity[v.status] || 'info'} />
+              <div className="work-tree-row-left" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                <div className="flex align-items-center gap-2">
+                  <i className="pi pi-file text-color-secondary" />
+                  <span className="text-sm">
+                    {v.textIastPreview || `Verse ${v.orderIndex}`}
+                    {v.textDevanagari ? ` (${v.textDevanagari})` : ''}
+                  </span>
+                  <Tag value={t(`sangraha.status.${v.status}`)} severity={statusSeverity[v.status] || 'info'} />
+                </div>
+                {translationFor(v) && (
+                  <span className="text-xs text-color-secondary font-italic ml-4">
+                    {translationFor(v)}
+                  </span>
+                )}
               </div>
               {isAdmin && (
                 <div className="work-tree-row-right">

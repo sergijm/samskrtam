@@ -95,4 +95,32 @@ public class VerseService {
         verse.setDeletedAt(Instant.now());
         verseRepository.save(verse);
     }
+
+    /**
+     * PUT /verses/{id} — обновление orderIndex и rawText.
+     * Если текст изменился (rawText не равен сохранённому) — очищает результаты анализа
+     * и сбрасывает статус в DRAFT.
+     */
+    @Transactional
+    public Verse updateVerse(UUID id, int orderIndex, String rawText) {
+        Verse verse = getVerseById(id);
+        verse.setOrderIndex(orderIndex);
+        verse.setUpdatedAt(Instant.now());
+
+        if (rawText != null) {
+            boolean textChanged = !rawText.equals(verse.getRawText());
+            verse.setRawText(rawText);
+            if (textChanged) {
+                // Очистить результаты анализа
+                verseAnalysisRepository.deleteByVerseId(id);
+                verseWordRepository.deleteAllByVerseId(id);
+                verse.setTextDevanagari(null);
+                verse.setTextIast(null);
+                verse.setStatus(VerseStatus.DRAFT);
+            }
+        }
+
+        return verseRepository.save(verse);
+    }
 }
+

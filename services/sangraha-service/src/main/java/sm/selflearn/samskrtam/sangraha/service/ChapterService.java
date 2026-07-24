@@ -9,12 +9,15 @@ import sm.selflearn.samskrtam.sangraha.dto.CreateChapterRequest;
 import sm.selflearn.samskrtam.sangraha.dto.UpdateChapterRequest;
 import sm.selflearn.samskrtam.sangraha.dto.VerseTreeDto;
 import sm.selflearn.samskrtam.sangraha.model.Chapter;
+import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
 import sm.selflearn.samskrtam.sangraha.model.Work;
 import sm.selflearn.samskrtam.sangraha.repository.ChapterRepository;
+import sm.selflearn.samskrtam.sangraha.repository.VerseAnalysisRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -25,6 +28,7 @@ public class ChapterService {
     private final ChapterRepository chapterRepository;
     private final WorkService workService;
     private final VerseRepository verseRepository;
+    private final VerseAnalysisRepository verseAnalysisRepository;
     private final ChapterTitleService chapterTitleService;
     @Transactional(readOnly = true)
     public List<Chapter> getChaptersByWorkId(UUID workId) {
@@ -47,17 +51,25 @@ public class ChapterService {
                         ch.getSlug(),
                         ch.getTitleRu(),
                         ch.getTitleEn(),
+                        ch.getTitleSaIast(),
+                        ch.getTitleSaDevanagari(),
                         ch.getOrderIndex(),
                         ch.getSlug(),
                         verseRepository.findAllByChapterIdAndDeletedAtIsNullOrderByOrderIndexAsc(ch.getId())
                                 .stream()
-                                .map(v -> new VerseTreeDto(
-                                        v.getId(),
-                                        v.getOrderIndex(),
-                                        v.getTextIast() != null && v.getTextIast().length() > 80
-                                                ? v.getTextIast().substring(0, 80) + "..."
-                                                : v.getTextIast(),
-                                        v.getStatus()))
+                                .map(v -> {
+                                    Optional<VerseAnalysis> analysis =
+                                            verseAnalysisRepository.findByVerseId(v.getId());
+                                    return new VerseTreeDto(
+                                            v.getId(),
+                                            v.getOrderIndex(),
+                                            preview(v.getTextIast(), 80),
+                                            v.getTextIast(),
+                                            v.getTextDevanagari(),
+                                            analysis.map(VerseAnalysis::getTranslationRu).orElse(null),
+                                            analysis.map(VerseAnalysis::getTranslationEn).orElse(null),
+                                            v.getStatus());
+                                })
                                 .toList()
                 ))
                 .toList();
@@ -115,5 +127,10 @@ public class ChapterService {
         Chapter chapter = getChapterById(id);
         chapter.setDeletedAt(Instant.now());
         chapterRepository.save(chapter);
+    }
+
+    private static String preview(String text, int max) {
+        if (text == null) return null;
+        return text.length() > max ? text.substring(0, max) + "..." : text;
     }
 }

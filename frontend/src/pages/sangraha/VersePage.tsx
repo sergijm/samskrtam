@@ -3,56 +3,82 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   useVerseDetail,
   useAnalyzeVerse,
+  useUpdateVerse,
 } from '../../hooks/useSangraha';
 import { useAuthStore } from '../../store/authStore';
 import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
 import { InputTextarea } from 'primereact/inputtextarea';
+import { InputNumber } from 'primereact/inputnumber';
 import { useRef, useState, useCallback, useEffect } from 'react';
 import VerseWordsList from '../../components/sangraha/VerseWordsList';
 import SandhiSplitsList from '../../components/sangraha/SandhiSplitsList';
-import { IconButton, CtaButton, CreateButton } from '../../components/common/buttons';
+import { IconButton, CtaButton, CreateButton, PageButton } from '../../components/common/buttons';
 
 const VersePage = () => {
   const { t, i18n } = useTranslation();
   const { workSlug, verseId } = useParams<{ workSlug: string; verseId: string }>();
   const navigate = useNavigate();
   const toast = useRef<Toast>(null);
-  const { data: verse, isLoading, isError } = useVerseDetail(verseId || '');
+    const { data: verse, isLoading, isError } = useVerseDetail(verseId || '');
   const analyze = useAnalyzeVerse();
+  const updateVerse = useUpdateVerse();
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.roles?.includes('ADMIN') ?? false;
 
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState('');
+  const [editOrderIndex, setEditOrderIndex] = useState(0);
 
   useEffect(() => {
     if (verse) {
       setEditText(verse.rawText ?? verse.textDevanagari ?? verse.textIast ?? '');
-            if (verse.status === 'DRAFT' || verse.status === 'FAILED') {
+      setEditOrderIndex(verse.orderIndex);
+      if (verse.status === 'DRAFT' || verse.status === 'FAILED') {
         setIsEditing(true);
       }
     }
   }, [verse]);
 
-    const handleAnalyze = useCallback(async () => {
+  const handleSave = useCallback(async () => {
     if (!verseId) return;
     try {
+      await updateVerse.mutateAsync({
+        verseId,
+        data: { orderIndex: editOrderIndex, rawText: editText || undefined },
+      });
+      setIsEditing(false);
+      toast.current?.show({ severity: 'success', summary: t('common.success') });
+    } catch {
+      toast.current?.show({ severity: 'error', summary: t('common.error') });
+    }
+  }, [verseId, editOrderIndex, editText, updateVerse, t]);
+
+  const handleAnalyze = useCallback(async () => {
+    if (!verseId) return;
+    try {
+      // Сначала сохраняем текст, чтобы он попал в rawText перед анализом
+      await updateVerse.mutateAsync({
+        verseId,
+        data: { orderIndex: editOrderIndex, rawText: editText || undefined },
+      });
+      // Затем запускаем анализ
       await analyze.mutateAsync({ verseId, data: { text: editText } });
       setIsEditing(false);
       toast.current?.show({ severity: 'success', summary: t('sangraha.action.analyze') });
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     }
-  }, [verseId, editText, analyze, t]);
+  }, [verseId, editOrderIndex, editText, updateVerse, analyze, t]);
 
   const startEditing = useCallback(() => {
     if (verse) {
       setEditText(verse.rawText ?? verse.textDevanagari ?? verse.textIast ?? '');
-          }
-          setIsEditing(true);
-        }, [verse]);
+      setEditOrderIndex(verse.orderIndex);
+    }
+    setIsEditing(true);
+  }, [verse]);
 
   const isAnalyzed = verse?.status === 'ANALYZED';
   const isAnalyzing = verse?.status === 'ANALYZING';
@@ -115,24 +141,35 @@ const VersePage = () => {
         </div>
       )}
 
-      {/* Режим редактирования — одно поле (деванагари, но можно ввести IAST) */}
+                  {/* Режим редактирования */}
       {isEditing && !isAnalyzing && (
         <div className="mb-4">
-          <label className="block mb-1 font-semibold">{t('sangraha.fields.text')}</label>
-          <InputTextarea
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            className="w-full"
-            rows={4}
-            placeholder={t('sangraha.placeholder.text')}
-          />
+          <div className="mb-3">
+            <label className="block mb-1 font-semibold">{t('sangraha.fields.orderIndex')}</label>
+            <InputNumber
+              value={editOrderIndex}
+              onValueChange={(e) => setEditOrderIndex(e.value ?? 0)}
+              min={0}
+            />
+          </div>
+          <div className="mb-3">
+            <label className="block mb-1 font-semibold">{t('sangraha.fields.text')}</label>
+            <InputTextarea
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              className="w-full"
+              rows={4}
+              placeholder={t('sangraha.placeholder.text')}
+            />
+          </div>
         </div>
       )}
 
       {!isAnalyzing && isEditing && isAdmin && (
         <div className="flex gap-2 mb-4">
-                  <CtaButton labelKey="sangraha.action.analyze" iconName="pi-robot" className="p-button-success" onClick={handleAnalyze} loading={analyze.isPending} />
-                </div>
+          <PageButton variant="dialog-action" labelKey="common.save" iconName="pi-check" onClick={handleSave} loading={updateVerse.isPending} />
+          <CtaButton labelKey="sangraha.action.analyze" iconName="pi-robot" className="p-button-success" onClick={handleAnalyze} loading={analyze.isPending} />
+        </div>
       )}
 
       {isAnalyzed && !isEditing && (

@@ -8,5 +8,9 @@ public record VerseTreeDto(
     UUID id,
     int orderIndex,
     String textIastPreview,
+    String textIast,
+    String textDevanagari,
+    String translationRu,
+    String translationEn,
     VerseStatus status
 ) {}

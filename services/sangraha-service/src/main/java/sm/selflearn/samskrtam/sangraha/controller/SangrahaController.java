@@ -104,11 +104,18 @@ public class SangrahaController {
         return ResponseEntity.ok(verseService.getVerseDetail(verseId));
     }
 
-    @PutMapping("/verses/{verseId}/text")
+        @PutMapping("/verses/{verseId}/text")
     public ResponseEntity<Verse> updateVerseText(
             @PathVariable UUID verseId,
             @RequestBody VerseTextRequest request) {
         return ResponseEntity.ok(verseService.updateVerseText(verseId, request.text()));
+    }
+
+    @PutMapping("/verses/{verseId}")
+    public ResponseEntity<Verse> updateVerse(
+            @PathVariable UUID verseId,
+            @Valid @RequestBody UpdateVerseRequest request) {
+        return ResponseEntity.ok(verseService.updateVerse(verseId, request.orderIndex(), request.rawText()));
     }
 
     @DeleteMapping("/verses/{verseId}")

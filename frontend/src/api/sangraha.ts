@@ -9,6 +9,8 @@ import type {
   UpdateChapterRequest,
   CreateVerseRequest,
   UpdateVerseTextRequest,
+  UpdateVerseRequest,
+  VerseDto,
 } from '../types/sangraha';
 
 const BASE = '/api/v1/sangraha';
@@ -40,7 +42,7 @@ export const sangrahaApi = {
 
   // Verses
   createVerse: (chapterId: string, data: CreateVerseRequest) =>
-    api.post(`${BASE}/chapters/${chapterId}/verses`, data),
+    api.post<VerseDto>(`${BASE}/chapters/${chapterId}/verses`, data),
 
   getVerseDetail: (verseId: string) =>
     api.get<VerseDetailDto>(`${BASE}/verses/${verseId}`),
@@ -48,10 +50,12 @@ export const sangrahaApi = {
   updateVerseText: (verseId: string, data: UpdateVerseTextRequest) =>
     api.put(`${BASE}/verses/${verseId}/text`, data),
 
-  analyzeVerse: (verseId: string) =>
-    api.post(`${BASE}/verses/${verseId}/analyze`),
+  updateVerse: (verseId: string, data: UpdateVerseRequest) =>
+    api.put<VerseDto>(`${BASE}/verses/${verseId}`, data),
+
+  analyzeVerse: (verseId: string, data?: { text: string }) =>
+    api.post(`${BASE}/verses/${verseId}/analyze`, data),
 
   deleteVerse: (verseId: string) =>
     api.delete(`${BASE}/verses/${verseId}`),
 };
-

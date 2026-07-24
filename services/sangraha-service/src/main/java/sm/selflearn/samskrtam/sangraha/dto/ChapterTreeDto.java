@@ -8,6 +8,8 @@ public record ChapterTreeDto(
     String slug,
     String titleRu,
     String titleEn,
+    String titleIast,
+    String titleDevanagari,
     int orderIndex,
     String categoryCode,
     List<VerseTreeDto> verses

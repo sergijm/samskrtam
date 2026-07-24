@@ -9,6 +9,7 @@ import type {
   CreateChapterRequest,
   CreateVerseRequest,
   UpdateVerseTextRequest,
+  UpdateVerseRequest,
 } from '../types/sangraha';
 
 export const useWorks = () =>
@@ -110,6 +111,18 @@ export const useUpdateVerseText = () => {
       sangrahaApi.updateVerseText(verseId, data),
     onSuccess: (_data, variables) =>
       qc.invalidateQueries({ queryKey: ['sangraha', 'verse', variables.verseId] }),
+  });
+};
+
+export const useUpdateVerse = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ verseId, data }: { verseId: string; data: UpdateVerseRequest }) =>
+      sangrahaApi.updateVerse(verseId, data),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'verse', variables.verseId] });
+      qc.invalidateQueries({ queryKey: ['sangraha', 'work'] });
+    },
   });
 };
 
