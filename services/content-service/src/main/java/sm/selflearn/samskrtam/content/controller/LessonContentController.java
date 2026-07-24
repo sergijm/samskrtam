@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
+import sm.selflearn.samskrtam.content.dto.DeclensionParadigmPageDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionStemDto;
 import sm.selflearn.samskrtam.content.dto.GeneratedQuizData;
 import sm.selflearn.samskrtam.content.dto.LessonItemResponse;
@@ -100,7 +101,7 @@ public class LessonContentController {
                 filterScope, filterCaseTypes, filterNumberTypes, filterCombinations);
     }
 
-    @GetMapping("/declension-stems/{stemId}/forms")
+        @GetMapping("/declension-stems/{stemId}/forms")
     @Operation(summary = "Get all declension forms for a specific stem")
     @ApiResponse(responseCode = "200", description = "List of declension forms retrieved successfully")
     @ApiResponse(responseCode = "404", description = "Declension stem not found")
@@ -112,6 +113,16 @@ public class LessonContentController {
         return forms.stream()
                 .map(this::mapToDeclensionFormDto)
                 .collect(Collectors.toList());
+    }
+
+        @GetMapping("/public/lessons/{slug}/declension-paradigms")
+    @Operation(summary = "Get one declension paradigm by index (public carousel)")
+    @ApiResponse(responseCode = "200", description = "Paradigm page retrieved successfully")
+    @ApiResponse(responseCode = "404", description = "Lesson not found, not DECLENSIONS, or index out of range")
+    public DeclensionParadigmPageDto getDeclensionParadigm(
+            @PathVariable String slug,
+            @RequestParam(defaultValue = "0") int index) {
+        return grammarContentService.getDeclensionParadigmForLesson(slug, index);
     }
 
     private DeclensionFormDto mapToDeclensionFormDto(DeclensionForm form) {

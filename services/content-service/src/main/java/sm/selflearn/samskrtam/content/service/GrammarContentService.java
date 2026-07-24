@@ -5,12 +5,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.CaseEndingDto;
+import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
+import sm.selflearn.samskrtam.content.dto.DeclensionParadigmDto;
+import sm.selflearn.samskrtam.content.dto.DeclensionParadigmPageDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionStemDto;
+import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.model.*;
+import sm.selflearn.samskrtam.content.model.DeclensionForm;
 import sm.selflearn.samskrtam.content.model.DeclensionStem;
 import sm.selflearn.samskrtam.content.model.Lesson;
 import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.content.repository.CaseEndingRepository;
+import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
 import sm.selflearn.samskrtam.content.repository.DeclensionStemRepository;
 import sm.selflearn.samskrtam.content.repository.LessonRepository;
 
@@ -25,6 +31,7 @@ public class GrammarContentService {
 
     private final LessonRepository lessonRepository;
     private final DeclensionStemRepository declensionStemRepository;
+    private final DeclensionFormRepository declensionFormRepository;
     private final CaseEndingRepository caseEndingRepository;
 
     public List<DeclensionStemDto> getDeclensionStemsForLesson(String slug) {
@@ -41,16 +48,17 @@ public class GrammarContentService {
         }
 
         return stems.stream()
-                .map(stem -> DeclensionStemDto.builder()
+                                .map(stem -> DeclensionStemDto.builder()
                         .id(stem.getId())
-                                                .lessonId(lesson.getId())
-                                                .slug(stem.getStemIast()) // Changed from getStemNameIast() to getStemIast()
-                                                .gender(stem.getGender())
-                                                .vowelType(stem.getVowelType())
-                                                .stemDevanagari(stem.getStemDevanagari())
-                                                .translationRu(stem.getTranslationRu())
-                                                .translationEn(stem.getTranslationEn())
-                                                .build())
+                        .lessonId(lesson.getId())
+                        .slug(stem.getStemIast())
+                        .stemIast(stem.getStemIast())
+                        .gender(stem.getGender())
+                        .vowelType(stem.getVowelType())
+                        .stemDevanagari(stem.getStemDevanagari())
+                        .translationRu(stem.getTranslationRu())
+                        .translationEn(stem.getTranslationEn())
+                        .build())
                 .collect(Collectors.toList());
         }
 
@@ -145,6 +153,126 @@ public class GrammarContentService {
                         .endingIast(ce.getEndingIast())
                         .endingDevanagari(ce.getEndingDevanagari())
                         .build())
+                .collect(Collectors.toList());
+    }
+
+        /**
+     * Возвращает ОДНУ парадигму (стем + все его формы) по индексу,
+     * плюс carousel-метаданные (index, totalCount).
+     * <p>
+     * Стемы стабильно сортируются по {@code id} (UUID — лексикографический порядок).
+     * Формы загружаются ТОЛЬКО для index-го стема, формы других стемов не грузятся.
+     *
+     * @param slug  slug урока DECLENSIONS
+     * @param index 0-based индекс стема в отсортированном списке
+     * @return DeclensionParadigmPageDto с текущей парадигмой и метаданными карусели
+     * @throws SamskrtamException если урок не найден, не DECLENSIONS, или index вне диапазона
+     */
+    public DeclensionParadigmPageDto getDeclensionParadigmForLesson(String slug, int index) {
+        log.info("Fetching declension paradigm [{}/?] for lesson slug: {}", index, slug);
+        Lesson lesson = lessonRepository.findBySlug(slug)
+                .orElseThrow(() -> new SamskrtamException("LESSON_NOT_FOUND", "Lesson not found with slug: " + slug));
+
+        if (lesson.getLessonType() != LessonType.DECLENSIONS) {
+            throw new SamskrtamException("LESSON_NOT_FOUND",
+                    "Lesson with slug '%s' is not a DECLENSIONS lesson".formatted(slug));
+        }
+
+        VowelType vowelType = mapSlugToVowelType(slug);
+        List<DeclensionStem> stems;
+        if (vowelType != null) {
+            stems = declensionStemRepository.findByVowelType(vowelType);
+        } else {
+            stems = declensionStemRepository.findAll();
+        }
+
+        // Stable order: by id (UUID — natural ordering, consistent across calls)
+        stems.sort((a, b) -> a.getId().compareTo(b.getId()));
+
+        int totalCount = stems.size();
+        if (index < 0 || index >= totalCount) {
+            throw new SamskrtamException("LESSON_NOT_FOUND",
+                    "Index %d out of range [0, %d) for lesson slug '%s'".formatted(index, totalCount, slug));
+        }
+
+        DeclensionStem stem = stems.get(index);
+        List<DeclensionForm> forms = declensionFormRepository.findByDeclensionStemId(stem.getId());
+        List<DeclensionFormDto> formDtos = forms.stream()
+                .map(f -> DeclensionFormDto.builder()
+                        .declensionStemId(f.getDeclensionStemId())
+                        .caseType(f.getCaseType())
+                        .numberType(f.getNumberType())
+                        .formIast(f.getFormIast())
+                        .formDevanagari(f.getFormDevanagari())
+                        .build())
+                .collect(Collectors.toList());
+
+        DeclensionParadigmDto paradigm = DeclensionParadigmDto.builder()
+                .stemId(stem.getId())
+                .stemIast(stem.getStemIast())
+                .stemDevanagari(stem.getStemDevanagari())
+                .translationRu(stem.getTranslationRu())
+                .translationEn(stem.getTranslationEn())
+                .gender(stem.getGender())
+                .vowelType(stem.getVowelType())
+                .forms(formDtos)
+                .build();
+
+        return DeclensionParadigmPageDto.builder()
+                .index(index)
+                .totalCount(totalCount)
+                .paradigm(paradigm)
+                .build();
+    }
+
+    /**
+     * @deprecated replaced by {@link #getDeclensionParadigmForLesson(String, int)} — index-based pagination.
+     * Kept temporarily for backward compatibility; will be removed after frontend and
+     * gateway switch to the index-based endpoint.
+     */
+    @Deprecated
+    public List<DeclensionParadigmDto> getDeclensionParadigmsForLesson(String slug) {
+        log.info("Fetching declension paradigms (deprecated all-at-once) for lesson slug: {}", slug);
+        Lesson lesson = lessonRepository.findBySlug(slug)
+                .orElseThrow(() -> new SamskrtamException("LESSON_NOT_FOUND", "Lesson not found with slug: " + slug));
+
+        if (lesson.getLessonType() != LessonType.DECLENSIONS) {
+            throw new SamskrtamException("LESSON_NOT_FOUND",
+                    "Lesson with slug '%s' is not a DECLENSIONS lesson".formatted(slug));
+        }
+
+        VowelType vowelType = mapSlugToVowelType(slug);
+        List<DeclensionStem> stems;
+        if (vowelType != null) {
+            stems = declensionStemRepository.findByVowelType(vowelType);
+        } else {
+            stems = declensionStemRepository.findAll();
+        }
+
+        return stems.stream()
+                .map(stem -> {
+                    List<DeclensionForm> forms = declensionFormRepository.findByDeclensionStemId(stem.getId());
+                    List<DeclensionFormDto> formDtos = forms.stream()
+                            .map(f -> DeclensionFormDto.builder()
+                                    .declensionStemId(f.getDeclensionStemId())
+                                    .caseType(f.getCaseType())
+                                    .numberType(f.getNumberType())
+                                    .formIast(f.getFormIast())
+                                    .formDevanagari(f.getFormDevanagari())
+                                    .build())
+                            .collect(Collectors.toList());
+
+                    return DeclensionParadigmDto.builder()
+                            .stemId(stem.getId())
+                            .stemIast(stem.getStemIast())
+                            .stemDevanagari(stem.getStemDevanagari())
+                            .translationRu(stem.getTranslationRu())
+                            .translationEn(stem.getTranslationEn())
+                            .gender(stem.getGender())
+                            .vowelType(stem.getVowelType())
+                            .forms(formDtos)
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 

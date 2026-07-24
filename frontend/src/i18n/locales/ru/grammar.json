@@ -13,7 +13,16 @@
     "declensionsTitle": "Склонения",
     "declensionsDescription": "Практикуйте склонения существительных и прилагательных.",
     "conjugationsTitle": "Спряжения",
-    "conjugationsDescription": "Изучите спряжения глаголов."
+    "conjugationsDescription": "Изучите спряжения глаголов.",
+    "paradigmsLoading": "Загрузка парадигм...",
+    "paradigmsEmpty": "Нет данных парадигм для этого урока."
+  },
+  "gender": {
+    "MASCULINE": "мужской род",
+    "FEMININE": "женский род",
+    "NEUTER": "средний род",
+    "UNKNOWN": "род неизвестен",
+    "UNSPECIFIED": "род не указан"
   },
   "vocabulary": {
     "basicVocabularyTitle": "Базовая лексика (Фриш)",

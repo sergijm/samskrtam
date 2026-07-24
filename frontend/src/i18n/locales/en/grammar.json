@@ -13,7 +13,16 @@
     "declensionsTitle": "Declensions",
     "declensionsDescription": "Practice declensions of nouns and adjectives.",
     "conjugationsTitle": "Conjugations",
-    "conjugationsDescription": "Learn and practice verb conjugations."
+    "conjugationsDescription": "Learn and practice verb conjugations.",
+    "paradigmsLoading": "Loading paradigms...",
+    "paradigmsEmpty": "No paradigm data for this lesson."
+  },
+  "gender": {
+    "MASCULINE": "masculine",
+    "FEMININE": "feminine",
+    "NEUTER": "neuter",
+    "UNKNOWN": "unknown gender",
+    "UNSPECIFIED": "unspecified gender"
   },
   "vocabulary": {
     "basicVocabularyTitle": "Basic Vocabulary (Frisch)",

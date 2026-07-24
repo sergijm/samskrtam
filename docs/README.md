@@ -172,3 +172,4 @@ graph TD
 - [x] **sangraha-service порт 8089** — фиксирован, согласован с Агентом 5 DevOps. Пометка «предварительно» снята.
 - [x] **sangraha-service §6.3: Quiz(VOCABULARY) на уровне главы?** — решено: Quiz заводится только на уровне произведения (workSlug). Главы не получают отдельного Quiz.
 - [x] **sangraha-service shared DTO для Kafka-события** — решено: заведён `SangrahaVocabularyEvent` в `shared/samskrtam-dtos` (пакет `sangraha`).
+- [ ] **Расхождение списка вкладок GrammarLessonPage** — `quiz-service/quiz-declension.md` §3.1 (4 вкладки, без «Статистика»/«Парадигмы», с «Сессии») vs `frontend/pages/grammar-lesson-page.md` §2 (5 вкладок, со «Статистика»/«Парадигмы», без «Сессии») описывают одну и ту же страницу по-разному — зафиксировано Агентом 6 при добавлении вкладки «Парадигмы» с реальными словоформами (`content.declension_forms`, `content-service.md` §5а). Нужно решить, какой список — эталон, и убрать дублирование (см. `quiz-declension.md` §3.1, врезка).

@@ -84,6 +84,25 @@ PUT    /api/v1/content/vocabulary/{wordId}              → обновить с�
 DELETE /api/v1/content/vocabulary/{wordId}              → удалить слово
 ```
 
+### 5а. Публичное API для вкладки «Парадигмы» (STUDENT)
+
+**NEW.** До сих пор `declension_stems`/`declension_forms` были доступны только двумя ADMIN-only эндпоинтами (`GET /content/lessons/{slug}/declension-stems`, `GET /content/declension-stems/{stemId}/forms` — реверс-инжинирены в `content-api.yaml`, используются только `quiz-service.ContentClient` для генерации дистракторов, роль ADMIN согласно таблице маршрутов агент-1-gateway.md, т.е. **фронтенд их вызвать не может**). Это блокировало задачу «показать реальные парадигмы (не абстрактные окончания) на вкладке «Парадигмы»» — см. `frontend/pages/grammar-lesson-page.md` §2.2 и `quiz-service/quiz-declension.md` §3.1.
+
+Добавлен один публичный эндпоинт с постраничной выдачей:
+
+```
+GET /api/v1/content/public/lessons/{slug}/declension-paradigms?index=N   → DeclensionParadigmPageDto
+```
+
+Возвращает **одну** парадигму (стем + все его формы) за раз, по 0-based `index`, плюс `totalCount` — для навигации «вперёд/назад» по стемам урока на фронтенде (карусель, одна таблица падеж×число на экран, см. `frontend/pages/grammar-lesson-page.md` §2.2). Урок склонений обычно содержит несколько стемов-примеров, поэтому грузить формы всех сразу нецелесообразно. Полная схема — `openapi/content/content-api.yaml` + `schemas/content.yaml#DeclensionParadigmPageDto`/`#DeclensionParadigmDto`.
+
+**Задача Агенту 2 (реализация):**
+- Контроллер: новый метод в существующем `LessonContentController` (или отдельный `DeclensionParadigmController`, если контроллер уже перегружен) под путём `/content/public/lessons/{slug}/declension-paradigms`, роль STUDENT, query-параметр `index` (см. `parameters.yaml#ParadigmIndexQueryParam`).
+- Данные — из уже существующих `DeclensionStemRepository`/`DeclensionFormRepository`: сначала стабильно отсортированный список `stemId` урока (по `stemId`/дате создания — зафиксировать выбор постфактум), взять `totalCount` = размер списка, `index`-й элемент → подгрузить его формы. Не грузить формы остальных стемов.
+- `index` вне диапазона `[0, totalCount)` → 404 (тем же `ErrorResponse`, что и для «урок не найден»).
+- **Обязательная зависимость:** сначала выполнить миграцию из §4 выше (`stemIast` уже есть в БД и entity, но добавить `stemIast` в `DeclensionStemMapper`/DTO — см. расхождение, зафиксированное в `content.yaml#DeclensionStemDto`) и миграцию `translation_ru/translation_en` + data-fix `stem_devanagari` (уже запланирована, см. §4/§9) — без них `stemIast/translationRu/translationEn/stemDevanagari` внутри `DeclensionParadigmDto` будут пустыми и вкладка «Парадигмы» не даст выигрыша относительно текущего состояния.
+- 404, если урок не найден или `lessonType != DECLENSIONS` (переиспользовать существующий паттерн ошибки, как в `getDeclensionStemsForLesson`).
+
 ### Внутреннее API для quiz-service
 
 > **ИЗМЕНЕНО (архитектурное решение):** ранее `generate-quiz-data` генерировал вопросы **и**

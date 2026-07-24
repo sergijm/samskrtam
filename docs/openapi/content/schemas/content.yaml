@@ -75,6 +75,16 @@ DeclensionStemDto:
       format: uuid
     slug:
       type: string
+    stemIast:
+      type:
+        - string
+        - 'null'
+      description: >
+        NEW — поле было в content-service.md §3 (сущность DeclensionStem) с самого начала,
+        но отсутствовало в этой DTO-схеме (расхождение зафиксировано Агентом 6, задача Агенту 2 —
+        добавить в DeclensionStemMapper). Обязательно для рендера парадигмы (переиспользуется в
+        DeclensionParadigmDto ниже) — без него заголовок таблицы парадигмы нечем заполнить
+        на IAST, только деванагари/slug.
     gender:
       $ref: '#/Gender'
     vowelType:
@@ -129,6 +139,67 @@ DeclensionFormDto:
       type: string
     formDevanagari:
       type: string
+
+DeclensionParadigmDto:
+  type: object
+  description: >
+    NEW. Одна полная парадигма одного стема (композиция DeclensionStemDto без
+    id/lessonId/slug — они не нужны фронтенду для рендера справочной таблицы — и
+    вложенного списка DeclensionFormDto, чтобы избежать N+1: стем + все его формы одним
+    запросом). Возвращается по одной штуке внутри DeclensionParadigmPageDto (см. ниже) —
+    НЕ массивом сразу всех стемов урока, см. обоснование там же.
+  required: [stemId, vowelType, gender, forms]
+  properties:
+    stemId:
+      type: string
+      format: uuid
+    stemIast:
+      type:
+        - string
+        - 'null'
+    stemDevanagari:
+      type:
+        - string
+        - 'null'
+    translationRu:
+      type:
+        - string
+        - 'null'
+    translationEn:
+      type:
+        - string
+        - 'null'
+    gender:
+      $ref: '#/Gender'
+    vowelType:
+      $ref: '#/VowelType'
+    forms:
+      type: array
+      items:
+        $ref: '#/DeclensionFormDto'
+      description: Обычно 24 элемента (8 падежей × 3 числа), может быть меньше для неполных сидов.
+
+DeclensionParadigmPageDto:
+  type: object
+  description: >
+    NEW. Ответ GET /content/public/lessons/{slug}/declension-paradigms?index=N (см.
+    content-api.yaml, content-service.md §5а). Урок склонений обычно содержит НЕСКОЛЬКО
+    стемов-примеров одного (vowelType, gender) — см. quiz-generator-spec.md §2.1, "прогресс
+    общий для всех основ одного сочетания признаков" — поэтому загружать формы всех стемов
+    урока одним ответом нецелесообразно (лишний трафик, почти всегда не нужен пользователю
+    целиком). Вместо массива всех парадигм — одна текущая парадигма (по индексу `index`,
+    0-based, порядок стемов стабилен — по `stemId`/дате создания, определяет Агент 2) +
+    метаданные для карусели (счётчик "N / total", доступность стрелок).
+  required: [index, totalCount, paradigm]
+  properties:
+    index:
+      type: integer
+      description: 0-based позиция возвращённого paradigm в общем списке стемов урока.
+    totalCount:
+      type: integer
+      description: Общее количество стемов урока (для disable стрелки "вперёд" на последнем и подписи "N / total").
+    paradigm:
+      $ref: '#/DeclensionParadigmDto'
 
 VocabularyWordDto:
   type: object

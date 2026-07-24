@@ -117,6 +117,42 @@ paths:
               schema:
                 $ref: '../common/schemas/common.yaml#/ErrorResponse'
 
+  /content/public/lessons/{slug}/declension-paradigms:
+    get:
+      tags: [grammar]
+      summary: Get one reference declension paradigm (stem + all forms) for a lesson, by index
+      description: >
+        NEW. Публичный (STUDENT, /content/public/**) эндпоинт для вкладки «Парадигмы» на
+        GrammarLessonPage (см. frontend/pages/grammar-lesson-page.md §2.2) и quiz-declension.md
+        §3.1. В отличие от /content/lessons/{slug}/declension-stems + /content/declension-stems/{stemId}/forms
+        (оба — ADMIN-only, внутренние, используются quiz-service/ContentClient), этот эндпоинт
+        доступен фронтенду напрямую и отдаёт РОВНО ОДНУ парадигму (стем + все его формы) за раз,
+        по 0-based `index` — а не массив всех стемов урока: урок обычно содержит несколько
+        стемов-примеров одного (vowelType, gender) (см. quiz-generator-spec.md §2.1), и грузить
+        формы всех сразу нецелесообразно — пользователь листает их по одной (карусель со
+        стрелками, см. grammar-lesson-page.md §2.2). `totalCount` в ответе — для счётчика
+        "N / total" и disable крайних стрелок.
+        Источник данных — те же таблицы content.declension_stems/content.declension_forms,
+        реализация переиспользует существующие репозитории (стабильный порядок стемов —
+        по stemId/дате создания, фиксирует Агент 2), отдельного query не требует.
+      operationId: getDeclensionParadigmForLesson
+      parameters:
+        - $ref: 'parameters.yaml#/SlugPathParam'
+        - $ref: 'parameters.yaml#/ParadigmIndexQueryParam'
+      responses:
+        '200':
+          description: Одна парадигма урока по индексу + метаданные карусели
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/content.yaml#/DeclensionParadigmPageDto'
+        '404':
+          description: Lesson not found, lessonType != DECLENSIONS, or index out of range
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/common.yaml#/ErrorResponse'
+
   /content/lessons/{slug}/case-endings:
     get:
       tags: [grammar]

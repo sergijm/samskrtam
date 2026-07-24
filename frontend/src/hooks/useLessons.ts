@@ -28,3 +28,18 @@ export const useQuestionHistory = (slug: string, caseType: string, numberType: s
     queryFn: () => lessonApi.getQuestionHistory(slug, caseType, numberType, gender).then(res => res.data),
     enabled: !!slug && !!caseType && !!numberType && !!gender,
   });
+
+/**
+ * One paradigm page by index — lazy, loaded when the "Paradigms" tab is opened.
+ * The carousel component advances the index; this hook fetches only the current page.
+ */
+export const useDeclensionParadigm = (slug: string, index: number, enabled: boolean) =>
+  useQuery({
+    queryKey: ['declension-paradigm', slug, index],
+    queryFn: () => lessonApi.getDeclensionParadigm(slug, index).then(res => res.data),
+    enabled: !!slug && enabled,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });

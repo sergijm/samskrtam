@@ -14,9 +14,10 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DeclensionStemDto {
-    private UUID id;
+        private UUID id;
     private UUID lessonId;
     private String slug;
+    private String stemIast;
     private Gender gender;
     private VowelType vowelType;
     private String stemDevanagari;

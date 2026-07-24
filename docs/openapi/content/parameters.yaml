@@ -104,6 +104,19 @@ DeclensionStemIdPathParam:
     type: string
     format: uuid
 
+ParadigmIndexQueryParam:
+  name: index
+  in: query
+  required: false
+  description: >
+    0-based позиция запрашиваемого стема среди всех стемов урока (см.
+    /content/public/lessons/{slug}/declension-paradigms). Порядок стабилен между запросами
+    (по stemId/дате создания). Значение вне диапазона [0, totalCount) → 404.
+  schema:
+    type: integer
+    minimum: 0
+    default: 0
+
 VocabularyWordIdPathParam:
   name: wordId
   in: path

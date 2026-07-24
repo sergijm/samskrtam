@@ -1,4 +1,5 @@
 import api from './axios';
+import { DeclensionParadigmPageDto } from '../types/content-dtos';
 
 export const lessonApi = {
 
@@ -18,5 +19,11 @@ export const lessonApi = {
   getQuestionHistory: (slug: string, caseType: string, numberType: string, gender: string) =>
     api.get(`/api/v1/lessons/grammar/${slug}/questions/history`, {
       params: { caseType, numberType, gender },
+    }),
+
+    // Получить ОДНУ парадигму склонений по индексу (карусель grammar-lesson-page §2.2)
+  getDeclensionParadigm: (slug: string, index: number) =>
+    api.get<DeclensionParadigmPageDto>(`/api/v1/content/public/lessons/${slug}/declension-paradigms`, {
+      params: { index },
     }),
 };
