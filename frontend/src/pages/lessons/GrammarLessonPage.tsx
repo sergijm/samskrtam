@@ -10,9 +10,31 @@ import { CaseAggregationTable } from '../../components/lesson/CaseAggregationTab
 import { NumberAggregationTable } from '../../components/lesson/NumberAggregationTable';
 import { GrammarDetailsTable } from '../../components/lesson/GrammarDetailsTable';
 import GrammarParadigmCarousel from '../../components/lesson/GrammarParadigmCarousel';
+import DeclensionEndingsReferenceTable from '../../components/lesson/DeclensionEndingsReferenceTable';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { Skeleton } from 'primereact/skeleton';
 import { aggregateByCase, aggregateByNumber } from '../../utils/grammarAggregation';
+import { useDeclensionParadigm } from '../../hooks/useLessons';
+import { vowelTypeToEndingsTable } from '../../data/aStemEndingsTable';
+
+const GRAMMAR_TAB_STORAGE_KEY = 'grammar-lesson-active-tab';
+
+function readSavedTab(): number {
+  try {
+    const raw = localStorage.getItem(GRAMMAR_TAB_STORAGE_KEY);
+    if (raw !== null) {
+      const parsed = parseInt(raw, 10);
+      if (!isNaN(parsed) && parsed >= 0) return parsed;
+    }
+  } catch { /* ignore */ }
+  return 0;
+}
+
+function saveTab(index: number) {
+  try {
+    localStorage.setItem(GRAMMAR_TAB_STORAGE_KEY, String(index));
+  } catch { /* ignore */ }
+}
 
 const GrammarLessonPage = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -22,13 +44,20 @@ const GrammarLessonPage = () => {
       const [selectedCaseType, setSelectedCaseType] = useState<string>('');
       const [selectedNumberType, setSelectedNumberType] = useState<string>('');
       const [selectedGender, setSelectedGender] = useState<string>('');
-      const [activeTab, setActiveTab] = useState<number>(0);
+      const [activeTab, setActiveTab] = useState<number>(readSavedTab);
       const [questionHistoryDialogVisible, setQuestionHistoryDialogVisible] = useState(false);
       const [sortField, setSortField] = useState<string>('caseType');
       const [sortOrder, setSortOrder] = useState<number>(1);
 
-      // Lazy: only fetch paradigms when the "Paradigms" tab (index 0) is opened
-      const [paradigmsTabOpened, setParadigmsTabOpened] = useState(false);
+            // Tab 0 (Paradigms) is the default active tab — fetch immediately if it's the saved tab
+            const [paradigmsTabOpened, setParadigmsTabOpened] = useState(readSavedTab() === 0);
+
+      // Fetch first paradigm page to determine stem type for the endings reference table.
+      // React Query deduplicates this with the carousel's own fetch for index 0.
+      const { data: firstParadigmPage } = useDeclensionParadigm(slug || '', 0, paradigmsTabOpened);
+      const endingsTableData = firstParadigmPage?.paradigm?.vowelType
+        ? vowelTypeToEndingsTable[firstParadigmPage.paradigm.vowelType]
+        : undefined;
 
     const caseAggregations = useMemo(() => {
     if (!lesson?.questions) return [];
@@ -67,9 +96,9 @@ const GrammarLessonPage = () => {
       }
     };
 
-    const handleTabChange = (e: { index: number }) => {
+        const handleTabChange = (e: { index: number }) => {
       setActiveTab(e.index);
-      // Tab index 0 = Paradigms
+      saveTab(e.index);
       if (e.index === 0) {
         setParadigmsTabOpened(true);
       }
@@ -121,7 +150,11 @@ const GrammarLessonPage = () => {
 
                     <div className=" mt-4">
                                                 <TabView activeIndex={activeTab} onTabChange={handleTabChange}>
-                                                    <TabPanel header={i18n.language === 'ru' ? 'Парадигмы' : 'Paradigms'}>
+                                                                                                        <TabPanel header={i18n.language === 'ru' ? 'Парадигмы' : 'Paradigms'}>
+                            {/* Static reference table of case endings — shown only when stem type is recognized */}
+                            {endingsTableData && (
+                              <DeclensionEndingsReferenceTable data={endingsTableData} />
+                            )}
                             <GrammarParadigmCarousel slug={slug || ''} enabled={paradigmsTabOpened} />
                           </TabPanel>
                           <TabPanel header={i18n.language === 'ru' ? 'По падежам' : 'By Case'}>

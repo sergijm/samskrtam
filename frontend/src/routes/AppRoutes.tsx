@@ -32,6 +32,7 @@ import EmeneauRulesPage from '../pages/EmeneauRulesPage';
 import EmeneauExercisesPage from '../pages/eamenau/EmeneauExercisesPage';
 import EmeneauExerciseDetailPage from '../pages/eamenau/EmeneauExerciseDetailPage';
 import DictionaryPage from '../pages/dictionary/DictionaryPage';
+import AlphabetPage from '../pages/writing/AlphabetPage';
 import VocabularyLessonPage from '../pages/lessons/VocabularyLessonPage';
 import GrammarLessonPage from '../pages/lessons/GrammarLessonPage';
 import WorksPage from '../pages/sangraha/WorksPage';
@@ -111,6 +112,9 @@ export default function AppRoutes() {
       <Route path="/admin" element={<ProtectedLayoutRoute><AdminHomePage /></ProtectedLayoutRoute>} />
       <Route path="/admin/users" element={<ProtectedLayoutRoute><AdminUsersPage /></ProtectedLayoutRoute>} />
       <Route path="/admin/groups" element={<ProtectedLayoutRoute><AdminGroupsPage /></ProtectedLayoutRoute>} />
+
+      {/* Writing routes */}
+      <Route path="/writing/alphabet" element={<ProtectedLayoutRoute><AlphabetPage /></ProtectedLayoutRoute>} />
 
       {/* Catch-all */}
       <Route path="*" element={<ProtectedRoute><Navigate to="/" /></ProtectedRoute>} />

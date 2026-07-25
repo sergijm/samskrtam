@@ -41,7 +41,6 @@ export const curriculumTree: CurriculumNode[] = [
         status: 'available',
         children: [
           { id: '2.1.1.1', titleKey: 'nouns.a_masc', status: 'available', route: '/lessons/grammar/declensions-a-masc' },
-          { id: '2.1.1.2', titleKey: 'nouns.a_neut', status: 'available', route: '/lessons/grammar/declensions-a-neut' },
           { id: '2.1.1.3', titleKey: 'nouns.aa_fem', status: 'available', route: '/lessons/grammar/declensions-aa-fem' },
           { id: '2.1.1.4', titleKey: 'nouns.i_stems', status: 'available', route: '/lessons/grammar/declensions-i' },
           { id: '2.1.1.5', titleKey: 'nouns.ii_stems', status: 'available', route: '/lessons/grammar/declensions-ii' },
@@ -178,7 +177,7 @@ export const curriculumTree: CurriculumNode[] = [
     status: 'planned',
     icon: 'pi-pen-to-square',
     children: [
-      { id: '2.2.1', titleKey: 'writing.alphabet', status: 'planned' },
+      { id: '2.2.1', titleKey: 'writing.alphabet', status: 'available', route: '/writing/alphabet' },
       { id: '2.2.2', titleKey: 'writing.ligatures', status: 'planned' },
       { id: '2.2.3', titleKey: 'writing.transliteration', status: 'planned' },
       { id: '2.2.4', titleKey: 'writing.prosody', status: 'planned' },

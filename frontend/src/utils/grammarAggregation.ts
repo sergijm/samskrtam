@@ -2,7 +2,7 @@ import type { WordStatus, GrammarQuestionProgress } from '../types/lesson';
 
 export const NUMBER_TYPES = ['SINGULAR', 'DUAL', 'PLURAL'] as const;
 
-export const CASE_TYPES = [
+export const  CASE_TYPES = [
   'NOMINATIVE', 'ACCUSATIVE', 'INSTRUMENTAL', 'DATIVE',
   'ABLATIVE', 'GENITIVE', 'LOCATIVE', 'VOCATIVE',
 ] as const;

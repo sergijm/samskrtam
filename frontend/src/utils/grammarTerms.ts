@@ -30,6 +30,17 @@ export const ABBR_CASE: Record<string, string> = {
   'VOCATIVE': 'Voc.',
 };
 
+export const ABBR_CASE_RU: Record<string, string> = {
+  'NOMINATIVE': 'Им.',
+  'ACCUSATIVE': 'Вин.',
+  'INSTRUMENTAL': 'Тв.',
+  'DATIVE': 'Дат.',
+  'ABLATIVE': 'Отл.',
+  'GENITIVE': 'Род.',
+  'LOCATIVE': 'Мест.',
+  'VOCATIVE': 'Зв.',
+};
+
 export const ABBR_NUMBER: Record<string, string> = {
   'SINGULAR': 'Sg.',
   'DUAL': 'Du.',

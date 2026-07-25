@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from 'primereact/skeleton';
 import { CASE_TYPES } from '../../utils/grammarAggregation';
+import { lookup, ABBR_CASE, ABBR_CASE_RU } from '../../utils/grammarTerms';
 import type { DeclensionParadigmDto, DeclensionFormDto } from '../../types/content-dtos';
 
 interface GrammarParadigmTableProps {
@@ -96,23 +97,7 @@ const GrammarParadigmTable: React.FC<GrammarParadigmTableProps> = ({ paradigms, 
                   {CASE_TYPES.map(caseType => (
                     <tr key={caseType}>
                       <td className="p-2 border-bottom-1 border-100 text-color-secondary">
-                        {i18n.language === 'ru'
-                          ? (() => {
-                              const map: Record<string, string> = {
-                                NOMINATIVE: 'Им.', ACCUSATIVE: 'Вин.', INSTRUMENTAL: 'Тв.',
-                                DATIVE: 'Дат.', ABLATIVE: 'Отл.', GENITIVE: 'Род.',
-                                LOCATIVE: 'Мест.', VOCATIVE: 'Зв.',
-                              };
-                              return map[caseType] || caseType;
-                            })()
-                          : (() => {
-                              const map: Record<string, string> = {
-                                NOMINATIVE: 'Nom.', ACCUSATIVE: 'Acc.', INSTRUMENTAL: 'Ins.',
-                                DATIVE: 'Dat.', ABLATIVE: 'Abl.', GENITIVE: 'Gen.',
-                                LOCATIVE: 'Loc.', VOCATIVE: 'Voc.',
-                              };
-                              return map[caseType] || caseType;
-                            })()}
+                        {lookup(caseType, i18n.language === 'ru' ? ABBR_CASE_RU : ABBR_CASE)}
                       </td>
                       {columns.map(num => {
                         const form = findForm(paradigm.forms, caseType, num);

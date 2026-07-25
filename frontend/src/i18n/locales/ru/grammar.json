@@ -24,6 +24,13 @@
     "UNKNOWN": "род неизвестен",
     "UNSPECIFIED": "род не указан"
   },
+    "endings": {
+    "titleAStem": "Падежные окончания основ на -a",
+    "titleAAStem": "Падежные окончания основ на -ā",
+    "sectionTitle": "Таблица окончаний",
+    "toggleShow": "Показать таблицу окончаний",
+    "toggleHide": "Скрыть таблицу окончаний"
+  },
   "vocabulary": {
     "basicVocabularyTitle": "Базовая лексика (Фриш)",
     "basicVocabularyDescription": "Изучите базовую лексику санскрита по методу Фриша.",
@@ -47,3 +54,4 @@
     "noWordsFound": "Слова не найдены."
   }
 }
+

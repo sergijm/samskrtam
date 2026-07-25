@@ -3,6 +3,21 @@ import { Link } from 'react-router-dom';
 
 // ── Словари грамматических терминов (латинские сокращения, 1–5 букв + точка) ──
 
+const POS_MAP: Record<string, string> = {
+  NOUN: 'n.',
+  VERB: 'v.',
+  ADJECTIVE: 'adj.',
+  PRONOUN: 'pron.',
+  ADVERB: 'adv.',
+  NUMERAL: 'num.',
+  INDECLINABLE: 'indecl.',
+  PARTICLE: 'part.',
+  CONJUNCTION: 'conj.',
+  PREPOSITION: 'prep.',
+  INTERJECTION: 'interj.',
+  OTHER: 'other',
+};
+
 const GENDER_MAP: Record<string, string> = {
   MASCULINE: 'm.',
   FEMININE: 'f.',
@@ -65,13 +80,12 @@ const mapEnum = (map: Record<string, string>, value: string | null | undefined):
   return map[value] ?? value;
 };
 
-// ── Интерфейс ──
-
 interface Word {
   id: string;
   position?: number;
   surfaceIast: string;
   surfaceDevanagari?: string;
+  lemmaIast?: string;
   stem?: string;
   root?: string;
   pos?: string;
@@ -120,13 +134,20 @@ const VerseWordsList = ({ words }: VerseWordsListProps) => {
       <div className="p-3 border-1 border-round surface-border surface-ground">
         {words.map((w) => (
           <div key={w.id} className="flex align-items-center gap-2 mb-1 flex-wrap">
-            <span className="font-medium">{w.surfaceIast}</span>
+            <Link
+              to={`/dictionary?q=${encodeURIComponent(w.lemmaIast || w.stem || w.surfaceIast)}`}
+              className="font-medium hover:underline" style={{ color: 'inherit' }}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {w.surfaceIast}
+            </Link>
 
             {w.surfaceDevanagari && (
               <span className="text-color-secondary font-italic">{w.surfaceDevanagari}</span>
             )}
 
-            <span className="text-color-secondary">({w.pos || '-'})</span>
+            <span className="text-color-secondary">({mapEnum(POS_MAP, w.pos) || '-'})</span>
 
             {w.stem && <span className="text-sm text-color-secondary">stem: {w.stem}</span>}
 
@@ -179,3 +200,4 @@ const VerseWordsList = ({ words }: VerseWordsListProps) => {
 };
 
 export default VerseWordsList;
+

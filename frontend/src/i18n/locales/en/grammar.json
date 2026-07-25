@@ -1,4 +1,4 @@
-{
+﻿{
   "grammar": {
     "sandhiExercisesTitle": "Sandhi - Emeneau (Exercises)",
     "sandhiExercisesDescription": "Practice Sandhi rules with exercises from Emeneau's textbook.",
@@ -24,6 +24,13 @@
     "UNKNOWN": "unknown gender",
     "UNSPECIFIED": "unspecified gender"
   },
+  "endings": {
+    "titleAStem": "Case Endings of -a Stems",
+    "titleAAStem": "Case Endings of -ā Stems",
+    "sectionTitle": "Endings Table",
+    "toggleShow": "Show endings table",
+    "toggleHide": "Hide endings table"
+  },
   "vocabulary": {
     "basicVocabularyTitle": "Basic Vocabulary (Frisch)",
     "basicVocabularyDescription": "Learn fundamental Sanskrit vocabulary according to Frisch's method.",
@@ -35,10 +42,10 @@
     "hitopadeshaDescription": "Learn Sanskrit words from the Hitopadesha stories."
   },
   "eamenau": {
-    "exerciseNumber": "Exercise №",
+    "exerciseNumber": "Exercise \u2116",
     "exerciseLetter": "Letter",
     "instructionText": "Instructions",
-    "taskNumber": "Task №",
+    "taskNumber": "Task \u2116",
     "rules": "Rules",
     "noSolutionFound": "No solution found for this task.",
     "filterRules": "Filter Rules"

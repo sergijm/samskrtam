@@ -14,8 +14,7 @@
     "vocabulary": "Vocabulary"
   },
   "nouns": {
-    "a_masc": "a-stems, masc.",
-    "a_neut": "a-stems, neut.",
+    "a_masc": "a-stems, masc. neut.",
     "aa_fem": "ā-stems, fem.",
     "i_stems": "i-stems",
     "ii_stems": "ī-stems",
@@ -109,4 +108,3 @@
     "planned": "soon"
   }
 }
-

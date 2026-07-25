@@ -13,12 +13,33 @@
     "writing": "Письмо и произношение",
     "vocabulary": "Лексика"
   },
+  "nouns": {
+    "a_masc": "основы на -a",
+    "aa_fem": "основы на -ā",
+    "i_stems": "основы на -i",
+    "ii_stems": "основы на -ī",
+    "u_stems": "основы на -u",
+    "uu_stems": "основы на -ū",
+    "r_stems": "основы на -ṛ",
+    "cons_an": "Согласные: -an",
+    "cons_in_vant_mant": "Согласные: -in/-vant/-mant",
+    "cons_as_is_us": "Согласные: -as/-is/-us",
+    "cons_at_ant": "Согласные: -at/-ant",
+    "cons_simple_final": "Согласные: простые конечные",
+    "irregular": "Нерегулярные основы"
+  },
   "vocabulary": {
     "sangraha_quizzes": "VOCABULARY-квизы (sangraha)",
     "thematic": "Тематические группы",
     "frequency": "Частотная лексика",
     "basic": "Базовая лексика",
     "lists": "Списки"
+  },
+  "writing": {
+    "alphabet": "Деванагари: алфавит",
+    "ligatures": "Лигатуры",
+    "transliteration": "Транслитерация IAST↔Деванагари",
+    "prosody": "Долгота гласных и просодия"
   },
   "catalog": {
     "texts": "Тексты"
