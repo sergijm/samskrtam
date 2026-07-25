@@ -25,9 +25,9 @@
 
 Для vowel_type I/I_LONG/U/U_LONG/R окончания одинаковы для всех родов. Прогресс агрегируется раздельно по gender (разные основы/слова). Хранение: либо одна запись с gender = UNSPECIFIED, либо дублирующие строки с разным gender — на усмотрение Агента 2. Агент 3 получает одинаковый caseEnding, но агрегирует прогресс раздельно.
 
-## ADR-006: sangraha-service — произведения, LLM-анализ стихов, синхронизация лексики через Kafka
+## ADR-006: sangraha-service — произведения, LLM-анализ стихов, синхронизация лексики через REST (было — через Kafka)
 
-Новый сервис `sangraha-service` (Java 21, Virtual Threads, схема `sangraha`). LLM-анализ стиха (OpenAI-совместимый) — строго через tool calling (`submit_verse_analysis`), без парсинга свободного текста. Никаких синхронных HTTP-вызовов к content-service/dictionary-service — только Kafka, topic `sangraha-vocabulary-events` (transactional outbox). Иерархия work.slug → chapter.slug маппится на VocabularyCategory.code в content-service для бесплатного VOCABULARY-квиза. Дедупликация слов по (wordIast, stem). Версионирование analysis не хранится (перезапись). Права: write — только ADMIN. Порт: 8089.
+Новый сервис `sangraha-service` (Java 21, Virtual Threads, схема `sangraha`). LLM-анализ стиха (OpenAI-совместимый) — строго через tool calling (`submit_verse_analysis`), без парсинга свободного текста. **ИЗМЕНЕНО:** синхронизация лексики с content-service изначально была спроектирована только через Kafka (topic `sangraha-vocabulary-events`, transactional outbox, без синхронных HTTP-вызовов) — по факту эксплуатации признано избыточным для канала «один producer, один consumer» и заменено на прямой синхронный REST-вызов `POST content-service/content/internal/sangraha/vocabulary`. Transactional Outbox в sangraha-service **сохранён** как паттерн надёжной доставки (retry/backoff) — изменился только транспорт Relay (HTTP вместо Kafka producer), см. `sangraha-service.md` §6, `content-service.md` §11. Иерархия work.slug → chapter.slug маппится на VocabularyCategory.code в content-service для бесплатного VOCABULARY-квиза. Дедупликация слов по (wordIast, stem). Версионирование analysis не хранится (перезапись). Права: write — только ADMIN. Порт: 8089.
 
 ## ADR-007: Единая таблица прогресса quiz_item_score, отсутствие FK на content, производный статус без time-decay
 

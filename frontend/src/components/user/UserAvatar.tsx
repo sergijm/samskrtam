@@ -16,15 +16,15 @@ const UserAvatar = ({ username, firstName, lastName, email, avatarUrl, size = 'n
   const initial = displayName ? displayName.charAt(0).toUpperCase() : '?';
 
   return (
-    <div className="flex align-items-center">
+    <div className="flex align-items-center ml-4">
       <Avatar
         image={avatarUrl}
         label={!avatarUrl ? initial : undefined}
         size={size}
         shape={shape}
-        className="p-mr-2"
+        className="mr-2"
       />
-      <div>
+      <div className="ml-1">
         <div className="font-bold">{displayName}</div> {/* Display firstName + lastName or username */}
         {email && <div className="text-sm text-color-secondary">{email}</div>} {/* Display email */}
       </div>
@@ -33,3 +33,4 @@ const UserAvatar = ({ username, firstName, lastName, email, avatarUrl, size = 'n
 };
 
 export default UserAvatar;
+

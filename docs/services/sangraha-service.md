@@ -16,15 +16,19 @@
 результаты их LLM-анализа: транслитерация IAST ⇄ devanagari, перевод (ru/en), разбор
 сандхи, пословная грамматика.
 
-Сервис **не хранит словарь и не ходит синхронно ни в `content-service`, ни в
-`dictionary-service`**. Единственный канал наружу — Kafka: после анализа стиха
-sangraha-service публикует слова этого стиха, `content-service` асинхронно строит из
-них категории лексики и словарные квизы (см. §6). Сопоставление слов со словарными
-статьями `dictionary-service` **в текущей итерации не делается** (см. §8).
+Сервис **не хранит словарь**. Единственный канал наружу — синхронный REST-вызов
+`content-service` (через Transactional Outbox Relay, см. §6): после анализа стиха
+sangraha-service отправляет слова этого стиха, `content-service` синхронно строит из
+них категории лексики и словарные квизы и возвращает `vocabularyWordId` каждого слова.
+**ИЗМЕНЕНО:** раньше это был асинхронный обмен через Kafka (топик
+`sangraha-vocabulary-events`) — заменён на прямой REST, Kafka из этого канала убрана
+целиком (outbox как паттерн доставки остался, сменился только транспорт, см. §6).
+Сопоставление слов со словарными статьями `dictionary-service` **в текущей итерации не
+делается** (см. §8).
 
 Разделение ответственности:
 - **sangraha-service** — тексты, их структура, LLM-анализ (грамматика стиха)
-- **content-service** — лексика для VOCABULARY-квизов (получает слова из Kafka)
+- **content-service** — лексика для VOCABULARY-квизов (получает слова синхронным REST-вызовом, см. §6)
 - **dictionary-service** — полный словарь (MW/Frisch), не связан с sangraha в этой итерации
 
 ---
@@ -45,7 +49,7 @@ sangraha-service публикует слова этого стиха, `content-s
 
 ## 3. Flyway Migrations
 
-4 миграции: V1 — вся схема sangraha (works, chapters, verses, verse_analyses, verse_words, outbox_events); V2 — санскритские названия (titleSaIast, titleSaDevanagari) для works; V3 — санскритские названия для chapters + orderIndex nullable; V4 — поле formation_rule_numbers в verse_words; V5 — поле raw_text (VARCHAR) в verses.
+4 миграции: V1 — вся схема sangraha (works, chapters, verses, verse_analyses, verse_words, outbox_events); V2 — санскритские названия (titleSaIast, titleSaDevanagari) для works; V3 — санскритские названия для chapters + orderIndex nullable; V4 — поле formation_rule_numbers в verse_words; V5 — поле raw_text (VARCHAR) в verses; **V6 (NEW, задача Агенту 2) — поле `vocabulary_word_id UUID NULL` в verse_words**, для хранения id, полученного из ответа `POST content-service/content/internal/sangraha/vocabulary` (см. §6) — задел на будущее, в текущей итерации не рендерится фронтендом.
 
 ---
 
@@ -216,25 +220,22 @@ Backend валидирует `tool_calls[0].function.arguments` по JSON Schema
 
 ---
 
-## 6. Kafka: sangraha → content-service
+## 6. Outbox → REST: sangraha → content-service
 
-```
-topic: sangraha-vocabulary-events
-key:   verseId
-```
+**ИЗМЕНЕНО (было Kafka, стало синхронный REST).** Kafka-обмен между sangraha-service и content-service убран целиком (топик `sangraha-vocabulary-events` и его DLQ больше не существуют) — признан избыточным для канала «один producer, один consumer». **Transactional Outbox сохраняется** (`OutboxEvent(VERSE_VOCABULARY_EXTRACTED)` по-прежнему пишется в той же транзакции, что и `VerseWord[]`, см. §5.1, шаг 3) — меняется только то, что делает Relay с записью из `outbox_events`: вместо публикации в Kafka он **синхронно вызывает REST** `content-service`.
 
-Публикуется **на каждый проанализированный стих** (не батчами по главе).
+### OutboxRelayService (переименован из бывшего Kafka-продюсера; таблица/статусы/поля outbox_events не меняются)
 
-Событие содержит: eventType (VERSE_VOCABULARY_EXTRACTED), verseId, workSlug, workTitleRu, workTitleEn, chapterSlug, chapterTitleRu, chapterTitleEn, words[] (wordIast, wordDevanagari, stem, root, gender, translationRu, translationEn, explanationRu, explanationEn)
+`@Scheduled`-поллер опрашивает `outbox_events` (`status = NEW`, `aggregate_type = 'Verse'`, `event_type = 'VERSE_VOCABULARY_EXTRACTED'`), на каждую запись:
 
-Consumer в `content-service` (новый `@KafkaListener`, первый консьюмер в этом сервисе):
-1. `upsert VocabularyCategory(code = workSlug)` (root, если не существует — создать по workTitleRu/En).
-2. `upsert VocabularyCategory(code = "{workSlug}.{chapterSlug}", parentId = root.id)`.
+1. Десериализует `payload` в `SangrahaVocabularyEvent` (тот же shared DTO, что и раньше — `shared/samskrtam-dtos`, пакет `sangraha`, без изменений).
+2. `POST {CONTENT_SERVICE_URL}/content/internal/sangraha/vocabulary` с этим телом (синхронный HTTP-клиент — `RestClient`, т.к. sangraha-service на сервлетном стеке/virtual threads, не WebFlux; см. §1). Точный контракт запроса/ответа — `content-service.md` §11.
+3. **Успех (2xx):** из ответа `{ words: [{ wordIast, stem, vocabularyWordId }] }` сопоставляет элементы с `VerseWord` этого стиха по `(surfaceIast→wordIast через lemma, stem)` — фактическое сопоставление 1:1 с исходным `words[]` запроса (тот же порядок), проставляет `VerseWord.vocabularyWordId` (**NEW колонка**, см. §3 миграция V6). `OutboxEvent.status = PUBLISHED`, `processed_at = now()`.
+4. **Ошибка (4xx/5xx/timeout):** `retry_count++`, `error_message` = тело ошибки/exception; при исчерпании лимита попыток — `status = FAILED` (лимит и backoff — открытый вопрос, см. §8, тот же, что раньше решался для Kafka-ретраев — просто транспорт сменился, сама проблема не новая).
 
-3. `upsert Quiz(type = VOCABULARY, slug = workSlug)` — **только на уровне произведения**. Quiz на уровне главы не создаётся: агрегация слов по поддереву категорий (`VocabularyService.getVocabularyWordsForQuiz`) уже поддерживает фильтрацию по `categoryCode = "{workSlug}.{chapterSlug}"` через дерево категорий. Отдельный Quiz на главу создал бы дублирование набора слов.
-4. Для каждого слова: dedup по `(wordIast, stem)` — если `VocabularyWord` уже существует, не создавать заново, только добавить `VocabularyWordCategory(wordId, categoryId=chapter.id)`, если связи ещё нет.
+Прямая отправка из бизнес-логики (минуя outbox) по-прежнему запрещена — тот же принцип, что в quiz-service (`quiz-service-kafka.md` §1), только здесь "отправка" = HTTP-вызов, а не публикация в топик.
 
-Payload/типы события переиспользуются как shared DTO — `shared/samskrtam-dtos` содержит пакет `sangraha` с `SangrahaVocabularyEvent`. Решение Агента 6: заводим shared DTO, т.к. событие используется двумя сервисами (producer + consumer), локальный DTO создал бы дублирование и риск рассинхронизации.
+**Идемпотентность на стороне content-service:** т.к. Relay может повторить вызов при таймауте (получил 5xx или не получил ответ, а операция на самом деле прошла) — `content-service` обрабатывает `POST .../vocabulary` идемпотентно за счёт dedup по `(wordIast, stem)` (не меняется относительно бывшей Kafka-логики, см. `content-service.md` §11, шаг 4) — повторный вызов с тем же payload безопасен, просто не создаст дублей и вернёт те же `vocabularyWordId`.
 
 ---
 
@@ -284,5 +285,6 @@ Payload/типы события переиспользуются как shared D
   транслитерации выбирает Агент 2 при реализации на основе общепринятых схем IAST/SLP1.
 - **Роль «редактор/переводчик»**: пока весь write — `ADMIN`. Отдельная роль (может вводить/анализировать стихи, но не управлять произведениями/главами) — следующая итерация; когда будет готова модель ролей, добавить `SANGRAHA_EDITOR` и обновить §4.
 - **Связь слов стиха со словарём** (`dictionary-service`, поиск по `slp1`): сознательно не делаем в этой итерации — только грамматика от LLM. Если понадобится — отдельным Kafka-каналом (sangraha публикует, dictionary-service асинхронно обогащает через ответное событие), без синхронных вызовов между сервисами.
-- **Quiz(VOCABULARY) — только на уровне произведения**: §6.3 решён — Quiz заводится только с `slug = workSlug`. Главы не получают отдельного Quiz, т.к. агрегация слов по поддереву категорий (`VocabularyService.getVocabularyWordsForQuiz`) уже поддерживает фильтрацию по `categoryCode = "{workSlug}.{chapterSlug}"` через дерево категорий. Отдельный Quiz на главу создал бы дублирование.
+- **Политика ретраев Outbox Relay (NEW, после перехода §6 на REST):** backoff между попытками, максимум `retry_count`, что происходит после исчерпания (статус `FAILED` навсегда + ручной разбор через admin, или dead-letter в отдельной таблице/логе) — не специфицировано, решает Агент 2 при реализации; ориентир — обычный exponential backoff для HTTP-ретраев, без over-engineering на первой итерации.
+- **Quiz(VOCABULARY) — только на уровне произведения**: решено — Quiz заводится только с `slug = workSlug` (было в §6 до перехода на REST, решение не менялось). Главы не получают отдельного Quiz, т.к. агрегация слов по поддереву категорий (`VocabularyService.getVocabularyWordsForQuiz`) уже поддерживает фильтрацию по `categoryCode = "{workSlug}.{chapterSlug}"` через дерево категорий. Отдельный Quiz на главу создал бы дублирование.
 - **Библиотека текстов (каталог, не курикулум)** — требования к странице библиотеки, стабильному адресу строфы (`произведение.глава.строфа`, используется как `source_ref` в `usage_examples`), двухсекционному поиску по корпусу (произведения + строфы) и полю `license`/`source_type` в модели произведения — см. [frontend/information-architecture.md §3.2 и §7](../frontend/information-architecture/02-catalog.md).

@@ -15,7 +15,8 @@ dependencies {
     implementation(libs.spring.web)
     implementation(libs.spring.data.jpa)
 
-    implementation(libs.spring.kafka)
+    // Kafka удалён — sangraha ↔ content-service теперь через RestClient
+    // implementation(libs.spring.kafka)
 
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgresql)

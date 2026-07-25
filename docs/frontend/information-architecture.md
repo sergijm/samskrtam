@@ -17,7 +17,7 @@ IA — объединяет структуру меню, каталожные р
 
 | Файл | Содержание |
 |---|---|
-| [information-architecture/01-curriculum-vs-catalog.md](information-architecture/01-curriculum-vs-catalog.md) | §1 Ключевой принцип: курикулум vs каталог · §2 Полная структура курикулума (дерево бокового меню) |
+| [information-architecture/01-curriculum-vs-catalog.md](information-architecture/01-curriculum-vs-catalog.md) | §1 Ключевой принцип: курикулум vs каталог · §2 Дерево курикулума: §2.1 Грамматика (родитель) · §2.2 Письмо и произношение · §2.3 Лексика |
 | [information-architecture/02-catalog.md](information-architecture/02-catalog.md) | §3 Каталожные разделы: лексика (браузер словаря, личные списки), тексты (библиотека) |
 | [information-architecture/03-onboarding-dashboard.md](information-architecture/03-onboarding-dashboard.md) | §4 Онбординг первого захода · §5 Dashboard |
 | [information-architecture/04-progress-map.md](information-architecture/04-progress-map.md) | §6 Карта прогресса и формула агрегации `successRate` · §8 Почему не единая диаграмма навыков |

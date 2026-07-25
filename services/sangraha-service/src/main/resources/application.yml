@@ -33,22 +33,9 @@ spring:
     user: ${DB_USER}
     password: ${DB_PASSWORD}
 
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      properties:
-        spring.json.type.mapping: sangraha-vocabulary-event:sm.selflearn.samskrtam.sangraha.event.SangrahaVocabularyEvent
-    consumer:
-      group-id: sangraha-service
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "*"
-        spring.json.type.mapping: vocabulary-sync-result:sm.selflearn.samskrtam.content.event.VocabularyWordSyncedEvent
-      enable-auto-commit: false
-
+# Kafka в sangraha-service удалён — заменён на синхронный REST-вызов content-service.
+# OutboxRelayService: @Scheduled поллер → RestClient → POST {CONTENT_SERVICE_URL}/content/internal/sangraha/vocabulary.
+# Бывшие топики: sangraha-vocabulary-events (producer), vocabulary-sync-results (consumer).
 sangraha:
   llm:
     base-url: ${SANGRAHA_LLM_BASE_URL}
@@ -59,6 +46,8 @@ sangraha:
 app:
   outbox:
     fixed-delay-ms: ${APP_OUTBOX_FIXED_DELAY_MS:5000}
+  content-service:
+    url: ${CONTENT_SERVICE_URL}
 
 management:
   server:
@@ -86,7 +75,4 @@ logging:
   level:
     root: WARN
     sm.selflearn.samskrtam: DEBUG
-    org.springframework.kafka: DEBUG
-    org.apache.kafka: WARN
-
 

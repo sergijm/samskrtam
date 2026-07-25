@@ -201,6 +201,88 @@ DeclensionParadigmPageDto:
     paradigm:
       $ref: '#/DeclensionParadigmDto'
 
+SangrahaVocabularyEventDto:
+  type: object
+  description: >
+    NEW. Тело запроса POST /content/internal/sangraha/vocabulary. Ранее — payload
+    Kafka-события VERSE_VOCABULARY_EXTRACTED (топик sangraha-vocabulary-events, теперь
+    удалён, см. ADR-006). Схема не менялась при переходе с Kafka на REST, только транспорт.
+    Источник истины по этой схеме — sangraha-service.md §5.1/§6, здесь для валидации
+    запроса на стороне content-service.
+  required: [eventType, verseId, workSlug, chapterSlug, words]
+  properties:
+    eventType:
+      type: string
+      enum: [VERSE_VOCABULARY_EXTRACTED]
+    verseId:
+      type: string
+      format: uuid
+    workSlug:
+      type: string
+    workTitleRu:
+      type: string
+    workTitleEn:
+      type: string
+    chapterSlug:
+      type: string
+    chapterTitleRu:
+      type: string
+    chapterTitleEn:
+      type: string
+    words:
+      type: array
+      items:
+        type: object
+        required: [wordIast, stem]
+        properties:
+          wordIast:
+            type: string
+          wordDevanagari:
+            type: string
+          stem:
+            type: string
+          root:
+            type:
+              - string
+              - 'null'
+          gender:
+            $ref: '#/Gender'
+          translationRu:
+            type: string
+          translationEn:
+            type: string
+          explanationRu:
+            type:
+              - string
+              - 'null'
+          explanationEn:
+            type:
+              - string
+              - 'null'
+
+SangrahaVocabularySyncResultDto:
+  type: object
+  description: >
+    NEW. Ответ на POST /content/internal/sangraha/vocabulary — раньше событие ничего не
+    возвращало (fire-and-forget в Kafka), теперь HTTP-ответ обязателен: sangraha-service
+    сохраняет vocabularyWordId в verse_words.vocabulary_word_id (см. sangraha-service.md §3/§6).
+  required: [words]
+  properties:
+    words:
+      type: array
+      description: В том же порядке, что words[] в запросе.
+      items:
+        type: object
+        required: [wordIast, stem, vocabularyWordId]
+        properties:
+          wordIast:
+            type: string
+          stem:
+            type: string
+          vocabularyWordId:
+            type: string
+            format: uuid
+
 VocabularyWordDto:
   type: object
   required: [id, wordIast]

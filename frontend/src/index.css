@@ -83,10 +83,10 @@ html {
     display: flex;
     flex: 1;
     overflow: hidden;
-    max-width: 1920px;
+    max-width: 1900px;
     width: 100%;
     margin: 0 auto;
-    padding: 1rem;
+    padding: 0 1rem 1rem 1rem;
     gap: 1rem;
 }
 
@@ -160,13 +160,18 @@ html {
 .curriculum-tree .p-treenode-content {
   padding: 0.1rem 0.1rem;
   border-radius: 6px;
+  cursor: pointer;
 }
 
 .curriculum-tree .p-treenode-content:hover {
   background: var(--surface-hover, rgba(0,0,0,0.04));
 }
 
-/* Ветки (родительские узлы) — жирный шрифт, subtle accent */
+/* Ветки (родительские узлы) — жирный шрифт, subtle accent, pointer */
+.curriculum-tree-branch > .p-treenode-content {
+  cursor: pointer;
+}
+
 .curriculum-tree-branch > .p-treenode-content .p-treenode-label {
   font-weight: 600;
   color: var(--primary-color, #6366f1);
@@ -187,10 +192,14 @@ html {
   color: var(--primary-color, #6366f1);
 }
 
-/* Planned (недоступные) узлы — визуально приглушены */
+/* Planned (недоступные) узлы — визуально приглушены, некликабельны */
 .curriculum-tree-node-planned {
   opacity: 0.5;
   font-style: italic;
+}
+
+.curriculum-tree-node-planned > .p-treenode-content {
+  cursor: default;
 }
 
 /* Иконки в узлах */
@@ -210,6 +219,13 @@ html {
     width: 100%;
     margin: 0 auto;
     padding: 0.5rem 1rem;
+}
+
+/* ─── Avatar: prevent vertical stretch, */
+form .p-avatar.p-avatar-image img {
+  object-fit: cover;
+  width: 80px;
+  height: 80px;
 }
 
 /* ─── Compact DataTable rows ─── */

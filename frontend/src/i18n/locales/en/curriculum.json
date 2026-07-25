@@ -1,5 +1,6 @@
 {
   "section": {
+    "grammar": "Grammar",
     "nouns": "Nouns (Declension)",
     "adjectives": "Adjectives",
     "pronouns": "Pronouns",
@@ -9,7 +10,8 @@
     "verb_nominals": "Verbal Nouns",
     "sandhi": "Sandhi",
     "syntax": "Syntax",
-    "writing": "Writing & Pronunciation"
+    "writing": "Writing & Pronunciation",
+    "vocabulary": "Vocabulary"
   },
   "nouns": {
     "a_masc": "a-stems, masc.",
@@ -93,13 +95,18 @@
     "transliteration": "IAST↔Devanāgarī transliteration",
     "prosody": "Vowel length & prosody"
   },
+  "vocabulary": {
+    "sangraha_quizzes": "VOCABULARY quizzes (sangraha)",
+    "thematic": "Thematic groups",
+    "frequency": "Frequency vocabulary",
+    "basic": "Basic Vocabulary",
+    "lists": "Lists"
+  },
   "catalog": {
-    "lexicon": "Vocabulary",
-    "lexicon.basic": "Basic Vocabulary",
-    "lexicon.lists": "Lists",
     "texts": "Texts"
   },
   "status": {
     "planned": "soon"
   }
 }
+

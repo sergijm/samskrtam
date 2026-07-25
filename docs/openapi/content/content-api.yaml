@@ -222,6 +222,36 @@ paths:
               schema:
                 $ref: '../common/schemas/common.yaml#/ErrorResponse'
 
+  /content/internal/sangraha/vocabulary:
+    post:
+      tags: [vocabulary]
+      summary: Sync vocabulary words extracted from a verse (sangraha-service → content-service)
+      description: >
+        NEW. Заменяет бывший Kafka-топик sangraha-vocabulary-events (см. ADR-006,
+        content-service.md §11, sangraha-service.md §6). Не публичный и не ADMIN —
+        чистый service-to-service вызов (вызывается напрямую, минуя api-gateway,
+        Outbox Relay в sangraha-service). Идемпотентно: dedup по (wordIast, stem).
+      operationId: syncVocabularyFromSangraha
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/content.yaml#/SangrahaVocabularyEventDto'
+      responses:
+        '200':
+          description: Слова синхронизированы, возвращены их id (в том же порядке, что в запросе)
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/content.yaml#/SangrahaVocabularySyncResultDto'
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/common.yaml#/ErrorResponse'
+
   /content/vocabulary/words/{wordId}:
     get:
       tags: [vocabulary]

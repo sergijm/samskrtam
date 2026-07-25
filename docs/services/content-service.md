@@ -254,17 +254,17 @@ content-service.
 
 ---
 
-## 11. Kafka Consumer: sangraha-vocabulary-events
+## 11. Internal REST: приём словаря из sangraha-service
 
-**Контекст:** `sangraha-service` (см. [services/sangraha-service.md](./sangraha-service.md), ADR-006 в `docs/conventions.md`) анализирует санскритские стихи через LLM и на каждый проанализированный стих публикует извлечённые слова. `content-service` — единственный текущий consumer; это **первый `@KafkaListener` в проекте** (до сих пор все сервисы только продюсили события через Outbox).
+**ИЗМЕНЕНО (было Kafka, стало синхронный REST).** Раньше `content-service` был Kafka-консьюмером `sangraha-vocabulary-events` (`@KafkaListener`, топик, DLQ). Kafka-обмен признан избыточным для этого канала (один producer, один consumer, sangraha-service и так синхронно ждёт результата LLM-анализа стиха, отдельная асинхронность здесь не нужна) — **заменён на прямой синхронный REST-вызов** `sangraha-service → content-service`. `Transactional Outbox` в sangraha-service **сохраняется** (см. `sangraha-service.md` §6) — просто относитель Outbox Relay теперь не Kafka producer, а обычный HTTP-клиент; гарантия доставки/ретраи те же, что и раньше, только транспорт другой.
 
 ```
-topic: sangraha-vocabulary-events
-key:   verseId (String, UUID)
-group: content-service
+POST /content/internal/sangraha/vocabulary
 ```
 
-### Payload (см. точную схему в sangraha-service.md §6)
+**Не публичный и не ADMIN-эндпоинт** — чистый service-to-service вызов, без роли (аутентификация — по внутреннему сетевому периметру/service-to-service секрету, как решит Агент 1; **не** заводить под `/content/public/**` и не под общий ADMIN-префикс, это не пользовательский трафик). Вызывается напрямую по адресу content-service (env `CONTENT_SERVICE_URL` у sangraha-service, минуя gateway — тот же паттерн, что `quiz-service.ContentClient`, см. `quiz-service-architecture.md` §4), не через `/api/v1/**`.
+
+### Request (тот же payload, что раньше уходил в Kafka, см. точную схему в sangraha-service.md §6)
 
 ```json
 {
@@ -285,18 +285,32 @@ group: content-service
 }
 ```
 
-### Обработка (`SangrahaVocabularyEventListener` → `VocabularySyncService`)
+Схема переиспользуется как есть — `shared/samskrtam-dtos`, пакет `sangraha`, `SangrahaVocabularyEvent` (без изменений, только транспорт вокруг него поменялся).
 
-Идемпотентно (топик может redeliver-ить при ребалансе/ретрае):
+### Response (NEW — раньше событие ничего не возвращало, теперь HTTP-ответ обязателен)
+
+```json
+{
+  "words": [
+    { "wordIast": "dhṛtarāṣṭraḥ", "stem": "dhṛtarāṣṭra", "vocabularyWordId": "uuid" }
+  ]
+}
+```
+
+По одному элементу на каждое слово из запроса, **в том же порядке** — `vocabularyWordId` (существующего либо только что созданного `VocabularyWord`, см. dedup в шаге 4 ниже). sangraha-service сохраняет `vocabularyWordId` обратно в свою БД, на `verse_words.vocabulary_word_id` (**NEW колонка**, задача Агенту 2 в sangraha-service — миграция V6, см. `sangraha-service.md` §3) — задел на будущее (например, ссылка «стих → слово в словарном квизе» на фронте), в текущей итерации не рендерится.
+
+### Обработка (`SangrahaVocabularyController` → `VocabularySyncService`, синхронно, в теле HTTP-запроса; сама логика шагов 1–4 не меняется относительно прежнего consumer'а)
+
+Идемпотентно (Outbox Relay может повторить вызов при таймауте/5xx — at-least-once, как и раньше с Kafka redelivery):
 
 1. `VocabularyCategory` root: `findByCodeIgnoreCase(workSlug)`, если нет — создать (`nameRu = workTitleRu`, `nameEn = workTitleEn`, `parentId = null`).
 2. `VocabularyCategory` chapter: `findByCodeIgnoreCase("{workSlug}.{chapterSlug}")`, если нет — создать с `parentId = root.id`.
 3. Для root и/или chapter-категории — `upsert Quiz(quizType = VOCABULARY, slug = code)`, если квиза с таким `slug` ещё нет (`titleRu/En` берём из `workTitleRu/En`/`chapterTitleRu/En`). Решение — заводить квиз на уровне произведения, главы или обоих — принимает Агент 2 при реализации (открытый вопрос, см. §9 sangraha-service.md).
-4. Для каждого слова из `words[]`: dedup по `(wordIast, stem)` — `findByWordIastAndStem`. Если найдено — не создавать новый `VocabularyWord`; если связи `VocabularyWordCategory(wordId, chapterCategory.id)` ещё нет — создать. Если не найдено — создать `VocabularyWord` (`wordIast`, `wordDevanagari`, `stem`, `root`, `gender`, `translationRu/En`, `explanationRu/En`) и сразу связать с категорией главы.
-5. Ошибки обработки события (например, невалидный payload) — не ретраятся бесконечно; после N попыток — в DLQ-топик `sangraha-vocabulary-events-dlq` (конвенция DLQ — на усмотрение Агента 5 DevOps, если Kafka error handling ещё не типизирован в проекте).
+4. Для каждого слова из `words[]`: dedup по `(wordIast, stem)` — `findByWordIastAndStem`. Если найдено — не создавать новый `VocabularyWord`; если связи `VocabularyWordCategory(wordId, chapterCategory.id)` ещё нет — создать. Если не найдено — создать `VocabularyWord` (`wordIast`, `wordDevanagari`, `stem`, `root`, `gender`, `translationRu/En`, `explanationRu/En`) и сразу связать с категорией главы. В обоих случаях — собрать `vocabularyWordId` в ответ.
+5. **Ошибки обработки (NEW, вместо DLQ-топика):** невалидный payload/ошибка БД → HTTP 4xx/5xx с телом ошибки (`ErrorResponse`), транзакция отменяется целиком (ничего не создаётся частично). Ретраи и backoff — на стороне Outbox Relay в sangraha-service (`status=FAILED`, `retry_count`, см. `sangraha-service.md` §6), не на стороне content-service; DLQ и Kafka error handling здесь больше не нужны — убрано.
 
 ### Открытые вопросы (для Агента 2 при реализации)
 
 - [ ] Квиз заводится на уровне работы, главы или обоих одновременно?
-- [ ] Нужен ли consumer-level retry/backoff и DLQ-топик, или на этом этапе допустим simple log-and-skip?
+- [ ] Политика ретраев Outbox Relay (backoff, максимум попыток, что происходит после исчерпания — статус `FAILED` навсегда + ручной разбор, или dead-letter в БД) — см. тот же вопрос в `sangraha-service.md` §6.
 - [ ] `gender = null` от sangraha (для indeclinable-слов) — как мапится в `VocabularyWord.gender` (там `nullable = false`)? Вероятно `UNSPECIFIED` — подтвердить при реализации.

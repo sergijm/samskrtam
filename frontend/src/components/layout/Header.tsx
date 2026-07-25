@@ -41,7 +41,7 @@ const Header = () => {
         <ThemeSwitcher />
         <LocaleSwitcher />
         {isAuthenticated && user && (
-          <Link to="/settings" className="no-underline text-color">
+          <Link to="/settings" className="no-underline text-color mr-2">
             <UserAvatar
               username={user.username}
               firstName={user.firstName}

@@ -16,6 +16,8 @@ export const LocaleSwitcher = () => {
       onChange={(e) => e.value && setLocale(e.value)}
       options={options}
       aria-label="Language"
+      pt={{ button: { className: 'p-button-sm' } }}
     />
   );
 };
+
