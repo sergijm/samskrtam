@@ -96,9 +96,11 @@
     "title": "IAST ↔ Devanāgarī Transliteration",
     "description": "Type text in one writing system and see the result in the other. The result updates as you type.",
     "directionAscii": "ASCII → Devanāgarī",
+    "directionIast": "IAST → Devanāgarī",
     "directionDevanagari": "Devanāgarī → IAST",
     "schemeLabel": "Input scheme",
     "inputAscii": "Input ({{scheme}})",
+    "inputIast": "Input (IAST)",
     "inputDevanagari": "Input (Devanāgarī)",
     "outputDevanagari": "Devanāgarī",
     "outputIast": "IAST",
@@ -106,12 +108,19 @@
     "outputPlaceholder": "Result will appear here...",
     "keyboardHint": "⇅ Use the on-screen keyboard below for Devanāgarī input"
   },
-  "vocabulary": {
-    "sangraha_quizzes": "VOCABULARY quizzes (sangraha)",
-    "thematic": "Thematic groups",
-    "frequency": "Frequency vocabulary",
-    "basic": "Basic Vocabulary",
-    "lists": "Lists"
+  "keyboard": {
+    "sectionVowels": "Vowels",
+    "sectionConsonants": "Consonants",
+    "sectionSemivowels": "Semivowels & Sibilants",
+    "sectionSpecials": "Diacritics & Special",
+    "sectionPunctuation": "Punctuation",
+    "sectionDigits": "Digits",
+    "vargaVelar": "Velar (kaṇṭhya)",
+    "vargaPalatal": "Palatal (tālavya)",
+    "vargaRetroflex": "Retroflex (mūrdhanya)",
+    "vargaDental": "Dental (dantya)",
+    "vargaLabial": "Labial (oṣṭhya)",
+    "tooltipIast": "IAST: {{iast}}"
   },
   "catalog": {
     "texts": "Texts"

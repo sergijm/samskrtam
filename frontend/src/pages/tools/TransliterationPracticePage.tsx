@@ -1,17 +1,17 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { SelectButton, type SelectButtonChangeEvent } from 'primereact/selectbutton';
-import { Card } from 'primereact/card';
 import {
   asciiToDevanagari,
   asciiToIast,
   devanagariToIast,
+  iastToDevanagari,
   type InputScheme,
 } from '../../utils/transliteration';
 import DevanagariKeyboard from '../../components/transliteration/DevanagariKeyboard';
 
-type Direction = 'ascii-to-devanagari' | 'devanagari-to-iast';
+type Direction = 'ascii-to-devanagari' | 'iast-to-devanagari' | 'devanagari-to-iast';
 
 interface SelectOption<T extends string> {
   label: string;
@@ -53,15 +53,20 @@ const TransliterationPracticePage: React.FC = () => {
   const devanagariOutput =
     direction === 'ascii-to-devanagari'
       ? asciiToDevanagari(input, scheme)
-      : null;
+      : direction === 'iast-to-devanagari'
+        ? iastToDevanagari(input)
+        : null;
 
   const iastOutput =
     direction === 'ascii-to-devanagari'
       ? asciiToIast(input, scheme)
-      : devanagariToIast(input);
+      : direction === 'iast-to-devanagari'
+        ? input // IAST input → show unchanged as IAST output
+        : devanagariToIast(input);
 
   const directionOptions: SelectOption<Direction>[] = [
     { label: t('transliteration.directionAscii'), value: 'ascii-to-devanagari' },
+    { label: t('transliteration.directionIast'), value: 'iast-to-devanagari' },
     { label: t('transliteration.directionDevanagari'), value: 'devanagari-to-iast' },
   ];
 
@@ -72,6 +77,8 @@ const TransliterationPracticePage: React.FC = () => {
   ];
 
   const isAsciiMode = direction === 'ascii-to-devanagari';
+  const isIastMode = direction === 'iast-to-devanagari';
+  const isDevanagariInput = direction === 'devanagari-to-iast';
 
   return (
     <div className="flex flex-column gap-3 p-3">
@@ -84,6 +91,7 @@ const TransliterationPracticePage: React.FC = () => {
           value={direction}
           options={directionOptions}
           onChange={handleDirectionChange}
+          pt={{ button: { className: 'p-button-sm' } }}
         />
       </div>
 
@@ -95,18 +103,21 @@ const TransliterationPracticePage: React.FC = () => {
             value={scheme}
             options={schemeOptions}
             onChange={handleSchemeChange}
+            pt={{ button: { className: 'p-button-sm' } }}
+
           />
         </div>
       )}
 
       {/* Input field */}
-      <Card
-        title={
-          isAsciiMode
+      <div>
+        <label className="block text-sm font-medium mb-1">
+          {isAsciiMode
             ? t('transliteration.inputAscii', { scheme: scheme.toUpperCase() })
-            : t('transliteration.inputDevanagari')
-        }
-      >
+            : isIastMode
+              ? t('transliteration.inputIast')
+              : t('transliteration.inputDevanagari')}
+        </label>
         <InputTextarea
           ref={(el) => {
             inputRef.current = el;
@@ -119,10 +130,10 @@ const TransliterationPracticePage: React.FC = () => {
           placeholder={t('transliteration.inputPlaceholder')}
           style={{ fontFamily: isAsciiMode ? 'inherit' : "'Noto Sans Devanagari', 'Siddhanta', serif" }}
         />
-      </Card>
+      </div>
 
       {/* Virtual keyboard for Devanagari mode */}
-      {!isAsciiMode && (
+      {isDevanagariInput && (
         <div>
           <p className="text-sm text-color-secondary m-0 mb-2">
             {t('transliteration.keyboardHint')}
@@ -134,33 +145,33 @@ const TransliterationPracticePage: React.FC = () => {
         </div>
       )}
 
-      {/* Output cards */}
+      {/* Output */}
       <div className="grid">
-        {isAsciiMode && devanagariOutput !== null && (
-          <div className="col-12 md:col-6">
-            <Card title={t('transliteration.outputDevanagari')}>
-              <div
-                className="p-3 border-round surface-100 text-lg"
-                style={{
-                  minHeight: '6rem',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  lineHeight: 2,
-                  fontFamily:
-                    "'Noto Sans Devanagari', 'Siddhanta', 'Lohit Devanagari', 'Sanskrit Text', serif",
-                }}
-              >
-                {devanagariOutput || (
-                  <span className="text-color-secondary">
-                    {t('transliteration.outputPlaceholder')}
-                  </span>
-                )}
-              </div>
-            </Card>
+        {devanagariOutput !== null && (
+          <div className={isAsciiMode ? 'col-12 md:col-6' : 'col-12'}>
+            <label className="block text-sm font-medium mb-1">{t('transliteration.outputDevanagari')}</label>
+            <div
+              className="p-3 border-round surface-100 text-lg"
+              style={{
+                minHeight: '6rem',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                lineHeight: 2,
+                fontFamily:
+                  "'Noto Sans Devanagari', 'Siddhanta', 'Lohit Devanagari', 'Sanskrit Text', serif",
+              }}
+            >
+              {devanagariOutput || (
+                <span className="text-color-secondary">
+                  {t('transliteration.outputPlaceholder')}
+                </span>
+              )}
+            </div>
           </div>
         )}
-        <div className={isAsciiMode ? 'col-12 md:col-6' : 'col-12'}>
-          <Card title={t('transliteration.outputIast')}>
+        {!isIastMode && (
+          <div className={isAsciiMode ? 'col-12 md:col-6' : 'col-12'}>
+            <label className="block text-sm font-medium mb-1">{t('transliteration.outputIast')}</label>
             <div
               className="p-3 border-round surface-100 text-lg"
               style={{
@@ -176,8 +187,8 @@ const TransliterationPracticePage: React.FC = () => {
                 </span>
               )}
             </div>
-          </Card>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

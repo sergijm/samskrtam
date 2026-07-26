@@ -1,54 +1,117 @@
 /**
- * Style overrides for DevanagariKeyboard.
+ * Styles for DevanagariKeyboard — custom virtual keyboard.
  *
- * Adapts react-simple-keyboard's default theme to match
- * PrimeReact/PrimeFlex styling (lara-light-blue / lara-dark-blue).
+ * Two-column layout (PrimeFlex grid), group gaps via .kbd-gap,
+ * virāma highlighted, digits collapsible.
  */
 
-.devanagari-kbd .simple-keyboard {
+/* ── Keyboard root ──────────────────────────────────────────────── */
+
+.devanagari-kbd {
   background: var(--surface-ground, #f8f9fa);
   border-radius: var(--border-radius, 6px);
-  padding: 4px;
-  font-family: inherit;
+  padding: 8px;
+  user-select: none;
 }
 
-.devanagari-kbd .hg-theme-default .hg-button {
+/* ── Key rows ───────────────────────────────────────────────────── */
+
+.kbd-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: flex-start;
+  margin-bottom: 4px;
+}
+
+/* ── Key buttons ────────────────────────────────────────────────── */
+
+.kbd-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 40px;
+  padding: 2px 6px;
+  font-size: 1.05rem;
+  font-family: 'Noto Sans Devanagari', 'Siddhanta', 'Lohit Devanagari', 'Sanskrit Text', serif;
   background: var(--surface-card, #ffffff);
   border: 1px solid var(--surface-border, #dee2e6);
-  color: var(--text-color, #495057);
-  border-radius: var(--border-radius, 6px);
-  font-size: 1rem;
-  height: 44px;
-  min-width: 36px;
+  border-radius: var(--border-radius, 4px);
+  color: var(--text-color, #212529);
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s;
-  margin: 2px;
-  padding: 0 4px;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
-.devanagari-kbd .hg-theme-default .hg-button:hover {
-  background: var(--primary-50, #e8f0fe);
+.kbd-key:hover {
+  background: var(--primary-50, #eef2ff);
   border-color: var(--primary-color, #6366f1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
-.devanagari-kbd .hg-theme-default .hg-button:active,
-.devanagari-kbd .hg-theme-default .hg-activeButton {
+.kbd-key:active {
   background: var(--primary-color, #6366f1);
   color: #ffffff;
-  border-color: var(--primary-color, #6366f1);
 }
 
-.devanagari-kbd .hg-theme-default .hg-row {
-  justify-content: center;
-  margin-bottom: 2px;
+/* ── Group separator (between vargas) ───────────────────────────── */
+
+.kbd-gap {
+  display: inline-block;
+  width: 6px;
 }
 
-/* Responsive: smaller keys on narrow screens */
-@media (max-width: 576px) {
-  .devanagari-kbd .hg-theme-default .hg-button {
-    font-size: 0.8rem;
+/* ── Virāma special highlight ──────────────────────────────────── */
+
+.kbd-key-virama {
+  border-color: var(--orange-400, #ff8c00);
+  background: var(--orange-50, #fff7e6);
+  font-weight: 700;
+}
+
+.kbd-key-virama:hover {
+  background: var(--orange-100, #ffe8cc);
+  border-color: var(--orange-500, #e67e00);
+}
+
+/* ── Digits toggle ──────────────────────────────────────────────── */
+
+.kbd-digits-toggle {
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 6px;
+  border-radius: var(--border-radius, 4px);
+  font-size: 0.9rem;
+}
+
+.kbd-digits-toggle:hover {
+  background: var(--surface-100, #f1f3f5);
+}
+
+.kbd-digits-label {
+  color: var(--text-color-secondary, #6c757d);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .kbd-key {
+    min-width: 34px;
     height: 36px;
-    min-width: 28px;
+    font-size: 0.95rem;
+    padding: 1px 4px;
+  }
+}
+
+@media (max-width: 576px) {
+  .devanagari-kbd {
+    padding: 4px;
+  }
+
+  .kbd-key {
+    min-width: 30px;
+    height: 32px;
+    font-size: 0.85rem;
     padding: 0 2px;
   }
 }

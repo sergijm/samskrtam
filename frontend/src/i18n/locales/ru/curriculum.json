@@ -16,12 +16,8 @@
   "nouns": {
     "a_masc": "основы на -a",
     "aa_fem": "основы на -ā",
-    "i_stems": "основы на -i",
-    "ii_stems": "основы на -ī",
     "i_u_stems": "основы на -i и -u",
     "ii_uu_stems": "основы на -ī и -ū",
-    "u_stems": "основы на -u",
-    "uu_stems": "основы на -ū,",
     "r_stems": "основы на -ṛ",
     "cons_an": "Согласные: -an",
     "cons_in_vant_mant": "Согласные: -in/-vant/-mant",
@@ -42,6 +38,36 @@
     "ligatures": "Лигатуры",
     "transliteration": "Транслитерация IAST↔Деванагари",
     "prosody": "Долгота гласных и просодия"
+  },
+  "transliteration": {
+    "title": "Транслитерация IAST ↔ Деванагари",
+    "description": "Введите текст в одной системе письма и получите результат в другой. Результат обновляется по мере набора.",
+    "directionAscii": "ASCII → Деванагари",
+    "directionIast": "IAST → Деванагари",
+    "directionDevanagari": "Деванагари → IAST",
+    "schemeLabel": "Схема ввода",
+    "inputAscii": "Ввод ({{scheme}})",
+    "inputIast": "Ввод (IAST)",
+    "inputDevanagari": "Ввод (Деванагари)",
+    "outputDevanagari": "Деванагари",
+    "outputIast": "IAST",
+    "inputPlaceholder": "Набирайте текст...",
+    "outputPlaceholder": "Результат появится здесь...",
+    "keyboardHint": "⇅ Используйте экранную клавиатуру ниже для ввода деванагари"
+  },
+  "keyboard": {
+    "sectionVowels": "Гласные",
+    "sectionConsonants": "Согласные",
+    "sectionSemivowels": "Полугласные и сибилянты",
+    "sectionSpecials": "Диакритика и спецсимволы",
+    "sectionPunctuation": "Пунктуация",
+    "sectionDigits": "Цифры",
+    "vargaVelar": "Заднеязычные (kaṇṭhya)",
+    "vargaPalatal": "Палатальные (tālavya)",
+    "vargaRetroflex": "Церебральные (mūrdhanya)",
+    "vargaDental": "Зубные (dantya)",
+    "vargaLabial": "Губные (oṣṭhya)",
+    "tooltipIast": "IAST: {{iast}}"
   },
   "catalog": {
     "texts": "Тексты"
