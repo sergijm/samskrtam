@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { lessonApi } from '../api/lessonApi';
 
 export const useVocabularyLesson = (slug: string) =>
@@ -42,4 +42,6 @@ export const useDeclensionParadigm = (slug: string, index: number, enabled: bool
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    placeholderData: keepPreviousData,
   });
+
