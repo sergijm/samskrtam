@@ -9,9 +9,13 @@ import sm.selflearn.samskrtam.sangraha.model.Verse;
 import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
 import sm.selflearn.samskrtam.sangraha.model.VerseStatus;
 import sm.selflearn.samskrtam.sangraha.model.VerseWord;
+import sm.selflearn.samskrtam.sangraha.model.Chapter;
+import sm.selflearn.samskrtam.sangraha.model.Work;
+import sm.selflearn.samskrtam.sangraha.repository.ChapterRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseAnalysisRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
+import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,9 +26,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class VerseService {
 
-    private final VerseRepository verseRepository;
+        private final VerseRepository verseRepository;
     private final VerseAnalysisRepository verseAnalysisRepository;
     private final VerseWordRepository verseWordRepository;
+    private final ChapterRepository chapterRepository;
+    private final WorkRepository workRepository;
     private final ChapterService chapterService;
     private final VerseMapper verseMapper;
     private final TransliterationService transliterationService;
@@ -35,12 +41,30 @@ public class VerseService {
         return verseRepository.findAllByChapterIdAndDeletedAtIsNullOrderByOrderIndexAsc(chapterId);
     }
 
-    @Transactional(readOnly = true)
+        @Transactional(readOnly = true)
     public VerseDetailDto getVerseDetail(UUID id) {
         Verse verse = getVerseById(id);
         Optional<VerseAnalysis> analysis = verseAnalysisRepository.findByVerseId(id);
         List<VerseWord> words = verseWordRepository.findAllByVerseIdOrderByPositionAsc(id);
-        return verseMapper.toDetailDto(verse, analysis.orElse(null), words.isEmpty() ? null : words);
+
+        // Получаем workSlug через chapter → work для vocabularyQuizSlug
+        Chapter chapter = chapterRepository.findByIdAndDeletedAtIsNull(verse.getChapterId())
+                .orElseThrow(() -> new RuntimeException("Chapter not found: " + verse.getChapterId()));
+        Work work = workRepository.findById(chapter.getWorkId())
+                .orElseThrow(() -> new RuntimeException("Work not found: " + chapter.getWorkId()));
+        String vocabularyQuizSlug = work.getSlug();
+
+        // vocabularyQuizAvailable — есть ли хотя бы одно синхронизированное слово
+        // на уровне произведения
+        boolean vocabularyQuizAvailable = verseWordRepository
+                .existsSyncedWordsByWorkId(work.getId());
+        int uniqueWordCount = vocabularyQuizAvailable
+                ? verseWordRepository.countDistinctSyncedWordsByWorkId(work.getId())
+                : 0;
+
+        return verseMapper.toDetailDto(verse, analysis.orElse(null),
+                words.isEmpty() ? null : words,
+                vocabularyQuizSlug, vocabularyQuizAvailable, uniqueWordCount);
     }
 
     @Transactional(readOnly = true)

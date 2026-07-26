@@ -21,7 +21,16 @@ Gender:
 
 VowelType:
   type: string
-  enum: [A_STEM, AA_STEM, I_STEM, II_STEM, U_STEM, UU_STEM, R_STEM]
+  description: >
+    NEW значения PRON_AHAM/PRON_TVAM/PRON_TAD/PRON_ETAD/PRON_IDAM/PRON_KIM/PRON_YAD —
+    местоимения (см. adr.md ADR-008): каждое имя/класс местоимения — отдельный
+    vowelType, а не производный от обычных основ, т.к. формы супплетивны
+    (declension_forms хранит готовые словоформы, не суффикс+основа — конкатенации
+    не требуется). PRON_AHAM/PRON_TVAM — gender=UNSPECIFIED (личные местоимения не
+    различают род, см. content-service.md §3). PRON_TAD/PRON_ETAD/PRON_IDAM/PRON_KIM/
+    PRON_YAD — по 3 рода на класс (MASCULINE/FEMININE/NEUTER), как a-основы одного
+    рода (ADR-004).
+  enum: [A_STEM, AA_STEM, I_STEM, II_STEM, U_STEM, UU_STEM, R_STEM, PRON_AHAM, PRON_TVAM, PRON_TAD, PRON_ETAD, PRON_IDAM, PRON_KIM, PRON_YAD]
 
 CaseType:
   type: string

@@ -14,5 +14,8 @@ public record VerseDetailDto(
     String rawText,
     VerseStatus status,
     VerseAnalysisDto analysis,
-    List<VerseWordDto> words
+    List<VerseWordDto> words,
+    String vocabularyQuizSlug,
+    boolean vocabularyQuizAvailable,
+    int uniqueWordCount
 ) {}

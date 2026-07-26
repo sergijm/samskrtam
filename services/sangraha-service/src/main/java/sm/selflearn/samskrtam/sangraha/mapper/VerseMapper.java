@@ -31,7 +31,9 @@ public class VerseMapper {
      * При нарушении контракта возвращаем пустые списки вместо null, чтобы фронтенд
      * не падал, но логируем ошибку.
      */
-    public VerseDetailDto toDetailDto(Verse verse, VerseAnalysis analysis, List<VerseWord> words) {
+        public VerseDetailDto toDetailDto(Verse verse, VerseAnalysis analysis, List<VerseWord> words,
+                                       String vocabularyQuizSlug, boolean vocabularyQuizAvailable,
+                                       int uniqueWordCount) {
         VerseAnalysisDto analysisDto = null;
         if (analysis != null) {
             analysisDto = toAnalysisDto(analysis);
@@ -56,7 +58,7 @@ public class VerseMapper {
             }
         }
 
-        return new VerseDetailDto(
+                return new VerseDetailDto(
             verse.getId(),
             verse.getChapterId(),
             verse.getOrderIndex(),
@@ -65,7 +67,10 @@ public class VerseMapper {
             verse.getRawText(),
             verse.getStatus(),
             analysisDto,
-            wordDtos
+            wordDtos,
+            vocabularyQuizSlug,
+            vocabularyQuizAvailable,
+            uniqueWordCount
         );
     }
 

@@ -289,6 +289,45 @@ paths:
         '204':
           description: Стих помечен как удалённый
 
+  /verses/{verseId}/vocabulary-quiz:
+    post:
+      operationId: getOrCreateVocabularyQuiz
+      summary: Получить (или создать) лексический квиз этого стиха — кнопка «Изучить»
+      description: |
+        Если `verses.vocabulary_quiz_slug` уже заполнен — возвращает его немедленно,
+        без обращения к content-service. Иначе собирает уникальные слова стиха
+        (VerseWord[], дедуп по lemmaIast+stem) и синхронно вызывает
+        content-service `POST /content/internal/sangraha/vocabulary-quiz`
+        (см. content-service.md §11), сохраняет полученный `quizSlug` в
+        `verses.vocabulary_quiz_slug` и возвращает его. См. sangraha-service.md
+        §6/§7, ADR-009 (заменяет прежний Outbox-механизм — синхронизация теперь
+        по клику пользователя, а не автоматически после анализа).
+      tags: [Verses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: verseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Слог лексического квиза (существующий или только что созданный)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [quizSlug]
+                properties:
+                  quizSlug:
+                    type: string
+        '404':
+          description: Стих не найден
+        '409':
+          description: Стих ещё не проанализирован (status != ANALYZED) либо не содержит слов
+
   /verses/{verseId}/analyze:
     post:
       operationId: analyzeVerse

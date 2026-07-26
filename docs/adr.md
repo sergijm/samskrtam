@@ -59,3 +59,44 @@
 - Алгоритм отбора вопросов (generate()) — единый для всех itemType, без ветвлений по типу.
 - Планирование next_review_at — отдельная формула SRS-интервалов, не спроектирована (открытый вопрос, не блокирует принятие ADR).
 - Конкретные значения difficultUpperThreshold (по умолчанию 45) и masteredLowerThreshold (по умолчанию 80) — черновые, калибруются на реальных данных.
+
+## ADR-008: Местоимения — через существующий itemType DECLENSION_FORM, без нового PRONOUN_FORM
+
+**Контекст:** курикулум (`information-architecture/01-curriculum-vs-catalog.md` §2.1.3) требует пять уроков местоимений (личные, указательные, вопросительные, относительные, возвратное). `quiz-generator-spec.md` §2.1 заранее резервировал `PRONOUN_FORM` как возможное новое значение itemType под эту задачу.
+
+**Решение:** новый itemType не заводится. Местоимения реализуются как дополнительные значения `vowelType` (`PRON_AHAM`, `PRON_TVAM`, `PRON_TAD`, `PRON_ETAD`, `PRON_IDAM`, `PRON_KIM`, `PRON_YAD`) в уже существующих таблицах `content.declension_stems`/`content.declension_forms`/`content.case_endings`, itemType остаётся `DECLENSION_FORM`, external_ref_id — по-прежнему `case_endings.id` (см. ADR-007).
+
+**Обоснование:**
+- `declension_forms` хранит готовые словоформы (не суффикс+основа), поэтому супплетивные парадигмы (aham→mama→mahyam, tad/etad/idam/kim/yad) укладываются в модель без изменений.
+- Личные местоимения (aham/tvam) не различают род — `gender = UNSPECIFIED`, тот же паттерн, что уже принят для i/u/ṛ-основ (ADR-004/005).
+- Указательные/вопросительные/относительные (tad/etad/idam/kim/yad) различают 3 рода — тот же паттерн, что a-основы одного рода (ADR-004), просто с тремя стемами вместо одного на класс.
+- Для форм без вычленяемого окончания (aham/tvam) `case_endings.ending` хранит форму целиком; при единственной форме в группе омонимии вес `ENDING_MATCH` обнуляется автоматически существующим алгоритмом (`quiz-declension.md` §4.5, шаг 2) — отдельной ветки кода не требуется.
+- Соблюдается инвариант §5 `quiz-generator-spec.md`: алгоритм отбора и таблица `quiz.quiz_item_score` не меняются, новый материал — это только данные в content-service.
+
+**Явно вне контракта первой итерации:** энклитические формы личных местоимений (me/te/nau/vaḥ и т.д.) и несклоняемое `svayam` — не входят в 24 стандартные словоформы DECLENSION_FORM, квизом не покрываются, статические заметки на странице урока (реализация — Агент 2/3).
+
+**Статус:** Принято.
+
+**Последствия:**
+- `openapi/content/schemas/content.yaml#VowelType` расширен семью значениями.
+- Новая Flyway-миграция в content-service: расширение enum + сид `declension_stems`/`declension_forms`/`case_endings` + 5 новых `Quiz(lessonType=DECLENSIONS)` (`pronouns-personal`, `pronouns-demonstrative`, `pronouns-interrogative`, `pronouns-relative`, `pronouns-reflexive`) — задача Агента 2.
+- `pronouns-reflexive` (ātman) дублирует парадигму существующего `declensions-a-masc` под отдельным slug — сознательный выбор в пользу независимости уроков, а не переиспользования/связи между Quiz.
+- quiz-service, генератор вопросов, quiz_item_score — без изменений.
+
+## ADR-009: Лексический квиз по стиху — on-demand по кнопке «Изучить», без Outbox/автосинхронизации
+
+**Контекст:** ADR-006 ввёл синхронный REST-вызов `sangraha-service → content-service` вместо Kafka, но сохранил Transactional Outbox — синхронизация лексики происходила автоматически после **каждого** анализа стиха, независимо от того, нужен ли этот квиз кому-либо из пользователей. Квиз при этом заводился на уровне произведения (`slug = workSlug`), агрегируя слова всех стихов через `VocabularyCategory`.
+
+**Решение:**
+- **Outbox убран целиком.** Таблица `outbox_events` и `OutboxRelayService` в sangraha-service удаляются (новая миграция `DROP TABLE`, см. `sangraha-service.md` §3). Анализ стиха (`§5.1`) больше не пишет `OutboxEvent` и вообще не инициирует никакого обращения к content-service.
+- **Синхронизация — по явному клику пользователя.** Кнопка «Изучить» на VersePage вызывает `POST /verses/{verseId}/vocabulary-quiz` (sangraha-service). Если по этому стиху уже был клик — возвращается закэшированный `verse.vocabularyQuizSlug` без обращения к content-service. Иначе sangraha-service синхронно (в рамках того же HTTP-запроса) вызывает `content-service`, получает `quizSlug` и кэширует его.
+- **Квиз — на уровне стиха, а не произведения.** `Quiz.slug = "sangraha-verse-{verseId}"`, детерминирован (идемпотентность вместо ретраев). Это отменяет прежнее решение «Quiz только на уровне произведения» (было в `sangraha-service.md` §8 до этого ADR).
+- **`VocabularyCategory` (work→chapter) сохраняется без изменений** — это общий механизм тематической классификации лексики (см. `information-architecture.md` §2.3 «Лексика»), не специфичный для sangraha; произведения по-прежнему используют его для группировки слов по темам «произведение/глава», независимо от того, в каком именно квизе (по стиху) физически находится слово.
+- Слово может одновременно входить и в свой квиз-по-стиху, и в тематическую категорию произведения/главы — это ортогональные связи (`VocabularyWord` ↔ `Quiz` через прямую привязку, `VocabularyWord` ↔ `VocabularyCategory` через `VocabularyWordCategory`).
+
+**Статус:** Принято.
+
+**Последствия:**
+- `sangraha-service`: новая колонка `verses.vocabulary_quiz_slug`, новая миграция `DROP TABLE outbox_events`, удаление `OutboxRelayService`, новый эндпоинт `POST /verses/{verseId}/vocabulary-quiz`.
+- `content-service`: эндпоинт `§11` переименован (`/vocabulary` → `/vocabulary-quiz`), контракт запроса/ответа изменён (ответ — `{ quizSlug }` вместо списка `vocabularyWordId`), `VocabularyCategory` не меняется.
+- Открытые вопросы «квиз на уровне работы/главы/обоих» и «политика ретраев Outbox» (были в `sangraha-service.md` §8 и `content-service.md` §11) закрыты этим ADR — сняты, а не решены в старой постановке.

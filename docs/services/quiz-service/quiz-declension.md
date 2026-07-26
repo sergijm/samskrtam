@@ -26,6 +26,8 @@
 - `caseEnding` для MASCULINE и FEMININE в рамках одного (caseType, numberType) совпадает.
 - `successRate` считается раздельно по роду, так как это разные основы/слова.
 
+**Местоимения (ADR-008) — тот же паттерн, без нового itemType:** уроки `pronouns-personal`/`pronouns-demonstrative`/`pronouns-interrogative`/`pronouns-relative`/`pronouns-reflexive` используют `DECLENSION_FORM` наравне с обычными основами. `pronouns-personal` (aham/tvam) — `gender = UNSPECIFIED`, как i/u/ṛ-основы выше. `pronouns-demonstrative`/`interrogative`/`relative` (tad/etad/idam/kim/yad) — по 3 стема на класс (MASCULINE/FEMININE/NEUTER), как a-основы одного рода (ADR-004). `pronouns-reflexive` (ātman) — обычная a-основа муж. рода, данные дублируют `declensions-a-masc` под отдельным slug (сознательный выбор, см. ADR-008). Энклитики и несклоняемое `svayam` — вне контракта DECLENSION_FORM в этой итерации.
+
 ---
 
 ## 3. UI стартовой страницы квиза: таблицы прогресса и мульти-выбор

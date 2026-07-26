@@ -141,6 +141,16 @@ VerseDetail:
       items:
         $ref: '#/VerseWordDto'
       nullable: true
+    vocabularyQuizSlug:
+      type: string
+      nullable: true
+      description: >-
+        Slug лексического квиза этого стиха (кэш `verses.vocabulary_quiz_slug`,
+        см. sangraha-service.md §3/§6/§7, ADR-009). null, если по этому стиху
+        ещё никто не нажимал «Изучить» — квиз в content-service ещё не создан.
+        Заполняется вызовом POST /verses/{verseId}/vocabulary-quiz (см. §7) и
+        после первого успешного вызова возвращается здесь же напрямую из БД,
+        без обращения к content-service.
 
 VerseAnalysisDto:
   type: object

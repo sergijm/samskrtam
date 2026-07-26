@@ -38,7 +38,8 @@
 
 **VocabularyWord** (таблица vocabulary_words, только для VOCABULARY квизов): id (UUID), quizId (UUID), word (IAST), wordDevanagari, translationRu, translationEn, partOfSpeech, example
 
-**DeclensionStem** (таблица `content.declension_stems`, для DECLENSIONS квизов; **отсутствовала в этом документе — добавлено**): id (UUID), stemIast, stemDevanagari (колонка существует в БД, но не заполняется миграцией-сидом V2 — данных нет), vowelType (A_STEM|AA_STEM|I_STEM|II_STEM|U_STEM|UU_STEM|R_STEM), gender.
+**DeclensionStem** (таблица `content.declension_stems`, для DECLENSIONS квизов; **отсутствовала в этом документе — добавлено**): id (UUID), stemIast, stemDevanagari (колонка существует в БД, но не заполняется миграцией-сидом V2 — данных нет), vowelType (A_STEM|AA_STEM|I_STEM|II_STEM|U_STEM|UU_STEM|R_STEM|PRON_AHAM|PRON_TVAM|PRON_TAD|PRON_ETAD|PRON_IDAM|PRON_KIM|PRON_YAD — семь новых значений для местоимений, см. ADR-008), gender.
+**NEW (местоимения, ADR-008):** `PRON_AHAM`/`PRON_TVAM` — `gender = UNSPECIFIED` (личные местоимения рода не различают, как i/u/ṛ-основы, ADR-004/005). `PRON_TAD`/`PRON_ETAD`/`PRON_IDAM`/`PRON_KIM`/`PRON_YAD` — по 3 стема на класс (MASCULINE/FEMININE/NEUTER), как a-основы одного рода. `case_endings.ending` для супплетивных форм (aham/tvam) хранит словоформу целиком, а не вычленяемый суффикс — генератор это переживает без изменений кода (см. ADR-008).
 **NEW (задача Агенту 2, см. ниже):** добавить `translationRu`, `translationEn` — сейчас перевода основы нет вообще ни в БД, ни в entity.
 
 **DeclensionForm** (таблица `content.declension_forms`): PK (declensionStemId, caseType, numberType), formIast, formDevanagari — уже заполнены (сид из `raw_data.sanskrit_declensions_enriched`).
@@ -256,24 +257,24 @@ content-service.
 
 ## 11. Internal REST: приём словаря из sangraha-service
 
-**ИЗМЕНЕНО (было Kafka, стало синхронный REST).** Раньше `content-service` был Kafka-консьюмером `sangraha-vocabulary-events` (`@KafkaListener`, топик, DLQ). Kafka-обмен признан избыточным для этого канала (один producer, один consumer, sangraha-service и так синхронно ждёт результата LLM-анализа стиха, отдельная асинхронность здесь не нужна) — **заменён на прямой синхронный REST-вызов** `sangraha-service → content-service`. `Transactional Outbox` в sangraha-service **сохраняется** (см. `sangraha-service.md` §6) — просто относитель Outbox Relay теперь не Kafka producer, а обычный HTTP-клиент; гарантия доставки/ретраи те же, что и раньше, только транспорт другой.
+**ИЗМЕНЕНО (было автосинхронизация через Outbox после каждого анализа, стало on-demand по кнопке «Изучить»).** Раньше `content-service` принимал слова автоматически после каждого анализа стиха (через Transactional Outbox Relay в sangraha-service, см. историю в ADR-006). Теперь sangraha-service вызывает этот эндпоинт **только** по явному клику пользователя на кнопку «Изучить» на VersePage (см. `sangraha-service.md` §6/§7, ADR-009) — Outbox в sangraha-service убран целиком, вызов происходит синхронно внутри HTTP-запроса на кнопку.
 
 ```
-POST /content/internal/sangraha/vocabulary
+POST /content/internal/sangraha/vocabulary-quiz
 ```
 
-**Не публичный и не ADMIN-эндпоинт** — чистый service-to-service вызов, без роли (аутентификация — по внутреннему сетевому периметру/service-to-service секрету, как решит Агент 1; **не** заводить под `/content/public/**` и не под общий ADMIN-префикс, это не пользовательский трафик). Вызывается напрямую по адресу content-service (env `CONTENT_SERVICE_URL` у sangraha-service, минуя gateway — тот же паттерн, что `quiz-service.ContentClient`, см. `quiz-service-architecture.md` §4), не через `/api/v1/**`.
+**Не публичный и не ADMIN-эндпоинт** — чистый service-to-service вызов, без роли (аутентификация — по внутреннему сетевому периметру/service-to-service секрету, как решит Агент 1). Вызывается напрямую по адресу content-service (env `CONTENT_SERVICE_URL` у sangraha-service, минуя gateway), не через `/api/v1/**`.
 
-### Request (тот же payload, что раньше уходил в Kafka, см. точную схему в sangraha-service.md §6)
+### Request
 
 ```json
 {
-  "eventType": "VERSE_VOCABULARY_EXTRACTED",
   "verseId": "uuid",
   "workSlug": "bhagavad-gita",
   "workTitleRu": "Бхагавад-гита", "workTitleEn": "Bhagavad Gita",
   "chapterSlug": "1",
   "chapterTitleRu": "Глава 1", "chapterTitleEn": "Chapter 1",
+  "verseOrderIndex": 1,
   "words": [
     {
       "wordIast": "dhṛtarāṣṭraḥ", "wordDevanagari": "धृतराष्ट्रः",
@@ -285,32 +286,27 @@ POST /content/internal/sangraha/vocabulary
 }
 ```
 
-Схема переиспользуется как есть — `shared/samskrtam-dtos`, пакет `sangraha`, `SangrahaVocabularyEvent` (без изменений, только транспорт вокруг него поменялся).
+Список `words[]` уже дедуплицирован sangraha-service по `(lemmaIast, stem)` в рамках стиха (см. `sangraha-service.md` §6) — content-service не обязан ожидать дублей внутри одного запроса, но и не полагается на это (см. шаг 4 ниже — дедуп всё равно по `(wordIast, stem)`, для защиты от повторной отправки одного и того же слова в разных стихах).
 
-### Response (NEW — раньше событие ничего не возвращало, теперь HTTP-ответ обязателен)
+### Response
 
 ```json
-{
-  "words": [
-    { "wordIast": "dhṛtarāṣṭraḥ", "stem": "dhṛtarāṣṭra", "vocabularyWordId": "uuid" }
-  ]
-}
+{ "quizSlug": "sangraha-verse-<verseId>" }
 ```
 
-По одному элементу на каждое слово из запроса, **в том же порядке** — `vocabularyWordId` (существующего либо только что созданного `VocabularyWord`, см. dedup в шаге 4 ниже). sangraha-service сохраняет `vocabularyWordId` обратно в свою БД, на `verse_words.vocabulary_word_id` (**NEW колонка**, задача Агенту 2 в sangraha-service — миграция V6, см. `sangraha-service.md` §3) — задел на будущее (например, ссылка «стих → слово в словарном квизе» на фронте), в текущей итерации не рендерится.
+Один квиз на стих, не на слово — `vocabularyWordId` каждого слова больше не возвращается (не нужен, `verse_words.vocabulary_word_id` из старого плана отменён вместе с Outbox, см. `sangraha-service.md` §3).
 
-### Обработка (`SangrahaVocabularyController` → `VocabularySyncService`, синхронно, в теле HTTP-запроса; сама логика шагов 1–4 не меняется относительно прежнего consumer'а)
+### Обработка (`SangrahaVocabularyController` → `VocabularyQuizSyncService`, синхронно, в теле HTTP-запроса)
 
-Идемпотентно (Outbox Relay может повторить вызов при таймауте/5xx — at-least-once, как и раньше с Kafka redelivery):
+Идемпотентно (sangraha-service может повторить вызов при таймауте на своей стороне — не гарантия at-least-once через Outbox, как раньше, а просто «пользователь нажал кнопку ещё раз», см. `sangraha-service.md` §6, шаг 5):
 
-1. `VocabularyCategory` root: `findByCodeIgnoreCase(workSlug)`, если нет — создать (`nameRu = workTitleRu`, `nameEn = workTitleEn`, `parentId = null`).
+1. `VocabularyCategory` root: `findByCodeIgnoreCase(workSlug)`, если нет — создать (`nameRu = workTitleRu`, `nameEn = workTitleEn`, `parentId = null`) — **без изменений относительно прежней логики**, категория остаётся общим механизмом тематической классификации лексики (см. `information-architecture.md` §2.3), не специфичным для этого флоу.
 2. `VocabularyCategory` chapter: `findByCodeIgnoreCase("{workSlug}.{chapterSlug}")`, если нет — создать с `parentId = root.id`.
-3. Для root и/или chapter-категории — `upsert Quiz(quizType = VOCABULARY, slug = code)`, если квиза с таким `slug` ещё нет (`titleRu/En` берём из `workTitleRu/En`/`chapterTitleRu/En`). Решение — заводить квиз на уровне произведения, главы или обоих — принимает Агент 2 при реализации (открытый вопрос, см. §9 sangraha-service.md).
-4. Для каждого слова из `words[]`: dedup по `(wordIast, stem)` — `findByWordIastAndStem`. Если найдено — не создавать новый `VocabularyWord`; если связи `VocabularyWordCategory(wordId, chapterCategory.id)` ещё нет — создать. Если не найдено — создать `VocabularyWord` (`wordIast`, `wordDevanagari`, `stem`, `root`, `gender`, `translationRu/En`, `explanationRu/En`) и сразу связать с категорией главы. В обоих случаях — собрать `vocabularyWordId` в ответ.
-5. **Ошибки обработки (NEW, вместо DLQ-топика):** невалидный payload/ошибка БД → HTTP 4xx/5xx с телом ошибки (`ErrorResponse`), транзакция отменяется целиком (ничего не создаётся частично). Ретраи и backoff — на стороне Outbox Relay в sangraha-service (`status=FAILED`, `retry_count`, см. `sangraha-service.md` §6), не на стороне content-service; DLQ и Kafka error handling здесь больше не нужны — убрано.
+3. `Quiz` — **на уровне стиха**, не категории: `slug = "sangraha-verse-{verseId}"` (детерминирован, не рандом — повтор вызова не создаёт дубль), `titleRu/En` — шаблон, например `"{workTitleRu}, стих {verseOrderIndex}"` (точный текст — на усмотрение Агента 2). `upsert` — если `Quiz` с таким slug уже есть, вернуть его же (идемпотентность), новый не создавать.
+4. Для каждого слова из `words[]`: dedup по `(wordIast, stem)` в рамках всего словаря content-service (`findByWordIastAndStem`), как и раньше. Если найдено — не создавать новый `VocabularyWord`; связать существующий `wordId` и с `Quiz` этого стиха (если связи ещё нет), и с `chapterCategory` (`VocabularyWordCategory`, если связи ещё нет) — слово может одновременно входить в квиз конкретного стиха **и** в тематическую категорию произведения/главы, это независимые связи. Если не найдено — создать `VocabularyWord` (`wordIast`, `wordDevanagari`, `stem`, `root`, `gender`, `translationRu/En`, `explanationRu/En`) и сразу связать и с квизом стиха, и с категорией главы.
+5. **Ошибки:** невалидный payload/ошибка БД → HTTP 4xx/5xx с телом ошибки (`ErrorResponse`), транзакция отменяется целиком. Повтор — ответственность sangraha-service (кнопка «Изучить» просто не закэширует slug при ошибке, пользователь может нажать снова, см. `sangraha-service.md` §6, шаг 5); DLQ/Outbox-ретраи здесь не нужны — это был механизм для автосинхронизации, которой больше нет.
 
 ### Открытые вопросы (для Агента 2 при реализации)
 
-- [ ] Квиз заводится на уровне работы, главы или обоих одновременно?
-- [ ] Политика ретраев Outbox Relay (backoff, максимум попыток, что происходит после исчерпания — статус `FAILED` навсегда + ручной разбор, или dead-letter в БД) — см. тот же вопрос в `sangraha-service.md` §6.
-- [ ] `gender = null` от sangraha (для indeclinable-слов) — как мапится в `VocabularyWord.gender` (там `nullable = false`)? Вероятно `UNSPECIFIED` — подтвердить при реализации.
+- Точный шаблон `titleRu/En` генерируемого квиза (см. шаг 3) — решает Агент 2, зафиксировать постфактум в этом разделе.
+- `gender = null` от sangraha (для indeclinable-слов) — как мапится в `VocabularyWord.gender` (там `nullable = false`)? Вероятно `UNSPECIFIED` — подтвердить при реализации.
