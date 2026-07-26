@@ -1,0 +1,54 @@
+/**
+ * Style overrides for DevanagariKeyboard.
+ *
+ * Adapts react-simple-keyboard's default theme to match
+ * PrimeReact/PrimeFlex styling (lara-light-blue / lara-dark-blue).
+ */
+
+.devanagari-kbd .simple-keyboard {
+  background: var(--surface-ground, #f8f9fa);
+  border-radius: var(--border-radius, 6px);
+  padding: 4px;
+  font-family: inherit;
+}
+
+.devanagari-kbd .hg-theme-default .hg-button {
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--surface-border, #dee2e6);
+  color: var(--text-color, #495057);
+  border-radius: var(--border-radius, 6px);
+  font-size: 1rem;
+  height: 44px;
+  min-width: 36px;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  margin: 2px;
+  padding: 0 4px;
+}
+
+.devanagari-kbd .hg-theme-default .hg-button:hover {
+  background: var(--primary-50, #e8f0fe);
+  border-color: var(--primary-color, #6366f1);
+}
+
+.devanagari-kbd .hg-theme-default .hg-button:active,
+.devanagari-kbd .hg-theme-default .hg-activeButton {
+  background: var(--primary-color, #6366f1);
+  color: #ffffff;
+  border-color: var(--primary-color, #6366f1);
+}
+
+.devanagari-kbd .hg-theme-default .hg-row {
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+/* Responsive: smaller keys on narrow screens */
+@media (max-width: 576px) {
+  .devanagari-kbd .hg-theme-default .hg-button {
+    font-size: 0.8rem;
+    height: 36px;
+    min-width: 28px;
+    padding: 0 2px;
+  }
+}

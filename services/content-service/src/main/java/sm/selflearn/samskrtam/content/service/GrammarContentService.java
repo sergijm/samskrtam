@@ -39,10 +39,10 @@ public class GrammarContentService {
         Lesson lesson = lessonRepository.findBySlug(slug)
                 .orElseThrow(() -> new SamskrtamException("LESSON_NOT_FOUND", "Lesson not found with slug: " + slug));
 
-        VowelType vowelType = mapSlugToVowelType(slug);
+                List<VowelType> vowelTypes = SlugToVowelTypeMapper.mapSlugToVowelTypes(slug);
         List<DeclensionStem> stems;
-        if (vowelType != null) {
-            stems = declensionStemRepository.findByVowelType(vowelType);
+        if (!vowelTypes.isEmpty()) {
+            stems = declensionStemRepository.findByVowelTypeIn(vowelTypes);
         } else {
             stems = declensionStemRepository.findAll();
         }
@@ -89,18 +89,14 @@ public class GrammarContentService {
         lessonRepository.findBySlug(slug)
                 .orElseThrow(() -> new SamskrtamException("LESSON_NOT_FOUND", "Lesson not found with slug: " + slug));
 
-        VowelType vowelType = mapSlugToVowelType(slug);
-        if (vowelType == null) {
+                List<VowelType> vowelTypes = SlugToVowelTypeMapper.mapSlugToVowelTypes(slug);
+        if (vowelTypes.isEmpty()) {
             log.warn("Could not determine VowelType from slug: {}, returning empty case endings", slug);
             return List.of();
         }
 
         // Для основ -i, -u, -ṛ окончания не различаются по роду — в БД gender = UNSPECIFIED.
-        boolean isUnspecifiedGenderType = (vowelType == VowelType.I_STEM
-                || vowelType == VowelType.II_STEM
-                || vowelType == VowelType.U_STEM
-                || vowelType == VowelType.UU_STEM
-                || vowelType == VowelType.R_STEM);
+        boolean isUnspecifiedGenderType = SlugToVowelTypeMapper.isUnspecifiedGenderType(vowelTypes);
 
         List<CaseEnding> allEndings;
 
@@ -108,24 +104,33 @@ public class GrammarContentService {
             // Детальный фильтр (CASE_NUMBER_GENDER)
             if (isUnspecifiedGenderType) {
                 // Для типов без родового различия — ищем UNSPECIFIED
-                allEndings = caseEndingRepository.findByVowelTypeAndGenderAndCaseTypeAndNumberType(
-                        vowelType, Gender.UNSPECIFIED, caseType, numberType);
+                allEndings = caseEndingRepository.findByVowelTypeIn(vowelTypes).stream()
+                        .filter(ce -> ce.getGender() == Gender.UNSPECIFIED
+                                && ce.getCaseType() == caseType
+                                && ce.getNumberType() == numberType)
+                        .collect(Collectors.toList());
                 if (allEndings.isEmpty()) {
-                    allEndings = caseEndingRepository.findByVowelTypeAndGenderAndCaseTypeAndNumberType(
-                            vowelType, gender, caseType, numberType);
+                    allEndings = caseEndingRepository.findByVowelTypeIn(vowelTypes).stream()
+                            .filter(ce -> ce.getGender() == gender
+                                    && ce.getCaseType() == caseType
+                                    && ce.getNumberType() == numberType)
+                            .collect(Collectors.toList());
                 }
             } else {
-                allEndings = caseEndingRepository.findByVowelTypeAndGenderAndCaseTypeAndNumberType(
-                        vowelType, gender, caseType, numberType);
+                allEndings = caseEndingRepository.findByVowelTypeIn(vowelTypes).stream()
+                        .filter(ce -> ce.getGender() == gender
+                                && ce.getCaseType() == caseType
+                                && ce.getNumberType() == numberType)
+                        .collect(Collectors.toList());
             }
         } else if (caseType != null) {
             // Фильтр только по падежу (CASE_ONLY) — все числа и роды
-            allEndings = caseEndingRepository.findByVowelType(vowelType).stream()
+            allEndings = caseEndingRepository.findByVowelTypeIn(vowelTypes).stream()
                     .filter(ce -> ce.getCaseType() == caseType)
                     .collect(Collectors.toList());
         } else {
-            // Без фильтра — все case_endings для этого vowelType
-            allEndings = caseEndingRepository.findByVowelType(vowelType);
+            // Без фильтра — все case_endings для этих vowelTypes
+            allEndings = caseEndingRepository.findByVowelTypeIn(vowelTypes);
         }
 
         return allEndings.stream()
@@ -178,10 +183,10 @@ public class GrammarContentService {
                     "Lesson with slug '%s' is not a DECLENSIONS lesson".formatted(slug));
         }
 
-        VowelType vowelType = mapSlugToVowelType(slug);
+                List<VowelType> vowelTypes = SlugToVowelTypeMapper.mapSlugToVowelTypes(slug);
         List<DeclensionStem> stems;
-        if (vowelType != null) {
-            stems = declensionStemRepository.findByVowelType(vowelType);
+        if (!vowelTypes.isEmpty()) {
+            stems = declensionStemRepository.findByVowelTypeIn(vowelTypes);
         } else {
             stems = declensionStemRepository.findAll();
         }
@@ -230,7 +235,7 @@ public class GrammarContentService {
      * Kept temporarily for backward compatibility; will be removed after frontend and
      * gateway switch to the index-based endpoint.
      */
-    @Deprecated
+        @Deprecated
     public List<DeclensionParadigmDto> getDeclensionParadigmsForLesson(String slug) {
         log.info("Fetching declension paradigms (deprecated all-at-once) for lesson slug: {}", slug);
         Lesson lesson = lessonRepository.findBySlug(slug)
@@ -241,10 +246,10 @@ public class GrammarContentService {
                     "Lesson with slug '%s' is not a DECLENSIONS lesson".formatted(slug));
         }
 
-        VowelType vowelType = mapSlugToVowelType(slug);
+        List<VowelType> vowelTypes = SlugToVowelTypeMapper.mapSlugToVowelTypes(slug);
         List<DeclensionStem> stems;
-        if (vowelType != null) {
-            stems = declensionStemRepository.findByVowelType(vowelType);
+        if (!vowelTypes.isEmpty()) {
+            stems = declensionStemRepository.findByVowelTypeIn(vowelTypes);
         } else {
             stems = declensionStemRepository.findAll();
         }
@@ -276,15 +281,11 @@ public class GrammarContentService {
                 .collect(Collectors.toList());
     }
 
+        /**
+     * @deprecated Use {@link SlugToVowelTypeMapper#mapSlugToVowelType(String)}.
+     */
+    @Deprecated
     public VowelType mapSlugToVowelType(String slug) {
-        if (slug == null) return null;
-        if (slug.startsWith("declensions-a-") || slug.equals("declensions-a-masc") || slug.equals("declensions-a-neut")) return VowelType.A_STEM;
-        if (slug.startsWith("declensions-aa-") || slug.equals("declensions-a-fem")) return VowelType.AA_STEM;
-        if (slug.startsWith("declensions-ii-") || slug.equals("declensions-ii") || slug.equals("declensions-ii-fem")) return VowelType.II_STEM;
-        if (slug.startsWith("declensions-i-") || slug.equals("declensions-i")) return VowelType.I_STEM;
-        if (slug.startsWith("declensions-uu-") || slug.equals("declensions-uu") || slug.equals("declensions-uu-fem")) return VowelType.UU_STEM;
-        if (slug.startsWith("declensions-u-") || slug.equals("declensions-u")) return VowelType.U_STEM;
-        if (slug.startsWith("declensions-r-") || slug.equals("declensions-r")) return VowelType.R_STEM;
-        return null;
+        return SlugToVowelTypeMapper.mapSlugToVowelType(slug);
     }
 }

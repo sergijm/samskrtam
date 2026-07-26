@@ -12,6 +12,11 @@ public interface CaseEndingRepository extends JpaRepository<CaseEnding, Long> {
 
     List<CaseEnding> findByVowelType(VowelType vowelType);
 
+    /**
+     * Find case endings by multiple vowel types (for compound lessons like declensions-i-u).
+     */
+    List<CaseEnding> findByVowelTypeIn(List<VowelType> vowelTypes);
+
     List<CaseEnding> findByVowelTypeAndGenderAndCaseTypeAndNumberType(
             VowelType vowelType,
             Gender gender,

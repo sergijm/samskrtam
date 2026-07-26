@@ -16,10 +16,8 @@
   "nouns": {
     "a_masc": "a-stems, masc. neut.",
     "aa_fem": "ā-stems, fem.",
-    "i_stems": "i-stems",
-    "ii_stems": "ī-stems",
-    "u_stems": "u-stems",
-    "uu_stems": "ū-stems",
+    "i_u_stems": "i-stems and u-stems",
+    "ii_uu_stems": "ī-stems and ū-stems",
     "r_stems": "ṛ-stems",
     "cons_an": "Consonant: -an",
     "cons_in_vant_mant": "Consonant: -in/-vant/-mant",
@@ -94,6 +92,20 @@
     "transliteration": "IAST↔Devanāgarī transliteration",
     "prosody": "Vowel length & prosody"
   },
+  "transliteration": {
+    "title": "IAST ↔ Devanāgarī Transliteration",
+    "description": "Type text in one writing system and see the result in the other. The result updates as you type.",
+    "directionAscii": "ASCII → Devanāgarī",
+    "directionDevanagari": "Devanāgarī → IAST",
+    "schemeLabel": "Input scheme",
+    "inputAscii": "Input ({{scheme}})",
+    "inputDevanagari": "Input (Devanāgarī)",
+    "outputDevanagari": "Devanāgarī",
+    "outputIast": "IAST",
+    "inputPlaceholder": "Start typing...",
+    "outputPlaceholder": "Result will appear here...",
+    "keyboardHint": "⇅ Use the on-screen keyboard below for Devanāgarī input"
+  },
   "vocabulary": {
     "sangraha_quizzes": "VOCABULARY quizzes (sangraha)",
     "thematic": "Thematic groups",
@@ -108,3 +120,4 @@
     "planned": "soon"
   }
 }
+

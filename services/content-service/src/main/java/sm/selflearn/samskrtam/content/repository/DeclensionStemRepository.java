@@ -12,5 +12,10 @@ import java.util.UUID;
 public interface DeclensionStemRepository extends JpaRepository<DeclensionStem, UUID> {
     Optional<DeclensionStem> findByStemIast(String stemIast);
     List<DeclensionStem> findByVowelType(VowelType vowelType);
+
+    /**
+     * Find stems by multiple vowel types (for compound lessons like declensions-i-u).
+     */
+    List<DeclensionStem> findByVowelTypeIn(List<VowelType> vowelTypes);
 }
 

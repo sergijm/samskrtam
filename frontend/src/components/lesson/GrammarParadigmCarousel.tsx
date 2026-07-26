@@ -203,24 +203,8 @@ const GrammarParadigmCarousel: React.FC<GrammarParadigmCarouselProps> = ({ slug,
         renderTable(page.paradigm, slug, t, i18n, navigate)
       )}
 
-      {/* Bottom arrows for convenience */}
-      <div className="flex justify-content-center gap-3 mt-3">
-        <Button
-          icon="pi pi-chevron-left"
-          onClick={goPrev}
-          disabled={isFirst}
-          className="p-button-outlined p-button-sm"
-          label={i18n.language === 'ru' ? 'Пред.' : 'Prev'}
-        />
-        <Button
-          icon="pi pi-chevron-right"
-          onClick={goNext}
-          disabled={isLast}
-          className="p-button-outlined p-button-sm"
-          iconPos="right"
-          label={i18n.language === 'ru' ? 'След.' : 'Next'}
-        />
-      </div>
+      {/* Bottom arrows removed — only the toolbar at top is needed */}
+
     </div>
   );
 };

@@ -24,17 +24,15 @@ public class DeclensionQuizGeneratorService {
 
     private static final Random random = new Random();
 
-    public List<QuestionResponse> generateDeclensionQuestions(Lesson lesson, Locale locale) {
+        public List<QuestionResponse> generateDeclensionQuestions(Lesson lesson, Locale locale) {
         List<DeclensionStem> availableStems;
 
-        // Определяем VowelType из slug урока
-        VowelType vowelType = mapSlugToVowelType(lesson.getSlug());
+        // Определяем VowelType(s) из slug урока (поддерживает составные уроки: declensions-i-u, declensions-ii-uu)
+        List<VowelType> vowelTypes = SlugToVowelTypeMapper.mapSlugToVowelTypes(lesson.getSlug());
 
-        if (vowelType != null) {
-            // Конкретный тип основы — фильтруем по vowelType
-            availableStems = declensionStemRepository.findAll().stream()
-                    .filter(stem -> stem.getVowelType() == vowelType)
-                    .collect(Collectors.toList());
+        if (!vowelTypes.isEmpty()) {
+            // Конкретные типы основ — фильтруем по списку vowelType
+            availableStems = declensionStemRepository.findByVowelTypeIn(vowelTypes);
         } else {
             // slug не содержит конкретной основы (declensions-all) — берём все
             availableStems = declensionStemRepository.findAll();
@@ -234,15 +232,11 @@ public class DeclensionQuizGeneratorService {
         return null;
     }
 
+        /**
+     * @deprecated Use {@link SlugToVowelTypeMapper#mapSlugToVowelTypes(String)}.
+     */
     private VowelType mapSlugToVowelType(String slug) {
-        if (slug == null) return null;
-        if (slug.startsWith("declensions-a-"))  return VowelType.A_STEM;
-        if (slug.startsWith("declensions-aa-")) return VowelType.AA_STEM;
-        if (slug.startsWith("declensions-ii-") || slug.equals("declensions-ii")) return VowelType.II_STEM;
-        if (slug.startsWith("declensions-i-")  || slug.equals("declensions-i"))  return VowelType.I_STEM;
-        if (slug.startsWith("declensions-uu-") || slug.equals("declensions-uu")) return VowelType.UU_STEM;
-        if (slug.startsWith("declensions-u-")  || slug.equals("declensions-u"))  return VowelType.U_STEM;
-        if (slug.startsWith("declensions-r-")  || slug.equals("declensions-r"))  return VowelType.R_STEM;
-        return null; // declensions-all или неизвестный slug → все основы
-    }}
+        return SlugToVowelTypeMapper.mapSlugToVowelType(slug);
+    }
+}
 

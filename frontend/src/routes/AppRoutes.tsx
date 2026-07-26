@@ -33,6 +33,7 @@ import EmeneauExercisesPage from '../pages/eamenau/EmeneauExercisesPage';
 import EmeneauExerciseDetailPage from '../pages/eamenau/EmeneauExerciseDetailPage';
 import DictionaryPage from '../pages/dictionary/DictionaryPage';
 import AlphabetPage from '../pages/writing/AlphabetPage';
+import TransliterationPracticePage from '../pages/tools/TransliterationPracticePage';
 import VocabularyLessonPage from '../pages/lessons/VocabularyLessonPage';
 import GrammarLessonPage from '../pages/lessons/GrammarLessonPage';
 import WorksPage from '../pages/sangraha/WorksPage';
@@ -115,6 +116,7 @@ export default function AppRoutes() {
 
       {/* Writing routes */}
       <Route path="/writing/alphabet" element={<ProtectedLayoutRoute><AlphabetPage /></ProtectedLayoutRoute>} />
+      <Route path="/writing/transliteration" element={<ProtectedLayoutRoute><TransliterationPracticePage /></ProtectedLayoutRoute>} />
 
       {/* Catch-all */}
       <Route path="*" element={<ProtectedRoute><Navigate to="/" /></ProtectedRoute>} />

@@ -27,6 +27,8 @@
   "endings": {
     "titleAStem": "Case Endings of -a Stems",
     "titleAAStem": "Case Endings of -ā Stems",
+    "titleIUStem": "Case Endings of -i / -u Stems",
+    "titleIIUuStem": "Case Endings of -ī / -ū Stems",
     "sectionTitle": "Endings Table",
     "toggleShow": "Show endings table",
     "toggleHide": "Hide endings table"

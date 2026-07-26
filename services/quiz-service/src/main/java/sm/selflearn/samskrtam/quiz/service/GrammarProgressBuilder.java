@@ -8,7 +8,6 @@ import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.content.dto.*;
 import sm.selflearn.samskrtam.content.dto.CaseEndingDto;
 import sm.selflearn.samskrtam.content.model.Gender;
-import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.quiz.dto.*;
 import sm.selflearn.samskrtam.quiz.model.ItemType;
 import sm.selflearn.samskrtam.quiz.model.QuizItemScore;
@@ -48,20 +47,21 @@ public class GrammarProgressBuilder {
                 );
     }
 
-    private Mono<GrammarLesson> processStems(LessonItemResponse lessonItem,
+        private Mono<GrammarLesson> processStems(LessonItemResponse lessonItem,
                                               List<DeclensionStemDto> stems,
                                               UUID userId) {
         if (stems.isEmpty()) {
             return Mono.just(emptyLesson(lessonItem));
         }
-        VowelType vowelType = stems.get(0).getVowelType();
-        return contentClient.getCaseEndingsByVowelType(String.valueOf(vowelType))
-                .flatMap(caseEndings -> processGroups(lessonItem, stems, vowelType, caseEndings, userId));
+        // Use slug-based endpoint to fetch case endings for ALL vowel types
+        // (supports compound lessons like declensions-i-u, declensions-ii-uu)
+        String slug = lessonItem.getSlug();
+        return contentClient.getCaseEndingsForLesson(slug, null, null, null)
+                .flatMap(caseEndings -> processGroups(lessonItem, stems, caseEndings, userId));
     }
 
-    private Mono<GrammarLesson> processGroups(LessonItemResponse lessonItem,
+        private Mono<GrammarLesson> processGroups(LessonItemResponse lessonItem,
                                                List<DeclensionStemDto> stems,
-                                               VowelType vowelType,
                                                List<CaseEndingDto> caseEndings,
                                                UUID userId) {
         Set<String> groupGenders = new LinkedHashSet<>();
@@ -75,9 +75,9 @@ public class GrammarProgressBuilder {
                     List<Mono<GrammarQuestionProgress>> groupMonos = new ArrayList<>();
                     for (String g : groupGenders) {
                         Gender genderEnum = parseGender(g);
-                        for (DeclensionFormDto form : allForms) {
+                                                for (DeclensionFormDto form : allForms) {
                             groupMonos.add(buildGroupProgress(
-                                    lessonItem, vowelType, caseEndings,
+                                    lessonItem, caseEndings,
                                     genderEnum, form, userId));
                         }
                     }
@@ -96,8 +96,8 @@ public class GrammarProgressBuilder {
         }
     }
 
-        private Mono<GrammarQuestionProgress> buildGroupProgress(
-            LessonItemResponse lessonItem, VowelType vowelType,
+                private Mono<GrammarQuestionProgress> buildGroupProgress(
+            LessonItemResponse lessonItem,
             List<CaseEndingDto> caseEndings,
             Gender gender, DeclensionFormDto form,
             UUID userId) {
