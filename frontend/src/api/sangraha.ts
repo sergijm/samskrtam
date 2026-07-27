@@ -56,6 +56,10 @@ export const sangrahaApi = {
   analyzeVerse: (verseId: string, data?: { text: string }) =>
     api.post(`${BASE}/verses/${verseId}/analyze`, data),
 
+  getOrCreateVocabularyQuiz: (verseId: string) =>
+    api.post<{ quizSlug: string; quizId: string; quizStatus: string }>(`${BASE}/verses/${verseId}/vocabulary-quiz`),
+
   deleteVerse: (verseId: string) =>
     api.delete(`${BASE}/verses/${verseId}`),
 };
+

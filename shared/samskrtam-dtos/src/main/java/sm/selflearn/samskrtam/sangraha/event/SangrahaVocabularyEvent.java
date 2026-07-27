@@ -45,6 +45,9 @@ public class SangrahaVocabularyEvent {
     @JsonProperty("chapterTitleEn")
     private String chapterTitleEn;
 
+    @JsonProperty("verseOrderIndex")
+    private int verseOrderIndex;
+
     @JsonProperty("words")
     private List<SangrahaVocabularyWord> words;
 
@@ -85,3 +88,4 @@ public class SangrahaVocabularyEvent {
         private String explanationEn;
     }
 }
+

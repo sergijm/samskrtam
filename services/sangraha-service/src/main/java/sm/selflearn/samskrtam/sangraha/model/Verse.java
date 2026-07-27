@@ -57,4 +57,10 @@ public class Verse {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    @Column(name = "vocabulary_quiz_slug")
+    private String vocabularyQuizSlug;
+
+    @Column(name = "vocabulary_quiz_id")
+    private UUID vocabularyQuizId;
 }

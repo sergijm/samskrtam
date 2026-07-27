@@ -103,11 +103,12 @@ interface Word {
 
 interface VerseWordsListProps {
   words: Word[];
+  headerActions?: React.ReactNode;
 }
 
 // ── Компонент ──
 
-const VerseWordsList = ({ words }: VerseWordsListProps) => {
+const VerseWordsList = ({ words, headerActions }: VerseWordsListProps) => {
   const { t } = useTranslation();
 
   if (!words || words.length === 0) return null;
@@ -118,18 +119,21 @@ const VerseWordsList = ({ words }: VerseWordsListProps) => {
 
   return (
     <div className="mb-4">
-      <label className="flex justify-content-between align-items-center mb-1 font-semibold">
+            <label className="flex justify-content-between align-items-center mb-1 font-semibold">
         <span>{t('sangraha.fields.words')}</span>
-        {allFormationRuleNumbers.length > 0 && (
-          <Link
-            to={`/grammar/emeneau-rules?${allFormationRuleNumbers.map(r => `rule=${r}`).join('&')}`}
-            className="text-sm text-primary"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {allFormationRuleNumbers.join(', ')}
-          </Link>
-        )}
+        <span className="flex align-items-center gap-2">
+          {headerActions}
+          {allFormationRuleNumbers.length > 0 && (
+            <Link
+              to={`/grammar/emeneau-rules?${allFormationRuleNumbers.map(r => `rule=${r}`).join('&')}`}
+              className="text-sm text-primary"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {allFormationRuleNumbers.join(', ')}
+            </Link>
+          )}
+        </span>
       </label>
       <div className="p-3 border-1 border-round surface-border surface-ground">
         {words.map((w) => (

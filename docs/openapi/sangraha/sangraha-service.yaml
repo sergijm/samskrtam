@@ -294,14 +294,16 @@ paths:
       operationId: getOrCreateVocabularyQuiz
       summary: Получить (или создать) лексический квиз этого стиха — кнопка «Изучить»
       description: |
-        Если `verses.vocabulary_quiz_slug` уже заполнен — возвращает его немедленно,
-        без обращения к content-service. Иначе собирает уникальные слова стиха
-        (VerseWord[], дедуп по lemmaIast+stem) и синхронно вызывает
-        content-service `POST /content/internal/sangraha/vocabulary-quiz`
-        (см. content-service.md §11), сохраняет полученный `quizSlug` в
-        `verses.vocabulary_quiz_slug` и возвращает его. См. sangraha-service.md
-        §6/§7, ADR-009 (заменяет прежний Outbox-механизм — синхронизация теперь
-        по клику пользователя, а не автоматически после анализа).
+        Если `verses.vocabulary_quiz_slug`/`vocabulary_quiz_id` уже заполнены —
+        возвращает их немедленно (без quizStatus), без обращения к content-service.
+        Иначе собирает уникальные слова стиха (VerseWord[], дедуп по lemmaIast+stem)
+        и синхронно вызывает content-service `POST /content/internal/sangraha/vocabulary-quiz`
+        (см. content-service.md §11), сохраняет полученные `quizSlug`/`quizId` в
+        `verses.vocabulary_quiz_slug`/`vocabulary_quiz_id` и возвращает их вместе с
+        `quizStatus`. Фронтенд стартует сессию сразу по `quizId` (с `statusFilter`,
+        вычисленным из `quizStatus`), без промежуточного GET /lessons/vocabulary/{slug}.
+        См. sangraha-service.md §6/§7, ADR-009 (заменяет прежний Outbox-механизм —
+        синхронизация теперь по клику пользователя, а не автоматически после анализа).
       tags: [Verses]
       security:
         - bearerAuth: []
@@ -314,15 +316,27 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Слог лексического квиза (существующий или только что созданный)
+          description: Идентификаторы лексического квиза (существующего или только что созданного)
           content:
             application/json:
               schema:
                 type: object
-                required: [quizSlug]
+                required: [quizSlug, quizId]
                 properties:
                   quizSlug:
                     type: string
+                  quizId:
+                    type: string
+                    format: uuid
+                  quizStatus:
+                    type: string
+                    enum: [CREATED, EXISTING]
+                    nullable: true
+                    description: >-
+                      Присутствует только когда quiz-service/content-service был
+                      реально вызван (не кэш-хит). CREATED — квиз создан этим же
+                      запросом (первый клик по этому стиху), EXISTING — уже
+                      существовал. На кэш-хите (§6, шаг 1) поле отсутствует.
         '404':
           description: Стих не найден
         '409':

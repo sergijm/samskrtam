@@ -151,6 +151,16 @@ VerseDetail:
         Заполняется вызовом POST /verses/{verseId}/vocabulary-quiz (см. §7) и
         после первого успешного вызова возвращается здесь же напрямую из БД,
         без обращения к content-service.
+    vocabularyQuizId:
+      type: string
+      format: uuid
+      nullable: true
+      description: >-
+        UUID сущности Lesson в content-service (кэш `verses.vocabulary_quiz_id`,
+        см. sangraha-service.md §3/§6/§7, ADR-009 «Обновление»). Заполняется
+        вместе с vocabularyQuizSlug, тем же вызовом. Используется фронтендом
+        для старта квиз-сессии напрямую по UUID (без промежуточного
+        GET /lessons/vocabulary/{slug}) — см. §7.
 
 VerseAnalysisDto:
   type: object

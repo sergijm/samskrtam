@@ -4,8 +4,12 @@ import {
   useVerseDetail,
   useAnalyzeVerse,
   useUpdateVerse,
+  useGetOrCreateVocabularyQuiz,
 } from '../../hooks/useSangraha';
 import { useAuthStore } from '../../store/authStore';
+import { useLocaleStore } from '../../store/localeStore';
+import { quizApi } from '../../api/quizApi';
+import { LessonType } from '../../types/quiz';
 import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
@@ -24,6 +28,7 @@ const VersePage = () => {
     const { data: verse, isLoading, isError } = useVerseDetail(verseId || '');
   const analyze = useAnalyzeVerse();
   const updateVerse = useUpdateVerse();
+  const getOrCreateVocabularyQuiz = useGetOrCreateVocabularyQuiz();
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.roles?.includes('ADMIN') ?? false;
 
@@ -77,8 +82,31 @@ const VersePage = () => {
       setEditText(verse.rawText ?? verse.textDevanagari ?? verse.textIast ?? '');
       setEditOrderIndex(verse.orderIndex);
     }
-    setIsEditing(true);
+        setIsEditing(true);
   }, [verse]);
+
+    const handleStudy = useCallback(async () => {
+    if (!verseId) return;
+    try {
+      const quizRes = await getOrCreateVocabularyQuiz.mutateAsync(verseId);
+      const { quizSlug, quizId, quizStatus } = quizRes.data;
+
+      const locale = useLocaleStore.getState().locale;
+      const sessionRes = await quizApi.startOrResumeWithStatusFilter(
+        quizId,
+        LessonType.VOCABULARY,
+        locale,
+        'NEW',
+      );
+      const sessionData = sessionRes.data;
+
+      navigate(`/quiz/vocabulary/${quizSlug}/${sessionData.sessionId}`, {
+        state: { sessionData },
+      });
+    } catch {
+      toast.current?.show({ severity: 'error', summary: t('common.error') });
+    }
+  }, [verseId, getOrCreateVocabularyQuiz, navigate, t]);
 
   const isAnalyzed = verse?.status === 'ANALYZED';
   const isAnalyzing = verse?.status === 'ANALYZING';
@@ -186,8 +214,19 @@ const VersePage = () => {
             </div>
           )}
 
-                    {verse.words && verse.words.length > 0 && (
-            <VerseWordsList words={verse.words} />
+                                        {verse.words && verse.words.length > 0 && (
+            <VerseWordsList
+              words={verse.words}
+              headerActions={
+                <CtaButton
+                  labelKey="sangraha.action.study"
+                  iconName="pi-book"
+                  className="p-button-text"
+                  onClick={handleStudy}
+                  loading={getOrCreateVocabularyQuiz.isPending}
+                />
+              }
+            />
           )}
 
           {isAdmin && (

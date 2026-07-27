@@ -5,13 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 import java.util.UUID;
 
 /**
- * Ответ content-service на POST /content/internal/sangraha/vocabulary.
- * Возвращает vocabularyWordId для каждого слова из запроса, в том же порядке.
+ * Ответ content-service на POST /content/internal/sangraha/vocabulary-quiz.
  */
 @Data
 @Builder
@@ -19,22 +16,14 @@ import java.util.UUID;
 @AllArgsConstructor
 public class SangrahaVocabularyResponse {
 
-    @JsonProperty("words")
-    private List<WordEntry> words;
+    @JsonProperty("quizSlug")
+    private String quizSlug;
 
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class WordEntry {
+    @JsonProperty("quizId")
+    private UUID quizId;
 
-        @JsonProperty("wordIast")
-        private String wordIast;
-
-        @JsonProperty("stem")
-        private String stem;
-
-        @JsonProperty("vocabularyWordId")
-        private UUID vocabularyWordId;
-    }
+    /** "CREATED" | "EXISTING" | null (null — не передавай в ответе вовсе, см. VocabularyQuizController в sangraha-service). */
+    @JsonProperty("quizStatus")
+    private String quizStatus;
 }
+

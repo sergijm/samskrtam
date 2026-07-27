@@ -28,7 +28,8 @@
       "analyze": "Analyze",
       "edit": "Edit",
       "save": "Save",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "study": "Study"
     },
     "fields": {
       "title": "Title",

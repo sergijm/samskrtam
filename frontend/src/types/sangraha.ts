@@ -91,8 +91,7 @@ export interface VerseDetailDto {
   status: VerseStatus;
   analysis?: VerseAnalysisDto | null;
   words: VerseWordDto[];
-  vocabularyQuizSlug: string | null;
-  vocabularyQuizAvailable: boolean;
+    vocabularyQuizSlug?: string | null;
 }
 
 export interface CreateWorkRequest {

@@ -21,7 +21,5 @@ public record VerseWordDto(
     String voice,
     String glossRu,
     String glossEn,
-    List<Integer> formationRuleNumbers,
-    UUID vocabularyWordId,
-    String vocabSyncStatus
+    List<Integer> formationRuleNumbers
 ) {}

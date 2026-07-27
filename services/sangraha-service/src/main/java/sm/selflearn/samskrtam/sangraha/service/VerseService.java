@@ -3,13 +3,16 @@ package sm.selflearn.samskrtam.sangraha.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sm.selflearn.samskrtam.content.dto.SangrahaVocabularyResponse;
 import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
+import sm.selflearn.samskrtam.sangraha.dto.VocabularyQuizResponse;
+import sm.selflearn.samskrtam.sangraha.event.SangrahaVocabularyEvent;
 import sm.selflearn.samskrtam.sangraha.mapper.VerseMapper;
+import sm.selflearn.samskrtam.sangraha.model.Chapter;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
 import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
 import sm.selflearn.samskrtam.sangraha.model.VerseStatus;
 import sm.selflearn.samskrtam.sangraha.model.VerseWord;
-import sm.selflearn.samskrtam.sangraha.model.Chapter;
 import sm.selflearn.samskrtam.sangraha.model.Work;
 import sm.selflearn.samskrtam.sangraha.repository.ChapterRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseAnalysisRepository;
@@ -18,7 +21,9 @@ import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,13 +32,15 @@ import java.util.UUID;
 public class VerseService {
 
         private final VerseRepository verseRepository;
-    private final VerseAnalysisRepository verseAnalysisRepository;
-    private final VerseWordRepository verseWordRepository;
-    private final ChapterRepository chapterRepository;
-    private final WorkRepository workRepository;
-    private final ChapterService chapterService;
-    private final VerseMapper verseMapper;
-    private final TransliterationService transliterationService;
+        private final VerseAnalysisRepository verseAnalysisRepository;
+        private final VerseWordRepository verseWordRepository;
+        private final ChapterRepository chapterRepository;
+        private final WorkRepository workRepository;
+        private final ChapterService chapterService;
+        private final VerseMapper verseMapper;
+        private final TransliterationService transliterationService;
+        private final WorkService workService;
+        private final ContentServiceVocabularyClient contentServiceVocabularyClient;
 
     @Transactional(readOnly = true)
     public List<Verse> getVersesByChapterId(UUID chapterId) {
@@ -42,30 +49,15 @@ public class VerseService {
     }
 
         @Transactional(readOnly = true)
-    public VerseDetailDto getVerseDetail(UUID id) {
-        Verse verse = getVerseById(id);
-        Optional<VerseAnalysis> analysis = verseAnalysisRepository.findByVerseId(id);
-        List<VerseWord> words = verseWordRepository.findAllByVerseIdOrderByPositionAsc(id);
+        public VerseDetailDto getVerseDetail(UUID id) {
+            Verse verse = getVerseById(id);
+            Optional<VerseAnalysis> analysis = verseAnalysisRepository.findByVerseId(id);
+            List<VerseWord> words = verseWordRepository.findAllByVerseIdOrderByPositionAsc(id);
 
-        // Получаем workSlug через chapter → work для vocabularyQuizSlug
-        Chapter chapter = chapterRepository.findByIdAndDeletedAtIsNull(verse.getChapterId())
-                .orElseThrow(() -> new RuntimeException("Chapter not found: " + verse.getChapterId()));
-        Work work = workRepository.findById(chapter.getWorkId())
-                .orElseThrow(() -> new RuntimeException("Work not found: " + chapter.getWorkId()));
-        String vocabularyQuizSlug = work.getSlug();
-
-        // vocabularyQuizAvailable — есть ли хотя бы одно синхронизированное слово
-        // на уровне произведения
-        boolean vocabularyQuizAvailable = verseWordRepository
-                .existsSyncedWordsByWorkId(work.getId());
-        int uniqueWordCount = vocabularyQuizAvailable
-                ? verseWordRepository.countDistinctSyncedWordsByWorkId(work.getId())
-                : 0;
-
-        return verseMapper.toDetailDto(verse, analysis.orElse(null),
-                words.isEmpty() ? null : words,
-                vocabularyQuizSlug, vocabularyQuizAvailable, uniqueWordCount);
-    }
+            return verseMapper.toDetailDto(verse, analysis.orElse(null),
+                    words.isEmpty() ? null : words,
+                    verse.getVocabularyQuizSlug());
+        }
 
     @Transactional(readOnly = true)
     public Verse getVerseById(UUID id) {
@@ -144,7 +136,81 @@ public class VerseService {
             }
         }
 
-        return verseRepository.save(verse);
+                return verseRepository.save(verse);
+    }
+
+        /**
+     * Кнопка «Изучить» на VersePage — POST /verses/{verseId}/vocabulary-quiz.
+     * Если у стиха уже есть закэшированный vocabularyQuizSlug — возвращает его сразу.
+     * Иначе синхронно вызывает content-service, кэширует результат и возвращает.
+     */
+    @Transactional
+    public VocabularyQuizResponse getOrCreateVocabularyQuiz(UUID verseId) {
+        Verse verse = getVerseById(verseId);
+
+        if (verse.getVocabularyQuizSlug() != null && !verse.getVocabularyQuizSlug().isBlank()
+                && verse.getVocabularyQuizId() != null) {
+            return new VocabularyQuizResponse(
+                    verse.getVocabularyQuizSlug(),
+                    verse.getVocabularyQuizId(),
+                    "EXISTING");
+        }
+
+        if (verse.getStatus() != VerseStatus.ANALYZED) {
+            throw new RuntimeException("Verse is not analyzed yet: " + verseId);
+        }
+
+        List<VerseWord> words = verseWordRepository.findAllByVerseIdOrderByPositionAsc(verseId);
+        if (words.isEmpty()) {
+            throw new RuntimeException("Verse has no words: " + verseId);
+        }
+
+        Chapter chapter = chapterRepository.findById(verse.getChapterId())
+                .orElseThrow(() -> new RuntimeException("Chapter not found: " + verse.getChapterId()));
+        Work work = workService.getWorkById(chapter.getWorkId());
+
+        // Дедуп слов стиха по (lemmaIast, stem) перед отправкой
+        Map<String, VerseWord> deduped = new LinkedHashMap<>();
+        for (VerseWord w : words) {
+            String key = w.getLemmaIast() + "|" + w.getStem();
+            deduped.putIfAbsent(key, w);
+        }
+
+        List<SangrahaVocabularyEvent.SangrahaVocabularyWord> vocabWords = deduped.values().stream()
+                .map(w -> SangrahaVocabularyEvent.SangrahaVocabularyWord.builder()
+                        .verseWordId(w.getId())
+                        .wordIast(w.getLemmaIast())
+                        .wordDevanagari(w.getSurfaceDevanagari())
+                        .stem(w.getStem())
+                        .root(w.getRoot())
+                        .gender(w.getGender() != null ? w.getGender().name() : null)
+                        .translationRu(w.getGlossRu())
+                        .translationEn(w.getGlossEn())
+                        .build())
+                .toList();
+
+        SangrahaVocabularyEvent request = SangrahaVocabularyEvent.builder()
+                .verseId(verseId)
+                .workSlug(work.getSlug())
+                .workTitleRu(work.getTitleRu())
+                .workTitleEn(work.getTitleEn())
+                .chapterSlug(chapter.getSlug())
+                .chapterTitleRu(chapter.getTitleRu())
+                .chapterTitleEn(chapter.getTitleEn())
+                .verseOrderIndex(verse.getOrderIndex())
+                .words(vocabWords)
+                .build();
+
+        SangrahaVocabularyResponse response = contentServiceVocabularyClient.requestVocabularyQuiz(request);
+        verse.setVocabularyQuizSlug(response.getQuizSlug());
+        verse.setVocabularyQuizId(response.getQuizId());
+        verse.setUpdatedAt(Instant.now());
+        verseRepository.save(verse);
+
+        return new VocabularyQuizResponse(
+                response.getQuizSlug(),
+                response.getQuizId(),
+                response.getQuizStatus());
     }
 }
 

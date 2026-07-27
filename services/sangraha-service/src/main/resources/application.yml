@@ -44,8 +44,6 @@ sangraha:
     two-pass: ${SANGRAHA_LLM_TWO_PASS}
 
 app:
-  outbox:
-    fixed-delay-ms: ${APP_OUTBOX_FIXED_DELAY_MS:5000}
   content-service:
     url: ${CONTENT_SERVICE_URL}
 

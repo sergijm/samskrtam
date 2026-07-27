@@ -138,3 +138,13 @@ export const useAnalyzeVerse = () => {
   });
 };
 
+export const useGetOrCreateVocabularyQuiz = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (verseId: string) => sangrahaApi.getOrCreateVocabularyQuiz(verseId),
+    onSuccess: (_data, verseId) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'verse', verseId] });
+    },
+  });
+};
+

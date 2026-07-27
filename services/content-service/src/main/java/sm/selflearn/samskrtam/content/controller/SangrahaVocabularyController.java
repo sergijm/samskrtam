@@ -29,10 +29,11 @@ public class SangrahaVocabularyController {
 
     private final VocabularySyncService vocabularySyncService;
 
-    @PostMapping("/vocabulary")
-    @Operation(summary = "Synchronize vocabulary words from verse analysis",
-               description = "Called by sangraha-service after LLM analysis of a verse. "
-                           + "Idempotent: dedup by (wordIast, stem). Returns vocabularyWordId for each word.")
+        @PostMapping("/vocabulary-quiz")
+    @Operation(summary = "Get or create a lexical quiz for a verse (button «Изучить»)",
+               description = "Called by sangraha-service only when the user clicks the "
+                           + "«Изучить» button on VersePage. Idempotent: quiz slug is "
+                           + "deterministic per verseId. Returns quizSlug.")
     @ApiResponse(responseCode = "200", description = "Words synced successfully")
     @ApiResponse(responseCode = "400", description = "Invalid payload")
     @ApiResponse(responseCode = "500", description = "DB error — transaction rolled back, nothing created")

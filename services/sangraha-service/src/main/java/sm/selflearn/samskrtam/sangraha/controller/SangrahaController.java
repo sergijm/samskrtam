@@ -16,6 +16,7 @@ import sm.selflearn.samskrtam.sangraha.dto.CreateChapterRequest;
 import sm.selflearn.samskrtam.sangraha.dto.CreateWorkRequest;
 import sm.selflearn.samskrtam.sangraha.dto.UpdateChapterRequest;
 import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
+import sm.selflearn.samskrtam.sangraha.dto.VocabularyQuizResponse;
 import sm.selflearn.samskrtam.sangraha.dto.WorkTreeDto;
 import sm.selflearn.samskrtam.sangraha.model.Chapter;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
@@ -104,7 +105,13 @@ public class SangrahaController {
         return ResponseEntity.ok(verseService.getVerseDetail(verseId));
     }
 
-        @PutMapping("/verses/{verseId}/text")
+        @PostMapping("/verses/{verseId}/vocabulary-quiz")
+    public ResponseEntity<VocabularyQuizResponse> getOrCreateVocabularyQuiz(@PathVariable UUID verseId) {
+        VocabularyQuizResponse response = verseService.getOrCreateVocabularyQuiz(verseId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/verses/{verseId}/text")
     public ResponseEntity<Verse> updateVerseText(
             @PathVariable UUID verseId,
             @RequestBody VerseTextRequest request) {

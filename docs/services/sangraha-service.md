@@ -19,7 +19,7 @@
 Сервис **не хранит словарь**. Единственный канал наружу — синхронный REST-вызов
 `content-service` (см. §6): по явному действию пользователя (кнопка «Изучить» на
 VersePage, §7) sangraha-service отправляет слова конкретного стиха, `content-service`
-синхронно строит из них лексический квиз этого стиха и возвращает `quizSlug`.
+синхронно строит из них лексический квиз этого стиха и возвращает `quizSlug` и `quizId` (UUID сущности `Lesson` в content-service — фронтенд стартует сессию по UUID напрямую, см. §7).
 **ИЗМЕНЕНО:** раньше это был асинхронный обмен через Kafka (топик
 `sangraha-vocabulary-events`), затем — автоматический синхронный REST-вызов сразу
 после каждого анализа стиха через Transactional Outbox (ADR-006). Оба механизма
@@ -53,7 +53,7 @@ VersePage, §7) sangraha-service отправляет слова конкрет�
 
 ## 3. Flyway Migrations
 
-4 миграции: V1 — вся схема sangraha (works, chapters, verses, verse_analyses, verse_words, outbox_events); V2 — санскритские названия (titleSaIast, titleSaDevanagari) для works; V3 — санскритские названия для chapters + orderIndex nullable; V4 — поле formation_rule_numbers в verse_words; V5 — поле raw_text (VARCHAR) в verses; **V6 (NEW, задача Агенту 2) — поле `vocabulary_quiz_slug VARCHAR NULL` в verses**, кэш slug'а лексического квиза этого стиха в content-service, заполняется по кнопке «Изучить» (см. §6, §7, ADR-009); **V7 (NEW, задача Агенту 2) — DROP TABLE outbox_events`**, таблица и весь Outbox-механизм в sangraha-service убраны (ADR-009) — редактировать V1 нельзя, удаление только новой миграцией поверх.
+4 миграции: V1 — вся схема sangraha (works, chapters, verses, verse_analyses, verse_words, outbox_events); V2 — санскритские названия (titleSaIast, titleSaDevanagari) для works; V3 — санскритские названия для chapters + orderIndex nullable; V4 — поле formation_rule_numbers в verse_words; V5 — поле raw_text (VARCHAR) в verses; **V6 (NEW, задача Агенту 2) — поля `vocabulary_quiz_slug VARCHAR NULL` и `vocabulary_quiz_id UUID NULL` в verses**, кэш slug'а и UUID лексического квиза этого стиха в content-service, заполняются по кнопке «Изучить» (см. §6, §7, ADR-009 — обновлено, теперь кэшируется и UUID); **V7 (NEW, задача Агенту 2) — DROP TABLE outbox_events`**, таблица и весь Outbox-механизм в sangraha-service убраны (ADR-009) — редактировать V1 нельзя, удаление только новой миграцией поверх.
 
 ---
 
@@ -81,10 +81,12 @@ DELETE /api/v1/sangraha/chapters/{chapterId}                     → soft delete
 
 POST   /api/v1/sangraha/chapters/{chapterId}/verses             → добавить стих (пустой, DRAFT) (ADMIN)
 GET    /api/v1/sangraha/verses/{verseId}                         → стих: текст + (если ANALYZED) VerseAnalysis + VerseWord[] +
-                                                                     vocabularyQuizSlug (кэш кнопки «Изучить», null пока не нажата,
-                                                                     см. §6, §7, sangraha-schemas.yaml#VerseDetail)
-POST   /api/v1/sangraha/verses/{verseId}/vocabulary-quiz         → кнопка «Изучить»: вернуть кэш или синхронно создать лексический
-                                                                     квиз стиха в content-service и закэшировать slug (см. §6, ADR-009)
+                                                                     vocabularyQuizSlug/vocabularyQuizId (кэш кнопки «Изучить», null пока
+                                                                     не нажата, см. §6, §7, sangraha-schemas.yaml#VerseDetail)
+POST   /api/v1/sangraha/verses/{verseId}/vocabulary-quiz         → кнопка «Изучить»: вернуть кэш ({quizSlug, quizId}, без quizStatus) или
+                                                                     синхронно создать лексический квиз стиха в content-service
+                                                                     ({quizSlug, quizId, quizStatus}), закэшировать quizSlug/quizId
+                                                                     (см. §6, ADR-009)
 POST   /api/v1/sangraha/verses/{verseId}/analyze                 → сохранить `raw_text` и запустить LLM-анализ (ADMIN, см. §5); тело —
                                                                      единое поле `text` (обязательно, см. §7) — backend определяет
                                                                      письменность по Unicode-диапазону (наличие символов деванагари →
@@ -243,11 +245,11 @@ Backend валидирует `tool_calls[0].function.arguments` по JSON Schema
 `POST /api/v1/sangraha/verses/{verseId}/vocabulary-quiz` — обрабатывается синхронно,
 в теле HTTP-запроса от фронтенда:
 
-1. Если `verse.vocabularyQuizSlug != null` — вернуть `{ quizSlug: verse.vocabularyQuizSlug }` немедленно, никаких вызовов наружу.
+1. Если `verse.vocabularyQuizSlug != null` — вернуть `{ quizSlug: verse.vocabularyQuizSlug, quizId: verse.vocabularyQuizId }` немедленно, никаких вызовов наружу. **`quizStatus` не возвращается на кэш-хите** — content-service не переспрашивается, а значит не может подтвердить/опровергнуть «только что создан»; фронтенд трактует отсутствие `quizStatus` как «обычный смешанный отбор» (см. §7).
 2. Иначе — собрать `VerseWord[]` этого стиха, дедуплицировать по `(lemmaIast, stem)` **внутри стиха** (одно и то же слово, встретившееся в стихе дважды, не должно попасть в список дважды).
 3. `POST {CONTENT_SERVICE_URL}/content/internal/sangraha/vocabulary-quiz` (синхронный HTTP-клиент — `RestClient`, как и раньше) с телом: `verseId`, `workSlug`, `workTitleRu/En`, `chapterSlug`, `chapterTitleRu/En`, `verseOrderIndex`, `words[]`. Точный контракт — `content-service.md` §11.
-4. **Успех (2xx):** из ответа `{ quizSlug }` — сохранить в `verse.vocabularyQuizSlug`, вернуть на фронт.
-5. **Ошибка (4xx/5xx/timeout):** вернуть ошибку как есть фронтенду, `vocabularyQuizSlug` не сохраняется. Повторный клик по кнопке безопасен и идемпотентен — `quizSlug` на стороне content-service детерминирован по `verseId` (см. `content-service.md` §11), повторный вызов не создаёт дублей.
+4. **Успех (2xx):** из ответа `{ quizSlug, quizId, quizStatus }` — сохранить `quizSlug`/`quizId` в `verse.vocabularyQuizSlug`/`verse.vocabularyQuizId` (`quizStatus` — транзитное поле, не кэшируется на `Verse`, прокидывается на фронт как есть только в этом первом ответе).
+5. **Ошибка (4xx/5xx/timeout):** вернуть ошибку как есть фронтенду, ничего не сохранять. Повторный клик по кнопке безопасен и идемпотентен — `quizSlug`/`quizId` на стороне content-service детерминированы по `verseId` (см. `content-service.md` §11), повторный вызов не создаёт дублей.
 
 Никакой персистентной очереди/ретраев в фоне не требуется — повтор при ошибке равен повторному клику пользователя.
 
@@ -294,15 +296,25 @@ Backend валидирует `tool_calls[0].function.arguments` по JSON Schema
     только при `status=ANALYZED` и непустом `words[]`; `disabled`, если слов нет
     (проверяется локально на фронте, без обращения к бэкенду).
     - По клику — синхронный REST-вызов `POST /verses/{verseId}/vocabulary-quiz`
-      (sangraha-service, см. §6, ADR-009): если у стиха уже есть закэшированный
-      `vocabularyQuizSlug` — sangraha-service возвращает его сразу; иначе — сам
-      синхронно создаёт лексический квиз в content-service и кэширует slug.
-    - Из ответа `{ quizSlug }` — далее переиспользуется существующий механизм
-      старт/резюме квиза (`VocabularyLessonPage`, см. `lesson-pages-spec.md` §2.1,
-      `quiz-generator-spec.md` §3-4): `POST /quiz/{quizSlug}/sessions/start-or-resume`
-      (quiz-service, без `statusFilter`), затем переход на
-      `/quiz/vocabulary/{quizSlug}` (сессия стартует или резюмируется, если уже
-      есть `IN_PROGRESS`-сессия без `statusFilter`).
+      (sangraha-service, см. §6, ADR-009): если у стиха уже есть закэшированные
+      `vocabularyQuizSlug`/`vocabularyQuizId` — sangraha-service возвращает их сразу
+      (`quizStatus` в этом случае не возвращается, см. §6); иначе — сам синхронно
+      создаёт лексический квиз в content-service и кэширует оба поля.
+    - **ИЗМЕНЕНО:** из ответа `{ quizSlug, quizId, quizStatus? }` фронтенд **не**
+      делает промежуточный `GET /api/v1/lessons/vocabulary/{slug}` — он и раньше
+      был не нужен для запуска сессии (лишний шаг, оставался в первой версии этой
+      задачи по инерции с `VocabularyLessonPage`). Вместо этого сразу вызывает
+      `POST /api/v1/quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&statusFilter={statusFilter}`
+      (quiz-service, `quiz-generator-spec.md` §3-4) — по UUID, не по slug.
+      `statusFilter` вычисляется на фронте из `quizStatus`: `quizStatus="CREATED"` →
+      `statusFilter=NEW` (весь пул квиза — новые слова, обычный смешанный
+      due/new/reserve-отбор не нужен, слов ещё никто не проходил); `quizStatus="EXISTING"`
+      либо не пришёл (кэш-хит) → `statusFilter` не передаётся (обычный смешанный отбор).
+    - После успешного старта сессии — переход на `/quiz/vocabulary/{quizSlug}/{sessionId}`
+      (существующий маршрут `QuizPage`, см. `frontend-state.md`/`AppRoutes`) с передачей
+      результата через `navigate(url, { state: { sessionData } })` — тот же паттерн,
+      что уже поддержан в `useQuizSession` (ветка 1 «navigation state»), просто
+      раньше не имел рабочего вызывающего кода для VOCABULARY-квизов.
     - Квиз — на уровне **стиха**, а не произведения (см. ADR-009 — заменяет
       прежнее решение §8 «Quiz только на уровне произведения»). Уникальность слов
       внутри квиза стиха обеспечивает sangraha-service (дедуп по `(lemmaIast, stem)`

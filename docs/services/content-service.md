@@ -290,8 +290,12 @@ POST /content/internal/sangraha/vocabulary-quiz
 
 ### Response
 
+**ИЗМЕНЕНО:** возвращается ещё и `quizId` (UUID сущности `Lesson` в БД content-service) — фронтенд стартует/резюмирует квиз-сессию по UUID напрямую (`POST /quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&statusFilter=...`), без промежуточного `GET /lessons/vocabulary/{slug}` (см. `sangraha-service.md` §7). `quizSlug` по-прежнему нужен — sangraha-service кэширует его для построения URL `/quiz/vocabulary/{quizSlug}/{sessionId}` после старта сессии.
+
+**НОВОЕ:** добавлено поле `quizStatus` — `"CREATED"`, если `upsertQuiz` (шаг 3 ниже) только что вставил новую строку `Lesson` (это первый клик «Изучить» по этому стиху), либо `"EXISTING"`, если `Lesson` с таким slug уже существовал. Это единственный сигнал о «статусе» квиза, который content-service в принципе может дать — он не хранит и не видит пользовательский прогресс (`quiz_item_score`, сессии) — это домен quiz-service, а данный эндпоинт не содержит userId. Фронтенд использует `quizStatus` только для выбора `statusFilter` при первом же запуске сессии: `CREATED` → `statusFilter=NEW` (весь пул — новые слова, обычный due/new/reserve-отбор избыточен), `EXISTING` → без `statusFilter` (обычный смешанный отбор). См. `sangraha-service.md` §6/§7.
+
 ```json
-{ "quizSlug": "sangraha-verse-<verseId>" }
+{ "quizSlug": "sangraha-verse-<verseId>", "quizId": "<lesson-uuid>", "quizStatus": "CREATED" }
 ```
 
 Один квиз на стих, не на слово — `vocabularyWordId` каждого слова больше не возвращается (не нужен, `verse_words.vocabulary_word_id` из старого плана отменён вместе с Outbox, см. `sangraha-service.md` §3).
@@ -302,7 +306,7 @@ POST /content/internal/sangraha/vocabulary-quiz
 
 1. `VocabularyCategory` root: `findByCodeIgnoreCase(workSlug)`, если нет — создать (`nameRu = workTitleRu`, `nameEn = workTitleEn`, `parentId = null`) — **без изменений относительно прежней логики**, категория остаётся общим механизмом тематической классификации лексики (см. `information-architecture.md` §2.3), не специфичным для этого флоу.
 2. `VocabularyCategory` chapter: `findByCodeIgnoreCase("{workSlug}.{chapterSlug}")`, если нет — создать с `parentId = root.id`.
-3. `Quiz` — **на уровне стиха**, не категории: `slug = "sangraha-verse-{verseId}"` (детерминирован, не рандом — повтор вызова не создаёт дубль), `titleRu/En` — шаблон, например `"{workTitleRu}, стих {verseOrderIndex}"` (точный текст — на усмотрение Агента 2). `upsert` — если `Quiz` с таким slug уже есть, вернуть его же (идемпотентность), новый не создавать.
+3. `Quiz` (сущность в коде называется `Lesson`, см. `LessonType.VOCABULARY`) — **на уровне стиха**, не категории: `slug = "sangraha-verse-{verseId}"` (детерминирован, не рандом — повтор вызова не создаёт дубль), `titleRu/En` — шаблон, например `"{workTitleRu}, стих {verseOrderIndex}"` (точный текст — на усмотрение Агента 2). `upsert` — если `Lesson` с таким slug уже есть, вернуть его же (идемпотентность), новый не создавать. **ИЗМЕНЕНО:** метод upsert обязан возвращать не просто `Lesson`, а пару `(Lesson, wasCreated: boolean)` — `id` идёт в ответ как `quizId`, `wasCreated` определяет `quizStatus` (`true` → `"CREATED"`, `false` → `"EXISTING"`, см. Response выше).
 4. Для каждого слова из `words[]`: dedup по `(wordIast, stem)` в рамках всего словаря content-service (`findByWordIastAndStem`), как и раньше. Если найдено — не создавать новый `VocabularyWord`; связать существующий `wordId` и с `Quiz` этого стиха (если связи ещё нет), и с `chapterCategory` (`VocabularyWordCategory`, если связи ещё нет) — слово может одновременно входить в квиз конкретного стиха **и** в тематическую категорию произведения/главы, это независимые связи. Если не найдено — создать `VocabularyWord` (`wordIast`, `wordDevanagari`, `stem`, `root`, `gender`, `translationRu/En`, `explanationRu/En`) и сразу связать и с квизом стиха, и с категорией главы.
 5. **Ошибки:** невалидный payload/ошибка БД → HTTP 4xx/5xx с телом ошибки (`ErrorResponse`), транзакция отменяется целиком. Повтор — ответственность sangraha-service (кнопка «Изучить» просто не закэширует slug при ошибке, пользователь может нажать снова, см. `sangraha-service.md` §6, шаг 5); DLQ/Outbox-ретраи здесь не нужны — это был механизм для автосинхронизации, которой больше нет.
 

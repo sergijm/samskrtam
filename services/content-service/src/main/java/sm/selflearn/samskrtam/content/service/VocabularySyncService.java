@@ -21,8 +21,6 @@ import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.dto.Difficulty;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -36,62 +34,59 @@ public class VocabularySyncService {
     private final VocabularyWordCategoryRepository wordCategoryRepository;
     private final LessonRepository lessonRepository;
 
-    /**
-     * Обрабатывает запрос sangraha-service на синхронизацию лексики стиха.
-     * Идемпотентно: повторный вызов с тем же payload не создаёт дубликатов.
-     * Возвращает vocabularyWordId для каждого слова из запроса, в том же порядке.
+        /**
+     * Обрабатывает запрос sangraha-service на создание лексического квиза стиха.
+     * Идемпотентно: повторный вызов с тем же verseId возвращает тот же quizSlug.
+     * Строит иерархию категорий work → chapter → verse, upsert-ит Quiz(VOCABULARY)
+     * и линкует слова к chapterCategory (тема) и verseCategory (квиз).
      *
      * @param event событие от sangraha-service
-     * @return ответ с vocabularyWordId для каждого слова
+     * @return ответ с quizSlug (verseCode)
      */
-    @Transactional
+                @Transactional
     public SangrahaVocabularyResponse processEvent(SangrahaVocabularyEvent event) {
         String workSlug = event.getWorkSlug();
         String chapterCode = workSlug + "." + event.getChapterSlug();
+        String verseCode = chapterCode + ".verse-" + event.getVerseId();
+        String verseTitleRu = event.getWorkTitleRu() + ", стих " + event.getVerseOrderIndex();
+        String verseTitleEn = event.getWorkTitleEn() + ", verse " + event.getVerseOrderIndex();
 
-        // 1. Upsert root category (work level)
+        // 1. Upsert root category (work level) — без изменений
         VocabularyCategory rootCategory = upsertCategory(
-                workSlug,
-                null,
-                event.getWorkTitleRu(),
-                event.getWorkTitleEn()
-        );
+                workSlug, null, event.getWorkTitleRu(), event.getWorkTitleEn());
 
-        // 2. Upsert chapter category
+        // 2. Upsert chapter category — без изменений
         VocabularyCategory chapterCategory = upsertCategory(
-                chapterCode,
-                rootCategory.getId(),
-                event.getChapterTitleRu(),
-                event.getChapterTitleEn()
-        );
+                chapterCode, rootCategory.getId(), event.getChapterTitleRu(), event.getChapterTitleEn());
 
-        // 3. Upsert Quiz (VOCABULARY) at work level (slug = workSlug)
-        upsertQuiz(workSlug, event.getWorkTitleRu(), event.getWorkTitleEn());
+        // 3. NEW: Upsert verse-level category — квиз строится на ней, а не на chapterCategory
+        VocabularyCategory verseCategory = upsertCategory(
+                verseCode, chapterCategory.getId(), verseTitleRu, verseTitleEn);
 
-        // 4. Process each word, collect WordEntry for response (same order as input)
-        List<SangrahaVocabularyResponse.WordEntry> wordEntries = new ArrayList<>();
+        // 4. Upsert Lesson(VOCABULARY) — slug = verseCode, теперь возвращает (Lesson, wasCreated)
+        UpsertQuizResult quizResult = upsertQuiz(verseCode, verseTitleRu, verseTitleEn);
+
+        // 5. Process each word — линкуем и на chapterCategory (тема), и на verseCategory (квиз)
         if (event.getWords() != null) {
             for (SangrahaVocabularyWord w : event.getWords()) {
-                VocabularyWord savedWord = processWord(w, chapterCategory);
-                if (savedWord != null) {
-                    wordEntries.add(SangrahaVocabularyResponse.WordEntry.builder()
-                            .wordIast(w.getWordIast())
-                            .stem(w.getStem() != null && !w.getStem().isBlank() ? w.getStem() : w.getWordIast())
-                            .vocabularyWordId(savedWord.getId())
-                            .build());
-                }
+                processWord(w, chapterCategory, verseCategory);
             }
         }
 
-        log.info("Processed sangraha vocabulary request: verseId={}, workSlug={}, chapterSlug={}, wordsCount={}, syncedCount={}",
+        log.info("Processed vocabulary-quiz request: verseId={}, workSlug={}, chapterSlug={}, wordsCount={}, quizSlug={}, quizId={}, wasCreated={}",
                 event.getVerseId(), workSlug, event.getChapterSlug(),
                 event.getWords() != null ? event.getWords().size() : 0,
-                wordEntries.size());
+                verseCode, quizResult.lesson().getId(), quizResult.wasCreated());
 
         return SangrahaVocabularyResponse.builder()
-                .words(wordEntries)
+                .quizSlug(verseCode)
+                .quizId(quizResult.lesson().getId())
+                .quizStatus(quizResult.wasCreated() ? "CREATED" : "EXISTING")
                 .build();
     }
+
+    /** Пара (Lesson, был ли он только что создан этим вызовом) — нужна для quizStatus в ответе. */
+    private record UpsertQuizResult(Lesson lesson, boolean wasCreated) {}
 
     /**
      * Upsert VocabularyCategory: ищет по code, если нет — создаёт.
@@ -110,14 +105,14 @@ public class VocabularySyncService {
         return categoryRepository.save(category);
     }
 
-    /**
-     * Upsert Quiz(VOCABULARY) по slug = workSlug.
-     * Если квиз с таким slug уже существует — не перезаписываем.
+                /**
+     * Upsert Quiz(VOCABULARY) по slug.
+     * Возвращает (Lesson, wasCreated) — нужно для quizStatus в ответе.
      */
-    private void upsertQuiz(String slug, String titleRu, String titleEn) {
+    private UpsertQuizResult upsertQuiz(String slug, String titleRu, String titleEn) {
         Optional<Lesson> existing = lessonRepository.findBySlug(slug);
         if (existing.isPresent()) {
-            return;
+            return new UpsertQuizResult(existing.get(), false);
         }
         Lesson lesson = new Lesson();
         lesson.setSlug(slug);
@@ -127,17 +122,18 @@ public class VocabularySyncService {
         lesson.setDifficulty(Difficulty.BEGINNER);
         lesson.setQuestionsPerSession(10);
         lesson.setCreatedAt(Instant.now());
-        lessonRepository.save(lesson);
+        Lesson saved = lessonRepository.save(lesson);
         log.info("Created new VOCABULARY quiz: slug={}, titleRu={}", slug, titleRu);
+        return new UpsertQuizResult(saved, true);
     }
 
-    /**
+        /**
      * Обрабатывает одно слово из события.
      * Dedup по (wordIast, stem). Если слово уже существует — только добавляет
-     * связь VocabularyWordCategory, если её ещё нет.
-     * Если слова нет — создаёт и сразу связывает с категорией главы.
+     * связи VocabularyWordCategory, если их ещё нет.
+     * Если слова нет — создаёт и линкует к обеим категориям (chapter + verse).
      */
-    private VocabularyWord processWord(SangrahaVocabularyWord w, VocabularyCategory chapterCategory) {
+        private VocabularyWord processWord(SangrahaVocabularyWord w, VocabularyCategory chapterCategory, VocabularyCategory verseCategory) {
         String wordIast = w.getWordIast();
         String stem = w.getStem();
 
@@ -149,14 +145,11 @@ public class VocabularySyncService {
             stem = wordIast;
         }
 
-        // Dedup by (wordIast, stem) — ищем существующее слово
         Optional<VocabularyWord> existingWord = wordRepository.findByWordIastAndStem(wordIast, stem);
         VocabularyWord word;
         if (existingWord.isPresent()) {
             word = existingWord.get();
-            log.debug("Found existing vocabulary word: id={}, wordIast={}", word.getId(), wordIast);
         } else {
-            // Создаём новое слово
             Gender gender = parseGender(w.getGender());
             word = VocabularyWord.builder()
                     .wordIast(wordIast)
@@ -170,22 +163,24 @@ public class VocabularySyncService {
                     .explanationEn(w.getExplanationEn() != null ? w.getExplanationEn() : "")
                     .build();
             word = wordRepository.save(word);
-            log.debug("Created new vocabulary word: id={}, wordIast={}", word.getId(), wordIast);
         }
 
-        // Upsert связь с категорией главы
-        VocabularyWordCategoryId linkId = new VocabularyWordCategoryId(word.getId(), chapterCategory.getId());
+        linkWordToCategory(word, chapterCategory);
+        linkWordToCategory(word, verseCategory);
+        return word;
+    }
+
+    private void linkWordToCategory(VocabularyWord word, VocabularyCategory category) {
+        VocabularyWordCategoryId linkId = new VocabularyWordCategoryId(word.getId(), category.getId());
         if (!wordCategoryRepository.existsById(linkId)) {
             VocabularyWordCategory link = VocabularyWordCategory.builder()
                     .id(linkId)
                     .vocabularyWord(word)
-                    .category(chapterCategory)
+                    .category(category)
                     .createdAt(Instant.now())
                     .build();
             wordCategoryRepository.save(link);
-            log.debug("Linked word {} to category {}", word.getId(), chapterCategory.getId());
         }
-        return word;
     }
 
     /**

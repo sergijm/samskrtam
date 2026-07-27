@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import sm.selflearn.samskrtam.sangraha.event.SangrahaVocabularyEvent;
 import sm.selflearn.samskrtam.sangraha.model.*;
 import sm.selflearn.samskrtam.sangraha.repository.*;
 
@@ -23,7 +22,6 @@ public class VerseAnalysisSaver {
     private final VerseRepository verseRepository;
     private final VerseAnalysisRepository verseAnalysisRepository;
     private final VerseWordRepository verseWordRepository;
-    private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
 
     /**
@@ -31,9 +29,8 @@ public class VerseAnalysisSaver {
      * 1. Заполнить текст стиха (если не был введён вручную)
      * 2. Перезаписать VerseAnalysis (delete + insert)
      * 3. Пересоздать VerseWord[] (deleteAll + saveAll)
-     * 4. Опубликовать OutboxEvent (rollback, если не удалось сериализовать/сохранить)
-     * 5. Перевести статус ANALYZED (последним — гарантия атомарности)
-     * Любой сбой на шагах 1–4 откатывает всю транзакцию — статус остаётся ANALYZING.
+     * 4. Перевести статус ANALYZED (последним — гарантия атомарности)
+     * Любой сбой на шагах 1–3 откатывает всю транзакцию — статус остаётся ANALYZING.
      */
     @Transactional
     public void saveResults(
@@ -71,11 +68,7 @@ public class VerseAnalysisSaver {
         var words = buildWords(verse.getId(), wordsNode);
         verseWordRepository.saveAll(words);
 
-        // 4. Публикуем OutboxEvent для Kafka-синхронизации с content-service
-        //    Исключение при сериализации/сохранении летит вверх — транзакция откатывается целиком
-        publishVocabularyEvent(verse, work, chapter, words);
-
-        // 5. Статус ANALYZED — последним, гарантия атомарности
+        // 4. Статус ANALYZED — последним, гарантия атомарности
         verse.setStatus(VerseStatus.ANALYZED);
         verse.setUpdatedAt(Instant.now());
         verseRepository.save(verse);
@@ -126,47 +119,6 @@ public class VerseAnalysisSaver {
                     .build());
         }
         return words;
-    }
-
-    private void publishVocabularyEvent(Verse verse, Work work, Chapter chapter, List<VerseWord> words) {
-        var vocabWords = words.stream()
-                .map(w -> SangrahaVocabularyEvent.SangrahaVocabularyWord.builder()
-                        .verseWordId(w.getId())
-                        .wordIast(w.getLemmaIast())
-                        .wordDevanagari(w.getSurfaceDevanagari())
-                        .stem(w.getStem())
-                        .root(w.getRoot())
-                        .gender(w.getGender() != null ? w.getGender().name() : null)
-                        .translationRu(w.getGlossRu())
-                        .translationEn(w.getGlossEn())
-                        .build())
-                .toList();
-
-        var event = SangrahaVocabularyEvent.builder()
-                .eventType("VERSE_VOCABULARY_EXTRACTED")
-                .verseId(verse.getId())
-                .workSlug(work.getSlug())
-                .workTitleRu(work.getTitleRu())
-                .workTitleEn(work.getTitleEn())
-                .chapterSlug(chapter.getSlug())
-                .chapterTitleRu(chapter.getTitleRu())
-                .chapterTitleEn(chapter.getTitleEn())
-                .words(vocabWords)
-                .build();
-
-        try {
-            var payload = objectMapper.writeValueAsString(event);
-            var outbox = OutboxEvent.builder()
-                    .aggregateId(verse.getId())
-                    .eventType("VERSE_VOCABULARY_EXTRACTED")
-                    .payload(payload)
-                    .status("PENDING")
-                    .createdAt(Instant.now())
-                    .build();
-            outboxEventRepository.save(outbox);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to serialize vocabulary event for verse " + verse.getId(), e);
-        }
     }
 
     // ---- утилиты ----
