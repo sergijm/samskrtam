@@ -80,6 +80,9 @@ public class VerseWord {
     private String glossEn;
 
         /** JSON-массив целых чисел (внутренние правила 1–40), сохраняется как текст */
-    @Column(name = "formation_rule_numbers", columnDefinition = "TEXT")
-    private String formationRuleNumbers;
+        @Column(name = "formation_rule_numbers", columnDefinition = "TEXT")
+        private String formationRuleNumbers;
+
+        @Column(name = "vocabulary_word_id")
+        private UUID vocabularyWordId;
 }

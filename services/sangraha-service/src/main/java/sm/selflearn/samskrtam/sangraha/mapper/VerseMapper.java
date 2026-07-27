@@ -101,9 +101,10 @@ public class VerseMapper {
             word.getTense() != null ? word.getTense().name() : null,
             word.getMood() != null ? word.getMood().name() : null,
             word.getVoice() != null ? word.getVoice().name() : null,
-            word.getGlossRu(),
+                        word.getGlossRu(),
             word.getGlossEn(),
-            formationRuleNumbers
+            formationRuleNumbers,
+            word.getVocabularyWordId()
         );
     }
 

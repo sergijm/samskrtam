@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { ProgressBar } from 'primereact/progressbar';
+import type { VocabularyWordProgress } from '../../types/lesson';
 
 // ── Словари грамматических терминов (латинские сокращения, 1–5 букв + точка) ──
 
@@ -99,16 +101,19 @@ interface Word {
   glossRu?: string;
   glossEn?: string;
   formationRuleNumbers?: number[];
+  vocabularyWordId?: string | null;
 }
 
 interface VerseWordsListProps {
   words: Word[];
   headerActions?: React.ReactNode;
+  /** Маппинг vocabularyWordId → прогресс слова. Если передан — показывается колонка прогресса. */
+  wordProgressMap?: Record<string, VocabularyWordProgress> | null;
 }
 
 // ── Компонент ──
 
-const VerseWordsList = ({ words, headerActions }: VerseWordsListProps) => {
+const VerseWordsList = ({ words, headerActions, wordProgressMap }: VerseWordsListProps) => {
   const { t } = useTranslation();
 
   if (!words || words.length === 0) return null;
@@ -116,6 +121,8 @@ const VerseWordsList = ({ words, headerActions }: VerseWordsListProps) => {
   const allFormationRuleNumbers = words
     .flatMap(w => w.formationRuleNumbers ?? [])
     .filter((v, i, a) => a.indexOf(v) === i);
+
+  const showProgress = wordProgressMap != null;
 
   return (
     <div className="mb-4">
@@ -136,9 +143,14 @@ const VerseWordsList = ({ words, headerActions }: VerseWordsListProps) => {
         </span>
       </label>
       <div className="p-3 border-1 border-round surface-border surface-ground">
-        {words.map((w) => (
-          <div key={w.id} className="flex align-items-center gap-2 mb-1 flex-wrap">
-            <Link
+        {words.map((w) => {
+          const progress = showProgress && w.vocabularyWordId
+            ? wordProgressMap[w.vocabularyWordId]
+            : undefined;
+          return (
+            <div key={w.id} className="flex align-items-center gap-2 mb-1 flex-wrap">
+              <div className="flex align-items-center gap-2 flex-grow-1 flex-wrap">
+                <Link
               to={`/dictionary?q=${encodeURIComponent(w.lemmaIast || w.stem || w.surfaceIast)}`}
               className="font-medium hover:underline" style={{ color: 'inherit' }}
               target="_blank"
@@ -197,7 +209,24 @@ const VerseWordsList = ({ words, headerActions }: VerseWordsListProps) => {
               </span>
             )}
           </div>
-        ))}
+
+              {/* Колонка прогресса */}
+              {showProgress && (
+                <div className="ml-auto" style={{ minWidth: '80px', maxWidth: '100px' }}>
+                  {progress ? (
+                    <ProgressBar
+                      value={progress.score ?? 0}
+                      showValue
+                      style={{ height: '6px' }}
+                    />
+                  ) : (
+                    <span className="text-xs text-color-secondary">—</span>
+                  )}
+      </div>
+              )}
+    </div>
+  );
+        })}
       </div>
     </div>
   );

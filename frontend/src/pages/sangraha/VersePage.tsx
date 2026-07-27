@@ -15,7 +15,10 @@ import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { InputNumber } from 'primereact/inputnumber';
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useVocabularyLesson } from '../../hooks/useLessons';
+import type { VocabularyWordProgress } from '../../types/lesson';
 import VerseWordsList from '../../components/sangraha/VerseWordsList';
 import SandhiSplitsList from '../../components/sangraha/SandhiSplitsList';
 import { IconButton, CtaButton, CreateButton, PageButton } from '../../components/common/buttons';
@@ -24,13 +27,37 @@ const VersePage = () => {
   const { t, i18n } = useTranslation();
   const { workSlug, verseId } = useParams<{ workSlug: string; verseId: string }>();
   const navigate = useNavigate();
-  const toast = useRef<Toast>(null);
-    const { data: verse, isLoading, isError } = useVerseDetail(verseId || '');
+    const toast = useRef<Toast>(null);
+  const queryClient = useQueryClient();
+  const { data: verse, isLoading, isError } = useVerseDetail(verseId || '');
   const analyze = useAnalyzeVerse();
   const updateVerse = useUpdateVerse();
-  const getOrCreateVocabularyQuiz = useGetOrCreateVocabularyQuiz();
-  const user = useAuthStore((s) => s.user);
+    const getOrCreateVocabularyQuiz = useGetOrCreateVocabularyQuiz();
+    const user = useAuthStore((s) => s.user);
   const isAdmin = user?.roles?.includes('ADMIN') ?? false;
+
+  // Загружаем прогресс урока, если quizSlug уже есть (кнопка «Изучить» была нажата)
+  const vocabSlug = verse?.vocabularyQuizSlug;
+  const { data: vocabularyLesson } = useVocabularyLesson(vocabSlug || '');
+
+  // Строим map vocabularyWordId → прогресс
+  const wordProgressMap = useMemo<Record<string, VocabularyWordProgress> | null>(() => {
+    if (!vocabularyLesson?.words) return null;
+    const map: Record<string, VocabularyWordProgress> = {};
+    for (const wp of vocabularyLesson.words) {
+      map[wp.wordId] = wp;
+    }
+    return map;
+  }, [vocabularyLesson]);
+
+  // Иконка кнопки «Изучить» по statusSummary
+  const studyIcon = useMemo(() => {
+    if (!vocabularyLesson?.statusSummary) return 'pi-book';
+    const { total, mastered, learning, reviewDue } = vocabularyLesson.statusSummary;
+    if (mastered === total) return 'pi-check-circle';
+    if (learning > 0 || reviewDue > 0) return 'pi-spinner';
+    return 'pi-book';
+  }, [vocabularyLesson]);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState('');
@@ -85,11 +112,14 @@ const VersePage = () => {
         setIsEditing(true);
   }, [verse]);
 
-    const handleStudy = useCallback(async () => {
+        const handleStudy = useCallback(async () => {
     if (!verseId) return;
     try {
       const quizRes = await getOrCreateVocabularyQuiz.mutateAsync(verseId);
-      const { quizSlug, quizId, quizStatus } = quizRes.data;
+      const { quizSlug, quizId } = quizRes.data;
+
+      // Инвалидируем кэш урока — после возврата с квиза прогресс будет актуальным
+      queryClient.invalidateQueries({ queryKey: ['lesson', 'vocabulary', quizSlug] });
 
       const locale = useLocaleStore.getState().locale;
       const sessionRes = await quizApi.startOrResumeWithStatusFilter(
@@ -106,7 +136,7 @@ const VersePage = () => {
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     }
-  }, [verseId, getOrCreateVocabularyQuiz, navigate, t]);
+  }, [verseId, getOrCreateVocabularyQuiz, navigate, t, queryClient]);
 
   const isAnalyzed = verse?.status === 'ANALYZED';
   const isAnalyzing = verse?.status === 'ANALYZING';
@@ -215,12 +245,13 @@ const VersePage = () => {
           )}
 
                                         {verse.words && verse.words.length > 0 && (
-            <VerseWordsList
+                        <VerseWordsList
               words={verse.words}
+              wordProgressMap={wordProgressMap}
               headerActions={
                 <CtaButton
                   labelKey="sangraha.action.study"
-                  iconName="pi-book"
+                  iconName={studyIcon}
                   className="p-button-text"
                   onClick={handleStudy}
                   loading={getOrCreateVocabularyQuiz.isPending}

@@ -21,6 +21,7 @@ import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -201,11 +202,26 @@ public class VerseService {
                 .words(vocabWords)
                 .build();
 
-        SangrahaVocabularyResponse response = contentServiceVocabularyClient.requestVocabularyQuiz(request);
+                SangrahaVocabularyResponse response = contentServiceVocabularyClient.requestVocabularyQuiz(request);
         verse.setVocabularyQuizSlug(response.getQuizSlug());
         verse.setVocabularyQuizId(response.getQuizId());
         verse.setUpdatedAt(Instant.now());
         verseRepository.save(verse);
+
+        // Сохранить маппинг verseWordId → vocabularyWordId в verse_words
+        if (response.getWordMappings() != null && !response.getWordMappings().isEmpty()) {
+            Map<UUID, UUID> mapping = new HashMap<>();
+            for (var m : response.getWordMappings()) {
+                mapping.put(m.getVerseWordId(), m.getVocabularyWordId());
+            }
+            for (VerseWord w : words) {
+                UUID vocabId = mapping.get(w.getId());
+                if (vocabId != null) {
+                    w.setVocabularyWordId(vocabId);
+                }
+            }
+            verseWordRepository.saveAll(words);
+        }
 
         return new VocabularyQuizResponse(
                 response.getQuizSlug(),

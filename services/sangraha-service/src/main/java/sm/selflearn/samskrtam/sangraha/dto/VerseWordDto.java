@@ -19,7 +19,8 @@ public record VerseWordDto(
     String tense,
     String mood,
     String voice,
-    String glossRu,
+        String glossRu,
     String glossEn,
-    List<Integer> formationRuleNumbers
+    List<Integer> formationRuleNumbers,
+    UUID vocabularyWordId
 ) {}

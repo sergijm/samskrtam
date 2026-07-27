@@ -21,6 +21,8 @@ import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.dto.Difficulty;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -66,22 +68,32 @@ public class VocabularySyncService {
         // 4. Upsert Lesson(VOCABULARY) — slug = verseCode, теперь возвращает (Lesson, wasCreated)
         UpsertQuizResult quizResult = upsertQuiz(verseCode, verseTitleRu, verseTitleEn);
 
-        // 5. Process each word — линкуем и на chapterCategory (тема), и на verseCategory (квиз)
+                // 5. Process each word — линкуем и на chapterCategory (тема), и на verseCategory (квиз),
+        //    собираем маппинг verseWordId → vocabularyWordId
+        List<SangrahaVocabularyResponse.WordMapping> wordMappings = new ArrayList<>();
         if (event.getWords() != null) {
             for (SangrahaVocabularyWord w : event.getWords()) {
-                processWord(w, chapterCategory, verseCategory);
+                VocabularyWord word = processWord(w, chapterCategory, verseCategory);
+                if (word != null) {
+                    wordMappings.add(SangrahaVocabularyResponse.WordMapping.builder()
+                            .verseWordId(w.getVerseWordId())
+                            .vocabularyWordId(word.getId())
+                            .build());
+                }
             }
         }
 
-        log.info("Processed vocabulary-quiz request: verseId={}, workSlug={}, chapterSlug={}, wordsCount={}, quizSlug={}, quizId={}, wasCreated={}",
+        log.info("Processed vocabulary-quiz request: verseId={}, workSlug={}, chapterSlug={}, wordsCount={}, quizSlug={}, quizId={}, wasCreated={}, mappingsCount={}",
                 event.getVerseId(), workSlug, event.getChapterSlug(),
                 event.getWords() != null ? event.getWords().size() : 0,
-                verseCode, quizResult.lesson().getId(), quizResult.wasCreated());
+                verseCode, quizResult.lesson().getId(), quizResult.wasCreated(),
+                wordMappings.size());
 
         return SangrahaVocabularyResponse.builder()
                 .quizSlug(verseCode)
                 .quizId(quizResult.lesson().getId())
                 .quizStatus(quizResult.wasCreated() ? "CREATED" : "EXISTING")
+                .wordMappings(wordMappings)
                 .build();
     }
 

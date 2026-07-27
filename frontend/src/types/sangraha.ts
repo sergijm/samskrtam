@@ -70,6 +70,7 @@ export interface VerseWordDto {
   glossRu: string;
   glossEn: string;
   formationRuleNumbers?: number[];
+  vocabularyWordId?: string | null;
 }
 
 export interface VerseAnalysisDto {
