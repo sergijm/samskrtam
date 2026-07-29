@@ -82,6 +82,30 @@ public interface QuizSessionRepository extends ReactiveCrudRepository<QuizSessio
             "ORDER BY started_at DESC LIMIT 1")
     Mono<QuizSession> findInProgressByStatusFilter(UUID userId, UUID lessonId, String statusFilter);
 
+        /**
+     * Find an in-progress ALL_STEMS session matching filterVowelTypes, filterGenders, filterNumberTypes and filterCaseTypes.
+     * Uses JSONB equality for set comparison. All canonical JSON arrays must be compared as JSONB.
+     *
+     * @param filterVowelTypes  JSONB array string for ALL_STEMS, or null
+     * @param filterGenders     JSONB array string for ALL_STEMS, or null
+     * @param filterNumberTypes JSONB array string, or null
+     * @param filterCaseTypes   JSONB array string, or null
+     */
+    @Query("SELECT * FROM quiz.quiz_session " +
+            "WHERE user_id = :userId " +
+            "AND lesson_id = :lessonId " +
+            "AND status = 'IN_PROGRESS' " +
+            "AND status_filter IS NULL " +
+            "AND filter_scope = CAST(:filterScope AS VARCHAR) " +
+            "AND (:filterVowelTypes IS NULL OR filter_vowel_types::jsonb = CAST(:filterVowelTypes AS JSONB)) " +
+            "AND (:filterGenders IS NULL OR filter_genders::jsonb = CAST(:filterGenders AS JSONB)) " +
+            "AND (:filterNumberTypes IS NULL OR filter_number_types::jsonb = CAST(:filterNumberTypes AS JSONB)) " +
+            "AND (:filterCaseTypes IS NULL OR filter_case_types::jsonb = CAST(:filterCaseTypes AS JSONB)) " +
+            "ORDER BY started_at DESC LIMIT 1")
+    Mono<QuizSession> findInProgressByAllStemsFilter(UUID userId, UUID lessonId, String filterScope,
+                                                      String filterVowelTypes, String filterGenders,
+                                                      String filterNumberTypes, String filterCaseTypes);
+
     /** Paginated sessions filtered by quizId (lessonId). */
     @Query("SELECT * FROM quiz.quiz_session " +
             "WHERE user_id = :userId " +

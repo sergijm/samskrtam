@@ -95,10 +95,11 @@ public class UserSessionService {
     private int countFilterCombinations(QuizSession session) {
         if (session.getFilterScope() == null) return 0;
         try {
-            return switch (session.getFilterScope()) {
+                        return switch (session.getFilterScope()) {
                 case CASE_ONLY -> parseJsonArrayLength(session.getFilterCaseTypes());
                 case NUMBER_ONLY -> parseJsonArrayLength(session.getFilterNumberTypes());
                 case CASE_NUMBER_GENDER -> parseJsonArrayLength(session.getFilterCombinations());
+                case ALL_STEMS -> parseJsonArrayLength(session.getFilterVowelTypes());
             };
         } catch (Exception e) {
             log.warn("Failed to parse filter combinations for session {}", session.getId(), e);

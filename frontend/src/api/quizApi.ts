@@ -2,13 +2,15 @@ import api from './axios';
 import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, LessonType, QuizSessionSummary, AnswerHistory, QuizProgress, ResumeSessionResponse, StartOrResumeResponse, LessonListResponse, PaginatedResponse } from '../types/quiz';
 import { SandhiRuleDto } from '../types/content';
 
-export type FilterScope = 'CASE_ONLY' | 'NUMBER_ONLY' | 'CASE_NUMBER_GENDER';
+export type FilterScope = 'CASE_ONLY' | 'NUMBER_ONLY' | 'CASE_NUMBER_GENDER' | 'ALL_STEMS';
 
 export interface FilterParams {
   filterScope?: FilterScope;
   filterCaseTypes?: string;      // comma-separated caseType values
   filterNumberTypes?: string;    // comma-separated numberType values
   filterCombinations?: string;   // comma-separated "caseType:numberType:gender" triples
+  filterVowelTypes?: string;     // comma-separated vowelType values (ALL_STEMS only)
+  filterGenders?: string;        // comma-separated gender values (ALL_STEMS only)
 }
 
 export const quizApi = {
@@ -66,7 +68,7 @@ export const quizApi = {
     });
   },
 
-    startOrResumeSessionWithFilters: (quizId: string, lessonType: LessonType, userLocale: string, filters: FilterParams) => {
+        startOrResumeSessionWithFilters: (quizId: string, lessonType: LessonType, userLocale: string, filters: FilterParams) => {
     const slug = lessonType.toLowerCase();
     const url = `/api/v1/quiz/${slug}/sessions/start-or-resume`;
     const params: Record<string, string> = { lessonId: quizId };
@@ -74,8 +76,26 @@ export const quizApi = {
     if (filters.filterCaseTypes) params.filterCaseTypes = filters.filterCaseTypes;
     if (filters.filterNumberTypes) params.filterNumberTypes = filters.filterNumberTypes;
     if (filters.filterCombinations) params.filterCombinations = filters.filterCombinations;
+    if (filters.filterVowelTypes) params.filterVowelTypes = filters.filterVowelTypes;
+    if (filters.filterGenders) params.filterGenders = filters.filterGenders;
     return api.post<StartOrResumeResponse>(url, null, {
         params,
+      headers: { 'X-User-Locale': userLocale },
+    });
+  },
+
+        startOrResumeAllStemsSession: (userLocale: string, filterVowelTypes?: string[], filterNumberTypes?: string[], filterGenders?: string[], filterCaseTypes?: string[]) => {
+    const url = '/api/v1/quiz/declensions-all/sessions/start-or-resume';
+    const params: Record<string, string> = {
+      lessonId: '20000000-0000-0000-0000-00000000000b',
+      filterScope: 'ALL_STEMS',
+    };
+    if (filterVowelTypes && filterVowelTypes.length > 0) params.filterVowelTypes = filterVowelTypes.join(',');
+    if (filterNumberTypes && filterNumberTypes.length > 0) params.filterNumberTypes = filterNumberTypes.join(',');
+    if (filterGenders && filterGenders.length > 0) params.filterGenders = filterGenders.join(',');
+    if (filterCaseTypes && filterCaseTypes.length > 0) params.filterCaseTypes = filterCaseTypes.join(',');
+    return api.post<StartOrResumeResponse>(url, null, {
+      params,
       headers: { 'X-User-Locale': userLocale },
     });
   },
@@ -150,15 +170,17 @@ export const quizApi = {
     });
   },
 
-    startOrResumeWithStatusFilter: (
+        startOrResumeWithStatusFilter: (
     lessonId: string,
     lessonType: LessonType,
     userLocale: string,
     statusFilter: string,
+    filterVowelTypes?: string,
   ) => {
     const slug = lessonType.toLowerCase();
     const url = `/api/v1/quiz/${slug}/sessions/start-or-resume`;
     const params: Record<string, string> = { lessonId, statusFilter };
+    if (filterVowelTypes) params.filterVowelTypes = filterVowelTypes;
     return api.post<StartOrResumeResponse>(url, null, {
       params,
       headers: { 'X-User-Locale': userLocale },

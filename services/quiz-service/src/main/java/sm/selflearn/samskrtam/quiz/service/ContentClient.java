@@ -63,8 +63,14 @@ public class ContentClient {
         return generateQuizData(lessonId, userLocale, null, null, null, null);
     }
 
-    public Mono<GeneratedQuizData> generateQuizData(UUID lessonId, String userLocale,
+        public Mono<GeneratedQuizData> generateQuizData(UUID lessonId, String userLocale,
                                                     String filterScope, String filterCaseTypes, String filterNumberTypes, String filterCombinations) {
+        return generateQuizData(lessonId, userLocale, filterScope, filterCaseTypes, filterNumberTypes, filterCombinations, null, null);
+    }
+
+    public Mono<GeneratedQuizData> generateQuizData(UUID lessonId, String userLocale,
+                                                    String filterScope, String filterCaseTypes, String filterNumberTypes, String filterCombinations,
+                                                    String filterVowelTypes, String filterGenders) {
         return webClient.post()
                 .uri(uriBuilder -> {
                     var builder = uriBuilder.path("/api/v1/content/lessons/{id}/generate-quiz-data");
@@ -72,6 +78,8 @@ public class ContentClient {
                     if (filterCaseTypes != null) builder.queryParam("filterCaseTypes", filterCaseTypes);
                     if (filterNumberTypes != null) builder.queryParam("filterNumberTypes", filterNumberTypes);
                     if (filterCombinations != null) builder.queryParam("filterCombinations", filterCombinations);
+                    if (filterVowelTypes != null) builder.queryParam("filterVowelTypes", filterVowelTypes);
+                    if (filterGenders != null) builder.queryParam("filterGenders", filterGenders);
                     return builder.build(lessonId);
                 })
                 .header("X-User-Locale", userLocale)

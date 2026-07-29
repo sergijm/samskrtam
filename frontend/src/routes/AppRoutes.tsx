@@ -36,6 +36,7 @@ import AlphabetPage from '../pages/writing/AlphabetPage';
 import TransliterationPracticePage from '../pages/tools/TransliterationPracticePage';
 import VocabularyLessonPage from '../pages/lessons/VocabularyLessonPage';
 import GrammarLessonPage from '../pages/lessons/GrammarLessonPage';
+import GrammarAllStemsPage from '../pages/lessons/GrammarAllStemsPage';
 import WorksPage from '../pages/sangraha/WorksPage';
 import WorkPage from '../pages/sangraha/WorkPage';
 import VersePage from '../pages/sangraha/VersePage';
@@ -94,7 +95,8 @@ export default function AppRoutes() {
       <Route path="/vocabulary/basic" element={<ProtectedLayoutRoute><VocabularyBasicPage /></ProtectedLayoutRoute>} />
       <Route path="/vocabulary/texts" element={<ProtectedLayoutRoute><VocabularyTextsPage /></ProtectedLayoutRoute>} />
 
-      {/* Lesson pages */}
+            {/* Lesson pages */}
+      <Route path="/lessons/grammar/declensions-all" element={<ProtectedLayoutRoute><GrammarAllStemsPage /></ProtectedLayoutRoute>} />
       <Route path="/lessons/vocabulary/:slug" element={<ProtectedLayoutRoute><VocabularyLessonPage /></ProtectedLayoutRoute>} />
       <Route path="/lessons/grammar/:slug" element={<ProtectedLayoutRoute><GrammarLessonPage /></ProtectedLayoutRoute>} />
 

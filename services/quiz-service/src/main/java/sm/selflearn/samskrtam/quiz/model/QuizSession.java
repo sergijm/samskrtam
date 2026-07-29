@@ -49,12 +49,24 @@ public class QuizSession {
      */
     private Json filterCombinations;
 
-    /**
+        /**
      * Status filter (NEW|LEARNING|REVIEW) for bucket-based quiz sessions.
      * Null when no status filter applied. Participates in IN_PROGRESS session
      * lookup for resume: a session with one statusFilter is not resumed
      * by a click on a badge with a different statusFilter (or without one).
      */
     private StatusFilter statusFilter;
+
+    /**
+     * JSONB array of vowelType strings. Non-null only when filterScope = ALL_STEMS.
+     * Example: ["A_STEM","AA_STEM","I_STEM"]
+     */
+    private Json filterVowelTypes;
+
+    /**
+     * JSONB array of gender strings. Non-null only when filterScope = ALL_STEMS.
+     * Example: ["MASCULINE","FEMININE"]
+     */
+    private Json filterGenders;
 }
 

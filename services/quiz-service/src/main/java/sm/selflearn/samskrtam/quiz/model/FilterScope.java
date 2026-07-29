@@ -17,9 +17,16 @@ public enum FilterScope {
      */
     NUMBER_ONLY,
 
-    /**
+        /**
      * Detailed filter by combinations of case type, number type, and gender (from the "Details" tab).
      * filterCombinations is non-empty, filterCaseTypes/filterNumberTypes are null.
      */
-    CASE_NUMBER_GENDER
+    CASE_NUMBER_GENDER,
+
+    /**
+     * Cross-lesson filter for the virtual "declensions-all" lesson (see quiz-declension.md §5).
+     * Uses filterVowelTypes, filterGenders, and filterNumberTypes together.
+     * filterCaseTypes and filterCombinations are not used with this scope.
+     */
+    ALL_STEMS
 }

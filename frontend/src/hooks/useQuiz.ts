@@ -177,3 +177,23 @@ export const useStartNewQuizSession = () => {
   });
 };
 
+export const useStartOrResumeAllStemsSession = () => {
+  const { locale } = useLocaleStore();
+  return useMutation<
+    StartOrResumeResponse,
+    Error,
+    { filterVowelTypes?: string[]; filterNumberTypes?: string[]; filterGenders?: string[]; filterCaseTypes?: string[] }
+  >({
+    mutationFn: async ({ filterVowelTypes, filterNumberTypes, filterGenders, filterCaseTypes }) => {
+      const response = await quizApi.startOrResumeAllStemsSession(
+        locale,
+        filterVowelTypes,
+        filterNumberTypes,
+        filterGenders,
+        filterCaseTypes,
+      );
+      return response.data;
+    },
+  });
+};
+

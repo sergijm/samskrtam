@@ -22,14 +22,16 @@ public class QuestionGenerationService {
     private final VocabularyService vocabularyService;
     private final QuizScopeFilterService quizScopeFilterService;
 
-    public List<GeneratedQuizQuestionDto> generateQuestions(Lesson lesson, String userLocale,
-            String filterScope, String filterCaseTypes, String filterNumberTypes, String filterCombinations) {
+        public List<GeneratedQuizQuestionDto> generateQuestions(Lesson lesson, String userLocale,
+            String filterScope, String filterCaseTypes, String filterNumberTypes, String filterCombinations,
+            String filterVowelTypes, String filterGenders) {
         log.debug("Generating new questions for quizId: {} and locale: {}", lesson.getId(), userLocale);
 
         var builders = new ArrayList<GeneratedQuizQuestionDto.GeneratedQuizQuestionDtoBuilder>();
 
         if (LessonType.isDeclensions(lesson.getLessonType())) {
-            builders.addAll(declensionQuizGeneratorService.generateDeclensionQuestions(lesson, new Locale(userLocale)).stream()
+            builders.addAll(declensionQuizGeneratorService.generateDeclensionQuestions(
+                            lesson, new Locale(userLocale), filterVowelTypes, filterGenders).stream()
                     .map(response -> GeneratedQuizQuestionDto.builder()
                             .id(UUID.randomUUID())
                             .quizId(lesson.getId())

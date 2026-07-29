@@ -38,9 +38,9 @@ public class QuizScopeFilterService {
      * Pre-filters questions by scope parameters.
      *
      * @param questions          full list of generated questions
-     * @param filterScope        {@code "CASE_ONLY"} / {@code "NUMBER_ONLY"} / {@code "CASE_NUMBER_GENDER"}; {@code null} or blank → no filtering
+          * @param filterScope        {@code "CASE_ONLY"} / {@code "NUMBER_ONLY"} / {@code "CASE_NUMBER_GENDER"} / {@code "ALL_STEMS"}; {@code null} or blank → no filtering
      * @param filterCaseTypes    JSON array of allowed {@code CaseType} names (for {@code CASE_ONLY})
-     * @param filterNumberTypes  JSON array of allowed {@code NumberType} names (for {@code NUMBER_ONLY})
+     * @param filterNumberTypes  JSON array of allowed {@code NumberType} names (for {@code NUMBER_ONLY} / {@code ALL_STEMS})
      * @param filterCombinations JSON array of {@code {caseType,numberType,gender}} objects (for {@code CASE_NUMBER_GENDER})
      * @return filtered list (may be empty); the original list if {@code filterScope} is blank
      */
@@ -65,15 +65,27 @@ public class QuizScopeFilterService {
                                 && (allowedCases.isEmpty() || allowedCases.contains(q.getTargetCase().name())))
                         .collect(Collectors.toList());
             }
-            case "NUMBER_ONLY" -> {
-                Set<String> allowedNumbers = filterNumberTypes != null
-                        ? new HashSet<>(parseJsonArray(filterNumberTypes))
-                        : Collections.emptySet();
-                yield questions.stream()
-                        .filter(q -> q.getTargetNumber() != null
-                                && (allowedNumbers.isEmpty() || allowedNumbers.contains(q.getTargetNumber().name())))
-                        .collect(Collectors.toList());
-            }
+                        case "NUMBER_ONLY" -> {
+                            Set<String> allowedNumbers = resolveAllowedNumbers(filterNumberTypes);
+                            yield questions.stream()
+                                    .filter(q -> q.getTargetNumber() != null
+                                            && allowedNumbers.contains(q.getTargetNumber().name()))
+                                    .collect(Collectors.toList());
+                        }
+                        case "ALL_STEMS" -> {
+                            // ALL_STEMS: vowelType and gender are already pre-filtered at the DB level
+                            // (DeclensionQuizGeneratorService). Here we filter by numberType and caseType.
+                            Set<String> allowedNumbers = resolveAllowedNumbers(filterNumberTypes);
+                            Set<String> allowedCases = filterCaseTypes != null
+                                    ? new HashSet<>(parseJsonArray(filterCaseTypes))
+                                    : Collections.emptySet();
+                            yield questions.stream()
+                                    .filter(q -> q.getTargetNumber() != null
+                                            && allowedNumbers.contains(q.getTargetNumber().name()))
+                                    .filter(q -> allowedCases.isEmpty()
+                                            || (q.getTargetCase() != null && allowedCases.contains(q.getTargetCase().name())))
+                                    .collect(Collectors.toList());
+                        }
             case "CASE_NUMBER_GENDER" -> {
                 List<FilterCombination> combos = filterCombinations != null
                         ? parseCombinationsJson(filterCombinations)
@@ -139,6 +151,22 @@ public class QuizScopeFilterService {
         int end = obj.indexOf("\"", start);
         if (end < 0) return null;
         return obj.substring(start, end);
+    }
+
+        /**
+     * Resolves allowed number types: parses JSON array, expands empty to all three numbers.
+     *
+     * @param filterNumberTypes JSON array string or null/blank
+     * @return non-empty set of NumberType names
+     */
+    private Set<String> resolveAllowedNumbers(String filterNumberTypes) {
+        Set<String> result = filterNumberTypes != null
+                ? new HashSet<>(parseJsonArray(filterNumberTypes))
+                : new HashSet<>();
+        if (result.isEmpty()) {
+            result = new HashSet<>(List.of("SINGULAR", "DUAL", "PLURAL"));
+        }
+        return result;
     }
 
     /**

@@ -32,22 +32,24 @@ public class QuizSessionService {
     private final SessionCreationService sessionCreationService;
 
         /**
-     * Unified dispatcher: routes to plain, filter-scoped, or status-filtered branch.
-     */
-    public Mono<StartOrResumeResponse> startOrResumeSession(
-            UUID lessonId, UUID userId, String userLocale,
-            FilterScope filterScope, String filterCaseTypes,
-            String filterNumberTypes, String filterCombinations,
-            StatusFilter statusFilter) {
-        if (statusFilter != null) {
-            return startOrResumeWithStatusFilter(lessonId, userId, userLocale, statusFilter);
+         * Unified dispatcher: routes to plain, filter-scoped, or status-filtered branch.
+         */
+        public Mono<StartOrResumeResponse> startOrResumeSession(
+                UUID lessonId, UUID userId, String userLocale,
+                FilterScope filterScope, String filterCaseTypes,
+                String filterNumberTypes, String filterCombinations,
+                StatusFilter statusFilter,
+                String filterVowelTypes, String filterGenders) {
+            if (statusFilter != null) {
+                return startOrResumeWithStatusFilter(lessonId, userId, userLocale, statusFilter);
+            }
+            if (filterScope != null) {
+                return startOrResumeWithFilterScope(lessonId, userId, userLocale,
+                        filterScope, filterCaseTypes, filterNumberTypes, filterCombinations,
+                        filterVowelTypes, filterGenders);
+            }
+            return startOrResumeSession(lessonId, userId, userLocale);
         }
-        if (filterScope != null) {
-            return startOrResumeWithFilterScope(lessonId, userId, userLocale,
-                    filterScope, filterCaseTypes, filterNumberTypes, filterCombinations);
-        }
-        return startOrResumeSession(lessonId, userId, userLocale);
-    }
 
     /** Plain start-or-resume (no filterScope, no statusFilter). */
     public Mono<StartOrResumeResponse> startOrResumeSession(UUID lessonId, UUID userId, String userLocale) {
@@ -57,14 +59,17 @@ public class QuizSessionService {
                 .switchIfEmpty(Mono.defer(() -> sessionCreationService.createNewSession(lessonId, userId, userLocale)));
     }
 
-    private Mono<StartOrResumeResponse> startOrResumeWithFilterScope(
+        private Mono<StartOrResumeResponse> startOrResumeWithFilterScope(
             UUID lessonId, UUID userId, String userLocale,
             FilterScope filterScope, String filterCaseTypes,
-            String filterNumberTypes, String filterCombinations) {
+            String filterNumberTypes, String filterCombinations,
+            String filterVowelTypes, String filterGenders) {
         String scope = filterScope.name();
         String canonicalCaseTypes = null;
         String canonicalNumberTypes = null;
         String canonicalCombinations = null;
+        String canonicalVowelTypes = null;
+        String canonicalGenders = null;
 
                 switch (filterScope) {
             case CASE_ONLY -> canonicalCaseTypes = QuizFilterJsonHelper.buildCanonicalJsonArray(
@@ -73,18 +78,41 @@ public class QuizSessionService {
                     QuizFilterJsonHelper.parseCsvToList(filterNumberTypes));
             case CASE_NUMBER_GENDER -> canonicalCombinations = QuizFilterJsonHelper.buildCanonicalCombinationsJson(
                     QuizFilterJsonHelper.parseCombinations(filterCombinations));
+                        case ALL_STEMS -> {
+                canonicalVowelTypes = QuizFilterJsonHelper.buildCanonicalJsonArray(
+                        QuizFilterJsonHelper.parseCsvToList(filterVowelTypes));
+                canonicalNumberTypes = QuizFilterJsonHelper.buildCanonicalJsonArray(
+                        QuizFilterJsonHelper.parseCsvToList(filterNumberTypes));
+                canonicalGenders = QuizFilterJsonHelper.buildCanonicalJsonArray(
+                        QuizFilterJsonHelper.parseCsvToList(filterGenders));
+                canonicalCaseTypes = QuizFilterJsonHelper.buildCanonicalJsonArray(
+                        QuizFilterJsonHelper.parseCsvToList(filterCaseTypes));
+            }
         }
 
         final String finalCaseTypes = canonicalCaseTypes;
         final String finalNumberTypes = canonicalNumberTypes;
         final String finalCombinations = canonicalCombinations;
+        final String finalVowelTypes = canonicalVowelTypes;
+        final String finalGenders = canonicalGenders;
+
+                if (filterScope == FilterScope.ALL_STEMS) {
+            return quizSessionRepository
+                    .findInProgressByAllStemsFilter(userId, lessonId, scope,
+                            finalVowelTypes, finalGenders, finalNumberTypes, finalCaseTypes)
+                    .flatMap(session -> sessionOperationsService.resume(session, userLocale))
+                    .switchIfEmpty(Mono.defer(() -> sessionCreationService.createFilteredSession(
+                            lessonId, userId, userLocale,
+                            filterScope, finalCaseTypes, finalNumberTypes, null,
+                            finalVowelTypes, finalGenders)));
+        }
 
         return quizSessionRepository
                 .findInProgressByFilter(userId, lessonId, scope,
                         finalCaseTypes, finalNumberTypes, finalCombinations)
                 .flatMap(session -> sessionOperationsService.resume(session, userLocale))
                                 .switchIfEmpty(Mono.defer(() -> sessionCreationService.createFilteredSession(lessonId, userId, userLocale,
-                        filterScope, finalCaseTypes, finalNumberTypes, finalCombinations)));
+                        filterScope, finalCaseTypes, finalNumberTypes, finalCombinations, null, null)));
     }
 
     /**

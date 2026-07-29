@@ -40,17 +40,20 @@ public class SessionFactory {
                 .build();
     }
 
-    /**
+        /**
      * Creates a new filtered quiz session with filter scope using JSONB sets.
-     * See docs/services/quiz-service/quiz-declension.md §3.4
+     * See docs/services/quiz-service/quiz-declension.md §3.4, §5.3
      *
      * @param filterCaseTypes JSON array string for CASE_ONLY
      * @param filterNumberTypes JSON array string for NUMBER_ONLY
      * @param filterCombinations JSON array string for CASE_NUMBER_GENDER
+     * @param filterVowelTypes JSON array string for ALL_STEMS
+     * @param filterGenders JSON array string for ALL_STEMS
      */
     public QuizSession createFilteredSession(UUID lessonId, UUID userId, GeneratedQuizData generatedQuizData,
                                                FilterScope filterScope, String filterCaseTypes,
-                                               String filterNumberTypes, String filterCombinations) {
+                                               String filterNumberTypes, String filterCombinations,
+                                               String filterVowelTypes, String filterGenders) {
         List<VocabularyWordDto> vocabularyWords = generatedQuizData.getVocabularyWords() != null ? generatedQuizData.getVocabularyWords() : Collections.emptyList();
         String vocabularyWordsJson = vocabularyWordsSerializer.serialize(vocabularyWords);
 
@@ -69,6 +72,8 @@ public class SessionFactory {
                 .filterCaseTypes(filterCaseTypes != null ? Json.of(filterCaseTypes) : null)
                 .filterNumberTypes(filterNumberTypes != null ? Json.of(filterNumberTypes) : null)
                 .filterCombinations(filterCombinations != null ? Json.of(filterCombinations) : null)
+                .filterVowelTypes(filterVowelTypes != null ? Json.of(filterVowelTypes) : null)
+                .filterGenders(filterGenders != null ? Json.of(filterGenders) : null)
                 .build();
     }
 

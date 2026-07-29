@@ -65,17 +65,20 @@ public class SessionCreationService {
 
     // ================== Filter-scoped session ==================
 
-    public Mono<sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse> createFilteredSession(
+        public Mono<sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse> createFilteredSession(
             UUID lessonId, UUID userId, String userLocale,
             FilterScope filterScope, String filterCaseTypes,
-            String filterNumberTypes, String filterCombinations) {
+            String filterNumberTypes, String filterCombinations,
+            String filterVowelTypes, String filterGenders) {
         String filterScopeStr = filterScope != null ? filterScope.name() : null;
         return contentClient.generateQuizData(lessonId, userLocale,
-                        filterScopeStr, filterCaseTypes, filterNumberTypes, filterCombinations)
+                        filterScopeStr, filterCaseTypes, filterNumberTypes, filterCombinations,
+                        filterVowelTypes, filterGenders)
                 .flatMap(generatedQuizData -> {
                     QuizSession newSession = sessionFactory.createFilteredSession(
                             lessonId, userId, generatedQuizData,
-                            filterScope, filterCaseTypes, filterNumberTypes, filterCombinations);
+                            filterScope, filterCaseTypes, filterNumberTypes, filterCombinations,
+                            filterVowelTypes, filterGenders);
                     return quizSessionRepository.save(newSession)
                             .flatMap(savedSession -> {
                                 List<GeneratedQuizQuestionDto> allQuestions = generatedQuizData.getGeneratedQuestions();
@@ -84,7 +87,9 @@ public class SessionCreationService {
                                             "No questions match the filter scope: " + filterScope
                                             + " filterCaseTypes=" + filterCaseTypes
                                             + " filterNumberTypes=" + filterNumberTypes
-                                            + " filterCombinations=" + filterCombinations));
+                                            + " filterCombinations=" + filterCombinations
+                                            + " filterVowelTypes=" + filterVowelTypes
+                                            + " filterGenders=" + filterGenders));
                                 }
                                 return filterAndSaveQuestions(savedSession, allQuestions,
                                         generatedQuizData, userId, userLocale, false);

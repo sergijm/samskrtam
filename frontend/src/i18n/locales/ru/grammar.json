@@ -24,11 +24,46 @@
     "UNKNOWN": "род неизвестен",
     "UNSPECIFIED": "род не указан"
   },
-    "endings": {
-        "titleAStem": "Падежные окончания основ на -a",
-    "titleAAStem": "Падежные окончания основ на -ā",
-    "titleIUStem": "Падежные окончания основ на -i / -u",
-    "titleIIUuStem": "Падежные окончания основ на -ī / -ū",
+                "allStems": {
+    "title": "Все основы",
+    "subtitle": "Все основы",
+    "startQuiz": "Начать квиз",
+    "filterVowelTypes": "По гласным основам",
+    "filterNumberTypes": "По числам",
+    "filterGenders": "По родам",
+    "filterCaseTypes": "По падежам",
+    "noQuestionsForFilters": "По выбранным фильтрам нет вопросов, попробуйте другую комбинацию",
+    "scopeFilterEmpty": "По выбранным фильтрам нет вопросов, попробуйте другую комбинацию"
+  },
+  "vowelType": {
+    "A_STEM": "a",
+    "AA_STEM": "ā",
+    "I_STEM": "i",
+    "II_STEM": "ī",
+    "U_STEM": "u",
+    "UU_STEM": "ū",
+    "R_STEM": "ṛ"
+  },
+    "number": {
+    "SINGULAR": "Единственное",
+    "DUAL": "Двойственное",
+    "PLURAL": "Множественное"
+  },
+  "case": {
+    "NOMINATIVE": "Именительный",
+    "ACCUSATIVE": "Винительный",
+    "INSTRUMENTAL": "Творительный",
+    "DATIVE": "Дательный",
+    "ABLATIVE": "Отложительный",
+    "GENITIVE": "Родительный",
+    "LOCATIVE": "Местный",
+    "VOCATIVE": "Звательный"
+  },
+  "endings": {
+    "titleAStem": "Окончания основ на -a",
+    "titleAAStem": "Окончания основ на -ā",
+    "titleIUStem": "Окончания основ на -i / -u",
+    "titleIIUuStem": "Окончания основ на -ī / -ū",
     "sectionTitle": "Таблица окончаний",
     "toggleShow": "Показать таблицу окончаний",
     "toggleHide": "Скрыть таблицу окончаний"

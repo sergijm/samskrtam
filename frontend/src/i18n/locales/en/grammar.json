@@ -24,6 +24,41 @@
     "UNKNOWN": "unknown gender",
     "UNSPECIFIED": "unspecified gender"
   },
+                "allStems": {
+    "title": "All stems",
+    "subtitle": "All stems",
+    "startQuiz": "Start quiz",
+    "filterVowelTypes": "By vowel stem",
+    "filterNumberTypes": "By number",
+    "filterGenders": "By gender",
+    "filterCaseTypes": "By case",
+    "noQuestionsForFilters": "No questions match the selected filters, try a different combination",
+    "scopeFilterEmpty": "No questions match the selected filters, try a different combination"
+  },
+  "vowelType": {
+    "A_STEM": "a",
+    "AA_STEM": "ā",
+    "I_STEM": "i",
+    "II_STEM": "ī",
+    "U_STEM": "u",
+    "UU_STEM": "ū",
+    "R_STEM": "ṛ"
+  },
+    "number": {
+    "SINGULAR": "Singular",
+    "DUAL": "Dual",
+    "PLURAL": "Plural"
+  },
+  "case": {
+    "NOMINATIVE": "Nominative",
+    "ACCUSATIVE": "Accusative",
+    "INSTRUMENTAL": "Instrumental",
+    "DATIVE": "Dative",
+    "ABLATIVE": "Ablative",
+    "GENITIVE": "Genitive",
+    "LOCATIVE": "Locative",
+    "VOCATIVE": "Vocative"
+  },
   "endings": {
     "titleAStem": "Case Endings of -a Stems",
     "titleAAStem": "Case Endings of -ā Stems",
@@ -56,3 +91,4 @@
     "noWordsFound": "No words found."
   }
 }
+

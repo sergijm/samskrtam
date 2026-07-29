@@ -27,9 +27,10 @@ public class GenerateQuizService {
     private final VocabularyService vocabularyService;
     private final GrammarContentService grammarContentService;
 
-    public GeneratedQuizData generateQuizData(UUID quizId, Locale locale,
+        public GeneratedQuizData generateQuizData(UUID quizId, Locale locale,
                                               String filterScope, String filterCaseTypes,
-                                              String filterNumberTypes, String filterCombinations) {
+                                              String filterNumberTypes, String filterCombinations,
+                                              String filterVowelTypes, String filterGenders) {
 
         Lesson lesson = lessonRepository.findById(quizId)
                 .orElseThrow(() -> new SamskrtamException("LESSON_NOT_FOUND", "Lesson not found with ID: " + quizId));
@@ -40,7 +41,8 @@ public class GenerateQuizService {
         }
 
         List<GeneratedQuizQuestionDto> questions = questionGenerationService.generateQuestions(
-                lesson, locale.getLanguage(), filterScope, filterCaseTypes, filterNumberTypes, filterCombinations);
+                lesson, locale.getLanguage(), filterScope, filterCaseTypes, filterNumberTypes, filterCombinations,
+                filterVowelTypes, filterGenders);
         List<GeneratedQuizQuestionDto> sortedQuestions = questions.stream()
                 .sorted(Comparator.comparingInt(GeneratedQuizQuestionDto::getQuestionNumber))
                 .toList();

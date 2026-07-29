@@ -10,6 +10,9 @@ import sm.selflearn.samskrtam.content.repository.CaseEndingRepository;
 import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
 import sm.selflearn.samskrtam.content.repository.DeclensionStemRepository;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -19,24 +22,33 @@ import java.util.stream.Collectors;
 public class DeclensionQuizGeneratorService {
 
         private final DeclensionStemRepository declensionStemRepository;
-    private final DeclensionFormRepository declensionFormRepository;
-    private final CaseEndingRepository caseEndingRepository;
+        private final DeclensionFormRepository declensionFormRepository;
+        private final CaseEndingRepository caseEndingRepository;
+        private final ObjectMapper objectMapper;
 
-    private static final Random random = new Random();
+        private static final Random random = new Random();
 
-        public List<QuestionResponse> generateDeclensionQuestions(Lesson lesson, Locale locale) {
-        List<DeclensionStem> availableStems;
+        public List<QuestionResponse> generateDeclensionQuestions(Lesson lesson, Locale locale,
+                                                                      String filterVowelTypes, String filterGenders) {
+            List<DeclensionStem> availableStems;
 
-        // Определяем VowelType(s) из slug урока (поддерживает составные уроки: declensions-i-u, declensions-ii-uu)
-        List<VowelType> vowelTypes = SlugToVowelTypeMapper.mapSlugToVowelTypes(lesson.getSlug());
+            // Определяем VowelType(s) из slug урока (поддерживает составные уроки: declensions-i-u, declensions-ii-uu)
+            List<VowelType> vowelTypes = SlugToVowelTypeMapper.mapSlugToVowelTypes(lesson.getSlug());
 
-        if (!vowelTypes.isEmpty()) {
-            // Конкретные типы основ — фильтруем по списку vowelType
-            availableStems = declensionStemRepository.findByVowelTypeIn(vowelTypes);
-        } else {
-            // slug не содержит конкретной основы (declensions-all) — берём все
-            availableStems = declensionStemRepository.findAll();
-        }
+            if (!vowelTypes.isEmpty()) {
+                // Конкретные типы основ — фильтруем по списку vowelType
+                availableStems = declensionStemRepository.findByVowelTypeIn(vowelTypes);
+            } else if ("declensions-all".equals(lesson.getSlug())) {
+                // ALL_STEMS: кросс-lesson выборка по filterVowelTypes + filterGenders (из query-параметров)
+                List<VowelType> filterVt = parseVowelTypes(filterVowelTypes);
+                List<Gender> filterG = parseGenders(filterGenders);
+                availableStems = declensionStemRepository.findByVowelTypeInAndGenderIn(
+                        filterVt.isEmpty() ? null : filterVt,
+                        filterG.isEmpty() ? null : filterG);
+            } else {
+                // slug не содержит конкретной основы — берём все
+                availableStems = declensionStemRepository.findAll();
+            }
 
         if (availableStems.isEmpty()) {
             throw new SamskrtamException("NO_DECLENSION_STEMS", "No declension stems found for quiz type: " + lesson.getLessonType());
@@ -233,10 +245,49 @@ public class DeclensionQuizGeneratorService {
     }
 
         /**
-     * @deprecated Use {@link SlugToVowelTypeMapper#mapSlugToVowelTypes(String)}.
-     */
-    private VowelType mapSlugToVowelType(String slug) {
-        return SlugToVowelTypeMapper.mapSlugToVowelType(slug);
-    }
+         * Parses filterVowelTypes: JSON array like ["A_STEM","AA_STEM"] — primary format from quiz-service,
+         * with CSV fallback for backward compatibility.
+         */
+        private List<VowelType> parseVowelTypes(String filterVowelTypes) {
+            return parseEnumList(filterVowelTypes, VowelType.class);
+        }
+
+        /**
+         * Parses filterGenders: JSON array like ["MASCULINE","FEMININE"] — primary format from quiz-service,
+         * with CSV fallback for backward compatibility.
+         */
+        private List<Gender> parseGenders(String filterGenders) {
+            return parseEnumList(filterGenders, Gender.class);
+        }
+
+        private <E extends Enum<E>> List<E> parseEnumList(String raw, Class<E> enumClass) {
+            if (raw == null || raw.isBlank()) return List.of();
+            List<String> tokens = parseStringList(raw);
+            List<E> result = new ArrayList<>();
+            for (String token : tokens) {
+                try {
+                    result.add(Enum.valueOf(enumClass, token.trim()));
+                } catch (IllegalArgumentException e) {
+                    // ignore unknown values
+                }
+            }
+            return result;
+        }
+
+        /**
+         * Primary: JSON array like {@code ["A_STEM","AA_STEM"]}.
+         * Fallback: comma-separated values like {@code "A_STEM,AA_STEM"}.
+         */
+        private List<String> parseStringList(String raw) {
+            String trimmed = raw.trim();
+            if (trimmed.startsWith("[")) {
+                try {
+                    return objectMapper.readValue(trimmed, new TypeReference<List<String>>() {});
+                } catch (Exception e) {
+                    log.debug("Failed to parse as JSON array, falling back to CSV: {}", trimmed, e);
+                }
+            }
+            return List.of(trimmed.split(","));
+        }
 }
 
