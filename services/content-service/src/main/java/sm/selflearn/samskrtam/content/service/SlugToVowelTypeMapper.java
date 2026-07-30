@@ -65,8 +65,25 @@ public final class SlugToVowelTypeMapper {
         if (slug.startsWith("declensions-u-") || slug.equals("declensions-u")) {
             return List.of(VowelType.U_STEM);
         }
-        if (slug.startsWith("declensions-r-") || slug.equals("declensions-r")) {
+                if (slug.startsWith("declensions-r-") || slug.equals("declensions-r")) {
             return List.of(VowelType.R_STEM);
+        }
+
+        // --- Pronoun lessons (ADR-008) ---
+        if (slug.equals("pronouns-personal")) {
+            return List.of(VowelType.PRON_AHAM, VowelType.PRON_TVAM);
+        }
+        if (slug.equals("pronouns-demonstrative")) {
+            return List.of(VowelType.PRON_TAD, VowelType.PRON_ETAD, VowelType.PRON_IDAM);
+        }
+        if (slug.equals("pronouns-interrogative")) {
+            return List.of(VowelType.PRON_KIM);
+        }
+        if (slug.equals("pronouns-relative")) {
+            return List.of(VowelType.PRON_YAD);
+        }
+        if (slug.equals("pronouns-reflexive")) {
+            return List.of(VowelType.PRON_REFLEXIVE);
         }
 
         // "declensions-all" or unknown slug → no specific vowel type filter
@@ -89,7 +106,9 @@ public final class SlugToVowelTypeMapper {
                         || vt == VowelType.II_STEM
                         || vt == VowelType.U_STEM
                         || vt == VowelType.UU_STEM
-                        || vt == VowelType.R_STEM);
+                        || vt == VowelType.R_STEM
+                        || vt == VowelType.PRON_AHAM
+                        || vt == VowelType.PRON_TVAM);
     }
 
     /**
@@ -102,3 +121,4 @@ public final class SlugToVowelTypeMapper {
         return types.isEmpty() ? null : types.get(0);
     }
 }
+

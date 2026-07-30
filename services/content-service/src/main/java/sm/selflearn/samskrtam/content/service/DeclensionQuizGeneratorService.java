@@ -219,11 +219,13 @@ public class DeclensionQuizGeneratorService {
         if (gender == null) {
             gender = Gender.UNSPECIFIED;
         }
-        boolean isUnspecifiedGenderType = (vowelType == VowelType.I_STEM
+                boolean isUnspecifiedGenderType = (vowelType == VowelType.I_STEM
                 || vowelType == VowelType.II_STEM
                 || vowelType == VowelType.U_STEM
                 || vowelType == VowelType.UU_STEM
-                || vowelType == VowelType.R_STEM);
+                || vowelType == VowelType.R_STEM
+                || vowelType == VowelType.PRON_AHAM
+                || vowelType == VowelType.PRON_TVAM);
 
         if (isUnspecifiedGenderType) {
             var endings = caseEndingRepository.findByVowelTypeAndGenderAndCaseTypeAndNumberType(

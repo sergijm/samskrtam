@@ -42,7 +42,15 @@
     "II_STEM": "ī",
     "U_STEM": "u",
     "UU_STEM": "ū",
-    "R_STEM": "ṛ"
+    "R_STEM": "ṛ",
+    "PRON_AHAM": "aham (I)",
+    "PRON_TVAM": "tvam (you)",
+    "PRON_TAD": "tad (that)",
+    "PRON_ETAD": "etad (this)",
+    "PRON_IDAM": "idam (this)",
+    "PRON_KIM": "kim (who?)",
+    "PRON_YAD": "yad (which)",
+    "PRON_REFLEXIVE": "reflex."
   },
     "number": {
     "SINGULAR": "Singular",

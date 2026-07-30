@@ -188,7 +188,7 @@ ALTER TABLE "content"."case_endings" ADD CONSTRAINT "uq_case_endings" UNIQUE ("v
 -- ----------------------------
 -- Checks structure for table case_endings
 -- ----------------------------
-ALTER TABLE "content"."case_endings" ADD CONSTRAINT "ck_vowel_type" CHECK (vowel_type::text = ANY (ARRAY['A_STEM'::character varying, 'AA_STEM'::character varying, 'I_STEM'::character varying, 'II_STEM'::character varying, 'U_STEM'::character varying, 'UU_STEM'::character varying, 'R_STEM'::character varying]::text[]));
+ALTER TABLE "content"."case_endings" ADD CONSTRAINT "ck_vowel_type" CHECK (vowel_type::text = ANY (ARRAY['A_STEM'::character varying, 'AA_STEM'::character varying, 'I_STEM'::character varying, 'II_STEM'::character varying, 'U_STEM'::character varying, 'UU_STEM'::character varying, 'R_STEM'::character varying, 'PRON_AHAM'::character varying, 'PRON_TVAM'::character varying, 'PRON_TAD'::character varying, 'PRON_ETAD'::character varying, 'PRON_IDAM'::character varying, 'PRON_KIM'::character varying, 'PRON_YAD'::character varying, 'PRON_REFLEXIVE'::character varying]::text[]));
 ALTER TABLE "content"."case_endings" ADD CONSTRAINT "ck_gender" CHECK (gender::text = ANY (ARRAY['MASCULINE'::character varying, 'FEMININE'::character varying, 'NEUTER'::character varying, 'UNKNOWN'::character varying, 'UNSPECIFIED'::character varying]::text[]));
 ALTER TABLE "content"."case_endings" ADD CONSTRAINT "ck_case_type" CHECK (case_type::text = ANY (ARRAY['NOMINATIVE'::character varying, 'ACCUSATIVE'::character varying, 'INSTRUMENTAL'::character varying, 'DATIVE'::character varying, 'ABLATIVE'::character varying, 'GENITIVE'::character varying, 'LOCATIVE'::character varying, 'VOCATIVE'::character varying]::text[]));
 ALTER TABLE "content"."case_endings" ADD CONSTRAINT "ck_number_type" CHECK (number_type::text = ANY (ARRAY['SINGULAR'::character varying, 'DUAL'::character varying, 'PLURAL'::character varying]::text[]));
@@ -221,7 +221,7 @@ ALTER TABLE "content"."declension_stems" ADD CONSTRAINT "declension_stems_stem_i
 -- ----------------------------
 -- Checks structure for table declension_stems
 -- ----------------------------
-ALTER TABLE "content"."declension_stems" ADD CONSTRAINT "ck_vowel_type" CHECK (vowel_type::text = ANY (ARRAY['A_STEM'::character varying::text, 'AA_STEM'::character varying::text, 'I_STEM'::character varying::text, 'II_STEM'::character varying::text, 'U_STEM'::character varying::text, 'UU_STEM'::character varying::text, 'R_STEM'::character varying::text]));
+ALTER TABLE "content"."declension_stems" ADD CONSTRAINT "ck_vowel_type" CHECK (vowel_type::text = ANY (ARRAY['A_STEM'::character varying::text, 'AA_STEM'::character varying::text, 'I_STEM'::character varying::text, 'II_STEM'::character varying::text, 'U_STEM'::character varying::text, 'UU_STEM'::character varying::text, 'R_STEM'::character varying::text, 'PRON_AHAM'::character varying::text, 'PRON_TVAM'::character varying::text, 'PRON_TAD'::character varying::text, 'PRON_ETAD'::character varying::text, 'PRON_IDAM'::character varying::text, 'PRON_KIM'::character varying::text, 'PRON_YAD'::character varying::text, 'PRON_REFLEXIVE'::character varying::text]));
 ALTER TABLE "content"."declension_stems" ADD CONSTRAINT "ck_gender" CHECK (gender::text = ANY (ARRAY['MASCULINE'::character varying::text, 'FEMININE'::character varying::text, 'NEUTER'::character varying::text, 'UNKNOWN'::character varying::text]));
 
 -- ----------------------------

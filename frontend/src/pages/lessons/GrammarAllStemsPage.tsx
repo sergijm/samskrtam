@@ -8,7 +8,8 @@ import { useStartOrResumeAllStemsSession } from '../../hooks/useQuiz';
 import { useLocaleStore } from '../../store/localeStore';
 import type { StartOrResumeResponse } from '../../types/quiz';
 
-const VOWEL_TYPES: string[] = ['A_STEM', 'AA_STEM', 'I_STEM', 'II_STEM', 'U_STEM', 'UU_STEM', 'R_STEM'];
+const VOWEL_TYPES: string[] = ['A_STEM', 'AA_STEM', 'I_STEM', 'II_STEM', 'U_STEM', 'UU_STEM', 'R_STEM',
+    'PRON_AHAM', 'PRON_TVAM', 'PRON_TAD', 'PRON_ETAD', 'PRON_IDAM', 'PRON_KIM', 'PRON_YAD', 'PRON_REFLEXIVE'];
 const NUMBER_TYPES: string[] = ['SINGULAR', 'DUAL', 'PLURAL'];
 const GENDER_TYPES: string[] = ['MASCULINE', 'FEMININE', 'NEUTER', 'UNSPECIFIED'];
 const CASE_TYPES: string[] = ['NOMINATIVE', 'ACCUSATIVE', 'INSTRUMENTAL', 'DATIVE', 'ABLATIVE', 'GENITIVE', 'LOCATIVE', 'VOCATIVE'];

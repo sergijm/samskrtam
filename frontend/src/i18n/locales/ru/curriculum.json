@@ -25,7 +25,14 @@
     "cons_as_is_us": "Согласные: -as/-is/-us",
     "cons_at_ant": "Согласные: -at/-ant",
     "cons_simple_final": "Согласные: простые конечные",
-    "irregular": "Нерегулярные основы"
+        "irregular": "Нерегулярные основы"
+  },
+  "pronouns": {
+    "personal": "Личные",
+    "demonstrative": "Указательные",
+    "interrogative": "Вопросительные",
+    "relative": "Относительные",
+    "reflexive": "Возвратное"
   },
   "vocabulary": {
     "sangraha_quizzes": "VOCABULARY-квизы (sangraha)",

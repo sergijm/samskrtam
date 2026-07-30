@@ -66,16 +66,13 @@ export const curriculumTree: CurriculumNode[] = [
         ],
       },
       // --- 2.1.3 Pronouns --------------------------------------------
-      {
-        id: '2.1.3',
-        titleKey: 'section.pronouns',
-        status: 'planned',
+      { id: '2.1.3', titleKey: 'section.pronouns', status: 'available',
         children: [
-          { id: '2.1.3.1', titleKey: 'pronouns.personal', status: 'planned' },
-          { id: '2.1.3.2', titleKey: 'pronouns.demonstrative', status: 'planned' },
-          { id: '2.1.3.3', titleKey: 'pronouns.interrogative', status: 'planned' },
-          { id: '2.1.3.4', titleKey: 'pronouns.relative', status: 'planned' },
-          { id: '2.1.3.5', titleKey: 'pronouns.reflexive', status: 'planned' },
+          { id: '2.1.3.1', titleKey: 'pronouns.personal', status: 'available', route: '/lessons/grammar/pronouns-personal' },
+          { id: '2.1.3.2', titleKey: 'pronouns.demonstrative', status: 'available', route: '/lessons/grammar/pronouns-demonstrative' },
+          { id: '2.1.3.3', titleKey: 'pronouns.interrogative', status: 'available', route: '/lessons/grammar/pronouns-interrogative' },
+          { id: '2.1.3.4', titleKey: 'pronouns.relative', status: 'available', route: '/lessons/grammar/pronouns-relative' },
+          { id: '2.1.3.5', titleKey: 'pronouns.reflexive', status: 'available', route: '/lessons/grammar/pronouns-reflexive' },
         ],
       },
       // --- 2.1.4 Numerals --------------------------------------------
