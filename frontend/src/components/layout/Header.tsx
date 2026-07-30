@@ -23,8 +23,9 @@ const Header = () => {
     <div className="layout-topbar flex justify-content-between align-items-center">
       <div className="flex align-items-center gap-2">
         <Link to="/" className="layout-topbar-logo no-underline text-xl font-bold flex align-items-center" style={{ padding: 0, margin: 0 }}>
-          <img src="/logo.png" alt="Aksharamārga Logo" style={{ height: '70px', width: '70px', marginRight: '0' }} />
-          <span className="text-3xl font-bold">Akshara Mārga</span>
+          <img src="/logo.png" alt="Aksharamārga Logo"
+               style={{ height: '70px', width: '70px', marginRight: '0' }} />
+          <span className="text-3xl font-bold " >Akshara Mārga</span>
         </Link>
         {isAuthenticated && (
           <IconButton

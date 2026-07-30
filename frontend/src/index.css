@@ -19,6 +19,15 @@ html {
     font-size: 20px;
 }
 
+.text-home  {
+    color: var(--text-color);
+    font-family: SansSerif;
+}
+
+.layout-topbar-logo span {
+
+}
+
 /* Ensure quiz cards fill height and content is properly aligned */
 .quiz-card.p-card {
     display: flex;

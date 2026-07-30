@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { ProgressBar } from 'primereact/progressbar';
+import { MiniProgressBar } from '../common/MiniProgressBar';
 import type { VocabularyWordProgress } from '../../types/lesson';
 
 // ── Словари грамматических терминов (латинские сокращения, 1–5 букв + точка) ──
@@ -211,18 +211,19 @@ const VerseWordsList = ({ words, headerActions, wordProgressMap }: VerseWordsLis
           </div>
 
               {/* Колонка прогресса */}
-              {showProgress && (
+                            {showProgress && (
                 <div className="ml-auto" style={{ minWidth: '80px', maxWidth: '100px' }}>
                   {progress ? (
-                    <ProgressBar
+                    <MiniProgressBar
                       value={progress.score ?? 0}
-                      showValue
-                      style={{ height: '6px' }}
+                      status={progress.status}
+                      showValue={false}
+                      height="8px"
                     />
                   ) : (
                     <span className="text-xs text-color-secondary">—</span>
                   )}
-      </div>
+                </div>
               )}
     </div>
   );

@@ -3,9 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { ProgressBar } from 'primereact/progressbar';
 import { Button } from 'primereact/button';
-import { statusToProgressColor } from '../../utils/statusColor';
+import { MiniProgressBar } from '../common/MiniProgressBar';
 import type { NumberAggregation } from '../../utils/grammarAggregation';
 
 interface NumberAggregationTableProps {
@@ -37,20 +36,11 @@ export const NumberAggregationTable: React.FC<NumberAggregationTableProps> = ({ 
       <Column
         header={i18n.language === 'ru' ? 'Изучено' : 'Learned'}
         body={(rowData: NumberAggregation) => (
-          <div className="flex align-items-center gap-2">
-            <ProgressBar
+          <MiniProgressBar
               value={rowData.aggregatedProgress}
-              color={statusToProgressColor(rowData.status)}
-              style={{ height: '5px', width: '80px' }}
-              showValue={false}
-            />
-            <span
-              className="cursor-pointer underline text-primary"
+            status={rowData.status}
               onClick={() => handleStartNumberQuiz(rowData.numberType)}
-            >
-              {rowData.aggregatedProgress}%
-            </span>
-          </div>
+          />
         )}
         style={{ width: '30%' }}
         sortable
@@ -71,3 +61,4 @@ export const NumberAggregationTable: React.FC<NumberAggregationTableProps> = ({ 
     </DataTable>
   );
 };
+

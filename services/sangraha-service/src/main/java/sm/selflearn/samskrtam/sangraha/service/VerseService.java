@@ -145,25 +145,37 @@ public class VerseService {
      * Если у стиха уже есть закэшированный vocabularyQuizSlug — возвращает его сразу.
      * Иначе синхронно вызывает content-service, кэширует результат и возвращает.
      */
+    /**
+     * Кнопка «Изучить» на VersePage — POST /verses/{verseId}/vocabulary-quiz.
+     * Если у стиха уже есть закэшированный vocabularyQuizSlug — возвращает его сразу.
+     * Иначе синхронно вызывает content-service, кэширует результат и возвращает.
+     */
     @Transactional
     public VocabularyQuizResponse getOrCreateVocabularyQuiz(UUID verseId) {
         Verse verse = getVerseById(verseId);
 
-        if (verse.getVocabularyQuizSlug() != null && !verse.getVocabularyQuizSlug().isBlank()
-                && verse.getVocabularyQuizId() != null) {
-            return new VocabularyQuizResponse(
-                    verse.getVocabularyQuizSlug(),
-                    verse.getVocabularyQuizId(),
-                    "EXISTING");
-        }
-
-        if (verse.getStatus() != VerseStatus.ANALYZED) {
-            throw new RuntimeException("Verse is not analyzed yet: " + verseId);
-        }
+        boolean quizAlreadyExists = verse.getVocabularyQuizSlug() != null
+                && !verse.getVocabularyQuizSlug().isBlank()
+                && verse.getVocabularyQuizId() != null;
 
         List<VerseWord> words = verseWordRepository.findAllByVerseIdOrderByPositionAsc(verseId);
-        if (words.isEmpty()) {
-            throw new RuntimeException("Verse has no words: " + verseId);
+
+        if (quizAlreadyExists) {
+            boolean allMapped = words.stream().allMatch(w -> w.getVocabularyWordId() != null);
+            if (allMapped) {
+                return new VocabularyQuizResponse(
+                        verse.getVocabularyQuizSlug(),
+                        verse.getVocabularyQuizId(),
+                        "EXISTING");
+            }
+            // Некоторые слова не имеют vocabularyWordId — проваливаемся дальше для дозаполнения
+        } else {
+            if (verse.getStatus() != VerseStatus.ANALYZED) {
+                throw new RuntimeException("Verse is not analyzed yet: " + verseId);
+            }
+            if (words.isEmpty()) {
+                throw new RuntimeException("Verse has no words: " + verseId);
+            }
         }
 
         Chapter chapter = chapterRepository.findById(verse.getChapterId())
@@ -202,20 +214,36 @@ public class VerseService {
                 .words(vocabWords)
                 .build();
 
-                SangrahaVocabularyResponse response = contentServiceVocabularyClient.requestVocabularyQuiz(request);
-        verse.setVocabularyQuizSlug(response.getQuizSlug());
-        verse.setVocabularyQuizId(response.getQuizId());
-        verse.setUpdatedAt(Instant.now());
-        verseRepository.save(verse);
+        SangrahaVocabularyResponse response = contentServiceVocabularyClient.requestVocabularyQuiz(request);
+
+        if (!quizAlreadyExists) {
+            verse.setVocabularyQuizSlug(response.getQuizSlug());
+            verse.setVocabularyQuizId(response.getQuizId());
+            verse.setUpdatedAt(Instant.now());
+            verseRepository.save(verse);
+        }
 
         // Сохранить маппинг verseWordId → vocabularyWordId в verse_words
+        // Используем ключ lemmaIast|stem, чтобы корректно обработать слова-дубли
         if (response.getWordMappings() != null && !response.getWordMappings().isEmpty()) {
-            Map<UUID, UUID> mapping = new HashMap<>();
-            for (var m : response.getWordMappings()) {
-                mapping.put(m.getVerseWordId(), m.getVocabularyWordId());
+            // verseWordId → lemmaIast|stem (из дедуплицированных представителей)
+            Map<UUID, String> verseWordIdToKey = new HashMap<>();
+            for (var entry : deduped.entrySet()) {
+                verseWordIdToKey.put(entry.getValue().getId(), entry.getKey());
             }
+
+            // lemmaIast|stem → vocabularyWordId
+            Map<String, UUID> lemmaStemToVocabId = new HashMap<>();
+            for (var m : response.getWordMappings()) {
+                String key = verseWordIdToKey.get(m.getVerseWordId());
+                if (key != null) {
+                    lemmaStemToVocabId.put(key, m.getVocabularyWordId());
+                }
+            }
+
             for (VerseWord w : words) {
-                UUID vocabId = mapping.get(w.getId());
+                String key = w.getLemmaIast() + "|" + w.getStem();
+                UUID vocabId = lemmaStemToVocabId.get(key);
                 if (vocabId != null) {
                     w.setVocabularyWordId(vocabId);
                 }
@@ -223,10 +251,11 @@ public class VerseService {
             verseWordRepository.saveAll(words);
         }
 
+        String status = quizAlreadyExists ? "EXISTING" : response.getQuizStatus();
         return new VocabularyQuizResponse(
-                response.getQuizSlug(),
-                response.getQuizId(),
-                response.getQuizStatus());
+                quizAlreadyExists ? verse.getVocabularyQuizSlug() : response.getQuizSlug(),
+                quizAlreadyExists ? verse.getVocabularyQuizId() : response.getQuizId(),
+                status);
     }
 }
 

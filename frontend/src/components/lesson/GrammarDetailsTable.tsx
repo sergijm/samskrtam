@@ -3,8 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { ProgressBar } from 'primereact/progressbar';
-import { statusToProgressColor } from '../../utils/statusColor';
+import { MiniProgressBar } from '../common/MiniProgressBar';
 import type { GrammarQuestionProgress } from '../../types/lesson';
 
 interface GrammarDetailsTableProps {
@@ -70,20 +69,11 @@ export const GrammarDetailsTable: React.FC<GrammarDetailsTableProps> = ({
       <Column
         header={i18n.language === 'ru' ? 'Изучено' : 'Learned'}
         body={(rowData: GrammarQuestionProgress) => (
-          <div className="flex align-items-center gap-2">
-            <ProgressBar
+          <MiniProgressBar
               value={rowData.score}
-              color={statusToProgressColor(rowData.status)}
-              style={{ height: '5px', width: '80px' }}
-              showValue={false}
-            />
-            <span
-              className="cursor-pointer underline text-primary"
+            status={rowData.status}
               onClick={() => navigate(buildFilterUrl(rowData))}
-            >
-              {rowData.score}%
-            </span>
-          </div>
+          />
         )}
         style={{ width: '18%' }}
         sortable

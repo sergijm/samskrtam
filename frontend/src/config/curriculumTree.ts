@@ -40,8 +40,8 @@ export const curriculumTree: CurriculumNode[] = [
         titleKey: 'section.nouns',
         status: 'available',
         children: [
-          { id: '2.1.1.1', titleKey: 'nouns.a_masc', status: 'available', route: '/lessons/grammar/declensions-a-masc' },
-          { id: '2.1.1.2', titleKey: 'nouns.all_stems', status: 'available', route: '/lessons/grammar/declensions-all' },
+          { id: '2.1.1.1', titleKey: 'nouns.all_stems', status: 'available', route: '/lessons/grammar/declensions-all' },
+          { id: '2.1.1.2', titleKey: 'nouns.a_masc', status: 'available', route: '/lessons/grammar/declensions-a-masc' },
           { id: '2.1.1.3', titleKey: 'nouns.aa_fem', status: 'available', route: '/lessons/grammar/declensions-aa-fem' },
           { id: '2.1.1.4', titleKey: 'nouns.i_u_stems',   status: 'available', route: '/lessons/grammar/declensions-i-u' },
           { id: '2.1.1.5', titleKey: 'nouns.ii_uu_stems', status: 'available', route: '/lessons/grammar/declensions-ii-uu' },

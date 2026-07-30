@@ -3,9 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { ProgressBar } from 'primereact/progressbar';
 import { Button } from 'primereact/button';
-import { statusToProgressColor } from '../../utils/statusColor';
+import { MiniProgressBar } from '../common/MiniProgressBar';
 import type { CaseAggregation } from '../../utils/grammarAggregation';
 
 interface CaseAggregationTableProps {
@@ -37,20 +36,11 @@ export const CaseAggregationTable: React.FC<CaseAggregationTableProps> = ({ aggr
       <Column
         header={i18n.language === 'ru' ? 'Изучено' : 'Learned'}
         body={(rowData: CaseAggregation) => (
-          <div className="flex align-items-center gap-2">
-            <ProgressBar
+          <MiniProgressBar
               value={rowData.aggregatedProgress}
-              color={statusToProgressColor(rowData.status)}
-              style={{ height: '5px', width: '80px' }}
-              showValue={false}
-            />
-            <span
-              className="cursor-pointer underline text-primary"
+            status={rowData.status}
               onClick={() => handleStartCaseQuiz(rowData.caseType)}
-            >
-              {rowData.aggregatedProgress}%
-            </span>
-          </div>
+          />
         )}
         style={{ width: '30%' }}
         sortable
