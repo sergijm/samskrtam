@@ -156,20 +156,3 @@ graph TD
 | **M7 — Polish** | все сервисы | i18n, UX, CI/CD финализация, load testing |
 
 ---
-
-## 7. Open Questions
-
-- [ ] Ingress controller в кластере — nginx-ingress или Traefik?
-- [ ] Persistent storage для PostgreSQL в k8s — local-path или NFS?
-- [ ] Внешнее API для словаря: Sanskrit Heritage или Monier-Williams приоритет?
-- [ ] Mail.ru OAuth: актуальны ли endpoints в 2025?
-- [ ] Автоматический деплой на main или только ручной (when: manual)?
-- [ ] **Eamenau:** нужен ли API для фонемной системы (`GET /api/v1/eamenau/phonemes`)? — см. [services/content-service/eamenau.md](./services/content-service/eamenau.md)
-- [ ] **Eamenau:** унифицировать написание `Eamenau` / `Emeneau` во всём проекте (в именах файлов фронтенда — `Emeneau`, в Java-коде — `Eamenau`)
-- [x] **Семантика Quiz/Lesson/Activity** — закрыто ADR-002, см. [conventions.md §14](./conventions.md#14-архитектурные-решения-adr)
-- [ ] **Eamenau:** `Answer` (варианты ответа к задаче) — реализован в модели, не используется в API. Планируется ли режим с выбором варианта?
-- [x] **sangraha-service порт 8089** — фиксирован, согласован с Агентом 5 DevOps. Пометка «предварительно» снята.
-- [x] **sangraha-service §6.3: Quiz(VOCABULARY) на уровне главы?** — решено: Quiz заводится только на уровне произведения (workSlug). Главы не получают отдельного Quiz.
-- [x] **sangraha-service shared DTO** — решено: заведён `SangrahaVocabularyEvent` в `shared/samskrtam-dtos` (пакет `sangraha`); переиспользуется без изменений после перехода канала sangraha→content с Kafka на REST (см. ниже).
-- [x] **sangraha↔content-service: Kafka → синхронный REST** — решено (Агент 6): канал `sangraha-vocabulary-events` избыточен (1 producer/1 consumer) — заменён на `POST content-service/content/internal/sangraha/vocabulary`, вызываемый Outbox Relay в sangraha-service синхронно; Outbox как паттерн доставки сохранён, см. `sangraha-service.md` §6, `content-service.md` §11, ADR-006.
-- [ ] **Расхождение списка вкладок GrammarLessonPage** — `quiz-service/quiz-declension.md` §3.1 (4 вкладки, без «Статистика»/«Парадигмы», с «Сессии») vs `frontend/pages/grammar-lesson-page.md` §2 (5 вкладок, со «Статистика»/«Парадигмы», без «Сессии») описывают одну и ту же страницу по-разному — зафиксировано Агентом 6 при добавлении вкладки «Парадигмы» с реальными словоформами (`content.declension_forms`, `content-service.md` §5а). Нужно решить, какой список — эталон, и убрать дублирование (см. `quiz-declension.md` §3.1, врезка).
