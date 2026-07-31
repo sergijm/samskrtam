@@ -51,25 +51,43 @@ export interface SandhiSplit {
   ruleNumbers?: number[];
 }
 
+export interface VerseWordMorphologyDto {
+  caseType?: string | null;
+  gender?: string | null;
+  numberType?: string | null;
+  person?: string | null;
+  tense?: string | null;
+  mood?: string | null;
+  voice?: string | null;
+}
+
+export interface VerseWordDerivationDto {
+  derivationType?: string | null;
+  derivationalSuffix?: string | null;
+  derivationalBase?: string | null;
+  description?: string | null;
+}
+
 export interface VerseWordDto {
   id: string;
   position: number;
   surfaceIast: string;
   surfaceDevanagari: string;
   lemmaIast: string;
-  stem: string;
+  stem?: string | null;
   root?: string | null;
   pos?: string | null;
-  gender?: string | null;
-  caseType?: string | null;
-  numberType?: string | null;
-  person?: string | null;
-  tense?: string | null;
-  mood?: string | null;
-  voice?: string | null;
-  glossRu: string;
-  glossEn: string;
+  formType?: string | null;
+  isFinite?: boolean | null;
+  morphology?: VerseWordMorphologyDto | null;
+  derivation?: VerseWordDerivationDto | null;
+  lemmaGlossRu?: string | null;
+  lemmaGlossEn?: string | null;
+  contextGlossRu: string;
+  contextGlossEn: string;
   formationRuleNumbers?: number[];
+  analysisConfidence?: string | null;
+  ambiguityNotes?: string | null;
   vocabularyWordId?: string | null;
 }
 

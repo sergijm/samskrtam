@@ -194,11 +194,12 @@ public class VerseService {
                         .verseWordId(w.getId())
                         .wordIast(w.getLemmaIast())
                         .wordDevanagari(w.getSurfaceDevanagari())
-                        .stem(w.getStem())
+                                                .stem(w.getStem())
                         .root(w.getRoot())
-                        .gender(w.getGender() != null ? w.getGender().name() : null)
-                        .translationRu(w.getGlossRu())
-                        .translationEn(w.getGlossEn())
+                        .gender(w.getMorphology() != null && w.getMorphology().getGender() != null
+                                ? w.getMorphology().getGender().name() : null)
+                        .translationRu(w.getContextGlossRu())
+                        .translationEn(w.getContextGlossEn())
                         .build())
                 .toList();
 

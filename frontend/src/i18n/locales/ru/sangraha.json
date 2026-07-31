@@ -49,7 +49,21 @@
       "translationEn": "Перевод (англ.)",
       "translation": "Перевод",
       "sandhiSplits": "Разбор сандхи",
-      "words": "Слова"
+      "words": "Слова",
+      "surfaceForm": "Поверхностная форма",
+      "lemma": "Лемма",
+      "root": "Корень",
+      "stem": "Основа",
+      "formType": "Тип формы",
+      "finite": "финитная",
+      "nonFinite": "нефинитная",
+      "morphology": "Морфология",
+      "derivation": "Словообразование",
+      "suffix": "Суффикс",
+      "base": "Основа",
+      "lemmaGloss": "Словарный перевод",
+      "contextGloss": "Контекстный перевод",
+      "formationRules": "Правила образования"
     },
     "placeholder": {
       "textDevanagari": "Введите текст на деванагари...",
@@ -64,7 +78,7 @@
     "wordsTable": {
       "position": "№",
       "surface": "Словоформа",
-      "lemma": "Словарная форма",
+      "lemma": "Лемма",
       "stem": "Основа",
       "pos": "Часть речи",
       "gender": "Род",

@@ -1,12 +1,15 @@
 package sm.selflearn.samskrtam.sangraha.model;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,45 +47,49 @@ public class VerseWord {
     @Column(name = "lemma_iast", nullable = false)
     private String lemmaIast;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String stem;
 
+    @Column(nullable = true)
     private String root;
 
     @Enumerated(EnumType.STRING)
     private PartOfSpeech pos;
 
     @Enumerated(EnumType.STRING)
-    private Gender gender;
+    @Column(name = "form_type")
+    private FormType formType;
 
-    @Enumerated(EnumType.STRING)
-    private GrammaticalCase caseType;
+    @Column(name = "is_finite")
+    private Boolean isFinite;
 
-    @Enumerated(EnumType.STRING)
-    private NumberType numberType;
+    @Column(name = "lemma_gloss_ru")
+    private String lemmaGlossRu;
 
-    @Enumerated(EnumType.STRING)
-    private Person person;
+    @Column(name = "lemma_gloss_en")
+    private String lemmaGlossEn;
 
-    @Enumerated(EnumType.STRING)
-    private Tense tense;
+    @Column(name = "context_gloss_ru", nullable = false)
+    private String contextGlossRu;
 
-    @Enumerated(EnumType.STRING)
-    private Mood mood;
-
-    @Enumerated(EnumType.STRING)
-    private Voice voice;
-
-    @Column(name = "gloss_ru", nullable = false)
-    private String glossRu;
-
-    @Column(name = "gloss_en", nullable = false)
-    private String glossEn;
-
-        /** JSON-массив целых чисел (внутренние правила 1–40), сохраняется как текст */
+    @Column(name = "context_gloss_en", nullable = false)
+    private String contextGlossEn;
         @Column(name = "formation_rule_numbers", columnDefinition = "TEXT")
         private String formationRuleNumbers;
 
-        @Column(name = "vocabulary_word_id")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "analysis_confidence")
+    private AnalysisConfidence analysisConfidence;
+
+    @Column(name = "ambiguity_notes")
+    private String ambiguityNotes;
+
+    @Column(name = "vocabulary_word_id")
         private UUID vocabularyWordId;
+
+    @OneToOne(mappedBy = "verseWord", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private VerseWordMorphology morphology;
+
+    @OneToOne(mappedBy = "verseWord", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private VerseWordDerivation derivation;
 }

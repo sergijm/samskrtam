@@ -12,15 +12,33 @@ public record VerseWordDto(
     String stem,
     String root,
     String pos,
-    String gender,
-    String caseType,
-    String numberType,
-    String person,
-    String tense,
-    String mood,
-    String voice,
-        String glossRu,
-    String glossEn,
+    String formType,
+    Boolean isFinite,
+    MorphologyDto morphology,
+    DerivationDto derivation,
+    String lemmaGlossRu,
+    String lemmaGlossEn,
+    String contextGlossRu,
+    String contextGlossEn,
     List<Integer> formationRuleNumbers,
+    String analysisConfidence,
+    String ambiguityNotes,
     UUID vocabularyWordId
-) {}
+) {
+    public record MorphologyDto(
+        String caseType,
+        String gender,
+        String numberType,
+        String person,
+        String tense,
+        String mood,
+        String voice
+    ) {}
+
+    public record DerivationDto(
+        String derivationType,
+        String derivationalSuffix,
+        String derivationalBase,
+        String description
+    ) {}
+}

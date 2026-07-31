@@ -83,8 +83,34 @@ public class VerseMapper {
         );
     }
 
-    public VerseWordDto toWordDto(VerseWord word) {
+        public VerseWordDto toWordDto(VerseWord word) {
         List<Integer> formationRuleNumbers = parseFormationRuleNumbers(word.getFormationRuleNumbers());
+
+        VerseWordDto.MorphologyDto morphologyDto = null;
+        if (word.getMorphology() != null) {
+            var m = word.getMorphology();
+            morphologyDto = new VerseWordDto.MorphologyDto(
+                m.getCaseType() != null ? m.getCaseType().name() : null,
+                m.getGender() != null ? m.getGender().name() : null,
+                m.getNumberType() != null ? m.getNumberType().name() : null,
+                m.getPerson() != null ? m.getPerson().name() : null,
+                m.getTense() != null ? m.getTense().name() : null,
+                m.getMood() != null ? m.getMood().name() : null,
+                m.getVoice() != null ? m.getVoice().name() : null
+            );
+        }
+
+        VerseWordDto.DerivationDto derivationDto = null;
+        if (word.getDerivation() != null) {
+            var d = word.getDerivation();
+            derivationDto = new VerseWordDto.DerivationDto(
+                d.getDerivationType() != null ? d.getDerivationType().name() : null,
+                d.getDerivationalSuffix(),
+                d.getDerivationalBase(),
+                d.getDescription()
+            );
+        }
+
         return new VerseWordDto(
             word.getId(),
             word.getPosition(),
@@ -94,16 +120,17 @@ public class VerseMapper {
             word.getStem(),
             word.getRoot(),
             word.getPos() != null ? word.getPos().name() : null,
-            word.getGender() != null ? word.getGender().name() : null,
-            word.getCaseType() != null ? word.getCaseType().name() : null,
-            word.getNumberType() != null ? word.getNumberType().name() : null,
-            word.getPerson() != null ? word.getPerson().name() : null,
-            word.getTense() != null ? word.getTense().name() : null,
-            word.getMood() != null ? word.getMood().name() : null,
-            word.getVoice() != null ? word.getVoice().name() : null,
-                        word.getGlossRu(),
-            word.getGlossEn(),
+            word.getFormType() != null ? word.getFormType().name() : null,
+            word.getIsFinite(),
+            morphologyDto,
+            derivationDto,
+            word.getLemmaGlossRu(),
+            word.getLemmaGlossEn(),
+            word.getContextGlossRu(),
+            word.getContextGlossEn(),
             formationRuleNumbers,
+            word.getAnalysisConfidence() != null ? word.getAnalysisConfidence().name() : null,
+            word.getAmbiguityNotes(),
             word.getVocabularyWordId()
         );
     }

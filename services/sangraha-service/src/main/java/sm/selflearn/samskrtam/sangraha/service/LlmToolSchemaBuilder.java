@@ -48,7 +48,7 @@ public class LlmToolSchemaBuilder {
         sandhiProps.putObject("components").put("type", "array").putObject("items").put("type", "string");
         sandhiProps.putObject("ruleNumbers").put("type", "array").putObject("items").put("type", "integer");
 
-        // words
+                // words
         ObjectNode wordItem = properties.putObject("words");
         wordItem.put("type", "array");
         wordItem.put("description", "Grammatical analysis of each word");
@@ -57,7 +57,8 @@ public class LlmToolSchemaBuilder {
 
         ArrayNode wordRequired = wordItemObj.putArray("required");
         wordRequired.add("position").add("surfaceIast").add("surfaceDevanagari")
-                .add("lemmaIast").add("stem").add("root").add("pos").add("glossRu").add("glossEn")
+                .add("lemmaIast").add("stem").add("pos").add("glossRu").add("glossEn")
+                .add("formType").add("analysisConfidence")
                 .add("formationRuleNumbers");
 
         ObjectNode wordProps = wordItemObj.putObject("properties");
@@ -72,48 +73,64 @@ public class LlmToolSchemaBuilder {
         posField.put("type", "string");
         posField.putArray("enum")
                 .add("NOUN").add("VERB").add("ADJECTIVE").add("ADVERB").add("PRONOUN")
-                .add("PARTICLE").add("CONJUNCTION").add("PREPOSITION").add("INTERJECTION").add("NUMERAL").add("OTHER");
+                .add("PARTICLE").add("CONJUNCTION").add("INDECLINABLE").add("INTERJECTION").add("NUMERAL").add("OTHER");
 
-        ObjectNode genderField = wordProps.putObject("gender");
-        genderField.put("type", "string");
-        genderField.putArray("enum")
-                .add("MASCULINE").add("FEMININE").add("NEUTER").add("UNSPECIFIED");
+        // formType
+        ObjectNode formTypeField = wordProps.putObject("formType");
+        formTypeField.put("type", "string");
+        formTypeField.putArray("enum")
+                .add("FINITE").add("INFINITIVE").add("ABSOLUTIVE").add("PARTICIPLE")
+                .add("GERUNDIVE").add("OTHER_NONFINITE").add("NOMINAL").add("ADJECTIVAL")
+                .add("PRONOMINAL").add("INDECLINABLE");
 
-        ObjectNode caseField = wordProps.putObject("caseType");
-        caseField.put("type", "string");
-        caseField.putArray("enum")
-                .add("NOMINATIVE").add("ACCUSATIVE").add("INSTRUMENTAL").add("DATIVE")
-                .add("ABLATIVE").add("GENITIVE").add("LOCATIVE").add("VOCATIVE").add("UNSPECIFIED");
+        wordProps.putObject("isFinite").put("type", "boolean");
 
-        ObjectNode numField = wordProps.putObject("numberType");
-        numField.put("type", "string");
-        numField.putArray("enum")
-                .add("SINGULAR").add("DUAL").add("PLURAL").add("UNSPECIFIED");
+        // morphology (nested object)
+        ObjectNode morphologyField = wordProps.putObject("morphology");
+        morphologyField.put("type", "object");
+        ObjectNode morphProps = morphologyField.putObject("properties");
+        morphProps.putObject("person").put("type", "string");
+        morphProps.putObject("number").put("type", "string");
+        morphProps.putObject("case").put("type", "string");
+        morphProps.putObject("gender").put("type", "string");
+        morphProps.putObject("tense").put("type", "string");
+        morphProps.putObject("mood").put("type", "string");
+        morphProps.putObject("voice").put("type", "string");
 
-        ObjectNode personField = wordProps.putObject("person");
-        personField.put("type", "string");
-        personField.putArray("enum")
-                .add("FIRST").add("SECOND").add("THIRD").add("UNSPECIFIED");
+        // derivation flat fields
+        ObjectNode derivTypeField = wordProps.putObject("derivationType");
+        derivTypeField.put("type", "string");
+        derivTypeField.putArray("enum")
+                .add("SIMPLE_INFLECTION").add("ABSOLUTIVE").add("PARTICIPLE").add("GERUNDIVE")
+                .add("INFINITIVE").add("CAUSATIVE").add("DESIDERATIVE").add("DENOMINATIVE")
+                .add("COMPOUND_VERB").add("OTHER");
+        wordProps.putObject("derivationalSuffix").put("type", "string");
+        wordProps.putObject("derivationalBase").put("type", "string");
 
-        ObjectNode tenseField = wordProps.putObject("tense");
-        tenseField.put("type", "string");
-        tenseField.putArray("enum")
-                .add("PRESENT").add("IMPERFECT").add("AORIST").add("PERFECT")
-                .add("PLUPERFECT").add("FUTURE").add("CONDITIONAL").add("BENEDICTIVE").add("UNSPECIFIED");
+        // derivation nested object
+        ObjectNode derivationField = wordProps.putObject("derivation");
+        derivationField.put("type", "object");
+        ObjectNode derivProps = derivationField.putObject("properties");
+        derivProps.putObject("type").put("type", "string");
+        derivProps.putObject("suffix").put("type", "string");
+        derivProps.putObject("base").put("type", "string");
+        derivProps.putObject("description").put("type", "string");
 
-        ObjectNode moodField = wordProps.putObject("mood");
-        moodField.put("type", "string");
-        moodField.putArray("enum")
-                .add("INDICATIVE").add("IMPERATIVE").add("OPTATIVE").add("CONDITIONAL").add("SUBJUNCTIVE").add("UNSPECIFIED");
-
-        ObjectNode voiceField = wordProps.putObject("voice");
-        voiceField.put("type", "string");
-        voiceField.putArray("enum")
-                .add("ACTIVE").add("MIDDLE").add("PASSIVE").add("UNSPECIFIED");
+        // lemma glosses
+        wordProps.putObject("lemmaGlossRu").put("type", "string");
+        wordProps.putObject("lemmaGlossEn").put("type", "string");
 
         wordProps.putObject("glossRu").put("type", "string");
         wordProps.putObject("glossEn").put("type", "string");
         wordProps.putObject("formationRuleNumbers").put("type", "array").putObject("items").put("type", "integer");
+
+        // analysis confidence
+        ObjectNode confidenceField = wordProps.putObject("analysisConfidence");
+        confidenceField.put("type", "string");
+        confidenceField.putArray("enum")
+                .add("HIGH").add("MEDIUM").add("LOW");
+
+        wordProps.putObject("ambiguityNotes").put("type", "string");
 
         return params;
     }

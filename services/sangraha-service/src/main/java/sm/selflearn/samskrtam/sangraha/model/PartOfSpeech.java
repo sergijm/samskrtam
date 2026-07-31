@@ -5,6 +5,11 @@ public enum PartOfSpeech {
     VERB,
     ADJECTIVE,
     PRONOUN,
+    ADVERB,
+    PARTICLE,
     INDECLINABLE,
-    NUMERAL
+    NUMERAL,
+    CONJUNCTION,
+    INTERJECTION,
+    OTHER
 }

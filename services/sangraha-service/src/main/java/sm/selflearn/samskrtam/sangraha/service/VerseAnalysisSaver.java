@@ -94,31 +94,92 @@ public class VerseAnalysisSaver {
         verseRepository.save(verse);
     }
 
-    private List<VerseWord> buildWords(UUID verseId, JsonNode wordsNode) {
+        private List<VerseWord> buildWords(UUID verseId, JsonNode wordsNode) {
         var words = new ArrayList<VerseWord>();
         for (var w : wordsNode) {
-            words.add(VerseWord.builder()
+            var word = VerseWord.builder()
                     .verseId(verseId)
                     .position(w.get("position").asInt())
                     .surfaceIast(getString(w, "surfaceIast"))
                     .surfaceDevanagari(getString(w, "surfaceDevanagari"))
                     .lemmaIast(getString(w, "lemmaIast"))
-                    .stem(getString(w, "stem"))
+                    .stem(getStringOrNull(w, "stem"))
                     .root(getStringOrNull(w, "root"))
                     .pos(safeEnum(PartOfSpeech.class, getString(w, "pos")))
-                    .gender(safeEnum(Gender.class, getString(w, "gender")))
-                    .caseType(safeEnum(GrammaticalCase.class, getString(w, "caseType")))
-                    .numberType(safeEnum(NumberType.class, getString(w, "numberType")))
-                    .person(safeEnum(Person.class, getString(w, "person")))
-                    .tense(safeEnum(Tense.class, getString(w, "tense")))
-                    .mood(safeEnum(Mood.class, getString(w, "mood")))
-                    .voice(safeEnum(Voice.class, getString(w, "voice")))
-                    .glossRu(getString(w, "glossRu"))
-                    .glossEn(getString(w, "glossEn"))
+                    .formType(safeEnum(FormType.class, getString(w, "formType")))
+                    .isFinite(getBooleanOrNull(w, "isFinite"))
+                    .lemmaGlossRu(getStringOrNull(w, "lemmaGlossRu"))
+                    .lemmaGlossEn(getStringOrNull(w, "lemmaGlossEn"))
+                    .contextGlossRu(getString(w, "glossRu"))
+                    .contextGlossEn(getString(w, "glossEn"))
                     .formationRuleNumbers(getArrayAsString(w, "formationRuleNumbers"))
-                    .build());
+                    .analysisConfidence(safeEnum(AnalysisConfidence.class, getString(w, "analysisConfidence")))
+                    .ambiguityNotes(getStringOrNull(w, "ambiguityNotes"))
+                    .build();
+
+            // Morphology from nested object
+            JsonNode morphNode = w.get("morphology");
+            if (morphNode != null && morphNode.isObject() && hasAnyNonNull(morphNode)) {
+                var morph = VerseWordMorphology.builder()
+                        .verseWord(word)
+                        .caseType(safeEnum(GrammaticalCase.class, getString(morphNode, "case")))
+                        .gender(safeEnum(Gender.class, getString(morphNode, "gender")))
+                        .numberType(safeEnum(NumberType.class, getString(morphNode, "number")))
+                        .person(safeEnum(Person.class, getString(morphNode, "person")))
+                        .tense(safeEnum(Tense.class, getString(morphNode, "tense")))
+                        .mood(safeEnum(Mood.class, getString(morphNode, "mood")))
+                        .voice(safeEnum(Voice.class, getString(morphNode, "voice")))
+                        .build();
+                word.setMorphology(morph);
+            }
+
+            // Derivation from flat fields + nested derivation.description
+            String derivationTypeStr = getString(w, "derivationType");
+            String derivationalSuffix = getStringOrNull(w, "derivationalSuffix");
+            String derivationalBase = getStringOrNull(w, "derivationalBase");
+            JsonNode derivNode = w.get("derivation");
+            String derivationDescription = null;
+            if (derivNode != null && derivNode.isObject()) {
+                derivationDescription = getStringOrNull(derivNode, "description");
+            }
+
+            if (derivationTypeStr != null || derivationalSuffix != null
+                    || derivationalBase != null || derivationDescription != null) {
+                var deriv = VerseWordDerivation.builder()
+                        .verseWord(word)
+                        .derivationType(safeEnum(DerivationType.class, derivationTypeStr))
+                        .derivationalSuffix(derivationalSuffix)
+                        .derivationalBase(derivationalBase)
+                        .description(derivationDescription)
+                        .build();
+                word.setDerivation(deriv);
+            }
+
+            words.add(word);
         }
         return words;
+    }
+
+    private static boolean hasAnyNonNull(JsonNode node) {
+        if (node == null || !node.isObject()) return false;
+        var fields = node.fields();
+        while (fields.hasNext()) {
+            var entry = fields.next();
+            if (!entry.getValue().isNull()) return true;
+        }
+        return false;
+    }
+
+    private static Boolean getBooleanOrNull(JsonNode node, String field) {
+        var f = node.get(field);
+        if (f == null || f.isNull()) return null;
+        if (f.isBoolean()) return f.asBoolean();
+        if (f.isTextual()) {
+            String val = f.asText();
+            if ("true".equalsIgnoreCase(val)) return true;
+            if ("false".equalsIgnoreCase(val)) return false;
+        }
+        return null;
     }
 
     // ---- утилиты ----

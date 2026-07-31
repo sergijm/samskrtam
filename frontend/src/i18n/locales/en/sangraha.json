@@ -49,7 +49,21 @@
       "translationEn": "Translation (English)",
       "translation": "Translation",
       "sandhiSplits": "Sandhi Splits",
-      "words": "Words"
+      "words": "Words",
+      "surfaceForm": "Surface form",
+      "lemma": "Lemma",
+      "root": "Root",
+      "stem": "Stem",
+      "formType": "Form type",
+      "finite": "finite",
+      "nonFinite": "non-finite",
+      "morphology": "Morphology",
+      "derivation": "Derivation",
+      "suffix": "Suffix",
+      "base": "Base",
+      "lemmaGloss": "Dict. gloss",
+      "contextGloss": "Context gloss",
+      "formationRules": "Formation rules"
     },
     "placeholder": {
       "textDevanagari": "Enter text in Devanagari...",

@@ -3,9 +3,20 @@
 > Used in sangraha-service.md §5.1.
 > Tool: `submit_verse_analysis` — parameters: textDevanagari, textIast, translationRu,
 > translationEn, sandhiSplits (array of {surface, components[], ruleNumbers[]}), words
-> (array: position, surfaceIast, surfaceDevanagari, lemmaIast, stem, root, pos, gender,
-> caseType, numberType, person, tense, mood, voice, glossRu, glossEn,
-> formationRuleNumbers[]).
+> (array — full lexical, morphological and derivational analysis of every word, see
+> item 4 below: position, surfaceIast, surfaceDevanagari, lemmaIast, root, stem, pos,
+> formType, isFinite, morphology {person, number, case, gender, tense, mood, voice},
+> derivationType, derivationalSuffix, derivationalBase, derivation {type, suffix, base,
+> description}, lemmaGlossRu, lemmaGlossEn, glossRu, glossEn, formationRuleNumbers[],
+> analysisConfidence, ambiguityNotes).
+>
+> Storage note (backend, not part of the model's task): morphology/derivation are
+> accepted from the model as nested objects for convenience, but persisted relationally
+> — `verse_word_morphology` and `verse_word_derivation`, two 1:1 tables keyed by
+> `verse_word_id` (see sangraha-service/verse-word-grammar.md §1, §4). glossRu/glossEn
+> are stored as `context_gloss_ru`/`context_gloss_en` (renamed at the DB layer to avoid
+> confusion with `lemma_gloss_ru`/`lemma_gloss_en` — the field names in the tool call
+> itself stay glossRu/glossEn, short and unambiguous in context).
 >
 > The full reference table of sandhi rules (1–71, internal + external) lives in
 > [`emenau-sandhi-rules.json`](./emenau-sandhi-rules.json),
@@ -58,30 +69,319 @@ call the function submit_verse_analysis and pass into it:
    boundary, nothing merged or altered) — do **not** include that boundary in
    sandhiSplits at all; it is not a sandhi. If a junction clearly involves sandhi but
    you cannot confidently match it to any rule 41–71 in the file — return an empty
-   ruleNumbers array rather than guessing a number. 
+   ruleNumbers array rather than guessing a number.
    Return the words in this field in IAST transliteration.
-4. words — a word-by-word grammatical analysis of every word in the verse in order of
-   appearance (position, starting from 0): the surface form (surfaceIast,
-   surfaceDevanagari — both scripts, as the field names indicate), the dictionary
-   form/lemma (lemmaIast), the stem (stem), and the root (root, if applicable —
-   otherwise null). lemmaIast, stem and root MUST be given in IAST only (never
-   Devanagari) — only surfaceDevanagari carries Devanagari; every other textual field
-   in this analysis (sandhiSplits, lemmaIast, stem, root) is IAST-only. Continue
-   with: the part of speech (pos), and for
-   inflected parts of speech — case (caseType), number (numberType), gender (gender);
-   for verbal forms — person (person), tense (tense), mood (mood), voice (voice);
-   leave fields that do not apply to a given part of speech as null. For every word
-   give a short gloss (its meaning in this context) in Russian (glossRu) and English
-   (glossEn). Additionally, for every word fill formationRuleNumbers — the list of
-   rule numbers from `emenau-sandhi-rules.json` (only rules with
-   `"applicability": "internal"`, i.e. numbers 1–40) that explain how this specific
-   word form was derived from its root/stem via internal morphophonemic changes (not
-   word-boundary phenomena), in the order applied. If the word form needs no such
-   explanation (e.g. an unmodified stem plus an ending with no phonetic change) —
-   return an empty array. If internal changes clearly occurred but you cannot
-   confidently match them to a specific rule 1–40 — also return an empty array rather
-   than guessing a number.
-   Return the words in this field in IAST transliteration.
+
+4. words — perform a COMPLETE lexical, morphological and derivational analysis
+of every word in the verse, in order of appearance (position starting from 0).
+The purpose of this analysis is to distinguish:
+1. the actual surface form occurring in the text;
+2. the lemma / dictionary entry;
+3. the verbal root (dhātu), if applicable;
+4. the morphological stem/base;
+5. the grammatical form of the word;
+6. inflectional grammatical features;
+7. derivational and formative information;
+8. the contextual meaning of the actual surface form;
+9. the dictionary meaning of the lemma.
+DO NOT collapse these concepts into one another.
+For every word return all of the following fields.
+--------------------------------------------------
+A. SURFACE FORM
+--------------------------------------------------
+position
+surfaceIast
+- Exact IAST transliteration of the actual surface form in the input.
+surfaceDevanagari
+- Exact Devanagari surface form in the input.
+- If the input only contains IAST, generate the Devanagari representation.
+Do not normalize, reconstruct, correct, or replace the actual surface form.
+--------------------------------------------------
+B. LEXICAL ANALYSIS
+--------------------------------------------------
+lemmaIast
+- The dictionary/citation lemma corresponding to the word.
+- This is the lexical unit that should be used for dictionary lookup and
+  vocabulary learning.
+- Do NOT use the surface form merely because it is the form occurring in
+  the verse.
+- Do NOT confuse lemma with root/dhātu.
+- Do NOT create a separate lemma for every inflected or derived form.
+root
+- Sanskrit verbal root (dhātu), if applicable.
+- Return only the root in IAST.
+- For example: "kṛ".
+- For nouns or words without an applicable verbal root, return null.
+stem
+- Morphological stem/base if it can be established confidently.
+- Return IAST only.
+- Do not simply copy the surface form into stem.
+- If the stem cannot be established confidently, return null.
+pos
+- Broad part of speech:
+  NOUN
+  VERB
+  ADJECTIVE
+  PRONOUN
+  ADVERB
+  PARTICLE
+  INDECLINABLE
+  NUMERAL
+  CONJUNCTION
+  INTERJECTION
+  OTHER
+--------------------------------------------------
+C. FORM TYPE
+--------------------------------------------------
+formType
+For verbal forms distinguish at least:
+FINITE
+INFINITIVE
+ABSOLUTIVE
+PARTICIPLE
+GERUNDIVE
+OTHER_NONFINITE
+For nominal/adjectival/pronominal forms use the appropriate category
+where identifiable, for example:
+NOMINAL
+ADJECTIVAL
+PRONOMINAL
+INDECLINABLE
+Do not classify a form as FINITE merely because it originates from a verb.
+Examples:
+gacchati -> FINITE
+kartum -> INFINITIVE
+kṛtvā -> ABSOLUTIVE
+vaśīkṛtya -> ABSOLUTIVE
+kṛtaḥ -> PARTICIPLE
+kartavyaḥ -> GERUNDIVE
+isFinite
+- true for finite verbal forms.
+- false for non-finite forms.
+- null when the concept is not applicable.
+--------------------------------------------------
+D. INFLECTIONAL MORPHOLOGY
+--------------------------------------------------
+Return a morphology object with the following fields:
+{
+  "person": ...,
+  "number": ...,
+  "case": ...,
+  "gender": ...,
+  "tense": ...,
+  "mood": ...,
+  "voice": ...
+}
+Use null whenever a feature does not apply.
+For nominal/adjectival/pronominal forms:
+case
+number
+gender
+For finite verbal forms:
+person
+number
+tense
+mood
+voice
+For non-finite verbal forms, DO NOT force finite-verb categories into
+the analysis.
+For example, an absolutive normally has:
+person: null
+number: null
+tense: null
+mood: null
+If voice is linguistically applicable and can be established, return it.
+Use:
+ACTIVE
+MIDDLE
+PASSIVE
+or null.
+Also return:
+gender
+case
+number
+where genuinely applicable.
+Do not invent a value simply because the database contains such a field.
+--------------------------------------------------
+E. DERIVATION / FORMATION
+--------------------------------------------------
+Return:
+derivationType
+- The derivational or formative process, if identifiable.
+Possible values include:
+SIMPLE_INFLECTION
+ABSOLUTIVE
+PARTICIPLE
+GERUNDIVE
+INFINITIVE
+CAUSATIVE
+DESIDERATIVE
+DENOMINATIVE
+COMPOUND_VERB
+OTHER
+null
+derivationalSuffix
+- The formative/suffix involved, if identifiable.
+- Examples: "-tya", "-tvā", etc.
+- IAST only.
+- Otherwise null.
+derivationalBase
+- The immediate lexical/morphological base from which the form is derived,
+  if identifiable.
+- IAST only.
+- Otherwise null.
+derivation
+- JSON object containing detailed derivational information.
+- If no reliable derivational information exists, return {}.
+Example:
+{
+  "type": "ABSOLUTIVE",
+  "suffix": "-tya",
+  "base": "vaśīkṛ",
+  "description": "absolutive formation with -tya"
+}
+Do not invent derivational information.
+If uncertain, use null or {}.
+--------------------------------------------------
+F. DICTIONARY MEANING OF THE LEMMA
+--------------------------------------------------
+lemmaGlossRu
+- Concise dictionary-style Russian meaning of lemmaIast.
+- This describes the lexical unit, NOT the specific form occurring in this
+  verse.
+lemmaGlossEn
+- Concise dictionary-style English meaning of lemmaIast.
+- This describes the lexical unit, NOT the specific form occurring in this
+  verse.
+Example:
+surfaceIast: "vaśīkṛtya"
+lemmaIast: "vaśīkṛ"
+lemmaGlossRu:
+"подчинять; делать подвластным"
+lemmaGlossEn:
+"to subdue; to bring under control"
+--------------------------------------------------
+G. CONTEXTUAL MEANING OF THE ACTUAL FORM
+--------------------------------------------------
+glossRu
+- Short contextual Russian meaning of the actual surface form in this verse.
+glossEn
+- Short contextual English meaning of the actual surface form in this verse.
+For example:
+surfaceIast: "vaśīkṛtya"
+glossRu:
+"подчинив"
+glossEn:
+"having subdued"
+IMPORTANT:
+lemmaGlossRu / lemmaGlossEn describe the dictionary lemma.
+glossRu / glossEn describe the actual form in this context.
+Never substitute one for the other.
+--------------------------------------------------
+H. INTERNAL MORPHOPHONEMIC RULES
+--------------------------------------------------
+formationRuleNumbers
+Return a list of rule numbers from emenau-sandhi-rules.json with:
+"applicability": "internal"
+That means rules 1–40 only.
+Use these rules ONLY for actual internal morphophonemic changes involved
+in the formation of this word.
+Do not use them simply because the word is inflected.
+If no internal morphophonemic rule applies:
+[]
+If an internal change clearly occurred but no rule can be matched with
+confidence:
+[]
+NEVER guess a rule number.
+--------------------------------------------------
+I. ANALYSIS CONFIDENCE
+--------------------------------------------------
+analysisConfidence
+Return exactly one of:
+HIGH
+MEDIUM
+LOW
+Use HIGH when the morphological and lexical analysis is clear.
+Use MEDIUM when the analysis is likely but one or more details are uncertain.
+Use LOW when the form is genuinely ambiguous or difficult to analyse.
+ambiguityNotes
+- null if there is no meaningful ambiguity.
+- Otherwise briefly explain the ambiguity.
+If multiple analyses are genuinely possible, return the most likely analysis
+as the primary analysis and describe the alternative in ambiguityNotes.
+--------------------------------------------------
+J. CRITICAL DISTINCTION BETWEEN LEMMA AND SURFACE FORM
+--------------------------------------------------
+The vocabulary system stores LEMMAS, not every surface form.
+Therefore:
+- "gacchati" may point to the lemma used by the lexical analysis;
+- "gacchanti", "agacchat", etc. are occurrences/forms, not automatically
+  separate vocabulary entries;
+- "vaśīkṛtya" is a surface form;
+- "vaśīkṛ" is the lexical lemma;
+- "kṛ" is the verbal root/dhātu.
+Do not create a new lexical entry merely because a new inflected or derived
+form appears.
+The field vocabulary_word_id will refer to the dictionary/vocabulary entry
+for lemmaIast, not to the individual surface form.
+--------------------------------------------------
+K. EXAMPLE
+--------------------------------------------------
+For:
+vaśīkṛtya / वशीकृत्य
+the analysis should be capable of representing:
+{
+  "position": 22,
+  "surfaceIast": "vaśīkṛtya",
+  "surfaceDevanagari": "वशीकृत्य",
+  "lemmaIast": "vaśīkṛ",
+  "stem": "vaśīkṛ",
+  "root": "kṛ",
+  "pos": "VERB",
+  "formType": "ABSOLUTIVE",
+  "isFinite": false,
+  "morphology": {
+    "person": null,
+    "number": null,
+    "case": null,
+    "gender": null,
+    "tense": null,
+    "mood": null,
+    "voice": "ACTIVE"
+  },
+  "derivationType": "ABSOLUTIVE",
+  "derivationalSuffix": "-tya",
+  "derivationalBase": "vaśīkṛ",
+  "derivation": {
+    "type": "ABSOLUTIVE",
+    "suffix": "-tya",
+    "base": "vaśīkṛ",
+    "description": "absolutive formation with -tya"
+  },
+  "lemmaGlossRu": "подчинять; делать подвластным",
+  "lemmaGlossEn": "to subdue; to bring under control",
+  "glossRu": "подчинив",
+  "glossEn": "having subdued",
+  "formationRuleNumbers": [],
+  "analysisConfidence": "HIGH",
+  "ambiguityNotes": null
+}
+This example illustrates the REQUIRED STRUCTURE.
+Do not blindly copy these values when analysing a different word.
+--------------------------------------------------
+L. OUTPUT REQUIREMENT
+--------------------------------------------------
+Return all words in their original order.
+Every word MUST receive a complete analysis object.
+Use null when a grammatical feature does not apply.
+Use [] for empty rule-number lists.
+Use {} for empty structured derivation information.
+NEVER invent a grammatical feature, root, stem, suffix, derivation or rule
+number merely to avoid returning null or [].
+
+Return the words in this field in IAST transliteration (surfaceIast, lemmaIast, stem,
+root, derivationalSuffix, derivationalBase — never Devanagari, only surfaceDevanagari
+carries Devanagari, per the same rule as sandhiSplits in item 3).
 
 5. Transliteration must be literal, not reconstructed from memory. textIast,
    surfaceIast, lemmaIast, stem and root must be the exact, letter-for-letter

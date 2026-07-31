@@ -118,7 +118,7 @@ public class JsonSchemas {
         components.put("minItems", 1);
         components.putObject("items").put("type", "string");
 
-        // words
+                // words
         ObjectNode words = properties.putObject("words");
         words.put("type", "array");
         words.put("minItems", 1);
@@ -126,25 +126,51 @@ public class JsonSchemas {
         wordItem.put("type", "object");
         ArrayNode wordRequired = wordItem.putArray("required");
         wordRequired.add("position").add("surfaceIast").add("surfaceDevanagari")
-                .add("lemmaIast").add("stem").add("pos").add("glossRu").add("glossEn");
+                .add("lemmaIast").add("stem").add("pos").add("glossRu").add("glossEn")
+                .add("formType").add("analysisConfidence");
 
         ObjectNode wordProps = wordItem.putObject("properties");
         wordProps.putObject("position").put("type", "integer").put("minimum", 0);
         wordProps.putObject("surfaceIast").put("type", "string").put("minLength", 1);
         wordProps.putObject("surfaceDevanagari").put("type", "string").put("minLength", 1);
         wordProps.putObject("lemmaIast").put("type", "string").put("minLength", 1);
-        wordProps.putObject("stem").put("type", "string").put("minLength", 1);
+        wordProps.putObject("stem").put("type", "string");
         wordProps.putObject("root").put("type", "string");
         wordProps.putObject("pos").put("type", "string");
-        wordProps.putObject("gender").put("type", "string");
-        wordProps.putObject("caseType").put("type", "string");
-        wordProps.putObject("numberType").put("type", "string");
-        wordProps.putObject("person").put("type", "string");
-        wordProps.putObject("tense").put("type", "string");
-        wordProps.putObject("mood").put("type", "string");
-        wordProps.putObject("voice").put("type", "string");
+        wordProps.putObject("formType").put("type", "string");
+        wordProps.putObject("isFinite").put("type", "boolean");
+
+        // morphology (nested)
+        ObjectNode morphSchema = wordProps.putObject("morphology");
+        morphSchema.put("type", "object");
+        ObjectNode morphProps = morphSchema.putObject("properties");
+        morphProps.putObject("person").put("type", "string");
+        morphProps.putObject("number").put("type", "string");
+        morphProps.putObject("case").put("type", "string");
+        morphProps.putObject("gender").put("type", "string");
+        morphProps.putObject("tense").put("type", "string");
+        morphProps.putObject("mood").put("type", "string");
+        morphProps.putObject("voice").put("type", "string");
+
+        wordProps.putObject("derivationType").put("type", "string");
+        wordProps.putObject("derivationalSuffix").put("type", "string");
+        wordProps.putObject("derivationalBase").put("type", "string");
+
+        // derivation (nested)
+        ObjectNode derivSchema = wordProps.putObject("derivation");
+        derivSchema.put("type", "object");
+        ObjectNode derivProps = derivSchema.putObject("properties");
+        derivProps.putObject("type").put("type", "string");
+        derivProps.putObject("suffix").put("type", "string");
+        derivProps.putObject("base").put("type", "string");
+        derivProps.putObject("description").put("type", "string");
+
+        wordProps.putObject("lemmaGlossRu").put("type", "string");
+        wordProps.putObject("lemmaGlossEn").put("type", "string");
         wordProps.putObject("glossRu").put("type", "string").put("minLength", 1);
         wordProps.putObject("glossEn").put("type", "string").put("minLength", 1);
+        wordProps.putObject("analysisConfidence").put("type", "string");
+        wordProps.putObject("ambiguityNotes").put("type", "string");
 
         schema.putObject("additionalProperties").put("type", "string");
 
