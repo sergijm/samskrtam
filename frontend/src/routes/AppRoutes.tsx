@@ -39,6 +39,7 @@ import GrammarLessonPage from '../pages/lessons/GrammarLessonPage';
 import GrammarAllStemsPage from '../pages/lessons/GrammarAllStemsPage';
 import WorksPage from '../pages/sangraha/WorksPage';
 import WorkPage from '../pages/sangraha/WorkPage';
+import ChapterPage from '../pages/sangraha/ChapterPage';
 import VersePage from '../pages/sangraha/VersePage';
 
 // Components
@@ -103,9 +104,10 @@ export default function AppRoutes() {
       {/* Quiz page */}
       <Route path="/quiz/:quizCategory/:slug/:sessionId?" element={<ProtectedLayoutRoute><QuizPage /></ProtectedLayoutRoute>} />
 
-      {/* Sangraha routes */}
+            {/* Sangraha routes */}
       <Route path="/sangraha" element={<ProtectedLayoutRoute><WorksPage /></ProtectedLayoutRoute>} />
       <Route path="/sangraha/:workSlug" element={<ProtectedLayoutRoute><WorkPage /></ProtectedLayoutRoute>} />
+      <Route path="/sangraha/:workSlug/chapters/:chapterId" element={<ProtectedLayoutRoute><ChapterPage /></ProtectedLayoutRoute>} />
       <Route path="/sangraha/:workSlug/verses/:verseId" element={<ProtectedLayoutRoute><VersePage /></ProtectedLayoutRoute>} />
 
       {/* Dictionary route */}

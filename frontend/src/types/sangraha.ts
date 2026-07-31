@@ -11,6 +11,29 @@ export interface WorkSummaryDto {
   createdAt: string;
 }
 
+export interface ChapterSummaryDto {
+  id: string;
+  slug: string;
+  titleRu: string;
+  titleEn: string;
+  titleIast?: string | null;
+  titleDevanagari?: string | null;
+  orderIndex: number;
+  categoryCode: string;
+  verseCount: number;
+}
+
+export interface WorkTreeDto {
+  id: string;
+  slug: string;
+  titleRu: string;
+  titleEn: string;
+  descriptionRu?: string | null;
+  descriptionEn?: string | null;
+  author?: string | null;
+  chapters: ChapterSummaryDto[];
+}
+
 export interface VerseTreeDto {
   id: string;
   orderIndex: number;
@@ -22,7 +45,7 @@ export interface VerseTreeDto {
   status: VerseStatus;
 }
 
-export interface ChapterTreeDto {
+export interface ChapterVersesDto {
   id: string;
   slug: string;
   titleRu: string;
@@ -32,17 +55,6 @@ export interface ChapterTreeDto {
   orderIndex: number;
   categoryCode: string;
   verses: VerseTreeDto[];
-}
-
-export interface WorkTreeDto {
-  id: string;
-  slug: string;
-  titleRu: string;
-  titleEn: string;
-  descriptionRu?: string | null;
-  descriptionEn?: string | null;
-  author?: string | null;
-  chapters: ChapterTreeDto[];
 }
 
 export interface SandhiSplit {
@@ -110,45 +122,7 @@ export interface VerseDetailDto {
   status: VerseStatus;
   analysis?: VerseAnalysisDto | null;
   words: VerseWordDto[];
-    vocabularyQuizSlug?: string | null;
+        vocabularyQuizSlug?: string | null;
+  vocabularyQuizId?: string | null;
 }
 
-export interface CreateWorkRequest {
-  title: string;
-  description?: string;
-}
-
-export interface UpdateWorkRequest {
-  titleRu?: string;
-  titleEn?: string;
-  descriptionRu?: string;
-  descriptionEn?: string;
-  author?: string;
-}
-
-export interface CreateChapterRequest {
-  slug: string;
-  orderIndex?: number;
-  title: string;
-}
-
-export interface UpdateChapterRequest {
-  slug?: string;
-  orderIndex?: number;
-  title?: string;
-}
-
-export interface CreateVerseRequest {
-  orderIndex: number;
-  textDevanagari?: string;
-  textIast?: string;
-}
-
-export interface UpdateVerseTextRequest {
-  text: string;
-}
-
-export interface UpdateVerseRequest {
-  orderIndex: number;
-  rawText?: string;
-}

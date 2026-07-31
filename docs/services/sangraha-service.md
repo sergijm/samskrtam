@@ -73,20 +73,10 @@ verse_word_morphology + verse_word_derivation — см. §2,
 ```
 GET    /api/v1/sangraha/works                                  → плитки произведений
        ?id={workId} (опционально)                              → если id указан — дерево произведения по UUID
-POST   /api/v1/sangraha/works                                   → создать произведение (ADMIN), см. §5.2
 GET    /api/v1/sangraha/works/{workSlug}                        → ★ произведение + дерево chapters/verses по slug
                                                                    (основной эндпоинт для фронтенда /sangraha/:workSlug,
                                                                    возвращает id, slug, titleRu/En и chapters[].verses[])
-PUT    /api/v1/sangraha/works/{workId}                          → обновить метаданные (ADMIN)
-DELETE /api/v1/sangraha/works/{workId}                          → soft delete (ADMIN)
 
-POST   /api/v1/sangraha/works/{workSlug}/chapters                → добавить главу (ADMIN), см. §5.3
-       Body: {"title": "...", "orderIndex": 123}  — title обязателен, orderIndex опционален
-PUT    /api/v1/sangraha/chapters/{chapterId}                     → обновить главу (ADMIN), см. §5.3
-       Body: {"title": "...", "orderIndex": 123}  — оба поля опциональны
-DELETE /api/v1/sangraha/chapters/{chapterId}                     → soft delete (ADMIN)
-
-POST   /api/v1/sangraha/chapters/{chapterId}/verses             → добавить стих (пустой, DRAFT) (ADMIN)
 GET    /api/v1/sangraha/verses/{verseId}                         → стих: текст + (если ANALYZED) VerseAnalysis + VerseWord[] +
                                                                      vocabularyQuizSlug/vocabularyQuizId (кэш кнопки «Изучить», null пока
                                                                      не нажата, см. §6, §7, sangraha-schemas.yaml#VerseDetail)
@@ -94,12 +84,9 @@ POST   /api/v1/sangraha/verses/{verseId}/vocabulary-quiz         → кнопк�
                                                                      синхронно создать лексический квиз стиха в content-service
                                                                      ({quizSlug, quizId, quizStatus}), закэшировать quizSlug/quizId
                                                                      (см. §6, ADR-009)
-POST   /api/v1/sangraha/verses/{verseId}/analyze                 → сохранить `raw_text` и запустить LLM-анализ (ADMIN, см. §5); тело —
+POST   /api/v1/sangraha/verses/{verseId}/analyze                 → сохранить `text` и запустить LLM-анализ (ADMIN, см. §5); тело —
                                                                      единое поле `text` (обязательно, см. §7) — backend определяет
-                                                                     письменность по Unicode-диапазону (наличие символов деванагари →
-                                                                     textDevanagari, иначе → textIast); синхронный ответ или 202 +
-                                                                     опрос статуса — решает Агент 2
-DELETE /api/v1/sangraha/verses/{verseId}                         → soft delete (ADMIN)
+                                                                     письменность и заполняет textDevanagari/textIast
 ```
 
 Ответ `GET /works/{workSlug}` (и `GET /works?id={workId}`) — двухуровневое дерево для TreeGrid:
@@ -116,8 +103,8 @@ DELETE /api/v1/sangraha/verses/{verseId}                         → soft delete
 Backend сохраняет `text` как есть в `Verse.rawText`, затем детектирует письменность по
 Unicode-диапазону деванагари и заполняет `textDevanagari` либо `textIast` — до перехода
 статуса в `ANALYZING` и до вызова LLM. Это единственная точка сохранения текста стиха
-(кнопка «Сохранить» и отдельный эндпоинт `PUT /verses/{id}/text` удалены — write-контур
-текста стиха теперь состоит из одного эндпоинта, см. §7).
+(Verse CRUD удалён — стихи создаются через импорт, текст сохраняется здесь,
+см. §7).
 
 Конфигурация — только через env, без дефолтов в yml (см. конвенцию по секретам):
 
@@ -165,81 +152,12 @@ Backend:
 Если пользователь ввёл текст только в одном представлении (только devanagari или только
 iast) — второе представление также генерирует модель, и backend сохраняет оба.
 
-### 5.2 Создание произведения: авто-детекция языка, перевод, генерация метаданных
+### 5.2 Удалённые операции
 
-`POST /api/v1/sangraha/works` принимает только `title` (сырой ввод пользователя на любом
-из трёх языков) и опционально `description`. Все остальные поля Work заполняются
-автоматически, синхронно, в рамках одного HTTP-запроса.
-
-**Шаг 1 — детекция языка (без LLM, по алфавиту первого значимого символа `title`):**
-Devanagari-диапазон Unicode → `SANSKRIT`; кириллица → `RU`; латиница → `EN`.
-
-**Шаг 2 — LLM tool calling.** Один вызов `/chat/completions` с промптом (файл
-[`prompts/work-metadata.md`](./prompts/work-metadata.md)) и **один**
-объявленный tool — `submit_work_metadata`, модель обязана вернуть результат через
-`tool_calls`, а не свободным текстом.
-
-Параметры tool `submit_work_metadata`: titleRu, titleEn, titleSaIast, titleSaDevanagari, descriptionRu
-(nullable), descriptionEn (nullable), author (nullable — если LLM не уверена в
-авторстве, возвращает `null`, поле остаётся пустым, не выдумывается).
-
-Backend валидирует `tool_calls[0].function.arguments` по JSON Schema (не доверяем
-модели, как и в §5.1). Поле языка, указанное пользователем (`detectedLanguage`),
-никогда не перезаписывается ответом модели — LLM только дополняет два оставшихся
-языковых представления и (опционально) описание/автора.
-
-Если пользователь передал `description` — она считается описанием на языке
-`detectedLanguage` и подставляется в соответствующее поле (`descriptionRu` или
-`descriptionEn`); модель в этом случае дополняет только оставшееся из двух полей
-описания переводом. Санскритское описание не хранится (только `descriptionRu`/`descriptionEn`).
-
-**Шаг 3 — slug.** Вычисляется **детерминированно, без LLM** — транслитерация
-`titleSaIast → SLP1` по фиксированной таблице соответствия IAST↔SLP1 (чистая функция
-в Agent 2, не LLM-задача: идентификатор не должен зависеть от недетерминированного
-вывода модели). Диакритика и пробелы/апострофы IAST превращаются в ASCII-набор SLP1;
-результат приводится к `^[a-z0-9][a-z0-9-]*$` (дефисы вместо пробелов, нижний регистр).
-При коллизии `slug` — backend добавляет числовой суффикс (`-2`, `-3`, ...).
-
-**Ошибки:** если LLM недоступна/вернула невалидный `tool_calls` — `POST /works`
-завершается ошибкой (5xx), Work не создаётся (никаких частично заполненных записей).
-
-### 5.3 Создание/редактирование главы: авто-перевод названия
-
-`POST /works/{workSlug}/chapters` принимает только `title` (сырой ввод пользователя на любом
-из трёх языков) и опционально `orderIndex`. Все остальные поля Chapter (`titleRu`, `titleEn`,
-`titleSaIast`, `titleSaDevanagari`, `slug`) заполняются автоматически, синхронно, в рамках
-одного HTTP-запроса — по тому же паттерну, что и §5.2 для Work.
-
-**Шаг 1 — детекция языка (без LLM, по алфавиту первого значимого символа `title`):**
-Devanagari-диапазон Unicode → `SANSKRIT`; кириллица → `RU`; латиница → `EN`.
-
-**Шаг 2 — LLM tool calling.** Один вызов `/chat/completions` с промптом (файл
-[`prompts/chapter-metadata.md`](./prompts/chapter-metadata.md)) и **один**
-объявленный tool — `submit_chapter_metadata`, модель обязана вернуть результат через
-`tool_calls`, а не свободным текстом.
-
-Параметры tool `submit_chapter_metadata`: titleRu, titleEn, titleSaIast, titleSaDevanagari.
-У главы нет author/description — эти поля отсутствуют.
-
-Backend валидирует `tool_calls[0].function.arguments` по JSON Schema (не доверяем
-модели, как и в §5.1). Поле языка, указанное пользователем (`detectedLanguage`),
-никогда не перезаписывается ответом модели — LLM только дополняет два оставшихся
-языковых представления.
-
-**Шаг 3 — slug.** Вычисляется **детерминированно, без LLM** — транслитерация
-`titleSaIast → SLP1` по той же схеме, что и для Work (см. §5.2). При коллизии в
-пределах workId (уникальность `(work_id, slug)`, а не глобально) — backend добавляет
-числовой суффикс (`-2`, `-3`, ...).
-
-**Шаг 4 — orderIndex.** Если `orderIndex` не передан в запросе — backend вычисляет его
-как `max(orderIndex) + 1` среди активных (не удалённых) глав того же произведения.
-
-**PUT /chapters/{chapterId}** принимает те же поля — `title` и опционально `orderIndex`.
-Оба поля опциональны: если `title` передан — выполняется LLM-перевод и обновляются
-все четыре title-поля; если `orderIndex` передан — обновляется только он.
-
-**Ошибки:** если LLM недоступна/вернула невалидный `tool_calls` — запрос завершается
-ошибкой (5xx), Chapter не создаётся/не обновляется (никаких частично заполненных записей).
+Work/Chapter CRUD удалён. Произведения и главы создаются через импорт
+(см. §1). Соответствующие эндпоинты и Java-сервисы удалены:
+- `POST /works`, `PUT /works/{workSlug}`, `DELETE /works/{workSlug}`
+- `POST /works/{workSlug}/chapters`, `PUT /chapters/{chapterId}`, `DELETE /chapters/{chapterId}`
 
 ---
 
@@ -269,18 +187,18 @@ Backend валидирует `tool_calls[0].function.arguments` по JSON Schema
 
 ## 7. Frontend (эскиз, детализирует Агент 3)
 
-- **Страница произведений** (`/sangraha`) — плитки (`WorkCard`) со списком работ + кнопка «Добавить произведение» (ADMIN).
-- **Страница произведения** (`/sangraha/{workSlug}`) — TreeGrid (PrimeReact TreeTable, по аналогии с остальным фронтом): колонка 1 — дерево «глава → стих (textIastPreview)», колонка 2 — иконка/ссылка на VOCABULARY-квиз `slug = categoryCode`. Кнопки «Добавить главу», «Добавить стих» (ADMIN).
+- **Страница произведений** (`/sangraha`) — плитки (`WorkCard`) со списком работ.
+- **Страница произведения** (`/sangraha/{workSlug}`) — дерево глав/стихов. Read-only: без кнопок добавления/удаления.
 - **Страница стиха** (`/sangraha/{workSlug}/verses/{verseId}`):
   - Поле ввода текста — **одно** (не два раздельных для devanagari/iast). Пользователь
     может печатать в нём как деванагари, так и IAST — оба варианта допустимы в одном
     и том же поле; в режиме редактирования поле показывает сохранённое `rawText`
     (а не `textDevanagari`/`textIast` — они актуальны только после анализа, см. ниже).
-  - `status=DRAFT` (или после нажатия «Редактировать» из ANALYZED/FAILED — см. ниже) →
-    поле ввода активно, кнопка **только одна** — «Анализ» → `POST /verses/{id}/analyze`
-    с телом `{ text }`. Отдельной кнопки «Сохранить» на странице нет: backend сохраняет
-    введённый текст в `rawText` и определяет письменность (`textDevanagari`/`textIast`,
-    §4/§5.1) в рамках того же запроса, до начала LLM-анализа.
+    - `status=DRAFT` (или `FAILED`) → поле ввода активно, кнопка
+    **только одна** — «Анализ» → `POST /verses/{id}/analyze`
+    с телом `{ text }`. Backend сохраняет введённый текст в `rawText`
+    и определяет письменность (`textDevanagari`/`textIast`,
+    §4/§5.1) в рамках того же запроса, до LLM-анализа.
   - `status=ANALYZING` → поле и кнопка заблокированы, индикатор загрузки.
   - `status=ANALYZED` → поле ввода **read-only** (показывает сохранённые
     `textDevanagari`/`textIast` — оба, если оба заполнены, а не `rawText`), и ниже обязательно
@@ -300,12 +218,8 @@ Backend валидирует `tool_calls[0].function.arguments` по JSON Schema
       штатно, без плейсхолдера-ошибки. **НОВОЕ:** строка слова разворачивается
       по клику в панель с полным разбором — без новых колонок в таблице, см.
       [verse-word-grammar.md §5](./sangraha-service/verse-word-grammar.md).
-    - Если `status=ANALYZED`, но `analysis`/`words` не пришли (пустой ответ backend) —
+    -     Если `status=ANALYZED`, но `analysis`/`words` не пришли (пустой ответ backend) —
       фронтенд должен показать явную ошибку/плейсхолдер, а не пустой блок молча.
-  - Кнопка **«Редактировать»** видна только при `status=ANALYZED`: возвращает поле
-    ввода в редактируемое состояние (значение — как для DRAFT), сохраняет исходный
-    текст доступным для правки; повторное нажатие «Анализ» перезаписывает
-    `VerseAnalysis` и `VerseWord[]` (см. §8, версионирование анализа не хранится).
   - Кнопка **«Изучить»** — рядом со списком слов (таблица `words[]`, см. выше), видна
     только при `status=ANALYZED` и непустом `words[]`; `disabled`, если слов нет
     (проверяется локально на фронте, без обращения к бэкенду).

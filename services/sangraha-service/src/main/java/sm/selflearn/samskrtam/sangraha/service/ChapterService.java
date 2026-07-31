@@ -1,26 +1,21 @@
 package sm.selflearn.samskrtam.sangraha.service;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import sm.selflearn.samskrtam.sangraha.dto.ChapterTreeDto;
-import sm.selflearn.samskrtam.sangraha.dto.CreateChapterRequest;
-import sm.selflearn.samskrtam.sangraha.dto.UpdateChapterRequest;
+import sm.selflearn.samskrtam.sangraha.dto.ChapterSummaryDto;
+import sm.selflearn.samskrtam.sangraha.dto.ChapterVersesDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseTreeDto;
 import sm.selflearn.samskrtam.sangraha.model.Chapter;
 import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
-import sm.selflearn.samskrtam.sangraha.model.Work;
 import sm.selflearn.samskrtam.sangraha.repository.ChapterRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseAnalysisRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChapterService {
@@ -29,7 +24,7 @@ public class ChapterService {
     private final WorkService workService;
     private final VerseRepository verseRepository;
     private final VerseAnalysisRepository verseAnalysisRepository;
-    private final ChapterTitleService chapterTitleService;
+
     @Transactional(readOnly = true)
     public List<Chapter> getChaptersByWorkId(UUID workId) {
         workService.getWorkById(workId);
@@ -42,11 +37,13 @@ public class ChapterService {
                 .orElseThrow(() -> new RuntimeException("Chapter not found: " + id));
     }
 
+    // ── NEW: chapter summaries without verses (for WorkPage tree) ──
+
     @Transactional(readOnly = true)
-    public List<ChapterTreeDto> getChapterTreeByWorkId(UUID workId) {
+    public List<ChapterSummaryDto> getChapterSummaryByWorkId(UUID workId) {
         List<Chapter> chapters = getChaptersByWorkId(workId);
         return chapters.stream()
-                .map(ch -> new ChapterTreeDto(
+                .map(ch -> new ChapterSummaryDto(
                         ch.getId(),
                         ch.getSlug(),
                         ch.getTitleRu(),
@@ -54,80 +51,48 @@ public class ChapterService {
                         ch.getTitleSaIast(),
                         ch.getTitleSaDevanagari(),
                         ch.getOrderIndex(),
-                        ch.getSlug(),
-                        verseRepository.findAllByChapterIdAndDeletedAtIsNullOrderByOrderIndexAsc(ch.getId())
-                                .stream()
-                                .map(v -> {
-                                    Optional<VerseAnalysis> analysis =
-                                            verseAnalysisRepository.findByVerseId(v.getId());
-                                    return new VerseTreeDto(
-                                            v.getId(),
-                                            v.getOrderIndex(),
-                                            preview(v.getTextIast(), 80),
-                                            v.getTextIast(),
-                                            v.getTextDevanagari(),
-                                            analysis.map(VerseAnalysis::getTranslationRu).orElse(null),
-                                            analysis.map(VerseAnalysis::getTranslationEn).orElse(null),
-                                            v.getStatus());
-                                })
-                                .toList()
+                        ch.getSlug(), // categoryCode = slug (legacy)
+                        verseRepository.countByChapterIdAndDeletedAtIsNull(ch.getId())
                 ))
                 .toList();
     }
 
-    @Transactional
-    public Chapter createChapterBySlug(String workSlug, CreateChapterRequest request) {
-        Work work = workService.getWorkBySlug(workSlug);
-        return createChapterFromTitle(work.getId(), request);
+    // ── NEW: single chapter with its verses (for ChapterPage) ──
+
+    @Transactional(readOnly = true)
+    public ChapterVersesDto getChapterVersesByChapterId(UUID chapterId) {
+        Chapter ch = getChapterById(chapterId);
+        var verses = verseRepository.findAllByChapterIdAndDeletedAtIsNullOrderByOrderIndexAsc(ch.getId())
+                .stream()
+                .map(v -> {
+                    Optional<VerseAnalysis> analysis =
+                            verseAnalysisRepository.findByVerseId(v.getId());
+                    return new VerseTreeDto(
+                            v.getId(),
+                            v.getOrderIndex(),
+                            preview(v.getTextIast(), 80),
+                            v.getTextIast(),
+                            v.getTextDevanagari(),
+                            analysis.map(VerseAnalysis::getTranslationRu).orElse(null),
+                            analysis.map(VerseAnalysis::getTranslationEn).orElse(null),
+                            v.getStatus());
+                })
+                .toList();
+        return new ChapterVersesDto(
+                ch.getId(),
+                ch.getSlug(),
+                ch.getTitleRu(),
+                ch.getTitleEn(),
+                ch.getTitleSaIast(),
+                ch.getTitleSaDevanagari(),
+                ch.getOrderIndex(),
+                ch.getSlug(),
+                verses
+        );
     }
 
-    /**
-     * Создание главы из сырого заголовка — делегирует {@link ChapterTitleService#createFromTitle}.
-     */
-    @Transactional
-    public Chapter createChapterFromTitle(UUID workId, CreateChapterRequest request) {
-        return chapterTitleService.createFromTitle(workId, request);
-    }
-    /**
-     * Обновление главы через title — делегирует {@link ChapterTitleService#updateFromTitle}.
-     * Если title не передан — обновляется только orderIndex.
-     */
-    @Transactional
-    public Chapter updateChapterFromTitle(UUID chapterId, UpdateChapterRequest request) {
-        Chapter chapter = getChapterById(chapterId);
-        return chapterTitleService.updateFromTitle(chapterId, request, chapter);
-    }
-
-    /**
-     * @deprecated — заменён на createChapterFromTitle. Сохранён для обратной совместимости
-     * до полного перехода на DTO в контроллере.
-     */
-    @Deprecated
-    @Transactional
-    public Chapter createChapter(UUID workId, Chapter chapter) {
-        workService.getWorkById(workId);
-        if (chapterRepository.existsByWorkIdAndSlug(workId, chapter.getSlug())) {
-            throw new RuntimeException("Chapter with slug '" + chapter.getSlug() + "' already exists in this work");
-        }
-        chapter.setWorkId(workId);
-        return chapterRepository.save(chapter);
-    }
-
-    @Transactional
-    public Chapter updateChapter(UUID id, Chapter update) {
-        Chapter chapter = getChapterById(id);
-        chapter.setTitleRu(update.getTitleRu());
-        chapter.setTitleEn(update.getTitleEn());
-        chapter.setOrderIndex(update.getOrderIndex());
-        return chapterRepository.save(chapter);
-    }
-
-    @Transactional
-    public void deleteChapter(UUID id) {
-        Chapter chapter = getChapterById(id);
-        chapter.setDeletedAt(Instant.now());
-        chapterRepository.save(chapter);
-    }
+    // ── DEPRECATED: old tree method (kept for backward compat, will be removed) ──
+    // Replaced by getChapterSummaryByWorkId() + getChapterVersesByChapterId()
 
     private static String preview(String text, int max) {
         if (text == null) return null;

@@ -2,45 +2,41 @@ import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   useVerseDetail,
-  useAnalyzeVerse,
-  useUpdateVerse,
   useGetOrCreateVocabularyQuiz,
 } from '../../hooks/useSangraha';
 import { useAuthStore } from '../../store/authStore';
 import { useLocaleStore } from '../../store/localeStore';
 import { quizApi } from '../../api/quizApi';
+import { sangrahaApi } from '../../api/sangraha';
 import { LessonType } from '../../types/quiz';
 import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
 import { InputTextarea } from 'primereact/inputtextarea';
-import { InputNumber } from 'primereact/inputnumber';
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useVocabularyLesson } from '../../hooks/useLessons';
 import type { VocabularyWordProgress } from '../../types/lesson';
 import VerseWordsList from '../../components/sangraha/VerseWordsList';
 import SandhiSplitsList from '../../components/sangraha/SandhiSplitsList';
-import { IconButton, CtaButton, CreateButton, PageButton } from '../../components/common/buttons';
+import { IconButton, CtaButton } from '../../components/common/buttons';
 
 const VersePage = () => {
   const { t, i18n } = useTranslation();
   const { workSlug, verseId } = useParams<{ workSlug: string; verseId: string }>();
   const navigate = useNavigate();
-    const toast = useRef<Toast>(null);
+  const toast = useRef<Toast>(null);
   const queryClient = useQueryClient();
   const { data: verse, isLoading, isError } = useVerseDetail(verseId || '');
-  const analyze = useAnalyzeVerse();
-  const updateVerse = useUpdateVerse();
-    const getOrCreateVocabularyQuiz = useGetOrCreateVocabularyQuiz();
-    const user = useAuthStore((s) => s.user);
+  const getOrCreateVocabularyQuiz = useGetOrCreateVocabularyQuiz();
+  const user = useAuthStore((s) => s.user);
   const isAdmin = user?.roles?.includes('ADMIN') ?? false;
 
-  // Загружаем прогресс урока, если quizSlug уже есть (кнопка «Изучить» была нажата)
+  // Load lesson progress if quizSlug already exists
   const vocabSlug = verse?.vocabularyQuizSlug;
   const { data: vocabularyLesson } = useVocabularyLesson(vocabSlug || '');
 
-  // Строим map vocabularyWordId → прогресс
+  // Build map vocabularyWordId -> progress
   const wordProgressMap = useMemo<Record<string, VocabularyWordProgress> | null>(() => {
     if (!vocabularyLesson?.words) return null;
     const map: Record<string, VocabularyWordProgress> = {};
@@ -50,7 +46,7 @@ const VersePage = () => {
     return map;
   }, [vocabularyLesson]);
 
-  // Иконка кнопки «Изучить» по statusSummary
+  // Study icon based on statusSummary
   const studyIcon = useMemo(() => {
     if (!vocabularyLesson?.statusSummary) return 'pi-book';
     const { total, mastered, learning, reviewDue } = vocabularyLesson.statusSummary;
@@ -59,66 +55,36 @@ const VersePage = () => {
     return 'pi-book';
   }, [vocabularyLesson]);
 
-  const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState('');
-  const [editOrderIndex, setEditOrderIndex] = useState(0);
+  const [analyzePending, setAnalyzePending] = useState(false);
 
   useEffect(() => {
     if (verse) {
       setEditText(verse.rawText ?? verse.textDevanagari ?? verse.textIast ?? '');
-      setEditOrderIndex(verse.orderIndex);
-      if (verse.status === 'DRAFT' || verse.status === 'FAILED') {
-        setIsEditing(true);
-      }
     }
   }, [verse]);
-
-  const handleSave = useCallback(async () => {
-    if (!verseId) return;
-    try {
-      await updateVerse.mutateAsync({
-        verseId,
-        data: { orderIndex: editOrderIndex, rawText: editText || undefined },
-      });
-      setIsEditing(false);
-      toast.current?.show({ severity: 'success', summary: t('common.success') });
-    } catch {
-      toast.current?.show({ severity: 'error', summary: t('common.error') });
-    }
-  }, [verseId, editOrderIndex, editText, updateVerse, t]);
 
   const handleAnalyze = useCallback(async () => {
     if (!verseId) return;
+    setAnalyzePending(true);
     try {
-      // Сначала сохраняем текст, чтобы он попал в rawText перед анализом
-      await updateVerse.mutateAsync({
-        verseId,
-        data: { orderIndex: editOrderIndex, rawText: editText || undefined },
-      });
-      // Затем запускаем анализ
-      await analyze.mutateAsync({ verseId, data: { text: editText } });
-      setIsEditing(false);
+      await sangrahaApi.analyzeVerse(verseId, { text: editText });
+      queryClient.invalidateQueries({ queryKey: ['sangraha', 'verse', verseId] });
+      queryClient.invalidateQueries({ queryKey: ['sangraha', 'work'] });
       toast.current?.show({ severity: 'success', summary: t('sangraha.action.analyze') });
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
+    } finally {
+      setAnalyzePending(false);
     }
-  }, [verseId, editOrderIndex, editText, updateVerse, analyze, t]);
+  }, [verseId, editText, queryClient, t]);
 
-  const startEditing = useCallback(() => {
-    if (verse) {
-      setEditText(verse.rawText ?? verse.textDevanagari ?? verse.textIast ?? '');
-      setEditOrderIndex(verse.orderIndex);
-    }
-        setIsEditing(true);
-  }, [verse]);
-
-        const handleStudy = useCallback(async () => {
+  const handleStudy = useCallback(async () => {
     if (!verseId) return;
     try {
       const quizRes = await getOrCreateVocabularyQuiz.mutateAsync(verseId);
       const { quizSlug, quizId } = quizRes.data;
 
-      // Инвалидируем кэш урока — после возврата с квиза прогресс будет актуальным
       queryClient.invalidateQueries({ queryKey: ['lesson', 'vocabulary', quizSlug] });
 
       const locale = useLocaleStore.getState().locale;
@@ -140,6 +106,7 @@ const VersePage = () => {
 
   const isAnalyzed = verse?.status === 'ANALYZED';
   const isAnalyzing = verse?.status === 'ANALYZING';
+  const isDraftOrFailed = verse?.status === 'DRAFT' || verse?.status === 'FAILED';
 
   const statusSeverity = verse?.status === 'ANALYZED' ? 'success' : verse?.status === 'FAILED' ? 'danger' : 'warn';
 
@@ -168,7 +135,14 @@ const VersePage = () => {
                 <IconButton
           iconName="pi-arrow-left"
           className="p-button-rounded mr-2"
-          onClick={() => navigate(`/sangraha/${workSlug}`)}
+          onClick={() => {
+            const chapterId = verse.chapterId;
+            if (chapterId) {
+              navigate(`/sangraha/${workSlug}/chapters/${chapterId}`);
+            } else {
+              navigate(`/sangraha/${workSlug}`);
+            }
+          }}
         />
         <h2 className="m-0">{t('sangraha.verse')} #{verse.orderIndex}</h2>
         <Tag value={t(`sangraha.status.${verse.status}`)} severity={statusSeverity} className="ml-2" />
@@ -181,35 +155,9 @@ const VersePage = () => {
         </div>
       )}
 
-      {/* Режим просмотра — два отдельных поля */}
-      {!isEditing && !isAnalyzing && (
+      {/* DRAFT/FAILED: input + Analyze button */}
+      {isDraftOrFailed && !isAnalyzing && (
         <div className="mb-4">
-          <div className="mb-3">
-            <label className="block mb-1 font-semibold">{t('sangraha.fields.textDevanagari')}</label>
-            <div className="p-3 border-1 border-round surface-border surface-ground">
-              <p className="m-0 text-lg">{verse.textDevanagari || '-'}</p>
-            </div>
-          </div>
-          <div className="mb-3">
-            <label className="block mb-1 font-semibold">{t('sangraha.fields.textIast')}</label>
-            <div className="p-3 border-1 border-round surface-border surface-ground">
-              <p className="m-0 text-lg">{verse.textIast || '-'}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-                  {/* Режим редактирования */}
-      {isEditing && !isAnalyzing && (
-        <div className="mb-4">
-          <div className="mb-3">
-            <label className="block mb-1 font-semibold">{t('sangraha.fields.orderIndex')}</label>
-            <InputNumber
-              value={editOrderIndex}
-              onValueChange={(e) => setEditOrderIndex(e.value ?? 0)}
-              min={0}
-            />
-          </div>
           <div className="mb-3">
             <label className="block mb-1 font-semibold">{t('sangraha.fields.text')}</label>
             <InputTextarea
@@ -220,32 +168,50 @@ const VersePage = () => {
               placeholder={t('sangraha.placeholder.text')}
             />
           </div>
+          {isAdmin && (
+            <CtaButton
+              labelKey="sangraha.action.analyze"
+              iconName="pi-robot"
+              className="p-button-success"
+              onClick={handleAnalyze}
+              loading={analyzePending}
+            />
+          )}
         </div>
       )}
 
-      {!isAnalyzing && isEditing && isAdmin && (
-        <div className="flex gap-2 mb-4">
-          <PageButton variant="dialog-action" labelKey="common.save" iconName="pi-check" onClick={handleSave} loading={updateVerse.isPending} />
-          <CtaButton labelKey="sangraha.action.analyze" iconName="pi-robot" className="p-button-success" onClick={handleAnalyze} loading={analyze.isPending} />
-        </div>
-      )}
-
-      {isAnalyzed && !isEditing && (
+      {/* ANALYZED: read-only view */}
+      {isAnalyzed && (
         <>
+          <div className="mb-4">
+            <div className="mb-3">
+              <label className="block mb-1 font-semibold">{t('sangraha.fields.textDevanagari')}</label>
+              <div className="p-3 border-1 border-round surface-border surface-ground">
+                <p className="m-0 text-lg">{verse.textDevanagari || '-'}</p>
+              </div>
+            </div>
+            <div className="mb-3">
+              <label className="block mb-1 font-semibold">{t('sangraha.fields.textIast')}</label>
+              <div className="p-3 border-1 border-round surface-border surface-ground">
+                <p className="m-0 text-lg">{verse.textIast || '-'}</p>
+              </div>
+            </div>
+          </div>
+
           {verse.analysis && (
             <div className="mb-4">
-                            <div className="mb-3">
+              <div className="mb-3">
                 <label className="block mb-1 font-semibold">{t('sangraha.fields.translation')}</label>
                 <div className="p-3 border-1 border-round surface-border surface-ground">
                   <p className="m-0">{(i18n.language === 'ru' ? verse.analysis.translationRu : verse.analysis.translationEn) || '-'}</p>
                 </div>
               </div>
-                            <SandhiSplitsList sandhiSplits={verse.analysis.sandhiSplits} />
+              <SandhiSplitsList sandhiSplits={verse.analysis.sandhiSplits} />
             </div>
           )}
 
-                                        {verse.words && verse.words.length > 0 && (
-                        <VerseWordsList
+          {verse.words && verse.words.length > 0 && (
+            <VerseWordsList
               words={verse.words}
               wordProgressMap={wordProgressMap}
               headerActions={
@@ -258,10 +224,6 @@ const VersePage = () => {
                 />
               }
             />
-          )}
-
-          {isAdmin && (
-            <CreateButton labelKey="sangraha.action.edit" iconName="pi-pencil" className="p-button-outlined" onClick={startEditing} />
           )}
         </>
       )}

@@ -18,7 +18,6 @@ import sm.selflearn.samskrtam.sangraha.repository.ChapterRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseAnalysisRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
-import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -32,16 +31,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class VerseService {
 
-        private final VerseRepository verseRepository;
-        private final VerseAnalysisRepository verseAnalysisRepository;
-        private final VerseWordRepository verseWordRepository;
-        private final ChapterRepository chapterRepository;
-        private final WorkRepository workRepository;
-        private final ChapterService chapterService;
-        private final VerseMapper verseMapper;
-        private final TransliterationService transliterationService;
-        private final WorkService workService;
-        private final ContentServiceVocabularyClient contentServiceVocabularyClient;
+            private final VerseRepository verseRepository;
+    private final VerseAnalysisRepository verseAnalysisRepository;
+    private final VerseWordRepository verseWordRepository;
+    private final ChapterRepository chapterRepository;
+    private final ChapterService chapterService;
+    private final VerseMapper verseMapper;
+    private final WorkService workService;
+    private final ContentServiceVocabularyClient contentServiceVocabularyClient;
 
     @Transactional(readOnly = true)
     public List<Verse> getVersesByChapterId(UUID chapterId) {
@@ -75,69 +72,6 @@ public class VerseService {
     @Transactional(readOnly = true)
     public List<VerseWord> getVerseWords(UUID verseId) {
         return verseWordRepository.findAllByVerseIdOrderByPositionAsc(verseId);
-    }
-
-    @Transactional
-    public Verse createVerse(UUID chapterId, Verse verse) {
-        chapterService.getChapterById(chapterId);
-        verse.setChapterId(chapterId);
-        verse.setStatus(VerseStatus.DRAFT);
-        verse.setCreatedAt(Instant.now());
-        return verseRepository.save(verse);
-    }
-
-    /**
-     * PUT /verses/{id}/text — единое поле text.
-     * Backend определяет письменность по Unicode-диапазону деванагари (\u0900–\u097F)
-     * и кладёт в textDevanagari либо textIast.
-     */
-    @Transactional
-    public Verse updateVerseText(UUID id, String text) {
-        Verse verse = getVerseById(id);
-        String script = transliterationService.detectScript(text);
-        if ("devanagari".equals(script)) {
-            verse.setTextDevanagari(text);
-            verse.setTextIast(null);
-        } else {
-            verse.setTextIast(text);
-            verse.setTextDevanagari(null);
-        }
-        verse.setUpdatedAt(Instant.now());
-        return verseRepository.save(verse);
-    }
-
-    @Transactional
-    public void deleteVerse(UUID id) {
-        Verse verse = getVerseById(id);
-        verse.setDeletedAt(Instant.now());
-        verseRepository.save(verse);
-    }
-
-    /**
-     * PUT /verses/{id} — обновление orderIndex и rawText.
-     * Если текст изменился (rawText не равен сохранённому) — очищает результаты анализа
-     * и сбрасывает статус в DRAFT.
-     */
-    @Transactional
-    public Verse updateVerse(UUID id, int orderIndex, String rawText) {
-        Verse verse = getVerseById(id);
-        verse.setOrderIndex(orderIndex);
-        verse.setUpdatedAt(Instant.now());
-
-        if (rawText != null) {
-            boolean textChanged = !rawText.equals(verse.getRawText());
-            verse.setRawText(rawText);
-            if (textChanged) {
-                // Очистить результаты анализа
-                verseAnalysisRepository.deleteByVerseId(id);
-                verseWordRepository.deleteAllByVerseId(id);
-                verse.setTextDevanagari(null);
-                verse.setTextIast(null);
-                verse.setStatus(VerseStatus.DRAFT);
-            }
-        }
-
-                return verseRepository.save(verse);
     }
 
         /**

@@ -43,10 +43,47 @@ WorkTree:
       type: string
     titleSaDevanagari:
       type: string
+    descriptionRu:
+      type: string
+      nullable: true
+    descriptionEn:
+      type: string
+      nullable: true
+    author:
+      type: string
+      nullable: true
     chapters:
       type: array
       items:
-        $ref: '#/ChapterWithVerses'
+        $ref: '#/ChapterSummary'
+
+ChapterSummary:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    slug:
+      type: string
+    orderIndex:
+      type: integer
+      nullable: true
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    titleSaIast:
+      type: string
+      nullable: true
+    titleSaDevanagari:
+      type: string
+      nullable: true
+    categoryCode:
+      type: string
+      description: "{workSlug}.{chapterSlug} — код категории лексики"
+    verseCount:
+      type: integer
+      description: Количество стихов в главе (для отображения на плитке)
 
 ChapterWithVerses:
   type: object
@@ -87,22 +124,20 @@ VersePreview:
       type: integer
     textIastPreview:
       type: string
-      description: Первые ~50 символов textIast для отображения в дереве
+      description: Первые ~80 символов textIast для отображения в списке
       nullable: true
-    status:
-      $ref: '#/VerseStatus'
-
-VerseSummary:
-  type: object
-  properties:
-    id:
+    textIast:
       type: string
-      format: uuid
-    chapterId:
+      nullable: true
+    textDevanagari:
       type: string
-      format: uuid
-    orderIndex:
-      type: integer
+      nullable: true
+    translationRu:
+      type: string
+      nullable: true
+    translationEn:
+      type: string
+      nullable: true
     status:
       $ref: '#/VerseStatus'
 
@@ -328,74 +363,7 @@ VerseStatus:
   type: string
   enum: [DRAFT, ANALYZING, ANALYZED, FAILED]
 
-CreateWorkRequest:
-  type: object
-  required: [title]
-  properties:
-    title:
-      type: string
-      description: >-
-        Сырой ввод названия на любом из трёх языков (ru/en/санскрит,
-        IAST или devanagari). Язык определяется автоматически по алфавиту,
-        остальные поля Work генерируются через LLM (см. sangraha-service.md §5.2).
-    description:
-      type: string
-      nullable: true
-      description: >-
-        Опциональное описание на языке title. Если не передано — генерируется
-        LLM на ru и en. Если передано — считается описанием на языке title,
-        второй язык дополняется переводом.
-
-UpdateWorkRequest:
-  type: object
-  properties:
-    titleRu:
-      type: string
-    titleEn:
-      type: string
-    titleSaIast:
-      type: string
-    titleSaDevanagari:
-      type: string
-    descriptionRu:
-      type: string
-    descriptionEn:
-      type: string
-    author:
-      type: string
-
-CreateChapterRequest:
-  type: object
-  required: [title]
-  properties:
-    title:
-      type: string
-      description: >-
-        Сырой ввод названия на любом из трёх языков (ru/en/санскрит,
-        IAST или devanagari). Остальные поля Chapter генерируются через LLM
-        (см. sangraha-service.md §5.3).
-    orderIndex:
-      type: integer
-      nullable: true
-      description: >-
-        Опциональный порядковый номер. Если не передан — backend вычисляет
-        как max(orderIndex) + 1 среди глав произведения.
-
-UpdateChapterRequest:
-  type: object
-  properties:
-    title:
-      type: string
-      description: >-
-        Сырой ввод названия на любом из трёх языков. Если передан — 
-        выполняется LLM-перевод и обновляются все четыре title-поля.
-    orderIndex:
-      type: integer
-      nullable: true
-      description: >-
-        Если передан — обновляется только порядковый номер.
-
-UpdateVerseTextRequest:
+VerseTextRequest:
   type: object
   required: [text]
   properties:
@@ -403,32 +371,6 @@ UpdateVerseTextRequest:
       type: string
       description: >-
         Единое поле ввода — может содержать текст на деванагари или в IAST.
-        Тело POST /verses/{id}/analyze (см. sangraha-service.yaml):
-        значение сначала сохраняется как есть в Verse.rawText, а затем backend
-        определяет письменность по Unicode-диапазону символов и заполняет
-        textDevanagari либо textIast (см. sangraha-service.md §4, §7).
-
-ChapterSummary:
-  type: object
-  properties:
-    id:
-      type: string
-      format: uuid
-    workId:
-      type: string
-      format: uuid
-    slug:
-      type: string
-    orderIndex:
-      type: integer
-      nullable: true
-    titleRu:
-      type: string
-    titleEn:
-      type: string
-    titleSaIast:
-      type: string
-      nullable: true
-    titleSaDevanagari:
-      type: string
-      nullable: true
+        Тело POST /verses/{verseId}/analyze: значение сохраняется как есть
+        в Verse.rawText, затем backend определяет письменность и заполняет
+                textDevanagari / textIast (см. sangraha-service.md §4, §7).

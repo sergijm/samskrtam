@@ -24,7 +24,7 @@ public class WorkTreeService {
                 work.getDescriptionRu(),
                 work.getDescriptionEn(),
                 work.getAuthor(),
-                chapterService.getChapterTreeByWorkId(work.getId())
+                chapterService.getChapterSummaryByWorkId(work.getId())
         );
     }
 }

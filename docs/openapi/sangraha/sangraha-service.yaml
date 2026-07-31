@@ -2,9 +2,10 @@ openapi: "3.1.0"
 info:
   title: Sangraha Service API
   description: |
-    API для управления санскритскими произведениями (Work → Chapter → Verse),
-    LLM-анализа стихов и синхронизации лексики через Kafka.
-    
+    API для чтения санскритских произведений (Work → Chapter → Verse) и LLM-анализа стихов.
+    Work/Chapter CRUD удалён — произведения и главы управляются через импорт.
+    Verse CRUD удалён — стихи создаются через импорт, текст сохраняется через POST …/analyze.
+
     Все write-эндпоинты требуют роль ADMIN.
   version: "1.0.0"
   contact:
@@ -26,7 +27,7 @@ paths:
         - name: id
           in: query
           required: false
-          description: UUID произведения (для получения дерева по UUID, административный доступ)
+          description: UUID произведения (для получения дерева по UUID)
           schema:
             type: string
             format: uuid
@@ -45,42 +46,16 @@ paths:
                   - $ref: 'sangraha-schemas.yaml#/WorkTree'
         '404':
           description: Произведение с указанным id не найдено
-    post:
-      operationId: createWork
-      summary: Создать произведение (авто-детекция языка, LLM-генерация)
-      description: |
-        Принимает одно текстовое поле title (на любом из трёх языков) и опционально description.
-        Backend детектит язык, через LLM генерирует titleRu/En/SaIast/SaDevanagari,
-        вычисляет slug из titleSaIast через IAST→SLP1. См. §5.2 sangraha-service.md.
-      tags: [Works]
-      security:
-        - bearerAuth:
-            - ADMIN
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: 'sangraha-schemas.yaml#/CreateWorkRequest'
-      responses:
-        '201':
-          description: Произведение создано. WorkSummary содержит новые поля titleSaIast/titleSaDevanagari.
-          content:
-            application/json:
-              schema:
-                $ref: 'sangraha-schemas.yaml#/WorkSummary'
-        '400':
-          description: Некорректные данные
-        '500':
-          description: Ошибка LLM — Work не создаётся
 
   /works/{workSlug}:
     get:
       operationId: getWorkTreeBySlug
-      summary: Произведение + дерево глав/стихов по slug
+      summary: Произведение + список глав (без стихов) по slug
       description: |
         Основной эндпоинт для страницы произведения (фронтенд: /sangraha/{workSlug}).
-        Возвращает id, slug, titleSaIast, titleSaDevanagari, titleRu/En и chapters[].verses[] — двухуровневое дерево.
+        Возвращает id, slug, titleRu/En и chapters[] с краткой информацией о главах
+        (ChapterSummary — без verses, только verseCount). Стихи загружаются отдельно
+        через GET /chapters/{chapterId}/verses.
       tags: [Works]
       security:
         - bearerAuth: []
@@ -93,7 +68,7 @@ paths:
             pattern: '^[a-z0-9][a-z0-9-]*$'
       responses:
         '200':
-          description: Дерево произведения
+          description: Произведение со списком глав (без стихов)
           content:
             application/json:
               schema:
@@ -101,138 +76,18 @@ paths:
         '404':
           description: Произведение не найдено
 
-    put:
-      operationId: updateWork
-      summary: Обновить метаданные произведения
-      tags: [Works]
-      security:
-        - bearerAuth:
-            - ADMIN
-      parameters:
-        - name: workSlug
-          in: path
-          required: true
-          description: Slug произведения
-          schema:
-            type: string
-            pattern: '^[a-z0-9][a-z0-9-]*$'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: 'sangraha-schemas.yaml#/UpdateWorkRequest'
-      responses:
-        '200':
-          description: Произведение обновлено
-          content:
-            application/json:
-              schema:
-                $ref: 'sangraha-schemas.yaml#/WorkSummary'
-
-    delete:
-      operationId: deleteWork
-      summary: Soft delete произведения
-      tags: [Works]
-      security:
-        - bearerAuth:
-            - ADMIN
-      parameters:
-        - name: workSlug
-          in: path
-          required: true
-          description: Slug произведения
-          schema:
-            type: string
-            pattern: '^[a-z0-9][a-z0-9-]*$'
-      responses:
-        '204':
-          description: Произведение помечено как удалённое
-
-  /works/{workSlug}/chapters:
-    post:
-      operationId: createChapter
-      summary: Добавить главу
-      tags: [Chapters]
-      security:
-        - bearerAuth:
-            - ADMIN
-      parameters:
-        - name: workSlug
-          in: path
-          required: true
-          description: Slug произведения
-          schema:
-            type: string
-            pattern: '^[a-z0-9][a-z0-9-]*$'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: 'sangraha-schemas.yaml#/CreateChapterRequest'
-      responses:
-        '201':
-          description: Глава создана
-          content:
-            application/json:
-              schema:
-                $ref: 'sangraha-schemas.yaml#/ChapterSummary'
-
-  /chapters/{chapterId}:
-    put:
-      operationId: updateChapter
-      summary: Обновить главу
-      tags: [Chapters]
-      security:
-        - bearerAuth:
-            - ADMIN
-      parameters:
-        - name: chapterId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: 'sangraha-schemas.yaml#/UpdateChapterRequest'
-      responses:
-        '200':
-          description: Глава обновлена
-          content:
-            application/json:
-              schema:
-                $ref: 'sangraha-schemas.yaml#/ChapterSummary'
-    delete:
-      operationId: deleteChapter
-      summary: Soft delete главы
-      tags: [Chapters]
-      security:
-        - bearerAuth:
-            - ADMIN
-      parameters:
-        - name: chapterId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Глава помечена как удалённая
+  # ── Chapters: single chapter with its verses (NEW) ──
 
   /chapters/{chapterId}/verses:
-    post:
-      operationId: createVerse
-      summary: Добавить стих (пустой, DRAFT)
-      tags: [Verses]
+    get:
+      operationId: getChapterVerses
+      summary: Одна глава со списком стихов
+      description: |
+        Возвращает главу и полный список её стихов (VersePreview[]).
+        Фронтенд: страница /sangraha/{workSlug}/chapters/{chapterId}.
+      tags: [Chapters]
       security:
-        - bearerAuth:
-            - ADMIN
+        - bearerAuth: []
       parameters:
         - name: chapterId
           in: path
@@ -241,12 +96,16 @@ paths:
             type: string
             format: uuid
       responses:
-        '201':
-          description: Стих создан
+        '200':
+          description: Глава со списком стихов
           content:
             application/json:
               schema:
-                $ref: 'sangraha-schemas.yaml#/VerseSummary'
+                $ref: 'sangraha-schemas.yaml#/ChapterWithVerses'
+        '404':
+          description: Глава не найдена
+
+  # ── Verses (read-only + analyze + vocabulary-quiz) ──
 
   /verses/{verseId}:
     get:
@@ -271,23 +130,6 @@ paths:
                 $ref: 'sangraha-schemas.yaml#/VerseDetail'
         '404':
           description: Стих не найден
-    delete:
-      operationId: deleteVerse
-      summary: Soft delete стиха
-      tags: [Verses]
-      security:
-        - bearerAuth:
-            - ADMIN
-      parameters:
-        - name: verseId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Стих помечен как удалённый
 
   /verses/{verseId}/vocabulary-quiz:
     post:
@@ -300,10 +142,7 @@ paths:
         и синхронно вызывает content-service `POST /content/internal/sangraha/vocabulary-quiz`
         (см. content-service.md §11), сохраняет полученные `quizSlug`/`quizId` в
         `verses.vocabulary_quiz_slug`/`vocabulary_quiz_id` и возвращает их вместе с
-        `quizStatus`. Фронтенд стартует сессию сразу по `quizId` (с `statusFilter`,
-        вычисленным из `quizStatus`), без промежуточного GET /lessons/vocabulary/{slug}.
-        См. sangraha-service.md §6/§7, ADR-009 (заменяет прежний Outbox-механизм —
-        синхронизация теперь по клику пользователя, а не автоматически после анализа).
+        `quizStatus`.
       tags: [Verses]
       security:
         - bearerAuth: []
@@ -316,7 +155,7 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Идентификаторы лексического квиза (существующего или только что созданного)
+          description: Идентификаторы лексического квиза
           content:
             application/json:
               schema:
@@ -333,10 +172,8 @@ paths:
                     enum: [CREATED, EXISTING]
                     nullable: true
                     description: >-
-                      Присутствует только когда quiz-service/content-service был
-                      реально вызван (не кэш-хит). CREATED — квиз создан этим же
-                      запросом (первый клик по этому стиху), EXISTING — уже
-                      существовал. На кэш-хите (§6, шаг 1) поле отсутствует.
+                      Присутствует только когда content-service был реально
+                      вызван (не кэш-хит).
         '404':
           description: Стих не найден
         '409':
@@ -345,15 +182,10 @@ paths:
   /verses/{verseId}/analyze:
     post:
       operationId: analyzeVerse
-      summary: Сохранить raw_text и запустить LLM-анализ стиха
+      summary: Сохранить текст и запустить LLM-анализ стиха
       description: |
-        Единственная точка сохранения текста стиха (кнопка «Сохранить» удалена
-        из фронтенда, см. sangraha-service.md §5.1, §7). Тело обязательно —
-        `UpdateVerseTextRequest` (поле `text`). Backend в рамках запроса:
-        сохраняет `text` в `Verse.rawText`, определяет письменность и заполняет
-        textDevanagari/textIast, затем переводит статус в ANALYZING и
-        возвращает 202 — анализ асинхронный, статус опрашивается через
-        GET /verses/{verseId}.
+        Единственная точка сохранения текста стиха (Verse CRUD удалён).
+        Принимает обязательное тело `VerseTextRequest` с полем `text`.
       tags: [Verses]
       security:
         - bearerAuth:
@@ -370,7 +202,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'sangraha-schemas.yaml#/UpdateVerseTextRequest'
+              $ref: 'sangraha-schemas.yaml#/VerseTextRequest'
       responses:
         '202':
           description: raw_text сохранён, анализ запущен

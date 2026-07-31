@@ -1,23 +1,15 @@
-﻿{
+{
   "sangraha": {
     "title": "Texts",
     "works": "Works",
-    "addWork": "Add Work",
-    "editWork": "Edit Work",
-    "deleteWork": "Delete Work",
     "noWorks": "No works found",
     "work": "Work",
     "workNotFound": "Work not found",
     "chapters": "Chapters",
-    "addChapter": "Add Chapter",
-    "editChapter": "Edit Chapter",
-    "deleteChapter": "Delete Chapter",
-    "chapterAdded": "Chapter added",
+    "chapterNotFound": "Chapter not found",
     "verses": "Verses",
-    "addVerse": "Add Verse",
-    "deleteVerse": "Delete Verse",
+    "noVerses": "No verses in this chapter",
     "verse": "Verse",
-    "verseAdded": "Verse added",
     "status": {
       "DRAFT": "Draft",
       "ANALYZING": "Analyzing...",
@@ -26,9 +18,6 @@
     },
     "action": {
       "analyze": "Analyze",
-      "edit": "Edit",
-      "save": "Save",
-      "cancel": "Cancel",
       "study": "Study"
     },
     "fields": {

@@ -1,25 +1,16 @@
 package sm.selflearn.samskrtam.sangraha.controller;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import sm.selflearn.samskrtam.sangraha.dto.CreateChapterRequest;
-import sm.selflearn.samskrtam.sangraha.dto.CreateWorkRequest;
-import sm.selflearn.samskrtam.sangraha.dto.UpdateChapterRequest;
+import sm.selflearn.samskrtam.sangraha.dto.ChapterVersesDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
 import sm.selflearn.samskrtam.sangraha.dto.VocabularyQuizResponse;
 import sm.selflearn.samskrtam.sangraha.dto.WorkTreeDto;
-import sm.selflearn.samskrtam.sangraha.model.Chapter;
-import sm.selflearn.samskrtam.sangraha.model.Verse;
 import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
 import sm.selflearn.samskrtam.sangraha.model.VerseWord;
 import sm.selflearn.samskrtam.sangraha.model.Work;
@@ -36,22 +27,16 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class SangrahaController {
 
-    private final WorkService workService;
-    private final ChapterService chapterService;
+        private final WorkService workService;
     private final VerseService verseService;
     private final WorkTreeService workTreeService;
+    private final ChapterService chapterService;
 
-    // ── Works ─────────────────────────────────────────────────────
+    // ── Works (read-only) ───────────────────────────────────────────
 
     @GetMapping("/works")
     public ResponseEntity<List<Work>> getAllWorks() {
         return ResponseEntity.ok(workService.getAllWorks());
-    }
-
-    @PostMapping("/works")
-    public ResponseEntity<Work> createWork(@Valid @RequestBody CreateWorkRequest request) {
-        Work work = workService.createWorkFromTitle(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(work);
     }
 
     @GetMapping("/works/{workSlug}")
@@ -59,79 +44,25 @@ public class SangrahaController {
         return ResponseEntity.ok(workTreeService.getWorkTreeBySlug(workSlug));
     }
 
-    @PutMapping("/works/{workSlug}")
-    public ResponseEntity<Work> updateWork(@PathVariable String workSlug, @RequestBody Work work) {
-        return ResponseEntity.ok(workService.updateWorkBySlug(workSlug, work));
+    // ── Chapters: single chapter with verses (NEW) ─────────────────
+
+    @GetMapping("/chapters/{chapterId}/verses")
+    public ResponseEntity<ChapterVersesDto> getChapterVerses(@PathVariable UUID chapterId) {
+        return ResponseEntity.ok(chapterService.getChapterVersesByChapterId(chapterId));
     }
-
-    @DeleteMapping("/works/{workSlug}")
-    public ResponseEntity<Void> deleteWork(@PathVariable String workSlug) {
-        workService.deleteWorkBySlug(workSlug);
-        return ResponseEntity.noContent().build();
-    }
-
-    // ── Chapters ──────────────────────────────────────────────────
-
-    @PostMapping("/works/{workSlug}/chapters")
-    public ResponseEntity<Chapter> createChapter(
-            @PathVariable String workSlug,
-            @Valid @RequestBody CreateChapterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(chapterService.createChapterBySlug(workSlug, request));
-    }
-
-    @PutMapping("/chapters/{chapterId}")
-    public ResponseEntity<Chapter> updateChapter(
-            @PathVariable UUID chapterId,
-            @RequestBody UpdateChapterRequest request) {
-        return ResponseEntity.ok(chapterService.updateChapterFromTitle(chapterId, request));
-    }
-
-    @DeleteMapping("/chapters/{chapterId}")
-    public ResponseEntity<Void> deleteChapter(@PathVariable UUID chapterId) {
-        chapterService.deleteChapter(chapterId);
-        return ResponseEntity.noContent().build();
-    }
-
-    // ── Verses ────────────────────────────────────────────────────
-
-    @PostMapping("/chapters/{chapterId}/verses")
-    public ResponseEntity<Verse> createVerse(@PathVariable UUID chapterId, @RequestBody Verse verse) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(verseService.createVerse(chapterId, verse));
-    }
-
+    // ── Verses (read-only + vocabulary-quiz) ──────────────────────
     @GetMapping("/verses/{verseId}")
     public ResponseEntity<VerseDetailDto> getVerse(@PathVariable UUID verseId) {
         return ResponseEntity.ok(verseService.getVerseDetail(verseId));
     }
 
-        @PostMapping("/verses/{verseId}/vocabulary-quiz")
+    @PostMapping("/verses/{verseId}/vocabulary-quiz")
     public ResponseEntity<VocabularyQuizResponse> getOrCreateVocabularyQuiz(@PathVariable UUID verseId) {
         VocabularyQuizResponse response = verseService.getOrCreateVocabularyQuiz(verseId);
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/verses/{verseId}/text")
-    public ResponseEntity<Verse> updateVerseText(
-            @PathVariable UUID verseId,
-            @RequestBody VerseTextRequest request) {
-        return ResponseEntity.ok(verseService.updateVerseText(verseId, request.text()));
-    }
-
-    @PutMapping("/verses/{verseId}")
-    public ResponseEntity<Verse> updateVerse(
-            @PathVariable UUID verseId,
-            @Valid @RequestBody UpdateVerseRequest request) {
-        return ResponseEntity.ok(verseService.updateVerse(verseId, request.orderIndex(), request.rawText()));
-    }
-
-    @DeleteMapping("/verses/{verseId}")
-    public ResponseEntity<Void> deleteVerse(@PathVariable UUID verseId) {
-        verseService.deleteVerse(verseId);
-        return ResponseEntity.noContent().build();
-    }
-
-    // ── Verse Analysis ────────────────────────────────────────────
+    // ── Verse Analysis (read-only) ────────────────────────────────
 
     @GetMapping("/verses/{verseId}/analysis")
     public ResponseEntity<VerseAnalysis> getVerseAnalysis(@PathVariable UUID verseId) {
@@ -143,3 +74,4 @@ public class SangrahaController {
         return ResponseEntity.ok(verseService.getVerseWords(verseId));
     }
 }
+

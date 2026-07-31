@@ -1,15 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sangrahaApi } from '../api/sangraha';
+
 import type {
   WorkSummaryDto,
   WorkTreeDto,
+  ChapterVersesDto,
   VerseDetailDto,
-  CreateWorkRequest,
-  UpdateWorkRequest,
-  CreateChapterRequest,
-  CreateVerseRequest,
-  UpdateVerseTextRequest,
-  UpdateVerseRequest,
 } from '../types/sangraha';
 
 export const useWorks = () =>
@@ -31,6 +27,16 @@ export const useWorkTree = (workSlug: string) =>
     enabled: !!workSlug,
   });
 
+export const useChapterVerses = (chapterId: string) =>
+  useQuery<ChapterVersesDto, Error>({
+    queryKey: ['sangraha', 'chapter', chapterId],
+    queryFn: async () => {
+      const res = await sangrahaApi.getChapterVerses(chapterId);
+      return res.data;
+    },
+    enabled: !!chapterId,
+  });
+
 export const useVerseDetail = (verseId: string) =>
   useQuery<VerseDetailDto, Error>({
     queryKey: ['sangraha', 'verse', verseId],
@@ -41,99 +47,15 @@ export const useVerseDetail = (verseId: string) =>
     enabled: !!verseId,
   });
 
-export const useCreateWork = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: CreateWorkRequest) => sangrahaApi.createWork(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['sangraha', 'works'] }),
-  });
-};
-
-export const useUpdateWork = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ workSlug, data }: { workSlug: string; data: UpdateWorkRequest }) =>
-      sangrahaApi.updateWork(workSlug, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['sangraha', 'works'] });
-      qc.invalidateQueries({ queryKey: ['sangraha', 'work'] });
-    },
-  });
-};
-
-export const useDeleteWork = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (workSlug: string) => sangrahaApi.deleteWork(workSlug),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['sangraha', 'works'] }),
-  });
-};
-
-export const useCreateChapter = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ workSlug, data }: { workSlug: string; data: CreateChapterRequest }) =>
-      sangrahaApi.createChapter(workSlug, data),
-    onSuccess: (_data, variables) =>
-      qc.invalidateQueries({ queryKey: ['sangraha', 'work'] }),
-  });
-};
-
-export const useDeleteChapter = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (chapterId: string) => sangrahaApi.deleteChapter(chapterId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['sangraha', 'work'] }),
-  });
-};
-
-export const useCreateVerse = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ chapterId, data }: { chapterId: string; data: CreateVerseRequest }) =>
-      sangrahaApi.createVerse(chapterId, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['sangraha', 'work'] }),
-  });
-};
-
-export const useDeleteVerse = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (verseId: string) => sangrahaApi.deleteVerse(verseId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['sangraha', 'work'] }),
-  });
-};
-
-export const useUpdateVerseText = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ verseId, data }: { verseId: string; data: UpdateVerseTextRequest }) =>
-      sangrahaApi.updateVerseText(verseId, data),
-    onSuccess: (_data, variables) =>
-      qc.invalidateQueries({ queryKey: ['sangraha', 'verse', variables.verseId] }),
-  });
-};
-
-export const useUpdateVerse = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ verseId, data }: { verseId: string; data: UpdateVerseRequest }) =>
-      sangrahaApi.updateVerse(verseId, data),
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: ['sangraha', 'verse', variables.verseId] });
-      qc.invalidateQueries({ queryKey: ['sangraha', 'work'] });
-    },
-  });
-};
-
 export const useAnalyzeVerse = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ verseId, data }: { verseId: string; data: { text: string } }) =>
-      sangrahaApi.analyzeVerse(verseId, data),
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: ['sangraha', 'verse', variables.verseId] });
+    mutationFn: ({ verseId, text }: { verseId: string; text?: string }) =>
+      sangrahaApi.analyzeVerse(verseId, text ? { text } : undefined),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'verse', vars.verseId] });
       qc.invalidateQueries({ queryKey: ['sangraha', 'work'] });
+      qc.invalidateQueries({ queryKey: ['sangraha', 'chapter'] });
     },
   });
 };

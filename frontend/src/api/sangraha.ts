@@ -2,64 +2,31 @@ import api from './axios';
 import type {
   WorkSummaryDto,
   WorkTreeDto,
+  ChapterVersesDto,
   VerseDetailDto,
-  CreateWorkRequest,
-  UpdateWorkRequest,
-  CreateChapterRequest,
-  UpdateChapterRequest,
-  CreateVerseRequest,
-  UpdateVerseTextRequest,
-  UpdateVerseRequest,
-  VerseDto,
 } from '../types/sangraha';
 
 const BASE = '/api/v1/sangraha';
 
 export const sangrahaApi = {
-  // Works
+  // Works (read-only)
   getAllWorks: () => api.get<WorkSummaryDto[]>(`${BASE}/works`),
 
   getWorkTree: (workSlug: string) =>
     api.get<WorkTreeDto>(`${BASE}/works/${workSlug}`),
 
-  createWork: (data: CreateWorkRequest) =>
-    api.post<WorkSummaryDto>(`${BASE}/works`, data),
+  // Chapters: single chapter with its verses
+  getChapterVerses: (chapterId: string) =>
+    api.get<ChapterVersesDto>(`${BASE}/chapters/${chapterId}/verses`),
 
-  updateWork: (workSlug: string, data: UpdateWorkRequest) =>
-    api.put<WorkSummaryDto>(`${BASE}/works/${workSlug}`, data),
-
-  deleteWork: (workSlug: string) => api.delete(`${BASE}/works/${workSlug}`),
-
-  // Chapters
-  createChapter: (workSlug: string, data: CreateChapterRequest) =>
-    api.post(`${BASE}/works/${workSlug}/chapters`, data),
-
-  updateChapter: (chapterId: string, data: UpdateChapterRequest) =>
-    api.put(`${BASE}/chapters/${chapterId}`, data),
-
-  deleteChapter: (chapterId: string) =>
-    api.delete(`${BASE}/chapters/${chapterId}`),
-
-  // Verses
-  createVerse: (chapterId: string, data: CreateVerseRequest) =>
-    api.post<VerseDto>(`${BASE}/chapters/${chapterId}/verses`, data),
-
+  // Verses (read-only + analyze + vocabulary-quiz)
   getVerseDetail: (verseId: string) =>
     api.get<VerseDetailDto>(`${BASE}/verses/${verseId}`),
-
-  updateVerseText: (verseId: string, data: UpdateVerseTextRequest) =>
-    api.put(`${BASE}/verses/${verseId}/text`, data),
-
-  updateVerse: (verseId: string, data: UpdateVerseRequest) =>
-    api.put<VerseDto>(`${BASE}/verses/${verseId}`, data),
 
   analyzeVerse: (verseId: string, data?: { text: string }) =>
     api.post(`${BASE}/verses/${verseId}/analyze`, data),
 
-  getOrCreateVocabularyQuiz: (verseId: string) =>
+    getOrCreateVocabularyQuiz: (verseId: string) =>
     api.post<{ quizSlug: string; quizId: string; quizStatus: string }>(`${BASE}/verses/${verseId}/vocabulary-quiz`),
-
-  deleteVerse: (verseId: string) =>
-    api.delete(`${BASE}/verses/${verseId}`),
 };
 

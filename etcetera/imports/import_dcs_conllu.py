@@ -1,501 +1,368 @@
 #!/usr/bin/env python3
-# Import DCS CoNLL-U files into the supplied Sangraha PostgreSQL schema.
-# Usage:
-#   python import_dcs_conllu.py --db 'postgresql://...' --dir /path/to/dcs/data
-# Dependency:
-#   pip install "psycopg[binary]>=3.1"
-# Errors are logged; processing continues. Each sentence is its own transaction.
+"""
+Скрипт импорта файлов CoNLL-U из DCS в PostgreSQL со схемой sangraha.
+- Название произведения: из первой строки файла.
+- Название главы и chapter_id: из шапки файла (## chapter / ## chapter_id).
+- Текст стиха (raw_text): из метаданных каждого отдельного предложения/блока.
+"""
 
-from __future__ import annotations
-import argparse, csv, json, logging, re, sys, uuid
-from dataclasses import dataclass
-from pathlib import Path
+import os
+import re
+import sys
+import logging
+import argparse
+from typing import Dict, Any, Optional, List
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
-try:
-    import psycopg
-except ImportError:
-    psycopg = None
-try:
-    import psycopg2
-except ImportError:
-    psycopg2 = None
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler("conllu_import.log", encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger("dcs_importer")
 
-LOG = logging.getLogger("dcs-import")
-VOICE = {"Act": "ACTIVE", "Mid": "MIDDLE", "Pass": "PASSIVE"}
+STATUS_DRAFT = "DRAFT"
 
-@dataclass
-class Token:
-    tid: str
-    form: str
-    lemma: str
-    upos: str
-    xpos: str
-    feats: dict[str, str]
-    misc: dict[str, str]
+POS_MAPPING = {
+    "NOUN": "NOUN", "PROPN": "NOUN", "VERB": "VERB",
+    "ADJ": "ADJECTIVE", "PRON": "PRONOUN", "ADV": "ADVERB",
+    "CCONJ": "CONJUNCTION", "SCONJ": "CONJUNCTION", "ADP": "INDECLINABLE",
+    "PART": "PARTICLE", "INTJ": "INTERJECTION", "NUM": "NUMERAL",
+    "IND": "INDECLINABLE", "X": "OTHER", "PUNCT": "OTHER"
+}
 
-@dataclass
-class Sentence:
-    comments: list[str]
-    tokens: list[Token]
+GENDER_MAPPING = {
+    "MASC": "MASCULINE", "FEM": "FEMININE", "NEUT": "NEUTER",
+    "M": "MASCULINE", "F": "FEMININE", "N": "NEUTER"
+}
 
-    def metadata(self):
-        out = {}
-        for line in self.comments:
-            if line.startswith("#") and "=" in line:
-                k, v = line[1:].split("=", 1)
-                out[k.strip()] = v.strip()
-        return out
+CASE_MAPPING = {
+    "NOM": "NOMINATIVE", "ACC": "ACCUSATIVE", "INS": "INSTRUMENTAL",
+    "DAT": "DATIVE", "ABL": "ABLATIVE", "GEN": "GENITIVE",
+    "LOC": "LOCATIVE", "VOC": "VOCATIVE"
+}
 
-    def text(self):
-        return self.metadata().get("text") or " ".join(t.form for t in self.tokens)
+NUMBER_MAPPING = {
+    "SING": "SINGULAR", "DUAL": "DUAL", "PLUR": "PLURAL",
+    "SG": "SINGULAR", "DU": "DUAL", "PL": "PLURAL"
+}
 
-def kv(value):
-    if not value or value == "_":
-        return {}
-    out = {}
-    for item in value.split("|"):
-        if "=" in item:
-            k, v = item.split("=", 1)
-            out[k] = v
-    return out
+PERSON_MAPPING = {"1": "FIRST", "2": "SECOND", "3": "THIRD"}
 
-def parse_conllu(path):
-    comments, tokens = [], []
+TENSE_MAPPING = {
+    "PRES": "PRESENT", "PAST": "IMPERFECT", "FUT": "FUTURE",
+    "IMP": "IMPERFECT", "PERF": "PERFECT", "AOR": "AORIST", "COND": "CONDITIONAL"
+}
 
-    def flush():
-        nonlocal comments, tokens
-        if comments or tokens:
-            s = Sentence(comments, tokens)
-            comments, tokens = [], []
-            return s
+MOOD_MAPPING = {
+    "IND": "INDICATIVE", "IMP": "IMPERATIVE", "SUB": "OPTATIVE",
+    "OPT": "OPTATIVE", "BEN": "BENEDICTIVE", "PREC": "BENEDICTIVE"
+}
+
+VOICE_MAPPING = {"ACT": "ACTIVE", "PASS": "PASSIVE", "MID": "MIDDLE"}
+
+FORM_TYPE_MAPPING = {
+    "FIN": "FINITE", "PART": "PARTICIPLE", "INF": "INFINITIVE",
+    "GER": "GERUNDIVE", "ABS": "ABSOLUTIVE"
+}
+
+def parse_feats(feats_str: str) -> Dict[str, str]:
+    feats = {}
+    if not feats_str or feats_str == "_":
+        return feats
+    for part in feats_str.split("|"):
+        if "=" in part:
+            k, v = part.split("=", 1)
+            feats[k.strip().lower()] = v.strip().upper()
+    return feats
+
+def map_value(mapping: Dict[str, str], raw_val: Optional[str]) -> Optional[str]:
+    if not raw_val or raw_val == "_":
         return None
+    return mapping.get(raw_val.upper())
 
-    with path.open("r", encoding="utf-8-sig", errors="replace") as fh:
-        for lineno, line in enumerate(fh, 1):
-            line = line.rstrip("\r\n")
-            if not line:
-                s = flush()
-                if s:
-                    yield s
-                continue
+def generate_slug(text: str) -> str:
+    slug = re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')
+    return slug if slug else "unknown"
+
+def get_work_name_from_first_line(file_path: str) -> str:
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            first_line = f.readline().strip()
+            if not first_line:
+                return os.path.splitext(os.path.basename(file_path))[0]
+
+            cleaned = re.sub(r'^#+\s*', '', first_line)
+            if ":" in cleaned:
+                key, val = cleaned.split(":", 1)
+                val = val.strip()
+                if val:
+                    return val
+            if cleaned:
+                return cleaned
+    except Exception as e:
+        logger.warning(f"Не удалось прочитать первую строку файла {file_path}: {e}")
+
+    return os.path.splitext(os.path.basename(file_path))[0]
+
+def parse_conllu_file(file_path: str):
+    """
+    Парсит conllu-файл.
+    Собирает общие метаданные файла (включая шапку), а также список блоков (метаданные блока + токены).
+    """
+    file_meta = {}
+    blocks = []
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        current_block_meta = {}
+        tokens = []
+        is_first_lines = True
+
+        for line in f:
+            raw_line = line
+            line = line.strip()
+
             if line.startswith("#"):
-                comments.append(line)
-                continue
-            fields = line.split("\t")
-            if len(fields) != 10:
-                LOG.warning("%s:%d: expected 10 columns, got %d; row skipped",
-                            path, lineno, len(fields))
-                continue
-            tid = fields[0]
-            if "-" in tid or "." in tid:
-                continue
-            tokens.append(Token(
-                tid,
-                "" if fields[1] == "_" else fields[1],
-                "" if fields[2] == "_" else fields[2],
-                "" if fields[3] == "_" else fields[3],
-                "" if fields[4] == "_" else fields[4],
-                kv(fields[5]), kv(fields[9])
-            ))
-    s = flush()
-    if s:
-        yield s
+                cleaned = re.sub(r'^#+\s*', '', line)
+                if ":" in cleaned:
+                    k, v = cleaned.split(":", 1)
+                    key = k.strip().lower()
+                    val = v.strip()
 
-def norm(s):
-    return re.sub(r"[^a-z0-9]", "", s.lower())
+                    # Запоминаем глобальные метаданные (глава, id файла и т.д.) пока не встретили пустую строку или токены
+                    if is_first_lines:
+                        file_meta[key] = val
 
-def lookup_value(row, *names):
-    data = {norm(k): v for k, v in row.items() if k is not None}
-    for name in names:
-        value = data.get(norm(name))
-        if value and value != "_":
-            return value
-    return None
+                    current_block_meta[key] = val
 
-class Lookup:
-    def __init__(self, root):
-        self.by_id, self.by_lemma = {}, {}
-        if not root:
-            return
-        path = root / "dictionary.csv"
-        if not path.exists():
-            return
-        try:
-            with path.open("r", encoding="utf-8-sig", errors="replace", newline="") as fh:
-                sample = fh.read(8192)
-                fh.seek(0)
+            if not line:
+                is_first_lines = False
+                if tokens or current_block_meta:
+                    # Сохраняем блок (копируем метаданные блока)
+                    blocks.append((dict(current_block_meta), tokens))
+                    current_block_meta = {}
+                    tokens = []
+                continue
+
+            if not line.startswith("#"):
+                is_first_lines = False
+                parts = line.split("\t")
+                if len(parts) >= 10:
+                    if "-" in parts[0] or "." in parts[0]:
+                        continue
+                    tokens.append({
+                        "id": parts[0], "form": parts[1], "lemma": parts[2],
+                        "upos": parts[3], "xpos": parts[4], "feats": parse_feats(parts[5]),
+                    })
+
+        if tokens or current_block_meta:
+            blocks.append((dict(current_block_meta), tokens))
+
+    return file_meta, blocks
+
+class SangrahaImporter:
+    def __init__(self, db_conn_string: str):
+        self.conn = psycopg2.connect(db_conn_string)
+        self.conn.autocommit = False
+        self.work_cache = {}
+        self.chapter_cache = {}
+
+    def close(self):
+        if self.conn:
+            self.conn.close()
+
+    def get_or_create_work(self, work_title: str) -> str:
+        if not work_title:
+            work_title = "Unknown Work"
+        if work_title in self.work_cache:
+            return self.work_cache[work_title]
+
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id FROM sangraha.works WHERE title_en = %s;", (work_title,))
+            res = cur.fetchone()
+            if res:
+                work_id = res["id"]
+            else:
+                slug = generate_slug(work_title)
+                cur.execute(
+                    """
+                    INSERT INTO sangraha.works (slug, title_ru, title_en, title_sa_iast)
+                    VALUES (%s, %s, %s, %s) RETURNING id;
+                    """,
+                    (slug, work_title, work_title, work_title)
+                )
+                work_id = cur.fetchone()["id"]
+                self.conn.commit()
+
+            self.work_cache[work_title] = work_id
+            return work_id
+
+    def get_or_create_chapter(self, work_id: str, chapter_title: str) -> str:
+        if not chapter_title:
+            chapter_title = "General Chapter"
+
+        cache_key = (work_id, chapter_title)
+        if cache_key in self.chapter_cache:
+            return self.chapter_cache[cache_key]
+
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT id FROM sangraha.chapters WHERE work_id = %s AND title_en = %s;",
+                (work_id, chapter_title)
+            )
+            res = cur.fetchone()
+            if res:
+                chapter_id = res["id"]
+            else:
+                cur.execute(
+                    "SELECT COALESCE(MAX(order_index), 0) + 1 AS next_idx FROM sangraha.chapters WHERE work_id = %s;",
+                    (work_id,)
+                )
+                next_order_index = cur.fetchone()["next_idx"]
+
+                slug = generate_slug(f"ch-{chapter_title}")
+                cur.execute(
+                    """
+                    INSERT INTO sangraha.chapters (work_id, slug, order_index, title_ru, title_en)
+                    VALUES (%s, %s, %s, %s, %s) RETURNING id;
+                    """,
+                    (work_id, slug, next_order_index, chapter_title, chapter_title)
+                )
+                chapter_id = cur.fetchone()["id"]
+                self.conn.commit()
+
+            self.chapter_cache[cache_key] = chapter_id
+            return chapter_id
+
+    def insert_verse_data(self, chapter_id: str, verse_num: int, text: str, tokens: List[Dict[str, Any]]):
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                INSERT INTO sangraha.verses (chapter_id, order_index, raw_text, status)
+                VALUES (%s, %s, %s, %s) RETURNING id;
+                """,
+                (chapter_id, verse_num, text, STATUS_DRAFT)
+            )
+            verse_id = cur.fetchone()["id"]
+
+            for idx, token in enumerate(tokens, start=1):
+                pos_enum = map_value(POS_MAPPING, token["upos"]) or map_value(POS_MAPPING, token["xpos"])
+                feats = token["feats"]
+                form_type = map_value(FORM_TYPE_MAPPING, feats.get("verbform"))
+
+                form_val = token["form"] if token["form"] != "_" else ""
+                lemma_val = token["lemma"] if token["lemma"] != "_" else ""
+
+                cur.execute(
+                    """
+                    INSERT INTO sangraha.verse_words (
+                        verse_id, position, surface_iast, surface_devanagari,
+                        lemma_iast, pos, form_type, context_gloss_ru, context_gloss_en
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
+                    """,
+                    (
+                        verse_id, idx, form_val, form_val, lemma_val,
+                        pos_enum, form_type, "", ""
+                    )
+                )
+                word_id = cur.fetchone()["id"]
+
+                gender = map_value(GENDER_MAPPING, feats.get("gender"))
+                g_case = map_value(CASE_MAPPING, feats.get("case"))
+                num_type = map_value(NUMBER_MAPPING, feats.get("number"))
+                person = map_value(PERSON_MAPPING, feats.get("person"))
+                tense = map_value(TENSE_MAPPING, feats.get("tense"))
+                mood = map_value(MOOD_MAPPING, feats.get("mood"))
+                voice = map_value(VOICE_MAPPING, feats.get("voice"))
+
+                if any([g_case, gender, num_type, person, tense, mood, voice]):
+                    cur.execute(
+                        """
+                        INSERT INTO sangraha.verse_word_morphology (
+                            verse_word_id, case_type, gender, number_type,
+                            person, tense, mood, voice
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+                        """,
+                        (word_id, g_case, gender, num_type, person, tense, mood, voice)
+                    )
+
+            self.conn.commit()
+
+def process_files(root_dir: str, db_string: str):
+    importer = SangrahaImporter(db_string)
+    total_files = 0
+    total_verses = 0
+
+    for dirpath, _, filenames in os.walk(root_dir):
+        for filename in filenames:
+            if filename.endswith(".conllu"):
+                total_files += 1
+                file_path = os.path.join(dirpath, filename)
+
+                # 1. Название произведения строго из первой строки файла
+                work_name = get_work_name_from_first_line(file_path)
+
+                # 2. Парсим файл на метаданные файла и блоки предложений
+                file_meta, blocks = parse_conllu_file(file_path)
+
+                # 3. Название главы и id из шапки файла
+                chapter_raw = file_meta.get("chapter")
+                chapter_id_meta = file_meta.get("chapter_id")
+
+                if chapter_raw:
+                    chapter_name = f"{chapter_raw}"
+                    if chapter_id_meta:
+                        chapter_name += f" (id:{chapter_id_meta})"
+                else:
+                    chapter_name = os.path.splitext(filename)[0]
+
                 try:
-                    dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
-                except csv.Error:
-                    dialect = csv.excel
-                count = 0
-                for row in csv.DictReader(fh, dialect=dialect):
-                    rid = lookup_value(row, "id", "lemma_id", "lexicon_id", "word_id")
-                    lemma = lookup_value(row, "lemma", "stem", "word", "form")
-                    if rid:
-                        self.by_id[str(rid)] = row
-                    if lemma:
-                        self.by_lemma[lemma] = row
-                    count += 1
-            LOG.info("Loaded %d dictionary rows from %s", count, path)
-        except Exception:
-            LOG.exception("Could not load optional lookup file %s", path)
+                    work_id = importer.get_or_create_work(work_name)
+                    chapter_id = importer.get_or_create_chapter(work_id, chapter_name)
+                except Exception as e:
+                    logger.error(f"Сбой Work/Chapter для файла {file_path}: {e}")
+                    importer.conn.rollback()
+                    continue
 
-    def row(self, lemma_id, lemma):
-        if lemma_id and str(lemma_id) in self.by_id:
-            return self.by_id[str(lemma_id)]
-        return self.by_lemma.get(lemma or "", {})
+                verse_seq = 1
+                for block_meta, tokens in blocks:
+                    if not tokens:
+                        continue
 
-    def get(self, lemma_id, lemma, *names):
-        return lookup_value(self.row(lemma_id, lemma), *names)
+                    try:
+                        # Текст стиха берем из конкретного блока (# text: ...), если есть,
+                        # либо собираем из токенов, игнорируя шапочный work_name/text произведения
+                        block_text = block_meta.get("text")
+                        # Если в блоке под ключ text записалось название произведения (совпадает с work_name),
+                        # то заменяем его на склейку токенов.
+                        if not block_text or block_text == work_name:
+                            text = " ".join(t["form"] for t in tokens if t["form"] != "_")
+                        else:
+                            text = block_text
 
-def find_lookup(root):
-    candidates = [
-        root / "conllu" / "files" / "lookup",
-        root / "conllu" / "lookup",
-        root / "files" / "lookup",
-        root / "lookup",
-        ]
-    for p in candidates:
-        if p.is_dir():
-            return p
-    for p in root.glob("**/lookup"):
-        if p.is_dir():
-            return p
-    return None
+                        importer.insert_verse_data(chapter_id, verse_seq, text, tokens)
+                        total_verses += 1
+                        verse_seq += 1
+                    except Exception as e:
+                        logger.error(f"Сбой стиха {verse_seq} в файле {file_path}: {e}")
+                        importer.conn.rollback()
 
-def map_pos(upos):
-    return {
-        "NOUN": "NOUN", "PROPN": "NOUN",
-        "VERB": "VERB", "AUX": "VERB",
-        "ADJ": "ADJECTIVE", "ADV": "ADVERB",
-        "PRON": "PRONOUN", "DET": "PRONOUN",
-        "NUM": "NUMERAL", "PART": "PARTICLE",
-        "CCONJ": "CONJUNCTION", "SCONJ": "CONJUNCTION",
-        "INTJ": "INTERJECTION", "ADP": "INDECLINABLE",
-        "X": "OTHER", "SYM": "OTHER",
-    }.get(upos.upper(), "OTHER")
-
-def form_type(token, pos):
-    vf = token.feats.get("VerbForm")
-    if pos == "VERB":
-        if vf == "Inf": return "INFINITIVE", False
-        if vf == "Conv": return "ABSOLUTIVE", False
-        if vf == "Part": return "PARTICIPLE", False
-        if vf == "Ger": return "GERUNDIVE", False
-        if vf == "Fin" or any(k in token.feats for k in ("Person", "Mood", "Tense")):
-            return "FINITE", True
-        return "OTHER_NONFINITE", False
-    if pos == "NOUN": return "NOMINAL", None
-    if pos == "ADJECTIVE": return "ADJECTIVAL", None
-    if pos == "PRONOUN": return "PRONOMINAL", None
-    if pos in {"PARTICLE", "ADVERB", "INDECLINABLE", "CONJUNCTION", "INTERJECTION"}:
-        return "INDECLINABLE", None
-    if pos == "NUMERAL": return "NOMINAL", None
-    return None, None
-
-def derivation_type(token, pos, ft):
-    vf = token.feats.get("VerbForm")
-    if vf == "Conv": return "ABSOLUTIVE"
-    if vf == "Inf": return "INFINITIVE"
-    if vf == "Part": return "PARTICIPLE"
-    if vf == "Ger": return "GERUNDIVE"
-    if pos == "VERB" and ft == "FINITE": return "SIMPLE_INFLECTION"
-    if ft in {"NOMINAL", "ADJECTIVAL", "PRONOMINAL"}: return "SIMPLE_INFLECTION"
-    return None
-
-def make_analysis(token, lookup):
-    pos = map_pos(token.upos)
-    ft, finite = form_type(token, pos)
-    f = token.feats
-    lid = token.misc.get("LemmaId")
-
-    # DCS documents column 3 as "Lemma or stem". For verbs it is commonly
-    # the lexical/dhatu-like lemma; no root is invented for non-verbs.
-    root = token.lemma if pos == "VERB" and token.lemma else None
-    stem = lookup.get(lid, token.lemma, "stem", "morphological_stem")
-    if stem is None and pos in {"NOUN", "ADJECTIVE"}:
-        stem = token.lemma or None
-
-    return {
-        "surface_iast": token.form or "",
-        "surface_devanagari": token.misc.get("Devanagari", ""),
-        "lemma_iast": token.lemma or token.form or "",
-        "stem": stem,
-        "root": root,
-        "pos": pos,
-        "form_type": ft,
-        "is_finite": finite,
-        "lemma_gloss_ru": lookup.get(
-            lid, token.lemma, "lemma_gloss_ru", "gloss_ru", "meaning_ru",
-            "russian", "ru", "translation_ru"
-        ),
-        "lemma_gloss_en": lookup.get(
-            lid, token.lemma, "lemma_gloss_en", "gloss_en", "meaning_en",
-            "english", "en", "translation_en"
-        ),
-        "context_gloss_ru": token.misc.get("GlossRu") or lookup.get(
-            lid, token.lemma, "context_gloss_ru", "gloss_ru", "meaning_ru"
-        ) or "",
-        "context_gloss_en": token.misc.get("GlossEn") or lookup.get(
-            lid, token.lemma, "context_gloss_en", "gloss_en", "meaning_en"
-        ) or "",
-        # DCS CoNLL-U contains no emenau rule-number annotations.
-        "formation_rule_numbers": "[]",
-        "analysis_confidence": "HIGH" if token.lemma and token.upos else "MEDIUM",
-        "ambiguity_notes": None,
-        "morphology": {
-            "case": f.get("Case"), "gender": f.get("Gender"),
-            "number": f.get("Number"), "person": f.get("Person"),
-            "tense": f.get("Tense"), "mood": f.get("Mood"),
-            "voice": VOICE.get(f.get("Voice"), f.get("Voice")),
-        },
-        "derivation_type": derivation_type(token, pos, ft),
-        "derivational_suffix": lookup.get(
-            lid, token.lemma, "derivational_suffix", "suffix", "formation_suffix"
-        ),
-        "derivational_base": lookup.get(
-            lid, token.lemma, "derivational_base", "base", "formation_base"
-        ),
-        "description": lookup.get(
-            lid, token.lemma, "derivation_description", "description"
-        ),
-    }
-
-def slugify(s):
-    return (re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-") or "item")[:80]
-
-def filename_meta(path):
-    # DCS documentation: Text-0007-Citation form of chapter, chapter citation, chapter ID.
-    m = re.match(r"^(.*?)-(\d{4})-(.*)$", path.stem)
-    if m:
-        return m.group(1), m.group(3) or f"chapter-{m.group(2)}", int(m.group(2))
-    return path.stem, path.stem, None
-
-def connect(dsn):
-    if psycopg is not None:
-        return psycopg.connect(dsn)
-    if psycopg2 is not None:
-        return psycopg2.connect(dsn)
-    raise RuntimeError('Install "psycopg[binary]" or "psycopg2-binary".')
-
-def get_or_create_work(conn, cache, key):
-    if key in cache:
-        return cache[key]
-    slug = slugify(key)
-    with conn.cursor() as c:
-        c.execute('SELECT id FROM "sangraha"."works" WHERE slug=%s', (slug,))
-        row = c.fetchone()
-        if row:
-            cache[key] = row[0]
-            return row[0]
-        wid = uuid.uuid4()
-        title = key[:255]
-        c.execute(
-            '''INSERT INTO "sangraha"."works"
-                   (id,slug,title_ru,title_en,title_sa_iast)
-               VALUES (%s,%s,%s,%s,%s)''',
-            (wid, slug, title, title, title)
-        )
-    conn.commit()
-    cache[key] = wid
-    return wid
-
-def get_or_create_chapter(conn, cache, work_id, key, order_index):
-    ck = (str(work_id), key)
-    if ck in cache:
-        return cache[ck]
-    slug = slugify(key)
-    with conn.cursor() as c:
-        c.execute(
-            'SELECT id FROM "sangraha"."chapters" WHERE work_id=%s AND slug=%s',
-            (work_id, slug)
-        )
-        row = c.fetchone()
-        if row:
-            cache[ck] = row[0]
-            return row[0]
-        cid = uuid.uuid4()
-        title = key[:255]
-        c.execute(
-            '''INSERT INTO "sangraha"."chapters"
-                   (id,work_id,slug,order_index,title_ru,title_en,title_sa_iast)
-               VALUES (%s,%s,%s,%s,%s,%s,%s)''',
-            (cid, work_id, slug, order_index, title, title, title)
-        )
-    conn.commit()
-    cache[ck] = cid
-    return cid
-
-def import_sentence(conn, chapter_id, order_index, sent, lookup, source):
-    # Punctuation is not a word in verse-analysis.md; raw/text retain it.
-    words = [t for t in sent.tokens if t.upos != "PUNCT"]
-    if not words:
-        return False
-
-    md = sent.metadata()
-    text_iast = md.get("text") or sent.text()
-    text_dev = md.get("text_devanagari") or md.get("textDevanagari")
-
-    with conn.cursor() as c:
-        c.execute(
-            '''SELECT id FROM "sangraha"."verses"
-               WHERE chapter_id=%s AND order_index=%s''',
-            (chapter_id, order_index)
-        )
-        old = c.fetchone()
-        if old:
-            c.execute('DELETE FROM "sangraha"."verses" WHERE id=%s', (old[0],))
-        verse_id = old[0] if old else uuid.uuid4()
-
-        c.execute(
-            '''INSERT INTO "sangraha"."verses"
-               (id,chapter_id,order_index,raw_text,text_devanagari,text_iast,status)
-               VALUES (%s,%s,%s,%s,%s,%s,'ANALYZED')''',
-            (verse_id, chapter_id, order_index, text_iast, text_dev, text_iast)
-        )
-
-        # No translation/sandhi-rule analysis is present in the DCS CoNLL-U
-        # source. Do not invent it.
-        raw_model = json.dumps({
-            "source": str(source),
-            "importer": "import_dcs_conllu.py",
-            "note": "No model translation/sandhi-rule analysis in DCS CoNLL-U source."
-        }, ensure_ascii=False)
-        c.execute(
-            '''INSERT INTO "sangraha"."verse_analyses"
-               (verse_id,translation_ru,translation_en,sandhi_splits,
-                raw_model_response,model_name)
-               VALUES (%s,%s,%s,'[]'::jsonb,%s::jsonb,%s)''',
-            (verse_id, "", "", raw_model, "DCS-CoNLL-U-import")
-        )
-
-        for position, token in enumerate(words):
-            a = make_analysis(token, lookup)
-            wid = uuid.uuid4()
-            c.execute(
-                '''INSERT INTO "sangraha"."verse_words"
-                   (id,verse_id,position,surface_iast,surface_devanagari,
-                    lemma_iast,stem,root,pos,form_type,is_finite,
-                    lemma_gloss_ru,lemma_gloss_en,context_gloss_ru,context_gloss_en,
-                    formation_rule_numbers,analysis_confidence,ambiguity_notes,
-                    vocabulary_word_id)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
-                (
-                    wid, verse_id, position, a["surface_iast"],
-                    a["surface_devanagari"], a["lemma_iast"], a["stem"], a["root"],
-                    a["pos"], a["form_type"], a["is_finite"],
-                    a["lemma_gloss_ru"], a["lemma_gloss_en"],
-                    a["context_gloss_ru"], a["context_gloss_en"],
-                    a["formation_rule_numbers"], a["analysis_confidence"],
-                    a["ambiguity_notes"], None
-                )
-            )
-
-            m = a["morphology"]
-            c.execute(
-                '''INSERT INTO "sangraha"."verse_word_morphology"
-                   (verse_word_id,case_type,gender,number_type,person,tense,mood,voice)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s)''',
-                (
-                    wid, m["case"], m["gender"], m["number"], m["person"],
-                    m["tense"], m["mood"], m["voice"]
-                )
-            )
-
-            c.execute(
-                '''INSERT INTO "sangraha"."verse_word_derivation"
-                   (verse_word_id,derivation_type,derivational_suffix,
-                    derivational_base,description)
-                   VALUES (%s,%s,%s,%s,%s)''',
-                (
-                    wid, a["derivation_type"], a["derivational_suffix"],
-                    a["derivational_base"], a["description"]
-                )
-            )
-
-    conn.commit()
-    return True
-
-def import_file(conn, path, lookup, work_cache, chapter_cache, stats):
-    work_name, chapter_name, chapter_order = filename_meta(path)
-    work_id = get_or_create_work(conn, work_cache, work_name)
-    chapter_id = get_or_create_chapter(
-        conn, chapter_cache, work_id, chapter_name, chapter_order
-    )
-
-    count = 0
-    for count, sent in enumerate(parse_conllu(path)):
-        try:
-            if import_sentence(conn, chapter_id, count, sent, lookup, path):
-                stats["verses"] += 1
-        except Exception:
-            conn.rollback()
-            stats["errors"] += 1
-            LOG.exception(
-                "Import error: file=%s sentence/order=%d; skipped and continuing",
-                path, count
-            )
-    stats["files"] += 1
-    LOG.info("Finished %s: %d sentence blocks", path, count + 1)
+    importer.close()
+    logger.info(f"Импорт завершен. Файлов обработано: {total_files}, Стихов/предложений: {total_verses}")
 
 def main():
-    ap = argparse.ArgumentParser(description="Import DCS CoNLL-U into Sangraha")
-    ap.add_argument("--db", required=True, help="PostgreSQL DSN/URL")
-    ap.add_argument("--dir", required=True, type=Path, help="DCS root directory")
-    ap.add_argument("--log-level", default="INFO",
-                    choices=("DEBUG", "INFO", "WARNING", "ERROR"))
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--db", required=True)
+    parser.add_argument("--dir", required=True)
+    args = parser.parse_args()
 
-    logging.basicConfig(
-        level=getattr(logging, args.log_level),
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s"
-    )
-
-    root = args.dir.expanduser().resolve()
-    if not root.is_dir():
-        LOG.error("Directory does not exist: %s", root)
-        return 2
-
-    files = sorted(root.rglob("*.conllu"))
-    if not files:
-        LOG.error("No *.conllu files found under %s", root)
-        return 2
-
-    lookup_root = find_lookup(root)
-    lookup = Lookup(lookup_root)
-    if lookup_root:
-        LOG.info("Lookup directory: %s", lookup_root)
-    else:
-        LOG.warning("DCS lookup directory not found; optional gloss data stays NULL/empty")
-
-    try:
-        conn = connect(args.db)
-    except Exception:
-        LOG.exception("Database connection failed")
-        return 3
-
-    stats = {"files": 0, "verses": 0, "errors": 0}
-    work_cache, chapter_cache = {}, {}
-
-    try:
-        with conn.cursor() as c:
-            c.execute('SELECT 1 FROM "sangraha"."works" LIMIT 1')
-        conn.commit()
-
-        for path in files:
-            try:
-                import_file(conn, path, lookup, work_cache, chapter_cache, stats)
-            except Exception:
-                conn.rollback()
-                stats["errors"] += 1
-                LOG.exception("File-level error: %s; continuing", path)
-    finally:
-        conn.close()
-
-    LOG.info("DONE: files=%d verses=%d errors=%d",
-             stats["files"], stats["verses"], stats["errors"])
-    return 0 if stats["errors"] == 0 else 1
+    if not os.path.exists(args.dir):
+        sys.exit(f"Директория не найдена: {args.dir}")
+    process_files(args.dir, args.db)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

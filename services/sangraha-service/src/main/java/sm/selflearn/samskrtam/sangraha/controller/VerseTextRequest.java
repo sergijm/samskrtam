@@ -3,7 +3,7 @@ package sm.selflearn.samskrtam.sangraha.controller;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * DTO для PUT /verses/{id}/text.
+ * DTO для POST /verses/{verseId}/analyze.
  * Единое поле text — backend определяет письменность по Unicode-диапазону
  * (наличие символов деванагари → textDevanagari, иначе → textIast).
  */
