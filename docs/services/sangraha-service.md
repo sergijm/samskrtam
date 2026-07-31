@@ -47,13 +47,20 @@ VersePage, §7) sangraha-service отправляет слова конкрет�
 
 **VerseAnalysis** (1:1 с Verse, таблица verse_analyses): verseId (UUID, PK), translationRu (TEXT), translationEn (TEXT), sandhiSplits (JSONB), rawModelResponse (JSONB, опционально), modelName, analyzedAt
 
-**VerseWord** (таблица verse_words): id (UUID), verseId (UUID), position (int), surfaceIast, surfaceDevanagari, lemmaIast, stem, root (опционально), pos, gender, caseType, numberType, person, tense, mood, voice, glossRu, glossEn
+**VerseWord** (таблица verse_words, задача Агенту 2 — реляционная модель, **НЕ** JSONB) — расширена полным лексико-грамматическим разбором (formType, isFinite, lemmaGlossRu/En, contextGlossRu/En вместо glossRu/En, analysisConfidence, ambiguityNotes); морфология и словообразование вынесены в отдельные таблицы 1:1 — **VerseWordMorphology**, **VerseWordDerivation**. Детали — [sangraha-service/verse-word-grammar.md](./sangraha-service/verse-word-grammar.md).
 
 ---
 
 ## 3. Flyway Migrations
 
-4 миграции: V1 — вся схема sangraha (works, chapters, verses, verse_analyses, verse_words, outbox_events); V2 — санскритские названия (titleSaIast, titleSaDevanagari) для works; V3 — санскритские названия для chapters + orderIndex nullable; V4 — поле formation_rule_numbers в verse_words; V5 — поле raw_text (VARCHAR) в verses; **V6 (NEW, задача Агенту 2) — поля `vocabulary_quiz_slug VARCHAR NULL` и `vocabulary_quiz_id UUID NULL` в verses**, кэш slug'а и UUID лексического квиза этого стиха в content-service, заполняются по кнопке «Изучить» (см. §6, §7, ADR-009 — обновлено, теперь кэшируется и UUID); **V7 (NEW, задача Агенту 2) — DROP TABLE outbox_events`**, таблица и весь Outbox-механизм в sangraha-service убраны (ADR-009) — редактировать V1 нельзя, удаление только новой миграцией поверх.
+**ИЗМЕНЕНО (задача Агенту 2): история миграций сведена к одному файлу
+`V1__create_schema.sql`** — проект без прод-данных, вместо очередной
+миграции поверх пересоздаётся единственный исходный файл в целевом виде
+(works/chapters/verses, verse_analyses, новая реляционная verse_words +
+verse_word_morphology + verse_word_derivation — см. §2,
+[verse-word-grammar.md](./sangraha-service/verse-word-grammar.md));
+`outbox_events` не создаётся (ADR-009, см. §6). SQL прислан оркестратором
+целиком, файлы V2–V10 удаляются.
 
 ---
 
@@ -125,7 +132,12 @@ Backend вызывает `/chat/completions` (или `/responses`) с промп
 **одним** объявленным tool — модель обязана вернуть результат через `tool_calls`,
 а не свободным текстом.
 
-Tool `submit_verse_analysis` с параметрами: textDevanagari, textIast, translationRu, translationEn, sandhiSplits (массив {surface, components[], ruleNumbers[]}), words (массив: position, surfaceIast, surfaceDevanagari, lemmaIast, stem, root, pos, gender, caseType, numberType, person, tense, mood, voice, glossRu, glossEn, formationRuleNumbers[])
+Tool `submit_verse_analysis` с параметрами: textDevanagari, textIast,
+translationRu, translationEn, sandhiSplits (массив {surface, components[],
+ruleNumbers[]}), words — **ИЗМЕНЕНО**, полный лексико-грамматический разбор
+каждого слова, точный список полей и JPA-модель хранения —
+[verse-word-grammar.md §1–§3](./sangraha-service/verse-word-grammar.md).
+Промпт (`prompts/verse-analysis.md` §4) обновлён оркестратором под эту модель.
 
 **Письменность:** везде, кроме `textDevanagari` и `surfaceDevanagari`, — только IAST.
 В частности, `sandhiSplits.surface`/`components`, `lemmaIast`, `stem`, `root` — IAST,
@@ -285,7 +297,9 @@ Backend валидирует `tool_calls[0].function.arguments` по JSON Schema
       либо лицо/время/наклонение/залог — в зависимости от pos), `glossRu`/`glossEn`,
       и номер(-а) внутреннего правила `formationRuleNumbers` (тот же справочник,
       §5.1) — как краткая подпись/тултип «как образована форма»; пустой массив —
-      штатно, без плейсхолдера-ошибки.
+      штатно, без плейсхолдера-ошибки. **НОВОЕ:** строка слова разворачивается
+      по клику в панель с полным разбором — без новых колонок в таблице, см.
+      [verse-word-grammar.md §5](./sangraha-service/verse-word-grammar.md).
     - Если `status=ANALYZED`, но `analysis`/`words` не пришли (пустой ответ backend) —
       фронтенд должен показать явную ошибку/плейсхолдер, а не пустой блок молча.
   - Кнопка **«Редактировать»** видна только при `status=ANALYZED`: возвращает поле

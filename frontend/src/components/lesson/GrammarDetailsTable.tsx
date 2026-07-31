@@ -60,19 +60,12 @@ export const GrammarDetailsTable: React.FC<GrammarDetailsTableProps> = ({
         onSort={() => onSort('gender')}
       />
       <Column
-        header={i18n.language === 'ru' ? 'Окончание' : 'Ending'}
-        body={(rowData: GrammarQuestionProgress) => (
-          <span className="font-bold">{rowData.caseEnding ?? '-'}</span>
-        )}
-        style={{ width: '15%' }}
-      />
-      <Column
         header={i18n.language === 'ru' ? 'Изучено' : 'Learned'}
         body={(rowData: GrammarQuestionProgress) => (
           <MiniProgressBar
-              value={rowData.score}
+            value={rowData.score}
             status={rowData.status}
-              onClick={() => navigate(buildFilterUrl(rowData))}
+            onClick={() => navigate(buildFilterUrl(rowData))}
           />
         )}
         style={{ width: '18%' }}

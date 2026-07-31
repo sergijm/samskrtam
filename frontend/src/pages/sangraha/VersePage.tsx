@@ -55,7 +55,7 @@ const VersePage = () => {
     if (!vocabularyLesson?.statusSummary) return 'pi-book';
     const { total, mastered, learning, reviewDue } = vocabularyLesson.statusSummary;
     if (mastered === total) return 'pi-check-circle';
-    if (learning > 0 || reviewDue > 0) return 'pi-spinner';
+    if (learning > 0 || reviewDue > 0) return 'pi-caret-right';
     return 'pi-book';
   }, [vocabularyLesson]);
 

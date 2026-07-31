@@ -197,6 +197,9 @@ VerseAnalysisDto:
 
 VerseWordDto:
   type: object
+  description: >-
+    Полный грамматический разбор одной словоформы стиха. Детальное описание
+    смысла каждой группы полей — sangraha-service/verse-word-grammar.md.
   properties:
     id:
       type: string
@@ -211,16 +214,75 @@ VerseWordDto:
       type: string
     stem:
       type: string
+      nullable: true
     root:
       type: string
       nullable: true
     pos:
       type: string
       nullable: true
-    gender:
+    formType:
       type: string
       nullable: true
+      description: >-
+        FINITE|INFINITIVE|ABSOLUTIVE|PARTICIPLE|GERUNDIVE|OTHER_NONFINITE|
+        NOMINAL|ADJECTIVAL|PRONOMINAL|INDECLINABLE
+    isFinite:
+      type: boolean
+      nullable: true
+    morphology:
+      $ref: '#/VerseWordMorphologyDto'
+      nullable: true
+    derivation:
+      $ref: '#/VerseWordDerivationDto'
+      nullable: true
+    lemmaGlossRu:
+      type: string
+      nullable: true
+    lemmaGlossEn:
+      type: string
+      nullable: true
+    contextGlossRu:
+      type: string
+    contextGlossEn:
+      type: string
+    formationRuleNumbers:
+      type: array
+      items:
+        type: integer
+      description: >-
+        Номера правил из emenau-sandhi-rules.json (только
+        applicability=internal, диапазон 1–40), объясняющие, как образована именно
+        эта словоформа из корня/основы (морфофонемные изменения при присоединении
+        суффикса/окончания) — в порядке применения. Пустой массив, если словоформа
+        не требует объяснения через внутренние сандхи (простое присоединение без
+        изменений) или модель не уверена (не угадывать номер).
+    analysisConfidence:
+      type: string
+      nullable: true
+      description: >-
+        HIGH|MEDIUM|LOW. Присутствует в DTO для тестирования/отладки,
+        на VersePage не отображается (см. sangraha-service.md §7).
+    ambiguityNotes:
+      type: string
+      nullable: true
+    vocabularyWordId:
+      type: string
+      format: uuid
+      nullable: true
+
+VerseWordMorphologyDto:
+  type: object
+  nullable: true
+  description: >-
+    Инфлективная морфология словоформы. Объект целиком отсутствует
+    (null), если для слова нет применимой морфологии; отдельные поля
+    внутри тоже могут быть null (не применимы к данной части речи/форме).
+  properties:
     caseType:
+      type: string
+      nullable: true
+    gender:
       type: string
       nullable: true
     numberType:
@@ -238,21 +300,29 @@ VerseWordDto:
     voice:
       type: string
       nullable: true
-    glossRu:
+
+VerseWordDerivationDto:
+  type: object
+  nullable: true
+  description: >-
+    Деривационная/словообразовательная информация словоформы. Объект
+    целиком отсутствует (null), если словообразование не установлено.
+  properties:
+    derivationType:
       type: string
-    glossEn:
-      type: string
-    formationRuleNumbers:
-      type: array
-      items:
-        type: integer
+      nullable: true
       description: >-
-        Номера правил из emenau-sandhi-rules.json (только
-        applicability=internal, диапазон 1–40), объясняющие, как образована именно
-        эта словоформа из корня/основы (морфофонемные изменения при присоединении
-        суффикса/окончания) — в порядке применения. Пустой массив, если словоформа
-        не требует объяснения через внутренние сандхи (простое присоединение без
-        изменений) или модель не уверена (не угадывать номер).
+        SIMPLE_INFLECTION|ABSOLUTIVE|PARTICIPLE|GERUNDIVE|INFINITIVE|
+        CAUSATIVE|DESIDERATIVE|DENOMINATIVE|COMPOUND_VERB|OTHER
+    derivationalSuffix:
+      type: string
+      nullable: true
+    derivationalBase:
+      type: string
+      nullable: true
+    description:
+      type: string
+      nullable: true
 
 VerseStatus:
   type: string

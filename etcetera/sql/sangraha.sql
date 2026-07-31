@@ -12,7 +12,7 @@
  Target Server Version : 170009 (170009)
  File Encoding         : 65001
 
- Date: 04/07/2026 18:56:49
+ Date: 30/07/2026 21:21:25
 */
 
 
@@ -24,47 +24,15 @@ CREATE TABLE "sangraha"."chapters" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid(),
   "work_id" uuid NOT NULL,
   "slug" varchar(80) COLLATE "pg_catalog"."default" NOT NULL,
-  "order_index" int4 NOT NULL,
+  "order_index" int4,
   "title_ru" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
   "title_en" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-  "deleted_at" timestamptz(6)
+  "deleted_at" timestamptz(6),
+  "title_sa_iast" varchar(255) COLLATE "pg_catalog"."default",
+  "title_sa_devanagari" varchar(255) COLLATE "pg_catalog"."default"
 )
 ;
 
--- ----------------------------
--- Table structure for flyway_schema_history
--- ----------------------------
-DROP TABLE IF EXISTS "sangraha"."flyway_schema_history";
-CREATE TABLE "sangraha"."flyway_schema_history" (
-  "installed_rank" int4 NOT NULL,
-  "version" varchar(50) COLLATE "pg_catalog"."default",
-  "description" varchar(200) COLLATE "pg_catalog"."default" NOT NULL,
-  "type" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-  "script" varchar(1000) COLLATE "pg_catalog"."default" NOT NULL,
-  "checksum" int4,
-  "installed_by" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-  "installed_on" timestamp(6) NOT NULL DEFAULT now(),
-  "execution_time" int4 NOT NULL,
-  "success" bool NOT NULL
-)
-;
-
--- ----------------------------
--- Table structure for outbox_events
--- ----------------------------
-DROP TABLE IF EXISTS "sangraha"."outbox_events";
-CREATE TABLE "sangraha"."outbox_events" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid(),
-  "aggregate_id" uuid NOT NULL,
-  "event_type" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-  "payload" jsonb NOT NULL,
-  "status" varchar(20) COLLATE "pg_catalog"."default" NOT NULL DEFAULT 'PENDING'::character varying,
-  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "processed_at" timestamptz(6),
-  "retry_count" int4 NOT NULL DEFAULT 0,
-  "error_message" text COLLATE "pg_catalog"."default"
-)
-;
 
 -- ----------------------------
 -- Table structure for verse_analyses
@@ -103,7 +71,9 @@ CREATE TABLE "sangraha"."verse_words" (
   "mood" varchar(20) COLLATE "pg_catalog"."default",
   "voice" varchar(20) COLLATE "pg_catalog"."default",
   "gloss_ru" varchar(500) COLLATE "pg_catalog"."default" NOT NULL,
-  "gloss_en" varchar(500) COLLATE "pg_catalog"."default" NOT NULL
+  "gloss_en" varchar(500) COLLATE "pg_catalog"."default" NOT NULL,
+  "formation_rule_numbers" text COLLATE "pg_catalog"."default",
+  "vocabulary_word_id" uuid
 )
 ;
 
@@ -120,7 +90,10 @@ CREATE TABLE "sangraha"."verses" (
   "status" varchar(20) COLLATE "pg_catalog"."default" NOT NULL DEFAULT 'DRAFT'::character varying,
   "created_at" timestamptz(6) NOT NULL DEFAULT now(),
   "updated_at" timestamptz(6),
-  "deleted_at" timestamptz(6)
+  "deleted_at" timestamptz(6),
+  "raw_text" varchar COLLATE "pg_catalog"."default",
+  "vocabulary_quiz_slug" varchar(255) COLLATE "pg_catalog"."default",
+  "vocabulary_quiz_id" uuid
 )
 ;
 
@@ -137,7 +110,9 @@ CREATE TABLE "sangraha"."works" (
   "description_en" varchar(1000) COLLATE "pg_catalog"."default",
   "author" varchar(255) COLLATE "pg_catalog"."default",
   "created_at" timestamptz(6) NOT NULL DEFAULT now(),
-  "deleted_at" timestamptz(6)
+  "deleted_at" timestamptz(6),
+  "title_sa_iast" varchar(255) COLLATE "pg_catalog"."default",
+  "title_sa_devanagari" varchar(255) COLLATE "pg_catalog"."default"
 )
 ;
 
@@ -156,38 +131,7 @@ ALTER TABLE "sangraha"."chapters" ADD CONSTRAINT "ck_chapter_slug" CHECK (slug::
 -- ----------------------------
 ALTER TABLE "sangraha"."chapters" ADD CONSTRAINT "pk_chapters" PRIMARY KEY ("id");
 
--- ----------------------------
--- Indexes structure for table flyway_schema_history
--- ----------------------------
-CREATE INDEX "flyway_schema_history_s_idx" ON "sangraha"."flyway_schema_history" USING btree (
-  "success" "pg_catalog"."bool_ops" ASC NULLS LAST
-);
-
--- ----------------------------
--- Primary Key structure for table flyway_schema_history
--- ----------------------------
-ALTER TABLE "sangraha"."flyway_schema_history" ADD CONSTRAINT "flyway_schema_history_pk" PRIMARY KEY ("installed_rank");
-
--- ----------------------------
--- Indexes structure for table outbox_events
--- ----------------------------
-CREATE INDEX "idx_outbox_pending" ON "sangraha"."outbox_events" USING btree (
-  "status" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST,
-  "created_at" "pg_catalog"."timestamptz_ops" ASC NULLS LAST
-) WHERE status::text = 'PENDING'::text;
-
--- ----------------------------
--- Checks structure for table outbox_events
--- ----------------------------
-ALTER TABLE "sangraha"."outbox_events" ADD CONSTRAINT "ck_event_type" CHECK (event_type::text = 'VERSE_VOCABULARY_EXTRACTED'::text);
-ALTER TABLE "sangraha"."outbox_events" ADD CONSTRAINT "ck_status" CHECK (status::text = ANY (ARRAY['PENDING'::character varying, 'PROCESSED'::character varying, 'FAILED'::character varying]::text[]));
-
--- ----------------------------
--- Primary Key structure for table outbox_events
--- ----------------------------
-ALTER TABLE "sangraha"."outbox_events" ADD CONSTRAINT "pk_outbox_events" PRIMARY KEY ("id");
-
--- ----------------------------
+--------------------
 -- Primary Key structure for table verse_analyses
 -- ----------------------------
 ALTER TABLE "sangraha"."verse_analyses" ADD CONSTRAINT "pk_verse_analyses" PRIMARY KEY ("verse_id");
@@ -207,7 +151,7 @@ ALTER TABLE "sangraha"."verse_words" ADD CONSTRAINT "pk_verse_words" PRIMARY KEY
 -- ----------------------------
 -- Checks structure for table verses
 -- ----------------------------
-ALTER TABLE "sangraha"."verses" ADD CONSTRAINT "ck_verse_status" CHECK (status::text = ANY (ARRAY['DRAFT'::character varying, 'ANALYZING'::character varying, 'ANALYZED'::character varying, 'FAILED'::character varying]::text[]));
+ALTER TABLE "sangraha"."verses" ADD CONSTRAINT "ck_verse_status" CHECK (status::text = ANY (ARRAY['DRAFT'::character varying::text, 'ANALYZING'::character varying::text, 'ANALYZED'::character varying::text, 'FAILED'::character varying::text]));
 
 -- ----------------------------
 -- Primary Key structure for table verses
