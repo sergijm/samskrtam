@@ -70,3 +70,14 @@ export const useGetOrCreateVocabularyQuiz = () => {
   });
 };
 
+export const useAnalyzeAllVerses = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (chapterId: string) => sangrahaApi.analyzeAllVerses(chapterId),
+    onSuccess: (_data, chapterId) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'chapter', chapterId] });
+      qc.invalidateQueries({ queryKey: ['sangraha', 'work'] });
+    },
+  });
+};
+

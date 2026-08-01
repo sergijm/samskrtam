@@ -32,13 +32,13 @@ public class VerseAnalysisSaver {
      * 4. Перевести статус ANALYZED (последним — гарантия атомарности)
      * Любой сбой на шагах 1–3 откатывает всю транзакцию — статус остаётся ANALYZING.
      */
-    @Transactional
+        @Transactional
     public void saveResults(
             Verse verse, Work work, Chapter chapter,
             String textDevanagari, String textIast,
             String translationRu, String translationEn,
             JsonNode sandhiSplitsNode, JsonNode wordsNode,
-            String rawResponse, String modelName
+            String rawResponse, String modelName, String analyzerName
     ) {
         // 1. Заполняем текст стиха, если не был введён вручную
         if (verse.getTextDevanagari() == null || verse.getTextDevanagari().isBlank()) {
@@ -58,6 +58,7 @@ public class VerseAnalysisSaver {
                 .sandhiSplits(sandhiSplitsNode.toString())
                 .rawModelResponse(rawResponse)
                 .modelName(modelName)
+                .analyzerName(analyzerName)
                 .analyzedAt(Instant.now())
                 .build();
         verseAnalysisRepository.save(analysis);

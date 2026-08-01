@@ -105,6 +105,40 @@ paths:
         '404':
           description: Глава не найдена
 
+  /chapters/{chapterId}/verses/analyze-all:
+    post:
+      operationId: analyzeAllVerses
+      summary: Запустить пакетный LLM-анализ всех стихов главы — кнопка «Анализировать всё»
+      description: |
+        Переводит все стихи главы со статусом DRAFT/FAILED в ANALYZING и запускает
+        один batch-вызов LLM (`submit_verse_analyses`, см.
+        sangraha-prompts/verse-analysis.md) на все эти стихи сразу. Результаты
+        сопоставляются со стихами по verseIndex и сохраняются по одному, той же
+        транзакцией на стих, что и одиночный анализ (см. sangraha-service.md §5.4).
+        Стихи уже в статусе ANALYZING/ANALYZED пропускаются.
+      tags: [Chapters]
+      security:
+        - bearerAuth:
+            - ADMIN
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Пакетный анализ запущен
+          content:
+            application/json:
+              schema:
+                $ref: 'sangraha-schemas.yaml#/AnalyzeAllVersesResponse'
+        '404':
+          description: Глава не найдена
+        '409':
+          description: В главе нет стихов, доступных для анализа
+
   # ── Verses (read-only + analyze + vocabulary-quiz) ──
 
   /verses/{verseId}:

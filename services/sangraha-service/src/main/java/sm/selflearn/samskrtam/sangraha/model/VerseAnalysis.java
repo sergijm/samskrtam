@@ -46,6 +46,9 @@ public class VerseAnalysis {
     @Column(name = "model_name", nullable = false)
     private String modelName;
 
+    @Column(name = "analyzer_name", nullable = false)
+    private String analyzerName;
+
     @Column(name = "analyzed_at", nullable = false)
     private Instant analyzedAt;
 

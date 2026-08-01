@@ -26,7 +26,12 @@ export const sangrahaApi = {
   analyzeVerse: (verseId: string, data?: { text: string }) =>
     api.post(`${BASE}/verses/${verseId}/analyze`, data),
 
+  analyzeAllVerses: (chapterId: string) =>
+    api.post<{ chapterId: string; verseIds: string[] }>(`${BASE}/chapters/${chapterId}/verses/analyze-all`),
+
     getOrCreateVocabularyQuiz: (verseId: string) =>
     api.post<{ quizSlug: string; quizId: string; quizStatus: string }>(`${BASE}/verses/${verseId}/vocabulary-quiz`),
 };
+
+
 

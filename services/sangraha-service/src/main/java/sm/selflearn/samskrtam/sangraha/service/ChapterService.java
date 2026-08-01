@@ -71,7 +71,7 @@ public class ChapterService {
                             v.getId(),
                             v.getOrderIndex(),
                             preview(v.getTextIast(), 80),
-                            v.getTextIast(),
+                            Optional.ofNullable(v.getTextIast()).orElse(v.getRawText()),
                             v.getTextDevanagari(),
                             analysis.map(VerseAnalysis::getTranslationRu).orElse(null),
                             analysis.map(VerseAnalysis::getTranslationEn).orElse(null),

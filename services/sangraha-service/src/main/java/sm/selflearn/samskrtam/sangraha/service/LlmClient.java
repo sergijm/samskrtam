@@ -13,6 +13,8 @@ import sm.selflearn.samskrtam.sangraha.model.Verse;
 import sm.selflearn.samskrtam.sangraha.service.strategy.LlmCallStrategy;
 import sm.selflearn.samskrtam.sangraha.service.strategy.LlmCallStrategyFactory;
 
+import java.util.List;
+
 /**
  * HTTP-клиент к OpenAI API для анализа санскритских стихов через tool calling.
  * Использует официальный OpenAI Java SDK (com.openai:openai-java).
@@ -34,7 +36,7 @@ public class LlmClient {
 
     private OpenAIClient openAIClient;
 
-    private static final String TOOL_NAME = "submit_verse_analysis";
+    private static final String TOOL_NAME = "submit_verse_analyses";
 
     @PostConstruct
     public void init() {
@@ -47,25 +49,25 @@ public class LlmClient {
                 llmProperties.getMaxCompletionTokens());
     }
 
-    /**
-     * Вызывает LLM для анализа стиха через выбранную стратегию.
+        /**
+     * Вызывает LLM для анализа списка стихов через выбранную стратегию.
      */
-    public JsonNode call(Verse verse) {
+    public JsonNode call(List<Verse> verses) {
         try {
             LlmCallStrategy strategy = strategyFactory.create(openAIClient);
             log.debug("Using strategy: {}", strategy.getName());
-            return (JsonNode) strategy.call(verse);
+            return (JsonNode) strategy.call(verses);
         } catch (Exception e) {
-            log.error("Failed to call LLM API for verse {}", verse.getId(), e);
+            log.error("Failed to call LLM API for {} verses", verses.size(), e);
             return null;
         }
     }
 
     /**
-     * Извлекает аргументы вызова submit_verse_analysis из полного ответа LLM
-     * через прямой JSON-парсинг (работает со всеми версиями SDK).
+     * Извлекает аргументы вызова submit_verse_analyses из полного ответа LLM
+     * и возвращает массив verses (JsonNode ArrayNode) или null.
      */
-    public JsonNode extractToolArguments(JsonNode response) {
+    public JsonNode extractVersesArguments(JsonNode response) {
         try {
             var toolCallsNode = response.path("choices")
                     .path(0)
@@ -92,7 +94,8 @@ public class LlmClient {
                 return null;
             }
 
-            return objectMapper.readTree(argsJson);
+            JsonNode arguments = objectMapper.readTree(argsJson);
+            return arguments.get("verses");
 
         } catch (Exception e) {
             log.error("Failed to extract tool arguments from LLM response", e);

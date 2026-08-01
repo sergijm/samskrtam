@@ -132,8 +132,8 @@ public class VerseService {
                         .root(w.getRoot())
                         .gender(w.getMorphology() != null && w.getMorphology().getGender() != null
                                 ? w.getMorphology().getGender().name() : null)
-                        .translationRu(w.getContextGlossRu())
-                        .translationEn(w.getContextGlossEn())
+                                                .translationRu(w.getLemmaGlossRu())
+                        .translationEn(w.getLemmaGlossEn())
                         .build())
                 .toList();
 

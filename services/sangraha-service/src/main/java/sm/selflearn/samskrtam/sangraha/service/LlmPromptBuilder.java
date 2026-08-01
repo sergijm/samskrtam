@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
 
+import java.util.List;
+
 /**
  * Строит system и user промпты для LLM.
  * Извлекает секцию ## system из markdown-файла промпта.
@@ -62,33 +64,78 @@ public class LlmPromptBuilder {
         return fullPrompt.substring(codeStart + 5, codeEnd).trim();
     }
 
-    /**
-     * Строит user-промпт с текстом стиха и контекстом правил сандхи.
+        /**
+     * Строит user-промпт с текстом стиха и контекстом правил сандхи (batch-формат).
      */
     public String buildUserPrompt(Verse verse) {
-        var sb = new StringBuilder("Analyze the following Sanskrit verse:\n\n");
+        var sb = new StringBuilder();
         if (verse.getRawText() != null && !verse.getRawText().isBlank()) {
-            sb.append("Devanagari or IAST: ").append(verse.getRawText()).append("\n");
+            sb.append("verseIndex: 0\n");
+            sb.append("textDevanagari: ").append(verse.getRawText()).append("\n");
+            sb.append("textIast: null\n");
+        } else {
+            sb.append("verseIndex: 0\n");
+            sb.append("textDevanagari: null\n");
+            if (verse.getTextIast() != null && !verse.getTextIast().isBlank()) {
+                sb.append("textIast: ").append(verse.getTextIast()).append("\n");
+            } else {
+                sb.append("textIast: null\n");
+            }
         }
 
-        sb.append("\nProvide complete analysis using the submit_verse_analysis function.");
+        appendSandhiRules(sb);
 
+        return sb.toString();
+    }
+
+    /**
+     * Строит batch user-промпт для нескольких стихов.
+     * Для каждого стиха выводит блок verseIndex/textDevanagari/textIast.
+     * verseIndex = позиция в списке.
+     */
+    public String buildBatchUserPrompt(List<Verse> verses) {
+        var sb = new StringBuilder("Analyze the following Sanskrit verses:\n\n");
+        for (int i = 0; i < verses.size(); i++) {
+            Verse verse = verses.get(i);
+            sb.append("verseIndex: ").append(i).append("\n");
+            if (verse.getRawText() != null && !verse.getRawText().isBlank()) {
+                sb.append("textDevanagari: ").append(verse.getRawText()).append("\n");
+                sb.append("textIast: null\n");
+            } else {
+                if (verse.getTextDevanagari() != null && !verse.getTextDevanagari().isBlank()) {
+                    sb.append("textDevanagari: ").append(verse.getTextDevanagari()).append("\n");
+                } else {
+                    sb.append("textDevanagari: null\n");
+                }
+                if (verse.getTextIast() != null && !verse.getTextIast().isBlank()) {
+                    sb.append("textIast: ").append(verse.getTextIast()).append("\n");
+                } else {
+                    sb.append("textIast: null\n");
+                }
+            }
+            sb.append("\n");
+        }
+
+        appendSandhiRules(sb);
+
+        return sb.toString();
+    }
+
+    private void appendSandhiRules(StringBuilder sb) {
         JsonNode sandhiRulesNode = promptLoader.getEmenauSandhiRules();
         if (sandhiRulesNode != null) {
             try {
                 String sandhiRules = objectMapper.writeValueAsString(sandhiRulesNode);
                 if (!sandhiRules.isEmpty()) {
-                    sb.append("\n\n---\n");
+                    sb.append("\n---\n");
                     sb.append("External sandhi rules (rules 41–71) for sandhi split reference:\n");
                     sb.append(sandhiRules);
                     sb.append("\n\nIMPORTANT: Only use these external rules (41–71) for sandhi split analysis. ");
                     sb.append("Internal rules (1–40) explain word-internal form changes and must NOT be cited in sandhi splits.");
                 }
             } catch (Exception e) {
-                log.warn("Failed to serialize sandhi rules for verse {}", verse.getId(), e);
+                log.warn("Failed to serialize sandhi rules", e);
             }
         }
-
-        return sb.toString();
     }
 }

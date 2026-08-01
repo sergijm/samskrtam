@@ -74,11 +74,12 @@ public class VerseMapper {
     public VerseAnalysisDto toAnalysisDto(VerseAnalysis analysis) {
         List<SandhiSplitDto> sandhiSplits = parseSandhiSplits(analysis.getSandhiSplits());
 
-        return new VerseAnalysisDto(
+                return new VerseAnalysisDto(
             analysis.getTranslationRu(),
             analysis.getTranslationEn(),
             sandhiSplits,
             analysis.getModelName(),
+            analysis.getAnalyzerName(),
             analysis.getAnalyzedAt()
         );
     }

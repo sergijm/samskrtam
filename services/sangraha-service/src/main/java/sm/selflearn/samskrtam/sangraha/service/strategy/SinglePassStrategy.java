@@ -21,7 +21,7 @@ import java.util.List;
 @Slf4j
 public class SinglePassStrategy implements LlmCallStrategy {
 
-    private static final String TOOL_NAME = "submit_verse_analysis";
+        private static final String TOOL_NAME = "submit_verse_analyses";
 
     private final OpenAIClient openAIClient;
     private final LlmPromptBuilder promptBuilder;
@@ -36,16 +36,17 @@ public class SinglePassStrategy implements LlmCallStrategy {
     }
 
     @Override
-    public JsonNode call(Verse verse) throws Exception {
+    public JsonNode call(List<Verse> verses) throws Exception {
         String systemPrompt = promptBuilder.extractSystemPrompt();
-        String userPrompt = promptBuilder.buildUserPrompt(verse);
+        String userPrompt = promptBuilder.buildBatchUserPrompt(verses);
 
-        String schemaJson = objectMapper.writeValueAsString(toolSchemaBuilder.buildFunctionDefinitionSchema());
+        String schemaJson = objectMapper.writeValueAsString(
+                toolSchemaBuilder.buildBatchFunctionDefinitionSchema());
         FunctionParameters functionParameters = objectMapper.readValue(schemaJson, FunctionParameters.class);
 
         var functionDefinition = FunctionDefinition.builder()
                 .name(TOOL_NAME)
-                .description("Submit complete verse analysis: transcription, translation, sandhi splits, and per-word grammar.")
+                .description("Submit complete verse analyses: transcription, translation, sandhi splits, and per-word grammar for one or more verses.")
                 .parameters(functionParameters)
                 .build();
 

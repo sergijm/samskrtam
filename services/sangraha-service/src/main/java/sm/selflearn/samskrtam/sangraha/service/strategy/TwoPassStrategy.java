@@ -28,7 +28,7 @@ import java.util.List;
 @Slf4j
 public class TwoPassStrategy implements LlmCallStrategy {
 
-    private static final String TOOL_NAME = "submit_verse_analysis";
+        private static final String TOOL_NAME = "submit_verse_analyses";
 
     private final OpenAIClient openAIClient;
     private final LlmPromptBuilder promptBuilder;
@@ -43,10 +43,10 @@ public class TwoPassStrategy implements LlmCallStrategy {
     }
 
     @Override
-    public JsonNode call(Verse verse) throws Exception {
+    public JsonNode call(List<Verse> verses) throws Exception {
         // --- Pass 1: свободное рассуждение без tool_choice ---
         String pass1SystemPrompt = promptBuilder.extractPass1SystemPrompt();
-        String userPrompt = promptBuilder.buildUserPrompt(verse);
+        String userPrompt = promptBuilder.buildBatchUserPrompt(verses);
         var pass1Builder = ChatCompletionCreateParams.builder()
                 .model(model)
                 .addSystemMessage(pass1SystemPrompt)
@@ -57,21 +57,22 @@ public class TwoPassStrategy implements LlmCallStrategy {
         ChatCompletionCreateParams pass1Params = pass1Builder.build();
         ChatCompletion pass1Response = openAIClient.chat().completions().create(pass1Params);
         String pass1Content = pass1Response.choices().get(0).message().content().orElse("");
-        log.info("Pass 1 (reasoning) for verse {}: {} chars, finishReason={}",
-                verse.getId(), pass1Content.length(),
+        log.info("Pass 1 (reasoning) for {} verses: {} chars, finishReason={}",
+                verses.size(), pass1Content.length(),
                 pass1Response.choices().get(0).finishReason());
 
         // --- Pass 2: формализация с tool_choice forced ---
         String pass2SystemPrompt = promptBuilder.extractPass2SystemPrompt();
-        String pass2UserInstruction = "Please submit your analysis above through submit_verse_analysis now, " +
+        String pass2UserInstruction = "Please submit your analysis above through submit_verse_analyses now, " +
                 "following the field-by-field mapping in the system instructions.";
 
-        String schemaJson = objectMapper.writeValueAsString(toolSchemaBuilder.buildFunctionDefinitionSchema());
+        String schemaJson = objectMapper.writeValueAsString(
+                toolSchemaBuilder.buildBatchFunctionDefinitionSchema());
         FunctionParameters functionParameters = objectMapper.readValue(schemaJson, FunctionParameters.class);
 
         var functionDefinition = FunctionDefinition.builder()
                 .name(TOOL_NAME)
-                .description("Submit complete verse analysis: transcription, translation, sandhi splits, and per-word grammar.")
+                .description("Submit complete verse analyses: transcription, translation, sandhi splits, and per-word grammar for one or more verses.")
                 .parameters(functionParameters)
                 .build();
 
@@ -84,7 +85,7 @@ public class TwoPassStrategy implements LlmCallStrategy {
         var pass2Builder = ChatCompletionCreateParams.builder()
                 .model(model)
                 .addSystemMessage(pass2SystemPrompt)
-                .addUserMessage(promptBuilder.buildUserPrompt(verse))
+                .addUserMessage(promptBuilder.buildBatchUserPrompt(verses))
                 .addAssistantMessage(pass1Content)
                 .addUserMessage(pass2UserInstruction)
                 .tools(List.of(tool))
@@ -101,8 +102,8 @@ public class TwoPassStrategy implements LlmCallStrategy {
         ChatCompletionCreateParams pass2Params = pass2Builder.build();
 
         ChatCompletion pass2Response = openAIClient.chat().completions().create(pass2Params);
-        log.info("Pass 2 (formalize) for verse {}: finishReason={}",
-                verse.getId(),
+        log.info("Pass 2 (formalize) for {} verses: finishReason={}",
+                verses.size(),
                 pass2Response.choices().get(0).finishReason());
 
         return objectMapper.valueToTree(pass2Response);

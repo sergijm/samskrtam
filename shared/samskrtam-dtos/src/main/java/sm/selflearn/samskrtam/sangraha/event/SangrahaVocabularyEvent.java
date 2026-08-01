@@ -10,19 +10,16 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Событие, публикуемое sangraha-service в топик sangraha-vocabulary-events
- * после каждого успешного LLM-анализа стиха.
+ * Событие, отправляемое sangraha-service в content-service (синхронный REST-вызов,
+ * бывший Kafka-топик sangraha-vocabulary-events, заменён по ADR-006).
  *
- * Consumer — content-service: строит VocabularyCategory (work/chapter) и VocabularyWord.
+ * Consumer — content-service: строит VocabularyCategory (work/chapter/verse) и VocabularyWord.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class SangrahaVocabularyEvent {
-
-    @JsonProperty("eventType")
-    private String eventType;
 
     @JsonProperty("verseId")
     private UUID verseId;

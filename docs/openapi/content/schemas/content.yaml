@@ -210,19 +210,13 @@ DeclensionParadigmPageDto:
     paradigm:
       $ref: '#/DeclensionParadigmDto'
 
-SangrahaVocabularyEventDto:
+SangrahaVocabularyQuizRequestDto:
   type: object
   description: >
-    NEW. Тело запроса POST /content/internal/sangraha/vocabulary. Ранее — payload
-    Kafka-события VERSE_VOCABULARY_EXTRACTED (топик sangraha-vocabulary-events, теперь
-    удалён, см. ADR-006). Схема не менялась при переходе с Kafka на REST, только транспорт.
-    Источник истины по этой схеме — sangraha-service.md §5.1/§6, здесь для валидации
-    запроса на стороне content-service.
-  required: [eventType, verseId, workSlug, chapterSlug, words]
+    Тело запроса POST /content/internal/sangraha/vocabulary-quiz. Источник истины —
+    sangraha-service.md §6/§7, content-service.md §11.
+  required: [verseId, workSlug, chapterSlug, words]
   properties:
-    eventType:
-      type: string
-      enum: [VERSE_VOCABULARY_EXTRACTED]
     verseId:
       type: string
       format: uuid
@@ -238,14 +232,21 @@ SangrahaVocabularyEventDto:
       type: string
     chapterTitleEn:
       type: string
+    verseOrderIndex:
+      type: integer
     words:
       type: array
       items:
         type: object
         required: [wordIast, stem]
         properties:
+          verseWordId:
+            type: string
+            format: uuid
+            description: id VerseWord в sangraha-service; используется только для сборки wordMappings в ответе.
           wordIast:
             type: string
+            description: Лемма слова (lemmaIast), не поверхностная словоформа.
           wordDevanagari:
             type: string
           stem:
@@ -258,8 +259,10 @@ SangrahaVocabularyEventDto:
             $ref: '#/Gender'
           translationRu:
             type: string
+            description: Словарный перевод леммы (lemmaGlossRu), не контекстный перевод словоформы.
           translationEn:
             type: string
+            description: Словарный перевод леммы (lemmaGlossEn), не контекстный перевод словоформы.
           explanationRu:
             type:
               - string
@@ -269,25 +272,33 @@ SangrahaVocabularyEventDto:
               - string
               - 'null'
 
-SangrahaVocabularySyncResultDto:
+SangrahaVocabularyQuizResponseDto:
   type: object
   description: >
-    NEW. Ответ на POST /content/internal/sangraha/vocabulary — раньше событие ничего не
-    возвращало (fire-and-forget в Kafka), теперь HTTP-ответ обязателен: sangraha-service
-    сохраняет vocabularyWordId в verse_words.vocabulary_word_id (см. sangraha-service.md §3/§6).
-  required: [words]
+    Ответ на POST /content/internal/sangraha/vocabulary-quiz. Источник истины —
+    content-service.md §11.
+  required: [quizSlug, quizId, quizStatus]
   properties:
-    words:
+    quizSlug:
+      type: string
+      description: '"{workSlug}.{chapterSlug}.verse-{verseId}"'
+    quizId:
+      type: string
+      format: uuid
+      description: UUID сущности Lesson (LessonType.VOCABULARY).
+    quizStatus:
+      type: string
+      enum: [CREATED, EXISTING]
+    wordMappings:
       type: array
-      description: В том же порядке, что words[] в запросе.
+      description: verseWordId → vocabularyWordId для каждого успешно обработанного слова.
       items:
         type: object
-        required: [wordIast, stem, vocabularyWordId]
+        required: [verseWordId, vocabularyWordId]
         properties:
-          wordIast:
+          verseWordId:
             type: string
-          stem:
-            type: string
+            format: uuid
           vocabularyWordId:
             type: string
             format: uuid

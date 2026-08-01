@@ -257,7 +257,7 @@ content-service.
 
 ## 11. Internal REST: приём словаря из sangraha-service
 
-**ИЗМЕНЕНО (было автосинхронизация через Outbox после каждого анализа, стало on-demand по кнопке «Изучить»).** Раньше `content-service` принимал слова автоматически после каждого анализа стиха (через Transactional Outbox Relay в sangraha-service, см. историю в ADR-006). Теперь sangraha-service вызывает этот эндпоинт **только** по явному клику пользователя на кнопку «Изучить» на VersePage (см. `sangraha-service.md` §6/§7, ADR-009) — Outbox в sangraha-service убран целиком, вызов происходит синхронно внутри HTTP-запроса на кнопку.
+Вызывается sangraha-service синхронно, в теле HTTP-запроса на кнопку «Изучить» на VersePage (см. `sangraha-service.md` §6/§7).
 
 ```
 POST /content/internal/sangraha/vocabulary-quiz
@@ -277,38 +277,49 @@ POST /content/internal/sangraha/vocabulary-quiz
   "verseOrderIndex": 1,
   "words": [
     {
-      "wordIast": "dhṛtarāṣṭraḥ", "wordDevanagari": "धृतराष्ट्रः",
+      "verseWordId": "uuid",
+      "wordIast": "dhṛtarāṣṭra", "wordDevanagari": "धृतराष्ट्रः",
       "stem": "dhṛtarāṣṭra", "root": null, "gender": "MASCULINE",
-      "translationRu": "Дхритараштра", "translationEn": "Dhritarashtra",
+      "translationRu": "Дхритараштра (имя царя)", "translationEn": "Dhritarashtra (a king's name)",
       "explanationRu": "...", "explanationEn": "..."
     }
   ]
 }
 ```
 
-Список `words[]` уже дедуплицирован sangraha-service по `(lemmaIast, stem)` в рамках стиха (см. `sangraha-service.md` §6) — content-service не обязан ожидать дублей внутри одного запроса, но и не полагается на это (см. шаг 4 ниже — дедуп всё равно по `(wordIast, stem)`, для защиты от повторной отправки одного и того же слова в разных стихах).
+Каждый элемент `words[]` — словарная статья, а не разбор конкретной словоформы: `wordIast` = `lemmaIast` слова (лемма, словарная форма), `translationRu/En` = `lemmaGlossRu/En` (словарное значение леммы). `wordDevanagari` = `surfaceDevanagari` той словоформы, в которой слово впервые встретилось (у леммы отдельного деванагари-написания в модели sangraha-service нет — только у словоформы, см. `verse-word-grammar.md` §1); для большинства слов расхождение с деванагари-написанием самой леммы отсутствует или несущественно (совпадает при отсутствии сандхи/окончания), в остальных случаях это известное упрощение. `verseWordId` — id строки `VerseWord` в sangraha-service, нужен только для того, чтобы content-service мог вернуть маппинг `verseWordId → vocabularyWordId` в ответе (см. Response ниже); в дедупликации и создании `VocabularyWord` не участвует.
+
+Список `words[]` уже дедуплицирован sangraha-service по `(lemmaIast, stem)` в рамках стиха (см. `sangraha-service.md` §6) — content-service не обязан ожидать дублей внутри одного запроса, но и не полагается на это: дедуп по `(wordIast, stem)` в рамках всего словаря (шаг 4 ниже) защищает от повторной отправки одного и того же слова в разных стихах.
 
 ### Response
 
-**ИЗМЕНЕНО:** возвращается ещё и `quizId` (UUID сущности `Lesson` в БД content-service) — фронтенд стартует/резюмирует квиз-сессию по UUID напрямую (`POST /quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&statusFilter=...`), без промежуточного `GET /lessons/vocabulary/{slug}` (см. `sangraha-service.md` §7). `quizSlug` по-прежнему нужен — sangraha-service кэширует его для построения URL `/quiz/vocabulary/{quizSlug}/{sessionId}` после старта сессии.
-
-**НОВОЕ:** добавлено поле `quizStatus` — `"CREATED"`, если `upsertQuiz` (шаг 3 ниже) только что вставил новую строку `Lesson` (это первый клик «Изучить» по этому стиху), либо `"EXISTING"`, если `Lesson` с таким slug уже существовал. Это единственный сигнал о «статусе» квиза, который content-service в принципе может дать — он не хранит и не видит пользовательский прогресс (`quiz_item_score`, сессии) — это домен quiz-service, а данный эндпоинт не содержит userId. Фронтенд использует `quizStatus` только для выбора `statusFilter` при первом же запуске сессии: `CREATED` → `statusFilter=NEW` (весь пул — новые слова, обычный due/new/reserve-отбор избыточен), `EXISTING` → без `statusFilter` (обычный смешанный отбор). См. `sangraha-service.md` §6/§7.
-
 ```json
-{ "quizSlug": "sangraha-verse-<verseId>", "quizId": "<lesson-uuid>", "quizStatus": "CREATED" }
+{
+  "quizSlug": "bhagavad-gita.1.verse-<verseId>",
+  "quizId": "<lesson-uuid>",
+  "quizStatus": "CREATED",
+  "wordMappings": [
+    { "verseWordId": "uuid", "vocabularyWordId": "uuid" }
+  ]
+}
 ```
 
-Один квиз на стих, не на слово — `vocabularyWordId` каждого слова больше не возвращается (не нужен, `verse_words.vocabulary_word_id` из старого плана отменён вместе с Outbox, см. `sangraha-service.md` §3).
+`quizId` (UUID сущности `Lesson` в БД content-service) — фронтенд стартует/резюмирует квиз-сессию по UUID напрямую (`POST /quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&statusFilter=...`), без промежуточного `GET /lessons/vocabulary/{slug}` (см. `sangraha-service.md` §7). `quizSlug` кэшируется sangraha-service для построения URL `/quiz/vocabulary/{quizSlug}/{sessionId}` после старта сессии; формат — `"{workSlug}.{chapterSlug}.verse-{verseId}"` (совпадает с `code` `VocabularyCategory` уровня стиха, см. шаг 3 ниже).
 
-### Обработка (`SangrahaVocabularyController` → `VocabularyQuizSyncService`, синхронно, в теле HTTP-запроса)
+`quizStatus` — `"CREATED"`, если `upsertQuiz` (шаг 3 ниже) только что вставил новую строку `Lesson` (это первый клик «Изучить» по этому стиху), либо `"EXISTING"`, если `Lesson` с таким slug уже существовал. Это единственный сигнал о «статусе» квиза, который content-service в принципе может дать — он не хранит и не видит пользовательский прогресс (`quiz_item_score`, сессии) — это домен quiz-service, а данный эндпоинт не содержит userId. Фронтенд использует `quizStatus` только для выбора `statusFilter` при первом же запуске сессии: `CREATED` → `statusFilter=NEW` (весь пул — новые слова, обычный due/new/reserve-отбор избыточен), `EXISTING` → без `statusFilter` (обычный смешанный отбор). См. `sangraha-service.md` §6/§7.
 
-Идемпотентно (sangraha-service может повторить вызов при таймауте на своей стороне — не гарантия at-least-once через Outbox, как раньше, а просто «пользователь нажал кнопку ещё раз», см. `sangraha-service.md` §6, шаг 5):
+`wordMappings[]` — маппинг `verseWordId → vocabularyWordId` для каждого успешно обработанного слова, в произвольном порядке (не обязательно совпадает с порядком `words[]` в запросе). sangraha-service использует его, чтобы связать свои `VerseWord` со словарными статьями content-service (`verse_words.vocabulary_word_id`, см. `sangraha-service.md` §2/§3) — по паре `(lemmaIast, stem)`, восстановленной из `verseWordId` дедуплицированных представителей на своей стороне.
 
-1. `VocabularyCategory` root: `findByCodeIgnoreCase(workSlug)`, если нет — создать (`nameRu = workTitleRu`, `nameEn = workTitleEn`, `parentId = null`) — **без изменений относительно прежней логики**, категория остаётся общим механизмом тематической классификации лексики (см. `information-architecture.md` §2.3), не специфичным для этого флоу.
-2. `VocabularyCategory` chapter: `findByCodeIgnoreCase("{workSlug}.{chapterSlug}")`, если нет — создать с `parentId = root.id`.
-3. `Quiz` (сущность в коде называется `Lesson`, см. `LessonType.VOCABULARY`) — **на уровне стиха**, не категории: `slug = "sangraha-verse-{verseId}"` (детерминирован, не рандом — повтор вызова не создаёт дубль), `titleRu/En` — шаблон, например `"{workTitleRu}, стих {verseOrderIndex}"` (точный текст — на усмотрение Агента 2). `upsert` — если `Lesson` с таким slug уже есть, вернуть его же (идемпотентность), новый не создавать. **ИЗМЕНЕНО:** метод upsert обязан возвращать не просто `Lesson`, а пару `(Lesson, wasCreated: boolean)` — `id` идёт в ответ как `quizId`, `wasCreated` определяет `quizStatus` (`true` → `"CREATED"`, `false` → `"EXISTING"`, см. Response выше).
-4. Для каждого слова из `words[]`: dedup по `(wordIast, stem)` в рамках всего словаря content-service (`findByWordIastAndStem`), как и раньше. Если найдено — не создавать новый `VocabularyWord`; связать существующий `wordId` и с `Quiz` этого стиха (если связи ещё нет), и с `chapterCategory` (`VocabularyWordCategory`, если связи ещё нет) — слово может одновременно входить в квиз конкретного стиха **и** в тематическую категорию произведения/главы, это независимые связи. Если не найдено — создать `VocabularyWord` (`wordIast`, `wordDevanagari`, `stem`, `root`, `gender`, `translationRu/En`, `explanationRu/En`) и сразу связать и с квизом стиха, и с категорией главы.
-5. **Ошибки:** невалидный payload/ошибка БД → HTTP 4xx/5xx с телом ошибки (`ErrorResponse`), транзакция отменяется целиком. Повтор — ответственность sangraha-service (кнопка «Изучить» просто не закэширует slug при ошибке, пользователь может нажать снова, см. `sangraha-service.md` §6, шаг 5); DLQ/Outbox-ретраи здесь не нужны — это был механизм для автосинхронизации, которой больше нет.
+### Обработка (`SangrahaVocabularyController` → `VocabularySyncService`, синхронно, в теле HTTP-запроса)
+
+Идемпотентно (sangraha-service может повторить вызов при таймауте на своей стороне — это просто «пользователь нажал кнопку ещё раз», см. `sangraha-service.md` §6, шаг 5):
+
+1. `VocabularyCategory` root (уровень произведения): `findByCodeIgnoreCase(workSlug)`, если нет — создать (`code = workSlug`, `nameRu = workTitleRu`, `nameEn = workTitleEn`, `parentId = null`) — категория остаётся общим механизмом тематической классификации лексики (см. `information-architecture.md` §2.3), не специфичным для этого флоу.
+2. `VocabularyCategory` chapter (уровень главы): `findByCodeIgnoreCase("{workSlug}.{chapterSlug}")`, если нет — создать с `parentId = root.id`.
+3. `VocabularyCategory` verse (уровень стиха, на ней строится квиз) и `Quiz` (сущность в коде называется `Lesson`, `LessonType.VOCABULARY`): `code`/`slug = "{workSlug}.{chapterSlug}.verse-{verseId}"` (детерминирован, не рандом — повтор вызова не создаёт дубль), `titleRu/En` — `"{workTitleRu}, стих {verseOrderIndex}"` / `"{workTitleEn}, verse {verseOrderIndex}"`. `upsertQuiz` возвращает пару `(Lesson, wasCreated: boolean)` — `id` идёт в ответ как `quizId`, `wasCreated` определяет `quizStatus` (`true` → `"CREATED"`, `false` → `"EXISTING"`, см. Response выше).
+4. Для каждого слова из `words[]`: dedup по `(wordIast, stem)` в рамках всего словаря content-service (`findByWordIastAndStem`). Если найдено — не создавать новый `VocabularyWord`; связать существующий `wordId` и с `Quiz` этого стиха (если связи ещё нет), и с `chapterCategory` (`VocabularyWordCategory`, если связи ещё нет) — слово может одновременно входить в квиз конкретного стиха **и** в тематическую категорию произведения/главы, это независимые связи. Если не найдено — создать `VocabularyWord` (`wordIast`, `wordDevanagari`, `stem`, `root`, `gender`, `translationRu/En`, `explanationRu/En`) и сразу связать и с квизом стиха, и с категорией главы. Слово с пустым `wordIast` пропускается (не создаётся, в `wordMappings` не попадает); пустой `stem` заменяется на `wordIast`.
+5. **Ошибки:** невалидный payload/ошибка БД → HTTP 4xx/5xx с телом ошибки (`ErrorResponse`), транзакция отменяется целиком. Повтор — ответственность sangraha-service (кнопка «Изучить» просто не закэширует slug при ошибке, пользователь может нажать снова, см. `sangraha-service.md` §6, шаг 5).
+
 
 ### Открытые вопросы (для Агента 2 при реализации)
 

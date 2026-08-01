@@ -24,8 +24,8 @@ public class JsonSchemas {
     @Getter
     private JsonNode workMetadataSchema;
 
-    @Getter
-    private JsonNode verseAnalysisSchema;
+        @Getter
+    private JsonNode verseAnalysesSchema;
 
     @Getter
     private JsonNode chapterMetadataSchema;
@@ -33,7 +33,7 @@ public class JsonSchemas {
     @PostConstruct
     public void init() {
         this.workMetadataSchema = buildWorkMetadataSchema();
-        this.verseAnalysisSchema = buildVerseAnalysisSchema();
+        this.verseAnalysesSchema = buildVerseAnalysesSchema();
         this.chapterMetadataSchema = buildChapterMetadataSchema();
         log.info("JSON Schemas initialized");
     }
@@ -85,26 +85,40 @@ public class JsonSchemas {
         return schema;
     }
 
-    /**
-     * JSON Schema для submit_verse_analysis tool.
+        /**
+     * JSON Schema для submit_verse_analyses tool (batch).
+     * Корневой объект: { type: object, required: [verses], properties: { verses: [...] } }
      */
-    private ObjectNode buildVerseAnalysisSchema() {
+    private ObjectNode buildVerseAnalysesSchema() {
         ObjectNode schema = objectMapper.createObjectNode();
         schema.put("$schema", "http://json-schema.org/draft-07/schema#");
         schema.put("type", "object");
 
         ArrayNode required = schema.putArray("required");
-        required.add("textDevanagari").add("textIast").add("translationRu")
-                .add("translationEn").add("sandhiSplits").add("words");
+        required.add("verses");
 
         ObjectNode properties = schema.putObject("properties");
-        properties.putObject("textDevanagari").put("type", "string");
-        properties.putObject("textIast").put("type", "string");
-        properties.putObject("translationRu").put("type", "string").put("minLength", 1);
-        properties.putObject("translationEn").put("type", "string").put("minLength", 1);
 
-        // sandhiSplits
-        ObjectNode sandhiSplits = properties.putObject("sandhiSplits");
+        // verses array
+        ObjectNode versesNode = properties.putObject("verses");
+        versesNode.put("type", "array");
+        versesNode.put("minItems", 1);
+        ObjectNode verseItem = versesNode.putObject("items");
+        verseItem.put("type", "object");
+
+        ArrayNode verseRequired = verseItem.putArray("required");
+        verseRequired.add("verseIndex").add("textDevanagari").add("textIast").add("translationRu")
+                .add("translationEn").add("sandhiSplits").add("words");
+
+        ObjectNode verseProps = verseItem.putObject("properties");
+        verseProps.putObject("verseIndex").put("type", "integer").put("minimum", 0);
+        verseProps.putObject("textDevanagari").put("type", "string");
+        verseProps.putObject("textIast").put("type", "string");
+        verseProps.putObject("translationRu").put("type", "string").put("minLength", 1);
+        verseProps.putObject("translationEn").put("type", "string").put("minLength", 1);
+
+        // sandhiSplits (inside per-verse)
+        ObjectNode sandhiSplits = verseProps.putObject("sandhiSplits");
         sandhiSplits.put("type", "array");
         sandhiSplits.put("minItems", 0);
         ObjectNode sandhiItem = sandhiSplits.putObject("items");
@@ -118,8 +132,8 @@ public class JsonSchemas {
         components.put("minItems", 1);
         components.putObject("items").put("type", "string");
 
-                // words
-        ObjectNode words = properties.putObject("words");
+        // words (inside per-verse)
+        ObjectNode words = verseProps.putObject("words");
         words.put("type", "array");
         words.put("minItems", 1);
         ObjectNode wordItem = words.putObject("items");

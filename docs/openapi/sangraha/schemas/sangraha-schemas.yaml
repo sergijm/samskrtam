@@ -226,6 +226,12 @@ VerseAnalysisDto:
               правиле (см. sangraha-prompts/verse-analysis.md).
     modelName:
       type: string
+    analyzerName:
+      type: string
+      description: >-
+        Имя LLM-модели, которая фактически выполнила анализ (сохраняется
+        отдельно от modelName для совместимости; заполняется тем же значением,
+        см. sangraha-service.md §5.4).
     analyzedAt:
       type: string
       format: date-time
@@ -374,3 +380,19 @@ VerseTextRequest:
         Тело POST /verses/{verseId}/analyze: значение сохраняется как есть
         в Verse.rawText, затем backend определяет письменность и заполняет
                 textDevanagari / textIast (см. sangraha-service.md §4, §7).
+
+AnalyzeAllVersesResponse:
+  type: object
+  required: [chapterId, verseIds]
+  properties:
+    chapterId:
+      type: string
+      format: uuid
+    verseIds:
+      type: array
+      items:
+        type: string
+        format: uuid
+      description: >-
+        Идентификаторы всех стихов главы, переведённых в статус ANALYZING
+        этим запросом (см. sangraha-service.md §5.4).

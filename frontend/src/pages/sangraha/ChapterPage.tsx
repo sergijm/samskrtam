@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useChapterVerses } from '../../hooks/useSangraha';
+import { useChapterVerses, useAnalyzeAllVerses } from '../../hooks/useSangraha';
 import { Skeleton } from 'primereact/skeleton';
-import { IconButton } from '../../components/common/buttons';
+import { IconButton, PageButton } from '../../components/common/buttons';
 import { Tooltip } from 'primereact/tooltip';
 
 const statusSeverity: Record<string, 'success' | 'info' | 'warn' | 'danger'> = {
@@ -24,6 +24,11 @@ const ChapterPage = () => {
   const { workSlug, chapterId } = useParams<{ workSlug: string; chapterId: string }>();
   const navigate = useNavigate();
   const { data: chapter, isLoading, isError } = useChapterVerses(chapterId || '');
+  const analyzeAll = useAnalyzeAllVerses();
+
+  const hasAnalyzableVerses = chapter?.verses?.some(
+    (v) => v.status === 'DRAFT' || v.status === 'FAILED'
+  );
 
   if (isLoading) {
     return (
@@ -60,7 +65,7 @@ const ChapterPage = () => {
           className="p-button-rounded mr-2"
           onClick={() => navigate(`/sangraha/${workSlug}`)}
         />
-        <div>
+        <div style={{ flex: 1 }}>
           <h2 className="m-0">
             {chapter.titleIast || chapter.titleEn}
             {chapter.titleDevanagari ? ` (${chapter.titleDevanagari})` : ''}
@@ -69,6 +74,14 @@ const ChapterPage = () => {
             {i18n.language === 'ru' ? chapter.titleRu : chapter.titleEn}
           </p>
         </div>
+        <PageButton
+          variant="cta-primary"
+          iconName="pi-sync"
+          labelKey="sangraha.action.analyzeAll"
+          loading={analyzeAll.isPending}
+          disabled={!hasAnalyzableVerses || analyzeAll.isPending}
+          onClick={() => analyzeAll.mutate(chapterId!)}
+        />
       </div>
 
       {chapter.verses && chapter.verses.length > 0 ? (
@@ -83,7 +96,7 @@ const ChapterPage = () => {
                 <span className="font-bold text-sm" style={{ minWidth: '2rem' }}>{v.orderIndex}</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
                   <span className="font-medium">
-                      {v.textIastPreview || `${t('sangraha.verse')} ${v.orderIndex}`}
+                      {v.textIast || `${t('sangraha.verse')} ${v.orderIndex}`}
                     </span>
                   {translationFor(v.translationRu, v.translationEn) && (
                     <span className="text-xs text-color-secondary font-italic">

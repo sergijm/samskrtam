@@ -8,6 +8,7 @@ public record VerseAnalysisDto(
     String translationEn,
     List<SandhiSplitDto> sandhiSplits,
     String modelName,
+    String analyzerName,
     Instant analyzedAt
 ) {
     public record SandhiSplitDto(

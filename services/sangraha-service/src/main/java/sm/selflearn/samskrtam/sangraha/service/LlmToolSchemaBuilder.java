@@ -8,8 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * Строит JSON Schema для tool definition OpenAI SDK (submit_verse_analysis).
+ * Строит JSON Schema для tool definition OpenAI SDK (submit_verse_analyses).
  * Содержит enum-ограничения для POS, gender, case, number, person, tense, mood, voice.
+ * Корневой объект: свойство `verses` — массив per-verse объектов с verseIndex.
  */
 @Component
 @RequiredArgsConstructor
@@ -19,24 +20,45 @@ public class LlmToolSchemaBuilder {
     private final ObjectMapper objectMapper;
 
     /**
-     * Возвращает ObjectNode JSON Schema для FunctionDefinition submit_verse_analysis.
+     * Возвращает ObjectNode JSON Schema для FunctionDefinition submit_verse_analyses.
+     * Корневой объект: { type: object, required: [verses], properties: { verses: [...] } }
      */
-    public ObjectNode buildFunctionDefinitionSchema() {
+    public ObjectNode buildBatchFunctionDefinitionSchema() {
         ObjectNode params = objectMapper.createObjectNode();
         params.put("type", "object");
 
         ArrayNode required = params.putArray("required");
-        required.add("textDevanagari").add("textIast").add("translationRu")
-                .add("translationEn").add("sandhiSplits").add("words");
+        required.add("verses");
 
         ObjectNode properties = params.putObject("properties");
-        properties.putObject("textDevanagari").put("type", "string").put("description", "Verse text in Devanagari script");
-        properties.putObject("textIast").put("type", "string").put("description", "Verse text in IAST transliteration");
-        properties.putObject("translationRu").put("type", "string").put("description", "Russian translation");
-        properties.putObject("translationEn").put("type", "string").put("description", "English translation");
 
-        // sandhiSplits
-        ObjectNode sandhiItem = properties.putObject("sandhiSplits");
+        // verses array
+        ObjectNode versesNode = properties.putObject("verses");
+        versesNode.put("type", "array");
+        versesNode.put("description",
+                "Array of verse analyses — one entry per input verse, matched by verseIndex");
+        ObjectNode verseItem = versesNode.putObject("items");
+        verseItem.put("type", "object");
+
+        ArrayNode verseRequired = verseItem.putArray("required");
+        verseRequired.add("verseIndex").add("textDevanagari").add("textIast").add("translationRu")
+                .add("translationEn").add("sandhiSplits").add("words");
+
+        ObjectNode verseProps = verseItem.putObject("properties");
+        verseProps.putObject("verseIndex").put("type", "integer")
+                .put("description", "0-based index of the verse in the input batch");
+
+        verseProps.putObject("textDevanagari").put("type", "string")
+                .put("description", "Verse text in Devanagari script");
+        verseProps.putObject("textIast").put("type", "string")
+                .put("description", "Verse text in IAST transliteration");
+        verseProps.putObject("translationRu").put("type", "string")
+                .put("description", "Russian translation");
+        verseProps.putObject("translationEn").put("type", "string")
+                .put("description", "English translation");
+
+        // sandhiSplits (inside per-verse)
+        ObjectNode sandhiItem = verseProps.putObject("sandhiSplits");
         sandhiItem.put("type", "array");
         sandhiItem.put("description", "Analysis of each sandhi split in the verse");
         ObjectNode sandhiItemObj = sandhiItem.putObject("items");
@@ -48,8 +70,8 @@ public class LlmToolSchemaBuilder {
         sandhiProps.putObject("components").put("type", "array").putObject("items").put("type", "string");
         sandhiProps.putObject("ruleNumbers").put("type", "array").putObject("items").put("type", "integer");
 
-                // words
-        ObjectNode wordItem = properties.putObject("words");
+                        // words (inside per-verse)
+        ObjectNode wordItem = verseProps.putObject("words");
         wordItem.put("type", "array");
         wordItem.put("description", "Grammatical analysis of each word");
         ObjectNode wordItemObj = wordItem.putObject("items");

@@ -222,29 +222,30 @@ paths:
               schema:
                 $ref: '../common/schemas/common.yaml#/ErrorResponse'
 
-  /content/internal/sangraha/vocabulary:
+  /content/internal/sangraha/vocabulary-quiz:
     post:
       tags: [vocabulary]
-      summary: Sync vocabulary words extracted from a verse (sangraha-service → content-service)
+      summary: Get or create the lexical quiz for a verse (sangraha-service → content-service)
       description: >
-        NEW. Заменяет бывший Kafka-топик sangraha-vocabulary-events (см. ADR-006,
-        content-service.md §11, sangraha-service.md §6). Не публичный и не ADMIN —
-        чистый service-to-service вызов (вызывается напрямую, минуя api-gateway,
-        Outbox Relay в sangraha-service). Идемпотентно: dedup по (wordIast, stem).
-      operationId: syncVocabularyFromSangraha
+        Вызывается sangraha-service синхронно по клику пользователя на кнопку «Изучить»
+        (см. content-service.md §11, sangraha-service.md §6). Не публичный и не ADMIN —
+        чистый service-to-service вызов, вызывается напрямую, минуя api-gateway.
+        Идемпотентно: слова дедуплицируются по (wordIast, stem), квиз — по
+        (workSlug, chapterSlug, verseId).
+      operationId: getOrCreateVocabularyQuiz
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: 'schemas/content.yaml#/SangrahaVocabularyEventDto'
+              $ref: 'schemas/content.yaml#/SangrahaVocabularyQuizRequestDto'
       responses:
         '200':
-          description: Слова синхронизированы, возвращены их id (в том же порядке, что в запросе)
+          description: Квиз создан или уже существовал; слова связаны со словарными статьями
           content:
             application/json:
               schema:
-                $ref: 'schemas/content.yaml#/SangrahaVocabularySyncResultDto'
+                $ref: 'schemas/content.yaml#/SangrahaVocabularyQuizResponseDto'
         '400':
           description: Invalid payload
           content:
