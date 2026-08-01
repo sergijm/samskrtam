@@ -30,7 +30,7 @@ VowelType:
     различают род, см. content-service.md §3). PRON_TAD/PRON_ETAD/PRON_IDAM/PRON_KIM/
     PRON_YAD — по 3 рода на класс (MASCULINE/FEMININE/NEUTER), как a-основы одного
     рода (ADR-004).
-  enum: [A_STEM, AA_STEM, I_STEM, II_STEM, U_STEM, UU_STEM, R_STEM, PRON_AHAM, PRON_TVAM, PRON_TAD, PRON_ETAD, PRON_IDAM, PRON_KIM, PRON_YAD]
+  enum: [A_STEM, AA_STEM, I_STEM, II_STEM, U_STEM, UU_STEM, R_STEM, PRON_AHAM, PRON_TVAM, PRON_TAD, PRON_ETAD, PRON_IDAM, PRON_KIM, PRON_YAD, PRON_REFLEXIVE]
 
 CaseType:
   type: string
@@ -342,3 +342,48 @@ VocabularyWordDto:
       type:
         - string
         - 'null'
+
+DeclensionExamplesResponseDto:
+  type: object
+  description: >
+    Ответ GET /lessons/{slug}/examples (вкладка «Примеры»,
+    см. content-service.md §12, services/content-service/declension-examples.md).
+  required: [groups]
+  properties:
+    groups:
+      type: array
+      items:
+        type: object
+        required: [caseType, numberType, examples]
+        properties:
+          caseType:
+            $ref: '#/CaseType'
+          numberType:
+            $ref: '#/NumberType'
+          examples:
+            type: array
+            items:
+              type: object
+              required: [verseId, textIast, textDevanagari, translationRu, translationEn, workTitleRu, workTitleEn, chapterTitleRu, chapterTitleEn, verseOrderIndex]
+              properties:
+                verseId:
+                  type: string
+                  format: uuid
+                textIast:
+                  type: string
+                textDevanagari:
+                  type: string
+                translationRu:
+                  type: string
+                translationEn:
+                  type: string
+                workTitleRu:
+                  type: string
+                workTitleEn:
+                  type: string
+                chapterTitleRu:
+                  type: string
+                chapterTitleEn:
+                  type: string
+                verseOrderIndex:
+                  type: integer

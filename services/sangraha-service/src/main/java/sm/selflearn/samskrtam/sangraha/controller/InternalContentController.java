@@ -1,0 +1,48 @@
+package sm.selflearn.samskrtam.sangraha.controller;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import sm.selflearn.samskrtam.sangraha.dto.DeclensionExamplesSearchRequestDto;
+import sm.selflearn.samskrtam.sangraha.dto.DeclensionExamplesSearchResponseDto;
+import sm.selflearn.samskrtam.sangraha.dto.VersesBatchRequestDto;
+import sm.selflearn.samskrtam.sangraha.dto.VersesBatchResponseDto;
+import sm.selflearn.samskrtam.sangraha.service.VerseBatchService;
+import sm.selflearn.samskrtam.sangraha.service.VerseWordSearchService;
+
+/**
+ * Internal service-to-service endpoints для content-service (§9 sangraha-service.md):
+ * - POST /sangraha/internal/content/declension-examples — примеры склонений
+ * - POST /sangraha/internal/content/verses/batch — пакетный запрос стихов
+ * Не публичные, вызываются напрямую content-service по SANGRAHA_SERVICE_URL.
+ */
+@Slf4j
+@RestController
+@RequestMapping("/sangraha/internal/content")
+@RequiredArgsConstructor
+public class InternalContentController {
+
+    private final VerseWordSearchService verseWordSearchService;
+    private final VerseBatchService verseBatchService;
+
+    @PostMapping("/declension-examples")
+    public ResponseEntity<DeclensionExamplesSearchResponseDto> searchDeclensionExamples(
+            @RequestBody DeclensionExamplesSearchRequestDto request) {
+        log.debug("Declension examples request: vowelType={}, gender={}, cells={}",
+                request.vowelType(), request.gender(), request.cells().size());
+        DeclensionExamplesSearchResponseDto response = verseWordSearchService.searchExamples(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/verses/batch")
+    public ResponseEntity<VersesBatchResponseDto> fetchVersesBatch(
+            @RequestBody VersesBatchRequestDto request) {
+        log.debug("Verses batch request: {} ids", request.verseIds().size());
+        VersesBatchResponseDto response = verseBatchService.fetchBatch(request);
+        return ResponseEntity.ok(response);
+    }
+}

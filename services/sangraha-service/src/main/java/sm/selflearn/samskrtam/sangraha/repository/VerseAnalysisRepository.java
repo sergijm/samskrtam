@@ -4,6 +4,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,4 +15,6 @@ public interface VerseAnalysisRepository extends JpaRepository<VerseAnalysis, UU
     Optional<VerseAnalysis> findByVerseId(UUID verseId);
 
     void deleteByVerseId(UUID verseId);
+
+    List<VerseAnalysis> findAllByVerseIdIn(Collection<UUID> verseIds);
 }

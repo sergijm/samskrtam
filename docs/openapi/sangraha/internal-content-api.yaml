@@ -1,0 +1,73 @@
+openapi: "3.1.0"
+info:
+  title: sangraha-service — Internal API (called by content-service)
+  description: |
+    Service-to-service эндпоинты, вызываемые content-service напрямую (env
+    SANGRAHA_SERVICE_URL у content-service, минуя api-gateway, без роли) для вкладки
+    «Примеры» на странице шага склонений. Источник истины — docs/services/sangraha-service.md
+    §9, docs/services/content-service/declension-examples.md.
+  version: "1.0.0"
+
+servers:
+  - url: http://sangraha-service:8082
+    description: Прямой service-to-service вызов, минуя api-gateway
+
+paths:
+  /sangraha/internal/content/declension-examples:
+    post:
+      operationId: searchDeclensionExamples
+      summary: Find example verses for declension cells, grouped by (caseType, numberType)
+      tags: [declension-examples]
+      description: >
+        Возвращает только verseId по группам, не сами цитаты (см.
+        /sangraha/internal/content/verses/batch ниже). Одна группа в ответе на каждую
+        запрошенную ячейку — даже с пустым verseIds (значимый результат «ничего не
+        нашлось», content-service его кэширует).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/internal-content-schemas.yaml#/DeclensionExamplesSearchRequestDto'
+      responses:
+        '200':
+          description: По одной группе на каждую запрошенную ячейку
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/internal-content-schemas.yaml#/DeclensionExamplesSearchResponseDto'
+        '400':
+          description: Invalid payload (например, неизвестный vowelType)
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/common.yaml#/ErrorResponse'
+
+  /sangraha/internal/content/verses/batch:
+    post:
+      operationId: getVersesBatch
+      summary: Batch-fetch verse text/translation/attribution by verseId list
+      tags: [declension-examples]
+      description: >
+        Только status=ANALYZED. verseId, для которого стиха нет / не ANALYZED / мягко
+        удалён — молча отсутствует в ответе, без ошибки (content-service не различает
+        причину, см. content-service/declension-examples.md §12 шаг 4).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/internal-content-schemas.yaml#/VersesBatchRequestDto'
+      responses:
+        '200':
+          description: Только найденные и проанализированные стихи, в произвольном порядке
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/internal-content-schemas.yaml#/VersesBatchResponseDto'
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/common.yaml#/ErrorResponse'

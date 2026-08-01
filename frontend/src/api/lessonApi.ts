@@ -1,5 +1,5 @@
 import api from './axios';
-import { DeclensionParadigmPageDto } from '../types/content-dtos';
+import { DeclensionParadigmPageDto, DeclensionExamplesResponseDto } from '../types/content-dtos';
 
 export const lessonApi = {
 
@@ -26,4 +26,8 @@ export const lessonApi = {
     api.get<DeclensionParadigmPageDto>(`/api/v1/content/public/lessons/${slug}/declension-paradigms`, {
       params: { index },
     }),
+
+  // Получить примеры склонений для урока (вкладка «Примеры», без индекса)
+  getDeclensionExamples: (slug: string) =>
+    api.get<DeclensionExamplesResponseDto>(`/api/v1/content/public/lessons/${slug}/examples`),
 };

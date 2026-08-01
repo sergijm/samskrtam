@@ -45,7 +45,7 @@ VersePage, §7) sangraha-service отправляет слова конкрет�
 
 **Verse** (таблица verses): id (UUID), chapterId (UUID), orderIndex (int), rawText (VARCHAR, сырой ввод пользователя до определения письменности — см. §4, §7), textDevanagari (TEXT), textIast (TEXT), status (DRAFT|ANALYZING|ANALYZED|FAILED), createdAt, updatedAt, deletedAt
 
-**VerseAnalysis** (1:1 с Verse, таблица verse_analyses): verseId (UUID, PK), translationRu (TEXT), translationEn (TEXT), sandhiSplits (JSONB), rawModelResponse (JSONB, опционально), modelName, **analyzerName (НОВОЕ, задача Агенту 2 — имя LLM-модели, фактически выполнившей анализ; заполняется тем же значением, что и modelName, отдельная колонка — задел на случай будущего расхождения «настроенная модель» vs «модель, реально ответившая в API»)**, analyzedAt
+**VerseAnalysis** (1:1 с Verse, таблица verse_analyses): verseId (UUID, PK), translationRu (TEXT), translationEn (TEXT), sandhiSplits (JSONB), rawModelResponse (JSONB, опционально), modelName, analyzedAt
 
 **VerseWord** (таблица verse_words, задача Агенту 2 — реляционная модель, **НЕ** JSONB) — расширена полным лексико-грамматическим разбором (formType, isFinite, lemmaGlossRu/En, contextGlossRu/En вместо glossRu/En, analysisConfidence, ambiguityNotes); морфология и словообразование вынесены в отдельные таблицы 1:1 — **VerseWordMorphology**, **VerseWordDerivation**. Детали — [sangraha-service/verse-word-grammar.md](./sangraha-service/verse-word-grammar.md).
 
@@ -61,11 +61,6 @@ verse_word_morphology + verse_word_derivation — см. §2,
 [verse-word-grammar.md](./sangraha-service/verse-word-grammar.md));
 `outbox_events` не создаётся (ADR-009, см. §6). SQL прислан оркестратором
 целиком, файлы V2–V10 удаляются.
-
-**НОВОЕ (задача Агенту 2):** добавить `V2__verse_analyses_add_analyzer_name.sql`
-— `ALTER TABLE sangraha.verse_analyses ADD COLUMN analyzer_name varchar(200)`,
-NOT NULL с backfill `UPDATE ... SET analyzer_name = model_name` в той же
-миграции (см. §2).
 
 ---
 
@@ -92,9 +87,6 @@ POST   /api/v1/sangraha/verses/{verseId}/vocabulary-quiz         → кнопк�
 POST   /api/v1/sangraha/verses/{verseId}/analyze                 → сохранить `text` и запустить LLM-анализ (ADMIN, см. §5); тело —
                                                                      единое поле `text` (обязательно, см. §7) — backend определяет
                                                                      письменность и заполняет textDevanagari/textIast
-POST   /api/v1/sangraha/chapters/{chapterId}/verses/analyze-all  → ★ НОВОЕ: кнопка «Анализировать всё» на странице списка стихов главы
-                                                                     (ADMIN, см. §5.2) — пакетный LLM-анализ всех стихов главы одним
-                                                                     batch-вызовом (см. sangraha-schemas.yaml#AnalyzeAllVersesResponse)
 ```
 
 Ответ `GET /works/{workSlug}` (и `GET /works?id={workId}`) — двухуровневое дерево для TreeGrid:
@@ -127,17 +119,12 @@ Backend вызывает `/chat/completions` (или `/responses`) с промп
 **одним** объявленным tool — модель обязана вернуть результат через `tool_calls`,
 а не свободным текстом.
 
-**ИЗМЕНЕНО (задача Агенту 2):** tool переименован в `submit_verse_analyses`
-(множественное число) — параметры: единственный параметр `verses`, массив
-записей `{verseIndex, textDevanagari, textIast, translationRu, translationEn,
-sandhiSplits[], words[]}`. Одиночный анализ (`POST /verses/{verseId}/analyze`)
-теперь тоже вызывает этот tool, просто с `verses` из одного элемента
-(`verseIndex: 0`) — единая кодовая база для одиночного и пакетного режимов,
-см. §5.2. Полный список полей `words[]` и JPA-модель хранения —
+Tool `submit_verse_analysis` с параметрами: textDevanagari, textIast,
+translationRu, translationEn, sandhiSplits (массив {surface, components[],
+ruleNumbers[]}), words — **ИЗМЕНЕНО**, полный лексико-грамматический разбор
+каждого слова, точный список полей и JPA-модель хранения —
 [verse-word-grammar.md §1–§3](./sangraha-service/verse-word-grammar.md).
-Промпт (`prompts/verse-analysis.md`) обновлён оркестратором под batch-схему —
-готовый файл-приложение
-[`docs/tasks/attachments/B-batch-verse-analysis.md`](../tasks/attachments/B-batch-verse-analysis.md).
+Промпт (`prompts/verse-analysis.md` §4) обновлён оркестратором под эту модель.
 
 **Письменность:** везде, кроме `textDevanagari` и `surfaceDevanagari`, — только IAST.
 В частности, `sandhiSplits.surface`/`components`, `lemmaIast`, `stem`, `root` — IAST,
@@ -157,44 +144,15 @@ sandhiSplits[], words[]}`. Одиночный анализ (`POST /verses/{verse
 в любом из двух случаев — пустой массив, не угадывать номер.
 
 Backend:
-1. Валидирует `tool_calls[0].function.arguments.verses[]` по этой схеме (например через JSON Schema validator, не доверяем модели).
-2. Для каждого элемента `verses[]`, сопоставленного по `verseIndex` со своим стихом, в одной транзакции на стих: обновляет `Verse.textDevanagari/textIast` (если не были заданы вручную), пишет `VerseAnalysis` (перезаписывая предыдущую — см. §8, включая новую колонку `analyzerName`), пересоздаёт `VerseWord[]` для стиха, переводит `Verse.status → ANALYZED`.
+1. Валидирует `tool_calls[0].function.arguments` по этой схеме (например через JSON Schema validator, не доверяем модели).
+2. В одной транзакции: обновляет `Verse.textDevanagari/textIast` (если не были заданы вручную), пишет `VerseAnalysis` (перезаписывая предыдущую — см. §8), пересоздаёт `VerseWord[]` для стиха, переводит `Verse.status → ANALYZED`.
 
 **ИЗМЕНЕНО:** шаг записи `OutboxEvent(VERSE_VOCABULARY_EXTRACTED)` убран — анализ стиха больше не инициирует никакой синхронизации с content-service. Слова уходят в content-service только по явному действию пользователя — кнопка «Изучить» на VersePage, см. §6, §7.
 
 Если пользователь ввёл текст только в одном представлении (только devanagari или только
 iast) — второе представление также генерирует модель, и backend сохраняет оба.
 
-`analyzerName` (см. §2) заполняется тем же значением, что и `modelName` —
-именем модели, фактически ответившей в API (`ChatCompletion.model()`), а не
-именем из конфигурации `SANGRAHA_LLM_MODEL` (провайдер может подставить
-конкретную версию). См. также §5.2 (пакетный анализ — то же поле).
-
-### 5.2 Пакетный анализ (analyze-all)
-
-`POST /chapters/{chapterId}/verses/analyze-all` (кнопка «Анализировать всё» на
-странице списка стихов главы, см. §7):
-1. Backend выбирает стихи главы со статусом `DRAFT`/`FAILED` (не `ANALYZING`/
-   `ANALYZED` — повторно не трогаем), переводит их в `ANALYZING` одной пачкой.
-   Если подходящих стихов нет — `409`.
-2. Строит единый batch-запрос к LLM: один system-промпт
-   (`prompts/verse-analysis.md`), один user-промпт, перечисляющий тексты всех
-   отобранных стихов с их `verseIndex` (см. приложение
-   [B-batch-verse-analysis.md](../tasks/attachments/B-batch-verse-analysis.md)),
-   один `tool_choice=submit_verse_analyses`.
-3. Из ответа читает `arguments.verses[]`, по каждому элементу находит стих по
-   `verseIndex` и сохраняет результат той же процедурой, что и одиночный анализ
-   (§5.1, п.2) — отдельная транзакция на стих, так что сбой по одному стиху не
-   откатывает остальные. Стих, для которого модель не вернула элемент
-   `verses[]`, помечается `FAILED`.
-4. Отвечает `202` с `AnalyzeAllVersesResponse` (`chapterId`, `verseIds` —
-   список стихов, переведённых в `ANALYZING`).
-
-Ограничение на размер batch (сколько стихов отправлять в одном вызове LLM,
-разбивать ли главу на несколько batch-вызовов при большом числе стихов) —
-открытый вопрос, см. §8.
-
-### 5.3 Удалённые операции
+### 5.2 Удалённые операции
 
 Work/Chapter CRUD удалён. Произведения и главы создаются через импорт
 (см. §1). Соответствующие эндпоинты и Java-сервисы удалены:
@@ -231,17 +189,6 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
 
 - **Страница произведений** (`/sangraha`) — плитки (`WorkCard`) со списком работ.
 - **Страница произведения** (`/sangraha/{workSlug}`) — дерево глав/стихов. Read-only: без кнопок добавления/удаления.
-- **Страница списка стихов главы** (`/sangraha/{workSlug}/chapters/{chapterId}`,
-  компонент `ChapterPage`, данные — `GET /chapters/{chapterId}/verses`): список
-  стихов со статус-иконкой (§4). **НОВОЕ:** кнопка «Анализировать всё» в шапке
-  страницы → `POST /chapters/{chapterId}/verses/analyze-all` (§5.2). Кнопка
-  видна только ADMIN; disabled, пока в списке нет ни одного стиха со статусом
-  `DRAFT`/`FAILED` (все уже `ANALYZING`/`ANALYZED`) — проверяется локально на
-  фронте по `verses[].status`. По ответу `202` — инвалидировать кэш списка
-  стихов (те же query keys, что и у одиночного анализа), список сам обновит
-  статус-иконки на `ANALYZING`/`ANALYZED` при поллинге/повторном заходе —
-  отдельного WebSocket/поллинга под это не заводим (см. открытый вопрос §8 про
-  live-обновление статуса).
 - **Страница стиха** (`/sangraha/{workSlug}/verses/{verseId}`):
   - Поле ввода текста — **одно** (не два раздельных для devanagari/iast). Пользователь
     может печатать в нём как деванагари, так и IAST — оба варианта допустимы в одном
@@ -308,12 +255,68 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
 
 ## 8. Открытые вопросы / отложено
 
-- **Live-обновление статуса стиха на ChapterPage после «Анализировать всё»**: пока без поллинга/WebSocket — статус обновляется только при повторном заходе/ручном refresh страницы; поллинг раз в N секунд, пока в главе есть `ANALYZING`-стихи, можно добавить позже без изменения контракта.
-- **Размер batch для «Анализировать всё»** (см. §5.2): пока один LLM-вызов на всю главу; лимит числа стихов на вызов и стратегия разбиения больших глав на несколько batch-вызовов — решает Агент 2 по факту реальных размеров глав/токен-лимитов провайдера.
-- **Таблица соответствия IAST↔SLP1 для slug** (см. §5.3): конкретный набор правил
+- **Таблица соответствия IAST↔SLP1 для slug** (см. §5.2): конкретный набор правил
   транслитерации выбирает Агент 2 при реализации на основе общепринятых схем IAST/SLP1.
 - **Роль «редактор/переводчик»**: пока весь write — `ADMIN`. Отдельная роль (может вводить/анализировать стихи, но не управлять произведениями/главами) — следующая итерация; когда будет готова модель ролей, добавить `SANGRAHA_EDITOR` и обновить §4.
 - **Связь слов стиха со словарём** (`dictionary-service`, поиск по `slp1`): сознательно не делаем в этой итерации — только грамматика от LLM. Если понадобится — отдельным Kafka-каналом (sangraha публикует, dictionary-service асинхронно обогащает через ответное событие), без синхронных вызовов между сервисами.
 - **Политика ретраев Outbox Relay** — снято: Outbox убран целиком (ADR-009), синхронизация теперь происходит внутри HTTP-запроса на кнопку «Изучить», отдельного ретрая в фоне нет — повтор равен повторному клику пользователя.
 - **Quiz(VOCABULARY) — уровень квиза** — решено иначе, чем раньше: квиз теперь на уровне **стиха** (`slug = "{workSlug}.{chapterSlug}.verse-{verseId}"`), а не произведения — см. ADR-009, §6, §7. Прежнее решение «только на уровне произведения» отменено этим ADR.
+
+## 9. Internal REST: примеры склонений для content-service
+
+Два service-to-service эндпоинта для вкладки «Примеры» на странице шага склонений (`content-service.md` §12) — не публичные, не через api-gateway, вызываются напрямую по адресу sangraha-service (env `SANGRAHA_SERVICE_URL` у content-service, по аналогии с `CONTENT_SERVICE_URL` у sangraha-service, §6).
+
+### `POST /sangraha/internal/content/declension-examples`
+
+Ищет примеры словоформ по словоизменительному классу и возвращает их сгруппированными по ячейке `(caseType, numberType)`, не сами цитаты — только `verseId[]` (за текстом/переводом content-service идёт отдельно, см. следующий эндпоинт).
+
+```json
+{
+  "vowelType": "A_STEM",
+  "gender": "MASCULINE",
+  "limitPerGroup": 3,
+  "cells": [
+    { "caseType": "NOMINATIVE", "numberType": "SINGULAR" },
+    { "caseType": "INSTRUMENTAL", "numberType": "SINGULAR" }
+  ]
+}
+```
+
+`gender`/`caseType`/`numberType` — значения тех же enum'ов, что в `VerseWordMorphology` (`Gender`, `GrammaticalCase`, `NumberType`, см. `verse-word-grammar.md` §1); имена значений совпадают с одноимёнными enum'ами content-service (`content.Gender/CaseType/NumberType`) один в один, поэтому маппинг на стороне content-service — только сериализация имени enum, без таблицы соответствий. `vowelType` — значения = `declension_stems.vowel_type` content-service (`ck_vowel_type`, см. `content-service` V13-миграцию): 7 регулярных классов основы (`A_STEM`, `AA_STEM`, `I_STEM`, `II_STEM`, `U_STEM`, `UU_STEM`, `R_STEM`) + 8 местоимённых (`PRON_AHAM`, `PRON_TVAM`, `PRON_TAD`, `PRON_ETAD`, `PRON_IDAM`, `PRON_KIM`, `PRON_YAD`, `PRON_REFLEXIVE`). У `VerseWord`/`VerseWordMorphology` в sangraha-service понятия `vowelType` нет вообще — для регулярных классов sangraha-service определяет его на лету по последней букве `VerseWord.stem` (`A_STEM` → `stem` оканчивается на краткое `a`, `AA_STEM` → на `ā`, и т.д. по остальным пяти регулярным классам); для `PRON_*` классов сопоставление по окончанию основы не работает вообще (местоимённые парадигмы супплетивны — например, `aham` → `mayā` в творительном, разные корни) — поиск для `PRON_*` идёт по фиксированному соответствию `vowelType → lemmaIast` (`PRON_AHAM` → `asmad`, `PRON_TVAM` → `yuṣmad`, `PRON_TAD` → `tad`, и т.д.) — таблица соответствий не в этом документе, фиксирует Агент 2 при реализации по словарю местоимений.
+
+Ответ:
+
+```json
+{
+  "groups": [
+    { "caseType": "NOMINATIVE", "numberType": "SINGULAR", "verseIds": ["uuid1", "uuid2", "uuid3"] },
+    { "caseType": "INSTRUMENTAL", "numberType": "SINGULAR", "verseIds": [] }
+  ]
+}
+```
+
+По каждой запрошенной ячейке — ровно одна группа в ответе, даже если `verseIds` пуст (content-service кэширует пустой результат как значимый, см. `content-service.md` §12) — группа не пропускается молча. Отбор внутри группы (`≤ limitPerGroup` штук) — детерминированный (например, по `verse_id`), чтобы повторный запрос с тем же `limitPerGroup` возвращал тот же набор, а не случайную выборку.
+
+### `POST /sangraha/internal/content/verses/batch`
+
+```json
+{ "verseIds": ["uuid1", "uuid2"] }
+```
+
+```json
+{
+  "verses": [
+    {
+      "verseId": "uuid1",
+      "textIast": "...", "textDevanagari": "...",
+      "translationRu": "...", "translationEn": "...",
+      "workTitleRu": "Бхагавад-гита", "workTitleEn": "Bhagavad Gita",
+      "chapterTitleRu": "Глава 1", "chapterTitleEn": "Chapter 1",
+      "verseOrderIndex": 1
+    }
+  ]
+}
+```
+
+Только стихи со `status = ANALYZED` (только тогда есть перевод и оба варианта письменности, см. §5.1). `verseId` из запроса, для которого стиха нет, стих не `ANALYZED`, или он мягко удалён (`deletedAt != null`) — просто отсутствует в `verses[]` ответа, без ошибки и без указания причины (content-service не обязан и не должен различать «не найден»/«не проанализирован»/«удалён» — во всех случаях цитата для вкладки «Примеры» одинаково недоступна, см. `content-service.md` §12, шаг 4).
 - **Библиотека текстов (каталог, не курикулум)** — требования к странице библиотеки, стабильному адресу строфы (`произведение.глава.строфа`, используется как `source_ref` в `usage_examples`), двухсекционному поиску по корпусу (произведения + строфы) и полю `license`/`source_type` в модели произведения — см. [frontend/information-architecture.md §3.2 и §7](../frontend/information-architecture/02-catalog.md).

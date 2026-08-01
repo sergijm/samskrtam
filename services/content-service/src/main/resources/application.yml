@@ -40,11 +40,9 @@ spring:
     password: ${DB_PASSWORD}
     schemas: content
 
-# Kafka в content-service удалён — sangraha-service теперь вызывает REST напрямую
-# (POST /content/internal/sangraha/vocabulary).
-# Бывшие топики: sangraha-vocabulary-events (consumer) и vocabulary-sync-results (producer).
-# Kafka-конфигурация больше не нужна, но spring-kafka jar оставлен в build.gradle.kts —
-# другие домены (eamenau) могут его использовать через общий autoconfig.
+app:
+  sangraha-service:
+    url: ${SANGRAHA_SERVICE_URL}
 management:
   server:
     port: ${MANAGEMENT_PORT}

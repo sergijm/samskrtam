@@ -45,3 +45,18 @@ export const useDeclensionParadigm = (slug: string, index: number, enabled: bool
     placeholderData: keepPreviousData,
   });
 
+/**
+ * Examples for the declension lesson — one request per entire lesson, no index.
+ * Lazy: fires only when enabled (active tab === 'examples').
+ */
+export const useDeclensionExamples = (slug: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ['declension-examples', slug],
+    queryFn: () => lessonApi.getDeclensionExamples(slug).then(res => res.data),
+    enabled: !!slug && enabled,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+

@@ -10,6 +10,7 @@ import { CaseAggregationTable } from '../../components/lesson/CaseAggregationTab
 import { NumberAggregationTable } from '../../components/lesson/NumberAggregationTable';
 import { GrammarDetailsTable } from '../../components/lesson/GrammarDetailsTable';
 import GrammarParadigmCarousel from '../../components/lesson/GrammarParadigmCarousel';
+import DeclensionExamplesPanel from '../../components/lesson/DeclensionExamplesPanel';
 import DeclensionEndingsReferenceTable from '../../components/lesson/DeclensionEndingsReferenceTable';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { Skeleton } from 'primereact/skeleton';
@@ -50,7 +51,9 @@ const GrammarLessonPage = () => {
       const [sortOrder, setSortOrder] = useState<number>(1);
 
             // Tab 0 (Paradigms) is the default active tab — fetch immediately if it's the saved tab
-            const [paradigmsTabOpened, setParadigmsTabOpened] = useState(readSavedTab() === 0);
+                        const [paradigmsTabOpened, setParadigmsTabOpened] = useState(readSavedTab() === 0);
+                        // Tab 2 (Examples) — lazy, only when clicked
+                                    const [examplesTabOpened, setExamplesTabOpened] = useState(readSavedTab() === 1);
 
       // Fetch first paradigm page to determine stem type for the endings reference table.
       // React Query deduplicates this with the carousel's own fetch for index 0.
@@ -97,12 +100,15 @@ const GrammarLessonPage = () => {
     };
 
         const handleTabChange = (e: { index: number }) => {
-      setActiveTab(e.index);
-      saveTab(e.index);
-      if (e.index === 0) {
-        setParadigmsTabOpened(true);
-      }
-    };
+              setActiveTab(e.index);
+              saveTab(e.index);
+              if (e.index === 0) {
+                setParadigmsTabOpened(true);
+              }
+              if (e.index === 1) {
+                setExamplesTabOpened(true);
+              }
+            };
 
   if (isError) {
     return (
@@ -157,7 +163,10 @@ const GrammarLessonPage = () => {
                             )}
                             <GrammarParadigmCarousel slug={slug || ''} enabled={paradigmsTabOpened} />
                           </TabPanel>
-                          <TabPanel header={i18n.language === 'ru' ? 'По падежам' : 'By Case'}>
+                                                    <TabPanel header={i18n.language === 'ru' ? 'Примеры' : 'Examples'}>
+                                                      <DeclensionExamplesPanel slug={slug || ''} enabled={examplesTabOpened} />
+                                                    </TabPanel>
+                                                    <TabPanel header={i18n.language === 'ru' ? 'По падежам' : 'By Case'}>
                             <CaseAggregationTable aggregations={caseAggregations} quizSlug={slug || ''} />
                           </TabPanel>
                           <TabPanel header={i18n.language === 'ru' ? 'По числам' : 'By Number'}>

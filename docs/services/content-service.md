@@ -324,4 +324,11 @@ POST /content/internal/sangraha/vocabulary-quiz
 ### Открытые вопросы (для Агента 2 при реализации)
 
 - Точный шаблон `titleRu/En` генерируемого квиза (см. шаг 3) — решает Агент 2, зафиксировать постфактум в этом разделе.
-- `gender = null` от sangraha (для indeclinable-слов) — как мапится в `VocabularyWord.gender` (там `nullable = false`)? Вероятно `UNSPECIFIED` — подтвердить при реализации.
+
+## 12. Вкладка «Примеры» на странице шага склонений
+
+Реальные цитаты из проанализированных стихов sangraha-service для каждой ячейки `(caseType, numberType)` парадигмы склонения (`GET /lessons/{slug}/declension-paradigms?index=N`, §5а), сгруппированные по словоизменительному классу `(vowelType, gender)`. Полная спецификация: [services/content-service/declension-examples.md](./content-service/declension-examples.md).
+
+Новая таблица `content.declension_example_groups` (кэш `verseId[]` по группам `(vowel_type, gender, case_type, number_type)`, включая пустые результаты). **Endpoint:** `GET /content/public/lessons/{slug}/examples` (STUDENT). Источник данных — два internal-эндпоинта sangraha-service (`sangraha-service.md` §9): поиск примеров по классу и батч-получение текста/перевода стихов по `verseId[]`.
+
+---

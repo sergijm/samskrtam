@@ -6,16 +6,18 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import sm.selflearn.samskrtam.common.SamskrtamException;
+import sm.selflearn.samskrtam.content.dto.CaseEndingDto;
+import sm.selflearn.samskrtam.content.dto.DeclensionExamplesResponseDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionParadigmPageDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionStemDto;
 import sm.selflearn.samskrtam.content.dto.GeneratedQuizData;
 import sm.selflearn.samskrtam.content.dto.LessonItemResponse;
-import sm.selflearn.samskrtam.content.dto.CaseEndingDto;
 import sm.selflearn.samskrtam.content.model.*;
 import sm.selflearn.samskrtam.content.model.DeclensionForm;
 import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
+import sm.selflearn.samskrtam.content.service.DeclensionExamplesService;
 import sm.selflearn.samskrtam.content.service.GenerateQuizService;
 import sm.selflearn.samskrtam.content.service.GrammarContentService;
 import sm.selflearn.samskrtam.content.service.LessonContentService;
@@ -32,9 +34,10 @@ import java.util.stream.Collectors;
 public class LessonContentController {
 
     private final LessonContentService lessonContentService;
-    private final GenerateQuizService generateQuizService;
-    private final GrammarContentService grammarContentService;
-    private final DeclensionFormRepository declensionFormRepository;
+        private final GenerateQuizService generateQuizService;
+        private final GrammarContentService grammarContentService;
+        private final DeclensionFormRepository declensionFormRepository;
+        private final DeclensionExamplesService declensionExamplesService;
 
     @GetMapping("/lessons")
     @Operation(summary = "Get a list of available quizzes")
@@ -119,14 +122,23 @@ public class LessonContentController {
     }
 
         @GetMapping("/public/lessons/{slug}/declension-paradigms")
-    @Operation(summary = "Get one declension paradigm by index (public carousel)")
-    @ApiResponse(responseCode = "200", description = "Paradigm page retrieved successfully")
-    @ApiResponse(responseCode = "404", description = "Lesson not found, not DECLENSIONS, or index out of range")
-    public DeclensionParadigmPageDto getDeclensionParadigm(
-            @PathVariable String slug,
-            @RequestParam(defaultValue = "0") int index) {
-        return grammarContentService.getDeclensionParadigmForLesson(slug, index);
-    }
+            @Operation(summary = "Get one declension paradigm by index (public carousel)")
+            @ApiResponse(responseCode = "200", description = "Paradigm page retrieved successfully")
+            @ApiResponse(responseCode = "404", description = "Lesson not found, not DECLENSIONS, or index out of range")
+            public DeclensionParadigmPageDto getDeclensionParadigm(
+                    @PathVariable String slug,
+                    @RequestParam(defaultValue = "0") int index) {
+                return grammarContentService.getDeclensionParadigmForLesson(slug, index);
+            }
+
+            @GetMapping("/public/lessons/{slug}/examples")
+                        @Operation(summary = "Get real-verse examples for every cell of the declension paradigm")
+                        @ApiResponse(responseCode = "200", description = "Examples retrieved successfully")
+                        @ApiResponse(responseCode = "404", description = "Lesson not found or not DECLENSIONS")
+                        public DeclensionExamplesResponseDto getDeclensionExamples(
+                                @PathVariable String slug) {
+                            return declensionExamplesService.getExamples(slug);
+                        }
 
     private DeclensionFormDto mapToDeclensionFormDto(DeclensionForm form) {
         return DeclensionFormDto.builder()

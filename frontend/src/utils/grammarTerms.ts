@@ -13,10 +13,27 @@ export const FULL_CASE: Record<string, string> = {
   'VOCATIVE': 'Vocative',
 };
 
+export const FULL_CASE_RU: Record<string, string> = {
+  'NOMINATIVE': 'Именительный',
+  'ACCUSATIVE': 'Винительный',
+  'INSTRUMENTAL': 'Творительный',
+  'DATIVE': 'Дательный',
+  'ABLATIVE': 'Отложительный',
+  'GENITIVE': 'Родительный',
+  'LOCATIVE': 'Местный',
+  'VOCATIVE': 'Звательный',
+};
+
 export const FULL_NUMBER: Record<string, string> = {
   'SINGULAR': 'Singular',
   'DUAL': 'Dual',
   'PLURAL': 'Plural',
+};
+
+export const FULL_NUMBER_RU: Record<string, string> = {
+  'SINGULAR': 'Единственное',
+  'DUAL': 'Двойственное',
+  'PLURAL': 'Множественное',
 };
 
 export const ABBR_CASE: Record<string, string> = {
@@ -52,3 +69,4 @@ export function lookup(value: string | undefined | null, map: Record<string, str
   if (!value) return null;
   return map[value] ?? value;
 }
+

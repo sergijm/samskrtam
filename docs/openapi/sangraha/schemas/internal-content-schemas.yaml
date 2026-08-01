@@ -1,0 +1,100 @@
+# Schemas for docs/openapi/sangraha/internal-content-api.yaml.
+# vowelType/gender/caseType/numberType значения намеренно совпадают по имени с
+# content.VowelType/Gender/CaseType/NumberType (docs/openapi/content/schemas/content.yaml) —
+# sangraha-service своего собственного понятия vowelType не имеет, определяет его на лету
+# по VerseWord.stem для регулярных классов; для PRON_* — по фиксированному lemmaIast
+# (см. sangraha-service.md §9).
+
+DeclensionExamplesSearchRequestDto:
+  type: object
+  required: [vowelType, gender, limitPerGroup, cells]
+  properties:
+    vowelType:
+      type: string
+      enum: [A_STEM, AA_STEM, I_STEM, II_STEM, U_STEM, UU_STEM, R_STEM, PRON_AHAM, PRON_TVAM, PRON_TAD, PRON_ETAD, PRON_IDAM, PRON_KIM, PRON_YAD, PRON_REFLEXIVE]
+    gender:
+      type: string
+      enum: [MASCULINE, FEMININE, NEUTER, UNKNOWN, UNSPECIFIED]
+    limitPerGroup:
+      type: integer
+      minimum: 1
+      description: Максимум примеров в каждой возвращаемой группе.
+    cells:
+      type: array
+      minItems: 1
+      items:
+        type: object
+        required: [caseType, numberType]
+        properties:
+          caseType:
+            type: string
+            enum: [NOMINATIVE, ACCUSATIVE, INSTRUMENTAL, DATIVE, ABLATIVE, GENITIVE, LOCATIVE, VOCATIVE]
+          numberType:
+            type: string
+            enum: [SINGULAR, DUAL, PLURAL]
+
+DeclensionExamplesSearchResponseDto:
+  type: object
+  required: [groups]
+  properties:
+    groups:
+      type: array
+      description: Ровно одна группа на каждую запрошенную ячейку (даже с пустым verseIds).
+      items:
+        type: object
+        required: [caseType, numberType, verseIds]
+        properties:
+          caseType:
+            type: string
+            enum: [NOMINATIVE, ACCUSATIVE, INSTRUMENTAL, DATIVE, ABLATIVE, GENITIVE, LOCATIVE, VOCATIVE]
+          numberType:
+            type: string
+            enum: [SINGULAR, DUAL, PLURAL]
+          verseIds:
+            type: array
+            items:
+              type: string
+              format: uuid
+
+VersesBatchRequestDto:
+  type: object
+  required: [verseIds]
+  properties:
+    verseIds:
+      type: array
+      items:
+        type: string
+        format: uuid
+
+VersesBatchResponseDto:
+  type: object
+  required: [verses]
+  properties:
+    verses:
+      type: array
+      description: Только status=ANALYZED, не мягко удалённые. Не найденные verseId просто отсутствуют.
+      items:
+        type: object
+        required: [verseId, textIast, textDevanagari, translationRu, translationEn, workTitleRu, workTitleEn, chapterTitleRu, chapterTitleEn, verseOrderIndex]
+        properties:
+          verseId:
+            type: string
+            format: uuid
+          textIast:
+            type: string
+          textDevanagari:
+            type: string
+          translationRu:
+            type: string
+          translationEn:
+            type: string
+          workTitleRu:
+            type: string
+          workTitleEn:
+            type: string
+          chapterTitleRu:
+            type: string
+          chapterTitleEn:
+            type: string
+          verseOrderIndex:
+            type: integer

@@ -65,3 +65,26 @@ export interface DeclensionParadigmPageDto {
     paradigm: DeclensionParadigmDto;
 }
 
+// =============================================
+// Declension Examples (grammar-lesson-page §2.2а)
+// =============================================
+
+export interface DeclensionExamplesResponseDto {
+    groups: Array<{
+        caseType: CaseType;
+        numberType: NumberType;
+        examples: Array<{
+            verseId: string;
+            textIast: string;
+            textDevanagari: string;
+            translationRu: string;
+            translationEn: string;
+            workTitleRu: string;
+            workTitleEn: string;
+            chapterTitleRu: string;
+            chapterTitleEn: string;
+            verseOrderIndex: number;
+        }>;
+    }>;
+}
+
