@@ -17,6 +17,10 @@
     "paradigmsLoading": "Загрузка парадигм...",
     "paradigmsEmpty": "Нет данных парадигм для этого урока."
   },
+  "examples": {
+    "analyzeMissing": "Проанализировать недостающие примеры ({{count}})",
+    "openAll": "Открыть все стихи ({{count}})"
+  },
   "gender": {
     "MASCULINE": "мужской род",
     "FEMININE": "женский род",

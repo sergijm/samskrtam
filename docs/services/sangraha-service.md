@@ -87,6 +87,12 @@ POST   /api/v1/sangraha/verses/{verseId}/vocabulary-quiz         → кнопк�
 POST   /api/v1/sangraha/verses/{verseId}/analyze                 → сохранить `text` и запустить LLM-анализ (ADMIN, см. §5); тело —
                                                                      единое поле `text` (обязательно, см. §7) — backend определяет
                                                                      письменность и заполняет textDevanagari/textIast
+POST   /api/v1/sangraha/chapters/{chapterId}/verses/analyze-all  → батч-анализ всех DRAFT/FAILED стихов главы (ADMIN, реализовано,
+                                                                     в этом списке ранее отсутствовало — актуализировано)
+GET    /api/v1/sangraha/verse?id={uuid}&id={uuid}...             → ★ НОВОЕ, произвольный список стихов + status каждого
+                                                                     (не только ANALYZED), см. sangraha-service/batch-verse-review.md
+POST   /api/v1/sangraha/verse/analysis                           → ★ НОВОЕ, батч-анализ произвольного списка verseId (ADMIN,
+                                                                     безусловный повтор), см. sangraha-service/batch-verse-review.md
 ```
 
 Ответ `GET /works/{workSlug}` (и `GET /works?id={workId}`) — двухуровневое дерево для TreeGrid:
@@ -189,6 +195,7 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
 
 - **Страница произведений** (`/sangraha`) — плитки (`WorkCard`) со списком работ.
 - **Страница произведения** (`/sangraha/{workSlug}`) — дерево глав/стихов. Read-only: без кнопок добавления/удаления.
+- **Страница массового просмотра/анализа** (`/sangraha/verses`, ADMIN-only, `id` из query-параметров) — см. `sangraha-service/batch-verse-review.md`.
 - **Страница стиха** (`/sangraha/{workSlug}/verses/{verseId}`):
   - Поле ввода текста — **одно** (не два раздельных для devanagari/iast). Пользователь
     может печатать в нём как деванагари, так и IAST — оба варианта допустимы в одном
@@ -310,6 +317,7 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
   "verses": [
     {
       "verseId": "uuid1",
+      "workSlug": "bhagavad-gita",
       "textIast": "...", "textDevanagari": "...",
       "translationRu": "...", "translationEn": "...",
       "workTitleRu": "Бхагавад-гита", "workTitleEn": "Bhagavad Gita",

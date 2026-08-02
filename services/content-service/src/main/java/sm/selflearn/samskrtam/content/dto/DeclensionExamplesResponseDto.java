@@ -46,6 +46,7 @@ public class DeclensionExamplesResponseDto {
     @Builder
     public static class ExampleDto {
         UUID verseId;
+        String workSlug;
         String textIast;
         String textDevanagari;
         String translationRu;
@@ -59,6 +60,7 @@ public class DeclensionExamplesResponseDto {
         @JsonCreator
         public ExampleDto(
                 @JsonProperty("verseId") UUID verseId,
+                @JsonProperty("workSlug") String workSlug,
                 @JsonProperty("textIast") String textIast,
                 @JsonProperty("textDevanagari") String textDevanagari,
                 @JsonProperty("translationRu") String translationRu,
@@ -69,6 +71,7 @@ public class DeclensionExamplesResponseDto {
                 @JsonProperty("chapterTitleEn") String chapterTitleEn,
                 @JsonProperty("verseOrderIndex") int verseOrderIndex) {
             this.verseId = verseId;
+            this.workSlug = workSlug;
             this.textIast = textIast;
             this.textDevanagari = textDevanagari;
             this.translationRu = translationRu;

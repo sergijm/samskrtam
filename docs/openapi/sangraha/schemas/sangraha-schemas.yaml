@@ -396,3 +396,70 @@ AnalyzeAllVersesResponse:
       description: >-
         Идентификаторы всех стихов главы, переведённых в статус ANALYZING
         этим запросом (см. sangraha-service.md §5.4).
+
+VerseBatchItem:
+  type: object
+  required: [id, workSlug, workTitleRu, workTitleEn, chapterSlug, chapterTitleRu, chapterTitleEn, verseOrderIndex, textIastPreview, status]
+  description: >-
+    Один стих в ответе GET /verse (sangraha-service/batch-verse-review.md).
+    В отличие от внутреннего /sangraha/internal/content/verses/batch — отдаёт
+    слаги, превью текста и status любого стиха (без фильтра по ANALYZED).
+  properties:
+    id:
+      type: string
+      format: uuid
+    workSlug:
+      type: string
+    workTitleRu:
+      type: string
+    workTitleEn:
+      type: string
+    chapterSlug:
+      type: string
+    chapterTitleRu:
+      type: string
+    chapterTitleEn:
+      type: string
+    verseOrderIndex:
+      type: integer
+    textIastPreview:
+      type: string
+      description: Первые ~80 символов textIast (та же обрезка, что в дереве главы)
+      nullable: true
+    status:
+      $ref: '#/VerseStatus'
+
+VersesBatchResponse:
+  type: object
+  required: [verses]
+  properties:
+    verses:
+      type: array
+      items:
+        $ref: '#/VerseBatchItem'
+      description: >-
+        Стихи в порядке id запроса; не найденные/удалённые id отсутствуют
+        без ошибки.
+
+AnalyzeVersesRequest:
+  type: object
+  required: [verseIds]
+  properties:
+    verseIds:
+      type: array
+      items:
+        type: string
+        format: uuid
+
+AnalyzeVersesResponse:
+  type: object
+  required: [verseIds]
+  properties:
+    verseIds:
+      type: array
+      items:
+        type: string
+        format: uuid
+      description: >-
+        Id реально загруженных стихов, принятых к анализу (не найденные/удалённые
+        исключены молча).

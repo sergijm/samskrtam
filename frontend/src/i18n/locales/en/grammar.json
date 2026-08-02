@@ -17,6 +17,10 @@
     "paradigmsLoading": "Loading paradigms...",
     "paradigmsEmpty": "No paradigm data for this lesson."
   },
+  "examples": {
+    "analyzeMissing": "Analyze missing examples ({{count}})",
+    "openAll": "Open all verses ({{count}})"
+  },
   "gender": {
     "MASCULINE": "masculine",
     "FEMININE": "feminine",

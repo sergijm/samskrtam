@@ -6,8 +6,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import sm.selflearn.samskrtam.sangraha.dto.ChapterVersesDto;
+import sm.selflearn.samskrtam.sangraha.dto.VerseBatchResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
 import sm.selflearn.samskrtam.sangraha.dto.VocabularyQuizResponse;
 import sm.selflearn.samskrtam.sangraha.dto.WorkTreeDto;
@@ -15,6 +17,7 @@ import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
 import sm.selflearn.samskrtam.sangraha.model.VerseWord;
 import sm.selflearn.samskrtam.sangraha.model.Work;
 import sm.selflearn.samskrtam.sangraha.service.ChapterService;
+import sm.selflearn.samskrtam.sangraha.service.VerseBatchService;
 import sm.selflearn.samskrtam.sangraha.service.VerseService;
 import sm.selflearn.samskrtam.sangraha.service.WorkService;
 import sm.selflearn.samskrtam.sangraha.service.WorkTreeService;
@@ -31,6 +34,7 @@ public class SangrahaController {
     private final VerseService verseService;
     private final WorkTreeService workTreeService;
     private final ChapterService chapterService;
+    private final VerseBatchService verseBatchService;
 
     // ── Works (read-only) ───────────────────────────────────────────
 
@@ -50,6 +54,15 @@ public class SangrahaController {
     public ResponseEntity<ChapterVersesDto> getChapterVerses(@PathVariable UUID chapterId) {
         return ResponseEntity.ok(chapterService.getChapterVersesByChapterId(chapterId));
     }
+
+    // ── Verses: произвольный список id (batch-verse-review.md) ─────
+
+    @GetMapping("/verse")
+    public ResponseEntity<VerseBatchResponseDto> getVersesByIds(
+            @RequestParam(value = "id", required = false) List<UUID> id) {
+        return ResponseEntity.ok(verseBatchService.fetchBatchReview(id));
+    }
+
     // ── Verses (read-only + vocabulary-quiz) ──────────────────────
     @GetMapping("/verses/{verseId}")
     public ResponseEntity<VerseDetailDto> getVerse(@PathVariable UUID verseId) {

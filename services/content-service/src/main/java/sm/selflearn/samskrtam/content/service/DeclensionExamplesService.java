@@ -150,6 +150,7 @@ public class DeclensionExamplesService {
                     .filter(v -> v != null) // стих мог быть удалён после кэширования
                     .map(v -> ExampleDto.builder()
                             .verseId(v.getVerseId())
+                            .workSlug(v.getWorkSlug())
                             .textIast(v.getTextIast())
                             .textDevanagari(v.getTextDevanagari())
                             .translationRu(v.getTranslationRu())

@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sm.selflearn.samskrtam.sangraha.dto.VerseBatchItemDto;
+import sm.selflearn.samskrtam.sangraha.dto.VerseBatchResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.VersesBatchRequestDto;
 import sm.selflearn.samskrtam.sangraha.dto.VersesBatchResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.VersesBatchResponseDto.VerseDto;
@@ -75,6 +77,7 @@ public class VerseBatchService {
 
             dtos.add(new VerseDto(
                     verse.getId(),
+                    work.getSlug(),
                     Optional.ofNullable(verse.getTextIast()).orElse(verse.getRawText()),
                     verse.getTextDevanagari(),
                     analysis == null ? null : analysis.getTranslationRu(),
@@ -88,6 +91,62 @@ public class VerseBatchService {
         }
 
         return new VersesBatchResponseDto(dtos);
+    }
+
+    /**
+     * GET /api/v1/sangraha/verse (sangraha-service/batch-verse-review.md).
+     * Пакетная выдача стихов по произвольному списку id с их {@code status}
+     * (без фильтра по ANALYZED). Не найденные/удалённые id молча отсутствуют.
+     * Порядок элементов — по порядку id в запросе.
+     */
+    @Transactional(readOnly = true)
+    public VerseBatchResponseDto fetchBatchReview(List<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return new VerseBatchResponseDto(List.of());
+        }
+
+        List<Verse> verses = verseRepository.findAllByIdInAndDeletedAtIsNull(ids);
+        if (verses.isEmpty()) {
+            return new VerseBatchResponseDto(List.of());
+        }
+
+        Map<UUID, Verse> verseById = verses.stream()
+                .collect(Collectors.toMap(Verse::getId, Function.identity()));
+
+        Map<UUID, Chapter> chapters = loadChapters(verses);
+        Map<UUID, Work> works = loadWorks(chapters.values());
+
+        List<VerseBatchItemDto> dtos = new ArrayList<>();
+        for (UUID id : ids) {
+            Verse verse = verseById.get(id);
+            if (verse == null) continue;
+
+            Chapter chapter = chapters.get(verse.getChapterId());
+            if (chapter == null) continue;
+
+            Work work = works.get(chapter.getWorkId());
+            if (work == null) continue;
+
+            // Превью: textIast, а если его нет (например DRAFT) — fallback на rawText.
+            String previewText = Optional.ofNullable(verse.getTextIast())
+                    .filter(s -> !s.isBlank())
+                    .orElse(verse.getRawText());
+
+            dtos.add(new VerseBatchItemDto(
+                    id,
+                    work.getSlug(),
+                    work.getTitleRu(),
+                    work.getTitleEn(),
+                    chapter.getSlug(),
+                    chapter.getTitleRu(),
+                    chapter.getTitleEn(),
+                    verse.getOrderIndex(),
+                    ChapterService.preview(previewText, 80),
+                    verse.getStatus()
+            ));
+        }
+
+        return new VerseBatchResponseDto(dtos);
     }
 
     private Map<UUID, Chapter> loadChapters(List<Verse> verses) {

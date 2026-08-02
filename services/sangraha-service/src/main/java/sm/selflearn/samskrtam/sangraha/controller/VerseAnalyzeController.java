@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import sm.selflearn.samskrtam.sangraha.dto.AnalyzeVersesRequest;
+import sm.selflearn.samskrtam.sangraha.dto.AnalyzeVersesResponse;
 import sm.selflearn.samskrtam.sangraha.service.VerseAnalysisService;
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +40,14 @@ public class VerseAnalyzeController {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(new ErrorResponse(e.getMessage()));
         }
+    }
+
+    @PostMapping("/verse/analysis")
+    public ResponseEntity<AnalyzeVersesResponse> analyzeVerses(
+            @RequestBody AnalyzeVersesRequest request) {
+        List<UUID> verseIds = request == null ? List.of() : request.verseIds();
+        List<UUID> accepted = verseAnalysisService.analyzeVerses(verseIds);
+        return ResponseEntity.accepted().body(new AnalyzeVersesResponse(accepted));
     }
 
     public record AnalyzeAllVersesResponse(UUID chapterId, List<UUID> verseIds) {}

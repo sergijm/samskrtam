@@ -4,6 +4,7 @@ import type {
   WorkTreeDto,
   ChapterVersesDto,
   VerseDetailDto,
+  VerseBatchResponseDto,
 } from '../types/sangraha';
 
 const BASE = '/api/v1/sangraha';
@@ -31,6 +32,15 @@ export const sangrahaApi = {
 
     getOrCreateVocabularyQuiz: (verseId: string) =>
     api.post<{ quizSlug: string; quizId: string; quizStatus: string }>(`${BASE}/verses/${verseId}/vocabulary-quiz`),
+
+  // Batch verse review (sangraha-service/batch-verse-review.md)
+  // Axios сериализует массивы как `id[]=...`, а бэкенд ждёт повторяющийся `id=...` —
+  // query-строку собираем вручную.
+  getVersesBatch: (ids: string[]) =>
+    api.get<VerseBatchResponseDto>(`${BASE}/verse?${ids.map((id) => `id=${encodeURIComponent(id)}`).join('&')}`),
+
+  analyzeVerses: (verseIds: string[]) =>
+    api.post<{ verseIds: string[] }>(`${BASE}/verse/analysis`, { verseIds }),
 };
 
 

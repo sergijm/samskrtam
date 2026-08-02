@@ -8,6 +8,7 @@ public record VersesBatchResponseDto(
 ) {
     public record VerseDto(
             UUID verseId,
+            String workSlug,
             String textIast,
             String textDevanagari,
             String translationRu,

@@ -1,7 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { Button } from 'primereact/button';
 import { Skeleton } from 'primereact/skeleton';
 import { useDeclensionExamples } from '../../hooks/useLessons';
+import { useAuthStore } from '../../store/authStore';
 import { CASE_TYPES, NUMBER_TYPES } from '../../utils/grammarAggregation';
 import { FULL_CASE, FULL_CASE_RU, FULL_NUMBER, FULL_NUMBER_RU } from '../../utils/grammarTerms';
 import type { DeclensionExamplesResponseDto } from '../../types/content-dtos';
@@ -13,6 +16,8 @@ interface DeclensionExamplesPanelProps {
 
 const DeclensionExamplesPanel: React.FC<DeclensionExamplesPanelProps> = ({ slug, enabled }) => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const isAdmin = useAuthStore((s) => s.user?.roles?.includes('ADMIN') ?? false);
   const { data, isLoading, isError } = useDeclensionExamples(slug, enabled);
 
   // -- Not yet enabled (lazy — first click hasn't happened) --
@@ -39,8 +44,51 @@ const DeclensionExamplesPanel: React.FC<DeclensionExamplesPanelProps> = ({ slug,
 
   // -- Empty response: no groups at all --
   const groups = data?.groups ?? [];
+  const missingVerseIds = data?.missingVerseIds ?? [];
+
+  // Все уникальные verseId из примеров (вкладка «Примеры» доступна всем,
+  // но страница /sangraha/verses — только ADMIN).
+  const allVerseIds = [...new Set(groups.flatMap((g) => g.examples.map((e) => e.verseId)))];
+
+  // Кнопка «Открыть все стихи» — только для ADMIN (целевая страница ADMIN-only).
+  const openAllVersesButton = isAdmin && allVerseIds.length > 0 && (
+    <Button
+      className="p-button-sm p-button-outlined"
+      icon="pi pi-external-link"
+      label={t('grammar.examples.openAll', { count: allVerseIds.length })}
+      onClick={() =>
+        navigate(`/sangraha/verses?${allVerseIds.map((id) => `id=${id}`).join('&')}`)
+      }
+    />
+  );
+
+  // Кнопка «Проанализировать недостающие примеры» — только для ADMIN
+  // (поле missingVerseIds приходит только ADMIN-роли) и только при непустом списке.
+  const analyzeMissingButton = missingVerseIds.length > 0 && (
+    <Button
+      className="p-button-sm p-button-outlined"
+      icon="pi pi-sync"
+      label={t('grammar.examples.analyzeMissing', { count: missingVerseIds.length })}
+      onClick={() =>
+        navigate(`/sangraha/verses?${missingVerseIds.map((id) => `id=${id}`).join('&')}`)
+      }
+    />
+  );
+
+  const examplesToolbar = (analyzeMissingButton || openAllVersesButton) && (
+    <div className="flex flex-wrap gap-2 mb-3">
+      {openAllVersesButton}
+      {analyzeMissingButton}
+    </div>
+  );
+
   if (groups.length === 0) {
-    return <div className="text-color-secondary p-4 text-center">{t('grammar.examplesNoData')}</div>;
+    return (
+      <div>
+        {examplesToolbar}
+        <div className="text-color-secondary p-4 text-center">{t('grammar.examplesNoData')}</div>
+      </div>
+    );
   }
 
   // -- Build a lookup map for quick access --
@@ -59,7 +107,12 @@ const DeclensionExamplesPanel: React.FC<DeclensionExamplesPanelProps> = ({ slug,
   }
 
   if (!hasAnyExamples) {
-    return <div className="text-color-secondary p-4 text-center">{t('grammar.examplesNoData')}</div>;
+    return (
+      <div>
+        {examplesToolbar}
+        <div className="text-color-secondary p-4 text-center">{t('grammar.examplesNoData')}</div>
+      </div>
+    );
   }
 
   const caseLabel = (caseType: string) =>
@@ -79,6 +132,7 @@ const DeclensionExamplesPanel: React.FC<DeclensionExamplesPanelProps> = ({ slug,
 
   return (
     <div className="declension-examples-panel">
+      {examplesToolbar}
       {/* Iterate CASE_TYPES (rows), then NUMBER_TYPES (cols) — same order as paradigm table */}
       {CASE_TYPES.map(caseType =>
         NUMBER_TYPES.map(numberType => {
@@ -89,7 +143,7 @@ const DeclensionExamplesPanel: React.FC<DeclensionExamplesPanelProps> = ({ slug,
           return (
             <div key={key} className="mb-4">
               {/* Group header: case + number */}
-              <h4 className="text-base font-semibold text-color mb-2 pb-1 border-bottom-1 border-200" style={{ marginLeft: '1.25rem' }}>
+              <h4 className="text-base font-semibold text-color mb-2" style={{ marginLeft: '1.25rem' }}>
                 {caseLabel(caseType)}, {numberLabel(numberType)}
               </h4>
 
@@ -98,7 +152,16 @@ const DeclensionExamplesPanel: React.FC<DeclensionExamplesPanelProps> = ({ slug,
                 {group.examples.map((ex, index) => (
                   <div
                     key={ex.verseId}
-                    className={index > 0 ? 'pt-2 mt-2 border-top-1 border-200' : undefined}
+                    role="button"
+                    tabIndex={0}
+                    className={`cursor-pointer select-none p-1 ${index > 0 ? 'pt-2 mt-2 border-top-1 border-200' : ''}`}
+                    onClick={() => navigate(`/sangraha/${ex.workSlug}/verses/${ex.verseId}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        navigate(`/sangraha/${ex.workSlug}/verses/${ex.verseId}`);
+                      }
+                    }}
                   >
                     {/* IAST (large) */}
                     <div className="text-base font-medium" style={{ fontStyle: 'italic' }}>

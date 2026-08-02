@@ -7,9 +7,11 @@
     "workNotFound": "Work not found",
     "chapters": "Chapters",
     "chapterNotFound": "Chapter not found",
+    "chapter": "Chapter",
     "verses": "Verses",
     "noVerses": "No verses in this chapter",
     "verse": "Verse",
+    "batchReviewTitle": "Bulk verse review",
     "status": {
       "DRAFT": "Draft",
       "ANALYZING": "Analyzing...",
@@ -18,6 +20,7 @@
     },
     "action": {
       "analyze": "Analyze",
+      "analyzeAll": "Analyze all",
       "study": "Study"
     },
     "fields": {
@@ -30,6 +33,8 @@
       "descriptionEn": "Description (English)",
       "author": "Author",
       "orderIndex": "Order",
+      "verseOrderIndex": "Verse #",
+      "status": "Status",
       "textDevanagari": "Text (Devanagari)",
       "textIast": "Text (IAST)",
       "versePreview": "Verse Preview",

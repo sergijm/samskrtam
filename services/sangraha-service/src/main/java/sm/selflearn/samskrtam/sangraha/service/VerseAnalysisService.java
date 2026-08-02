@@ -15,6 +15,7 @@ import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -26,6 +27,14 @@ import static sm.selflearn.samskrtam.sangraha.service.VerseAnalysisSaver.getStri
 @RequiredArgsConstructor
 @Slf4j
 public class VerseAnalysisService {
+
+    /**
+     * Размер чанка для analyzeVerses (batch-verse-review.md): не больше самой крупной
+     * существующей главы, чтобы не увеличивать LLM-промпт сверх проверенного на практике.
+     * TODO: прикинуть реальный максимум по корпусу (MAX(COUNT(*)) по chapter_id) и
+     * выровнять константу, если он заметно больше/меньше.
+     */
+    private static final int ANALYSIS_CHUNK_SIZE = 20;
 
     private final VerseRepository verseRepository;
     private final ChapterRepository chapterRepository;
@@ -78,6 +87,42 @@ public class VerseAnalysisService {
         runAnalysis(versesToAnalyze);
 
         return versesToAnalyze.stream().map(Verse::getId).collect(Collectors.toList());
+    }
+
+    /**
+     * Батч-анализ произвольного списка стихов (sangraha-service/batch-verse-review.md,
+     * POST /api/v1/sangraha/verse/analysis).
+     * В отличие от {@link #analyzeChapter} — не фильтрует по статусу: все переданные
+     * стихи анализируются безусловно, включая уже ANALYZED (полная перезапись анализа).
+     * Не найденные/удалённые id пропускаются молча. Чанки обрабатываются последовательно.
+     *
+     * @return список id реально загруженных стихов (в порядке запроса), принятых к анализу
+     */
+    public List<UUID> analyzeVerses(List<UUID> verseIds) {
+        if (verseIds == null || verseIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<Verse> found = verseRepository.findAllByIdInAndDeletedAtIsNull(verseIds);
+        Map<UUID, Verse> verseById = new HashMap<>();
+        for (Verse verse : found) {
+            verseById.put(verse.getId(), verse);
+        }
+
+        List<Verse> ordered = new ArrayList<>();
+        for (UUID id : verseIds) {
+            Verse verse = verseById.get(id);
+            if (verse != null) {
+                ordered.add(verse);
+            }
+        }
+
+        for (int i = 0; i < ordered.size(); i += ANALYSIS_CHUNK_SIZE) {
+            int end = Math.min(i + ANALYSIS_CHUNK_SIZE, ordered.size());
+            runAnalysis(ordered.subList(i, end));
+        }
+
+        return ordered.stream().map(Verse::getId).collect(Collectors.toList());
     }
 
     /**
