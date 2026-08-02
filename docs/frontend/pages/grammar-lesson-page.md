@@ -71,7 +71,7 @@
 | Всего | `{statusSummary.total}` | — | — |
 | Не изучено | `{statusSummary.newCount}` | «Изучить» | `statusFilter=NEW` |
 | В процессе | `{statusSummary.learning}` | «Продолжить» | `statusFilter=LEARNING` |
-| Изучено | `{statusSummary.mastered}` | «Повторить» | `statusFilter=REVIEW` (доступно при `reviewDue > 0`, см. ADR-007 «Обновление 2026-07») |
+| Изучено | `{statusSummary.mastered}` | «Повторить» | `statusFilter=REVIEW` (доступно при `reviewDue > 0`, см. architecture.md §3.6) |
 
 **Поведение:** идентично `LessonStatsBadges` — клик по кнопке вызывает `POST /quiz/{slug}/sessions/start-or-resume?...&statusFilter=<NEW|LEARNING|REVIEW>` и переходит на `/quiz/grammar/:type`, квиз стартует или резюмируется в зависимости от наличия IN_PROGRESS-сессии с тем же `statusFilter`. Кнопка строки с нулевым значением (`newCount === 0`, `learning === 0`, либо для «Изучено» — `reviewDue === 0`) недоступна (`disabled`), строка остаётся видимой.
 
@@ -118,6 +118,8 @@
 - Заголовок вкладки — название урока/класса (`titleRu`/`titleEn` урока, тот же источник, что заголовок страницы урока) — без указания конкретного стема, т.к. ответ `DeclensionExamplesResponseDto` относится ко всему словоизменительному классу урока, а не к одному стему (`groups[]` содержит только `caseType`/`numberType`/`examples`, без `stem`).
 - Список групп в порядке падежей `CASE_TYPES`, внутри падежа — по числам `NUMBER_TYPES` (`utils/grammarAggregation.ts`); заголовок группы — `{caseRu}, {numberRu}` (или `caseEn`/`numberEn` по локали). Внутри группы — карточка на каждый пример из `examples[]`: `textIast` крупно, `textDevanagari` мелким шрифтом под ним, `translationRu`/`translationEn` по локали, внизу мелкая атрибуция `«{workTitleRu}, {chapterTitleRu}, стих {verseOrderIndex}»` (аналогично `workTitleEn`/`chapterTitleEn`).
 - Группа с пустым `examples[]` не рендерится вовсе (не показывать «нет примеров» отдельным блоком на каждую из ~14 ячеек — визуальный шум; просто пропустить). Если у ответа вообще нет ни одной непустой группы — один общий текст-заглушка на всю вкладку («Примеров пока нет», без иконки-ошибки — ожидаемое состояние для редких/местоимённых классов, не сбой).
+
+**Кнопка «Проанализировать недостающие примеры» (только ADMIN).** `DeclensionExamplesResponseDto` для роли `ADMIN` дополнительно содержит `missingVerseIds: UUID[]` — список стихов, которые были найдены sangraha-service как грамматические кандидаты (см. `sangraha-service.md` §9, поиск без фильтра по `ANALYZED`), но не попали в `examples[]`, потому что не прошли фильтр `ANALYZED` на шаге `POST .../verses/batch` (см. `services/content-service/declension-examples.md`, шаг 4) — то есть реально существуют в базе sangraha, но ещё не проанализированы LLM, поэтому невидимы ученику. Для `STUDENT`/анонимного пользователя поле не передаётся (`null`/отсутствует) — список внутренних `verseId` и сам факт «есть непроанализированные кандидаты» не предназначен для обычных пользователей. Если `missingVerseIds` непусто — над списком групп кнопка `«Проанализировать недостающие примеры ({missingVerseIds.length})»`, по клику — переход (обычный `navigate`, тот же SPA, не новая вкладка) на `/sangraha/verses?id={id1}&id={id2}&...` (новая страница sangraha-service, см. `sangraha-service/batch-verse-review.md`) с полным списком `missingVerseIds` в query-параметрах.
 
 **Что не делает эта вкладка:** карточки не кликабельны — примеры не запускают квиз (в отличие от ячеек таблицы §2.2), это чисто справочная иллюстрация; ссылок на страницу стиха (`VersePage`) в первой версии тоже нет (открытый вопрос ниже).
 

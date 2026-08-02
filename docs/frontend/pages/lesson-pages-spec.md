@@ -45,7 +45,7 @@
 
 | Бейдж | Значение | Клик запускает/резюмирует квиз |
 |---|---|---|
-| Изучено | `{statusSummary.mastered}/{statusSummary.total}` | `statusFilter=REVIEW` — сессия по MASTERED-элементам в стадии review (`reviewDue > 0`; см. ADR-007 «Обновление 2026-07») |
+| Изучено | `{statusSummary.mastered}/{statusSummary.total}` | `statusFilter=REVIEW` — сессия по MASTERED-элементам в стадии review (`reviewDue > 0`; см. architecture.md §3.6) |
 | Новые | `{statusSummary.newCount}` | `statusFilter=NEW` — сессия по неизученным элементам |
 | В процессе | `{statusSummary.learning}` | `statusFilter=LEARNING` — сессия по начатым, но не изученным элементам |
 
@@ -64,11 +64,11 @@
 | Перевод | `translationRu` или `translationEn` по локали |
 | Попытки | кликабельный текст `{nSuccess}/{nAll}` |
 
-**Правила статуса слова (модель ADR-007, `quiz.quiz_item_score`, не successRate):**
+**Правила статуса слова (модель architecture.md §3.6, `quiz.quiz_item_score`, не successRate):**
 - **NEW** — нет строки `quiz_item_score` для `(userId, itemType, externalRefId)`
 - **LEARNING** — есть строка, `score < 90`
 - **MASTERED** — `score >= 90`
-- **REVIEW** (частный случай MASTERED, см. ADR-007 «Обновление 2026-07») — `score >= 90` и `nextReviewAt <= now`; отображается вместо MASTERED, включает кнопку «Повторить»
+- **REVIEW** (частный случай MASTERED, см. architecture.md §3.6) — `score >= 90` и `nextReviewAt <= now`; отображается вместо MASTERED, включает кнопку «Повторить»
 
 `nSuccess`/`nAll`/`successRate` в таблице попыток остаются (on-the-fly агрегация по `quiz_answers`, не влияют на статус) — используются только в колонке «Попытки» и `WordHistoryDialog`.
 

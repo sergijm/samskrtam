@@ -1,6 +1,6 @@
 # content-service
 
-> Домен: Lesson Content — настройки и содержание уроков (см. ADR-002)
+> Домен: Lesson Content — настройки и содержание уроков (см. [architecture.md §3.2](../architecture.md#32-семантика-quiz--lesson--activity))
 > Язык: **Java 21 + Virtual Threads**
 > Модуль: `services/content-service`
 > Порт: 8081
@@ -38,9 +38,11 @@
 
 **VocabularyWord** (таблица vocabulary_words, только для VOCABULARY квизов): id (UUID), quizId (UUID), word (IAST), wordDevanagari, translationRu, translationEn, partOfSpeech, example
 
-**DeclensionStem** (таблица `content.declension_stems`, для DECLENSIONS квизов; **отсутствовала в этом документе — добавлено**): id (UUID), stemIast, stemDevanagari (колонка существует в БД, но не заполняется миграцией-сидом V2 — данных нет), vowelType (A_STEM|AA_STEM|I_STEM|II_STEM|U_STEM|UU_STEM|R_STEM|PRON_AHAM|PRON_TVAM|PRON_TAD|PRON_ETAD|PRON_IDAM|PRON_KIM|PRON_YAD — семь новых значений для местоимений, см. ADR-008), gender.
-**NEW (местоимения, ADR-008):** `PRON_AHAM`/`PRON_TVAM` — `gender = UNSPECIFIED` (личные местоимения рода не различают, как i/u/ṛ-основы, ADR-004/005). `PRON_TAD`/`PRON_ETAD`/`PRON_IDAM`/`PRON_KIM`/`PRON_YAD` — по 3 стема на класс (MASCULINE/FEMININE/NEUTER), как a-основы одного рода. `case_endings.ending` для супплетивных форм (aham/tvam) хранит словоформу целиком, а не вычленяемый суффикс — генератор это переживает без изменений кода (см. ADR-008).
-**NEW (задача Агенту 2, см. ниже):** добавить `translationRu`, `translationEn` — сейчас перевода основы нет вообще ни в БД, ни в entity.
+**DeclensionStem** (таблица `content.declension_stems`, для DECLENSIONS квизов): id (UUID), stemIast, stemDevanagari (колонка существует в БД, но миграцией-сидом V2 не заполняется — данных нет), vowelType (`A_STEM`|`AA_STEM`|`I_STEM`|`II_STEM`|`U_STEM`|`UU_STEM`|`R_STEM`|`PRON_AHAM`|`PRON_TVAM`|`PRON_TAD`|`PRON_ETAD`|`PRON_IDAM`|`PRON_KIM`|`PRON_YAD` — семь значений для местоимений, см. [architecture.md §3.4](../architecture.md#34-местоимения--через-существующий-itemtype-declension_form)), gender.
+
+Для местоимений: `PRON_AHAM`/`PRON_TVAM` — `gender = UNSPECIFIED`; `PRON_TAD`/`PRON_ETAD`/`PRON_IDAM`/`PRON_KIM`/`PRON_YAD` — по 3 стема на класс (MASCULINE/FEMININE/NEUTER), как a-основы одного рода. `case_endings.ending` для супплетивных форм (aham/tvam) хранит словоформу целиком, а не вычленяемый суффикс — генератор работает с этим без дополнительного кода.
+
+**Открытая задача:** добавить `translationRu`, `translationEn` — перевода основы сейчас нет ни в БД, ни в entity.
 
 **DeclensionForm** (таблица `content.declension_forms`): PK (declensionStemId, caseType, numberType), formIast, formDevanagari — уже заполнены (сид из `raw_data.sanskrit_declensions_enriched`).
 
@@ -106,14 +108,7 @@ GET /api/v1/content/public/lessons/{slug}/declension-paradigms?index=N   → Dec
 
 ### Внутреннее API для quiz-service
 
-> **ИЗМЕНЕНО (архитектурное решение):** ранее `generate-quiz-data` генерировал вопросы **и**
-> сохранял их в content-service (`content.generated_quiz_data`/`generated_questions`), а
-> quiz-service на resume/answer/complete перезапрашивал их обратно по id
-> (`GET /generated-quiz-data/{id}`, `GET /generated-questions/{id}`). Решено: это дублирование
-> не нужно, т.к. quiz-service всё равно обязан хранить сгенерированные вопросы у себя (для
-> SQL-статистики/истории, `quiz.session_questions`, см. quiz-service.md §12). Поэтому
-> content-service теперь **не хранит ничего** — генерирует и сразу возвращает результат.
-> Единственный вызываемый quiz-service эндпоинт для генерации вопросов сессии:
+content-service не хранит сгенерированные вопросы сессии — генерирует и сразу возвращает результат, ничего не сохраняя. quiz-service хранит результат вызова у себя, в `quiz.session_questions`, и читает оттуда на resume/answer/complete (см. `quiz-service.md` §3, §5, §12) — это единственный источник данных для SQL-статистики/истории, поэтому дублирование хранения в content-service не требуется. Единственный вызываемый quiz-service эндпоинт для генерации вопросов сессии:
 
 ```
 POST /api/v1/content/lessons/{quizId}/generate-quiz-data   → генерирует вопросы сессии и
@@ -122,21 +117,13 @@ POST /api/v1/content/lessons/{quizId}/generate-quiz-data   → генериру�
                                                                на старте сессии
 ```
 
-Эндпоинты `GET /generated-quiz-data/{id}` и `GET /generated-questions/{questionId}` —
-**удалены** вместе с их персистентным слоем (см. §3а). quiz-service самостоятельно хранит
-результат этого вызова в `quiz.session_questions` и оттуда же читает на resume/answer/complete
-(см. quiz-service.md §3, §5, §12) — content-service для этого больше не нужен.
-
 Ответ `generate-quiz-data` — `GeneratedQuizData`: `{ lessonId, lessonType,
 questionsPerSession, generatedQuestions[...], vocabularyWords (null для не-VOCABULARY) }`.
 Поле `generatedQuizDataId` в DTO больше не нужно как внешний идентификатор для повторного
 запроса к content-service — quiz-service при желании может сохранить какой-то свой
 внутренний group-id, но это уже его внутреннее дело (см. quiz-service.md §12).
 
-**ИЗМЕНЕНО (перенос scope pre-filter из quiz-service, см. quiz-declension.md §3.4):**
-`generate-quiz-data` принимает опциональные query-параметры фильтрации, ранее применявшиеся
-на стороне quiz-service (`SessionCreationService.applyScopeFilter`) уже после получения
-полного списка вопросов от content-service:
+`generate-quiz-data` принимает опциональные query-параметры фильтрации по объёму (scope pre-filter, см. `quiz-declension.md` §3.4) — применяются на стороне content-service, до формирования полного списка вопросов, а не на стороне quiz-service после его получения:
 
 - `filterScope` — `CASE_ONLY` / `NUMBER_ONLY` / `CASE_NUMBER_GENDER` (те же значения, что и у
   одноимённого параметра `quiz-sessions.yaml`/`FilterScopeParam`; в content-service
@@ -186,18 +173,11 @@ content-service отдаёт по запросу.
 
 ---
 
-## 3а. Генерация вопросов сессии — теперь без сохранения (было пропущено в этом документе)
+## 3а. Генерация вопросов сессии — без сохранения
 
-Ранее в этом разделе описывались персистентные таблицы `content.generated_quiz_data`/
-`content.generated_questions`. **Они удалены** вместе с `GeneratedQuizDataRecordRepository`,
-`GeneratedQuestionRepository` и entity `GeneratedQuizDataRecord`/`GeneratedQuestion` — решено,
-что per-session сгенерированный вопрос хранит только quiz-service (`quiz.session_questions`,
-см. quiz-service.md §12), а content-service — чистый генератор без побочных эффектов записи.
+content-service не хранит per-session сгенерированные вопросы: нет таблиц `content.generated_quiz_data`/`content.generated_questions` и соответствующего персистентного слоя. Сгенерированный вопрос хранит только quiz-service (`quiz.session_questions`, см. `quiz-service.md` §12); content-service — чистый генератор без побочных эффектов записи.
 
-`DeclensionQuizGeneratorService`/`QuestionGenerationService` остаются, но их персистентная
-часть (`GenerateQuizService` в части сохранения) удаляется — они теперь только строят и
-возвращают `List<QuestionResponse>`/`GeneratedQuizData`, ничего не пишут в БД
-content-service.
+`DeclensionQuizGeneratorService`/`QuestionGenerationService` строят и возвращают `List<QuestionResponse>`/`GeneratedQuizData`, ничего не записывая в БД content-service.
 
 ---
 

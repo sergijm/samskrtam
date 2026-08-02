@@ -141,6 +141,66 @@ paths:
 
   # ── Verses (read-only + analyze + vocabulary-quiz) ──
 
+  /verse:
+    get:
+      operationId: getVersesByIds
+      summary: Стихи по произвольному списку id (для массового просмотра/ревью)
+      description: |
+        Чтение без ограничения размера списка id (в отличие от анализа — размер
+        на этой ручке не важен). Не найденные/удалённые id просто отсутствуют
+        в verses[] — без ошибки. В отличие от внутреннего /sangraha/internal/content/
+        verses/batch отдаёт status (DRAFT|ANALYZING|ANALYZED|FAILED) каждого стиха.
+        Фронтенд: страница /sangraha/verses, см. sangraha-service/batch-verse-review.md.
+      tags: [Verses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          required: false
+          description: Повторяющийся параметр — список verseId
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+      responses:
+        '200':
+          description: Стихи по порядку id в запросе
+          content:
+            application/json:
+              schema:
+                $ref: 'sangraha-schemas.yaml#/VersesBatchResponse'
+
+  /verse/analysis:
+    post:
+      operationId: analyzeVerses
+      summary: Батч-анализ произвольного списка стихов (безусловный повтор)
+      description: |
+        Анализирует все переданные verseId независимо от текущего status — включая
+        уже ANALYZED (полная перезапись существующего VerseAnalysis/VerseWord[]).
+        В отличие от analyze-all — фильтрации по DRAFT/FAILED нет. Входной список
+        разбивается на чанки, обрабатываются последовательно синхронно.
+        Не найденные/удалённые id исключаются молча. См.
+        sangraha-service/batch-verse-review.md.
+      tags: [Verses]
+      security:
+        - bearerAuth:
+            - ADMIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'sangraha-schemas.yaml#/AnalyzeVersesRequest'
+      responses:
+        '202':
+          description: Анализ запущен
+          content:
+            application/json:
+              schema:
+                $ref: 'sangraha-schemas.yaml#/AnalyzeVersesResponse'
+
   /verses/{verseId}:
     get:
       operationId: getVerse

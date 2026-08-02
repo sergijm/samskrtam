@@ -41,9 +41,11 @@ import WorksPage from '../pages/sangraha/WorksPage';
 import WorkPage from '../pages/sangraha/WorkPage';
 import ChapterPage from '../pages/sangraha/ChapterPage';
 import VersePage from '../pages/sangraha/VersePage';
+import VersesBatchPage from '../pages/sangraha/VersesBatchPage';
 
 // Components
 import ProtectedRoute from '../components/auth/ProtectedRoute';
+import RequireRole from '../components/auth/RequireRole';
 import AppLayout from '../components/layout/AppLayout';
 import { ReactNode } from 'react';
 
@@ -54,6 +56,19 @@ function ProtectedLayoutRoute({ children }: { children: ReactNode }) {
       <AppLayout>
         {children}
       </AppLayout>
+    </ProtectedRoute>
+  );
+}
+
+/** Helper: защищённый маршрут + роль (ADMIN-only страницы) */
+function RoleLayoutRoute({ role, children }: { role: string; children: ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <RequireRole role={role}>
+        <AppLayout>
+          {children}
+        </AppLayout>
+      </RequireRole>
     </ProtectedRoute>
   );
 }
@@ -106,6 +121,7 @@ export default function AppRoutes() {
 
             {/* Sangraha routes */}
       <Route path="/sangraha" element={<ProtectedLayoutRoute><WorksPage /></ProtectedLayoutRoute>} />
+      <Route path="/sangraha/verses" element={<RoleLayoutRoute role="ADMIN"><VersesBatchPage /></RoleLayoutRoute>} />
       <Route path="/sangraha/:workSlug" element={<ProtectedLayoutRoute><WorkPage /></ProtectedLayoutRoute>} />
       <Route path="/sangraha/:workSlug/chapters/:chapterId" element={<ProtectedLayoutRoute><ChapterPage /></ProtectedLayoutRoute>} />
       <Route path="/sangraha/:workSlug/verses/:verseId" element={<ProtectedLayoutRoute><VersePage /></ProtectedLayoutRoute>} />

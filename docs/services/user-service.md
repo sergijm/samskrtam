@@ -6,7 +6,7 @@
 > Порт: 8087
 > Status: **DRAFT**
 
-> **Переименован из auth-service.** Логин, refresh, logout, OAuth2 flow перенесены в api-gateway (ADR-001).
+> Логин, refresh, logout и OAuth2 flow — зона ответственности api-gateway; user-service отвечает за жизненный цикл аккаунта (см. [architecture.md §3.1](../architecture.md#31-разделение-аутентификации-между-gateway-и-user-service)).
 
 ---
 

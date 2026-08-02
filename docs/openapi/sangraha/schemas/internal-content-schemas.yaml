@@ -75,11 +75,13 @@ VersesBatchResponseDto:
       description: Только status=ANALYZED, не мягко удалённые. Не найденные verseId просто отсутствуют.
       items:
         type: object
-        required: [verseId, textIast, textDevanagari, translationRu, translationEn, workTitleRu, workTitleEn, chapterTitleRu, chapterTitleEn, verseOrderIndex]
+        required: [verseId, workSlug, textIast, textDevanagari, translationRu, translationEn, workTitleRu, workTitleEn, chapterTitleRu, chapterTitleEn, verseOrderIndex]
         properties:
           verseId:
             type: string
             format: uuid
+          workSlug:
+            type: string
           textIast:
             type: string
           textDevanagari:

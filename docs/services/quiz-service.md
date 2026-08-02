@@ -4,7 +4,6 @@
 > Язык: **Java 21 + WebFlux (Reactor)**
 > Модуль: `services/quiz-service`
 > Порт: 8082
-> Status: **UPDATED**
 
 ---
 
@@ -34,7 +33,7 @@
 
 ## 3. Репозитории и хранение данных
 
-Пять ReactiveCrudRepository: QuizSessionRepository, QuizAnswerRepository, SessionQuestionRepository, OutboxEventRepository, QuizItemScoreRepository (единая таблица прогресса `quiz.quiz_item_score`, ADR-007 — источник статуса NEW/LEARNING/MASTERED/REVIEW для LessonPage; не путать с on-the-fly расчётом successRate для колонки «Попытки», см. §7 ниже).
+Пять ReactiveCrudRepository: QuizSessionRepository, QuizAnswerRepository, SessionQuestionRepository, OutboxEventRepository, QuizItemScoreRepository (единая таблица прогресса `quiz.quiz_item_score`, architecture.md §3.6 — источник статуса NEW/LEARNING/MASTERED/REVIEW для LessonPage; не путать с on-the-fly расчётом successRate для колонки «Попытки», см. §7 ниже).
 
 Подробнее (включая дистракторы и word score): [quiz-service-repositories.md](quiz-service/quiz-service-repositories.md)
 
@@ -54,7 +53,7 @@
 
 WebClient с методами generateQuizData, getDeclensionForms, getVocabularyWordsForLesson и др. Полный список: [quiz-service-architecture.md](quiz-service/quiz-service-architecture.md)
 
-**ИЗМЕНЕНО:** `generateQuizData` дополнительно принимает `filterScope`/`filterCaseTypes`/`filterNumberTypes`/`filterCombinations` и прокидывает их как query-параметры в content-service — scope pre-filter вопросов теперь выполняется там (см. content-service.md, quiz-declension.md §3.4), quiz-service больше не содержит `SessionCreationService.applyScopeFilter`.
+`generateQuizData` принимает `filterScope`/`filterCaseTypes`/`filterNumberTypes`/`filterCombinations` и прокидывает их как query-параметры в content-service — scope pre-filter вопросов выполняется там (см. content-service.md, quiz-declension.md §3.4); quiz-service такой фильтрации сам не выполняет.
 
 ## 7. Зависимости (build.gradle.kts)
 

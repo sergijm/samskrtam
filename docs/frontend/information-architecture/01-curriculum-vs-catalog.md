@@ -55,7 +55,7 @@
   вопросительные (`pronouns-interrogative`) ⛔ · относительные (`pronouns-relative`) ⛔ ·
   возвратное (`pronouns-reflexive`) ⛔
 - Реализация — через существующий itemType DECLENSION_FORM (новые vowelType,
-  без нового типа квиза), см. ADR-008, `content-service.md` §3,
+  без нового типа квиза), см. architecture.md §3.4, `content-service.md` §3,
   `quiz-service/quiz-declension.md` §2. Энклитики личных местоимений и
   несклоняемое `svayam` — вне scope первой итерации (статические заметки,
   не квиз).

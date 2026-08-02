@@ -94,7 +94,11 @@ public class ChapterService {
     // ── DEPRECATED: old tree method (kept for backward compat, will be removed) ──
     // Replaced by getChapterSummaryByWorkId() + getChapterVersesByChapterId()
 
-    private static String preview(String text, int max) {
+    /**
+     * Обрезка текста для превью. Используется деревом главы и батч-списком стихов
+     * (VerseBatchService.fetchBatchReview), чтобы не плодить две копии утилиты.
+     */
+    public static String preview(String text, int max) {
         if (text == null) return null;
         return text.length() > max ? text.substring(0, max) + "..." : text;
     }

@@ -95,9 +95,9 @@ SELECT COUNT(*), SUM(CASE WHEN is_correct THEN 1 ELSE 0 END), MAX(answered_at) F
 
 Запрос выполняется асинхронно через R2DBC @Query в UserSessionService. Используется в LessonServiceImpl только для nSuccess/nAll/successRate (колонка «Попытки», WordHistoryDialog) — **не** для вычисления статуса NEW/LEARNING/MASTERED/REVIEW (см. §8).
 
-## 8. QuizItemScoreRepository — источник статуса и сводки LessonPage (ADR-007)
+## 8. QuizItemScoreRepository — источник статуса и сводки LessonPage (architecture.md §3.6)
 
-Единая таблица `quiz.quiz_item_score` (составной ключ userId+itemType+externalRefId, поле score 0–100, nextReviewAt) — единственный источник статуса QuizItem и `LessonStatusSummary` на LessonPage. Заменяет удалённые word_score/grammar_form_score и связанные с ними WordScoreRepository/GrammarFormScoreRepository как источник статуса (successRate-модель отменена, см. ADR-007 «Обновление 2026-07»).
+Единая таблица `quiz.quiz_item_score` (составной ключ userId+itemType+externalRefId, поле score 0–100, nextReviewAt) — единственный источник статуса QuizItem и `LessonStatusSummary` на LessonPage. Заменяет удалённые word_score/grammar_form_score и связанные с ними WordScoreRepository/GrammarFormScoreRepository как источник статуса (successRate-модель отменена, см. architecture.md §3.6).
 
 Метод `findByUserIdAndItemTypeAndExternalRefIdIn` — джойн списка externalRefId урока с прогрессом пользователя одним запросом (для отображения статуса каждого QuizItem). Метод `countLearnedItems(userId, itemType, minScore=90)` — используется для `learnedWords`/`learnedQuestions` на плитке урока (LessonItemDto) и для поля `mastered` в LessonStatusSummary.
 

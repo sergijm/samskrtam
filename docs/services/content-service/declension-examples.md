@@ -29,28 +29,13 @@ UNIQUE (vowel_type, gender, case_type, number_type)
 1. Резолвить `(vowelType, gender)` для `slug` — загрузить стемы урока (тот же `DeclensionStemRepository`, что в `getDeclensionParadigmForLesson`, §5а), включая ошибку `LESSON_NOT_FOUND`; все стемы одного урока склонений принадлежат одному словоизменительному классу `(vowelType, gender)` (см. выше — группировка идёт по классу, а не по конкретному стему), поэтому достаточно взять класс любого стема урока (например, первого по той же стабильной сортировке, что в §5а).
 2. Для полного набора ячеек `(caseType, numberType)` (все падежи × оба числа, единый для всех уроков склонений) найти в `declension_example_groups` строки по `(vowelType, gender, caseType, numberType)`. Ячейки, для которых строка уже есть (в том числе с пустым `verse_ids`) — взять `verse_ids` из кэша, дальше не переспрашивать.
 3. Для ячеек без строки в кэше — один батч-вызов `POST {SANGRAHA_SERVICE_URL}/sangraha/internal/content/declension-examples` (`sangraha-service.md` §9) сразу на все недостающие ячейки этой парадигмы (`vowelType`/`gender` фиксированы на весь запрос, `cells[]` — только недостающие `(caseType, numberType)`, `limitPerGroup` — константа, число примеров на ячейку, значение определяет Агент 2 при реализации). Ответ `groups[]` (`caseType`, `numberType`, `verseIds[]`, `verseIds` может быть пустым) — upsert каждой группы в `declension_example_groups` (в том числе пустых — это тоже кэшируемый результат, см. описание таблицы выше).
-4. Собрать множество всех `verseId` по всем ячейкам (кэш + только что дозаполненные), убрать дубли (одна и та же цитата может иллюстрировать одновременно, например, и nominative singular, и accusative singular, если формы совпадают). Один батч-вызов `POST {SANGRAHA_SERVICE_URL}/sangraha/internal/content/verses/batch` (`sangraha-service.md` §9) с этим списком `verseId` → получить `textIast/textDevanagari/translationRu/En/workTitleRu/En/chapterTitleRu/En/verseOrderIndex` для каждого найденного `verseId`. `verseId`, не найденные в sangraha-service (например, стих был удалён/деанализирован после того, как попал в кэш) — просто отсутствуют в ответе, без ошибки (см. `sangraha-service.md` §9); соответствующая цитата тихо пропускается при сборке ответа фронтенду, `declension_example_groups` при этом не чистится (см. ограничение кэша выше).
-5. Собрать ответ фронтенду: список групп `(caseType, numberType, examples[])`, `examples[]` — уже с полным текстом/переводом/атрибуцией, в том порядке `verseId`, в котором они пришли от sangraha-service.
+4. Собрать множество всех `verseId` по всем ячейкам (кэш + только что дозаполненные), убрать дубли (одна и та же цитата может иллюстрировать одновременно, например, и nominative singular, и accusative singular, если формы совпадают). Один батч-вызов `POST {SANGRAHA_SERVICE_URL}/sangraha/internal/content/verses/batch` (`sangraha-service.md` §9) с этим списком `verseId` → получить `workSlug`/`textIast`/`textDevanagari`/`translationRu/En`/`workTitleRu/En`/`chapterTitleRu/En`/`verseOrderIndex` для каждого найденного `verseId`. `verseId`, не найденные в sangraha-service (например, стих был удалён/деанализирован после того, как попал в кэш, или ещё не `ANALYZED`, см. `sangraha-service.md` §9) — просто отсутствуют в ответе, без ошибки; соответствующая цитата тихо пропускается при сборке ответа фронтенду, `declension_example_groups` при этом не чистится (см. ограничение кэша выше).
 
-```json
-{
-  "groups": [
-    {
-      "caseType": "INSTRUMENTAL", "numberType": "SINGULAR",
-      "examples": [
-        {
-          "verseId": "uuid",
-          "textIast": "...", "textDevanagari": "...",
-          "translationRu": "...", "translationEn": "...",
-          "workTitleRu": "Бхагавад-гита", "workTitleEn": "Bhagavad Gita",
-          "chapterTitleRu": "Глава 1", "chapterTitleEn": "Chapter 1",
-          "verseOrderIndex": 1
-        }
-      ]
-    }
-  ]
-}
-```
+4а. **`missingVerseIds` (только для роли `ADMIN`).** Разница множеств: все `verseId` из шага 4 минус те, что реально вернулись из `/verses/batch` — это стихи-кандидаты, которые есть в sangraha-service и грамматически подходят, но ещё не `ANALYZED` (поэтому не попали в `examples[]`). Для `STUDENT`/анонимного запроса это поле не считается и не попадает в ответ вовсе — не только не показывается на фронте, а именно не вычисляется и не сериализуется (список внутренних `verseId` неанализированных стихов не должен светиться в публичном ответе для не-ADMIN). Используется фронтендом для кнопки «Проанализировать недостающие примеры», см. `docs/frontend/pages/grammar-lesson-page.md` §2.2а.
+
+5. Собрать ответ фронтенду: список групп `(caseType, numberType, examples[])`, `examples[]` — уже с полным текстом/переводом/атрибуцией, в том порядке `verseId`, в котором они пришли от sangraha-service, плюс (только для `ADMIN`) `missingVerseIds[]` из шага 4а.
+
+Поля ответа (`DeclensionExamplesResponseDto`): `groups` — массив, каждый элемент: `caseType`, `numberType`, `examples` — массив, каждый элемент: `verseId`, `workSlug`, `textIast`, `textDevanagari`, `translationRu`, `translationEn`, `workTitleRu`, `workTitleEn`, `chapterTitleRu`, `chapterTitleEn`, `verseOrderIndex` (`workSlug` нужен фронтенду для перехода на страницу стиха `/sangraha/{workSlug}/verses/{verseId}` по клику на цитату). `missingVerseIds` — массив UUID, только для `ADMIN` (для остальных ролей поле отсутствует в JSON, не `null`/пустой массив — именно отсутствует, чтобы не путать «нет недостающих» с «не считали для этой роли»).
 
 ### Открытые вопросы (для Агента 2 при реализации)
 

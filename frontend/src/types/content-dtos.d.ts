@@ -75,6 +75,7 @@ export interface DeclensionExamplesResponseDto {
         numberType: NumberType;
         examples: Array<{
             verseId: string;
+            workSlug: string;
             textIast: string;
             textDevanagari: string;
             translationRu: string;
@@ -86,5 +87,8 @@ export interface DeclensionExamplesResponseDto {
             verseOrderIndex: number;
         }>;
     }>;
+    /** Только для роли ADMIN (см. content-service/declension-examples.md, шаг 4а).
+     *  Для остальных ролей поле отсутствует в JSON — проверять через `?.length > 0`. */
+    missingVerseIds?: string[];
 }
 

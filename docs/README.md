@@ -1,8 +1,7 @@
-# SamskrtamApp — Project Specification v0.5
+# SamskrtamApp — Project Specification
 
 > Specification-Driven Development · Microservices · Monorepo
 > Stack: Java 21 + Virtual Threads · WebFlux (gateway, quiz-service) · React/TypeScript · PostgreSQL · Keycloak · Kafka · MinIO · Grafana Stack (Tempo · Loki · Prometheus)
-> Status: **UPDATED**
 
 ---
 
@@ -13,7 +12,8 @@
 **Архитектура:** Микросервисы (монорепо), Contract-First SDD
 **Язык интерфейса:** Русский + English (i18n с первого дня)
 
-- SamskrtamApp построен как референсная реализация современной Java-микросервисной системы — но не в силу необходимости, а как учебный полигон для практического знакомства с технологиями. Архитектура намеренно избыточна для реальных задач проекта и охватывает паттерны, актуальные при высокой нагрузке: событийную асинхронность через Kafka, stateless-сервисы, централизованную аутентификацию через Gateway, Specification-Driven Development.
+SamskrtamApp построен как референсная реализация современной Java-микросервисной системы — но не в силу необходимости, а как учебный полигон для практического знакомства с технологиями. Архитектура намеренно избыточна для реальных задач проекта и охватывает паттерны, актуальные при высокой нагрузке: событийную асинхронность через Kafka, stateless-сервисы, централизованную аутентификацию через Gateway, Specification-Driven Development.
+
 ---
 
 ## 2. Goals & Non-Goals
@@ -24,7 +24,7 @@
 - Статистика через очередь событий
 - Групповой лидерборд
 - Аутентификация: Keycloak (собственный аккаунт + Google + Mail.ru)
-- Горизонтальное масштабирование: stateless сервисы, Kafka для async
+- Горизонтальное масштабирование: stateless-сервисы, Kafka для async
 - Bilingual UI (ru / en)
 - [Упражнения по сандхи (Eamenau)](./services/content-service/eamenau.md) — разбор правил сандхи на материале учебника Eméneau
 
@@ -36,21 +36,20 @@
 
 ## 3. Язык и стек по сервисам
 
-| Сервис | Язык    | Async модель | Причина |
-|---|---------|---|---|
+| Сервис | Язык | Async-модель | Причина |
+|---|---|---|---|
 | api-gateway | Java 21 | WebFlux (Reactor) | Gateway требует реактивный стек |
-| feature-flag-service | Java 21 | Virtual Threads | Простой CRUD + Redis, нет смысла в реактивщине |
+| feature-flag-service | Java 21 | Virtual Threads | Простой CRUD + Redis, реактивность избыточна |
 | user-service | Java 21 | Virtual Threads | Профили, регистрация, аватарки, блокировка |
-| content-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов. Поддерживает иерархические категории для VOCABULARY квизов. Содержит домен Eamenau (упражнения по сандхи). |
-| quiz-service | Java 21 | WebFlux (Reactor) + R2DBC | Единый сервис прохождения всех квизов. Использует Outbox Pattern для публикации событий в Kafka. |
-| **dictionary-service** | Java 21 | Virtual Threads|
-| statistics-service | Java 21 | Kafka Streams | Расчет статистики с использованием Kafka Streams. |
-| shared/samskrtam-dtos | Java 21 | — | Объединенный модуль для всех DTO и событий квизов, контента и статистики |
-| shared/common-dto | Java 21 | — | Совместимость со всеми сервисами |
+| content-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов, иерархические категории для VOCABULARY-квизов, домен Eamenau (упражнения по сандхи) |
+| quiz-service | Java 21 | WebFlux (Reactor) + R2DBC | Единый сервис прохождения всех квизов, публикация событий в Kafka через Outbox Pattern |
+| dictionary-service | Java 21 | Virtual Threads | Поиск по словарю, fallback на внешнее API |
+| statistics-service | Java 21 | Kafka Streams | Расчёт статистики и лидерборда |
+| sangraha-service | Java 21 | Virtual Threads | Санскритские произведения, LLM-анализ стихов |
+| shared/samskrtam-dtos | Java 21 | — | Общий модуль DTO и событий для квизов, контента и статистики |
+| shared/common-dto | Java 21 | — | Общие DTO для всех сервисов |
 
-> **Ключевое решение:** Java 21 Virtual Threads позволяют писать блокирующий
-> код (обычный JDBC, RestTemplate) который JVM автоматически делает
-> неблокирующим. Не нужен R2DBC и WebFlux там где они избыточны.
+> **Ключевое решение:** Java 21 Virtual Threads позволяют писать блокирующий код (обычный JDBC, RestTemplate), который JVM автоматически делает неблокирующим. R2DBC и WebFlux применяются только там, где это оправдано (Gateway, quiz-service).
 
 ---
 
@@ -67,7 +66,7 @@ graph TD
   end
 
   subgraph IdentityUsers ["👤 Users & Identity — Java 21 + Virtual Threads"]
-    AS[user-service\nKeycloak proxy]
+    US[user-service\nKeycloak proxy]
   end
 
   subgraph Content ["📝 Content — Java 21 + Virtual Threads"]
@@ -105,32 +104,34 @@ graph TD
 ## 5. Specification Files
 
 ### Architecture
+
 | Файл | Содержание |
 |---|---|
 | [README.md](./README.md) | Этот файл — обзор проекта |
-| [architecture.md](./architecture.md) | Топология, технологии, монорепо, CI/CD, Kubernetes |
+| [architecture.md](./architecture.md) | Топология, технологии, монорепо, ключевые архитектурные решения |
 | [conventions.md](./conventions.md) | Соглашения: конфигурация, логирование, трассировка, тесты, git |
 | [infra/keycloak.md](./infra/keycloak.md) | Аутентификация, identity providers, JWT claims |
 | [services/api-gateway.md](./services/api-gateway.md) | Маршруты, фильтры, rate limiting, OAuth2 flow |
 | [services/feature-flag-service.md](./services/feature-flag-service.md) | Feature flags — управление поведением без деплоя |
 
-
 ### Per-Service Specifications
-| Файл | Содержание |
-|---|---|
-| [sangraha-service.md](./services/sangraha-service.md) | Java 21 + VT | Санскритские произведения, LLM-анализ стихов |
-| [openapi/](./openapi/) | OpenAPI спецификации для всех сервисов |
+
+| Файл | Стек | Содержание |
+|---|---|---|
 | [services/api-gateway.md](./services/api-gateway.md) | Java 21 + WebFlux | Spring Cloud Gateway |
 | [services/feature-flag-service.md](./services/feature-flag-service.md) | Java 21 + VT | Feature Flag Service |
 | [services/user-service.md](./services/user-service.md) | Java 21 + VT | Логин, регистрация, OAuth, управление паролем |
 | [services/content-service.md](./services/content-service.md) | Java 21 + VT | Настройки и содержание всех квизов |
-| [services/content-service/eamenau.md](./services/content-service/eamenau.md) | — (домен content-service) | Упражнения по сандхи, фонемная система |
-| [services/quiz-service.md](./services/quiz-service.md) | Java 21 + VT | Прохождение квизов пользователем |
-| [services/dictionary-service.md](./services/dictionary-service.md) | Java 21 + Virtual Threads | Словарь + внешнее API |
+| [services/content-service/eamenau.md](./services/content-service/eamenau.md) | домен content-service | Упражнения по сандхи, фонемная система |
+| [services/quiz-service.md](./services/quiz-service.md) | Java 21 + VT/WebFlux | Прохождение квизов пользователем |
+| [services/dictionary-service.md](./services/dictionary-service.md) | Java 21 + VT | Словарь + внешнее API |
 | [services/statistics-service.md](./services/statistics-service.md) | Java 21 + VT | Статистика |
 | [services/leaderboard.md](./services/leaderboard.md) | — | Алгоритмы лидерборда (XP, Elo, Skill, Composite) |
+| [services/sangraha-service.md](./services/sangraha-service.md) | Java 21 + VT | Санскритские произведения, LLM-анализ стихов |
+| [openapi/](./openapi/) | — | OpenAPI-спецификации для всех сервисов |
 
 ### Frontend
+
 | Файл | Содержание |
 |---|---|
 | [frontend/frontend-overview.md](./frontend/frontend-overview.md) | Стек, структура, роуты, тема, i18n |
@@ -147,12 +148,10 @@ graph TD
 
 | Milestone | Сервисы | Цель |
 |---|---|---|
-| **M1 — Foundation** | Gateway + Keycloak + user-service + content-service | Auth, CRUD контента, монорепо скелет |
+| **M1 — Foundation** | Gateway + Keycloak + user-service + content-service | Auth, CRUD контента, монорепо-скелет |
 | **M2 — First Quiz** | quiz-service (declensions) | Первый рабочий квиз, Contract-First |
-| **M3 — Statistics** | statistics-service + Kafka | События, async обработка |
+| **M3 — Statistics** | statistics-service + Kafka | События, async-обработка |
 | **M4 — Dictionary** | dictionary-service (Java 21 + Virtual Threads) | Cache-aside, внешнее API |
 | **M5 — More Quizzes** | quiz-service (conjugations + vocabulary) | Масштабирование паттерна |
 | **M6 — Observability** | все сервисы | Distributed tracing, structured logging, metrics |
-| **M7 — Polish** | все сервисы | i18n, UX, CI/CD финализация, load testing |
-
----
+| **M7 — Polish** | все сервисы | i18n, UX, CI/CD-финализация, load testing |

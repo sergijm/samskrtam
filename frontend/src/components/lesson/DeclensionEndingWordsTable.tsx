@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Skeleton } from 'primereact/skeleton';
 import { useAllDeclensionParadigms } from '../../hooks/useLessons';
+import { IconButton } from '../common/buttons';
 
 interface DeclensionEndingWordsTableProps {
   selection: {
@@ -71,31 +72,16 @@ const DeclensionEndingWordsTable: React.FC<DeclensionEndingWordsTableProps> = ({
     return <div className="text-color-secondary p-4 text-center">{t('grammar.paradigmsEmpty')}</div>;
   }
 
-  const numberLabel = t(`number.${selection.numberType}`);
-  const genderLabel = selection.gender ? t(`gender.${selection.gender}`) : '';
-  const axisLabel = genderLabel ? `${numberLabel}, ${genderLabel}` : numberLabel;
-
   return (
     <div className="overflow-x-auto">
+      <div className="flex align-items-center mb-2">
+        <IconButton
+          iconName="pi-arrow-left"
+          className="p-button-rounded p-button-text"
+          onClick={onBack}
+        />
+      </div>
       <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr>
-            <th
-              className="text-left p-2 border-bottom-1 border-200 font-semibold cursor-pointer hover:surface-100 transition-colors"
-              style={{ width: '25%' }}
-              onClick={onBack}
-            >
-              {i18n.language === 'ru' ? 'Падеж' : 'Case'}
-            </th>
-            <th
-              className="text-center p-2 border-bottom-1 border-200 font-semibold cursor-pointer hover:surface-100 transition-colors"
-              colSpan={2}
-              onClick={onBack}
-            >
-              {i18n.language === 'ru' ? 'Число/Род' : 'Number/Gender'}: {axisLabel}
-            </th>
-          </tr>
-        </thead>
         <tbody>
           {rows.map((row, idx) => (
             <tr key={idx}>

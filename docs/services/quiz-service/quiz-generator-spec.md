@@ -1,6 +1,6 @@
 ﻿# Спецификация: универсальный генератор вопросов квиза
 
-> Связанные файлы: [README.md](../README.md) · [quiz-declension.md](./quiz-declension.md) · [openapi/common/schemas/vocabulary.yaml](../openapi/common/schemas/vocabulary.yaml) · [services/quiz-service.md](../services/quiz-service.md) · [services/content-service.md](../services/content-service.md) · [conventions.md](../conventions.md#adr-007) (ADR-007)
+> Связанные файлы: [README.md](../README.md) · [quiz-declension.md](./quiz-declension.md) · [openapi/common/schemas/vocabulary.yaml](../openapi/common/schemas/vocabulary.yaml) · [services/quiz-service.md](../services/quiz-service.md) · [services/content-service.md](../services/content-service.md) · [architecture.md §3.6](../architecture.md#36-единая-таблица-прогресса-quiz_item_score)
 > Ответственный агент: Агент 6 (API Contract & Documentation) — контракт; реализация Агент 2 (Domain Services, quiz-service)
 > Статус: **АКТУАЛЕН**
 
@@ -12,7 +12,7 @@
 
 Границы микросервисов соблюдаются: quiz-service не имеет физических (FK) ссылок на таблицы content-service. Существование `externalRefId` подтверждается на уровне приложения (через `ContentClient`, уже существующий в quiz-service), а не через БД.
 
-Архитектурные решения по единой таблице quiz_item_score, отсутствию FK между схемами quiz и content, производному статусу без time-decay и общему прогрессу склонений зафиксированы в ADR-007.
+Архитектурные решения по единой таблице quiz_item_score, отсутствию FK между схемами quiz и content, производному статусу без time-decay и общему прогрессу склонений зафиксированы в architecture.md §3.6.
 
 ---
 
@@ -169,7 +169,7 @@ if consecutiveMistakes >= consecutiveMistakesThreshold:
 **2а. Если передан `statusFilter` (§3), шаги 3–5 заменяются одним отбором без due/new/reserve-смешения:**
 - `statusFilter=NEW` → пул = подмножество new целиком (без ограничения `maxNewPerSession`).
 - `statusFilter=LEARNING` → пул = единицы с существующей строкой `quiz_item_score`, чей бакет LEARNING или DIFFICULT (то есть «начато, но не MASTERED»); nextReviewAt не учитывается (в отличие от обычного due-отбора).
-- `statusFilter=REVIEW` → пул = единицы бакета MASTERED с `nextReviewAt ≤ текущее время` (REVIEW-бакет, ADR-007 «Обновление 2026-07»).
+- `statusFilter=REVIEW` → пул = единицы бакета MASTERED с `nextReviewAt ≤ текущее время` (REVIEW-бакет, architecture.md §3.6).
 - Если после отбора пул пуст — сессия не создаётся, quiz-service возвращает 404/пустой результат (реакция на это на фронтенде — вне контракта квиза, см. lesson-pages-spec.md: бейдж со значением 0 некликабелен/задизейблен).
 - Внутри пула — сортировка по dueSortStrategy (как для due), ограничение до sessionSize; dueCapRatio/allowReserveWhenNoDue не применяются.
 - Шаги 6–8 (interleave, minGap, requeue, обновление score) выполняются как обычно.

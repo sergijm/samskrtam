@@ -1,23 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useChapterVerses, useAnalyzeAllVerses } from '../../hooks/useSangraha';
+import { verseStatusIcon } from '../../utils/verseStatus';
 import { Skeleton } from 'primereact/skeleton';
 import { IconButton, PageButton } from '../../components/common/buttons';
 import { Tooltip } from 'primereact/tooltip';
-
-const statusSeverity: Record<string, 'success' | 'info' | 'warn' | 'danger'> = {
-  ANALYZED: 'success',
-  ANALYZING: 'info',
-  DRAFT: 'warn',
-  FAILED: 'danger',
-};
-
-const statusIcon: Record<string, { icon: string; color: string }> = {
-  ANALYZED:  { icon: 'pi pi-check-circle',   color: 'var(--green-500)' },
-  ANALYZING: { icon: 'pi pi-spin pi-spinner', color: 'var(--blue-500)' },
-  DRAFT:     { icon: 'pi pi-pencil',          color: 'var(--yellow-500)' },
-  FAILED:    { icon: 'pi pi-exclamation-circle', color: 'var(--red-500)' },
-};
 
 const ChapterPage = () => {
   const { t, i18n } = useTranslation();
@@ -107,8 +94,8 @@ const ChapterPage = () => {
             </div>
               <div className="work-tree-row-right">
                 <i
-                  className={statusIcon[v.status]?.icon ?? 'pi pi-question-circle'}
-                  style={{ color: statusIcon[v.status]?.color ?? 'var(--text-color-secondary)' }}
+                  className={verseStatusIcon[v.status]?.icon ?? 'pi pi-question-circle'}
+                  style={{ color: verseStatusIcon[v.status]?.color ?? 'var(--text-color-secondary)' }}
                   data-pr-tooltip={t(`sangraha.status.${v.status}`)}
                   data-pr-position="top"
                 />

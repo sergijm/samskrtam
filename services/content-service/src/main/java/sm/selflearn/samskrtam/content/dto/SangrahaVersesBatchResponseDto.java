@@ -27,6 +27,7 @@ public class SangrahaVersesBatchResponseDto {
     @Builder
     public static class VerseDto {
         UUID verseId;
+        String workSlug;
         String textIast;
         String textDevanagari;
         String translationRu;
@@ -40,6 +41,7 @@ public class SangrahaVersesBatchResponseDto {
         @JsonCreator
         public VerseDto(
                 @JsonProperty("verseId") UUID verseId,
+                @JsonProperty("workSlug") String workSlug,
                 @JsonProperty("textIast") String textIast,
                 @JsonProperty("textDevanagari") String textDevanagari,
                 @JsonProperty("translationRu") String translationRu,
@@ -50,6 +52,7 @@ public class SangrahaVersesBatchResponseDto {
                 @JsonProperty("chapterTitleEn") String chapterTitleEn,
                 @JsonProperty("verseOrderIndex") int verseOrderIndex) {
             this.verseId = verseId;
+            this.workSlug = workSlug;
             this.textIast = textIast;
             this.textDevanagari = textDevanagari;
             this.translationRu = translationRu;

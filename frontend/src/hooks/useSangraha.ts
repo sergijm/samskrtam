@@ -6,6 +6,7 @@ import type {
   WorkTreeDto,
   ChapterVersesDto,
   VerseDetailDto,
+  VerseBatchResponseDto,
 } from '../types/sangraha';
 
 export const useWorks = () =>
@@ -77,6 +78,29 @@ export const useAnalyzeAllVerses = () => {
     onSuccess: (_data, chapterId) => {
       qc.invalidateQueries({ queryKey: ['sangraha', 'chapter', chapterId] });
       qc.invalidateQueries({ queryKey: ['sangraha', 'work'] });
+    },
+  });
+};
+
+// ── Batch verse review (sangraha-service/batch-verse-review.md) ──
+
+export const useVersesBatch = (ids: string[]) =>
+  useQuery<VerseBatchResponseDto, Error>({
+    queryKey: ['sangraha', 'verse-batch', ids],
+    queryFn: async () => {
+      const res = await sangrahaApi.getVersesBatch(ids);
+      return res.data;
+    },
+    enabled: ids.length > 0,
+  });
+
+export const useAnalyzeVerses = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (verseIds: string[]) => sangrahaApi.analyzeVerses(verseIds),
+    // Инвалидация без конкретных ids — задевает любой открытый список стихов.
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'verse-batch'] });
     },
   });
 };

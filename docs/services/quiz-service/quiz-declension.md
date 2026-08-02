@@ -19,14 +19,14 @@
 ## 2. Примечание об окончаниях для основ -i, -u, -ṛ
 
 Для основ на **-i**, **-u**, **-ṛ** (`vowel_type`: I, I_LONG, U, U_LONG, R) падежные окончания **не различаются** по грамматическому роду ни в одном падеже/числе.
-Подробнее см. [ADR-005: Единство окончаний для основ -i, -u, -ṛ независимо от рода](../conventions.md#adr-005-единство-окончаний-для-основ--i--u--ṛ-независимо-от-рода).
+Подробнее см. [architecture.md §3.3](../architecture.md#33-хранение-окончаний-склонений).
 
 **Ключевые следствия:**
 - Ключ агрегации прогресса остаётся `(gender, caseType, numberType)` для единообразия по всем 8 урокам склонений (включая declensions-i, declensions-u, declensions-r).
 - `caseEnding` для MASCULINE и FEMININE в рамках одного (caseType, numberType) совпадает.
 - `successRate` считается раздельно по роду, так как это разные основы/слова.
 
-**Местоимения (ADR-008) — тот же паттерн, без нового itemType:** уроки `pronouns-personal`/`pronouns-demonstrative`/`pronouns-interrogative`/`pronouns-relative`/`pronouns-reflexive` используют `DECLENSION_FORM` наравне с обычными основами. `pronouns-personal` (aham/tvam) — `gender = UNSPECIFIED`, как i/u/ṛ-основы выше. `pronouns-demonstrative`/`interrogative`/`relative` (tad/etad/idam/kim/yad) — по 3 стема на класс (MASCULINE/FEMININE/NEUTER), как a-основы одного рода (ADR-004). `pronouns-reflexive` (ātman) — обычная a-основа муж. рода, данные дублируют `declensions-a-masc` под отдельным slug (сознательный выбор, см. ADR-008). Энклитики и несклоняемое `svayam` — вне контракта DECLENSION_FORM в этой итерации.
+**Местоимения (architecture.md §3.4) — тот же паттерн, без нового itemType:** уроки `pronouns-personal`/`pronouns-demonstrative`/`pronouns-interrogative`/`pronouns-relative`/`pronouns-reflexive` используют `DECLENSION_FORM` наравне с обычными основами. `pronouns-personal` (aham/tvam) — `gender = UNSPECIFIED`, как i/u/ṛ-основы выше. `pronouns-demonstrative`/`interrogative`/`relative` (tad/etad/idam/kim/yad) — по 3 стема на класс (MASCULINE/FEMININE/NEUTER), как a-основы одного рода (architecture.md §3.3). `pronouns-reflexive` (ātman) — обычная a-основа муж. рода, данные дублируют `declensions-a-masc` под отдельным slug (сознательный выбор, см. architecture.md §3.4). Энклитики и несклоняемое `svayam` — вне контракта DECLENSION_FORM.
 
 ---
 
@@ -78,9 +78,7 @@
 
 Поиск существующей незавершённой сессии для резюма выполняется по равенству (`filterScope` + соответствующее множество, сравнение без учёта порядка) — это отдельная миграция Flyway в схеме quiz-service (ответственность Агента 2), отражается в OpenAPI при обновлении контракта старта квиза (ответственность Агента 6, см. `docs/openapi/quiz/parameters.yaml` и `quiz-sessions.yaml`).
 
-**ИЗМЕНЕНО:** сам алгоритм пре-фильтрации вопросов по `filterScope`/множеству (ранее —
-`SessionCreationService.applyScopeFilter` в quiz-service, применявшийся к уже полученному от
-content-service списку `generatedQuestions[]`) перенесён в content-service — см.
+Алгоритм пре-фильтрации вопросов по `filterScope`/множеству находится в content-service — см.
 `content-service.md` (раздел «Внутреннее API для quiz-service»). quiz-service лишь:
 1) хранит `filterScope`/множество в `QuizSession` (как описано выше, для резюма);
 2) прокидывает те же значения как query-параметры в `ContentClient.generateQuizData(...)`;
@@ -109,7 +107,7 @@ content-service списку `generatedQuestions[]`) перенесён в conte
 
 **Генерация дистракторов:** правильная тройка — та, что породила данную словоформу. Дистракторы — другие тройки (caseType, numberType, gender) **этого же vowel_type**, при этом приоритет отдаётся тройкам, чьё окончание **графически совпадает или близко** к правильному (например nom./voc./acc. sg. среднего рода — классический источник омонимии) — иначе задача вырождается в угадывание по чтению. Итоговый набор: 1 верная + 3 неверных тройки (как и в FORM_BY_CASE), минимум 1 из дистракторов должен быть омонимом при наличии такового у данной основы/vowel_type, остальные — случайные тройки того же vowel_type.
 
-**Особый случай:** для vowel_type I/I_LONG/U/U_LONG/R (ADR-005, §2 этого документа) варианты-дистракторы всегда содержат `gender: UNSPECIFIED`; сама тройка не варьирует род, только caseType/numberType.
+**Особый случай:** для vowel_type I/I_LONG/U/U_LONG/R (architecture.md §3.3, §2 этого документа) варианты-дистракторы всегда содержат `gender: UNSPECIFIED`; сама тройка не варьирует род, только caseType/numberType.
 
 **Локализация вариантов:** каждый `CASE_COMBINATION`-option обязан нести `caseRu/caseEn/numberRu/numberEn/genderRu/genderEn` — переиспользуются те же справочники, что и в `grammar.yaml#GrammarQuestionProgress` (не заводить второй источник переводов падежей).
 
@@ -121,7 +119,7 @@ content-service списку `generatedQuestions[]`) перенесён в conte
 
 Дано: голое окончание в IAST (`caseEnding`, например `au`), **без основы** — вопрос сознательно оторван от конкретного слова, чтобы проверять знание системы окончаний, а не запоминание конкретной парадигмы. Нужно выбрать **все** тройки (падеж, число, род), которым соответствует это окончание, из смешанного пула правильных и неправильных троек.
 
-**Мотивация типа:** прямо тренирует омонимию, упомянутую в §2 (ADR-005) и в целом свойственную санскритской системе окончаний (напр. `au` = N/V/Ac du. во многих родах и типах основ одновременно).
+**Мотивация типа:** прямо тренирует омонимию, упомянутую в §2 (architecture.md §3.3) и в целом свойственную санскритской системе окончаний (напр. `au` = N/V/Ac du. во многих родах и типах основ одновременно).
 
 **Формирование пула вариантов:**
 - Все тройки (caseType, numberType, gender) данного vowel_type, чьё `caseEnding` совпадает с вопросным — все они верны и все включаются в пул (без выборочного отбрасывания корректных вариантов — иначе `caseEnding` перестаёт быть однозначно определён внутри вопроса).
@@ -213,7 +211,7 @@ content-service списку `generatedQuestions[]`) перенесён в conte
   `PRON_*` и согласные основы в этот фильтр не включаются, пока по ним нет уроков/данных).
 - **По числам** — множественный выбор из `numberType`: SINGULAR, DUAL, PLURAL.
 - **По родам** — множественный выбор из `gender`: MASCULINE, FEMININE, NEUTER, UNSPECIFIED. Для
-  I_STEM/II_STEM/U_STEM/UU_STEM/R_STEM (ADR-005) реально существует только `UNSPECIFIED` — если
+  I_STEM/II_STEM/U_STEM/UU_STEM/R_STEM (architecture.md §3.3) реально существует только `UNSPECIFIED` — если
   пользователь выбрал вместе одну из этих гласных и род MASCULINE/FEMININE/NEUTER, соответствующая
   комбинация просто не даёт вопросов (не ошибка, см. §5.4).
 
