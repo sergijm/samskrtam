@@ -148,3 +148,6 @@ KStream<String, QuizAnsweredEvent> stream = builder.stream("quiz-answered-events
 ✅ Требует от Агента 6 (Contract):
 - обновить OpenAPI: новый endpoint POST /sessions/{id}/resume
 ```
+
+## Кодогенерация
+- Где возможно используй аннотации JPA @OneToMany, @ManyToMany и прочие

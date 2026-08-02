@@ -3,24 +3,25 @@
 ================================================================================
 Директория: C:\MyDev\samskrtam
 Анализируемые расширения: ., j, a, v, a
-Всего файлов с >100 строк: 75
-Всего строк: 11,816
+Всего файлов с >100 строк: 76
+Всего строк: 11,836
 
 ================================================================================
 ☕ JAVA ФАЙЛЫ С БОЛЕЕ 100 СТРОК
 ================================================================================
-Всего Java файлов: 75
+Всего Java файлов: 76
 
-  services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\VerseAnalysisService.java - 434 строк
   services\content-service\src\main\java\sm\selflearn\samskrtam\content\service\DeclensionQuizGeneratorService.java - 295 строк
   services\content-service\src\main\java\sm\selflearn\samskrtam\content\service\GrammarContentService.java - 291 строк
   services\content-service\src\main\java\sm\selflearn\samskrtam\content\service\DeclensionExamplesService.java - 284 строк
   services\quiz-service\src\test\java\sm\selflearn\samskrtam\quiz\service\ScoreCalculatorTest.java - 280 строк
+  services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\VerseAnalysisService.java - 243 строк
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\VerseWordSearchService.java - 240 строк
   services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\SessionCreationService.java - 226 строк
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\VerseAnalysisSaver.java - 223 строк
   services\user-service\src\main\java\sm\selflearn\samskrtam\user\outbox\KeycloakAdminService.java - 222 строк
   services\content-service\src\main\java\sm\selflearn\samskrtam\content\service\VocabularySyncService.java - 213 строк
+  services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\VerseAnalysisResponseNormalizer.java - 211 строк
   services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\service\DeclensionOptionGeneratorService.java - 206 строк
   infrastructure\api-gateway\src\main\java\sm\selflearn\samskrtam\gateway\oauth2\OAuthController.java - 203 строк
   services\content-service\src\main\java\sm\selflearn\samskrtam\content\service\QuizScopeFilterService.java - 201 строк
@@ -87,5 +88,5 @@
   services\quiz-service\src\main\java\sm\selflearn\samskrtam\quiz\repository\QuizAnswerRepository.java - 101 строк
   services\sangraha-service\src\main\java\sm\selflearn\samskrtam\sangraha\service\ChapterService.java - 101 строк
 
-Статистика Java: 75 файлов, 11,816 строк
+Статистика Java: 76 файлов, 11,836 строк
 

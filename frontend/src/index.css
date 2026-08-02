@@ -64,6 +64,14 @@ html {
     display: none;
 }
 
+.declension-examples-tab-panel.p-tabview-panel {
+    padding: 0;
+}
+
+.grammar-lesson-tabs .p-tabview-panels {
+    padding: 0;
+}
+
 .no-border .p-datatable-wrapper {
     border: none;
 }

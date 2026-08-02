@@ -89,7 +89,7 @@ const DeclensionExamplesPanel: React.FC<DeclensionExamplesPanelProps> = ({ slug,
           return (
             <div key={key} className="mb-4">
               {/* Group header: case + number */}
-              <h4 className="text-base font-semibold text-color mb-2 pb-1 border-bottom-1 border-200">
+              <h4 className="text-base font-semibold text-color mb-2 pb-1 border-bottom-1 border-200" style={{ marginLeft: '1.25rem' }}>
                 {caseLabel(caseType)}, {numberLabel(numberType)}
               </h4>
 
@@ -98,7 +98,7 @@ const DeclensionExamplesPanel: React.FC<DeclensionExamplesPanelProps> = ({ slug,
                 {group.examples.map((ex, index) => (
                   <div
                     key={ex.verseId}
-                    className={index > 0 ? 'pt-3 mt-3 border-top-1 border-200' : undefined}
+                    className={index > 0 ? 'pt-2 mt-2 border-top-1 border-200' : undefined}
                   >
                     {/* IAST (large) */}
                     <div className="text-base font-medium" style={{ fontStyle: 'italic' }}>

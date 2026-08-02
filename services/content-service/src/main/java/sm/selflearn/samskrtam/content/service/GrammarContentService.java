@@ -5,17 +5,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.CaseEndingDto;
-import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionParadigmDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionParadigmPageDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionStemDto;
 import sm.selflearn.samskrtam.content.dto.LessonType;
-import sm.selflearn.samskrtam.content.model.*;
+import sm.selflearn.samskrtam.content.mapper.CaseEndingMapper;
+import sm.selflearn.samskrtam.content.mapper.DeclensionParadigmMapper;
+import sm.selflearn.samskrtam.content.mapper.DeclensionStemMapper;
+import sm.selflearn.samskrtam.content.model.CaseType;
 import sm.selflearn.samskrtam.content.model.DeclensionForm;
 import sm.selflearn.samskrtam.content.model.DeclensionStem;
+import sm.selflearn.samskrtam.content.model.Gender;
 import sm.selflearn.samskrtam.content.model.Lesson;
+import sm.selflearn.samskrtam.content.model.NumberType;
 import sm.selflearn.samskrtam.content.model.VowelType;
-import sm.selflearn.samskrtam.content.repository.CaseEndingRepository;
 import sm.selflearn.samskrtam.content.repository.DeclensionFormRepository;
 import sm.selflearn.samskrtam.content.repository.DeclensionStemRepository;
 import sm.selflearn.samskrtam.content.repository.LessonRepository;
@@ -32,14 +35,17 @@ public class GrammarContentService {
     private final LessonRepository lessonRepository;
     private final DeclensionStemRepository declensionStemRepository;
     private final DeclensionFormRepository declensionFormRepository;
-    private final CaseEndingRepository caseEndingRepository;
+    private final DeclensionCaseEndingFilterService caseEndingFilterService;
+    private final CaseEndingMapper caseEndingMapper;
+    private final DeclensionStemMapper declensionStemMapper;
+    private final DeclensionParadigmMapper declensionParadigmMapper;
 
     public List<DeclensionStemDto> getDeclensionStemsForLesson(String slug) {
         log.info("Fetching declension stems for slug: {}", slug);
         Lesson lesson = lessonRepository.findBySlug(slug)
                 .orElseThrow(() -> new SamskrtamException("LESSON_NOT_FOUND", "Lesson not found with slug: " + slug));
 
-                List<VowelType> vowelTypes = SlugToVowelTypeMapper.mapSlugToVowelTypes(slug);
+        List<VowelType> vowelTypes = SlugToVowelTypeMapper.mapSlugToVowelTypes(slug);
         List<DeclensionStem> stems;
         if (!vowelTypes.isEmpty()) {
             stems = declensionStemRepository.findByVowelTypeIn(vowelTypes);
@@ -48,19 +54,9 @@ public class GrammarContentService {
         }
 
         return stems.stream()
-                                .map(stem -> DeclensionStemDto.builder()
-                        .id(stem.getId())
-                        .lessonId(lesson.getId())
-                        .slug(stem.getStemIast())
-                        .stemIast(stem.getStemIast())
-                        .gender(stem.getGender())
-                        .vowelType(stem.getVowelType())
-                        .stemDevanagari(stem.getStemDevanagari())
-                        .translationRu(stem.getTranslationRu())
-                        .translationEn(stem.getTranslationEn())
-                        .build())
+                .map(stem -> declensionStemMapper.toDeclensionStemDto(stem, lesson.getId()))
                 .collect(Collectors.toList());
-        }
+    }
 
     /**
      * Получить список case_endings для урока склонений с опциональной фильтрацией.
@@ -89,75 +85,21 @@ public class GrammarContentService {
         lessonRepository.findBySlug(slug)
                 .orElseThrow(() -> new SamskrtamException("LESSON_NOT_FOUND", "Lesson not found with slug: " + slug));
 
-                List<VowelType> vowelTypes = SlugToVowelTypeMapper.mapSlugToVowelTypes(slug);
+        List<VowelType> vowelTypes = SlugToVowelTypeMapper.mapSlugToVowelTypes(slug);
         if (vowelTypes.isEmpty()) {
             log.warn("Could not determine VowelType from slug: {}, returning empty case endings", slug);
             return List.of();
         }
 
-        // Для основ -i, -u, -ṛ окончания не различаются по роду — в БД gender = UNSPECIFIED.
-        boolean isUnspecifiedGenderType = SlugToVowelTypeMapper.isUnspecifiedGenderType(vowelTypes);
-
-        List<CaseEnding> allEndings;
-
-        if (caseType != null && numberType != null && gender != null && gender != Gender.UNSPECIFIED) {
-            // Детальный фильтр (CASE_NUMBER_GENDER)
-            if (isUnspecifiedGenderType) {
-                // Для типов без родового различия — ищем UNSPECIFIED
-                allEndings = caseEndingRepository.findByVowelTypeIn(vowelTypes).stream()
-                        .filter(ce -> ce.getGender() == Gender.UNSPECIFIED
-                                && ce.getCaseType() == caseType
-                                && ce.getNumberType() == numberType)
-                        .collect(Collectors.toList());
-                if (allEndings.isEmpty()) {
-                    allEndings = caseEndingRepository.findByVowelTypeIn(vowelTypes).stream()
-                            .filter(ce -> ce.getGender() == gender
-                                    && ce.getCaseType() == caseType
-                                    && ce.getNumberType() == numberType)
-                            .collect(Collectors.toList());
-                }
-            } else {
-                allEndings = caseEndingRepository.findByVowelTypeIn(vowelTypes).stream()
-                        .filter(ce -> ce.getGender() == gender
-                                && ce.getCaseType() == caseType
-                                && ce.getNumberType() == numberType)
-                        .collect(Collectors.toList());
-            }
-        } else if (caseType != null) {
-            // Фильтр только по падежу (CASE_ONLY) — все числа и роды
-            allEndings = caseEndingRepository.findByVowelTypeIn(vowelTypes).stream()
-                    .filter(ce -> ce.getCaseType() == caseType)
-                    .collect(Collectors.toList());
-        } else {
-            // Без фильтра — все case_endings для этих vowelTypes
-            allEndings = caseEndingRepository.findByVowelTypeIn(vowelTypes);
-        }
-
-        return allEndings.stream()
-                .map(ce -> CaseEndingDto.builder()
-                        .id(ce.getId())
-                        .vowelType(ce.getVowelType())
-                        .gender(ce.getGender())
-                        .caseType(ce.getCaseType())
-                        .numberType(ce.getNumberType())
-                        .endingIast(ce.getEndingIast())
-                        .endingDevanagari(ce.getEndingDevanagari())
-                        .build())
+        return caseEndingFilterService.filter(vowelTypes, caseType, numberType, gender).stream()
+                .map(caseEndingMapper::toCaseEndingDto)
                 .collect(Collectors.toList());
     }
 
     public List<CaseEndingDto> getCaseEndingsByVowelType(VowelType vowelType) {
         log.info("Fetching case endings for vowelType: {}", vowelType.name());
-        return caseEndingRepository.findByVowelType(vowelType).stream()
-                .map(ce -> CaseEndingDto.builder()
-                        .id(ce.getId())
-                        .vowelType(ce.getVowelType())
-                        .gender(ce.getGender())
-                        .caseType(ce.getCaseType())
-                        .numberType(ce.getNumberType())
-                        .endingIast(ce.getEndingIast())
-                        .endingDevanagari(ce.getEndingDevanagari())
-                        .build())
+        return caseEndingFilterService.filter(List.of(vowelType), null, null, null).stream()
+                .map(caseEndingMapper::toCaseEndingDto)
                 .collect(Collectors.toList());
     }
 
@@ -183,7 +125,7 @@ public class GrammarContentService {
                     "Lesson with slug '%s' is not a DECLENSIONS lesson".formatted(slug));
         }
 
-                List<VowelType> vowelTypes = SlugToVowelTypeMapper.mapSlugToVowelTypes(slug);
+        List<VowelType> vowelTypes = SlugToVowelTypeMapper.mapSlugToVowelTypes(slug);
         List<DeclensionStem> stems;
         if (!vowelTypes.isEmpty()) {
             stems = declensionStemRepository.findByVowelTypeIn(vowelTypes);
@@ -202,26 +144,7 @@ public class GrammarContentService {
 
         DeclensionStem stem = stems.get(index);
         List<DeclensionForm> forms = declensionFormRepository.findByDeclensionStemId(stem.getId());
-        List<DeclensionFormDto> formDtos = forms.stream()
-                .map(f -> DeclensionFormDto.builder()
-                        .declensionStemId(f.getDeclensionStemId())
-                        .caseType(f.getCaseType())
-                        .numberType(f.getNumberType())
-                        .formIast(f.getFormIast())
-                        .formDevanagari(f.getFormDevanagari())
-                        .build())
-                .collect(Collectors.toList());
-
-        DeclensionParadigmDto paradigm = DeclensionParadigmDto.builder()
-                .stemId(stem.getId())
-                .stemIast(stem.getStemIast())
-                .stemDevanagari(stem.getStemDevanagari())
-                .translationRu(stem.getTranslationRu())
-                .translationEn(stem.getTranslationEn())
-                .gender(stem.getGender())
-                .vowelType(stem.getVowelType())
-                .forms(formDtos)
-                .build();
+        DeclensionParadigmDto paradigm = declensionParadigmMapper.toDeclensionParadigmDto(stem, forms);
 
         return DeclensionParadigmPageDto.builder()
                 .index(index)
@@ -257,26 +180,7 @@ public class GrammarContentService {
         return stems.stream()
                 .map(stem -> {
                     List<DeclensionForm> forms = declensionFormRepository.findByDeclensionStemId(stem.getId());
-                    List<DeclensionFormDto> formDtos = forms.stream()
-                            .map(f -> DeclensionFormDto.builder()
-                                    .declensionStemId(f.getDeclensionStemId())
-                                    .caseType(f.getCaseType())
-                                    .numberType(f.getNumberType())
-                                    .formIast(f.getFormIast())
-                                    .formDevanagari(f.getFormDevanagari())
-                                    .build())
-                            .collect(Collectors.toList());
-
-                    return DeclensionParadigmDto.builder()
-                            .stemId(stem.getId())
-                            .stemIast(stem.getStemIast())
-                            .stemDevanagari(stem.getStemDevanagari())
-                            .translationRu(stem.getTranslationRu())
-                            .translationEn(stem.getTranslationEn())
-                            .gender(stem.getGender())
-                            .vowelType(stem.getVowelType())
-                            .forms(formDtos)
-                            .build();
+                    return declensionParadigmMapper.toDeclensionParadigmDto(stem, forms);
                 })
                 .collect(Collectors.toList());
     }

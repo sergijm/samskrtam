@@ -1,9 +1,7 @@
 package sm.selflearn.samskrtam.sangraha.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +32,7 @@ public class VerseAnalysisService {
     private final WorkRepository workRepository;
     private final LlmClient llmClient;
     private final VerseAnalysisSaver analysisSaver;
+    private final VerseAnalysisResponseNormalizer responseNormalizer;
     private final ToolCallValidator toolCallValidator;
     private final JsonSchemas jsonSchemas;
     private final LlmProperties llmProperties;
@@ -124,206 +123,16 @@ public class VerseAnalysisService {
             return;
         }
 
-        /*
-         * 3. Извлекаем данные из LLM response.
-         *
-         * В зависимости от модели / gateway / tool-call parsing здесь реально
-         * могут прийти разные формы:
-         *
-         *   [...]
-         *
-         *   {"verses":[...]}
-         *
-         *   {"verses":"{\"verses\":[...]}"}
-         *
-         *   "{\"verses\":[...]}"
-         *
-         *   {"arguments":"{\"verses\":[...]}"}
-         *
-         *   "```json\n{\"verses\":[...]}\n```"
-         *
-         * Поэтому здесь не доверяем типу JsonNode и нормализуем всё
-         * до массива verses.
-         */
-        JsonNode versesArrayNode;
-
-        try {
-            versesArrayNode = llmClient.extractVersesArguments(llmResponse);
-
-            if (log.isDebugEnabled()) {
-                log.debug("Extracted LLM arguments: {}",
-                        objectMapper.writeValueAsString(versesArrayNode));
-            }
-
-            /*
-             * Максимальное количество итераций защиты от неожиданной
-             * рекурсивной/циклической обёртки.
-             */
-            for (int depth = 0; depth < 10 && versesArrayNode != null; depth++) {
-
-                if (versesArrayNode.isNull()) {
-                    versesArrayNode = null;
-                    break;
-                }
-
-                // Уже то, что нам нужно.
-                if (versesArrayNode.isArray()) {
-                    break;
-                }
-
-                /*
-                 * Строка может содержать JSON:
-                 *
-                 * "{\"verses\":[...]}"
-                 *
-                 * или markdown:
-                 *
-                 * ```json
-                 * {"verses":[...]}
-                 * ```
-                 */
-                if (versesArrayNode.isTextual()) {
-                    String text = versesArrayNode.asText();
-
-                    if (text == null || text.isBlank()) {
-                        versesArrayNode = null;
-                        break;
-                    }
-
-                    text = text.trim();
-
-                    // Убираем markdown code fence, если модель его добавила.
-                    if (text.startsWith("```")) {
-                        int firstNewline = text.indexOf('\n');
-                        int lastFence = text.lastIndexOf("```");
-
-                        if (firstNewline >= 0 && lastFence > firstNewline) {
-                            text = text.substring(firstNewline + 1, lastFence).trim();
-                        }
-                    }
-
-                    try {
-                        versesArrayNode = objectMapper.readTree(text);
-                        continue;
-                    } catch (Exception e) {
-                        log.warn("LLM returned textual value which is not valid JSON: {}",
-                                text.length() > 500
-                                        ? text.substring(0, 500) + "..."
-                                        : text);
-                        versesArrayNode = null;
-                        break;
-                    }
-                }
-
-                /*
-                 * Объект.
-                 *
-                 * Ищем стандартные обёртки:
-                 *
-                 * {"verses": ...}
-                 * {"arguments": ...}
-                 * {"parameters": ...}
-                 * {"result": ...}
-                 * {"data": ...}
-                 */
-                if (versesArrayNode.isObject()) {
-
-                    // Главный ожидаемый случай.
-                    JsonNode nestedVerses = versesArrayNode.get("verses");
-                    if (nestedVerses != null && !nestedVerses.isNull()) {
-                        versesArrayNode = nestedVerses;
-                        continue;
-                    }
-
-                    // Иногда tool arguments дополнительно обёрнуты.
-                    JsonNode arguments = versesArrayNode.get("arguments");
-                    if (arguments != null && !arguments.isNull()) {
-                        versesArrayNode = arguments;
-                        continue;
-                    }
-
-                    JsonNode parameters = versesArrayNode.get("parameters");
-                    if (parameters != null && !parameters.isNull()) {
-                        versesArrayNode = parameters;
-                        continue;
-                    }
-
-                    JsonNode result = versesArrayNode.get("result");
-                    if (result != null && !result.isNull()) {
-                        versesArrayNode = result;
-                        continue;
-                    }
-
-                    JsonNode data = versesArrayNode.get("data");
-                    if (data != null && !data.isNull()) {
-                        versesArrayNode = data;
-                        continue;
-                    }
-
-                    /*
-                     * Если это сам объект одного стиха:
-                     *
-                     * {
-                     *   "verseIndex": 0,
-                     *   "textDevanagari": "...",
-                     *   ...
-                     * }
-                     *
-                     * превращаем его в массив из одного элемента.
-                     */
-                    if (versesArrayNode.has("verseIndex")) {
-                        ArrayNode singleVerseArray = objectMapper.createArrayNode();
-                        singleVerseArray.add(versesArrayNode);
-                        versesArrayNode = singleVerseArray;
-                        break;
-                    }
-
-                    log.warn("LLM returned JSON object, but no verses/arguments/result/data "
-                                    + "field was found. Keys: {}",
-                            java.util.stream.StreamSupport.stream(
-                                            java.util.Spliterators.spliteratorUnknownSize(
-                                                    versesArrayNode.fieldNames(), 0),
-                                            false)
-                                    .toList());
-
-                    versesArrayNode = null;
-                    break;
-                }
-
-                // Любой другой JSON type нам не подходит.
-                log.warn("Unsupported LLM response JSON node type: {}",
-                        versesArrayNode.getNodeType());
-
-                versesArrayNode = null;
-                break;
-            }
-
-        } catch (Exception e) {
-            log.error("Failed to normalize LLM response for batch of {} verses",
-                    verses.size(), e);
-            versesArrayNode = null;
-        }
+        // 3. Извлекаем и нормализуем массив verses из ответа LLM.
+        JsonNode versesArrayNode = responseNormalizer.normalizeToVersesArray(llmResponse);
 
         if (versesArrayNode == null || !versesArrayNode.isArray()) {
-            log.error(
-                    "LLM did not return a usable verses array. Extracted node: {}",
-                    versesArrayNode == null
-                            ? "null"
-                            : versesArrayNode.toString()
-            );
-
+            log.error("LLM did not return a usable verses array for batch of {} verses",
+                    verses.size());
             for (Verse v : verses) {
                 analysisSaver.markFailed(v);
             }
             return;
-        }
-
-        if (log.isDebugEnabled()) {
-            try {
-                log.debug("Normalized verses array: {}",
-                        objectMapper.writeValueAsString(versesArrayNode));
-            } catch (JsonProcessingException ignored) {
-            }
         }
 
         String modelName = llmClient.extractModelName(llmResponse);

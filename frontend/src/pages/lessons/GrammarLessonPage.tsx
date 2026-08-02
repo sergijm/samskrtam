@@ -155,7 +155,7 @@ const GrammarLessonPage = () => {
           )}
 
           <div className="mt-4">
-            <TabView activeIndex={activeTab} onTabChange={handleTabChange}>
+            <TabView activeIndex={activeTab} onTabChange={handleTabChange} className="grammar-lesson-tabs">
               <TabPanel header={i18n.language === 'ru' ? 'Парадигмы' : 'Paradigms'}>
                 {/* Static reference table of case endings — shown only when stem type is recognized */}
                 {endingsTableData && (
@@ -179,7 +179,7 @@ const GrammarLessonPage = () => {
                   <GrammarParadigmCarousel slug={slug || ''} enabled={paradigmsTabOpened} />
                 )}
               </TabPanel>
-              <TabPanel header={i18n.language === 'ru' ? 'Примеры' : 'Examples'}>
+              <TabPanel header={i18n.language === 'ru' ? 'Примеры' : 'Examples'} className="declension-examples-tab-panel">
                 <DeclensionExamplesPanel slug={slug || ''} enabled={examplesTabOpened} />
               </TabPanel>
               <TabPanel header={i18n.language === 'ru' ? 'Прогресс' : 'Progress'}>
