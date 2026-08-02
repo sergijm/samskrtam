@@ -14,18 +14,24 @@ import sm.selflearn.samskrtam.sangraha.dto.DeclensionExamplesSearchResponseDto.G
 import sm.selflearn.samskrtam.sangraha.model.Gender;
 import sm.selflearn.samskrtam.sangraha.model.GrammaticalCase;
 import sm.selflearn.samskrtam.sangraha.model.NumberType;
-import sm.selflearn.samskrtam.sangraha.model.VerseStatus;
-import sm.selflearn.samskrtam.sangraha.model.VerseWord;
+import sm.selflearn.samskrtam.sangraha.model.NominalLemma;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
+import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository.VerseWordCount;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Поиск примеров словоформ по словоизменительному классу (sangraha-service.md §9) для
  * внутреннего эндпоинта POST /sangraha/internal/content/declension-examples.
+ * Поиск не фильтрует по Verse.status — идёт напрямую по наличию подходящей
+ * verse_word_morphology (см. §9, B1). Ранжирование — по длине стиха в словах (§9).
  */
 @Slf4j
 @Service
@@ -51,11 +57,40 @@ public class VerseWordSearchService {
     );
 
     /**
+     * Возможные последние буквы stem для каждого регулярного класса (fallback в HQL,
+     * sangraha-service.md §9): a→A_STEM, ā→AA_STEM, i→I_STEM, ī→II_STEM, u→U_STEM,
+     * ū→UU_STEM, ṛ/r→R_STEM.
+     */
+    private static final Map<VowelType, Set<String>> REGULAR_LAST_LETTERS = Map.of(
+            VowelType.A_STEM, Set.of("a"),
+            VowelType.AA_STEM, Set.of("ā"),
+            VowelType.I_STEM, Set.of("i"),
+            VowelType.II_STEM, Set.of("ī"),
+            VowelType.U_STEM, Set.of("u"),
+            VowelType.UU_STEM, Set.of("ū"),
+            VowelType.R_STEM, Set.of("ṛ", "r")
+    );
+
+    /**
+     * Все допустимые имена значений VowelType (7 регулярных + 8 местоимённых). В HQL
+     * используется для отделения распознанного stemClass (трактуется как vowelType слова)
+     * от нераспознанного значения (fallback по последней букве stem), см. findVerseWordCountsByVowelType.
+     */
+    private static final Set<String> VOWEL_TYPE_NAMES = Arrays.stream(VowelType.values())
+            .map(Enum::name)
+            .collect(Collectors.toUnmodifiableSet());
+
+    /**
+     * Кандидат на попадание в группу: стих + длина стиха в словах.
+     */
+    public record Candidate(UUID verseId, long wordCount) {}
+
+    /**
      * Маппинг последней буквы основы → регулярный класс (sangraha-service.md §9):
      * a→A_STEM, ā→AA_STEM, i→I_STEM, ī→II_STEM, u→U_STEM, ū→UU_STEM, ṛ/r→R_STEM.
      * Возвращает null, если основа отсутствует или не оканчивается на гласную регулярного класса.
      */
-    public VowelType classifyVowelType(String stem) {
+    public static VowelType classifyVowelType(String stem) {
         if (stem == null || stem.isEmpty()) {
             return null;
         }
@@ -72,6 +107,25 @@ public class VerseWordSearchService {
         };
     }
 
+    /**
+     * vowelType слова (sangraha-service.md §9): приоритет nominal_lemmas — stemClass строки
+     * на лемму слова (одна строка на lemma_iast, выбирать не из чего); если леммы нет в
+     * таблице (или stemClass в ней null/не является регулярным классом) — прежняя эвристика
+     * по последней букве stem. stem_class в БД без CHECK — открытый набор значений, поэтому
+     * нераспознанное значение трактуется как отсутствие классификации (fallback).
+     * Чистая функция.
+     */
+    static VowelType resolveVowelType(NominalLemma lemma, String stem) {
+        if (lemma != null && lemma.getStemClass() != null) {
+            try {
+                return VowelType.valueOf(lemma.getStemClass());
+            } catch (IllegalArgumentException e) {
+                return classifyVowelType(stem);
+            }
+        }
+        return classifyVowelType(stem);
+    }
+
     @Transactional(readOnly = true)
     public DeclensionExamplesSearchResponseDto searchExamples(DeclensionExamplesSearchRequestDto request) {
         if (request == null || request.vowelType() == null || request.gender() == null
@@ -86,61 +140,79 @@ public class VerseWordSearchService {
         Gender gender = toSangrahaGender(request.gender());
         List<GroupDto> groups = new ArrayList<>(request.cells().size());
         for (CellDto cell : request.cells()) {
-            List<UUID> verseIds = searchForCell(request.vowelType(), gender, cell, request.limitPerGroup());
+            List<UUID> verseIds = searchForCell(request.vowelType(), gender, cell,
+                    request.limitPerGroup(), request.maxPhraseWords());
             groups.add(new GroupDto(cell.caseType(), cell.numberType(), verseIds));
         }
         return new DeclensionExamplesSearchResponseDto(groups);
     }
 
-    private List<UUID> searchForCell(VowelType vowelType, Gender gender, CellDto cell, int limitPerGroup) {
+    private List<UUID> searchForCell(VowelType vowelType, Gender gender, CellDto cell,
+                                     int limitPerGroup, int maxPhraseWords) {
         GrammaticalCase caseType = toSangrahaCase(cell.caseType());
         NumberType numberType = toSangrahaNumber(cell.numberType());
         if (gender == null || caseType == null || numberType == null) {
             return List.of();
         }
 
-        List<VerseWord> matches;
+        List<VerseWordCount> counts;
         if (isRegular(vowelType)) {
-            String stemSuffix = stemSuffixPattern(vowelType);
-            if (stemSuffix == null) {
-                return List.of();
-            }
-            matches = verseWordRepository.findByMorphologyAndStemSuffix(
-                    gender, caseType, numberType, stemSuffix, VerseStatus.ANALYZED);
+            counts = verseWordRepository.findVerseWordCountsByVowelType(
+                    gender, caseType, numberType, vowelType.name(), VOWEL_TYPE_NAMES,
+                    REGULAR_LAST_LETTERS.get(vowelType), maxPhraseWords);
         } else {
             String lemmaIast = PRON_LEMMA_IAST.get(vowelType);
             if (lemmaIast == null) {
                 return List.of();
             }
-            matches = verseWordRepository.findByMorphologyAndLemmaIast(
-                    gender, caseType, numberType, lemmaIast, VerseStatus.ANALYZED);
+            counts = verseWordRepository.findVerseWordCountsByLemmaIast(
+                    gender, caseType, numberType, lemmaIast, maxPhraseWords);
         }
 
-        // Детерминированный отбор: по verseId (sangraha-service.md §9), чтобы повторный
-        // запрос с тем же limitPerGroup возвращал тот же набор.
-        return matches.stream()
-                .map(VerseWord::getVerseId)
-                .distinct()
-                .sorted()
-                .limit(limitPerGroup)
+        List<Candidate> candidates = counts.stream()
+                .map(count -> new Candidate(count.getVerseId(), count.getWordCount()))
                 .toList();
+        return rankAndSelect(candidates, limitPerGroup);
+    }
+
+    /**
+     * Ранжирование и отбор ≤ limitPerGroup (sangraha-service.md §9): кандидаты делятся на
+     * основной уровень (wordCount >= 3) и резервный (wordCount < 3); внутри каждого уровня —
+     * сортировка по возрастанию wordCount, при равенстве — по verseId (детерминированно).
+     * Сначала берутся первые limitPerGroup из основного уровня, недостающее добирается
+     * из начала резервного. Чистая функция — тестируется юнитом (B4).
+     */
+    static List<UUID> rankAndSelect(List<Candidate> candidates, int limitPerGroup) {
+        Comparator<Candidate> byWordCountThenVerseId = Comparator
+                .comparingLong(Candidate::wordCount)
+                .thenComparing(Candidate::verseId);
+        List<Candidate> primary = candidates.stream()
+                .filter(candidate -> candidate.wordCount() >= 3)
+                .sorted(byWordCountThenVerseId)
+                .toList();
+        List<Candidate> reserve = candidates.stream()
+                .filter(candidate -> candidate.wordCount() < 3)
+                .sorted(byWordCountThenVerseId)
+                .toList();
+
+        List<UUID> result = new ArrayList<>(Math.min(limitPerGroup, candidates.size()));
+        for (Candidate candidate : primary) {
+            if (result.size() >= limitPerGroup) {
+                break;
+            }
+            result.add(candidate.verseId());
+        }
+        for (Candidate candidate : reserve) {
+            if (result.size() >= limitPerGroup) {
+                break;
+            }
+            result.add(candidate.verseId());
+        }
+        return result;
     }
 
     private static boolean isRegular(VowelType vowelType) {
         return vowelType != null && !vowelType.name().startsWith("PRON_");
-    }
-
-    private static String stemSuffixPattern(VowelType vowelType) {
-        return switch (vowelType) {
-            case A_STEM -> "%a";
-            case AA_STEM -> "%ā";
-            case I_STEM -> "%i";
-            case II_STEM -> "%ī";
-            case U_STEM -> "%u";
-            case UU_STEM -> "%ū";
-            case R_STEM -> "%ṛ";
-            default -> null;
-        };
     }
 
     private static Gender toSangrahaGender(sm.selflearn.samskrtam.content.model.Gender gender) {

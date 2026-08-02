@@ -175,12 +175,30 @@ class SangrahaImporter:
         if self.conn:
             self.conn.close()
 
+    def get_or_create_source(self) -> str:
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id FROM sangraha.sources WHERE code = 'DCS';")
+            res = cur.fetchone()
+            if res:
+                return res["id"]
+            cur.execute(
+                """
+                INSERT INTO sangraha.sources (code, title_en, title_ru)
+                VALUES (%s, %s, %s) RETURNING id;
+                """,
+                ("DCS", "Digital Corpus of Sanskrit", "Цифровой корпус санскрита")
+            )
+            source_id = cur.fetchone()["id"]
+            self.conn.commit()
+            return source_id
+
     def get_or_create_work(self, work_title: str) -> str:
         if not work_title:
             work_title = "Unknown Work"
         if work_title in self.work_cache:
             return self.work_cache[work_title]
 
+        source_id = self.get_or_create_source()
         with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT id FROM sangraha.works WHERE title_en = %s;", (work_title,))
             res = cur.fetchone()
@@ -190,10 +208,10 @@ class SangrahaImporter:
                 slug = generate_slug(work_title)
                 cur.execute(
                     """
-                    INSERT INTO sangraha.works (slug, title_ru, title_en, title_sa_iast)
-                    VALUES (%s, %s, %s, %s) RETURNING id;
+                    INSERT INTO sangraha.works (slug, title_ru, title_en, title_sa_iast, source_id)
+                    VALUES (%s, %s, %s, %s, %s) RETURNING id;
                     """,
-                    (slug, work_title, work_title, work_title)
+                    (slug, work_title, work_title, work_title, source_id)
                 )
                 work_id = cur.fetchone()["id"]
                 self.conn.commit()

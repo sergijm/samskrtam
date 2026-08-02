@@ -52,3 +52,7 @@ dependencies {
 
     testImplementation(libs.spring.test)
 }
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}

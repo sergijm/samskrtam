@@ -17,10 +17,7 @@ import sm.selflearn.samskrtam.sangraha.repository.VerseAnalysisRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -46,8 +43,11 @@ public class VerseBatchService {
         }
 
         // Только ANALYZED и не удалённые
-        List<Verse> verses = verseRepository.findAllByIdInAndStatusAndDeletedAtIsNull(
-                request.verseIds(), VerseStatus.ANALYZED);
+//        List<Verse> verses = verseRepository.findAllByIdInAndStatusAndDeletedAtIsNull(
+//                request.verseIds(), VerseStatus.ANALYZED);
+
+        List<Verse> verses = verseRepository.findAllByIdInAndDeletedAtIsNull(
+                request.verseIds());
 
         if (verses.isEmpty()) {
             return new VersesBatchResponseDto(List.of());
@@ -72,14 +72,13 @@ public class VerseBatchService {
             if (work == null) continue;
 
             VerseAnalysis analysis = analyses.get(verse.getId());
-            if (analysis == null) continue;
 
             dtos.add(new VerseDto(
                     verse.getId(),
-                    verse.getTextIast(),
+                    Optional.ofNullable(verse.getTextIast()).orElse(verse.getRawText()),
                     verse.getTextDevanagari(),
-                    analysis.getTranslationRu(),
-                    analysis.getTranslationEn(),
+                    analysis == null ? null : analysis.getTranslationRu(),
+                    analysis == null ? null : analysis.getTranslationEn(),
                     work.getTitleRu(),
                     work.getTitleEn(),
                     chapter.getTitleRu(),

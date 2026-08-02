@@ -1,5 +1,6 @@
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, keepPreviousData, useQueries } from '@tanstack/react-query';
 import { lessonApi } from '../api/lessonApi';
+import type { DeclensionParadigmPageDto } from '../types/content-dtos';
 
 export const useVocabularyLesson = (slug: string) =>
   useQuery({
@@ -44,6 +45,32 @@ export const useDeclensionParadigm = (slug: string, index: number, enabled: bool
     refetchOnReconnect: false,
     placeholderData: keepPreviousData,
   });
+
+/**
+ * Fetches every paradigm page (index 0..totalCount-1) of a lesson in parallel.
+ * Uses the same queryKey as useDeclensionParadigm, so pages already loaded by
+ * the carousel are reused from the React Query cache (no duplicate requests).
+ */
+export const useAllDeclensionParadigms = (slug: string, totalCount: number, enabled: boolean) => {
+  const results = useQueries({
+    queries: Array.from({ length: Math.max(0, totalCount) }, (_, index) => ({
+      queryKey: ['declension-paradigm', slug, index],
+      queryFn: () => lessonApi.getDeclensionParadigm(slug, index).then(res => res.data),
+      enabled: !!slug && enabled && totalCount > 0,
+      staleTime: Infinity,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    })),
+  });
+
+  const pages = results
+    .map(r => r.data)
+    .filter((d): d is DeclensionParadigmPageDto => d !== undefined);
+  const isLoading = results.some(r => r.isLoading);
+
+  return { pages, isLoading };
+};
 
 /**
  * Examples for the declension lesson — one request per entire lesson, no index.

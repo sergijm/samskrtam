@@ -11,7 +11,14 @@ public record DeclensionExamplesSearchRequestDto(
         VowelType vowelType,
         Gender gender,
         int limitPerGroup,
+        int maxPhraseWords,
         List<CellDto> cells
 ) {
+    public DeclensionExamplesSearchRequestDto {
+        if (maxPhraseWords == 0) {
+            maxPhraseWords = 10;
+        }
+    }
+
     public record CellDto(CaseType caseType, NumberType numberType) {}
 }

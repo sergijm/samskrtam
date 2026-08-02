@@ -50,7 +50,7 @@ public class VerseService {
         public VerseDetailDto getVerseDetail(UUID id) {
             Verse verse = getVerseById(id);
             Optional<VerseAnalysis> analysis = verseAnalysisRepository.findByVerseId(id);
-            List<VerseWord> words = verseWordRepository.findAllByVerseIdOrderByPositionAsc(id);
+            List<VerseWord> words = verseWordRepository.findAllByVerse_IdOrderByPositionAsc(id);
 
             return verseMapper.toDetailDto(verse, analysis.orElse(null),
                     words.isEmpty() ? null : words,
@@ -71,7 +71,7 @@ public class VerseService {
 
     @Transactional(readOnly = true)
     public List<VerseWord> getVerseWords(UUID verseId) {
-        return verseWordRepository.findAllByVerseIdOrderByPositionAsc(verseId);
+        return verseWordRepository.findAllByVerse_IdOrderByPositionAsc(verseId);
     }
 
         /**
@@ -92,7 +92,7 @@ public class VerseService {
                 && !verse.getVocabularyQuizSlug().isBlank()
                 && verse.getVocabularyQuizId() != null;
 
-        List<VerseWord> words = verseWordRepository.findAllByVerseIdOrderByPositionAsc(verseId);
+        List<VerseWord> words = verseWordRepository.findAllByVerse_IdOrderByPositionAsc(verseId);
 
         if (quizAlreadyExists) {
             boolean allMapped = words.stream().allMatch(w -> w.getVocabularyWordId() != null);

@@ -60,6 +60,46 @@ description — человекочитаемое пояснение словоо
 JSONB для этого домена (разграничение ответственности, индексируемость
 обычными btree-индексами, типобезопасность через JPA-энумы).
 
+## 1а. NounStem (таблица noun_stems) — DEPRECATED, заменена NominalLemma
+
+**Статус: deprecated.** Реализована (миграция + JPA), но выявлен недостаток
+дизайна: `stem_iast`/`stem_class`/`confidence` — свойства **леммы**, а не
+конкретного вхождения слова в стих, поэтому хранение по `verse_word_id`
+дублирует одну и ту же классификацию на каждое вхождение (например, `rāma`
+может встречаться в корпусе сотни раз — и все сотни строк `noun_stems` несли
+бы одинаковые `stem_iast`/`stem_class`). Заменена таблицей `nominal_lemmas`
+(см. §1б ниже), где классификация хранится один раз на лемму. Таблица
+`noun_stems` **не удаляется** в миграции — оставлена для отката/сверки, но
+поиск (`sangraha-service.md` §9) больше её не использует. JPA-сущность
+`NounStem`/поле `VerseWord.nounStems` из кода не удаляются в рамках текущей
+задачи — отдельное решение об удалении принимается позже, после проверки
+`nominal_lemmas` на реальных данных.
+
+## 1б. NominalLemma (таблица nominal_lemmas)
+
+Одна строка на лемму (`lemma_iast`, `UNIQUE`), а не на вхождение слова —
+классификация не дублируется. Название `nominal_lemmas`, а не `noun_lemmas`
+— задел на будущее для других склоняемых частей речи (прилагательные,
+местоимения, числительные), не только существительных.
+
+Поля: id (BIGSERIAL, PK — единственная таблица в sangraha с числовым PK,
+остальные используют UUID; сознательное отклонение по присланному SQL,
+пересмотр — по решению Агента 2/оркестратора отдельным тикетом, не блокирует
+эту задачу), lemmaIast (TEXT, NOT NULL, UNIQUE), stemIast (TEXT, nullable),
+stemClass (TEXT, nullable, без CHECK-constraint — намеренно, набор значений
+не ограничивается текущими 7 regular-classes ради будущего расширения на
+другие части речи), confidence (TEXT, nullable, CHECK-constraint HIGH|MEDIUM|
+LOW — тот же паттерн, что у `analysisConfidence`), model (TEXT, nullable),
+createdAt/updatedAt (TIMESTAMPTZ, NOT NULL, DEFAULT now()).
+
+**Связь с VerseWord — не через JPA-relationship.** Нет физической FK-колонки
+в `verse_words`, указывающей на `nominal_lemmas` — связь только по совпадению
+текста `lemma_iast`. Натягивать `@ManyToOne`/`@OneToMany` через
+`referencedColumnName` не нужно (усложнение ORM ради несуществующей
+физической связи) — на этапе поиска (§9) делается обычный batch-запрос
+репозитория `findByLemmaIastIn(Collection<String>)` по набору лемм слов-
+кандидатов.
+
 ## 2. Новые Java-энумы (задача Агенту 2, пакет model/)
 
 FormType: FINITE, INFINITIVE, ABSOLUTIVE, PARTICIPLE, GERUNDIVE,

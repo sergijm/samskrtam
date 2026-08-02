@@ -12,7 +12,6 @@ import sm.selflearn.samskrtam.sangraha.repository.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -64,9 +63,9 @@ public class VerseAnalysisSaver {
         verseAnalysisRepository.save(analysis);
 
         // 3. Пересоздаём VerseWord[]
-        verseWordRepository.deleteAllByVerseId(verse.getId());
+        verseWordRepository.deleteAllByVerse_Id(verse.getId());
 
-        var words = buildWords(verse.getId(), wordsNode);
+        var words = buildWords(verse, wordsNode);
         verseWordRepository.saveAll(words);
 
         // 4. Статус ANALYZED — последним, гарантия атомарности
@@ -95,11 +94,11 @@ public class VerseAnalysisSaver {
         verseRepository.save(verse);
     }
 
-        private List<VerseWord> buildWords(UUID verseId, JsonNode wordsNode) {
+        private List<VerseWord> buildWords(Verse verse, JsonNode wordsNode) {
         var words = new ArrayList<VerseWord>();
         for (var w : wordsNode) {
             var word = VerseWord.builder()
-                    .verseId(verseId)
+                    .verse(verse)
                     .position(w.get("position").asInt())
                     .surfaceIast(getString(w, "surfaceIast"))
                     .surfaceDevanagari(getString(w, "surfaceDevanagari"))

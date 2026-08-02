@@ -29,6 +29,15 @@ export interface NumberAggregation {
   status: WordStatus;
 }
 
+export interface CaseNumberAggregation {
+  caseType: string;
+  numberType: string;
+  aggregatedProgress: number;
+  totalCombinations: number;
+  learnedCombinations: number;
+  status: WordStatus;
+}
+
 export const aggregateByCase = (questions: GrammarQuestionProgress[]): CaseAggregation[] => {
   const grouped = new Map<string, GrammarQuestionProgress[]>();
   for (const q of questions) {
@@ -89,6 +98,38 @@ export const aggregateByNumber = (questions: GrammarQuestionProgress[]): NumberA
       learnedCombinations: learned,
       status,
     });
+  }
+  return result;
+};
+
+export const aggregateByCaseAndNumber = (questions: GrammarQuestionProgress[]): CaseNumberAggregation[] => {
+  const grouped = new Map<string, GrammarQuestionProgress[]>();
+  for (const q of questions) {
+    const key = `${q.caseType}:${q.numberType}`;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(q);
+  }
+
+  const result: CaseNumberAggregation[] = [];
+  for (const caseType of CASE_TYPES) {
+    for (const numberType of NUMBER_TYPES) {
+      const items = grouped.get(`${caseType}:${numberType}`);
+      if (!items || items.length === 0) continue;
+
+      const total = items.length;
+      const learned = items.filter(q => q.score >= MASTERY_THRESHOLD).length;
+      const progress = total > 0 ? Math.round((learned / total) * 100) : 0;
+      const status: WordStatus = progress >= MASTERY_THRESHOLD ? 'MASTERED' : 'LEARNING';
+
+      result.push({
+        caseType,
+        numberType,
+        aggregatedProgress: progress,
+        totalCombinations: total,
+        learnedCombinations: learned,
+        status,
+      });
+    }
   }
   return result;
 };

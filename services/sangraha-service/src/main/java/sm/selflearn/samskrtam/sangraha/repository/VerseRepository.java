@@ -32,4 +32,12 @@ public interface VerseRepository extends JpaRepository<Verse, UUID> {
     List<Verse> findAllByIdInAndStatusAndDeletedAtIsNull(
             @Param("ids") Collection<UUID> ids,
             @Param("status") VerseStatus status);
+
+    @Query("""
+            SELECT v FROM Verse v
+            WHERE v.id IN :ids AND v.deletedAt IS NULL
+            """)
+    List<Verse> findAllByIdInAndDeletedAtIsNull(
+            @Param("ids") Collection<UUID> ids);
+
 }

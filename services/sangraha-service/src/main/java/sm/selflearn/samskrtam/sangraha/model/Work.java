@@ -51,6 +51,9 @@ public class Work {
 
     private String author;
 
+    @Column(name = "source_id", nullable = false)
+    private UUID sourceId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

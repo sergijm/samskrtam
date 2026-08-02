@@ -12,20 +12,19 @@
 
 ## 2. Элементы страницы
 
-**Шапка урока:** отличается от VocabularyLessonPage — заголовок слева, справа только кнопка «Начать квиз» (без `LessonStatsBadges`; панель статистики перенесена во вкладку «Статистика», см. §2.1).
+**Шапка урока:** заголовок + счётчик `total` из `statusSummary` (без `LessonStatsBadges`). Ниже шапки, **вне `TabView`** — `LessonStatsTab` (см. §2.1), это не отдельная вкладка (расхождение с более ранней версией этого документа — зафиксировано и исправлено; актуальный источник истины — `frontend/src/pages/lessons/GrammarLessonPage.tsx`).
 
 **Вкладки (`TabView`), порядок слева направо:**
 
 | # | Вкладка | Компонент | Содержимое |
 |---|---|---|---|
-| 1 | Статистика | `LessonStatsTab` | статистика урока по статусам, см. §2.1 |
-| 2 | Парадигмы | `GrammarParadigmTable` | справочная таблица словоформ падеж×число (×род), см. §2.2 |
-| 3 | Примеры | `DeclensionExamplesTab` | реальные цитаты из проанализированных стихов на каждую ячейку парадигмы, см. §2.2а |
-| 4 | По падежам | `CaseAggregationTable` | агрегация вопросов по падежу |
-| 5 | По числам | `NumberAggregationTable` | агрегация вопросов по числу (SINGULAR/DUAL/PLURAL), см. §2.1а |
-| 6 | Подробно | `GrammarDetailsTable` | таблица вопросов, см. ниже |
+| 1 | Парадигмы | `GrammarParadigmCarousel` + `DeclensionEndingsReferenceTable` | карусель реальных словоформ по стемам (падеж×число, см. §2.2) со статичной справочной таблицей окончаний над ней (кликабельна, см. §2.2б) |
+| 2 | Примеры | `DeclensionExamplesTab` | реальные цитаты из проанализированных стихов на каждую ячейку парадигмы, см. §2.2а |
+| 3 | Прогресс | `GrammarProgressGrid` | **НОВОЕ**, заменяет удалённые «По падежам»/«По числам»/«Подробно», см. §2.1а |
 
-**ИЗМЕНЕНО:** отдельной колонки «Статус» больше нет ни в одной из таблиц вкладок (`CaseAggregationTable`, `NumberAggregationTable`, `GrammarDetailsTable`) — тот же паттерн, что уже применён для вкладок «По падежам»/«По числам»/«Подробно» на стартовой странице квиза склонений (см. `quiz-declension.md` §3.1). Вместо неё статус кодируется цветом `ProgressBar` в колонке «Изучено»:
+**УДАЛЕНО:** вкладки «По падежам» (`CaseAggregationTable`), «По числам» (`NumberAggregationTable`), «Подробно» (`GrammarDetailsTable`) и соответствующие им компоненты. Их функциональность (запуск квиза по падежу/числу) полностью покрывается новой вкладкой «Прогресс» (§2.1а); детальная таблица вопросов (бывшая «Подробно», с колонкой «Попытки» → `QuestionHistoryDialog`) в новом UI не воспроизводится — сознательное упрощение по требованию пользователя, а не забытая функция.
+
+Статус кодируется цветом `ProgressBar` (переиспользуется в §2.1а):
 
 | Статус (`WordStatus`) | Цвет `ProgressBar` |
 |---|---|
@@ -46,13 +45,18 @@
 
 **Клик на `{nSuccess}/{nAll}`** → открывает `QuestionHistoryDialog` — аналог WordHistoryDialog для грамматических вопросов.
 
-## 2.1а. NumberAggregationTable (вкладка «По числам»)
+## 2.1а. GrammarProgressGrid (вкладка «Прогресс»)
 
-Зеркальная копия `CaseAggregationTable` (см. таблицу вкладок выше), но группировка — по `numberType` вместо `caseType`:
-- Источник данных и агрегация — тот же `lesson.questions: GrammarQuestionProgress[]`, новая функция `aggregateByNumber(questions)` в `utils/grammarAggregation.ts` (по аналогии с существующей `aggregateByCase`), константа `NUMBER_TYPES = ['SINGULAR', 'DUAL', 'PLURAL']` (фиксированный порядок строк, аналогично `CASE_TYPES`).
-- Колонки: **Число** (`numberRu`/`numberEn` по локали), **Изучено** (`ProgressBar` + процент, цвет по статусу — см. §2 выше), кнопка запуска квиза.
-- Строка таблицы отсутствует, если для данного `numberType` нет вопросов в уроке (как и в `CaseAggregationTable` для падежа без вопросов).
-- Клик по строке/кнопке запускает квиз с фильтром: `POST /quiz/{slug}/sessions/start-or-resume?...&filterScope=NUMBER_ONLY&filterNumberTypes=<numberType>` (те же `filterScope`-контракты, что уже реализованы на бэкенде для `CASE_ONLY`, см. `quiz-declension.md` §3.4 — дополнительных изменений на бэкенде не требуется, `NUMBER_ONLY` уже поддержан).
+**НОВОЕ.** Заменяет вкладки «По падежам» (`CaseAggregationTable`), «По числам» (`NumberAggregationTable`) и «Подробно» (`GrammarDetailsTable`) одной сводной таблицей: строки — падежи (`CASE_TYPES`, фиксированный порядок), столбцы — числа (`NUMBER_TYPES = ['SINGULAR','DUAL','PLURAL']`, фиксированный порядок). Никаких новых бэкенд-запросов не требуется — источник данных тот же `lesson.questions: GrammarQuestionProgress[]`, что и у старых `CaseAggregationTable`/`NumberAggregationTable`/`GrammarDetailsTable`.
+
+**Агрегация.** Новая функция `aggregateByCaseAndNumber(questions: GrammarQuestionProgress[])` в `utils/grammarAggregation.ts` (рядом с существующими `aggregateByCase`/`aggregateByNumber`, которые остаются — переиспользуются для расчёта заголовков строк/столбцов, см. ниже): группировка вопросов по паре `(caseType, numberType)`, для каждой непустой пары — `{ caseType, numberType, aggregatedProgress: Math.round(learned/total*100), status: aggregatedProgress >= MASTERY_THRESHOLD ? 'MASTERED' : 'LEARNING', totalCombinations, learnedCombinations }` (`learned` — количество вопросов с `score >= MASTERY_THRESHOLD`, идентично существующим `aggregateByCase`/`aggregateByNumber`). Возвращает `Map`/массив, по которому компонент ищет ячейку по ключу `${caseType}:${numberType}`.
+
+**Разметка таблицы:**
+- Заголовок первой колонки пуст (угловая ячейка).
+- Первая строка — заголовки столбцов: название числа (`numberRu`/`numberEn` по локали, берётся из `aggregateByNumber(questions)` — переиспользуется только как источник локализованных названий, не для агрегации). **Кликабельно** → запускает/резюмирует квиз `filterScope=NUMBER_ONLY&filterNumberTypes=<numberType>` (тот же переход, что раньше выполняла строка/кнопка `NumberAggregationTable` — контракт не меняется, см. `quiz-declension.md` §3.4).
+- Первая колонка каждой строки — название падежа (`caseRu`/`caseEn`, аналогично из `aggregateByCase`). **Кликабельно** → `filterScope=CASE_ONLY&filterCaseType=<caseType>` (контракт бывшей `CaseAggregationTable`, не меняется).
+- Остальные ячейки (падеж×число) — `MiniProgressBar` (см. `components/common/MiniProgressBar.tsx`, уже используется в старых `CaseAggregationTable`/`NumberAggregationTable`) со `value=aggregatedProgress`, `status` для цвета, **без `onClick`** — по прямому решению пользователя клик по самой ячейке ничего не запускает (там нет отдельного смысла «выбрать»: запуск квиза целиком описывается осями заголовков). Ячейка без данных (нет вопросов для этой пары падеж×число в уроке) рендерится пустой/прочерком, без `MiniProgressBar`.
+- Детальная таблица вопросов (бывшая «Подробно», клик `{nSuccess}/{nAll}` → `QuestionHistoryDialog`) в этой вкладке не воспроизводится — при удалении `GrammarDetailsTable` из страницы удаляется и вызов `QuestionHistoryDialog` вместе с состояниями `selectedCaseType`/`selectedNumberType`/`selectedGender`/`questionHistoryDialogVisible`/`sortField`/`sortOrder`, которые существовали только ради неё.
 
 
 
@@ -87,6 +91,22 @@
 - Столбцы — `numberType`, присутствующие среди `forms` текущего стема (обычно SINGULAR/DUAL/PLURAL).
 - Ячейка — `formIast` (крупно) + `formDevanagari` мелким шрифтом, ищется в `forms` по (`caseType`, `numberType`) текущей строки/столбца; пусто (`—`), если записи нет (неполный сид, см. `content-service.md` §3 про `sanskrit_declensions_enriched`).
 - Пока не выполнена миграция `translation_ru/translation_en`/data-fix `stem_devanagari` (задача Агенту 2, `content-service.md` §4/§5а) — эти поля приходят `null`, заголовок таблицы деградирует до одного `stemIast`; это временное, не блокирующее рендер состояние, а не ошибка.
+
+## 2.2б. DeclensionEndingsReferenceTable — клик по ячейке окончания (вкладка «Парадигмы»)
+
+**НОВОЕ.** `DeclensionEndingsReferenceTable` (см. `frontend/src/components/lesson/DeclensionEndingsReferenceTable.tsx`, данные — `data/aStemEndingsTable.ts`) — статичная справочная таблица абстрактных окончаний (падеж × число×род, столбцы вида `sgM`/`sgN`/`duMN`/`plM`/`plN`), рендерится над `GrammarParadigmCarousel` (§2.2), пока не кликабельна. Теперь её ячейки становятся кликабельными.
+
+**Разбор ячейки.** Каждый столбец `EndingsTableData.columns[].key` кодирует число + (опционально) род: `sgM`→(`SINGULAR`,`MASCULINE`), `sgN`→(`SINGULAR`,`NEUTER`), `duMN`→(`DUAL`, род не фильтруется — совпадают формы `MASCULINE`/`NEUTER`), `plM`→(`PLURAL`,`MASCULINE`), `plN`→(`PLURAL`,`NEUTER`); конкретный набор столбцов зависит от `vowelType` (см. `vowelTypeToEndingsTable`), маппинг «столбец → (numberType, gender|undefined)» — новая константа `ENDINGS_COLUMN_TO_NUMBER_GENDER` рядом с `aStemEndingsTable.ts`. `EndingsRow.caseKey` (нижний регистр, например `'nominative'`) маппится на `CASE_TYPES` (верхний регистр, `'NOMINATIVE'`) — новая функция `caseKeyToCaseType` там же.
+
+**Состояние.** На странице `GrammarLessonPage.tsx` (вкладка «Парадигмы») — новое состояние `selectedEndingCell: { caseType: string; numberType: string; gender?: string } | null` (изначально `null`). Клик по непустой ячейке `DeclensionEndingsReferenceTable` (пустая/`isIdentity`-ячейка, например «= основа» у Vocative, не кликабельна) устанавливает `selectedEndingCell` в разобранные `(caseType, numberType, gender)`. Пока `selectedEndingCell !== null`: `GrammarParadigmCarousel` скрывается, вместо него рендерится новый компонент `DeclensionEndingWordsTable`.
+
+**Источник данных `DeclensionEndingWordsTable`.** Никакого нового backend-эндпоинта не требуется (см. решение по вопросу 6/8 задачи) — компонент переиспользует уже показываемые в карусели данные: все страницы `GET /content/public/lessons/{slug}/declension-paradigms?index=0..totalCount-1`. Новый хук `useAllDeclensionParadigms(slug, totalCount, enabled)` (React Query `useQueries`, тот же `queryFn`/`queryKey`-паттерн, что `useDeclensionParadigm`, `enabled = selectedEndingCell !== null && totalCount > 0`) параллельно запрашивает все индексы (дедуплицируется с уже закэшированными страницами карусели по тому же `queryKey`, повторных сетевых запросов для уже открытых стемов не будет). `totalCount` берётся из уже загруженной страницы карусели (поднимается в состояние `GrammarLessonPage`, либо `GrammarParadigmCarousel` получает его как проп сверху — на усмотрение реализации, лишь бы не дублировался запрос ради самого числа).
+
+**Таблица слов.** Для каждого `DeclensionParadigmDto` из всех загруженных страниц, где среди `forms` есть запись с `(caseType, numberType)` из `selectedEndingCell` (и `gender`, если он задан в `selectedEndingCell`; для `duMN` — оба рода) — строка: девангари (`form.formDevanagari` слова целиком, не только основы), IAST (`form.formIast`), перевод (`translationRu`/`translationEn` стема по локали). Внутри `formIast`/`formDevanagari` каждой строки суффикс, совпадающий с текстом кликнутой ячейки (`EndingsCell.text`, без ведущего дефиса), оборачивается в `<span>` с цветовым выделением (то же цветовое решение, что и статус-цвета — фон/текст акцентного цвета темы, конкретный класс на усмотрение Агента 3). Стемы без формы для этой ячейки (неполный сид) в таблицу не попадают.
+
+**Возврат к карусели.** Заголовок таблицы — те же оси, что у справочной таблицы: первая колонка «Падеж», первая строка «Число/Род» (или объединённый заголовок, аналогично `DeclensionEndingsReferenceTable`). Клик по названию падежа (первая колонка) или по названию числа/рода (первая строка) внутри `DeclensionEndingWordsTable` сбрасывает `selectedEndingCell` в `null` → `GrammarParadigmCarousel` показывается снова, `DeclensionEndingWordsTable` скрывается. Клик по обычной ячейке таблицы слов (не заголовку) — не определён, действия не выполняет.
+
+**Что не делает эта вкладка (открытый вопрос п.7 отклонён пользователем):** запуск/резюм квиза по клику на ячейку `DeclensionEndingsReferenceTable` или по строке `DeclensionEndingWordsTable` не реализуется — такого поведения нет и не требуется.
 
 ## 2.2а. DeclensionExamplesTab (вкладка «Примеры»)
 

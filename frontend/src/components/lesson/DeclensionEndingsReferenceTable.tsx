@@ -4,9 +4,11 @@ import type { EndingsTableData } from "../../data/aStemEndingsTable";
 
 interface DeclensionEndingsReferenceTableProps {
   data: EndingsTableData;
+  onCellClick?: (caseKey: string, columnKey: string) => void;
+  selectedCell?: { caseKey: string; columnKey: string } | null;
 }
 
-const DeclensionEndingsReferenceTable: React.FC<DeclensionEndingsReferenceTableProps> = ({ data }) => {
+const DeclensionEndingsReferenceTable: React.FC<DeclensionEndingsReferenceTableProps> = ({ data, onCellClick, selectedCell }) => {
   const { i18n } = useTranslation();
 
   const caseLabel = (caseKey: string): string => {
@@ -51,7 +53,13 @@ const DeclensionEndingsReferenceTable: React.FC<DeclensionEndingsReferenceTableP
                 </td>
                 {data.columns.map((col) => {
                   const cell = row.cells[col.key];
-                  return renderCell(cell, isVocative, identityVocativeSg, identityVocativeDuPl, col.key);
+                  const cellClick = cell && !cell.isIdentity
+                    ? () => onCellClick?.(row.caseKey, col.key)
+                    : undefined;
+                  const isSelected = !!selectedCell
+                    && selectedCell.caseKey === row.caseKey
+                    && selectedCell.columnKey === col.key;
+                  return renderCell(cell, isVocative, identityVocativeSg, identityVocativeDuPl, col.key, cellClick, isSelected);
                 })}
               </tr>
             );
@@ -68,6 +76,8 @@ function renderCell(
   identitySgLabel: string,
   identityDuPlLabel: string,
   key: string,
+  onClick?: () => void,
+  isSelected?: boolean,
 ): React.ReactNode {
   if (!cell) {
     return <td key={key} className="text-center p-2 border-1 border-200 text-color-secondary">{'\u2014'}</td>;
@@ -84,8 +94,16 @@ function renderCell(
       </td>
     );
   }
+  const clickable = Boolean(onClick && cell.text && cell.text !== '\u2014');
+  const selectedClass = clickable && isSelected ? " text-primary" : "";
   return (
-    <td key={key} className="text-center p-2 border-1 border-200 font-bold" rowSpan={rowSpan} style={{ fontFamily: "inherit" }}>
+    <td
+      key={key}
+      className={`text-center p-2 border-1 border-200 font-bold${clickable ? " cursor-pointer hover:surface-100 transition-colors" : ""}${selectedClass}`}
+      rowSpan={rowSpan}
+      style={{ fontFamily: "inherit" }}
+      onClick={clickable ? onClick : undefined}
+    >
       {cell.text}
     </td>
   );

@@ -74,6 +74,7 @@
 - Grafana dashboards (JSON в репо vs ручная настройка)
 - ArchUnit тесты (shared/arch-rules vs дублирование)
 - Testcontainers reuse mode
+- Столбец `du. (m/n)` в справочной таблице окончаний a-основ (`frontend/src/data/aStemEndingsTable.ts`, `DeclensionEndingsReferenceTable`) объединяет мужской и средний род в одну колонку; корректно для instrumental/dative/ablative/genitive/locative (формы дв.ч. совпадают у обоих родов), но для nominative/accusative/vocative формы различаются по роду (муж. `-au`, ср. `-e`), а хранится только одно значение на строку — см. `docs/tasks/task-fix-astem-endings-table.md`. Решить: разбивать колонку на `du.m`/`du.n` для этих трёх строк, или документировать ограничение в UI.
 - [x] k8s NetworkPolicy — реализовано (доступ к сервисам только от Gateway)
 
 ## 10. Architecture Decisions (ADR)

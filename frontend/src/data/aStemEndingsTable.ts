@@ -33,6 +33,27 @@ export interface EndingsTableData {
   rows: EndingsRow[];
 }
 
+/** Maps an endings-table column key to the (numberType, optional gender) axis it encodes. */
+export const ENDINGS_COLUMN_TO_NUMBER_GENDER: Record<string, { numberType: string; gender?: string }> = {
+  sgM: { numberType: 'SINGULAR', gender: 'MASCULINE' },
+  sgN: { numberType: 'SINGULAR', gender: 'NEUTER' },
+  duMN: { numberType: 'DUAL' },
+  plM: { numberType: 'PLURAL', gender: 'MASCULINE' },
+  plN: { numberType: 'PLURAL', gender: 'NEUTER' },
+};
+
+/** Maps an EndingsRow.caseKey (lowercase) to the uppercase CASE_TYPES value. */
+export const CASE_KEY_TO_CASE_TYPE: Record<string, string> = {
+  nominative: 'NOMINATIVE',
+  accusative: 'ACCUSATIVE',
+  instrumental: 'INSTRUMENTAL',
+  dative: 'DATIVE',
+  ablative: 'ABLATIVE',
+  genitive: 'GENITIVE',
+  locative: 'LOCATIVE',
+  vocative: 'VOCATIVE',
+};
+
 // ============================================================================
 // -a stems (masculine & neuter)
 // ============================================================================
@@ -52,7 +73,7 @@ const A_STEM_ROWS: EndingsRow[] = [
       sgM: { text: '-s' },
       sgN: { text: '-m' },
       duMN: { text: '-au' },
-      plM: { text: '-as' },
+      plM: { text: '-ās' },
       plN: { text: '-āni', rowSpan: 2 },
     },
   },
@@ -62,7 +83,7 @@ const A_STEM_ROWS: EndingsRow[] = [
       sgM: { text: '-m' },
       sgN: { text: '-m' },
       duMN: { text: '-e' },
-      plM: { text: '-an' },
+      plM: { text: '-ān' },
       plN: { text: '', rowSpan: 0 },
     },
   },
@@ -89,8 +110,8 @@ const A_STEM_ROWS: EndingsRow[] = [
   {
     caseKey: 'ablative',
     cells: {
-      sgM: { text: '-ād' },
-      sgN: { text: '-ād' },
+      sgM: { text: '-āt' },
+      sgN: { text: '-āt' },
       duMN: { text: '', rowSpan: 0 },
       plM: { text: '', rowSpan: 0 },
       plN: { text: '', rowSpan: 0 },
@@ -109,8 +130,8 @@ const A_STEM_ROWS: EndingsRow[] = [
   {
     caseKey: 'locative',
     cells: {
-      sgM: { text: '-e/' },
-      sgN: { text: '-e/' },
+      sgM: { text: '-e' },
+      sgN: { text: '-e' },
       duMN: { text: '', rowSpan: 0 },
       plM: { text: '-e/-ṣu' },
       plN: { text: '-e/-ṣu' },
@@ -149,8 +170,8 @@ const AA_STEM_ROWS: EndingsRow[] = [
     caseKey: 'nominative',
     cells: {
       sg: { text: '—' },
-      du: { text: '-e/', rowSpan: 2 },
-      pl: { text: '-s', rowSpan: 2 },
+      du: { text: '-e', rowSpan: 2 },
+      pl: { text: '-ās', rowSpan: 2 },
     },
   },
   {
@@ -204,7 +225,7 @@ const AA_STEM_ROWS: EndingsRow[] = [
   {
     caseKey: 'vocative',
     cells: {
-      sg: { text: '-e/' },
+      sg: { text: '-e' },
       du: { text: '', isIdentity: true, identityDuPl: true },
       pl: { text: '', isIdentity: true, identityDuPl: true },
     },
@@ -284,7 +305,7 @@ const I_U_STEM_ROWS: EndingsRow[] = [
   {
     caseKey: 'locative',
     cells: {
-      sgM: { text: '-au/' }, sgF: { text: '-au/' }, sgN: { text: '-ni' },
+      sgM: { text: '-au' }, sgF: { text: '-au' }, sgN: { text: '-ni' },
       duMF: { text: '', rowSpan: 0 }, duN: { text: '', rowSpan: 0 },
       plM: { text: '-ṣu' }, plF: { text: '-ṣu' }, plN: { text: '-ṣu' },
     },
@@ -328,7 +349,7 @@ const II_UU_STEM_ROWS: EndingsRow[] = [
     caseKey: 'accusative',
     cells: {
       sgI: { text: '-m' }, sgU: { text: '-m' },
-      du: { text: '', rowSpan: 0 }, pl: { text: '-s' },
+      du: { text: '', rowSpan: 0 }, pl: { text: '-īs/-ūs' },
     },
   },
   {
@@ -369,7 +390,7 @@ const II_UU_STEM_ROWS: EndingsRow[] = [
   {
     caseKey: 'vocative',
     cells: {
-      sgI: { text: '-i/' }, sgU: { text: '-u/' },
+      sgI: { text: '-i' }, sgU: { text: '-u' },
       du: { text: '', isIdentity: true, identityDuPl: true }, pl: { text: '', isIdentity: true, identityDuPl: true },
     },
   },

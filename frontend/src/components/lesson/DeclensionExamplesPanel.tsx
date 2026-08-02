@@ -93,12 +93,12 @@ const DeclensionExamplesPanel: React.FC<DeclensionExamplesPanelProps> = ({ slug,
                 {caseLabel(caseType)}, {numberLabel(numberType)}
               </h4>
 
-              {/* Example cards */}
-              <div className="flex flex-column gap-2">
-                {group.examples.map(ex => (
+              {/* One common box for all examples of this case+number group */}
+              <div className="p-3 border-1 border-200 border-round surface-ground">
+                {group.examples.map((ex, index) => (
                   <div
                     key={ex.verseId}
-                    className="p-3 border-1 border-200 border-round surface-ground"
+                    className={index > 0 ? 'pt-3 mt-3 border-top-1 border-200' : undefined}
                   >
                     {/* IAST (large) */}
                     <div className="text-base font-medium" style={{ fontStyle: 'italic' }}>

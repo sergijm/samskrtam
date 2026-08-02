@@ -260,24 +260,37 @@ def fetch_html(url: str = URL, timeout: int = 30) -> str:
 
 
 def upsert_work(cur, metadata: dict) -> str:
+    cur.execute("SELECT id FROM sangraha.sources WHERE code = 'DCS';")
+    source_row = cur.fetchone()
+    if not source_row:
+        cur.execute(
+            """
+            INSERT INTO sangraha.sources (code, title_en, title_ru)
+            VALUES ('DCS', 'Digital Corpus of Sanskrit', 'Цифровой корпус санскрита')
+            RETURNING id
+            """
+        )
+        source_row = cur.fetchone()
+    source_id = source_row[0]
     cur.execute(
         """
         INSERT INTO sangraha.works
         (slug, title_ru, title_en, title_sa_iast,
-         title_sa_devanagari, author)
+         title_sa_devanagari, author, source_id)
         VALUES
             (%(slug)s, %(title_ru)s, %(title_en)s, %(title_sa_iast)s,
-             %(title_sa_devanagari)s, %(author)s)
+             %(title_sa_devanagari)s, %(author)s, %(source_id)s)
         ON CONFLICT (slug) DO UPDATE SET
                                          title_ru = EXCLUDED.title_ru,
                                          title_en = EXCLUDED.title_en,
                                          title_sa_iast = EXCLUDED.title_sa_iast,
                                          title_sa_devanagari = EXCLUDED.title_sa_devanagari,
                                          author = EXCLUDED.author,
+                                         source_id = EXCLUDED.source_id,
                                          deleted_at = NULL
         RETURNING id
         """,
-        {"slug": WORK_SLUG, **metadata},
+        {"slug": WORK_SLUG, "source_id": source_id, **metadata},
     )
     row = cur.fetchone()
     if not row:
