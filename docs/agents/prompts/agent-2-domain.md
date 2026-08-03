@@ -19,7 +19,7 @@
 Перед задачей читай спецификацию конкретного сервиса:
 - `docs/services/user-service.md`
 - `docs/services/content-service.md`
-- `docs/services/quiz-service.md`
+- `docs/quest-engine.md`
 - `docs/services/dictionary-service.md`
 - `docs/services/statistics-service.md`
 - `docs/services/leaderboard.md`

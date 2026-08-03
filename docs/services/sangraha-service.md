@@ -234,7 +234,7 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
       промежуточный `GET /api/v1/lessons/vocabulary/{slug}` — он не нужен для
       запуска сессии. Вместо этого сразу вызывает
       `POST /api/v1/quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&statusFilter={statusFilter}`
-      (quiz-service, `quiz-generator-spec.md` §3-4) — по UUID, не по slug.
+      (quiz-service, `quest-engine.md` §3-4) — по UUID, не по slug.
       `statusFilter` вычисляется на фронте из `quizStatus`: `quizStatus="CREATED"` →
       `statusFilter=NEW` (весь пул квиза — новые слова, обычный смешанный
       due/new/reserve-отбор не нужен, слов ещё никто не проходил); `quizStatus="EXISTING"`

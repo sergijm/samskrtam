@@ -1,6 +1,8 @@
 ﻿# Lesson Pages — VocabularyLessonPage и GrammarLessonPage
 
-> Связанные файлы: [frontend-overview.md](../frontend-overview.md) · [content-service.md](../../services/content-service.md) · [quiz-service.md](../../services/quiz-service.md) · [statistics-service.md](../../services/statistics-service.md)
+> ⚠️ **Требует согласования:** этот документ описывает UI-контракт (`filterScope`, `statusFilter=REVIEW`, `lessonId`) в терминах старой модели прогресса quiz-service. Модель прогресса и API сессий переработаны — см. [services/quest-engine.md](../../services/quest-engine.md). Детали фронтенд-контракта в этом файле нуждаются в пересмотре под новый API (`questId`, статусы NEW/LEARNING/DUE/MASTERED, без ручного `filterScope`).
+
+> Связанные файлы: [frontend-overview.md](../frontend-overview.md) · [content-service.md](../../services/content-service.md) · [quest-engine.md](../../services/quest-engine.md) · [statistics-service.md](../../services/statistics-service.md)
 > Status: **DRAFT**
 
 ---
@@ -50,9 +52,9 @@
 | В процессе | `{statusSummary.learning}` | `statusFilter=LEARNING` — сессия по начатым, но не изученным элементам |
 
 **Поведение:**
-- Каждый клик вызывает `POST /quiz/{slug}/sessions/start-or-resume?lessonId=...&statusFilter=<NEW|LEARNING|REVIEW>` (см. quiz-generator-spec.md §3/§4, ../openapi/quiz/parameters.yaml `StatusFilterParam`) и переходит на `/quiz/vocabulary/:slug` (или `/quiz/grammar/:type`) — квиз стартует или продолжается (resume) в зависимости от наличия IN_PROGRESS-сессии с тем же `statusFilter`.
+- Каждый клик вызывает `POST /quiz/{slug}/sessions/start-or-resume?lessonId=...&statusFilter=<NEW|LEARNING|REVIEW>` (см. quest-engine.md §3/§4, ../openapi/quiz/parameters.yaml `StatusFilterParam`) и переходит на `/quiz/vocabulary/:slug` (или `/quiz/grammar/:type`) — квиз стартует или продолжается (resume) в зависимости от наличия IN_PROGRESS-сессии с тем же `statusFilter`.
 - Бейдж с нулевым значением (`total === 0`, `newCount === 0`, `learning === 0`, либо для «Изучено» — `reviewDue === 0`) недоступен для клика (`disabled`), но остаётся видимым.
-- Заменяет прежний placeholder `navigate('/quiz/vocabulary/:slug?filterScope=REVIEW_DUE')` из `VocabularyLessonPage`/`GrammarLessonPage` — параметр `filterScope` для этой цели **не используется** (он занят под фильтр падеж/число/род в `GrammarLessonPage`, см. quiz-declension.md §3.4); корректный параметр — `statusFilter`.
+- Заменяет прежний placeholder `navigate('/quiz/vocabulary/:slug?filterScope=REVIEW_DUE')` из `VocabularyLessonPage`/`GrammarLessonPage` — параметр `filterScope` для этой цели **не используется** (он занят под фильтр падеж/число/род в `GrammarLessonPage`, см. quest-engine.md §3.4); корректный параметр — `statusFilter`.
 - Кнопка «Повторить» рядом с «Начать квиз» (см. §1) становится избыточной и удаляется — её функцию берёт на себя бейдж «Изучено».
 
 **Таблица слов (`DataTable`):**

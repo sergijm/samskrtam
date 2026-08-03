@@ -1,7 +1,9 @@
 # GrammarAllStemsPage (`/lessons/grammar/declensions-all`)
 
+> ⚠️ **Требует согласования:** этот документ описывает UI-контракт (`filterScope`, `statusFilter=REVIEW`, `lessonId`) в терминах старой модели прогресса quiz-service. Модель прогресса и API сессий переработаны — см. [services/quest-engine.md](../../services/quest-engine.md). Детали фронтенд-контракта в этом файле нуждаются в пересмотре под новый API (`questId`, статусы NEW/LEARNING/DUE/MASTERED, без ручного `filterScope`).
+
 > Связанные файлы: [grammar-lesson-page.md](./grammar-lesson-page.md) (обычная страница урока склонения,
-> для сравнения) · [quiz-declension.md](../../../services/quiz-service/quiz-declension.md) §5 (контракт
+> для сравнения) · [quest-engine.md](../../services/quest-engine.md) §5 (контракт
 > filterScope=ALL_STEMS) · [01-curriculum-vs-catalog.md](../information-architecture/01-curriculum-vs-catalog.md)
 > §2.1.1 (пункт меню) · Задача: [task-03-all-stems-quiz.md](../../agents/tasks/task-03-all-stems-quiz.md)
 > Status: **DRAFT**
@@ -31,7 +33,7 @@ RU «Все основы», EN «All stems».
 ## 3. Элементы страницы
 
 Шапка — только заголовок «Все основы» / «All stems», без `LessonStatsBadges` (нет прогресса, нет
-статуса — см. §5.1 `quiz-declension.md`).
+статуса — см. §5.1 `quest-engine.md`).
 
 Тело страницы — три независимых блока мульти-выбора (без `TabView`, без `DataTable`, без карусели
 парадигм) и кнопка запуска квиза под ними. Рекомендуемый компонент — `PrimeReact MultiSelect` (или
@@ -50,22 +52,22 @@ RU «Все основы», EN «All stems».
   `NUMBER_TYPES`), не заводить второй источник переводов.
 - **По родам** — множественный выбор из 4 значений `gender`: MASCULINE, FEMININE, NEUTER, UNSPECIFIED.
   Лейблы — `genderRu`/`genderEn`, тот же справочник родов, что уже используется в `CASE_COMBINATION`-опциях
-  (`grammar.yaml#GrammarQuestionProgress`, см. `quiz-declension.md` §4.2). Значение UNSPECIFIED показывать
+  (`grammar.yaml#GrammarQuestionProgress`, см. `quest-engine.md` §4.2). Значение UNSPECIFIED показывать
   человеко-читаемо (например «без различения рода» / «no gender distinction»), не как сырой enum.
 
-Падежи (`caseType`) фильтром не охватываются — все 8 падежей всегда включены (см. `quiz-declension.md`
+Падежи (`caseType`) фильтром не охватываются — все 8 падежей всегда включены (см. `quest-engine.md`
 §5.3), поэтому четвёртого блока «По падежам» на этой странице нет — это осознанное отличие от
 `GrammarLessonPage`, а не недосмотр.
 
 ## 4. Кнопка «Начать квиз»
 
-Одна кнопка снизу, без live-счётчика N в первой версии (см. `quiz-declension.md` §5.4, §5.6 — открытый
+Одна кнопка снизу, без live-счётчика N в первой версии (см. `quest-engine.md` §5.4, §5.6 — открытый
 вопрос про счётчик оставлен на потом). Текст кнопки — «Начать квиз» / «Start quiz», без числа в скобках
-(в отличие от `quiz-declension.md` §3.3, где счётчик есть). Клик:
+(в отличие от `quest-engine.md` §3.3, где счётчик есть). Клик:
 
 1. Собирает текущие значения трёх мульти-выборов в массивы строк (пустой массив = «всё», ничего
    специально не подставлять на фронте — раскрытие пустого множества в полный набор делает бэкенд, см.
-   `quiz-declension.md` §3.4/§5.3).
+   `quest-engine.md` §3.4/§5.3).
 2. Вызывает `POST /quiz/declensions-all/sessions/start-or-resume?filterScope=ALL_STEMS&filterVowelTypes=
    ...&filterGenders=...&filterNumberTypes=...` (см. `openapi/quiz/quiz-sessions.yaml`,
    `parameters.yaml#FilterVowelTypesParam`/`FilterGendersParam`). Один и тот же вызов и стартует новую
@@ -73,7 +75,7 @@ RU «Все основы», EN «All stems».
    фронте, названия «Начать» не меняется на «Продолжить» (в отличие от `LessonStatsTab.md` §2.1, где кнопки
    разные для разных статусов — здесь только один сценарий входа).
 3. При успехе — переход на `/quiz/grammar/declensions-all` (тот же паттерн, что и у остальных уроков
-   склонения, см. `lesson-pages-spec.md`), рендер вопросов без изменений (см. `quiz-declension.md` §5.5) —
+   склонения, см. `lesson-pages-spec.md`), рендер вопросов без изменений (см. `quest-engine.md` §5.5) —
    отдельного quiz-компонента не требуется, переиспользуется существующий `DeclensionQuizPage`/аналог по
    `slug`.
 4. При ошибке `SCOPE_FILTER_EMPTY` (HTTP 4xx с этим кодом в теле, см. `common.yaml#ErrorResponse`) —
@@ -85,7 +87,7 @@ RU «Все основы», EN «All stems».
 - `GrammarParadigmTable` (вкладка «Парадигмы» / карусель словоформ) — по прямому требованию задачи.
 - `LessonStatsTab`, `CaseAggregationTable`, `NumberAggregationTable`, `GrammarDetailsTable` — вся
   инфраструктура прогресса/статистики конкретного урока, поскольку `declensions-all` не является «одним
-  уроком» в привычном смысле (см. `quiz-declension.md` §5.6, открытый вопрос про агрегированную
+  уроком» в привычном смысле (см. `quest-engine.md` §5.6, открытый вопрос про агрегированную
   статистику — вынесен за рамки текущей задачи).
 - Вкладка «Сессии» — история сессий по этому виртуальному уроку не показывается на этой странице в первой
   версии; при необходимости пользователь видит её в общем списке `/quiz-sessions` (см.
@@ -100,6 +102,6 @@ RU «Все основы», EN «All stems».
   (полный пул).
 - Повторный клик «Начать квиз» с тем же набором значений фильтров, пока предыдущая сессия не завершена —
   резюмирует ту же сессию, а не создаёт новую (проверяется тем же способом, что и для остальных уроков
-  склонения, см. `quiz-declension.md` §3.3).
+  склонения, см. `quest-engine.md` §3.3).
 - Комбинация фильтров без единого совпадения (например только AA_STEM + gender=NEUTER) — показывает
   сообщение об ошибке, не белый экран/необработанное исключение.

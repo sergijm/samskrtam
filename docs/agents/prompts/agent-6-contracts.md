@@ -150,7 +150,7 @@ QuizAnsweredEvent:
 ⚠️ РАСХОЖДЕНИЕ КОНТРАКТА:
 Сервис: quiz-service
 Endpoint: POST /api/v1/quiz/sessions/{id}/answer
-Спецификация (docs/services/quiz-service.md): ответ содержит поле `isCorrect: boolean`
+Спецификация (docs/quest-engine.md): ответ содержит поле `isCorrect: boolean`
 Реализация (QuizAnswerResponse.java): поле называется `correct: boolean`
 
 Решение: привести реализацию к спецификации (не наоборот)
@@ -162,7 +162,7 @@ Endpoint: POST /api/v1/quiz/sessions/{id}/answer
 ```
 ✅ Обновлено:
 - docs/services/api-gateway.md §3 (добавлен маршрут /api/v1/quiz/sessions/{id}/resume)
-- docs/services/quiz-service.md (описан endpoint resume)
+- docs/quest-engine.md (описан endpoint resume)
 - docs/frontend/lesson-openapi.yaml (добавлена схема ResumeSessionResponse)
 
 ✅ Kafka:

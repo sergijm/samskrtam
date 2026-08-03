@@ -41,7 +41,7 @@
 - **Все основы** ⛔ (в разработке) — сквозной квиз по всем перечисленным выше
   гласным основам сразу, без вкладок и без таблиц парадигм, только фильтры
   (гласная/число/род, все мульти-выбор) + кнопка «Начать квиз». См.
-  `services/quiz-service/quiz-declension.md` §5 и
+  `services/quest-engine.md` §5 и
   `frontend/pages/grammar-all-stems-page.md`.
 - Согласные основы: на -an ⛔ · на -in/-vant/-mant ⛔ · на -as/-is/-us ⛔ ·
   на -at/-ant ⛔ · простой конечный согласный ⛔ · неправильные основы ⛔
@@ -56,7 +56,7 @@
   возвратное (`pronouns-reflexive`) ⛔
 - Реализация — через существующий itemType DECLENSION_FORM (новые vowelType,
   без нового типа квиза), см. architecture.md §3.4, `content-service.md` §3,
-  `quiz-service/quiz-declension.md` §2. Энклитики личных местоимений и
+  `quest-engine.md` §2. Энклитики личных местоимений и
   несклоняемое `svayam` — вне scope первой итерации (статические заметки,
   не квиз).
 

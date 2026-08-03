@@ -123,7 +123,11 @@ graph TD
 | [services/user-service.md](./services/user-service.md) | Java 21 + VT | Логин, регистрация, OAuth, управление паролем |
 | [services/content-service.md](./services/content-service.md) | Java 21 + VT | Настройки и содержание всех квизов |
 | [services/content-service/eamenau.md](./services/content-service/eamenau.md) | домен content-service | Упражнения по сандхи, фонемная система |
-| [services/quiz-service.md](./services/quiz-service.md) | Java 21 + VT/WebFlux | Прохождение квизов пользователем |
+| [services/quest-engine.md](./services/quest-engine.md) | Java 21 | quiz-service — прохождение квизов, прогресс, spaced repetition |
+| [services/quest-catalog.md](./services/quest-catalog.md) | — | Каталог типов квестов по разделам грамматики и лексики (реализованные и план) |
+| [services/quest-types-overview.md](./services/quest-types-overview.md) | — | Полная инвентаризация типов квестов: вариации, оценка объёма, приоритет по milestone |
+| [services/quest-item-model.md](./services/quest-item-model.md) | Java 21 | Базовые интерфейсы/абстрактные классы модели квестов (content-service + quiz-service) |
+| [quests/](./quests/README.md) | — | Юзер-стори по типам квестов, разложенные по доменам грамматики и лексики |
 | [services/dictionary-service.md](./services/dictionary-service.md) | Java 21 + VT | Словарь + внешнее API |
 | [services/statistics-service.md](./services/statistics-service.md) | Java 21 + VT | Статистика |
 | [services/leaderboard.md](./services/leaderboard.md) | — | Алгоритмы лидерборда (XP, Elo, Skill, Composite) |

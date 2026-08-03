@@ -1,7 +1,9 @@
 # GrammarLessonPage (`/lessons/grammar/:type`)
 
+> ⚠️ **Требует согласования:** этот документ описывает UI-контракт (`filterScope`, `statusFilter=REVIEW`, `lessonId`) в терминах старой модели прогресса quiz-service. Модель прогресса и API сессий переработаны — см. [services/quest-engine.md](../../services/quest-engine.md). Детали фронтенд-контракта в этом файле нуждаются в пересмотре под новый API (`questId`, статусы NEW/LEARNING/DUE/MASTERED, без ручного `filterScope`).
+
 > Вынесено из [lesson-pages-spec.md](./lesson-pages-spec.md) §3 по правилу лимита 350 строк (conventions.md §9, паттерн «индекс + подпапка»).
-> Связанные файлы: [lesson-pages-spec.md](./lesson-pages-spec.md) (общая концепция, VocabularyLessonPage, роутинг, типы, acceptance criteria) · [quiz-declension.md](../../../services/quiz-service/quiz-declension.md) §3.4 (filterScope) · [quiz-generator-spec.md](../../../services/quiz-service/quiz-generator-spec.md) §3 (statusFilter)
+> Связанные файлы: [lesson-pages-spec.md](./lesson-pages-spec.md) (общая концепция, VocabularyLessonPage, роутинг, типы, acceptance criteria) · [quest-engine.md](../../services/quest-engine.md) §3.4 (filterScope) · [quest-engine.md](../../services/quest-engine.md) §3 (statusFilter)
 > Status: **DRAFT**
 
 ---
@@ -53,7 +55,7 @@
 
 **Разметка таблицы:**
 - Заголовок первой колонки пуст (угловая ячейка).
-- Первая строка — заголовки столбцов: название числа (`numberRu`/`numberEn` по локали, берётся из `aggregateByNumber(questions)` — переиспользуется только как источник локализованных названий, не для агрегации). **Кликабельно** → запускает/резюмирует квиз `filterScope=NUMBER_ONLY&filterNumberTypes=<numberType>` (тот же переход, что раньше выполняла строка/кнопка `NumberAggregationTable` — контракт не меняется, см. `quiz-declension.md` §3.4).
+- Первая строка — заголовки столбцов: название числа (`numberRu`/`numberEn` по локали, берётся из `aggregateByNumber(questions)` — переиспользуется только как источник локализованных названий, не для агрегации). **Кликабельно** → запускает/резюмирует квиз `filterScope=NUMBER_ONLY&filterNumberTypes=<numberType>` (тот же переход, что раньше выполняла строка/кнопка `NumberAggregationTable` — контракт не меняется, см. `quest-engine.md` §3.4).
 - Первая колонка каждой строки — название падежа (`caseRu`/`caseEn`, аналогично из `aggregateByCase`). **Кликабельно** → `filterScope=CASE_ONLY&filterCaseType=<caseType>` (контракт бывшей `CaseAggregationTable`, не меняется).
 - Остальные ячейки (падеж×число) — `MiniProgressBar` (см. `components/common/MiniProgressBar.tsx`, уже используется в старых `CaseAggregationTable`/`NumberAggregationTable`) со `value=aggregatedProgress`, `status` для цвета, **без `onClick`** — по прямому решению пользователя клик по самой ячейке ничего не запускает (там нет отдельного смысла «выбрать»: запуск квиза целиком описывается осями заголовков). Ячейка без данных (нет вопросов для этой пары падеж×число в уроке) рендерится пустой/прочерком, без `MiniProgressBar`.
 - Детальная таблица вопросов (бывшая «Подробно», клик `{nSuccess}/{nAll}` → `QuestionHistoryDialog`) в этой вкладке не воспроизводится — при удалении `GrammarDetailsTable` из страницы удаляется и вызов `QuestionHistoryDialog` вместе с состояниями `selectedCaseType`/`selectedNumberType`/`selectedGender`/`questionHistoryDialogVisible`/`sortField`/`sortOrder`, которые существовали только ради неё.
@@ -75,7 +77,7 @@
 
 **Поведение:** идентично `LessonStatsBadges` — клик по кнопке вызывает `POST /quiz/{slug}/sessions/start-or-resume?...&statusFilter=<NEW|LEARNING|REVIEW>` и переходит на `/quiz/grammar/:type`, квиз стартует или резюмируется в зависимости от наличия IN_PROGRESS-сессии с тем же `statusFilter`. Кнопка строки с нулевым значением (`newCount === 0`, `learning === 0`, либо для «Изучено» — `reviewDue === 0`) недоступна (`disabled`), строка остаётся видимой.
 
-> ⚠️ **`statusFilter` не реализован на бэкенде** (расхождение контракт↔реализация, зафиксировано Агентом 6 — см. [quiz-generator-spec.md §3](../../../services/quiz-service/quiz-generator-spec.md), предупреждение, и §7 п.5). Кнопки этой вкладки визуально готовы, но до реализации Агентом 2 не выполняют полезного действия (бэкенд игнорирует параметр).
+> ⚠️ **`statusFilter` не реализован на бэкенде** (расхождение контракт↔реализация, зафиксировано Агентом 6 — см. [quest-engine.md §3](../../services/quest-engine.md), предупреждение, и §7 п.5). Кнопки этой вкладки визуально готовы, но до реализации Агентом 2 не выполняют полезного действия (бэкенд игнорирует параметр).
 
 ## 2.2. GrammarParadigmTable (вкладка «Парадигмы»)
 
@@ -130,4 +132,4 @@
 
 
 
-**Клик по ячейке** (когда есть форма) — запускает или резюмирует квиз, отфильтрованный именно на эту комбинацию: `POST /quiz/{slug}/sessions/start-or-resume?...&filterScope=CASE_NUMBER_GENDER&filterCombinations=<caseType>:<numberType>:<gender>` (тот же контракт, что уже используют `filterScope`-фильтры declension-квиза, см. quiz-declension.md §3.4 — в отличие от `statusFilter`, эта ветка **реализована** на бэкенде, доп. работы у Агента 2 не требуется), затем переход на `/quiz/grammar/:type`.
+**Клик по ячейке** (когда есть форма) — запускает или резюмирует квиз, отфильтрованный именно на эту комбинацию: `POST /quiz/{slug}/sessions/start-or-resume?...&filterScope=CASE_NUMBER_GENDER&filterCombinations=<caseType>:<numberType>:<gender>` (тот же контракт, что уже используют `filterScope`-фильтры declension-квиза, см. quest-engine.md §3.4 — в отличие от `statusFilter`, эта ветка **реализована** на бэкенде, доп. работы у Агента 2 не требуется), затем переход на `/quiz/grammar/:type`.

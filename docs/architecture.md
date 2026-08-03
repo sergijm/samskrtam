@@ -106,19 +106,15 @@
 - `quizStatus` (`CREATED`/`EXISTING`) — единственный сигнал, которым content-service может обозначить, нужен ли фильтр `statusFilter=NEW` при первом старте сессии: `CREATED` → `NEW`, `EXISTING`/кэш-хит → без фильтра. Фронтенд стартует сессию сразу по `quizId` через `POST /quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&statusFilter=...`.
 - Надёжная доставка обеспечивается на уровне HTTP-запроса, инициированного пользователем: отдельного фонового Outbox/relay для этого потока нет, повтор равен повторному клику.
 
-### 3.6 Единая таблица прогресса quiz_item_score
+### 3.6 Прогресс и повторение — quest-engine
 
-Прогресс по всем типам квизов хранится в одной таблице `quiz.quiz_item_score` с составным ключом `(user_id, item_type, external_ref_id)`. `item_type` — открытое для расширения перечисление (`VOCABULARY_WORD`, `DECLENSION_FORM` и др.). `external_ref_id` — UUID сущности в content-service, без физического FK. Поля таблицы: `id`, `user_id`, `item_type`, `external_ref_id`, `score` (0–100), `stability`, `last_answered_at`, `last_mistake_at`, `consecutive_mistakes`, `next_review_at`, `updated_at`.
+Модель прогресса, статусы обучения и алгоритм планирования повторений (spaced repetition)
+описаны отдельно, как часть спецификации движка квестов — см.
+[services/quest-engine.md](services/quest-engine.md). Ключевое: единая таблица прогресса без
+физических FK на content-service, один алгоритм повторения для всех типов заданий, без
+ручной калибровки порогов под каждый тип по отдельности.
 
-Физические внешние ключи между схемами `quiz` и `content` не используются, поскольку это разные микросервисы с разными базами данных: целостность ссылок обеспечивается на уровне приложения (`ContentClient` проверяет существование `external_ref_id`) и эвентуально — предпочтительный механизм для content-service — soft-delete.
-
-Статус единицы (`NEW`/`LEARNING`/`DIFFICULT`/`MASTERED`) не хранится, а вычисляется из текущего `score` при чтении: нет строки → `NEW`; `score ≤ difficultUpperThreshold` → `DIFFICULT`; между порогами → `LEARNING`; `score ≥ masteredLowerThreshold` → `MASTERED`. Time-decay не реализуется: `score` не убывает со временем, забывание проявляется через формулу score при следующей ошибке после контрольного показа (см. §2.5 `quiz-generator-spec.md`). `masteredLowerThreshold = 90` для обоих `itemType`; `difficultUpperThreshold` остаётся открытым параметром калибровки (см. §6 `quiz-generator-spec.md`).
-
-Единственное исключение из «без time-decay»: единица со статусом `MASTERED` (`score ≥ 90`), у которой `nextReviewAt ≤ now` (просрочен контрольный показ, см. `masteredCooldown`, §3 `quiz-generator-spec.md`), отображается на LessonPage как бакет **REVIEW** вместо `MASTERED` — это чисто отображаемый статус, для генератора и алгоритма отбора единица остаётся в бакете `MASTERED`. Наличие ≥1 единицы в REVIEW включает кнопку «Повторить» на LessonPage.
-
-Прогресс склонений общий для всех основ с одинаковым `(vowel_type, gender, case_type, number_type)`: `external_ref_id` для `DECLENSION_FORM` ссылается на `content.case_endings.id` — эталонную связку параметров, а не на конкретную основу, поэтому прогресс не дублируется там, где окончания совпадают (см. §3.3).
-
-Ответы пользователя хранятся отдельно, в `quiz.quiz_answers` (агрегация nSuccess/nAll — оттуда); `quiz_item_score` — единственное хранилище именно прогресса. Алгоритм отбора вопросов (`generate()`) единый для всех `itemType`, без ветвлений по типу. Планирование `next_review_at` — отдельная формула SRS-интервалов (открытый вопрос, см. §4).
+Прогресс склонений общий для всех основ с одинаковым `(vowel_type, gender, case_type, number_type)` (см. §3.3) — единица прогресса привязана к этой связке параметров, а не к конкретной основе, поэтому не дублируется там, где окончания совпадают.
 
 ---
 
@@ -129,6 +125,5 @@
 - Grafana dashboards (JSON в репозитории vs ручная настройка)
 - ArchUnit-тесты: shared/arch-rules vs дублирование в каждом сервисе
 - Testcontainers reuse mode
-- Формула SRS-интервалов для `next_review_at` (§3.6)
-- Конкретные значения `difficultUpperThreshold` (по умолчанию 45) и `masteredLowerThreshold` (по умолчанию 80 для нового материала, 90 — финальное значение для расчёта REVIEW) калибруются на реальных данных
+- Стартовые константы алгоритма повторения и лимит новых единиц в сессии — см. [services/quest-engine.md §7](services/quest-engine.md#7-открытые-вопросы)
 - Столбец `du. (m/n)` в справочной таблице окончаний a-основ (`frontend/src/data/aStemEndingsTable.ts`, `DeclensionEndingsReferenceTable`) объединяет мужской и средний род в одну колонку; корректно для instrumental/dative/ablative/genitive/locative (формы дв.ч. совпадают у обоих родов), но для nominative/accusative/vocative формы различаются по роду (муж. `-au`, ср. `-e`) — см. `docs/tasks/task-fix-astem-endings-table.md`. Решить: разбивать колонку на `du.m`/`du.n` для этих трёх строк или документировать ограничение в UI.

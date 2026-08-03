@@ -56,7 +56,7 @@
 
 **NEW, требуется новая миграция (Агент 2):** `ALTER TABLE content.declension_stems ADD COLUMN translation_ru VARCHAR(255), ADD COLUMN translation_en VARCHAR(255);` + data-fix UPDATE для заполнения `stem_devanagari` и новых `translation_ru/en` по всем текущим строкам таблицы — данные предоставляет пользователь (см. §9).
 
-**NEW, требуется миграция на удаление (Агент 2):** `DROP TABLE content.generated_questions; DROP TABLE content.generated_quiz_data;` — таблицы persist-хранения сгенерированных вопросов сессии удаляются, т.к. это дублировало `quiz.session_questions` (см. §3а и quiz-service.md §12). Порядок важен — сначала дочерняя таблица (FK на generated_quiz_data_id).
+**NEW, требуется миграция на удаление (Агент 2):** `DROP TABLE content.generated_questions; DROP TABLE content.generated_quiz_data;` — таблицы persist-хранения сгенерированных вопросов сессии удаляются, т.к. это дублировало `quiz.session_questions` (см. §3а и quest-engine.md §12). Порядок важен — сначала дочерняя таблица (FK на generated_quiz_data_id).
 
 ---
 
@@ -89,7 +89,7 @@ DELETE /api/v1/content/vocabulary/{wordId}              → удалить сл�
 
 ### 5а. Публичное API для вкладки «Парадигмы» (STUDENT)
 
-**NEW.** До сих пор `declension_stems`/`declension_forms` были доступны только двумя ADMIN-only эндпоинтами (`GET /content/lessons/{slug}/declension-stems`, `GET /content/declension-stems/{stemId}/forms` — реверс-инжинирены в `content-api.yaml`, используются только `quiz-service.ContentClient` для генерации дистракторов, роль ADMIN согласно таблице маршрутов агент-1-gateway.md, т.е. **фронтенд их вызвать не может**). Это блокировало задачу «показать реальные парадигмы (не абстрактные окончания) на вкладке «Парадигмы»» — см. `frontend/pages/grammar-lesson-page.md` §2.2 и `quiz-service/quiz-declension.md` §3.1.
+**NEW.** До сих пор `declension_stems`/`declension_forms` были доступны только двумя ADMIN-only эндпоинтами (`GET /content/lessons/{slug}/declension-stems`, `GET /content/declension-stems/{stemId}/forms` — реверс-инжинирены в `content-api.yaml`, используются только `quiz-service.ContentClient` для генерации дистракторов, роль ADMIN согласно таблице маршрутов агент-1-gateway.md, т.е. **фронтенд их вызвать не может**). Это блокировало задачу «показать реальные парадигмы (не абстрактные окончания) на вкладке «Парадигмы»» — см. `frontend/pages/grammar-lesson-page.md` §2.2 и `quest-engine.md` §3.1.
 
 Добавлен один публичный эндпоинт с постраничной выдачей:
 
@@ -108,7 +108,7 @@ GET /api/v1/content/public/lessons/{slug}/declension-paradigms?index=N   → Dec
 
 ### Внутреннее API для quiz-service
 
-content-service не хранит сгенерированные вопросы сессии — генерирует и сразу возвращает результат, ничего не сохраняя. quiz-service хранит результат вызова у себя, в `quiz.session_questions`, и читает оттуда на resume/answer/complete (см. `quiz-service.md` §3, §5, §12) — это единственный источник данных для SQL-статистики/истории, поэтому дублирование хранения в content-service не требуется. Единственный вызываемый quiz-service эндпоинт для генерации вопросов сессии:
+content-service не хранит сгенерированные вопросы сессии — генерирует и сразу возвращает результат, ничего не сохраняя. quiz-service хранит результат вызова у себя, в `quiz.session_questions`, и читает оттуда на resume/answer/complete (см. `quest-engine.md` §3, §5, §12) — это единственный источник данных для SQL-статистики/истории, поэтому дублирование хранения в content-service не требуется. Единственный вызываемый quiz-service эндпоинт для генерации вопросов сессии:
 
 ```
 POST /api/v1/content/lessons/{quizId}/generate-quiz-data   → генерирует вопросы сессии и
@@ -121,9 +121,9 @@ POST /api/v1/content/lessons/{quizId}/generate-quiz-data   → генериру�
 questionsPerSession, generatedQuestions[...], vocabularyWords (null для не-VOCABULARY) }`.
 Поле `generatedQuizDataId` в DTO больше не нужно как внешний идентификатор для повторного
 запроса к content-service — quiz-service при желании может сохранить какой-то свой
-внутренний group-id, но это уже его внутреннее дело (см. quiz-service.md §12).
+внутренний group-id, но это уже его внутреннее дело (см. quest-engine.md §12).
 
-`generate-quiz-data` принимает опциональные query-параметры фильтрации по объёму (scope pre-filter, см. `quiz-declension.md` §3.4) — применяются на стороне content-service, до формирования полного списка вопросов, а не на стороне quiz-service после его получения:
+`generate-quiz-data` принимает опциональные query-параметры фильтрации по объёму (scope pre-filter, см. `quest-engine.md` §3.4) — применяются на стороне content-service, до формирования полного списка вопросов, а не на стороне quiz-service после его получения:
 
 - `filterScope` — `CASE_ONLY` / `NUMBER_ONLY` / `CASE_NUMBER_GENDER` (те же значения, что и у
   одноимённого параметра `quiz-sessions.yaml`/`FilterScopeParam`; в content-service
@@ -147,7 +147,7 @@ questionsPerSession, generatedQuestions[...], vocabularyWords (null для не-
 из отфильтрованного пула, комбинируя разные вопросы»);
 `vocabularyWords` фильтр не затрагивает. Пустой результат фильтрации — не ошибка на уровне
 content-service (пустой список); обработку `SCOPE_FILTER_EMPTY` (бизнес-ошибка) по-прежнему
-выполняет quiz-service после получения ответа (см. quiz-service.md §6, quiz-service-sessions.md).
+выполняет quiz-service после получения ответа (см. quest-engine.md §6, quest-engine.md).
 Парсинг CSV/JSON-параметров — новая внутренняя утилита content-service, независимая от
 `QuizFilterJsonHelper` quiz-service (тот остаётся в quiz-service — используется для
 канонизации множеств `QuizSession.filterCaseTypes/filterNumberTypes/filterCombinations` при
@@ -167,7 +167,7 @@ correctTranslationEn, userLocale, stem, caseType, numberType, gender}`.
 **Дистракторы (варианты ответа) НЕ входят в этот ответ и не хранятся здесь** — они
 генерируются в quiz-service на лету при каждом обращении к вопросу, в т.ч. на resume, для чего
 content-service всё равно продолжает быть нужен через отдельный, независимый от этого,
-эндпоинт `getDeclensionForms` (см. quiz-service.md §5а) — то есть **полной развязки
+эндпоинт `getDeclensionForms` (см. quest-engine.md §5а) — то есть **полной развязки
 quiz-service от content-service на resume нет**, изменилось только то, что именно
 content-service отдаёт по запросу.
 
@@ -175,7 +175,7 @@ content-service отдаёт по запросу.
 
 ## 3а. Генерация вопросов сессии — без сохранения
 
-content-service не хранит per-session сгенерированные вопросы: нет таблиц `content.generated_quiz_data`/`content.generated_questions` и соответствующего персистентного слоя. Сгенерированный вопрос хранит только quiz-service (`quiz.session_questions`, см. `quiz-service.md` §12); content-service — чистый генератор без побочных эффектов записи.
+content-service не хранит per-session сгенерированные вопросы: нет таблиц `content.generated_quiz_data`/`content.generated_questions` и соответствующего персистентного слоя. Сгенерированный вопрос хранит только quiz-service (`quiz.session_questions`, см. `quest-engine.md` §12); content-service — чистый генератор без побочных эффектов записи.
 
 `DeclensionQuizGeneratorService`/`QuestionGenerationService` строят и возвращают `List<QuestionResponse>`/`GeneratedQuizData`, ничего не записывая в БД content-service.
 
@@ -212,7 +212,7 @@ content-service не хранит per-session сгенерированные в�
 ## 9. Открытые вопросы
 
 - [ ] Импорт вопросов и слов из CSV для массового добавления?
-- [ ] Кэшировать ли ответ `generate-quiz-data`/данные для дистракторов (`getDeclensionForms`) — актуально только для распределения нагрузки на content-service при большом числе одновременных `start`/`resume`; ответ `generate-quiz-data` теперь не переиспользуется (вызывается один раз на старте, дальше quiz-service хранит сам). Отложено до появления реальной нагрузки (см. quiz-service.md §3).
+- [ ] Кэшировать ли ответ `generate-quiz-data`/данные для дистракторов (`getDeclensionForms`) — актуально только для распределения нагрузки на content-service при большом числе одновременных `start`/`resume`; ответ `generate-quiz-data` теперь не переиспользуется (вызывается один раз на старте, дальше quiz-service хранит сам). Отложено до появления реальной нагрузки (см. quest-engine.md §3).
 - [ ] **Личные списки слов** (не реализовано) — новые сущности
   `content.user_word_lists (id, userId, title, createdAt)` и
   `content.user_word_list_items (listId, stemId|conjugationId, addedAt)`,
