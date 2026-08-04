@@ -7,7 +7,7 @@ import RegisterPage from '../pages/RegisterPage';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
 import AuthCallbackPage from '../pages/AuthCallbackPage';
-import DashboardPage from '../pages/DashboardPage';
+import LearnGraphPage from '../pages/LearnGraphPage';
 import SettingsPage from '../pages/SettingsPage';
 import ChangePasswordPage from '../pages/ChangePasswordPage';
 import UserProfilePage from '../pages/UserProfilePage';
@@ -24,6 +24,7 @@ import UserStatisticsPage from '../pages/UserStatisticsPage';
 import UserQuizSessionsPage from '../pages/UserQuizSessionsPage';
 import SessionHistoryPage from '../pages/SessionHistoryPage';
 import GrammarPage from '../pages/grammar/GrammarPage';
+import LexiconPage from '../pages/lexicon/LexiconPage';
 import VocabularyPage from '../pages/vocabulary/VocabularyPage';
 import VocabularyBasicPage from '../pages/vocabulary/VocabularyBasicPage';
 import VocabularyTextsPage from '../pages/vocabulary/VocabularyTextsPage';
@@ -50,10 +51,10 @@ import AppLayout from '../components/layout/AppLayout';
 import { ReactNode } from 'react';
 
 /** Helper: защищённый маршрут с общим лейаутом */
-function ProtectedLayoutRoute({ children }: { children: ReactNode }) {
+function ProtectedLayoutRoute({ children, hideSidebar }: { children: ReactNode; hideSidebar?: boolean }) {
   return (
     <ProtectedRoute>
-      <AppLayout>
+      <AppLayout hideSidebar={hideSidebar}>
         {children}
       </AppLayout>
     </ProtectedRoute>
@@ -85,7 +86,7 @@ export default function AppRoutes() {
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
       {/* Protected routes */}
-      <Route path="/dashboard" element={<ProtectedLayoutRoute><DashboardPage /></ProtectedLayoutRoute>} />
+      <Route path="/dashboard" element={<ProtectedLayoutRoute hideSidebar><LearnGraphPage /></ProtectedLayoutRoute>} />
       <Route path="/settings" element={<ProtectedLayoutRoute><SettingsPage /></ProtectedLayoutRoute>} />
       <Route path="/settings/password" element={<ProtectedLayoutRoute><ChangePasswordPage /></ProtectedLayoutRoute>} />
       <Route path="/users/:id" element={<ProtectedLayoutRoute><UserProfilePage /></ProtectedLayoutRoute>} />
@@ -107,6 +108,10 @@ export default function AppRoutes() {
       <Route path="/grammar/emeneau-rules" element={<ProtectedLayoutRoute><EmeneauRulesPage /></ProtectedLayoutRoute>} />
 
       {/* Vocabulary pages */}
+      <Route path="/vocabulary" element={<ProtectedLayoutRoute><VocabularyPage /></ProtectedLayoutRoute>} />
+
+      {/* Lexicon (стартовая страница лексики) */}
+      <Route path="/lexicon" element={<ProtectedLayoutRoute hideSidebar><LexiconPage /></ProtectedLayoutRoute>} />
       <Route path="/vocabulary/lists" element={<ProtectedLayoutRoute><UnderConstructionPage /></ProtectedLayoutRoute>} />
       <Route path="/vocabulary/basic" element={<ProtectedLayoutRoute><VocabularyBasicPage /></ProtectedLayoutRoute>} />
       <Route path="/vocabulary/texts" element={<ProtectedLayoutRoute><VocabularyTextsPage /></ProtectedLayoutRoute>} />

@@ -46,6 +46,7 @@ SamskrtamApp построен как референсная реализация
 | dictionary-service | Java 21 | Virtual Threads | Поиск по словарю, fallback на внешнее API |
 | statistics-service | Java 21 | Kafka Streams | Расчёт статистики и лидерборда |
 | sangraha-service | Java 21 | Virtual Threads | Санскритские произведения, LLM-анализ стихов |
+| curriculum-service | Java 21 | Virtual Threads | Учебный план: темы (Topic) и мягкие prerequisite-связи, независимая схема БД, без наполнения/квизов |
 | shared/samskrtam-dtos | Java 21 | — | Общий модуль DTO и событий для квизов, контента и статистики |
 | shared/common-dto | Java 21 | — | Общие DTO для всех сервисов |
 
@@ -126,6 +127,9 @@ graph TD
 | [services/quest-engine.md](./services/quest-engine.md) | Java 21 | quiz-service — прохождение квизов, прогресс, spaced repetition |
 | [services/quest-catalog.md](./services/quest-catalog.md) | — | Каталог типов квестов по разделам грамматики и лексики (реализованные и план) |
 | [services/quest-types-overview.md](./services/quest-types-overview.md) | — | Полная инвентаризация типов квестов: вариации, оценка объёма, приоритет по milestone |
+| [services/curriculum.md](./services/curriculum.md) | — | Учебный план: темы, мягкие зависимости между ними, граф по слоям, соответствие Milestones |
+| [services/curriculum-service.md](./services/curriculum-service.md) | Java 21 + VT | Независимый сервис: ~70 Topic, TopicPrerequisite, LearningLevel (L0–L6), ComplexQuiz (Mixed Practice/Level Assessment) — без наполнения/квизов, OpenAPI v2 |
+| [services/learning-materials.md](./services/learning-materials.md) | Java 21 | Теория, литература, сканы, видео — привязка к темам, вне модели квестов |
 | [services/quest-item-model.md](./services/quest-item-model.md) | Java 21 | Базовые интерфейсы/абстрактные классы модели квестов (content-service + quiz-service) |
 | [quests/](./quests/README.md) | — | Юзер-стори по типам квестов, разложенные по доменам грамматики и лексики |
 | [services/dictionary-service.md](./services/dictionary-service.md) | Java 21 + VT | Словарь + внешнее API |
@@ -149,6 +153,8 @@ graph TD
 ---
 
 ## 6. Milestones
+
+> Соответствие Milestones и учебного плана (какие темы/слои становятся проходимы на каждом шаге) — [services/curriculum.md §6](./services/curriculum.md#6-соответствие-milestones).
 
 | Milestone | Сервисы | Цель |
 |---|---|---|

@@ -38,10 +38,12 @@ spring:
 # Бывшие топики: sangraha-vocabulary-events (producer), vocabulary-sync-results (consumer).
 sangraha:
   llm:
-    base-url: ${SANGRAHA_LLM_BASE_URL}
+    # Конфигурации подключения (base-url/two-pass/max-completion-tokens) — в llm.yaml
+    # в корне репозитория (см. LlmConfigRegistry). Активная выбирается по SANGRAHA_LLM_MODEL.
     api-key: ${SANGRAHA_LLM_API_KEY}
     model: ${SANGRAHA_LLM_MODEL}
-    two-pass: ${SANGRAHA_LLM_TWO_PASS}
+    # Путь к llm.yaml; по умолчанию ищется в рабочей директории/.././app.
+    config-file: ${SANGRAHA_LLM_CONFIG_FILE:}
 
 app:
   content-service:

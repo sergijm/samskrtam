@@ -24,10 +24,11 @@ const UserAvatar = ({ username, firstName, lastName, email, avatarUrl, size = 'n
         shape={shape}
         className="mr-2"
       />
-      <div className="ml-1">
-        <div className="font-bold">{displayName}</div> {/* Display firstName + lastName or username */}
-        {email && <div className="text-sm text-color-secondary">{email}</div>} {/* Display email */}
-      </div>
+
+{/*      <div className="ml-1">
+        <div className="font-bold">{displayName}</div>  Display firstName + lastName or username
+        {email && <div className="text-sm text-color-secondary">{email}</div>}  Display email
+      </div>*/}
     </div>
   );
 };

@@ -1,0 +1,427 @@
+openapi: 3.1.0
+
+info:
+  title: curriculum-service API
+  description: |
+    Independent business-logic layer for the curriculum ("уроки") described in
+    docs/services/curriculum.md and docs/services/curriculum-service.md.
+    Model: ~70 atomic Topic + three independent classifications — TopicPrerequisite
+    (soft dependency graph), LearningLevel L0-L6 (authored first-introduction level,
+    NOT derived from the graph), and ComplexQuiz (curated 2-7 topic compositions:
+    Mixed Practice / Level Assessment). Scope of v2: structure only — no content,
+    no quizzes, no actual question generation or storage.
+    LearningMaterial (theory/media per topic) is a separate 1:N entity owned by
+    content-service (see docs/services/learning-materials.md) that references
+    Topic by id; curriculum-service has no field or dependency pointing to it.
+    Prerequisite is a soft (non-blocking) relation: it never gates access to a
+    topic, it only drives UI hints (badges, ordering on the progress map).
+  version: 2.0.0
+
+servers:
+  - url: http://localhost:8091/api/v2
+    description: Local development (direct to curriculum-service)
+  - url: http://localhost:8090/api/v2
+    description: Local development (via API Gateway)
+
+tags:
+  - name: topics
+    description: Topic CRUD and read access
+  - name: prerequisites
+    description: Soft prerequisite relations between topics
+  - name: levels
+    description: LearningLevel (L0-L6) navigation — the primary UI hierarchy
+  - name: complex-quizzes
+    description: Curated multi-topic Mixed Practice / Level Assessment compositions
+  - name: graph
+    description: Computed prerequisite layers — diagnostic tool, not the primary UI hierarchy (see curriculum-service.md §6)
+
+paths:
+  /curriculum/topics:
+    get:
+      tags: [topics]
+      summary: List all topics (flat, no computed layer)
+      operationId: listTopics
+      parameters:
+        - $ref: 'parameters.yaml#/IncludeEvergreenParam'
+      responses:
+        '200':
+          description: List of topics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/curriculum.yaml#/TopicDto'
+    post:
+      tags: [topics]
+      summary: Create a new topic
+      description: ADMIN only. Fails with 409 if `code` is already taken.
+      operationId: createTopic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/curriculum.yaml#/CreateTopicRequest'
+      responses:
+        '201':
+          description: Topic created
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/TopicDto'
+        '403':
+          description: Forbidden — not ADMIN
+        '409':
+          description: Duplicate code
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+
+  /curriculum/topics/{id}:
+    get:
+      tags: [topics]
+      summary: Get a topic with its direct prerequisites
+      description: Used by the topic card UI (curriculum.md §4) — shows only direct (1-3) prerequisites, not the full graph.
+      operationId: getTopic
+      parameters:
+        - $ref: 'parameters.yaml#/TopicIdParam'
+      responses:
+        '200':
+          description: Topic details
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [topic, prerequisites]
+                properties:
+                  topic:
+                    $ref: 'schemas/curriculum.yaml#/TopicDto'
+                  prerequisites:
+                    type: array
+                    items:
+                      $ref: 'schemas/curriculum.yaml#/TopicPrerequisiteDto'
+        '404':
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+    put:
+      tags: [topics]
+      summary: Update a topic
+      description: ADMIN only. Full replace of mutable fields, `code` is immutable.
+      operationId: updateTopic
+      parameters:
+        - $ref: 'parameters.yaml#/TopicIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/curriculum.yaml#/UpdateTopicRequest'
+      responses:
+        '200':
+          description: Topic updated
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/TopicDto'
+        '403':
+          description: Forbidden — not ADMIN
+        '404':
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+    delete:
+      tags: [topics]
+      summary: Delete a topic
+      description: >
+        ADMIN only. Cascades: deletes all topic_prerequisite rows referencing
+        this topic as either topicId or prerequisiteTopicId. No blocking checks —
+        a topic is always accessible regardless of prerequisite state, so removing
+        a prerequisite link is not an error condition.
+      operationId: deleteTopic
+      parameters:
+        - $ref: 'parameters.yaml#/TopicIdParam'
+      responses:
+        '204':
+          description: Topic deleted
+        '403':
+          description: Forbidden — not ADMIN
+        '404':
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+
+  /curriculum/topics/{id}/prerequisites:
+    get:
+      tags: [prerequisites]
+      summary: List direct prerequisites of a topic
+      operationId: listTopicPrerequisites
+      parameters:
+        - $ref: 'parameters.yaml#/TopicIdParam'
+      responses:
+        '200':
+          description: Direct prerequisites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/curriculum.yaml#/TopicPrerequisiteDto'
+        '404':
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+    post:
+      tags: [prerequisites]
+      summary: Add a prerequisite to a topic
+      description: >
+        ADMIN only. Rejects with 409 if it would create a cycle (DFS from
+        prerequisiteTopicId over existing edges, see curriculum-service.md §3),
+        or if prerequisiteTopicId equals id (self-loop).
+      operationId: addTopicPrerequisite
+      parameters:
+        - $ref: 'parameters.yaml#/TopicIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/curriculum.yaml#/AddPrerequisiteRequest'
+      responses:
+        '201':
+          description: Prerequisite added
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/TopicPrerequisiteDto'
+        '403':
+          description: Forbidden — not ADMIN
+        '404':
+          description: Topic or prerequisiteTopicId not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+        '409':
+          description: Cycle detected or self-loop
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+
+  /curriculum/topics/{id}/prerequisites/{prerequisiteTopicId}:
+    delete:
+      tags: [prerequisites]
+      summary: Remove a prerequisite from a topic
+      operationId: removeTopicPrerequisite
+      parameters:
+        - $ref: 'parameters.yaml#/TopicIdParam'
+        - $ref: 'parameters.yaml#/PrerequisiteTopicIdParam'
+      responses:
+        '204':
+          description: Prerequisite removed
+        '403':
+          description: Forbidden — not ADMIN
+        '404':
+          description: Relation not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+
+  /curriculum/levels:
+    get:
+      tags: [levels]
+      summary: List L0-L6 with topic counts
+      description: Primary UI navigation hierarchy (see curriculum-service.md §6) — NOT the same as the computed prerequisite graph in /graph.
+      operationId: listLevels
+      responses:
+        '200':
+          description: All 7 levels with topic counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/curriculum.yaml#/LevelSummary'
+
+  /curriculum/levels/{level}/topics:
+    get:
+      tags: [levels]
+      summary: List topics belonging to a given learning level
+      operationId: listTopicsByLevel
+      parameters:
+        - $ref: 'parameters.yaml#/LearningLevelPathParam'
+      responses:
+        '200':
+          description: Topics of this level, ordered by displayOrder then titleRu
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/curriculum.yaml#/TopicDto'
+
+  /curriculum/complex-quizzes:
+    get:
+      tags: [complex-quizzes]
+      summary: List complex quizzes (Mixed Practice / Level Assessment)
+      operationId: listComplexQuizzes
+      parameters:
+        - $ref: 'parameters.yaml#/LearningLevelQueryParam'
+        - $ref: 'parameters.yaml#/ComplexQuizTypeQueryParam'
+      responses:
+        '200':
+          description: List of complex quizzes (lightweight, topics not resolved)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/curriculum.yaml#/ComplexQuizSummaryDto'
+    post:
+      tags: [complex-quizzes]
+      summary: Create a complex quiz
+      description: >
+        ADMIN only. Validates topicIds count against type (2-4 for MIXED_PRACTICE,
+        5-7 for LEVEL_ASSESSMENT) and that all topicIds exist and are unique.
+      operationId: createComplexQuiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/curriculum.yaml#/UpsertComplexQuizRequest'
+      responses:
+        '201':
+          description: Complex quiz created
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ComplexQuizDto'
+        '403':
+          description: Forbidden — not ADMIN
+        '404':
+          description: One of topicIds does not exist
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+        '422':
+          description: topicIds count out of range for the given type, or duplicate ids
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+
+  /curriculum/complex-quizzes/{id}:
+    get:
+      tags: [complex-quizzes]
+      summary: Get a complex quiz with resolved topics
+      operationId: getComplexQuiz
+      parameters:
+        - $ref: 'parameters.yaml#/ComplexQuizIdParam'
+      responses:
+        '200':
+          description: Complex quiz details
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ComplexQuizDto'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+    put:
+      tags: [complex-quizzes]
+      summary: Update a complex quiz (metadata and/or topic composition)
+      description: ADMIN only. Same topicIds-count validation as create.
+      operationId: updateComplexQuiz
+      parameters:
+        - $ref: 'parameters.yaml#/ComplexQuizIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/curriculum.yaml#/UpsertComplexQuizRequest'
+      responses:
+        '200':
+          description: Complex quiz updated
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ComplexQuizDto'
+        '403':
+          description: Forbidden — not ADMIN
+        '404':
+          description: Not found, or one of topicIds does not exist
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+        '422':
+          description: topicIds count out of range for the given type, or duplicate ids
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+    delete:
+      tags: [complex-quizzes]
+      summary: Delete a complex quiz
+      operationId: deleteComplexQuiz
+      parameters:
+        - $ref: 'parameters.yaml#/ComplexQuizIdParam'
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Forbidden — not ADMIN
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+
+  /curriculum/graph:
+    get:
+      tags: [graph]
+      summary: Get the prerequisite graph as layers computed by topological sort (diagnostic)
+      description: >
+        DIAGNOSTIC endpoint, not the primary UI hierarchy — use /levels for that
+        (see curriculum-service.md §6). Layers are computed on read (Kahn's
+        algorithm) from TopicPrerequisite edges, not persisted, and are NOT the
+        same thing as the authored learningLevel. Useful to flag authoring
+        mistakes, e.g. a topic with learningLevel=L2 having a prerequisite whose
+        learningLevel=L4. Topics with isEvergreen=true are returned separately.
+      operationId: getCurriculumGraph
+      responses:
+        '200':
+          description: Layered curriculum graph
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/TopicGraphResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

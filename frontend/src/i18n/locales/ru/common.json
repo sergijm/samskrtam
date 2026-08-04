@@ -2,14 +2,15 @@
   "nav": {
     "dashboard": "Главная",
     "quizzes": "Квизы",
-    "dictionary": "Словарь",
+    "dictionary": "Словари",
     "statistics": "Статистика",
     "leaderboard": "Рейтинг",
     "settings": "Настройки",
     "admin": "Администрирование",
     "grammar": "Грамматика",
     "vocabulary": "Лексика",
-    "sangraha": "Тексты"
+    "sangraha": "Тексты",
+    "writing": "Письмо"
   },
   "common": {
     "search": "Поиск",

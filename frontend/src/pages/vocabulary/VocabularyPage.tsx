@@ -18,19 +18,19 @@ const VocabularyPage = () => {
     {
       title: t('vocabulary.basicVocabularyTitle'),
       description: t('vocabulary.basicVocabularyDescription'),
-      link: '/quizzes/vocabulary/basic',
+      link: '/vocabulary/basic',
       icon: 'pi pi-book',
     },
     {
       title: t('vocabulary.emeneauVocabularyTitle'),
       description: t('vocabulary.emeneauVocabularyDescription'),
-      link: '/quizzes/vocabulary/emeneau',
+      link: '/grammar/emeneau-exercises',
       icon: 'pi pi-book-open',
     },
     {
       title: t('vocabulary.panchatatraTitle'),
       description: t('vocabulary.panchatatraDescription'),
-      link: '/quizzes/vocabulary/texts',
+      link: '/vocabulary/texts',
       icon: 'pi pi-bookmark',
     },
   ];

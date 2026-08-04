@@ -12,6 +12,7 @@ import com.openai.models.chat.completions.*;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,6 +22,7 @@ import java.util.List;
  * Один вызов /chat/completions с tool submit_chapter_metadata.
  */
 @Component
+@DependsOn("llmConfigRegistry")
 @RequiredArgsConstructor
 @Slf4j
 public class ChapterMetadataClient {

@@ -91,14 +91,6 @@ prerequisite. Связь используется только для:
 
 ### Слой 4 — синтаксис и словообразование
 
-| Тема | Prerequisite | Тип квеста |
-|---|---|---|
-| Secondary stems (causative) | Conjugation parasmaipada | `SECONDARY_STEM_FORM` |
-| Kāraka: падежное управление | Declension (все основы), Conjugation present | `KARAKA_CASE_CHOICE` |
-| Agreement check | Declension, Participles | `AGREEMENT_CHECK` |
-| Compounds: split | Declension, базовый словарь | `COMPOUND_SPLIT` |
-| Word formation (taddhita) | Базовый словарь, Vocabulary roots | `WORD_FORMATION` |
-| Syllable weight | Sandhi (беглость чтения) | `SYLLABLE_WEIGHT` |
 
 ### Слой 5 — сложный синтаксис и метрика
 
@@ -159,7 +151,30 @@ graph TD
 
 ---
 
-## 5. Открытые вопросы
+## 6. Соответствие Milestones
+
+Слои учебного плана не совпадают 1:1 с Milestones проекта (`README.md §6`) — Milestone
+группирует работу по сервисам/инфраструктуре, слой — по педагогической зависимости.
+Ниже — с какого Milestone каждый слой становится проходимым:
+
+| Milestone | Что добавляет | Слои плана, становящиеся доступны |
+|---|---|---|
+| **M2 — First Quiz** | `DECLENSION_FORM` (declensions) | Слой 1 (Declension a-основы) |
+| **M3 — Statistics** | Kafka, события | — (инфраструктура, план не меняется) |
+| **M4 — Dictionary** | `VOCABULARY_WORD` (прямое направление) | Слой 0 (Базовый словарь) |
+| **M5 — More Quizzes** | `CONJUGATION_FORM` (parasmaipada laṭ/loṭ/vidhiliṅ), `VOCABULARY_SYNONYM` | Слой 2 (Conjugation present), часть слоя 3 (Vocabulary synonyms) |
+| **M6 — Observability** | инфраструктура, план не меняется | — |
+| **M7 — Polish** | оставшиеся типы по мере готовности (см. `quest-types-overview.md`) | Слои 3–6 постепенно, по мере реализации типов |
+
+Практическое следствие: до M5 включительно граф фактически линеен — Слой 0 → Слой 1 →
+начало Слоя 2, реальная ветвистость (несколько параллельных путей, синтаксис, метрика)
+появляется только начиная с Слоя 3, то есть после M5. Планировать конкретную очередность
+внутри слоёв 3–6 имеет смысл ближе к M7, когда будет ясно, какие типы из
+`quest-types-overview.md` реализованы, а какие остаются в Backlog.
+
+---
+
+
 
 - Нужен ли `HELPFUL` (в отличие от `RECOMMENDED`) отдельным визуальным сигналом, или в
   первой версии показывать только `RECOMMENDED`.

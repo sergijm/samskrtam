@@ -1,0 +1,38 @@
+# Конфигурации подключения к LLM для sangraha-service.
+#
+# Каждая запись привязана к модели; активная конфигурация выбирается по
+# SANGRAHA_LLM_MODEL (см. .env) — переключение модели сводится к правке одной
+# переменной в .env. Строковые поля поддерживают placeholder'ы ${VAR}, которые
+# резолвятся из .env — например api-key: ${SANGRAHA_LLM_API_KEY}.
+#
+# Путь к файлу: корень репозитория. Можно переопределить через
+# SANGRAHA_LLM_CONFIG_FILE / sangraha.llm.config-file.
+#
+# Поля конфигурации:
+#   base-url              — OpenAI-совместимый endpoint (см. ADR-006)
+#   api-key               — API-ключ (обычно placeholder из .env)
+#   two-pass              — true: reasoning → formalize; false: single-pass
+#   max-completion-tokens — лимит токенов на completion (8192 рекомендуется
+#                           для двухпроходного анализа длинных стихов)
+llm:
+  configs:
+    claude-sonnet-5:
+      base-url: https://api.aitunnel.ru/v1
+      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      two-pass: false
+      max-completion-tokens: 128000
+    claude-fable-5:
+      base-url: https://api.aitunnel.ru/v1
+      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      two-pass: false
+      max-completion-tokens: 128000
+    deepseek-v4-pro:
+      base-url: https://api.aitunnel.ru/v1
+      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      two-pass: true
+      max-completion-tokens: 8192
+    gpt-4.1-nano:
+      base-url: https://api.aitunnel.ru/v1
+      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      two-pass: false
+      max-completion-tokens: 8192

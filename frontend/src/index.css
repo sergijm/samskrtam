@@ -238,6 +238,436 @@ html {
     padding: 0.5rem 1rem;
 }
 
+.layout-topbar-nav .header-nav-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.layout-topbar-nav .header-nav-btn:hover {
+    background: var(--surface-hover);
+}
+
+.layout-topbar-nav .header-nav-btn.active {
+    color: var(--primary-color);
+    background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+
+/* ─── Learning graph (LearnGraphPage) ─── */
+.learn-graph-layer {
+    margin-bottom: 1.5rem;
+    background: var(--surface-card);
+    background-image: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--primary-color) 5%, transparent),
+        transparent 40%
+    );
+    border: 1px solid var(--surface-border);
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.learn-graph-layer--always {
+    border-style: dashed;
+    background-image: none;
+}
+
+.learn-graph-layer-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-color);
+    transition: background 0.2s;
+}
+
+.learn-graph-layer-header:hover {
+    background: var(--surface-hover);
+}
+
+.learn-graph-layer-number {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: var(--primary-color-text);
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.learn-graph-layer--always .learn-graph-layer-number {
+    background: var(--text-color-secondary);
+}
+
+.learn-graph-topic-count {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    color: var(--text-color-secondary);
+    background: var(--surface-ground);
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    padding: 0.2rem 0.6rem;
+}
+
+.learn-graph-layer-body {
+    padding: 0.5rem 1rem 1.25rem;
+}
+
+/* ─── Topic cards ─── */
+.learn-graph-topic {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 0.9rem 1rem;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: 0.75rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.learn-graph-topic:hover {
+    border-color: var(--primary-color);
+}
+
+.learn-graph-topic--highlighted {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 30%, transparent);
+}
+
+.learn-graph-topic--recommended {
+    border-color: var(--primary-color);
+    background:
+        linear-gradient(color-mix(in srgb, var(--primary-color) 6%, transparent), color-mix(in srgb, var(--primary-color) 6%, transparent)),
+        var(--surface-card);
+}
+
+.learn-graph-topic-icon {
+    font-size: 1rem;
+    color: var(--primary-color);
+}
+
+.learn-graph-topic-progress .p-progressbar {
+    height: 0.5rem !important;
+}
+
+.learn-graph-status {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 0.15rem 0.55rem;
+    white-space: nowrap;
+}
+
+.learn-graph-status-icon {
+    font-size: 0.7rem;
+}
+
+.learn-graph-status--mastered {
+    color: #16a34a;
+    background: rgba(22, 163, 74, 0.12);
+}
+
+.learn-graph-status--in_progress {
+    color: #d97706;
+    background: rgba(217, 119, 6, 0.12);
+}
+
+.learn-graph-status--recommended {
+    color: var(--primary-color);
+    background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+}
+
+.learn-graph-status--review {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.1);
+}
+
+/* ─── Dependencies ─── */
+.learn-graph-dep {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.learn-graph-dep-icon {
+    font-size: 0.7rem;
+    color: var(--text-color-secondary);
+}
+
+.learn-graph-prereq {
+    font-size: 0.75rem;
+    color: var(--text-color);
+    background: var(--surface-ground);
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.learn-graph-prereq:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--primary-color-text);
+}
+
+/* ─── Topic action button ─── */
+.learn-graph-topic-actions {
+    margin-top: auto;
+    padding-top: 0.75rem;
+}
+
+.learn-graph-learn-btn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--primary-color);
+    background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+    border-radius: 0.5rem;
+    padding: 0.45rem 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.learn-graph-learn-btn:hover {
+    background: var(--primary-color);
+    color: var(--primary-color-text);
+}
+
+/* ─── Filter bar ─── */
+.learn-graph-filter-btn {
+    font-size: 0.85rem;
+    color: var(--text-color);
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.learn-graph-filter-btn:hover {
+    border-color: var(--primary-color);
+}
+
+.learn-graph-filter-btn.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--primary-color-text);
+}
+
+/* ─── Summary & Continue ─── */
+.learn-graph-overall {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.learn-graph-continue {
+    border: 1px solid color-mix(in srgb, var(--primary-color) 35%, transparent) !important;
+}
+
+.learn-graph-cta {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--primary-color-text);
+    background: var(--primary-color);
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.65rem 1.25rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.learn-graph-cta:hover {
+    opacity: 0.9;
+}
+
+/* ─── Lexicon (LexiconPage) ─── */
+.lexicon-card {
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: 0.9rem;
+    padding: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.lexicon-card.cursor-pointer:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Hero */
+.lexicon-hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--primary-color-text);
+    background: var(--primary-color);
+    border: none;
+    border-radius: 0.6rem;
+    padding: 0.7rem 1.4rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.lexicon-hero-cta:hover {
+    opacity: 0.9;
+}
+
+/* Today */
+.lexicon-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 0.9rem;
+    background: var(--surface-ground);
+    border: 1px solid var(--surface-border);
+    border-radius: 0.75rem;
+}
+
+.lexicon-stat-icon {
+    font-size: 1rem;
+    color: var(--primary-color);
+}
+
+.lexicon-stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.lexicon-cta {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--primary-color-text);
+    background: var(--primary-color);
+    border: none;
+    border-radius: 0.6rem;
+    padding: 0.7rem 1.3rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.lexicon-cta:hover {
+    opacity: 0.9;
+}
+
+/* Quick start */
+.lexicon-quick-card {
+    background:
+        linear-gradient(color-mix(in srgb, var(--primary-color) 4%, transparent), color-mix(in srgb, var(--primary-color) 4%, transparent)),
+        var(--surface-card);
+}
+
+/* Frequency */
+.lexicon-band-overview {
+    cursor: pointer;
+}
+
+.lexicon-band-overview:hover {
+    border-color: var(--primary-color);
+}
+
+.lexicon-band-card:hover {
+    border-color: var(--primary-color);
+}
+
+/* Chips (POS) */
+.lexicon-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-color);
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    padding: 0.5rem 1rem;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.lexicon-chip:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.lexicon-chip-count {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    background: var(--surface-ground);
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+}
+
+/* Sources */
+.lexicon-source-devanagari {
+    font-size: 1.3rem;
+    color: var(--text-color-secondary);
+}
+
+/* Collections */
+.lexicon-collection-card:hover {
+    border-color: var(--primary-color);
+}
+
+/* Link-style button */
+.lexicon-link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.15rem 0.25rem;
+    transition: opacity 0.2s;
+}
+
+.lexicon-link-btn:hover {
+    opacity: 0.8;
+}
+
 /* ─── Avatar: prevent vertical stretch, */
 form .p-avatar.p-avatar-image img {
   object-fit: cover;

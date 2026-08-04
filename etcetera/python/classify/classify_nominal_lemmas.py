@@ -3,8 +3,12 @@
 import argparse
 import json
 import logging
+import os
+import re
 import sys
 import time
+
+import yaml
 
 import psycopg
 from openai import OpenAI
@@ -12,6 +16,11 @@ from openai import OpenAI
 
 DEFAULT_BATCH_SIZE = 2000
 LOG_FILE = "nominal_lemmas_llm.log"
+
+# Configuration
+LLM_MODEL = "deepseek-v4-pro"
+ENV_FILE_PATH = "C:\MyDev\samskrtam\.env"
+LLM_CONFIG_PATH = "C:\MyDev\samskrtam\llm.yaml"
 
 STEM_CLASSES = {
     "A_STEM",
@@ -169,15 +178,53 @@ def create_db_connection(env):
     )
 
 
-def create_llm_client(env):
+def load_llm_config(path, model, env):
+    """
+    Load the selected LLM configuration from llm.yaml.
+
+    String values may contain ${VAR} placeholders resolved from .env.
+    """
+    with open(path, "r", encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+
+    try:
+        llm_config = config["llm"]["configs"][model]
+    except (TypeError, KeyError):
+        available = sorted(
+            config.get("llm", {}).get("configs", {}).keys()
+            if isinstance(config, dict)
+            else []
+        )
+        raise RuntimeError(
+            f"LLM model {model!r} not found in {path}. "
+            f"Available models: {available}"
+        )
+
+    def resolve(value):
+        if not isinstance(value, str):
+            return value
+
+        def replace_var(match):
+            name = match.group(1)
+            return env.get(name, os.environ.get(name, match.group(0)))
+
+        return re.sub(r"\\$\\{([^}]+)\\}", replace_var, value)
+
+    return {
+        key: resolve(value)
+        for key, value in llm_config.items()
+    }
+
+
+def create_llm_client(llm_config):
     return OpenAI(
         base_url=required(
-            env,
-            "SANGRAHA_LLM_BASE_URL",
+            llm_config,
+            "base-url",
         ),
         api_key=required(
-            env,
-            "SANGRAHA_LLM_API_KEY",
+            llm_config,
+            "api-key",
         ),
     )
 
@@ -556,11 +603,6 @@ def main():
     )
 
     parser.add_argument(
-        "env_file",
-        help="Path to .env configuration file",
-    )
-
-    parser.add_argument(
         "--batch-size",
         type=int,
         default=DEFAULT_BATCH_SIZE,
@@ -583,16 +625,18 @@ def main():
         LOG_FILE,
     )
 
-    env = load_env(args.env_file)
+    env = load_env(ENV_FILE_PATH)
 
-    model = required(
+    model = LLM_MODEL
+    llm_config = load_llm_config(
+        LLM_CONFIG_PATH,
+        model,
         env,
-        "SANGRAHA_LLM_MODEL",
     )
 
     max_completion_tokens = int(
-        env.get(
-            "SANGRAHA_LLM_MAXCOMPLETIONTOKENS",
+        llm_config.get(
+            "max-completion-tokens",
             "128000",
         )
     )
@@ -612,7 +656,7 @@ def main():
         max_completion_tokens,
     )
 
-    client = create_llm_client(env)
+    client = create_llm_client(llm_config)
 
     with create_db_connection(env) as conn:
 

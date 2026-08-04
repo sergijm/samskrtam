@@ -8,6 +8,7 @@ import com.openai.models.chat.completions.ChatCompletion;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
 import sm.selflearn.samskrtam.sangraha.service.strategy.LlmCallStrategy;
@@ -24,6 +25,7 @@ import java.util.List;
  * {@link LlmCallStrategyFactory}.
  */
 @Component
+@DependsOn("llmConfigRegistry")
 @RequiredArgsConstructor
 @Slf4j
 public class LlmClient {

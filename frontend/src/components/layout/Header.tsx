@@ -7,8 +7,13 @@ import { LocaleSwitcher } from '../common/LocaleSwitcher';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import UserAvatar from '../user/UserAvatar';
 import { IconButton } from '../common/buttons';
+import HeaderNav from './HeaderNav';
 
-const Header = () => {
+interface HeaderProps {
+  showSidebarToggle?: boolean;
+}
+
+const Header = ({ showSidebarToggle = true }: HeaderProps) => {
   const { isAuthenticated, logout } = useAuthStore();
   const { data: user } = useMe();
   const { collapsed, toggle } = useSidebarStore();
@@ -27,7 +32,7 @@ const Header = () => {
                style={{ height: '70px', width: '70px', marginRight: '0' }} />
           <span className="text-3xl font-bold " >Akshara Mārga</span>
         </Link>
-        {isAuthenticated && (
+        {isAuthenticated && showSidebarToggle && (
           <IconButton
             iconName={`pi-chevron-${collapsed ? 'right' : 'left'}`}
             className="sidebar-toggle-btn ml-2"
@@ -38,6 +43,7 @@ const Header = () => {
           />
         )}
       </div>
+      <HeaderNav />
       <div className="layout-topbar-menu flex align-items-center gap-3">
         <ThemeSwitcher />
         <LocaleSwitcher />

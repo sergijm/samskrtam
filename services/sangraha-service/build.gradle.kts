@@ -37,6 +37,7 @@ dependencies {
     implementation(libs.micrometer.registry.prometheus)
 
     implementation(libs.jackson.datatype.jsr310)
+    implementation(libs.jackson.dataformat.yaml)
 
     // OpenAI SDK — замена самописного HTTP-клиента к LLM
     implementation("com.openai:openai-java:4.41.0")

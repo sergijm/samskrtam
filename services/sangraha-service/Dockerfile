@@ -8,6 +8,7 @@ RUN addgroup -S samskrtam && adduser -S samskrtam -G samskrtam
 USER samskrtam
 WORKDIR /app
 COPY --from=builder /app/services/sangraha-service/build/libs/*.jar app.jar
+COPY --from=builder /app/llm.yaml llm.yaml
 EXPOSE ${SANGRAHA_SERVICE_PORT}
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
   CMD wget -qO- http://localhost:${MANAGEMENT_PORT}/actuator/health || exit 1

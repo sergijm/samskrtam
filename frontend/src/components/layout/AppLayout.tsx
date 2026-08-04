@@ -5,9 +5,10 @@ import { useSidebarStore } from '../../store/sidebarStore';
 
 interface AppLayoutProps {
   children: React.ReactNode;
+  hideSidebar?: boolean;
 }
 
-const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+const AppLayout: React.FC<AppLayoutProps> = ({ children, hideSidebar = false }) => {
   const { collapsed, width, setWidth } = useSidebarStore();
   const resizeRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -40,23 +41,25 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   return (
     <div className="layout-wrapper">
-      <Header />
+      <Header showSidebarToggle={!hideSidebar} />
       <div className="layout-main-container">
-        <div
-          className={`layout-sidebar-wrapper${collapsed ? ' collapsed' : ''}`}
-          style={{ width: collapsed ? 0 : width }}
-        >
-          <div className="layout-sidebar-inner" style={{ width }}>
-            <Sidebar />
+        {!hideSidebar && (
+          <div
+            className={`layout-sidebar-wrapper${collapsed ? ' collapsed' : ''}`}
+            style={{ width: collapsed ? 0 : width }}
+          >
+            <div className="layout-sidebar-inner" style={{ width }}>
+              <Sidebar />
+            </div>
+            {!collapsed && (
+              <div
+                ref={resizeRef}
+                className="layout-sidebar-resize-handle"
+                onMouseDown={onMouseDown}
+              />
+            )}
           </div>
-          {!collapsed && (
-            <div
-              ref={resizeRef}
-              className="layout-sidebar-resize-handle"
-              onMouseDown={onMouseDown}
-            />
-          )}
-        </div>
+        )}
         <div className="layout-main">
           {children}
         </div>
