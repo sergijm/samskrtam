@@ -22,4 +22,6 @@ task-curriculum-03-entities.md, task-curriculum-04-dto-mapper.md, task-curriculu
 
 ## Критерии готовности (DoD)
 - [ ] Все операции соответствуют `docs/openapi/curriculum/curriculum-service.yaml` (пути, коды ответов, поля тела)
+- [ ] ADMIN-only эндпоинты возвращают 403 для не-ADMIN (интеграционный тест)
+- [ ] Интеграционный тест на полный сценарий: создать 3 темы, связать A→B→C, попытаться добавить C→A (ожидаем 409), запросить `/graph` (ожидаем 3 слоя по одной теме)
 - [ ] springdoc-generated `/v3/api-docs` не расходится по путям/операциям с ручным `curriculum-service.yaml` (используется только для сверки, источник истины — YAML в docs/)

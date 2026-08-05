@@ -32,3 +32,8 @@ task-curriculum-02-migration.md (таблицы `complex_quiz`/`complex_quiz_top
 11. `ComplexQuizController` (`@RestController @RequestMapping("/api/v2/curriculum/complex-quizzes")`): `GET` (список, фильтры `level`/`type`, `ComplexQuizSummaryDto`), `GET /{id}` (404 если нет, иначе полный `ComplexQuizDto`), `POST` (ADMIN), `PUT /{id}` (ADMIN), `DELETE /{id}` (ADMIN, 204).
 12. `GET /levels` и `GET /levels/{level}/topics` — если ещё не реализованы в task-06, добавить здесь как часть того же `TopicController` (не создавать отдельный контроллер ради двух простых эндпоинтов).
 
+## Критерии готовности (DoD)
+- [ ] Валидация диапазона 2-4 / 5-7 покрыта тестами (граничные значения: 1, 2, 4, 5, 7, 8 элементов; дубликаты; несуществующий topicId)
+- [ ] `PUT` корректно заменяет состав тем (не оставляет «хвостов» в `complex_quiz_topic`)
+- [ ] `Topic.appearsInLevels` в интеграционном тесте: тема учтена в `ComplexQuiz` уровня L2 и L3 при собственном `learningLevel = L1` → `appearsInLevels = [L1, L2, L3]`
+- [ ] Все операции соответствуют `docs/openapi/curriculum/curriculum-service.yaml` (пути, коды ответов, включая 422)

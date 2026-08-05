@@ -1,0 +1,52 @@
+server:
+  port: 8091
+  shutdown: graceful
+  error:
+    include-stacktrace: always
+    include-exception: true
+
+spring:
+  application:
+    name: curriculum-service
+  config:
+    import: "optional:file:.env[.properties]"
+  threads:
+    virtual:
+      enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: ${GRACEFUL_SHUTDOWN_TIMEOUT}
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE}
+      minimum-idle: ${DB_POOL_MIN_IDLE}
+      connection-timeout: ${DB_POOL_CONNECTION_TIMEOUT_MS}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: curriculum
+        jdbc:
+          time_zone: UTC
+  flyway:
+    url: ${CURRICULUM_DB_URL}
+    user: ${DB_USER}
+    password: ${DB_PASSWORD}
+    schemas: curriculum
+    locations: classpath:db/migration
+
+management:
+  server:
+    port: ${MANAGEMENT_PORT}
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+
+logging:
+  level:
+    root: WARN
+    sm.selflearn.samskrtam: DEBUG

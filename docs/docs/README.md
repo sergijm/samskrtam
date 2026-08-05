@@ -50,6 +50,8 @@ SamskrtamApp построен как референсная реализация
 | shared/samskrtam-dtos | Java 21 | — | Общий модуль DTO и событий для квизов, контента и статистики |
 | shared/common-dto | Java 21 | — | Общие DTO для всех сервисов |
 
+> **Ключевое решение:** Java 21 Virtual Threads позволяют писать блокирующий код (обычный JDBC, RestTemplate), который JVM автоматически делает неблокирующим. R2DBC и WebFlux применяются только там, где это оправдано (Gateway, quiz-service).
+
 ---
 
 ## 4. Bounded Contexts
@@ -125,8 +127,12 @@ graph TD
 | [services/quest-engine.md](./services/quest-engine.md) | Java 21 | quiz-service — прохождение квизов, прогресс, spaced repetition |
 | [services/quest-catalog.md](./services/quest-catalog.md) | — | Каталог типов квестов по разделам грамматики и лексики (реализованные и план) |
 | [services/quest-types-overview.md](./services/quest-types-overview.md) | — | Полная инвентаризация типов квестов: вариации, оценка объёма, приоритет по milestone |
-| [services/curriculum.md](./services/curriculum.md) | — | Учебный план: темы, мягкие зависимости между ними, граф по слоям, соответствие Milestones |
-| [services/curriculum-service.md](./services/curriculum-service.md) | Java 21 + VT | Независимый сервис: ~70 Topic, TopicPrerequisite, LearningLevel (L0–L6), ComplexQuiz (Mixed Practice/Level Assessment) — без наполнения/квизов, OpenAPI v2 |
+| [services/curriculum.md](./services/curriculum.md) | — | Учебный план: 70 атомарных grammar-тем L0–L6 (+2 evergreen), мягкие зависимости, граф, соответствие Milestones |
+| [services/curriculum-service.md](./services/curriculum-service.md) | Java 21 + VT | Сервис: ~70 grammar Topic + TopicPrerequisite, LearningLevel (L0–L6), ComplexQuiz (Mixed Practice/Level Assessment); плюс модуль `lexicon` (см. ниже) в той же БД — OpenAPI v2 |
+| [services/lexicon.md](./services/lexicon.md) | — (модуль curriculum-service) | Lexeme/WordForm, таксономии (frequency/semantic/POS/morphology), Source+occurrences, UserCollection, UserLexemeProgress — многомерные связи, не копии слова |
+| [services/lexical-curriculum.md](./services/lexical-curriculum.md) | — | LexicalTopic (=Topic domain=LEXICON), 68 начальных лексических тем L0–L6, обоснование frequency-полос, семантическая/POS/морфологическая таксономия |
+| [services/lexical-quizzes.md](./services/lexical-quizzes.md) | — | 5 категорий lexical-вопросов, VocabularyQuizDefinition (Topic/Mixed/Frequency/Source), adaptive selection формула |
+| [services/lexicon-content-pipeline.md](./services/lexicon-content-pipeline.md) | — | Pipeline наполнения ~2000 лемм: source data → AI-enrichment → validation → human review → seed-план по батчам |
 | [services/learning-materials.md](./services/learning-materials.md) | Java 21 | Теория, литература, сканы, видео — привязка к темам, вне модели квестов |
 | [services/quest-item-model.md](./services/quest-item-model.md) | Java 21 | Базовые интерфейсы/абстрактные классы модели квестов (content-service + quiz-service) |
 | [quests/](./quests/README.md) | — | Юзер-стори по типам квестов, разложенные по доменам грамматики и лексики |
@@ -150,3 +156,16 @@ graph TD
 
 ---
 
+## 6. Milestones
+
+> Соответствие Milestones и учебного плана (какие темы/слои становятся проходимы на каждом шаге) — [services/curriculum.md §6](./services/curriculum.md#6-соответствие-milestones).
+
+| Milestone | Сервисы | Цель |
+|---|---|---|
+| **M1 — Foundation** | Gateway + Keycloak + user-service + content-service | Auth, CRUD контента, монорепо-скелет |
+| **M2 — First Quiz** | quiz-service (declensions) | Первый рабочий квиз, Contract-First |
+| **M3 — Statistics** | statistics-service + Kafka | События, async-обработка |
+| **M4 — Dictionary** | dictionary-service (Java 21 + Virtual Threads) | Cache-aside, внешнее API |
+| **M5 — More Quizzes** | quiz-service (conjugations + vocabulary) | Масштабирование паттерна |
+| **M6 — Observability** | все сервисы | Distributed tracing, structured logging, metrics |
+| **M7 — Polish** | все сервисы | i18n, UX, CI/CD-финализация, load testing |

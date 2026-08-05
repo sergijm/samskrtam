@@ -1,0 +1,62 @@
+package sm.selflearn.samskrtam.curriculum.model;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.Data;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Data
+@Entity
+@Table(name = "topic", schema = "curriculum")
+public class Topic {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Column(name = "code", nullable = false, unique = true, length = 80)
+    private String code;
+
+    @Column(name = "title_ru", nullable = false, length = 200)
+    private String titleRu;
+
+    @Column(name = "title_en", nullable = false, length = 200)
+    private String titleEn;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "learning_level", nullable = false, length = 2)
+    private LearningLevel learningLevel;
+
+    @Column(name = "is_evergreen", nullable = false)
+    private boolean isEvergreen;
+
+    @Column(name = "display_order")
+    private Short displayOrder;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @PrePersist
+    void onCreate() {
+        Instant now = Instant.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        updatedAt = Instant.now();
+    }
+}

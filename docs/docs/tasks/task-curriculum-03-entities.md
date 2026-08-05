@@ -13,3 +13,7 @@ task-curriculum-01-scaffold.md, task-curriculum-02-migration.md
 4. `TopicRepository extends JpaRepository<Topic, UUID>`: методы `findByCode(String code)`, `existsByCode(String code)`, `findByLearningLevel(LearningLevel level, Sort sort)`, `countByLearningLevel(LearningLevel level)` (для `/levels`).
 5. `TopicPrerequisiteRepository extends JpaRepository<TopicPrerequisite, TopicPrerequisiteId>`: методы `findByIdTopicId(UUID topicId)` (прямые prerequisite темы), `findByIdPrerequisiteTopicId(UUID prerequisiteTopicId)` (обратный поиск — «что зависит от этой темы», нужен для обхода циклов в task-curriculum-05), `findAll()` (для построения полного графа в `/graph`).
 
+## Критерии готовности (DoD)
+- [ ] Сущности мапятся на существующие таблицы без дополнительных миграций
+- [ ] Юнит-тест на сохранение Topic + TopicPrerequisite и чтение через оба репозитория
+- [ ] `code` UNIQUE constraint долетает как понятная ошибка (проверяется в сервисном слое до insert, не через try/catch SQL exception)

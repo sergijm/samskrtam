@@ -11,6 +11,7 @@ include(
     ":services:quiz-service",
     ":services:statistics-service",
     ":services:dictionary-service",
-    ":services:sangraha-service"
+    ":services:sangraha-service",
+    ":services:curriculum-service"
 )
 

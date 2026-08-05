@@ -1,0 +1,66 @@
+# Shared parameters for curriculum-service API v2
+
+TopicIdParam:
+  name: id
+  in: path
+  required: true
+  description: UUID of the topic
+  schema:
+    type: string
+    format: uuid
+
+PrerequisiteTopicIdParam:
+  name: prerequisiteTopicId
+  in: path
+  required: true
+  description: UUID of the prerequisite topic
+  schema:
+    type: string
+    format: uuid
+
+IncludeEvergreenParam:
+  name: includeEvergreen
+  in: query
+  required: false
+  description: >
+    Whether to include topics with isEvergreen=true (Mixed review, Error correction)
+    in the flat list response.
+  schema:
+    type: boolean
+    default: true
+
+LearningLevelPathParam:
+  name: level
+  in: path
+  required: true
+  description: Learning level (L0..L6)
+  schema:
+    type: string
+    enum: [L0, L1, L2, L3, L4, L5, L6]
+
+LearningLevelQueryParam:
+  name: level
+  in: query
+  required: false
+  description: Filter by learning level (L0..L6)
+  schema:
+    type: string
+    enum: [L0, L1, L2, L3, L4, L5, L6]
+
+ComplexQuizTypeQueryParam:
+  name: type
+  in: query
+  required: false
+  description: Filter by complex quiz type
+  schema:
+    type: string
+    enum: [MIXED_PRACTICE, LEVEL_ASSESSMENT]
+
+ComplexQuizIdParam:
+  name: id
+  in: path
+  required: true
+  description: UUID of the complex quiz
+  schema:
+    type: string
+    format: uuid
