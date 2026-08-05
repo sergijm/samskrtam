@@ -11,7 +11,6 @@
 ## Входные данные
 - [x] Спецификация: `docs/services/curriculum-service.md`
 - [ ] API Gateway маршрут — НЕ входит в эту задачу (см. curriculum-service.md §6, задача Агента 1)
-- [ ] Dockerfile/docker-compose — НЕ входит в эту задачу (задача Агента 5)
 
 ## Шаги
 1. Скопировать структуру `build.gradle.kts` из `services/feature-flag-service/build.gradle.kts`, поменять `artifactId`/имя модуля на `curriculum-service`.

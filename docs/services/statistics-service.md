@@ -219,7 +219,7 @@ frontend/
 Роуты `/admin/flags/*` — подробная спецификация в [feature-flags-frontend.md](feature-flags-frontend.md).
 
 Роуты `/lessons/*` — подробная спецификация в [lesson-pages-spec.md](../frontend/pages/lesson-pages-spec.md). OpenAPI: [lesson-aggregation-openapi.yaml](../openapi/lesson-aggregation-openapi.yaml).
-    ├──► API Contract Agent (6)          ← первый: контракты
+    ├──► API Contract Agent (5)          ← первый: контракты
     │         │
     │         ▼
     ├──► Gateway & Infra Agent (1)        ← параллельно с Domain Agent
@@ -230,11 +230,9 @@ frontend/
     │         ├──► Frontend Agent (3)     ← после domain API
     │         │
     │         └──► Testing Agent (4)      ← параллельно с frontend
-    │
-    └──► DevOps Agent (5)                 ← параллельно
 ```
 
-**Критические зависимости:** Frontend (3) ждёт от Contract (6) OpenAPI и от Domain (2) endpoints; Testing (4) ждёт Domain (2); DevOps (5) ждёт всех; Gateway (1) ждёт Contract (6).
+**Критические зависимости:** Frontend (3) ждёт от Contract (5) OpenAPI и от Domain (2) endpoints; Testing (4) ждёт Domain (2); Gateway (1) ждёт Contract (5).
 
 ---
 
@@ -244,4 +242,4 @@ frontend/
 
 **Конфигурация:** без дефолтов в application.yml — только ${ENV_VAR}, секреты только через env, .env.example актуален.
 
-**Definition of Done:** 1) реализация соответствует docs/; 2) тесты + покрытие ≥ 80% сервисного слоя; 3) Checkstyle и SpotBugs чисты; 4) OpenAPI обновлён; 5) Dockerfile работает; 6) PR прошёл CI + code review.
+**Definition of Done:** 1) реализация соответствует docs/; 2) тесты + покрытие ≥ 80% сервисного слоя; 3) Checkstyle и SpotBugs чисты; 4) OpenAPI обновлён; 5) PR прошёл code review.

@@ -153,7 +153,7 @@
 
 
 
-- **Агент 6** (этот раздел + `openapi/quiz/schemas/session.yaml`, `answers.yaml`) — контракт: `QuestionType`, полиморфный `QuestionOptionDto`, `multiSelect`, `selectedOptionIds`/`correctOptionIds`. Сделано в рамках этой ревизии документа.
+- **Агент 5** (этот раздел + `openapi/quiz/schemas/session.yaml`, `answers.yaml`) — контракт: `QuestionType`, полиморфный `QuestionOptionDto`, `multiSelect`, `selectedOptionIds`/`correctOptionIds`. Сделано в рамках этой ревизии документа.
 - **Агент 2** — реализация:
   - **(bugfix)** перенос `SessionCreationService.applyScopeFilter` (quiz-service) в content-service как `QuizScopeFilterService`, применяемый **внутри** `QuestionGenerationService`/`DeclensionQuizGeneratorService` **до** обрезки по `questionsPerSession` — см. `content-service.md` §5 «Внутреннее API для quiz-service»; текущий баг: content-service генерирует `questionsPerSession` вопросов **без учёта** фильтра, а quiz-service фильтрует их постфактум, из-за чего после фильтрации остаётся 0–1 вопрос вместо полных 10;
   - **(bugfix)** текст `explanationRu/explanationEn` для `CASE_BY_FORM` (см. врезку выше в этом разделе) и его согласованность с фактическим направлением вопроса;
@@ -254,7 +254,7 @@ content-service тем же алгоритмом §4.5, независимо о�
 
 ### 5.7. Задачи по агентам
 
-- **Агент 6** (этот раздел + `openapi/quiz/parameters.yaml`, `schemas/session.yaml`,
+- **Агент 5** (этот раздел + `openapi/quiz/parameters.yaml`, `schemas/session.yaml`,
   `quiz-sessions.yaml`) — контракт `filterScope=ALL_STEMS`, `filterVowelTypes`, `filterGenders`. Сделано в
   рамках этой ревизии документа.
 - **Агент 2** — см. `docs/agents/tasks/task-02-all-stems-quiz.md`.

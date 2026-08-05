@@ -1,7 +1,7 @@
 ﻿# Спецификация: универсальный генератор вопросов квиза
 
 > Связанные файлы: [README.md](../README.md) · [quiz-declension.md](./quiz-declension.md) · [openapi/common/schemas/vocabulary.yaml](../openapi/common/schemas/vocabulary.yaml) · [services/quiz-service.md](../services/quiz-service.md) · [services/content-service.md](../services/content-service.md) · [architecture.md §3.6](../architecture.md#36-единая-таблица-прогресса-quiz_item_score)
-> Ответственный агент: Агент 6 (API Contract & Documentation) — контракт; реализация Агент 2 (Domain Services, quiz-service)
+> Ответственный агент: Агент 5 (API Contract & Documentation) — контракт; реализация Агент 2 (Domain Services, quiz-service)
 > Статус: **АКТУАЛЕН**
 
 ---
@@ -213,7 +213,7 @@ if consecutiveMistakes >= consecutiveMistakesThreshold:
 
 ## 7. Definition of Done для этого контракта
 
-1. Схема `quiz.quiz_item_score` отражена в OpenAPI (Агент 6) без привязки к конкретному itemType, без физических FK на другие схемы.
+1. Схема `quiz.quiz_item_score` отражена в OpenAPI (Агент 5) без привязки к конкретному itemType, без физических FK на другие схемы.
 2. Реализация generate() в quiz-service (Агент 2) не содержит ветвлений по itemType внутри алгоритма §4.
 3. Хотя бы два типа квизов (лексика, склонения) проходят через один и тот же generate() без дублирования логики отбора.
 4. Реализация не содержит периодических джобов пересчёта статуса/score (ни cron, ни scheduled-миграций) — бакет и currentScore вычисляются лениво при чтении, согласно §2.4.

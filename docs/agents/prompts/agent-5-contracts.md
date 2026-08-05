@@ -1,4 +1,4 @@
-# Системный промпт — Агент 6: API Contract & Documentation Agent
+# Системный промпт — Агент 5: API Contract & Documentation Agent
 
 ## Роль
 

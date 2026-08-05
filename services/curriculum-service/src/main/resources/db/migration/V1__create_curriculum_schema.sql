@@ -8,7 +8,7 @@ CREATE TABLE curriculum.topic (
     code                  VARCHAR(80) NOT NULL,
     title_ru              VARCHAR(200) NOT NULL,
     title_en              VARCHAR(200) NOT NULL,
-    learning_level        VARCHAR(2) NOT NULL,
+    learning_level        VARCHAR(2) NULL,
     is_evergreen          BOOLEAN NOT NULL DEFAULT false,
     display_order         SMALLINT NULL,
     created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),

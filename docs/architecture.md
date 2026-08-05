@@ -12,7 +12,6 @@
 | Gradle group | `sm.selflearn` | — |
 | artifactId | `samskrtam-<сервис>-service` | `samskrtam-dictionary-service` |
 | Main class | `sm.selflearn.samskrtam.<сервис>.Application` | — |
-| Docker image | `registry.gitlab.local/samskrtam/<сервис>-service` | — |
 
 ### Пакеты по сервисам
 
@@ -32,32 +31,7 @@
 
 ## 2. Физическая инфраструктура
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Локальная сеть                            │
-│                                                             │
-│  ┌──────────────────┐     ┌──────────────────────────────┐  │
-│  │   VM-1: GitLab   │     │   Kubernetes Cluster         │  │
-│  │                  │     │                              │  │
-│  │  GitLab CE       │     │  VM-2: control-plane         │  │
-│  │  GitLab Runner   │◄────│  VM-3: worker-1              │  │
-│  │  Container       │     │  VM-4: worker-2              │  │
-│  │  Registry        │     │  VM-5: worker-3              │  │
-│  │                  │     │                              │  │
-│  │  gitlab.local    │     │  Portainer (управление)      │  │
-│  └──────────────────┘     └──────────────────────────────┘  │
-│                                                             │
-│  Рабочая машина: Docker Compose (локальная разработка)      │
-└─────────────────────────────────────────────────────────────┘
-```
-
-| VM | Роль | Сервисы |
-|---|---|---|
-| VM-1 | GitLab | GitLab CE, GitLab Runner, Container Registry |
-| VM-2 | k8s control plane | kube-apiserver, etcd, scheduler, GitLab Agent |
-| VM-3 | k8s worker-1 | рабочая нагрузка |
-| VM-4 | k8s worker-2 | рабочая нагрузка |
-| VM-5 | k8s worker-3 | рабочая нагрузка + Portainer Agent |
+Деплой в одно- или мультисерверную среду (Docker Compose / Kubernetes / GitLab CI) отложен до стабилизации первой версии. Локальная разработка ведётся на рабочей машине: каждый сервис запускается из IDEA (Java 21), а PostgreSQL, Redis, Kafka, Keycloak поднимаются как внешние зависимости, сконфигурированные через `.env`.
 
 ---
 
@@ -120,10 +94,9 @@
 
 ## 4. Открытые вопросы
 
-- Secrets management (K8s Secrets vs Vault)
+- Secrets management (Vault vs иное решение для хранения секретов)
 - CHANGELOG (ручной vs semantic-release)
 - Grafana dashboards (JSON в репозитории vs ручная настройка)
 - ArchUnit-тесты: shared/arch-rules vs дублирование в каждом сервисе
-- Testcontainers reuse mode
 - Стартовые константы алгоритма повторения и лимит новых единиц в сессии — см. [services/quest-engine.md §7](services/quest-engine.md#7-открытые-вопросы)
 - Столбец `du. (m/n)` в справочной таблице окончаний a-основ (`frontend/src/data/aStemEndingsTable.ts`, `DeclensionEndingsReferenceTable`) объединяет мужской и средний род в одну колонку; корректно для instrumental/dative/ablative/genitive/locative (формы дв.ч. совпадают у обоих родов), но для nominative/accusative/vocative формы различаются по роду (муж. `-au`, ср. `-e`) — см. `docs/tasks/task-fix-astem-endings-table.md`. Решить: разбивать колонку на `du.m`/`du.n` для этих трёх строк или документировать ограничение в UI.

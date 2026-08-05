@@ -35,7 +35,7 @@ Virtual Threads: traceId автоматически через MDC + Micrometer.
 WebFlux: требуется ReactorContextAccessor (ThreadLocal не работает).
 Propagation: WebClient автоматически добавляет traceparent; Gateway пробрасывает во все downstream.
 
-Docker Compose: стандартные сервисы Tempo, Loki, Prometheus, Grafana.
+Стек Observability: Tempo, Loki, Prometheus, Grafana.
 
 ## 3. Actuator
 
@@ -55,8 +55,8 @@ Docker Compose: стандартные сервисы Tempo, Loki, Prometheus, G
 
 ### Health Groups
 
-- Liveness (/actuator/health/liveness): JVM alive + disk space → restart pod
-- Readiness (/actuator/health/readiness): DB, Redis, Kafka → вывод из rotation
+- Liveness (/actuator/health/liveness): JVM alive + disk space
+- Readiness (/actuator/health/readiness): DB, Redis, Kafka
 - Liveness не включает внешние зависимости
 
 ### Кастомные метрики

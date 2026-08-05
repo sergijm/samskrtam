@@ -24,15 +24,15 @@
 
 ## Агент 1 — API Gateway & Infrastructure Agent
 
-**Роль:** Инфраструктурный слой (Gateway, Keycloak, Feature Flags, k8s).
+**Роль:** Инфраструктурный слой (Gateway, Keycloak, Feature Flags).
 
 **Входные документы:** docs/services/api-gateway.md, docs/infra/keycloak.md, docs/services/feature-flag-service.md, docs/conventions.md
 
-**Ответственность:** Spring Cloud Gateway (маршруты, фильтры IdentityHeader/RateLimit/RequestId), OAuth2/OIDC (Authorization Code, ROPC, refresh, logout), JWT-валидация через Keycloak JWKS, rate limiting (Redis + feature-flag), Feature Flag Service (CRUD, Redis), Keycloak realm/clients/providers, k8s NetworkPolicy.
+**Ответственность:** Spring Cloud Gateway (маршруты, фильтры IdentityHeader/RateLimit/RequestId), OAuth2/OIDC (Authorization Code, ROPC, refresh, logout), JWT-валидация через Keycloak JWKS, rate limiting (Redis + feature-flag), Feature Flag Service (CRUD, Redis), Keycloak realm/clients/providers.
 
 **Стек:** Java 21 + WebFlux (Gateway), Java 21 + Virtual Threads (feature-flag-service).
 
-**Выход:** Gateway с маршрутами, Feature Flag API, realm-export.json, Dockerfile.
+**Выход:** Gateway с маршрутами, Feature Flag API, realm-export.json.
 
 **Ограничения:** Gateway без бизнес-логики, Virtual Threads неприменимы (WebFlux), client_secret только через env.
 
@@ -79,31 +79,17 @@
 
 ## Агент 4 — Testing Agent
 
-**Роль:** Тесты и покрытие (JUnit 5, Mockito, Testcontainers, ArchUnit, JaCoCo, Checkstyle, SpotBugs).
+**Роль:** Тесты и покрытие (JUnit 5, Mockito, ArchUnit, JaCoCo, Checkstyle, SpotBugs).
 
 **Входные документы:** docs/conventions.md (тесты, JaCoCo, Checkstyle, SpotBugs), спецификации сервисов.
 
-**Ответственность:** unit-тесты (без Spring, именование methodName_stateUnderTest_expectedBehavior), интеграционные тесты (Testcontainers: PostgreSQL, Redis, Kafka) с обязательными сценариями для каждого сервиса (quiz: сессии/ответы/outbox; content: CRUD/403; user: логин/дубль; statistics: Kafka агрегация; dictionary: cache hit/miss; gateway: 401/403/429). Архитектурные тесты ArchUnit. JaCoCo ≥ 80% сервисного слоя. Checkstyle + SpotBugs.
+**Ответственность:** unit-тесты (без Spring, именование methodName_stateUnderTest_expectedBehavior), интеграционные тесты (PostgreSQL, Redis, Kafka) с обязательными сценариями для каждого сервиса (quiz: сессии/ответы/outbox; content: CRUD/403; user: логин/дубль; statistics: Kafka агрегация; dictionary: cache hit/miss; gateway: 401/403/429). Архитектурные тесты ArchUnit. JaCoCo ≥ 80% сервисного слоя. Checkstyle + SpotBugs.
 
 **Выход:** тест-классы, build.gradle.kts с порогами, конфиги checkstyle.xml, spotbugs/exclude.xml, отчёт.
 
 ---
 
-## Агент 5 — DevOps & Observability Agent
-
-**Роль:** IaC, CI/CD, мониторинг, трассировка.
-
-**Входные документы:** docs/architecture.md, docs/conventions.md (Docker, Graceful Shutdown, Connection Pool).
-
-**Ответственность:** Docker Compose (все сервисы + PostgreSQL, Redis, Kafka, Keycloak, MinIO), Dockerfile (multi-stage, graceful shutdown, connection pool через env), Kubernetes (namespace, Deployments, Services, ConfigMaps, Secrets, NetworkPolicy: только Gateway к сервисам, топология control-plane + 3 worker), GitLab CI (build→test→coverage→lint→docker→push→deploy, Container Registry), Observability (Tempo OTLP, Loki JSON logging, Prometheus Micrometer, Grafana дашборды, management port 8099).
-
-**Выход:** docker-compose.yml/.override.yml, .env.example, Dockerfile для каждого сервиса, k8s/ манифесты, .gitlab-ci.yml, конфиги Tempo/Loki/Prometheus/Grafana.
-
-**Ограничения:** VM-1 = GitLab (не worker), Portainer на VM-5, open question: nginx-ingress vs Traefik.
-
----
-
-## Агент 6 — API Contract & Documentation Agent
+## Агент 5 — API Contract & Documentation Agent
 
 **Роль:** Контракты, OpenAPI, документация.
 
@@ -126,7 +112,7 @@
 
 ```
 Оркестратор (0)
-    ├──► API Contract Agent (6)          ← первый: контракты
+    ├──► API Contract Agent (5)          ← первый: контракты
     │         │
     │         ▼
     ├──► Gateway & Infra Agent (1)        ← параллельно с Domain Agent
@@ -137,11 +123,9 @@
     │         ├──► Frontend Agent (3)     ← после domain API
     │         │
     │         └──► Testing Agent (4)      ← параллельно с frontend
-    │
-    └──► DevOps Agent (5)                 ← параллельно
 ```
 
-**Критические зависимости:** Frontend (3) ждёт от Contract (6) OpenAPI и от Domain (2) endpoints; Testing (4) ждёт Domain (2); DevOps (5) ждёт всех; Gateway (1) ждёт Contract (6).
+**Критические зависимости:** Frontend (3) ждёт от Contract (5) OpenAPI и от Domain (2) endpoints; Testing (4) ждёт Domain (2); Gateway (1) ждёт Contract (5).
 
 ---
 
@@ -151,4 +135,4 @@
 
 **Конфигурация:** без дефолтов в application.yml — только ${ENV_VAR}, секреты только через env, .env.example актуален.
 
-**Definition of Done:** 1) реализация соответствует docs/; 2) тесты + покрытие ≥ 80% сервисного слоя; 3) Checkstyle и SpotBugs чисты; 4) OpenAPI обновлён; 5) Dockerfile работает; 6) PR прошёл CI + code review.
+**Definition of Done:** 1) реализация соответствует docs/; 2) тесты + покрытие ≥ 80% сервисного слоя; 3) Checkstyle и SpotBugs чисты; 4) OpenAPI обновлён; 5) PR прошёл code review.

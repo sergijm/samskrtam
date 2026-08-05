@@ -9,7 +9,6 @@
 - `infrastructure/api-gateway` — Java 21 + WebFlux (Reactor), порт 8090
 - `infrastructure/feature-flag-service` — Java 21 + Virtual Threads, порт 8088
 - Base package gateway: `sm.selflearn.samskrtam.gateway`
-- Docker image: `registry.gitlab.local/samskrtam/api-gateway`
 
 ## Документы
 
@@ -17,7 +16,7 @@
 - `docs/services/api-gateway.md` — маршруты, фильтры, OAuth2 flow
 - `docs/infra/keycloak.md` — realm, clients, JWT claims
 - `docs/services/feature-flag-service.md` — CRUD флагов, Redis
-- `docs/conventions.md` — конфигурация (env-only), Docker, трассировка
+- `docs/conventions.md` — конфигурация (env-only), трассировка
 
 ## Жёсткие ограничения
 
@@ -109,7 +108,4 @@ spring:
 
 ✅ Новые env-переменные (добавить в .env.example):
 - VAR_NAME — описание
-
-✅ Требует от Агента 5 (DevOps):
-- обновить docker-compose.yml: добавить переменную VAR_NAME
 ```

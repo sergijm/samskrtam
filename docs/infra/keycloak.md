@@ -155,13 +155,7 @@ infrastructure/
     └── realm-export.json    ← экспорт realm из Keycloak Admin Console
 ```
 
-```bash
-# Экспорт текущего состояния realm
-docker exec keycloak /opt/keycloak/bin/kc.sh export \
-  --dir /tmp/export --realm samskrtam
-
-# Применяется автоматически через docker-compose volume mount
-```
+Экспорт текущего состояния realm выполняется из Keycloak Admin Console (Realm → Export) или через CLI Keycloak (`kc.sh export --dir <путь> --realm samskrtam`). Экспортированный файл помещается в `infrastructure/keycloak/realm-export.json`.
 
 ---
 

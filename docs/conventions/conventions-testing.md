@@ -10,7 +10,7 @@ src/test/java/sm/selflearn/samskrtam/{service}/:
 - unit/service/ — JUnit 5 + Mockito, без Spring контекста
 - unit/util/
 - integration/api/ — MockMvc / WebTestClient, HTTP контракты
-- integration/repository/ — Testcontainers, реальная БД
+- integration/repository/ — реальная БД
 - arch/ — ArchUnit
 
 ## 2. Именование тестов

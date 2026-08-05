@@ -15,12 +15,12 @@
 |---|---|
 | Unit-тесты (Java) | JUnit 5 + Mockito |
 | Unit-тесты (Java) | JUnit 5 + Mockito |
-| Интеграционные тесты | Spring Boot Test + Testcontainers |
+| Интеграционные тесты | Spring Boot Test |
 | HTTP-контракты (servlet) | MockMvc |
 | HTTP-контракты (reactive) | WebTestClient |
-| БД в тестах | Testcontainers (PostgreSQL) |
-| Kafka в тестах | Testcontainers (Kafka) или EmbeddedKafka |
-| Redis в тестах | Testcontainers (Redis) |
+| БД в тестах | Embedded/локальная PostgreSQL |
+| Kafka в тестах | EmbeddedKafka |
+| Redis в тестах | Embedded/локальный Redis |
 | Архитектурные тесты | ArchUnit |
 | Покрытие | JaCoCo |
 | Линтинг | Checkstyle |
@@ -35,7 +35,7 @@ src/test/java/sm/selflearn/samskrtam/{service}/
 │   └── util/             ← вспомогательные классы
 ├── integration/
 │   ├── api/              ← HTTP-контракты (MockMvc / WebTestClient)
-│   └── repository/       ← реальная БД через Testcontainers
+│   └── repository/       ← реальная БД
 └── arch/                 ← ArchUnit правила
 ```
 
@@ -183,29 +183,7 @@ void services_shouldNotDependOn_controllers() {
 - Lombok-генерированный код (`@Data`, `@Builder`)
 - Тестовые классы (`*Test.java`, `*IT.java`)
 
-## Testcontainers — паттерн (переиспользование контейнеров)
-
-```java
-// Базовый класс для интеграционных тестов
-@SpringBootTest
-@Testcontainers
-public abstract class BaseIntegrationTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgres =
-        new PostgreSQLContainer<>("postgres:16")
-            .withReuse(true);  // reuse mode — не пересоздавать между тестами
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-    }
-}
-```
-
-## Порядок в CI (из conventions.md)
+## Порядок проверок (gradle-таски)
 
 ```
 test

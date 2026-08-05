@@ -34,9 +34,9 @@
 - Обязательные тест-кейсы по сервисам
 - [Подробнее →](conventions/conventions-testing.md)
 
-## 5. Docker
+## 5. Graceful shutdown
 
-- Graceful shutdown: `server.shutdown = graceful`, таймаут — из `GRACEFUL_SHUTDOWN_TIMEOUT`
+- `server.shutdown = graceful`, таймаут — из `GRACEFUL_SHUTDOWN_TIMEOUT`
 
 ## 6. Git Conventions
 
@@ -71,4 +71,4 @@
 
 ## 11. Открытые вопросы
 
-Общепроектные открытые вопросы — в [architecture.md §4](./architecture.md#4-открытые-вопросы). Реализовано: k8s NetworkPolicy (доступ к сервисам только от Gateway).
+Общепроектные открытые вопросы — в [architecture.md §4](./architecture.md#4-открытые-вопросы).

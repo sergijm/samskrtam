@@ -45,6 +45,6 @@ spring.datasource.password: ${DB_PASSWORD}
 
 ## 3. Адреса сервисов по окружениям
 
-Локально (IDEA вне Docker): localhost + порт сервиса. В Kubernetes: DNS-имя сервиса (`http://<service-name>:<port>`).
+Локально (IDEA): localhost + порт сервиса.
 
 Порты: content-service (8081), user-service (8087), dictionary-service (8083), statistics-service (8084), feature-flag-service (8085).
