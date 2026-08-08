@@ -102,6 +102,7 @@ public class GrammarLessonV2Service {
         l.setLearnedQuestions(learned);
         l.setProgressPercent(distinctCells > 0 ? (float) learned / distinctCells * 100f : 0f);
         l.setStatusSummary(new LessonStatusSummary(distinctCells, newCount, learning, mastered, reviewDue));
+        l.setItems(items);
         return l;
     }
 

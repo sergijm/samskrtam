@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.quiz.dto;
 
+import java.util.List;
 import java.util.UUID;
 
 public class GrammarLesson {
@@ -12,6 +13,7 @@ public class GrammarLesson {
     private int learnedQuestions;
     private float progressPercent;
     private LessonStatusSummary statusSummary;
+    private List<GrammarQuestionProgress> items;
 
     // Getters and setters
     public UUID getLessonId() {
@@ -84,5 +86,13 @@ public class GrammarLesson {
 
     public void setStatusSummary(LessonStatusSummary statusSummary) {
         this.statusSummary = statusSummary;
+    }
+
+    public List<GrammarQuestionProgress> getItems() {
+        return items;
+    }
+
+    public void setItems(List<GrammarQuestionProgress> items) {
+        this.items = items;
     }
 }

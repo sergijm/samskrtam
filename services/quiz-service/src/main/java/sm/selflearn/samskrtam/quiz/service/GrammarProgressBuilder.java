@@ -174,6 +174,7 @@ private Mono<GrammarQuestionProgress> buildGroupProgress(
         lesson.setLearnedQuestions(learned);
         lesson.setProgressPercent(distinctCells > 0 ? (float) learned / distinctCells * 100f : 0f);
         lesson.setStatusSummary(new LessonStatusSummary(distinctCells, newCount, learning, mastered, reviewDue));
+        lesson.setItems(deduplicated);
         return lesson;
     }
 }

@@ -38,6 +38,18 @@ export interface CaseNumberAggregation {
   status: WordStatus;
 }
 
+function avgProgress(items: GrammarQuestionProgress[]): number {
+  if (items.length === 0) return 0;
+  const sum = items.reduce((acc, q) => acc + (q.score || 0), 0);
+  return Math.round(sum / items.length);
+}
+
+function progressStatus(avg: number): WordStatus {
+  if (avg <= 0) return 'NEW';
+  if (avg < MASTERY_THRESHOLD) return 'LEARNING';
+  return 'MASTERED';
+}
+
 export const aggregateByCase = (questions: GrammarQuestionProgress[]): CaseAggregation[] => {
   const grouped = new Map<string, GrammarQuestionProgress[]>();
   for (const q of questions) {
@@ -51,20 +63,18 @@ export const aggregateByCase = (questions: GrammarQuestionProgress[]): CaseAggre
     const items = grouped.get(caseType);
     if (!items || items.length === 0) continue;
 
-    const total = items.length;
+    const progress = avgProgress(items);
     const learned = items.filter(q => q.score >= MASTERY_THRESHOLD).length;
-    const progress = total > 0 ? Math.round((learned / total) * 100) : 0;
     const firstItem = items[0];
-    const status: WordStatus = progress >= MASTERY_THRESHOLD ? 'MASTERED' : 'LEARNING';
 
     result.push({
       caseType,
       caseRu: firstItem.caseRu,
       caseEn: firstItem.caseEn,
       aggregatedProgress: progress,
-      totalCombinations: total,
+      totalCombinations: items.length,
       learnedCombinations: learned,
-      status,
+      status: progressStatus(progress),
     });
   }
   return result;
@@ -83,20 +93,18 @@ export const aggregateByNumber = (questions: GrammarQuestionProgress[]): NumberA
     const items = grouped.get(numberType);
     if (!items || items.length === 0) continue;
 
-    const total = items.length;
+    const progress = avgProgress(items);
     const learned = items.filter(q => q.score >= MASTERY_THRESHOLD).length;
-    const progress = total > 0 ? Math.round((learned / total) * 100) : 0;
     const firstItem = items[0];
-    const status: WordStatus = progress >= MASTERY_THRESHOLD ? 'MASTERED' : 'LEARNING';
 
     result.push({
       numberType,
       numberRu: firstItem.numberRu,
       numberEn: firstItem.numberEn,
       aggregatedProgress: progress,
-      totalCombinations: total,
+      totalCombinations: items.length,
       learnedCombinations: learned,
-      status,
+      status: progressStatus(progress),
     });
   }
   return result;
@@ -116,21 +124,18 @@ export const aggregateByCaseAndNumber = (questions: GrammarQuestionProgress[]): 
       const items = grouped.get(`${caseType}:${numberType}`);
       if (!items || items.length === 0) continue;
 
-      const total = items.length;
+      const progress = avgProgress(items);
       const learned = items.filter(q => q.score >= MASTERY_THRESHOLD).length;
-      const progress = total > 0 ? Math.round((learned / total) * 100) : 0;
-      const status: WordStatus = progress >= MASTERY_THRESHOLD ? 'MASTERED' : 'LEARNING';
 
       result.push({
         caseType,
         numberType,
         aggregatedProgress: progress,
-        totalCombinations: total,
+        totalCombinations: items.length,
         learnedCombinations: learned,
-        status,
+        status: progressStatus(progress),
       });
     }
   }
   return result;
 };
-
