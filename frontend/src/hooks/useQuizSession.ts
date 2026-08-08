@@ -1,22 +1,19 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  useStartQuizSession,
+  useComposeQuizSession,
   useQuizBySlug,
   useResumeQuizSession,
   useCompleteQuizSession,
-  useStartOrResumeQuizSessionWithFilters,
-  useStartOrResumeWithStatusFilter,
 } from './useQuiz';
 import { useQuizSessionState } from './useQuizSessionState';
 import { useSubmitAnswerHandler } from './useQuizSessionSubmit';
-import type { FilterParams } from '../api/quizApi';
-import type { StartOrResumeResponse } from '../types/quiz';
+import type { StartOrResumeResponse, ComposeQuizResponse, SessionQuestion } from '../types/quiz';
 
 /**
  * Оркестратор квиз-сессии:
  *  - стейт        → useQuizSessionState
- *  - инициализация → useEffect (5 веток: location.state / resume / statusFilter / filters / default)
+ *  - инициализация → useEffect (location.state / resume / compose-default)
  *  - завершение    → useEffect (completeSession)
  *  - отправка      → useSubmitAnswerHandler
  *  - агрегация loading/error
@@ -24,8 +21,6 @@ import type { StartOrResumeResponse } from '../types/quiz';
 export function useQuizSession(
   slug: string | undefined,
   sessionIdFromParams: string | undefined,
-  filterParams?: FilterParams,
-  statusFilter?: string,
 ) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,9 +29,7 @@ export function useQuizSession(
   const state = useQuizSessionState();
 
   /* ---- mutations ---- */
-  const startSession = useStartQuizSession();
-  const startFilteredSession = useStartOrResumeQuizSessionWithFilters();
-  const startStatusFilterSession = useStartOrResumeWithStatusFilter();
+  const composeSession = useComposeQuizSession();
   const resumeSession = useResumeQuizSession();
   const completeSession = useCompleteQuizSession();
 
@@ -55,7 +48,7 @@ export function useQuizSession(
 
   /* ═══════ init effect ═══════ */
   useEffect(() => {
-    // 1) navigation state
+    // 1) navigation state (from compose holder pages)
     if (location.state?.sessionData) {
       const sd = location.state.sessionData as StartOrResumeResponse;
       state.setQuizSummaryData(sd);
@@ -75,20 +68,20 @@ export function useQuizSession(
 
     const { lessonType, id: quizId, slug: quizSlug } = fetchedQuizSummary;
 
-    const apply = (data: StartOrResumeResponse) => {
+    const apply = (data: { sessionId: string; questions: SessionQuestion[]; currentQuestionIndex?: number }) => {
       state.setSessionId(data.sessionId);
       state.setQuestions(data.questions);
       state.setCurrentQuestionIndex(data.currentQuestionIndex ?? 0);
       state.setStartTime(Date.now());
-      state.setQuizSummaryData(data);
     };
 
     const applyAndNav = (data: StartOrResumeResponse) => {
+      state.setQuizSummaryData(data);
       apply(data);
       navigate(`/quiz/${lessonType.toLowerCase()}/${quizSlug}/${data.sessionId}`, { replace: true });
     };
 
-    // 2) resume
+    // 2) resume an existing session
     if (sessionIdFromParams) {
       resumeSession.mutate(
         { sessionId: sessionIdFromParams, lessonType },
@@ -97,31 +90,39 @@ export function useQuizSession(
       return;
     }
 
-    // 3) status filter (NEW/LEARNING/REVIEW)
-    if (statusFilter) {
-      startStatusFilterSession.mutate(
-        { quizId, lessonType, statusFilter },
-        { onSuccess: applyAndNav, onError: (e) => console.error('status-filter start failed:', e) },
-      );
-      return;
-    }
-
-    // 4) declension filters
-    if (filterParams?.filterScope) {
-      startFilteredSession.mutate(
-        { quizId, lessonType, filters: filterParams },
-        { onSuccess: applyAndNav, onError: (e) => console.error('filtered start failed:', e) },
-      );
-      return;
-    }
-
-    // 5) default
-    startSession.mutate(
-      { quizIdentifier: quizId, lessonType },
-      { onSuccess: applyAndNav, onError: (e) => console.error('start failed:', e) },
+    // 3) default: compose the lesson from its curriculum topic
+    composeSession.mutate(
+      {
+        topicCode: quizSlug || slug || '',
+        count: fetchedQuizSummary.totalQuestions && fetchedQuizSummary.totalQuestions > 0
+          ? fetchedQuizSummary.totalQuestions
+          : 10,
+      },
+      {
+        onSuccess: (data: ComposeQuizResponse) => {
+          const merged: StartOrResumeResponse = {
+            sessionId: data.sessionId,
+            quizId: fetchedQuizSummary.id,
+            lessonType: fetchedQuizSummary.lessonType,
+            totalQuestions: data.totalQuestions,
+            answeredQuestions: data.answeredQuestions,
+            score: data.score,
+            questions: data.questions,
+            currentQuestionIndex: data.currentQuestionIndex,
+            currentQuestionNumber: data.currentQuestionNumber,
+            quizTitleRu: fetchedQuizSummary.titleRu,
+            quizTitleEn: fetchedQuizSummary.titleEn,
+            quizDescriptionRu: fetchedQuizSummary.descriptionRu,
+            quizDescriptionEn: fetchedQuizSummary.descriptionEn,
+            slug: fetchedQuizSummary.slug,
+          };
+          applyAndNav(merged);
+        },
+        onError: (e) => console.error('compose start failed:', e),
+      },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state, fetchedQuizSummary, sessionIdFromParams, statusFilter, filterParams, state.hasAttemptedSessionLoad]);
+  }, [location.state, fetchedQuizSummary, sessionIdFromParams, state.hasAttemptedSessionLoad]);
 
   /* ═══════ completion effect ═══════ */
   useEffect(() => {
@@ -158,26 +159,20 @@ export function useQuizSession(
   /* ---- aggregates ---- */
   const isLoading =
     isSummaryLoading ||
-    startSession.isPending ||
-    startFilteredSession.isPending ||
-    startStatusFilterSession.isPending ||
+    composeSession.isPending ||
     resumeSession.isPending ||
     completeSession.isPending ||
     !state.sessionId;
 
   const isError =
     isSummaryError ||
-    startSession.isError ||
-    startFilteredSession.isError ||
-    startStatusFilterSession.isError ||
+    composeSession.isError ||
     resumeSession.isError ||
     completeSession.isError;
 
   const errorMessage =
     summaryError?.message ||
-    startSession.error?.message ||
-    startFilteredSession.error?.message ||
-    startStatusFilterSession.error?.message ||
+    composeSession.error?.message ||
     resumeSession.error?.message ||
     completeSession.error?.message;
 

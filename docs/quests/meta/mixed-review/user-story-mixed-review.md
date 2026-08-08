@@ -16,7 +16,7 @@
 
 ## Критерии приёмки
 
-- [ ] Это не новый тип QuestItem, а новый режим `SessionItemSelector` (см. `quest-item-model.md §4`) — не требует изменений в content-service.
+- [ ] Это не новый тип QuestItem, а новый режим `SessionItemSelector` (см. `quest-item-model.md §4`) — не требует изменений в curriculum-service.
 - [ ] Фронтенд должен уметь рендерить вопрос любого типа внутри одной сессии — общий контракт `QuestItem`/`AnswerMode` уже это допускает.
 - [ ] Смешанная сессия не создаёт новых Quest — прогресс пишется в те же строки `progress`, что и обычные сессии по одному Quest.
 

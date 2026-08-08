@@ -18,6 +18,8 @@ public interface VerseWordRepository extends JpaRepository<VerseWord, UUID> {
 
     List<VerseWord> findAllByVerse_IdOrderByPositionAsc(UUID verseId);
 
+    List<VerseWord> findTop2ByLemmaIdOrderByPositionAsc(UUID lemmaId);
+
     void deleteAllByVerse_Id(UUID verseId);
 
     /**

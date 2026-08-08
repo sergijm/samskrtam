@@ -48,7 +48,7 @@
 
 - Топики: `<domain>-<event>-events` (kebab-case)
 - Публикация — только через Transactional Outbox Pattern
-- Синхронные вызовы domain ↔ domain по HTTP допустимы только для узких сценариев «один producer, один consumer» без нужды в асинхронной доставке (пример — синхронизация лексики sangraha-service → content-service, см. [architecture.md §3.5](./architecture.md#35-sangraha-service-произведения-llm-анализ-стихов-синхронизация-лексики-через-rest)); в остальных случаях — Kafka + Outbox
+- Синхронные вызовы domain ↔ domain по HTTP допустимы только для узких сценариев «один producer, один consumer» без нужды в асинхронной доставке (пример — синхронизация лексики sangraha-service → curriculum-service, см. [architecture.md §3.5](./architecture.md#35-sangraha-service-произведения-llm-анализ-стихов-синхронизация-лексики-через-rest)); в остальных случаях — Kafka + Outbox
 
 ## 8. Мапперы Entity/DTO
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useGrammarLesson } from '../../hooks/useLessons';
@@ -12,11 +12,6 @@ import DeclensionEndingsReferenceTable from '../../components/lesson/DeclensionE
 import DeclensionEndingWordsTable from '../../components/lesson/DeclensionEndingWordsTable';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { Skeleton } from 'primereact/skeleton';
-import {
-  aggregateByCase,
-  aggregateByNumber,
-  aggregateByCaseAndNumber,
-} from '../../utils/grammarAggregation';
 import { useDeclensionParadigm } from '../../hooks/useLessons';
 import {
   vowelTypeToEndingsTable,
@@ -87,21 +82,6 @@ const GrammarLessonPage = () => {
     });
     setSelectedEndingCellKey({ caseKey, columnKey });
   };
-
-  const caseAggregations = useMemo(() => {
-    if (!lesson?.questions) return [];
-    return aggregateByCase(lesson.questions);
-  }, [lesson?.questions]);
-
-  const numberAggregations = useMemo(() => {
-    if (!lesson?.questions) return [];
-    return aggregateByNumber(lesson.questions);
-  }, [lesson?.questions]);
-
-  const caseNumberAggregations = useMemo(() => {
-    if (!lesson?.questions) return [];
-    return aggregateByCaseAndNumber(lesson.questions);
-  }, [lesson?.questions]);
 
   const handleTabChange = (e: { index: number }) => {
     setActiveTab(e.index);
@@ -184,9 +164,9 @@ const GrammarLessonPage = () => {
               </TabPanel>
               <TabPanel header={i18n.language === 'ru' ? 'Прогресс' : 'Progress'}>
                 <GrammarProgressGrid
-                  aggregations={caseNumberAggregations}
-                  caseNames={caseAggregations}
-                  numberNames={numberAggregations}
+                  aggregations={[]}
+                  caseNames={[]}
+                  numberNames={[]}
                   quizSlug={slug || ''}
                 />
               </TabPanel>

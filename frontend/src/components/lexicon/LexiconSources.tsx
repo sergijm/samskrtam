@@ -5,6 +5,7 @@ import { Toast } from 'primereact/toast';
 import { LexicalSource } from '../../types/lexicon';
 import { LexiconSectionHeader } from './LexiconSectionHeader';
 import { useLexiconToast } from './useLexiconToast';
+import { useLexiconLocale } from '../../hooks/useLexiconLocale';
 
 interface LexiconSourcesProps {
   sources: LexicalSource[];
@@ -14,6 +15,7 @@ interface LexiconSourcesProps {
 const LexiconSources: React.FC<LexiconSourcesProps> = ({ sources }) => {
   const { t } = useTranslation();
   const { toast, showComingSoon } = useLexiconToast();
+  const locale = useLexiconLocale();
 
   const percent = (source: LexicalSource) =>
     source.wordCount ? Math.round((source.masteredCount / source.wordCount) * 100) : 0;
@@ -40,7 +42,7 @@ const LexiconSources: React.FC<LexiconSourcesProps> = ({ sources }) => {
                     {source.devanagari && (
                       <div className="lexicon-source-devanagari">{source.devanagari}</div>
                     )}
-                    <div className="font-semibold text-lg">{source.title}</div>
+                    <div className="font-semibold text-lg">{locale({ ru: source.titleRu, en: source.titleEn })}</div>
                   </div>
                   <i className="pi pi-arrow-right text-primary" />
                 </div>

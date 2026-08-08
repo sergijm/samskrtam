@@ -21,7 +21,8 @@
     "action": {
       "analyze": "Analyze",
       "analyzeAll": "Analyze all",
-      "study": "Study"
+      "study": "Study",
+      "resetFilter": "Reset filter"
     },
     "fields": {
       "title": "Title",

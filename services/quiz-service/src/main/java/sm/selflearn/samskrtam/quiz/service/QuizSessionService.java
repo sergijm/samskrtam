@@ -8,12 +8,17 @@ import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.quiz.dto.AnswerRequest;
 import sm.selflearn.samskrtam.quiz.dto.AnswerResponse;
 import sm.selflearn.samskrtam.quiz.dto.CompleteSessionResponse;
+import sm.selflearn.samskrtam.quiz.dto.ComposeQuizResponse;
+import sm.selflearn.samskrtam.quiz.dto.QuestComposeRequest;
+import sm.selflearn.samskrtam.quiz.dto.QuestSessionTopicDto;
 import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse;
 import sm.selflearn.samskrtam.quiz.model.FilterScope;
+import sm.selflearn.samskrtam.quiz.model.QuizSession;
 import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 import sm.selflearn.samskrtam.quiz.model.StatusFilter;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -30,9 +35,16 @@ public class QuizSessionService {
         private final QuizSessionRepository quizSessionRepository;
     private final SessionOperationsService sessionOperationsService;
     private final SessionCreationService sessionCreationService;
+    private final ComposedSessionService composedSessionService;
+    private final QuestComposeService questComposeService;
+
+    private static boolean isComposed(QuizSession session) {
+        return session.getLessonId() == null;
+    }
 
         /**
-         * Unified dispatcher: routes to plain, filter-scoped, or status-filtered branch.
+         * Unified dispatcher: routes to topic-based compose (preferred), or to the legacy
+         * lesson-based plain/filter/status-filtered branches.
          */
         public Mono<StartOrResumeResponse> startOrResumeSession(
                 UUID lessonId, UUID userId, String userLocale,
@@ -51,12 +63,47 @@ public class QuizSessionService {
             return startOrResumeSession(lessonId, userId, userLocale);
         }
 
-    /** Plain start-or-resume (no filterScope, no statusFilter). */
+    /** Plain start-or-resume (no filterScope, no statusFilter) — legacy lesson-based branch. */
     public Mono<StartOrResumeResponse> startOrResumeSession(UUID lessonId, UUID userId, String userLocale) {
         return quizSessionRepository
                 .findTopByUserIdAndLessonIdAndStatusOrderByStartedAtDesc(userId, lessonId, SessionStatus.IN_PROGRESS)
                 .flatMap(session -> sessionOperationsService.resume(session, userLocale))
                 .switchIfEmpty(Mono.defer(() -> sessionCreationService.createNewSession(lessonId, userId, userLocale)));
+    }
+
+    /**
+     * Topic-based start-or-resume (principle 2026-08: topics, not lessons).
+     * Composes a session from a single topic via the universal engine and returns it
+     * shaped as the legacy {@link StartOrResumeResponse} (lesson fields null) so the
+     * front-end contract is unchanged.
+     *
+     * @param topicCode curriculum.topic.code that acts as the topic slug
+     * @param count     number of questions to compose (clamped to >= 0)
+     */
+    public Mono<StartOrResumeResponse> startOrResumeSessionByTopic(
+            String topicCode, int count, UUID userId, String userLocale) {
+        if (topicCode == null || topicCode.isBlank()) {
+            return Mono.error(new SamskrtamException("TOPIC_EMPTY", "Topic code must not be empty"));
+        }
+        QuestComposeRequest request = new QuestComposeRequest(
+                List.of(QuestSessionTopicDto.byCount(topicCode.trim(), count)),
+                userLocale);
+        return questComposeService.compose(userId, request)
+                .map(QuizSessionService::toStartOrResumeResponse);
+    }
+
+    private static StartOrResumeResponse toStartOrResumeResponse(ComposeQuizResponse compose) {
+        return StartOrResumeResponse.builder()
+                .sessionId(compose.getSessionId())
+                .lessonId(null)
+                .lessonType(null)
+                .questions(compose.getQuestions())
+                .totalQuestions(compose.getTotalQuestions())
+                .answeredQuestions(compose.getAnsweredQuestions())
+                .score(compose.getScore())
+                .currentQuestionIndex(compose.getCurrentQuestionIndex())
+                .currentQuestionNumber(compose.getCurrentQuestionNumber())
+                .build();
     }
 
         private Mono<StartOrResumeResponse> startOrResumeWithFilterScope(
@@ -136,7 +183,9 @@ public class QuizSessionService {
         return quizSessionRepository.findByIdAndUserId(sessionId, userId)
                 .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND",
                         "Session not found or does not belong to user: " + sessionId)))
-                .flatMap(session -> sessionOperationsService.resume(session, userLocale));
+                .flatMap(session -> isComposed(session)
+                        ? composedSessionService.resume(session, userLocale)
+                        : sessionOperationsService.resume(session, userLocale));
     }
 
     public Mono<AnswerResponse> submitAnswer(UUID sessionId, UUID userId, AnswerRequest request, String userLocale) {
@@ -145,7 +194,9 @@ public class QuizSessionService {
                 .filter(session -> session.getUserId().equals(userId))
                 .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND",
                         "Session not found or does not belong to user: " + sessionId)))
-                .flatMap(session -> sessionOperationsService.submitAnswer(session, userId, request, userLocale));
+                .flatMap(session -> isComposed(session)
+                        ? composedSessionService.submitAnswer(session, userId, request, userLocale)
+                        : sessionOperationsService.submitAnswer(session, userId, request, userLocale));
     }
 
     public Mono<CompleteSessionResponse> completeSession(UUID sessionId, UUID userId) {
@@ -154,14 +205,18 @@ public class QuizSessionService {
                 .filter(session -> session.getUserId().equals(userId))
                 .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND",
                         "Session not found or does not belong to user: " + sessionId)))
-                .flatMap(sessionOperationsService::completeSession);
+                .flatMap(session -> isComposed(session)
+                        ? composedSessionService.complete(session)
+                        : sessionOperationsService.completeSession(session));
     }
 
     public Mono<StartOrResumeResponse> retakeSession(UUID sessionId, UUID userId, String userLocale) {
         return quizSessionRepository.findByIdAndUserId(sessionId, userId)
                 .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND",
                         "Session not found or does not belong to user: " + sessionId)))
-                .flatMap(session -> sessionOperationsService.retakeSession(session, userLocale));
+                .flatMap(session -> isComposed(session)
+                        ? composedSessionService.retake(session, userLocale)
+                        : sessionOperationsService.retakeSession(session, userLocale));
     }
 
     public Mono<StartOrResumeResponse> startNewQuizFromExistingSession(UUID sessionId, UUID userId, String userLocale) {

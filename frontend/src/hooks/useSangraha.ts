@@ -7,13 +7,23 @@ import type {
   ChapterVersesDto,
   VerseDetailDto,
   VerseBatchResponseDto,
+  WorksClassGroupDto,
 } from '../types/sangraha';
 
-export const useWorks = () =>
+export const useWorks = (classIds?: string[]) =>
   useQuery<WorkSummaryDto[], Error>({
-    queryKey: ['sangraha', 'works'],
+    queryKey: ['sangraha', 'works', classIds ?? []],
     queryFn: async () => {
-      const res = await sangrahaApi.getAllWorks();
+      const res = await sangrahaApi.getAllWorks(classIds);
+      return res.data;
+    },
+  });
+
+export const useWorksClasses = () =>
+  useQuery<WorksClassGroupDto[], Error>({
+    queryKey: ['sangraha', 'works', 'classes'],
+    queryFn: async () => {
+      const res = await sangrahaApi.getWorksClasses();
       return res.data;
     },
   });

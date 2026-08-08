@@ -58,7 +58,7 @@ const LexiconCollections: React.FC<LexiconCollectionsProps> = ({ collections }) 
                 <div className="flex align-items-center gap-3">
                   <i className="pi pi-star-fill text-primary" />
                   <div className="flex flex-column">
-                    <span className="font-semibold">{t(collection.nameKey)}</span>
+                    <span className="font-semibold">{collection.name}</span>
                     <span className="text-sm text-500">{collection.wordCount} {t('lexicon.words')}</span>
                   </div>
                 </div>

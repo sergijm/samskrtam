@@ -15,7 +15,7 @@ import java.util.UUID;
 /**
  * Единый сервис обновления score/stability для всех типов квизов.
  *
- * <p>Заменяет {@link WordScoreService} и {@link GrammarFormScoreService}.
+ * <p>Единая таблица прогресса {@code quiz_item_score} (architecture.md §3.6).
  * Использует формулу §2.5 через {@link ScoreCalculator}.
  *
  * <p>Планирование nextReviewAt — временная заглушка (фиксированный интервал),
@@ -34,17 +34,17 @@ public class QuizItemScoreService {
      *
      * @param userId       идентификатор пользователя
      * @param itemType     тип элемента (VOCABULARY_WORD, DECLENSION_FORM)
-     * @param externalRefId ссылка на сущность content-service
+     * @param progressTag  тэг группировки прогресса (caseType|numberType|gender или formIast)
      * @param isCorrect    ответ правильный?
      * @return обновлённая строка QuizItemScore
      */
     public Mono<QuizItemScore> upsertScore(
             UUID userId,
             ItemType itemType,
-            UUID externalRefId,
+            String progressTag,
             boolean isCorrect) {
 
-        return repository.findByUserIdAndItemTypeAndExternalRefId(userId, itemType, externalRefId)
+        return repository.findByUserIdAndItemTypeAndProgressTag(userId, itemType, progressTag)
                 .flatMap(existing -> {
                     ScoreCalculator.Result result = ScoreCalculator.calculate(
                             existing.getScore(),
@@ -73,7 +73,7 @@ public class QuizItemScoreService {
                     QuizItemScore newScore = QuizItemScore.builder()
                             .userId(userId)
                             .itemType(itemType)
-                            .externalRefId(externalRefId)
+                            .progressTag(progressTag)
                             .score(result.score())
                             .stability(result.stability())
                             .consecutiveMistakes(result.consecutiveMistakes())

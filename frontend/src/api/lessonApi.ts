@@ -3,31 +3,31 @@ import { DeclensionParadigmPageDto, DeclensionExamplesResponseDto } from '../typ
 
 export const lessonApi = {
 
-  // Получить словарный урок с прогрессом пользователя
+// Получить словарный урок с прогрессом пользователя (v2)
   getVocabularyLesson: (slug: string) =>
-    api.get(`/api/v1/lessons/vocabulary/${slug}`),
+    api.get(`/api/v2/lessons/vocabulary/${slug}`),
 
-  // Получить грамматический урок с прогрессом пользователя
+  // Получить грамматический урок с прогрессом пользователя (v2 — данные из curriculum-service)
   getGrammarLesson: (slug: string) =>
-    api.get(`/api/v1/lessons/grammar/${slug}`),
+    api.get(`/api/v2/lessons/grammar/${slug}`),
 
-  // Получить историю ответов на конкретное слово в уроке
+  // Получить историю ответов на конкретное слово в уроке (v2)
   getWordHistory: (slug: string, wordId: string) =>
-    api.get(`/api/v1/lessons/vocabulary/${slug}/words/${wordId}/history`),
+    api.get(`/api/v2/lessons/vocabulary/${slug}/words/${wordId}/history`),
 
-  // Получить историю ответов на конкретный грамматический вопрос по caseType + numberType
+  // Получить историю ответов на конкретный грамматический вопрос по caseType + numberType (v2)
   getQuestionHistory: (slug: string, caseType: string, numberType: string, gender: string) =>
-    api.get(`/api/v1/lessons/grammar/${slug}/questions/history`, {
+    api.get(`/api/v2/lessons/grammar/${slug}/questions/history`, {
       params: { caseType, numberType, gender },
     }),
 
-    // Получить ОДНУ парадигму склонений по индексу (карусель grammar-lesson-page §2.2)
+    // Получить ОДНУ парадигму склонений по индексу (карусель grammar-lesson-page §2.2) — v2
   getDeclensionParadigm: (slug: string, index: number) =>
-    api.get<DeclensionParadigmPageDto>(`/api/v1/content/public/lessons/${slug}/declension-paradigms`, {
+    api.get<DeclensionParadigmPageDto>(`/api/v2/lessons/${slug}/declension-paradigms`, {
       params: { index },
     }),
 
-  // Получить примеры склонений для урока (вкладка «Примеры», без индекса)
+  // Получить примеры склонений для урока (вкладка «Примеры», без индекса) — v2
   getDeclensionExamples: (slug: string) =>
-    api.get<DeclensionExamplesResponseDto>(`/api/v1/content/public/lessons/${slug}/examples`),
+    api.get<DeclensionExamplesResponseDto>(`/api/v2/lessons/${slug}/examples`),
 };

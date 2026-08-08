@@ -13,13 +13,18 @@ dependencies {
     implementation(platform("org.springframework.boot:spring-boot-dependencies:${libs.versions.spring.boot.get()}"))
 
     implementation(libs.spring.web)
+    implementation(libs.spring.security)
     implementation(libs.spring.data.jpa)
+    implementation(project(":shared:samskrtam-dtos"))
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.springdoc.openapi.webmvc.ui)
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgresql)
     implementation(libs.postgresql.jdbc)
     implementation("org.springframework.boot:spring-boot-starter-validation")
+
+    // Sanscript.java для транслитерации санскрита (IAST → SLP1 для lemmaSlp1)
+    implementation("com.github.sanskrit:sanscript.java:0.1")
 
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)

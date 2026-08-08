@@ -1,6 +1,6 @@
 # Learning Materials — теория, литература, сканы, видео
 
-> Связанные файлы: [curriculum.md](./curriculum.md) · [quest-catalog.md](./quest-catalog.md) · [content-service/eamenau.md](./content-service/eamenau.md)
+> Связанные файлы: [curriculum.md](./curriculum.md) · [quest-catalog.md](./quest-catalog.md) · [curriculum-service/eamenau.md](./curriculum-service/eamenau.md)
 
 Квест (`Quest`) — только тренажёр (см. [quest-engine.md](./quest-engine.md)). Теория,
 ссылки на литературу, сканы страниц учебников и видео — отдельная сущность, привязанная
@@ -32,7 +32,7 @@ public record LearningMaterial(
 
 | Тип | Что хранит | Где физически |
 |---|---|---|
-| **TEXT** | Markdown-объяснение (правило, парадигма, комментарий) | текст в БД content-service |
+| **TEXT** | Markdown-объяснение (правило, парадигма, комментарий) | текст в БД curriculum-service |
 | **EXTERNAL_LINK** | Ссылка на литературу/статью + библиография | только `url` + `citation`, физически ничего не храним |
 | **SCANNED_PAGE** | Скан страницы учебника + перевод/расшифровка рядом | изображение в MinIO (`mediaObjectKey`, presigned URL — по аналогии с аватарками в user-service), перевод — `body` того же материала |
 | **VIDEO_LINK** | Ссылка на внешнее видео (YouTube и т.п.) | только `url`, эмбед на фронте |
@@ -85,7 +85,7 @@ quiz-service не участвует — материалы вне его дом
 
 Первые кандидаты — темы, где объяснение уже необходимо для осмысленной тренировки:
 `KARAKA_CASE_CHOICE` (без теории роли непонятны) и `SANDHI_SPLIT` — там уже есть готовый
-источник, учебник Eméneau (`content-service/eamenau.md`), не с нуля.
+источник, учебник Eméneau (`curriculum-service/eamenau.md`), не с нуля.
 
 - Конкретный `accessLevel` для не-public-domain сканов (публично / только владельцу /
   по подписке) — решение на уровне продукта, не архитектуры.

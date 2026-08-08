@@ -14,7 +14,8 @@
 
 | Подпапка | Тип | Юзер-стори |
 |---|---|---|
-| `morphology/declension/` | DECLENSION_FORM | [user-story-case-drill.md](morphology/declension/user-story-case-drill.md) |
+| `morphology/declension/` | DECLENSION_FORM, DECLENSION_FORM_CHOICE (простые, API v2) | [user-story-case-drill.md](morphology/declension/user-story-case-drill.md) |
+| `morphology/declension/` | CASE_RECOGNITION, DECLENSION_MATCH (комплексные, API v2) | [user-story-declension-complex.md](morphology/declension/user-story-declension-complex.md) |
 | `morphology/conjugation/` | CONJUGATION_FORM (parasmaipada, laṭ/loṭ/vidhiliṅ) | [user-story-verb-drill.md](morphology/conjugation/user-story-verb-drill.md) |
 | `morphology/conjugation-atmanepada/` | CONJUGATION_FORM (ātmanepada) | [user-story-atmanepada-drill.md](morphology/conjugation-atmanepada/user-story-atmanepada-drill.md) |
 | `morphology/conjugation-secondary-tenses/` | CONJUGATION_FORM (laṅ, lṛṭ) | [user-story-past-future-drill.md](morphology/conjugation-secondary-tenses/user-story-past-future-drill.md) |

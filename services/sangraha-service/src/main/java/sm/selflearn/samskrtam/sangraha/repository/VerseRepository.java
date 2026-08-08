@@ -40,4 +40,20 @@ public interface VerseRepository extends JpaRepository<Verse, UUID> {
     List<Verse> findAllByIdInAndDeletedAtIsNull(
             @Param("ids") Collection<UUID> ids);
 
+    /**
+     * Постраничный обход ANALYZED стихов курсором по {@code id > cursor}
+     * (lexicon-content-pipeline.md §2 — экспорт VerseWord[] для импорта лексики).
+     * Не удалённые, отсортированные по {@code id} ASC.
+     */
+    @Query("""
+            SELECT v FROM Verse v
+            WHERE v.status = :status AND v.deletedAt IS NULL
+              AND (:cursor IS NULL OR v.id > :cursor)
+            ORDER BY v.id
+            """)
+    List<Verse> findAllByStatusAndDeletedAtIsNullAndIdGreaterThan(
+            @Param("status") VerseStatus status,
+            @Param("cursor") UUID cursor,
+            org.springframework.data.domain.Pageable pageable);
+
 }

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { quizApi, FilterParams } from '../api/quizApi';
 import { StartSessionResponse, AnswerRequest, AnswerResponse, QuizSummaryDto, LessonItemDto, LessonType, ResumeSessionResponse, StartOrResumeResponse } from '../types/quiz';
+import { ComposeQuizRequest, ComposeQuizResponse } from '../types/quiz';
 import { useLocaleStore } from '../store/localeStore';
 
 export const useQuizList = (category?: string) => {
@@ -45,6 +46,24 @@ export const useQuizBySlug = (slug: string) => {
       return response.data;
     },
     enabled: !!slug,
+  });
+};
+
+export const useComposeQuizSession = () => {
+  const { locale } = useLocaleStore();
+  return useMutation<
+    ComposeQuizResponse,
+    Error,
+    { topicCode: string; count: number }
+  >({
+    mutationFn: async ({ topicCode, count }) => {
+      const request: ComposeQuizRequest = {
+        topics: [{ topicCode, count }],
+        userLocale: locale,
+      };
+      const response = await quizApi.composeSession(request);
+      return response.data;
+    },
   });
 };
 

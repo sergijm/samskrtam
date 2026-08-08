@@ -96,7 +96,7 @@ public class GrammarProgressBuilder {
         }
     }
 
-                private Mono<GrammarQuestionProgress> buildGroupProgress(
+private Mono<GrammarQuestionProgress> buildGroupProgress(
             LessonItemResponse lessonItem,
             List<CaseEndingDto> caseEndings,
             Gender gender, DeclensionFormDto form,
@@ -104,31 +104,21 @@ public class GrammarProgressBuilder {
 
         // Найти case_ending.id для данной (gender, caseType, numberType)
         String genderStr = gender != null ? gender.name() : "UNSPECIFIED";
-        UUID externalRefId = caseEndings.stream()
-                .filter(ce -> matchingCaseEnding(ce, genderStr, form))
-                .findFirst()
-                .map(CaseEndingDto::getId)
-                .orElse(null);
+        String caseType = form.getCaseType().name();
+        String numberType = form.getNumberType().name();
+        String progressTag = caseType + "|" + numberType + "|" + genderStr;
 
-        if (externalRefId == null || userId == null) {
+        if (userId == null) {
             return Mono.just(progressFactory.create(lessonItem, form, gender, caseEndings, 0));
         }
 
         Instant now = Instant.now();
         return quizItemScoreRepository
-                .findByUserIdAndItemTypeAndExternalRefId(userId, ItemType.DECLENSION_FORM, externalRefId)
+                .findByUserIdAndItemTypeAndProgressTag(userId, ItemType.DECLENSION_FORM, progressTag)
                 .map(itemScore -> progressFactory.create(lessonItem, form, gender, caseEndings, itemScore, now))
                 .defaultIfEmpty(progressFactory.create(lessonItem, form, gender, caseEndings, 0));
     }
 
-    private boolean matchingCaseEnding(CaseEndingDto ce, String genderStr, DeclensionFormDto form) {
-        String ceGender = ce.getGender() != null ? ce.getGender().name() : "UNSPECIFIED";
-        return ceGender.equals(genderStr)
-                && ce.getCaseType().name().equals(form.getCaseType().name())
-                && ce.getNumberType().name().equals(form.getNumberType().name());
-    }
-
-    
 
         private GrammarLesson emptyLesson(LessonItemResponse lessonItem) {
         GrammarLesson lesson = new GrammarLesson();
@@ -140,7 +130,6 @@ public class GrammarProgressBuilder {
         lesson.setTotalQuestions(0);
         lesson.setLearnedQuestions(0);
         lesson.setProgressPercent(0f);
-        lesson.setQuestions(Collections.emptyList());
         lesson.setStatusSummary(new LessonStatusSummary(0, 0, 0, 0, 0));
         return lesson;
     }
@@ -155,7 +144,10 @@ public class GrammarProgressBuilder {
         }
         List<GrammarQuestionProgress> deduplicated = new ArrayList<>(byGroup.values());
 
-        int total = deduplicated.size();
+        int distinctCells = (int) deduplicated.stream()
+                .map(q -> q.getCaseType() + ":" + q.getNumberType())
+                .distinct()
+                .count();
         int newCount = 0;
         int learning = 0;
         int mastered = 0;
@@ -178,11 +170,10 @@ public class GrammarProgressBuilder {
         lesson.setTitleRu(lessonItem.getTitleRu());
         lesson.setTitleEn(lessonItem.getTitleEn());
         lesson.setDifficulty(lessonItem.getDifficulty() != null ? lessonItem.getDifficulty().toString() : null);
-        lesson.setTotalQuestions(total);
+        lesson.setTotalQuestions(distinctCells);
         lesson.setLearnedQuestions(learned);
-        lesson.setProgressPercent(total > 0 ? (float) learned / total * 100f : 0f);
-        lesson.setQuestions(deduplicated);
-        lesson.setStatusSummary(new LessonStatusSummary(total, newCount, learning, mastered, reviewDue));
+        lesson.setProgressPercent(distinctCells > 0 ? (float) learned / distinctCells * 100f : 0f);
+        lesson.setStatusSummary(new LessonStatusSummary(distinctCells, newCount, learning, mastered, reviewDue));
         return lesson;
     }
 }

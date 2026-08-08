@@ -1,4 +1,4 @@
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
@@ -6,37 +6,17 @@ import { Card } from 'primereact/card';
 import { ProgressBar } from 'primereact/progressbar';
 
 import { useQuizSession } from '../hooks/useQuizSession';
-import { FilterParams } from '../api/quizApi';
+import QuestionRenderer from '../components/quiz/QuestionRenderer';
 import QuizQuestionPanel from '../components/quiz/QuizQuestionPanel';
 import QuizCaseSelectPanel from '../components/quiz/QuizCaseSelectPanel';
 import QuizEndingMatchPanel from '../components/quiz/QuizEndingMatchPanel';
+import QuizMatchPanel from '../components/quiz/QuizMatchPanel';
+import QuizFreeTextPanel from '../components/quiz/QuizFreeTextPanel';
 import QuizFeedbackPanel from '../components/quiz/QuizFeedbackPanel';
 
 const QuizPage = () => {
   const { t, i18n } = useTranslation();
   const { slug, sessionId: sessionIdFromParams } = useParams<{ slug?: string; sessionId?: string }>();
-  const [searchParams] = useSearchParams();
-
-    // Считываем фильтры из query-параметров URL
-  const filterScope = searchParams.get('filterScope') as FilterParams['filterScope'] | null;
-  const filterCaseType = searchParams.get('filterCaseType') || undefined;
-  const filterNumberType = searchParams.get('filterNumberType') || undefined;
-  const filterGender = searchParams.get('filterGender') || undefined;
-  const filterCombinations = searchParams.get('filterCombinations') || undefined;
-  const statusFilter = searchParams.get('statusFilter') || undefined;
-
-  const filterParams: FilterParams | undefined = filterScope
-    ? {
-        filterScope,
-        filterCaseTypes: filterScope === 'CASE_ONLY' ? filterCaseType : undefined,
-        filterNumberTypes: filterScope === 'NUMBER_ONLY' ? filterNumberType : undefined,
-        filterCombinations: filterScope === 'CASE_NUMBER_GENDER'
-          ? (filterCombinations || (filterCaseType && filterNumberType && filterGender
-              ? `${filterCaseType}:${filterNumberType}:${filterGender}`
-              : undefined))
-          : undefined,
-      }
-    : undefined;
 
   const {
     currentQuestionIndex,
@@ -53,7 +33,7 @@ const QuizPage = () => {
     handleSubmitAnswer,
     handleNextQuestion,
     hasAttemptedSessionLoad,
-  } = useQuizSession(slug, sessionIdFromParams, filterParams, statusFilter);
+  } = useQuizSession(slug, sessionIdFromParams);
 
   if (isLoading) {
     return (
@@ -95,7 +75,15 @@ const QuizPage = () => {
         <ProgressBar value={progress} className="mb-4" />
         {currentQuestion && quizSummaryData && (
           <>
-            {currentQuestion.questionType === 'CASE_BY_FORM' ? (
+            {currentQuestion.answerMode ? (
+              <QuestionRenderer
+                question={currentQuestion}
+                selectedOptionId={selectedOptionId}
+                disabled={!!feedback || isSubmittingAnswer}
+                feedback={feedback}
+                onSubmit={handleSubmitAnswer}
+              />
+            ) : currentQuestion.questionType === 'CASE_BY_FORM' ? (
               <QuizCaseSelectPanel
               question={currentQuestion}
                 selectedOptionId={selectedOptionId}
@@ -109,6 +97,20 @@ const QuizPage = () => {
                 disabled={!!feedback || isSubmittingAnswer}
                 feedback={feedback}
                 onSelectOption={handleSubmitAnswer}
+              />
+            ) : currentQuestion.questionType === 'MATCHING' ? (
+              <QuizMatchPanel
+                question={currentQuestion}
+                disabled={!!feedback || isSubmittingAnswer}
+                feedback={feedback}
+                onSelectOption={handleSubmitAnswer}
+              />
+            ) : currentQuestion.questionType === 'FREE_TEXT' ? (
+              <QuizFreeTextPanel
+                question={currentQuestion}
+                disabled={isSubmittingAnswer}
+                feedback={feedback}
+                onFreeTextSubmit={handleSubmitAnswer}
               />
             ) : (
               <QuizQuestionPanel

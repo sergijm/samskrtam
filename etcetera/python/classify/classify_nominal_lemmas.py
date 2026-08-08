@@ -14,11 +14,12 @@ import psycopg
 from openai import OpenAI
 
 
-DEFAULT_BATCH_SIZE = 2000
-LOG_FILE = "nominal_lemmas_llm.log"
+DEFAULT_BATCH_SIZE = 330
+LOG_FILE = """C:\MyDev\samskrtam\logs/nominal_lemmas_llm.log"""
 
 # Configuration
 LLM_MODEL = "deepseek-v4-pro"
+#LLM_MODEL = "claude-sonnet-5"
 ENV_FILE_PATH = "C:\MyDev\samskrtam\.env"
 LLM_CONFIG_PATH = "C:\MyDev\samskrtam\llm.yaml"
 

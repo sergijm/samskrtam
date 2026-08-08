@@ -14,4 +14,6 @@ public interface SourceRepository extends JpaRepository<Source, UUID> {
     Optional<Source> findByCode(String code);
 
     List<Source> findByKind(SourceKind kind);
+
+    Optional<Source> findByExternalSangrahaWorkSlug(String externalSangrahaWorkSlug);
 }

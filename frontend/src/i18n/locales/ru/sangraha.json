@@ -21,7 +21,8 @@
     "action": {
       "analyze": "Анализировать",
       "analyzeAll": "Анализировать всё",
-      "study": "Изучить"
+      "study": "Изучить",
+      "resetFilter": "Сбросить фильтр"
     },
     "fields": {
       "title": "Название",

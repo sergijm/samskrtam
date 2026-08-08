@@ -37,6 +37,9 @@ public class GatewayRoutesConfig {
     @Value("${STATISTICS_SERVICE_URL:http://statistics-service:8086}")
     private String statisticsServiceUrl;
 
+    @Value("${CURRICULUM_SERVICE_URL:http://curriculum-service:8091}")
+    private String curriculumServiceUrl;
+
     @Value("${SANGRAHA_SERVICE_URL:http://sangraha-service:8089}")
     private String sangrahaServiceUrl;
 
@@ -108,8 +111,18 @@ public class GatewayRoutesConfig {
                         .path("/api/v1/quiz/**")
                         .uri(quizServiceUrl))
 
+                // v2 quiz compose (curriculum-driven sessions) — quiz-service aggregates
+                .route("quiz-v2", r -> r
+                        .path("/api/v2/quiz/**")
+                        .uri(quizServiceUrl))
+
                 .route("lessons", r -> r
                         .path("/api/v1/lessons/**")
+                        .uri(quizServiceUrl))
+
+                // v2 lessons (grammar lesson page) — данные из curriculum-service, агрегирует quiz-service
+                .route("v2-lessons", r -> r
+                        .path("/api/v2/lessons/**")
                         .uri(quizServiceUrl))
 
                 // --- New route for user quiz sessions ---
@@ -132,6 +145,11 @@ public class GatewayRoutesConfig {
                 .route("statistics", r -> r
                         .path("/api/v1/statistics/**", "/api/v1/leaderboard/**")
                         .uri(statisticsServiceUrl))
+
+                // ── Curriculum (Learning map) ─────────────────────────────────────
+                .route("curriculum", r -> r
+                        .path("/api/v2/curriculum/**")
+                        .uri(curriculumServiceUrl))
 
                 .build();
     }

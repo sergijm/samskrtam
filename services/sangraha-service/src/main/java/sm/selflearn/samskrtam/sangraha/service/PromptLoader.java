@@ -46,6 +46,10 @@ public class PromptLoader {
     @Getter
     private String verseAnalysisPass2Prompt;
 
+    /** Промпт классификации лемм (lemma-classification.md §2.1) */
+    @Getter
+    private String lemmaClassificationPrompt;
+
     @PostConstruct
     public void loadPrompts() {
         this.workAnalysisPrompt = load("prompts/work-analysis.md");
@@ -54,10 +58,12 @@ public class PromptLoader {
         this.emenauSandhiRules = loadJson("prompts/emenau-sandhi-rules.json");
         this.verseAnalysisPass1Prompt = load("prompts/verse-analysis-pass1-reasoning.md");
         this.verseAnalysisPass2Prompt = load("prompts/verse-analysis-pass2-formalize.md");
+        this.lemmaClassificationPrompt = load("prompts/lemma-classification.md");
         log.info("Loaded workAnalysisPrompt ({} chars), verseAnalysisPrompt ({} chars), chapterMetadataPrompt ({} chars), emenauSandhiRules",
             workAnalysisPrompt.length(), verseAnalysisPrompt.length(), chapterMetadataPrompt.length());
-        log.info("Loaded pass1Prompt ({} chars), pass2Prompt ({} chars)",
-            verseAnalysisPass1Prompt.length(), verseAnalysisPass2Prompt.length());
+        log.info("Loaded pass1Prompt ({} chars), pass2Prompt ({} chars), lemmaClassificationPrompt ({} chars)",
+            verseAnalysisPass1Prompt.length(), verseAnalysisPass2Prompt.length(),
+            lemmaClassificationPrompt.length());
     }
 
     private String load(String path) {

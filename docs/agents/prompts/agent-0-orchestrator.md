@@ -11,7 +11,7 @@ SamskrtamApp — платформа изучения санскрита. Мон�
 Сервисы:
 - `infrastructure/api-gateway` — Java 21 + WebFlux, порт 8090
 - `services/user-service` — Java 21 + Virtual Threads, порт 8087
-- `services/content-service` — Java 21 + Virtual Threads, порт 8081
+- `services/curriculum-service` — Java 21 + Virtual Threads, порт 8081
 - `services/quiz-service` — Java 21 + WebFlux + R2DBC, порт 8082
 - `services/dictionary-service` — Java 21 + Virtual Threads, порт 8085
 - `services/statistics-service` — Java 21 + Kafka Streams, порт 8086

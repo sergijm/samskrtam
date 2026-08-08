@@ -12,6 +12,7 @@ import sm.selflearn.samskrtam.sangraha.dto.ChapterVersesDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseBatchResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
 import sm.selflearn.samskrtam.sangraha.dto.VocabularyQuizResponse;
+import sm.selflearn.samskrtam.sangraha.dto.WorksClassGroupDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorkTreeDto;
 import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
 import sm.selflearn.samskrtam.sangraha.model.VerseWord;
@@ -21,6 +22,7 @@ import sm.selflearn.samskrtam.sangraha.service.VerseBatchService;
 import sm.selflearn.samskrtam.sangraha.service.VerseService;
 import sm.selflearn.samskrtam.sangraha.service.WorkService;
 import sm.selflearn.samskrtam.sangraha.service.WorkTreeService;
+import sm.selflearn.samskrtam.sangraha.service.WorksClassService;
 
 import java.util.List;
 import java.util.UUID;
@@ -35,12 +37,19 @@ public class SangrahaController {
     private final WorkTreeService workTreeService;
     private final ChapterService chapterService;
     private final VerseBatchService verseBatchService;
+    private final WorksClassService worksClassService;
 
     // ── Works (read-only) ───────────────────────────────────────────
 
     @GetMapping("/works")
-    public ResponseEntity<List<Work>> getAllWorks() {
-        return ResponseEntity.ok(workService.getAllWorks());
+    public ResponseEntity<List<Work>> getAllWorks(
+            @RequestParam(value = "classId", required = false) List<UUID> classIds) {
+        return ResponseEntity.ok(worksClassService.filterWorks(classIds));
+    }
+
+    @GetMapping("/works/classes")
+    public ResponseEntity<List<WorksClassGroupDto>> getWorksClasses() {
+        return ResponseEntity.ok(worksClassService.getClassGroups());
     }
 
     @GetMapping("/works/{workSlug}")

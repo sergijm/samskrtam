@@ -1,8 +1,8 @@
 # Quest Catalog — типы квестов по грамматике и лексике
 
-> Связанные файлы: [quest-engine.md](./quest-engine.md) · [quest-item-model.md](./quest-item-model.md) · [content-service.md](./content-service.md) · [content-service/eamenau.md](./content-service/eamenau.md)
+> Связанные файлы: [quest-engine.md](./quest-engine.md) · [quest-item-model.md](./quest-item-model.md) · [curriculum-service.md](./curriculum-service.md) · [curriculum-service/eamenau.md](./curriculum-service/eamenau.md)
 
-Каталог фиксирует, какие типы `QuestItem` система умеет и планирует поддерживать. Каждый тип — это пара «данные + способ ответа», реализуемая одним генератором в content-service (см. [quest-item-model.md §2](./quest-item-model.md)) и не требующая изменений в quiz-service (алгоритм повторения и сессии одинаковы для любого типа, см. [quest-engine.md §3](./quest-engine.md#3-алгоритм-повторения-sm-2-упрощённый)).
+Каталог фиксирует, какие типы `QuestItem` система умеет и планирует поддерживать. Каждый тип — это пара «данные + способ ответа», реализуемая одним генератором в curriculum-service (см. [quest-item-model.md §2](./quest-item-model.md)) и не требующая изменений в quiz-service (алгоритм повторения и сессии одинаковы для любого типа, см. [quest-engine.md §3](./quest-engine.md#3-алгоритм-повторения-sm-2-упрощённый)).
 
 > Юзер-стори по каждому типу — в [`docs/quests/`](../quests/README.md), в подпапке своего домена.
 > Полная инвентаризация типов с оценкой объёма и приоритетом — [quest-types-overview.md](./quest-types-overview.md).
@@ -23,8 +23,18 @@
 
 ## 2. Морфология
 
-### 2.1 DECLENSION_FORM — реализован
-Склонение имени/местоимения/причастия по (падеж, число, [род]). Ответ — словоформа. См. [quest-engine.md](./quest-engine.md), [architecture.md §3.3–3.4](../architecture.md#33-хранение-окончаний-склонений).
+### 2.1 DECLENSION_FORM (и семейство) — переезжает в curriculum-service v2
+Склонение имени/местоимения/причастия по (падеж, число, [род]). Реализация (генерация +
+хранение) переносится из curriculum-service (v1, не меняется) в curriculum-service (v2) как
+единая группа из 4 типов заданий — простые (выбор/ввод) и комплексные (определение падежа,
+сопоставление). Полная спецификация: [curriculum-quest-items.md](./curriculum-quest-items.md).
+
+- `DECLENSION_FORM_CHOICE` — лемма → выбрать словоформу из вариантов (SINGLE_CHOICE).
+- `DECLENSION_FORM` — лемма → ввести словоформу (FREE_TEXT).
+- `CASE_RECOGNITION` — словоформа → определить падеж[, число, [род]] (SINGLE_CHOICE, единый составной вариант).
+- `DECLENSION_MATCH` — список словоформ ↔ список падеж+число (MATCHING).
+
+См. [quest-engine.md](./quest-engine.md), [architecture.md §3.3–3.4](../architecture.md#33-хранение-окончаний-склонений).
 
 ### 2.2 NUMERAL_FORM — план
 Склонение числительных (eka…daśa и далее — есть особенности: 1–4 склоняются по родам почти как местоимения, 5–19 не различают род, сотни/тысячи — как a-основы среднего рода). Отдельный тип, а не расширение DECLENSION_FORM: у числительных нет единой парадигмы vowel_type, состав падежей и родовых различий не совпадает с обычными основами.
@@ -47,7 +57,7 @@ Ktvā-форма (переходные, без preverb) и lyap-форма (с p
 ## 3. Фонология
 
 ### 3.1 SANDHI_SPLIT / SANDHI_JOIN — частично реализован
-`content-service/eamenau.md` — упражнения на разбор/сборку сандхи на материале учебника Eméneau, с фонемной системой и справочником правил (внутренние/внешние, см. `sangraha-service.md` §5). Как отдельный `QuestItem` в общем движке: SANDHI_SPLIT (дано слитное написание → разбить на компоненты + назвать правило), SANDHI_JOIN (обратная операция). **Payload:** surface, components[], ruleNumber. Оба режима ответа: FREE_TEXT (ввести разбор) и SINGLE_CHOICE (выбрать правильный вариант из дистракторов — типичные ошибочные сандхи).
+`curriculum-service/eamenau.md` — упражнения на разбор/сборку сандхи на материале учебника Eméneau, с фонемной системой и справочником правил (внутренние/внешние, см. `sangraha-service.md` §5). Как отдельный `QuestItem` в общем движке: SANDHI_SPLIT (дано слитное написание → разбить на компоненты + назвать правило), SANDHI_JOIN (обратная операция). **Payload:** surface, components[], ruleNumber. Оба режима ответа: FREE_TEXT (ввести разбор) и SINGLE_CHOICE (выбрать правильный вариант из дистракторов — типичные ошибочные сандхи).
 
 ---
 
@@ -70,7 +80,7 @@ Ktvā-форма (переходные, без preverb) и lyap-форма (с p
 | **VOCABULARY_SYNONYM** | выбрать синоним/группу synonyms (например, слова со значением «слон»: gaja, hastin, dvipa, kariṇ) | wordIast, synonymGroupId, distractors из других групп |
 | **VOCABULARY_ANTONYM** | подобрать антоним | wordIast, antonymIast |
 | **VOCABULARY_ROOT** | слово → dhātu, от которого образовано (для производных существительных/прилагательных) | wordIast, rootIast, derivationPattern |
-| **VOCABULARY_SEMANTIC_FIELD** | определить тематическую категорию слова (родство, природа, война, ритуал — те же категории, что в `VocabularyCategory`, см. `content-service.md`) | wordIast, categoryCode, distractor-категории |
+| **VOCABULARY_SEMANTIC_FIELD** | определить тематическую категорию слова (родство, природа, война, ритуал — те же категории, что в `VocabularyCategory`, см. `curriculum-service.md`) | wordIast, categoryCode, distractor-категории |
 | **VOCABULARY_GENDER** | определить род существительного по форме (нетривиально в санскрите — совпадающие по облику слова разного рода) | wordIast, gender |
 
 Все типы лексики используют единый механизм тематической категоризации (`VocabularyCategory`, work→chapter, см. `architecture.md §3.5`) для группировки уроков — категоризация не зависит от конкретного типа задания.
@@ -103,6 +113,6 @@ Ktvā-форма (переходные, без preverb) и lyap-форма (с p
 Чтобы добавить новый тип квеста, не трогая quiz-service:
 
 1. Определить домен (§1) и payload — набор полей, специфичных для типа.
-2. Реализовать `QuestItemGenerator<P>` в content-service (один класс на тип, см. [quest-item-model.md §2](./quest-item-model.md)).
+2. Реализовать `QuestItemGenerator<P>` в curriculum-service (один класс на тип, см. [quest-item-model.md §2](./quest-item-model.md)).
 3. Зарегистрировать тип в реестре типов (не enum — открытый список, см. §1 `quest-item-model.md`).
 4. Ничего не менять в quiz-service: прогресс, сессии, алгоритм повторения работают с любым типом одинаково, так как оперируют только `itemId` и результатом ответа (`correct: boolean`), не заглядывая в payload.

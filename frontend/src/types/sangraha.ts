@@ -145,3 +145,22 @@ export interface VerseBatchResponseDto {
   verses: VerseBatchItemDto[];
 }
 
+// ── Классификатор произведений (works_class) ──
+
+export interface WorksClassTreeNodeDto {
+  id: string;
+  parentId?: string | null;
+  code: string;
+  titleRu: string;
+  titleEn: string;
+  titleSaIast: string;
+  titleSaDeva?: string | null;
+  sortOrder: number;
+  children: WorksClassTreeNodeDto[];
+}
+
+export interface WorksClassGroupDto {
+  classification: string;
+  classes: WorksClassTreeNodeDto[];
+}
+

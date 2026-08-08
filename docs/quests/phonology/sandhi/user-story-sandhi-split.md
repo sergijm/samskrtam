@@ -1,6 +1,6 @@
 # US-PHON-01 — Разбор внешнего сандхи в связном тексте
 
-> Домен: Phonology · Тип: `SANDHI_SPLIT` (частично реализован, см. [content-service/eamenau.md](../../../services/content-service/eamenau.md))
+> Домен: Phonology · Тип: `SANDHI_SPLIT` (частично реализован, см. [curriculum-service/eamenau.md](../../../services/curriculum-service/eamenau.md))
 > Связанные файлы: [quest-catalog.md §3.1](../../../services/quest-catalog.md#31-sandhi_split--sandhi_join--частично-реализован)
 
 ## История

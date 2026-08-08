@@ -2,7 +2,7 @@
 
 > Дополняет `sangraha-service.md` §4 (API) и §7 (Frontend). Повод: часть корпуса
 > загружается внешним скриптом в обход UI (см. `verse-word-grammar.md` §1а/§1б,
-> `content-service/declension-examples.md`) — нужна возможность посмотреть и
+> `curriculum-service/declension-examples.md`) — нужна возможность посмотреть и
 > прогнать LLM-анализ по произвольному набору `verseId`, не привязанному к
 > одной главе (в отличие от уже существующей `POST /chapters/{chapterId}/
 > verses/analyze-all`).
@@ -91,8 +91,8 @@ query-параметров, не только выделенные — выбо�
 обновил `status` после ответа `202`.
 
 **Точка входа.** Кнопка «Проанализировать недостающие примеры» на вкладке
-«Примеры» урока склонений (content-service, фронтенд) — см.
-`docs/frontend/pages/grammar-lesson-page.md` §2.2а, `content-service/
+«Примеры» урока склонений (curriculum-service, фронтенд) — см.
+`docs/frontend/pages/grammar-lesson-page.md` §2.2а, `curriculum-service/
 declension-examples.md` (поле `missingVerseIds`, только для `ADMIN`). Прямого
 входа внутри самого раздела `/sangraha/*` в этой версии нет (не блокирует —
 можно добавить отдельным тикетом, например ссылку со страницы работы для

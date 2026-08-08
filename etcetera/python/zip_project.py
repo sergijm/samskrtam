@@ -9,7 +9,8 @@ EXTENSIONS = ('.java', '.ts', '.tsx', '.yaml', '.yml', '.md', '.sql', '.json')
 EXCLUDED_DIRS1 = {
     'node_modules', '.git', 'build', 'dist', 'target', '__pycache__',
     '.idea', '.vscode', 'venv', 'env', '.venv', 'logs', 'tmp', 'temp',
-    '.gradle', '.kotlin', 'gradle', 'etcetera', 'design'
+    '.gradle', '.kotlin', 'gradle', 'etcetera', 'design',
+    'content-service', 'statistics-service', 'user-service'
 }
 EXCLUDED_DIRS2 = {
     'frontend', 'services', 'shared'

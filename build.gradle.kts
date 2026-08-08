@@ -14,3 +14,12 @@ allprojects {
         mavenCentral()
     }
 }
+
+// Источники во всех модулях — UTF-8 (санскрит и кириллица в строках/комментариях).
+// Без явной кодировки javac на Windows читает исходники в платформенной кодировке,
+// что ломает не-ASCII-строки вида "aḥ"/"am" (мojibake).
+subprojects {
+    tasks.withType<JavaCompile>().configureEach {
+        options.encoding = "UTF-8"
+    }
+}

@@ -1,10 +1,19 @@
 # Quest Item Model — базовые Java-абстракции
 
-> Связанные файлы: [quest-engine.md](./quest-engine.md) · [quest-catalog.md](./quest-catalog.md) · [content-service.md](./content-service.md)
+> Связанные файлы: [quest-engine.md](./quest-engine.md) · [quest-catalog.md](./quest-catalog.md) · [curriculum-service.md](./curriculum-service.md)
 
-Базовые интерфейсы и абстрактные классы для модели квестов — общие для content-service (генерация) и quiz-service (прохождение, прогресс). Цель: добавление нового типа квеста (см. [quest-catalog.md](./quest-catalog.md)) не требует изменений в quiz-service и в алгоритме повторения — только новая реализация `QuestItemGenerator`/`AnswerChecker` в content-service.
+Базовые интерфейсы и абстрактные классы для модели квестов — общие для curriculum-service (генерация) и quiz-service (прохождение, прогресс). Цель: добавление нового типа квеста (см. [quest-catalog.md](./quest-catalog.md)) не требует изменений в quiz-service и в алгоритме повторения — только новая реализация `QuestItemGenerator`/`AnswerChecker` в curriculum-service.
 
-Пакеты: `sm.selflearn.samskrtam.content.quest.*` (генерация, только content-service), `sm.selflearn.samskrtam.quest.*` (общая модель, живёт в `shared/samskrtam-dtos` — доступна и content-service, и quiz-service), `sm.selflearn.samskrtam.quiz.progress.*` (прохождение и прогресс, только quiz-service).
+Пакеты: `sm.selflearn.samskrtam.content.quest.*` (генерация, только curriculum-service), `sm.selflearn.samskrtam.quest.*` (общая модель, живёт в `shared/samskrtam-dtos` — доступна curriculum-service, curriculum-service и quiz-service), `sm.selflearn.samskrtam.quiz.progress.*` (прохождение и прогресс, только quiz-service).
+
+> **Версионирование и новое семейство типов (declension, §3):** curriculum-service (API v1) не
+> трогается и продолжает обслуживать существующие типы как есть. Генерация и хранение
+> `DECLENSION_FORM`/`DECLENSION_FORM_CHOICE`/`CASE_RECOGNITION`/`DECLENSION_MATCH` переносится
+> в curriculum-service (API v2) — новый сервис, новый префикс пути, без изменений в
+> curriculum-service. Реализация в curriculum-service не «генерирует по запросу» через
+> `QuestItemGenerator.generate(ctx)`, а материализует заранее большой фиксированный набор
+> `QuestItem` в БД (batch-генератор), а `GET`-эндпоинт curriculum-service просто отбирает
+> нужное количество готовых строк по `topicId`/`itemType`. Контракт `QuestItem`/`QuestItemType`/`AnswerMode` (этот файл) один и тот же для обоих подходов — quiz-service не видит разницы. Подробности — [curriculum-quest-items.md](./curriculum-quest-items.md).
 
 ---
 
@@ -27,7 +36,8 @@ public enum AnswerMode {
     FREE_TEXT,       // ввод словоформы/перевода
     SINGLE_CHOICE,   // выбор одного варианта из distractors
     MULTI_SELECT,    // выбор нескольких (напр. все члены сложного слова)
-    SPAN_SELECT      // выделение части текста (напр. границы сандхи в строке)
+    SPAN_SELECT,     // выделение части текста (напр. границы сандхи в строке)
+    MATCHING         // соединение пар из двух списков (напр. словоформа ↔ падеж/число)
 }
 
 /** Маркерный интерфейс данных, специфичных для конкретного типа — реализуется record'ом на тип. */
@@ -35,7 +45,7 @@ public interface QuestItemPayload { }
 
 /**
  * Единица задания. Один класс на все типы — различие только в payload.
- * Иммутабельна, содержимое формирует content-service.
+ * Иммутабельна, содержимое формирует curriculum-service.
  */
 public final class QuestItem {
     private final UUID id;
@@ -43,7 +53,7 @@ public final class QuestItem {
     private final QuestItemType type;
     private final String prompt;              // что показываем пользователю
     private final AnswerMode answerMode;
-    private final List<String> distractors;   // пусто для FREE_TEXT
+    private final List<String> distractors;   // пусто для FREE_TEXT и MATCHING
     private final QuestItemPayload payload;    // тип-специфичные данные, для AnswerChecker
 
     // конструктор, геттеры — без сеттеров, объект собирается генератором целиком
@@ -59,9 +69,17 @@ public final class Quest {
 }
 ```
 
+**Контракт `AnswerMode.MATCHING`:** `distractors` не используется (пусто) — вариантов для
+подбора столько же, сколько пар, и все они «правильные» для какой-то из пар. Список пар
+(левая часть — словоформа, правая — падеж+число или иной атрибут) хранится в `payload`
+конкретного типа (пример: `DeclensionMatchPayload`, см. [curriculum-quest-items.md §3](./curriculum-quest-items.md#3-типы-payload)). `userAnswer` в этом режиме —
+сериализованный список сопоставлений (`{leftId: rightId, ...}`), `AnswerChecker` считает
+ответ верным только при полном совпадении всех пар (без частичного зачёта — упрощение
+первой версии).
+
 ---
 
-## 2. content-service — генерация (`sm.selflearn.samskrtam.content.quest`)
+## 2. curriculum-service — генерация (`sm.selflearn.samskrtam.content.quest`)
 
 ```java
 /** Контекст генерации: что известно на момент запроса (пользователь, Quest, опциональные фильтры). */
@@ -88,7 +106,7 @@ public abstract class AbstractQuestItemGenerator<P extends QuestItemPayload>
                 .toList();
     }
 
-    /** Откуда брать данные для генерации — конкретная выборка из БД content-service. */
+    /** Откуда брать данные для генерации — конкретная выборка из БД curriculum-service. */
     protected abstract List<?> sourceEntities(GenerationContext ctx);
 
     /** Собрать один QuestItem из одной сущности-источника. */
@@ -146,6 +164,16 @@ public class DeclensionQuestItemGenerator
 public final class GrammarQuestItemTypes {
     public static final QuestItemType DECLENSION_FORM = QuestItemTypes.of(
             "DECLENSION_FORM", QuestDomain.MORPHOLOGY, AnswerMode.FREE_TEXT);
+    /** Тип 1 задания (лемма → выбрать словоформу из вариантов) — тот же payload,
+     *  что и DECLENSION_FORM, отдельный AnswerMode на уровне QuestItem, см. curriculum-quest-items.md §2.1. */
+    public static final QuestItemType DECLENSION_FORM_CHOICE = QuestItemTypes.of(
+            "DECLENSION_FORM_CHOICE", QuestDomain.MORPHOLOGY, AnswerMode.SINGLE_CHOICE);
+    /** Тип 3 задания (словоформа → определить падеж[, число, [род]]), см. curriculum-quest-items.md §2.3. */
+    public static final QuestItemType CASE_RECOGNITION = QuestItemTypes.of(
+            "CASE_RECOGNITION", QuestDomain.MORPHOLOGY, AnswerMode.SINGLE_CHOICE);
+    /** Тип 4 задания (список словоформ ↔ список падеж+число), см. curriculum-quest-items.md §2.4. */
+    public static final QuestItemType DECLENSION_MATCH = QuestItemTypes.of(
+            "DECLENSION_MATCH", QuestDomain.MORPHOLOGY, AnswerMode.MATCHING);
     public static final QuestItemType NUMERAL_FORM = QuestItemTypes.of(
             "NUMERAL_FORM", QuestDomain.MORPHOLOGY, AnswerMode.FREE_TEXT);
     public static final QuestItemType CONJUGATION_FORM = QuestItemTypes.of(
@@ -254,7 +282,7 @@ public interface QuestSessionService {
 
 | Слой | Знает про типы квестов | Знает про прогресс/повторение |
 |---|---|---|
-| content-service (`QuestItemGenerator`, `AnswerChecker`) | да, по одному классу на тип | нет |
+| curriculum-service (`QuestItemGenerator`, `AnswerChecker`) | да, по одному классу на тип | нет |
 | shared-модель (`QuestItem`, `QuestItemType`) | только контракт, не логику типов | нет |
 | quiz-service (`SpacedRepetitionAlgorithm`, `SessionItemSelector`) | нет | да, единая реализация для всех типов |
 

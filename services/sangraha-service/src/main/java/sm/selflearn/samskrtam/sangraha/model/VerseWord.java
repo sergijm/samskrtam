@@ -69,6 +69,9 @@ public class VerseWord {
     @Column(name = "is_finite")
     private Boolean isFinite;
 
+    @Column(name = "lemma_id")
+    private UUID lemmaId;
+
     @Column(name = "lemma_gloss_ru")
     private String lemmaGlossRu;
 

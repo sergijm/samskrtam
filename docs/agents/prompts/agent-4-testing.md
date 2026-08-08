@@ -77,7 +77,7 @@ POST /sessions/{id}/answer с STUDENT JWT → 200
 GET /sessions/{id}/resume → восстанавливает состояние
 ```
 
-### content-service
+### curriculum-service
 ```java
 // unit/service/
 createQuiz_validData_savesQuiz()

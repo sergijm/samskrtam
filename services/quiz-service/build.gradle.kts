@@ -38,3 +38,7 @@ dependencies {
     testImplementation(libs.spring.test)
     testImplementation(libs.reactor.test)
 }
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}

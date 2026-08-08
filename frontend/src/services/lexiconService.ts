@@ -2,29 +2,20 @@
  * LexiconService — единая точка доступа к данным «Лексики».
  *
  * UI работает только с этим интерфейсом и не знает источник данных.
- *
- * Сейчас: MockLexiconService (локальные данные, см. src/data/mockLexicon.ts).
- * Позже: ApiLexiconService — заменить `new MockLexiconService()` на API-реализацию
- * в `getLexiconService()` (единственное место переключения).
+ * Реализация — ApiLexiconService (curriculum-service GET /api/v2/curriculum/lexicon).
  */
 
 import { LexiconDashboardData } from '../types/lexicon';
-import { mockLexiconDashboard } from '../data/mockLexicon';
+import { lexiconApi } from '../api/lexiconApi';
 
 export interface LexiconService {
   getDashboard(): Promise<LexiconDashboardData>;
 }
 
-class MockLexiconService implements LexiconService {
-  async getDashboard(): Promise<LexiconDashboardData> {
-    return mockLexiconDashboard;
-  }
-}
-
 class ApiLexiconService implements LexiconService {
-  /** TODO: заменить на axios-клиент (src/api/lexiconApi.ts) после готовности бэкенда. */
   async getDashboard(): Promise<LexiconDashboardData> {
-    throw new Error('Lexicon API is not implemented yet');
+    const response = await lexiconApi.getDashboard();
+    return response.data;
   }
 }
 
@@ -32,8 +23,7 @@ let lexiconService: LexiconService | undefined;
 
 export function getLexiconService(): LexiconService {
   if (!lexiconService) {
-    // Единственное место переключения mock → API:
-    lexiconService = new MockLexiconService();
+    lexiconService = new ApiLexiconService();
   }
   return lexiconService;
 }

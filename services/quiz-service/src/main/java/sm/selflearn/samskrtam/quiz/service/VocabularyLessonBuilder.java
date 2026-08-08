@@ -57,15 +57,15 @@ public class VocabularyLessonBuilder {
             return Mono.just(lesson);
         }
 
-        List<UUID> wordIds = vocabularyWords.stream()
-                .map(VocabularyWordDto::getId)
+        List<String> progressTags = vocabularyWords.stream()
+                .map(VocabularyWordDto::getWordIast)
                 .collect(Collectors.toList());
 
         Instant now = Instant.now();
 
         return quizItemScoreRepository
-                .findByUserIdAndItemTypeAndExternalRefIdIn(userId, ItemType.VOCABULARY_WORD, wordIds)
-                .collectMap(QuizItemScore::getExternalRefId, score -> score)
+                .findByUserIdAndItemTypeAndProgressTagIn(userId, ItemType.VOCABULARY_WORD, progressTags)
+                .collectMap(QuizItemScore::getProgressTag, score -> score)
                 .map(scoresMap -> populateLesson(lesson, vocabularyWords, scoresMap, now));
     }
 
@@ -83,7 +83,7 @@ public class VocabularyLessonBuilder {
     private VocabularyLessonDto populateLesson(
             VocabularyLessonDto lesson,
             List<VocabularyWordDto> vocabularyWords,
-            java.util.Map<UUID, QuizItemScore> scoresMap,
+            java.util.Map<String, QuizItemScore> scoresMap,
             Instant now) {
 
         int newCount = 0;
@@ -94,7 +94,7 @@ public class VocabularyLessonBuilder {
         List<VocabularyWordProgress> wordProgressList = new ArrayList<>();
 
         for (VocabularyWordDto word : vocabularyWords) {
-            QuizItemScore itemScore = scoresMap.get(word.getId());
+            QuizItemScore itemScore = scoresMap.get(word.getWordIast());
             WordStatus status = wordStatusResolver.resolve(itemScore, now);
 
             switch (status) {

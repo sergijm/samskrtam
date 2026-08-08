@@ -1,8 +1,8 @@
-# content-service
+# curriculum-service
 
 > Домен: Lesson Content — настройки и содержание уроков (см. [architecture.md §3.2](../architecture.md#32-семантика-quiz--lesson--activity))
 > Язык: **Java 21 + Virtual Threads**
-> Модуль: `services/content-service`
+> Модуль: `services/curriculum-service`
 > Порт: 8081
 > Status: **DRAFT**
 
@@ -10,12 +10,12 @@
 
 ## 1. Описание
 
-ВАЖНО!!! content-service вместе со схемой базы данных content будет удален, никаких доработок в нем не делать. Расширенный функционал постепенно будет заново имплементирован в curriculum-service.
+ВАЖНО!!! curriculum-service вместе со схемой базы данных content будет удален, никаких доработок в нем не делать. Расширенный функционал постепенно будет заново имплементирован в curriculum-service.
 
 Хранит **настройки и содержание всех квизов**: метаданные квизов (тип, сложность, slug), вопросы, варианты ответов, а также лексику для словарных квизов. Доступен только для роли `ADMIN` (запись) и внутренне для `quiz-service` (чтение). Virtual Threads позволяют использовать обычный JPA/JDBC без WebFlux.
 
 Разделение ответственности:
-- **content-service** — что есть в квизах (данные, настройки)
+- **curriculum-service** — что есть в квизах (данные, настройки)
 - **quiz-service** — как пользователь их проходит (сессии, ответы, события)
 
 ---
@@ -66,8 +66,8 @@
 
 
 > Полная OpenAPI спецификация для Lesson Pages: [lesson-aggregation-openapi.yaml](../openapi/lesson-aggregation-openapi.yaml)
-> OpenAPI спецификация внутреннего API (generate-quiz-data, включая scope-фильтр): [openapi/content/content-service.yaml](../openapi/content/content-service.yaml)
-> OpenAPI спецификация остального API content-service (реверс-инжиниринг по коду, все остальные эндпоинты): [openapi/content/content-api.yaml](../openapi/content/content-api.yaml) — см. там же зафиксированное расхождение: ADMIN CRUD из §5 ниже в коде не реализован.
+> OpenAPI спецификация внутреннего API (generate-quiz-data, включая scope-фильтр): [openapi/content/curriculum-service.yaml](../openapi/content/curriculum-service.yaml)
+> OpenAPI спецификация остального API curriculum-service (реверс-инжиниринг по коду, все остальные эндпоинты): [openapi/content/content-api.yaml](../openapi/content/content-api.yaml) — см. там же зафиксированное расхождение: ADMIN CRUD из §5 ниже в коде не реализован.
 
 ### Управление уроками (ADMIN)
 
@@ -110,7 +110,7 @@ GET /api/v1/content/public/lessons/{slug}/declension-paradigms?index=N   → Dec
 
 ### Внутреннее API для quiz-service
 
-content-service не хранит сгенерированные вопросы сессии — генерирует и сразу возвращает результат, ничего не сохраняя. quiz-service хранит результат вызова у себя, в `quiz.session_questions`, и читает оттуда на resume/answer/complete (см. `quest-engine.md` §3, §5, §12) — это единственный источник данных для SQL-статистики/истории, поэтому дублирование хранения в content-service не требуется. Единственный вызываемый quiz-service эндпоинт для генерации вопросов сессии:
+curriculum-service не хранит сгенерированные вопросы сессии — генерирует и сразу возвращает результат, ничего не сохраняя. quiz-service хранит результат вызова у себя, в `quiz.session_questions`, и читает оттуда на resume/answer/complete (см. `quest-engine.md` §3, §5, §12) — это единственный источник данных для SQL-статистики/истории, поэтому дублирование хранения в curriculum-service не требуется. Единственный вызываемый quiz-service эндпоинт для генерации вопросов сессии:
 
 ```
 POST /api/v1/content/lessons/{quizId}/generate-quiz-data   → генерирует вопросы сессии и
@@ -122,13 +122,13 @@ POST /api/v1/content/lessons/{quizId}/generate-quiz-data   → генериру�
 Ответ `generate-quiz-data` — `GeneratedQuizData`: `{ lessonId, lessonType,
 questionsPerSession, generatedQuestions[...], vocabularyWords (null для не-VOCABULARY) }`.
 Поле `generatedQuizDataId` в DTO больше не нужно как внешний идентификатор для повторного
-запроса к content-service — quiz-service при желании может сохранить какой-то свой
+запроса к curriculum-service — quiz-service при желании может сохранить какой-то свой
 внутренний group-id, но это уже его внутреннее дело (см. quest-engine.md §12).
 
-`generate-quiz-data` принимает опциональные query-параметры фильтрации по объёму (scope pre-filter, см. `quest-engine.md` §3.4) — применяются на стороне content-service, до формирования полного списка вопросов, а не на стороне quiz-service после его получения:
+`generate-quiz-data` принимает опциональные query-параметры фильтрации по объёму (scope pre-filter, см. `quest-engine.md` §3.4) — применяются на стороне curriculum-service, до формирования полного списка вопросов, а не на стороне quiz-service после его получения:
 
 - `filterScope` — `CASE_ONLY` / `NUMBER_ONLY` / `CASE_NUMBER_GENDER` (те же значения, что и у
-  одноимённого параметра `quiz-sessions.yaml`/`FilterScopeParam`; в content-service
+  одноимённого параметра `quiz-sessions.yaml`/`FilterScopeParam`; в curriculum-service
   представлено обычной строкой, не связано с enum `FilterScope` из quiz-service — сервисы не
   шарят доменные enum через HTTP-контракт).
 - `filterCaseTypes` — CSV/JSON-массив значений `CaseType`, используется при `CASE_ONLY`.
@@ -137,7 +137,7 @@ questionsPerSession, generatedQuestions[...], vocabularyWords (null для не-
   `CASE_NUMBER_GENDER`.
 
 Если `filterScope` не передан — поведение не меняется, возвращаются все сгенерированные
-вопросы (как раньше). Если передан — content-service фильтрует `generatedQuestions[]` по тем
+вопросы (как раньше). Если передан — curriculum-service фильтрует `generatedQuestions[]` по тем
 же правилам, что ранее были в `applyScopeFilter` (сравнение `targetCase`/`targetNumber`/
 `gender` вопроса с разрешённым множеством), и возвращает уже отфильтрованный список;
 **критично:** фильтр обязан применяться к пулу кандидатов (комбинациям основа×падеж×число) **до**
@@ -148,12 +148,12 @@ questionsPerSession, generatedQuestions[...], vocabularyWords (null для не-
 → обрезка» не изменить на «фильтр кандидатов → генерация ровно `questionsPerSession` вопросов
 из отфильтрованного пула, комбинируя разные вопросы»);
 `vocabularyWords` фильтр не затрагивает. Пустой результат фильтрации — не ошибка на уровне
-content-service (пустой список); обработку `SCOPE_FILTER_EMPTY` (бизнес-ошибка) по-прежнему
+curriculum-service (пустой список); обработку `SCOPE_FILTER_EMPTY` (бизнес-ошибка) по-прежнему
 выполняет quiz-service после получения ответа (см. quest-engine.md §6, quest-engine.md).
-Парсинг CSV/JSON-параметров — новая внутренняя утилита content-service, независимая от
+Парсинг CSV/JSON-параметров — новая внутренняя утилита curriculum-service, независимая от
 `QuizFilterJsonHelper` quiz-service (тот остаётся в quiz-service — используется для
 канонизации множеств `QuizSession.filterCaseTypes/filterNumberTypes/filterCombinations` при
-поиске сессии для резюма, что вне ответственности content-service).
+поиске сессии для резюма, что вне ответственности curriculum-service).
 
 Для DECLENSIONS/CONJUGATIONS `generatedQuestions[]` — это `GeneratedQuizQuestionDto`:
 `{id, quizId, questionNumber, text, explanationRu, explanationEn,
@@ -168,18 +168,18 @@ correctTranslationEn, userLocale, stem, caseType, numberType, gender}`.
 
 **Дистракторы (варианты ответа) НЕ входят в этот ответ и не хранятся здесь** — они
 генерируются в quiz-service на лету при каждом обращении к вопросу, в т.ч. на resume, для чего
-content-service всё равно продолжает быть нужен через отдельный, независимый от этого,
+curriculum-service всё равно продолжает быть нужен через отдельный, независимый от этого,
 эндпоинт `getDeclensionForms` (см. quest-engine.md §5а) — то есть **полной развязки
-quiz-service от content-service на resume нет**, изменилось только то, что именно
-content-service отдаёт по запросу.
+quiz-service от curriculum-service на resume нет**, изменилось только то, что именно
+curriculum-service отдаёт по запросу.
 
 ---
 
 ## 3а. Генерация вопросов сессии — без сохранения
 
-content-service не хранит per-session сгенерированные вопросы: нет таблиц `content.generated_quiz_data`/`content.generated_questions` и соответствующего персистентного слоя. Сгенерированный вопрос хранит только quiz-service (`quiz.session_questions`, см. `quest-engine.md` §12); content-service — чистый генератор без побочных эффектов записи.
+curriculum-service не хранит per-session сгенерированные вопросы: нет таблиц `content.generated_quiz_data`/`content.generated_questions` и соответствующего персистентного слоя. Сгенерированный вопрос хранит только quiz-service (`quiz.session_questions`, см. `quest-engine.md` §12); curriculum-service — чистый генератор без побочных эффектов записи.
 
-`DeclensionQuizGeneratorService`/`QuestionGenerationService` строят и возвращают `List<QuestionResponse>`/`GeneratedQuizData`, ничего не записывая в БД content-service.
+`DeclensionQuizGeneratorService`/`QuestionGenerationService` строят и возвращают `List<QuestionResponse>`/`GeneratedQuizData`, ничего не записывая в БД curriculum-service.
 
 ---
 
@@ -214,7 +214,7 @@ content-service не хранит per-session сгенерированные в�
 ## 9. Открытые вопросы
 
 - [ ] Импорт вопросов и слов из CSV для массового добавления?
-- [ ] Кэшировать ли ответ `generate-quiz-data`/данные для дистракторов (`getDeclensionForms`) — актуально только для распределения нагрузки на content-service при большом числе одновременных `start`/`resume`; ответ `generate-quiz-data` теперь не переиспользуется (вызывается один раз на старте, дальше quiz-service хранит сам). Отложено до появления реальной нагрузки (см. quest-engine.md §3).
+- [ ] Кэшировать ли ответ `generate-quiz-data`/данные для дистракторов (`getDeclensionForms`) — актуально только для распределения нагрузки на curriculum-service при большом числе одновременных `start`/`resume`; ответ `generate-quiz-data` теперь не переиспользуется (вызывается один раз на старте, дальше quiz-service хранит сам). Отложено до появления реальной нагрузки (см. quest-engine.md §3).
 - [ ] **Личные списки слов** (не реализовано) — новые сущности
   `content.user_word_lists (id, userId, title, createdAt)` и
   `content.user_word_list_items (listId, stemId|conjugationId, addedAt)`,
@@ -227,7 +227,7 @@ content-service не хранит per-session сгенерированные в�
 
 ## 10. Домен Eamenau
 
-Модуль упражнений по правилам сандхи санскрита. Полная спецификация: [services/content-service/eamenau.md](./content-service/eamenau.md).
+Модуль упражнений по правилам сандхи санскрита. Полная спецификация: [services/curriculum-service/eamenau.md](./curriculum-service/eamenau.md).
 
 Структура: модели (13 классов) в eamenau/model/, репозитории (12 интерфейсов) в eamenau/repository/, сервисы (EamenauService, EamenauExerciseService), контроллеры (EamenauController, EamenauExerciseController). Shared DTOs — в shared/samskrtam-dtos. Миграция: V2 — schema eamenau. Фронтенд: pages/eamenau/, components/eamenau/.
 
@@ -245,7 +245,7 @@ content-service не хранит per-session сгенерированные в�
 POST /content/internal/sangraha/vocabulary-quiz
 ```
 
-**Не публичный и не ADMIN-эндпоинт** — чистый service-to-service вызов, без роли (аутентификация — по внутреннему сетевому периметру/service-to-service секрету, как решит Агент 1). Вызывается напрямую по адресу content-service (env `CONTENT_SERVICE_URL` у sangraha-service, минуя gateway), не через `/api/v1/**`.
+**Не публичный и не ADMIN-эндпоинт** — чистый service-to-service вызов, без роли (аутентификация — по внутреннему сетевому периметру/service-to-service секрету, как решит Агент 1). Вызывается напрямую по адресу curriculum-service (env `CONTENT_SERVICE_URL` у sangraha-service, минуя gateway), не через `/api/v1/**`.
 
 ### Request
 
@@ -269,9 +269,9 @@ POST /content/internal/sangraha/vocabulary-quiz
 }
 ```
 
-Каждый элемент `words[]` — словарная статья, а не разбор конкретной словоформы: `wordIast` = `lemmaIast` слова (лемма, словарная форма), `translationRu/En` = `lemmaGlossRu/En` (словарное значение леммы). `wordDevanagari` = `surfaceDevanagari` той словоформы, в которой слово впервые встретилось (у леммы отдельного деванагари-написания в модели sangraha-service нет — только у словоформы, см. `verse-word-grammar.md` §1); для большинства слов расхождение с деванагари-написанием самой леммы отсутствует или несущественно (совпадает при отсутствии сандхи/окончания), в остальных случаях это известное упрощение. `verseWordId` — id строки `VerseWord` в sangraha-service, нужен только для того, чтобы content-service мог вернуть маппинг `verseWordId → vocabularyWordId` в ответе (см. Response ниже); в дедупликации и создании `VocabularyWord` не участвует.
+Каждый элемент `words[]` — словарная статья, а не разбор конкретной словоформы: `wordIast` = `lemmaIast` слова (лемма, словарная форма), `translationRu/En` = `lemmaGlossRu/En` (словарное значение леммы). `wordDevanagari` = `surfaceDevanagari` той словоформы, в которой слово впервые встретилось (у леммы отдельного деванагари-написания в модели sangraha-service нет — только у словоформы, см. `verse-word-grammar.md` §1); для большинства слов расхождение с деванагари-написанием самой леммы отсутствует или несущественно (совпадает при отсутствии сандхи/окончания), в остальных случаях это известное упрощение. `verseWordId` — id строки `VerseWord` в sangraha-service, нужен только для того, чтобы curriculum-service мог вернуть маппинг `verseWordId → vocabularyWordId` в ответе (см. Response ниже); в дедупликации и создании `VocabularyWord` не участвует.
 
-Список `words[]` уже дедуплицирован sangraha-service по `(lemmaIast, stem)` в рамках стиха (см. `sangraha-service.md` §6) — content-service не обязан ожидать дублей внутри одного запроса, но и не полагается на это: дедуп по `(wordIast, stem)` в рамках всего словаря (шаг 4 ниже) защищает от повторной отправки одного и того же слова в разных стихах.
+Список `words[]` уже дедуплицирован sangraha-service по `(lemmaIast, stem)` в рамках стиха (см. `sangraha-service.md` §6) — curriculum-service не обязан ожидать дублей внутри одного запроса, но и не полагается на это: дедуп по `(wordIast, stem)` в рамках всего словаря (шаг 4 ниже) защищает от повторной отправки одного и того же слова в разных стихах.
 
 ### Response
 
@@ -286,11 +286,11 @@ POST /content/internal/sangraha/vocabulary-quiz
 }
 ```
 
-`quizId` (UUID сущности `Lesson` в БД content-service) — фронтенд стартует/резюмирует квиз-сессию по UUID напрямую (`POST /quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&statusFilter=...`), без промежуточного `GET /lessons/vocabulary/{slug}` (см. `sangraha-service.md` §7). `quizSlug` кэшируется sangraha-service для построения URL `/quiz/vocabulary/{quizSlug}/{sessionId}` после старта сессии; формат — `"{workSlug}.{chapterSlug}.verse-{verseId}"` (совпадает с `code` `VocabularyCategory` уровня стиха, см. шаг 3 ниже).
+`quizId` (UUID сущности `Lesson` в БД curriculum-service) — фронтенд стартует/резюмирует квиз-сессию по UUID напрямую (`POST /quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&statusFilter=...`), без промежуточного `GET /lessons/vocabulary/{slug}` (см. `sangraha-service.md` §7). `quizSlug` кэшируется sangraha-service для построения URL `/quiz/vocabulary/{quizSlug}/{sessionId}` после старта сессии; формат — `"{workSlug}.{chapterSlug}.verse-{verseId}"` (совпадает с `code` `VocabularyCategory` уровня стиха, см. шаг 3 ниже).
 
-`quizStatus` — `"CREATED"`, если `upsertQuiz` (шаг 3 ниже) только что вставил новую строку `Lesson` (это первый клик «Изучить» по этому стиху), либо `"EXISTING"`, если `Lesson` с таким slug уже существовал. Это единственный сигнал о «статусе» квиза, который content-service в принципе может дать — он не хранит и не видит пользовательский прогресс (`quiz_item_score`, сессии) — это домен quiz-service, а данный эндпоинт не содержит userId. Фронтенд использует `quizStatus` только для выбора `statusFilter` при первом же запуске сессии: `CREATED` → `statusFilter=NEW` (весь пул — новые слова, обычный due/new/reserve-отбор избыточен), `EXISTING` → без `statusFilter` (обычный смешанный отбор). См. `sangraha-service.md` §6/§7.
+`quizStatus` — `"CREATED"`, если `upsertQuiz` (шаг 3 ниже) только что вставил новую строку `Lesson` (это первый клик «Изучить» по этому стиху), либо `"EXISTING"`, если `Lesson` с таким slug уже существовал. Это единственный сигнал о «статусе» квиза, который curriculum-service в принципе может дать — он не хранит и не видит пользовательский прогресс (`quiz_item_score`, сессии) — это домен quiz-service, а данный эндпоинт не содержит userId. Фронтенд использует `quizStatus` только для выбора `statusFilter` при первом же запуске сессии: `CREATED` → `statusFilter=NEW` (весь пул — новые слова, обычный due/new/reserve-отбор избыточен), `EXISTING` → без `statusFilter` (обычный смешанный отбор). См. `sangraha-service.md` §6/§7.
 
-`wordMappings[]` — маппинг `verseWordId → vocabularyWordId` для каждого успешно обработанного слова, в произвольном порядке (не обязательно совпадает с порядком `words[]` в запросе). sangraha-service использует его, чтобы связать свои `VerseWord` со словарными статьями content-service (`verse_words.vocabulary_word_id`, см. `sangraha-service.md` §2/§3) — по паре `(lemmaIast, stem)`, восстановленной из `verseWordId` дедуплицированных представителей на своей стороне.
+`wordMappings[]` — маппинг `verseWordId → vocabularyWordId` для каждого успешно обработанного слова, в произвольном порядке (не обязательно совпадает с порядком `words[]` в запросе). sangraha-service использует его, чтобы связать свои `VerseWord` со словарными статьями curriculum-service (`verse_words.vocabulary_word_id`, см. `sangraha-service.md` §2/§3) — по паре `(lemmaIast, stem)`, восстановленной из `verseWordId` дедуплицированных представителей на своей стороне.
 
 ### Обработка (`SangrahaVocabularyController` → `VocabularySyncService`, синхронно, в теле HTTP-запроса)
 
@@ -299,7 +299,7 @@ POST /content/internal/sangraha/vocabulary-quiz
 1. `VocabularyCategory` root (уровень произведения): `findByCodeIgnoreCase(workSlug)`, если нет — создать (`code = workSlug`, `nameRu = workTitleRu`, `nameEn = workTitleEn`, `parentId = null`) — категория остаётся общим механизмом тематической классификации лексики (см. `information-architecture.md` §2.3), не специфичным для этого флоу.
 2. `VocabularyCategory` chapter (уровень главы): `findByCodeIgnoreCase("{workSlug}.{chapterSlug}")`, если нет — создать с `parentId = root.id`.
 3. `VocabularyCategory` verse (уровень стиха, на ней строится квиз) и `Quiz` (сущность в коде называется `Lesson`, `LessonType.VOCABULARY`): `code`/`slug = "{workSlug}.{chapterSlug}.verse-{verseId}"` (детерминирован, не рандом — повтор вызова не создаёт дубль), `titleRu/En` — `"{workTitleRu}, стих {verseOrderIndex}"` / `"{workTitleEn}, verse {verseOrderIndex}"`. `upsertQuiz` возвращает пару `(Lesson, wasCreated: boolean)` — `id` идёт в ответ как `quizId`, `wasCreated` определяет `quizStatus` (`true` → `"CREATED"`, `false` → `"EXISTING"`, см. Response выше).
-4. Для каждого слова из `words[]`: dedup по `(wordIast, stem)` в рамках всего словаря content-service (`findByWordIastAndStem`). Если найдено — не создавать новый `VocabularyWord`; связать существующий `wordId` и с `Quiz` этого стиха (если связи ещё нет), и с `chapterCategory` (`VocabularyWordCategory`, если связи ещё нет) — слово может одновременно входить в квиз конкретного стиха **и** в тематическую категорию произведения/главы, это независимые связи. Если не найдено — создать `VocabularyWord` (`wordIast`, `wordDevanagari`, `stem`, `root`, `gender`, `translationRu/En`, `explanationRu/En`) и сразу связать и с квизом стиха, и с категорией главы. Слово с пустым `wordIast` пропускается (не создаётся, в `wordMappings` не попадает); пустой `stem` заменяется на `wordIast`.
+4. Для каждого слова из `words[]`: dedup по `(wordIast, stem)` в рамках всего словаря curriculum-service (`findByWordIastAndStem`). Если найдено — не создавать новый `VocabularyWord`; связать существующий `wordId` и с `Quiz` этого стиха (если связи ещё нет), и с `chapterCategory` (`VocabularyWordCategory`, если связи ещё нет) — слово может одновременно входить в квиз конкретного стиха **и** в тематическую категорию произведения/главы, это независимые связи. Если не найдено — создать `VocabularyWord` (`wordIast`, `wordDevanagari`, `stem`, `root`, `gender`, `translationRu/En`, `explanationRu/En`) и сразу связать и с квизом стиха, и с категорией главы. Слово с пустым `wordIast` пропускается (не создаётся, в `wordMappings` не попадает); пустой `stem` заменяется на `wordIast`.
 5. **Ошибки:** невалидный payload/ошибка БД → HTTP 4xx/5xx с телом ошибки (`ErrorResponse`), транзакция отменяется целиком. Повтор — ответственность sangraha-service (кнопка «Изучить» просто не закэширует slug при ошибке, пользователь может нажать снова, см. `sangraha-service.md` §6, шаг 5).
 
 
@@ -309,7 +309,7 @@ POST /content/internal/sangraha/vocabulary-quiz
 
 ## 12. Вкладка «Примеры» на странице шага склонений
 
-Реальные цитаты из проанализированных стихов sangraha-service для каждой ячейки `(caseType, numberType)` парадигмы склонения (`GET /lessons/{slug}/declension-paradigms?index=N`, §5а), сгруппированные по словоизменительному классу `(vowelType, gender)`. Полная спецификация: [services/content-service/declension-examples.md](./content-service/declension-examples.md).
+Реальные цитаты из проанализированных стихов sangraha-service для каждой ячейки `(caseType, numberType)` парадигмы склонения (`GET /lessons/{slug}/declension-paradigms?index=N`, §5а), сгруппированные по словоизменительному классу `(vowelType, gender)`. Полная спецификация: [services/curriculum-service/declension-examples.md](./curriculum-service/declension-examples.md).
 
 Новая таблица `content.declension_example_groups` (кэш `verseId[]` по группам `(vowel_type, gender, case_type, number_type)`, включая пустые результаты). **Endpoint:** `GET /content/public/lessons/{slug}/examples` (STUDENT). Источник данных — два internal-эндпоинта sangraha-service (`sangraha-service.md` §9): поиск примеров по классу и батч-получение текста/перевода стихов по `verseId[]`.
 

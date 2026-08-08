@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.quiz.config.QuizGeneratorConfig;
+import sm.selflearn.samskrtam.quiz.dto.QuestPoolItemDto;
 import sm.selflearn.samskrtam.quiz.model.ItemType;
 import sm.selflearn.samskrtam.quiz.model.QuizItem;
 import sm.selflearn.samskrtam.quiz.model.QuizItemScore;
@@ -21,15 +22,14 @@ import java.util.stream.Collectors;
  *
  * <p>Алгоритм:
  * <ol>
- *   <li>Получить список externalRefId для scope через ContentClient (вызывающий код)</li>
- *   <li>Присоединить строки quiz_item_score; разделить на due/new/reserve</li>
+ *   <li>Получить список {@link QuestPoolItemDto} для scope</li>
+ *   <li>Присоединить строки quiz_item_score по progress_tag; разделить на due/new/reserve</li>
  *   <li>Приоритизировать due по весовой формуле</li>
  *   <li>Отобрать new не более maxNewPerSession</li>
  *   <li>Добить reserve если нужно</li>
+ *   <li>Добить остатком new сверх maxNewPerSession если нужно</li>
  *   <li>Перемешать с учётом interleaveCategories и minGap</li>
  * </ol>
- *
- * @see <a href="docs/quizzes/quiz-generator-spec.md#section-4">Спецификация §4</a>
  */
 @Service
 @RequiredArgsConstructor
@@ -43,39 +43,62 @@ public class QuizGenerator {
     /**
      * Отобрать список {@link QuizItem} для сессии.
      *
-     * @param userId          идентификатор пользователя
-     * @param itemType        тип элементов (VOCABULARY_WORD, DECLENSION_FORM)
-     * @param externalRefIds  список externalRefId в scope (получен от ContentClient)
+     * @param userId  идентификатор пользователя
+     * @param itemType тип элементов (VOCABULARY_WORD, DECLENSION_FORM)
+     * @param pool    список элементов пула с id и progressTag
      * @return список QuizItem, отсортированный для показа
      */
     public Mono<List<QuizItem>> generate(
             UUID userId,
             ItemType itemType,
-            List<UUID> externalRefIds) {
+            List<QuestPoolItemDto> pool) {
 
-        if (externalRefIds == null || externalRefIds.isEmpty()) {
+        if (pool == null || pool.isEmpty()) {
             return Mono.just(Collections.emptyList());
         }
 
+        // Extract unique progress tags
+        List<String> tags = pool.stream()
+                .map(QuestPoolItemDto::progressTag)
+                .filter(t -> t != null && !t.isBlank())
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (tags.isEmpty()) {
+            // No tags means all items are treated as new
+            return Mono.just(buildAllNewSelection(itemType, pool, config.getSessionSize()));
+        }
+
         return quizItemScoreRepository
-                .findByUserIdAndItemTypeAndExternalRefIdIn(userId, itemType, externalRefIds)
+                .findByUserIdAndItemTypeAndProgressTagIn(userId, itemType, tags)
                 .collectList()
-                .map(scores -> buildSelection(userId, itemType, externalRefIds, scores));
+                .map(scores -> buildSelection(itemType, pool, scores));
+    }
+
+    private List<QuizItem> buildAllNewSelection(ItemType itemType, List<QuestPoolItemDto> pool,
+                                                QuizGeneratorConfig.SessionSizeParams sessionSizeParams) {
+        int sessionSize = sessionSizeParams.getSessionSize();
+        List<QuizItem> selected = new ArrayList<>();
+        List<QuestPoolItemDto> shuffled = new ArrayList<>(pool);
+        Collections.shuffle(shuffled);
+        int take = Math.min(shuffled.size(), sessionSize);
+        for (int i = 0; i < take; i++) {
+            selected.add(new QuizItem(itemType, shuffled.get(i).id()));
+        }
+        return selected;
     }
 
     /**
      * Основной алгоритм отбора (чистая логика, без БД).
      *
-     * @param userId         идентификатор пользователя
      * @param itemType       тип элементов
-     * @param allRefIds      полный список externalRefId в scope
-     * @param existingScores уже имеющиеся строки quiz_item_score для этого userId+itemType+scope
+     * @param pool           список элементов пула с id и progressTag
+     * @param existingScores уже имеющиеся строки quiz_item_score для этих progressTags
      * @return список QuizItem для сессии
      */
     List<QuizItem> buildSelection(
-            UUID userId,
             ItemType itemType,
-            List<UUID> allRefIds,
+            List<QuestPoolItemDto> pool,
             List<QuizItemScore> existingScores) {
 
         QuizGeneratorConfig.SessionSizeParams sessionSizeParams = config.getSessionSize();
@@ -88,46 +111,71 @@ public class QuizGenerator {
         int maxNew = sessionSizeParams.getMaxNewPerSession();
         int dueCap = (int) Math.ceil(sessionSize * sessionSizeParams.getDueCapRatio());
 
-        // Map externalRefId → QuizItemScore
-        Map<UUID, QuizItemScore> scoreMap = existingScores.stream()
-                .collect(Collectors.toMap(QuizItemScore::getExternalRefId, s -> s, (a, b) -> a));
+        // Map progressTag → QuizItemScore
+        Map<String, QuizItemScore> scoreMap = existingScores.stream()
+                .collect(Collectors.toMap(QuizItemScore::getProgressTag, s -> s, (a, b) -> a));
+
+        // Map progressTag → list of quest item ids
+        Map<String, List<UUID>> tagToIds = pool.stream()
+                .filter(p -> p.progressTag() != null && !p.progressTag().isBlank())
+                .collect(Collectors.groupingBy(
+                        QuestPoolItemDto::progressTag,
+                        LinkedHashMap::new,
+                        Collectors.mapping(QuestPoolItemDto::id, Collectors.toList())));
+
+        // Items without a tag go to new pool
+        List<UUID> untaggedIds = pool.stream()
+                .filter(p -> p.progressTag() == null || p.progressTag().isBlank())
+                .map(QuestPoolItemDto::id)
+                .collect(Collectors.toList());
 
         Instant now = Instant.now();
 
-        // Разделяем на due / new / reserve
+        // Разделяем tags на due / new / reserve
         List<UUID> dueItems = new ArrayList<>();
-        List<UUID> newItems = new ArrayList<>();
+        List<UUID> newItems = new ArrayList<>(untaggedIds);
         List<UUID> reserveItems = new ArrayList<>();
 
-        for (UUID refId : allRefIds) {
-            QuizItemScore score = scoreMap.get(refId);
+        for (Map.Entry<String, List<UUID>> entry : tagToIds.entrySet()) {
+            String tag = entry.getKey();
+            List<UUID> ids = entry.getValue();
+            QuizItemScore score = scoreMap.get(tag);
+
             if (score == null) {
                 // Нет строки = NEW
-                newItems.add(refId);
+                newItems.addAll(ids);
             } else if (score.getNextReviewAt() != null
                     && !score.getNextReviewAt().isAfter(now)) {
                 // nextReviewAt <= now → due
-                dueItems.add(refId);
+                dueItems.addAll(ids);
             } else if (ScoreCalculator.determineBucket(true, score.getScore(), bucketParams)
                     == ScoreCalculator.Bucket.MASTERED) {
-                // MASTERED → reserve (либо skipped до masteredCooldown)
-                // Проверка masteredCooldown: если nextReviewAt + cooldown прошёл — показать
                 if (score.getNextReviewAt() != null) {
                     Instant cooldownEnd = score.getNextReviewAt()
                             .plusSeconds(generalParams.getMasteredCooldown() * 86400L);
                     if (!cooldownEnd.isAfter(now)) {
-                        reserveItems.add(refId);
+                        reserveItems.addAll(ids);
                     }
                 }
             } else {
-                // LEARNING / DIFFICULT, не просрочено → reserve
-                reserveItems.add(refId);
+                reserveItems.addAll(ids);
             }
         }
 
-                        // 3. Приоритизация due — делегирует в DueItemPriorityComparator
+        // 3. Приоритизация due
         List<QuizItem> selected = new ArrayList<>();
-        dueItems.sort(DueItemPriorityComparator.comparingByPriority(scoreMap, dueSortParams, now));
+        // Map quest_item id → its tag's score for sorting
+        Map<UUID, QuizItemScore> idScoreMap = new HashMap<>();
+        for (Map.Entry<String, List<UUID>> entry : tagToIds.entrySet()) {
+            QuizItemScore s = scoreMap.get(entry.getKey());
+            if (s != null) {
+                for (UUID id : entry.getValue()) {
+                    idScoreMap.put(id, s);
+                }
+            }
+        }
+
+        dueItems.sort(DueItemPriorityComparator.comparingByPriority(idScoreMap, dueSortParams, now));
         int dueCount = Math.min(dueItems.size(), dueCap);
         for (int i = 0; i < dueCount; i++) {
             selected.add(new QuizItem(itemType, dueItems.get(i)));
@@ -137,7 +185,6 @@ public class QuizGenerator {
         int remainingNew = Math.min(newItems.size(), maxNew);
         int roomAfterDue = sessionSize - selected.size();
         int newToTake = Math.min(remainingNew, roomAfterDue);
-        // Случайный порядок для new
         Collections.shuffle(newItems);
         for (int i = 0; i < newToTake; i++) {
             selected.add(new QuizItem(itemType, newItems.get(i)));
@@ -153,9 +200,16 @@ public class QuizGenerator {
             }
         }
 
-        // 6. Перемешивание с учётом minGapBetweenSameWordRepeats
-        // Поскольку в текущей итерации каждый QuizItem уникален в сессии,
-        // межкатегорийное перемешивание реализуем простым shuffle-финальным
+        // 5b. Добить остатком new сверх maxNewPerSession
+        int roomAfterReserve = sessionSize - selected.size();
+        if (roomAfterReserve > 0 && newToTake < newItems.size()) {
+            int overflowToTake = Math.min(roomAfterReserve, newItems.size() - newToTake);
+            for (int i = newToTake; i < newToTake + overflowToTake; i++) {
+                selected.add(new QuizItem(itemType, newItems.get(i)));
+            }
+        }
+
+        // 6. Перемешивание
         if (generalParams.isInterleaveCategories() && selected.size() > 1) {
             Collections.shuffle(selected);
         }
@@ -166,14 +220,12 @@ public class QuizGenerator {
     /**
      * Отобрать список {@link QuizItem} для сессии с ручным фильтром по бакету (§4 п.«2а»).
      * Делегирует в {@link QuizStatusFilteredGenerator}.
-     *
-     * @return Mono со списком QuizItem; если пул пуст — Mono.empty() (→ 404)
      */
     public Mono<List<QuizItem>> generateStatusFiltered(
             UUID userId,
             ItemType itemType,
-            List<UUID> externalRefIds,
+            List<QuestPoolItemDto> pool,
             StatusFilter statusFilter) {
-        return statusFilteredGenerator.generate(userId, itemType, externalRefIds, statusFilter);
+        return statusFilteredGenerator.generate(userId, itemType, pool, statusFilter);
     }
 }

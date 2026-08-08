@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.quiz.model;
 
+import io.r2dbc.postgresql.codec.Json;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -54,4 +55,39 @@ public class SessionQuestion {
      * Копируется из GeneratedQuizQuestionDto.caseEnding при старте сессии.
      */
     private String caseEnding;
+
+    // ===================== Curriculum-driven fields (V14) =====================
+
+    /**
+     * Curriculum answer mode (FREE_TEXT | SINGLE_CHOICE | MATCHING).
+     * Non-null only for questions composed from curriculum.quest_item.
+     */
+    private String answerMode;
+
+    /**
+     * Canonical answer text for curriculum questions; NULL for MATCHING.
+     */
+    private String correctAnswer;
+
+    /**
+     * Rendered option list as JSONB array of {"id", "text"} objects, the correct option
+     * included. Fixed at session start so resume renders identical options/ids.
+     */
+    private Json options;
+
+    /**
+     * Materialized curriculum quest_item payload, passed through unparsed.
+     */
+    private Json payload;
+
+    /**
+     * curriculum.topic.code the question belongs to; NULL for legacy lesson-based questions.
+     */
+    private String topicCode;
+
+    /**
+     * Progress grouping tag: caseType|numberType|gender for declensions,
+     * formIast/lemma for vocabulary. Used as the key in quiz_item_score.
+     */
+    private String progressTag;
 }

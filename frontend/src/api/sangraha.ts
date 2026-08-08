@@ -5,13 +5,22 @@ import type {
   ChapterVersesDto,
   VerseDetailDto,
   VerseBatchResponseDto,
+  WorksClassGroupDto,
 } from '../types/sangraha';
 
 const BASE = '/api/v1/sangraha';
 
 export const sangrahaApi = {
-  // Works (read-only)
-  getAllWorks: () => api.get<WorkSummaryDto[]>(`${BASE}/works`),
+// Works (read-only, отфильтрованные по классификатору)
+  getAllWorks: (classIds?: string[]) =>
+    api.get<WorkSummaryDto[]>(
+      classIds && classIds.length > 0
+        ? `${BASE}/works?${classIds.map((id) => `classId=${encodeURIComponent(id)}`).join('&')}`
+        : `${BASE}/works`,
+    ),
+
+  // Классификатор произведений: дерево по classification (для дропдаунов)
+  getWorksClasses: () => api.get<WorksClassGroupDto[]>(`${BASE}/works/classes`),
 
   getWorkTree: (workSlug: string) =>
     api.get<WorkTreeDto>(`${BASE}/works/${workSlug}`),

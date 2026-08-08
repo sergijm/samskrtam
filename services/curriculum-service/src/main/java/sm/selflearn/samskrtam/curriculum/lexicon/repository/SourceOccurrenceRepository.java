@@ -1,6 +1,8 @@
 package sm.selflearn.samskrtam.curriculum.lexicon.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.SourceOccurrence;
 
@@ -18,4 +20,11 @@ public interface SourceOccurrenceRepository extends JpaRepository<SourceOccurren
     long countBySourceId(UUID sourceId);
 
     long countDistinctByLexemeIdAndSourceId(UUID lexemeId, UUID sourceId);
+
+    long countDistinctBySourceId(UUID sourceId);
+
+    @Query("select distinct o.lexeme.id from SourceOccurrence o where o.source.id = :sourceId "
+            + "and (:prefix is null or o.locationRef like :prefix || '%')")
+    List<UUID> findLexemeIdsBySourceIdAndLocationPrefix(
+            @Param("sourceId") UUID sourceId, @Param("prefix") String prefix);
 }

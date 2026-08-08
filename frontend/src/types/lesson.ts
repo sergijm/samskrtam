@@ -66,7 +66,6 @@ export interface GrammarLesson {
   learnedQuestions: number;
   progressPercent:  number;
     statusSummary?:   LessonStatusSummary;
-  questions:        GrammarQuestionProgress[];
 }
 
 export interface AnswerHistoryEntry {

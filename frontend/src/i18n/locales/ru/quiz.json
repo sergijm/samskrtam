@@ -18,7 +18,16 @@
     "completeQuiz": "Завершить квиз",
     "completeSessionError": "Не удалось завершить сессию квиза: {{message}}",
     "retakeQuiz": "Повторить квиз",
-    "startNewQuiz": "Начать новый"
+    "startNewQuiz": "Начать новый",
+    "freeTextPlaceholder": "Введите ответ",
+    "submit": "Ответить",
+    "matching": {
+      "checkButton": "Проверить",
+      "resetHint": "Нажмите ещё раз, чтобы отменить выбор"
+    },
+    "freeText": {
+      "placeholder": "Введите словоформу…"
+    }
   },
   "quizzes": {
     "title": "Список квизов",

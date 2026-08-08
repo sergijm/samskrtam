@@ -10,7 +10,7 @@ task-curriculum-03-entities.md, task-curriculum-04-dto-mapper.md, task-curriculu
 1. `@RestController @RequestMapping("/api/v2/curriculum")`.
 2. `GET /topics` (`?includeEvergreen=true|false`) → `List<TopicDto>`, без вычисления слоёв (просто `topicRepository.findAll()` + опциональный фильтр по `isEvergreen`).
 3. `GET /topics/{id}` → объект `{topic, prerequisites}`; `prerequisites` — через `topicPrerequisiteRepository.findByIdTopicId(id)`, замаппленные в `TopicPrerequisiteDto` (с резолвленной темой). `topic.appearsInLevels` заполняется join-запросом по `complex_quiz_topic`/`complex_quiz` (см. task-07) плюс собственный `learningLevel` темы первым элементом списка. 404 (с `ErrorResponseDto`), если темы нет.
-4. `POST /topics` — только роль `ADMIN` (`@PreAuthorize("hasRole('ADMIN')")` или эквивалент, используемый в других сервисах, см. `content-service.md` §5); 409, если `code` уже занят (проверка `existsByCode` до insert, не полагаться на constraint exception).
+4. `POST /topics` — только роль `ADMIN` (`@PreAuthorize("hasRole('ADMIN')")` или эквивалент, используемый в других сервисах, см. `curriculum-service.md` §5); 409, если `code` уже занят (проверка `existsByCode` до insert, не полагаться на constraint exception).
 5. `PUT /topics/{id}` — ADMIN, 404 если не найдена, `code` из тела запроса игнорируется/отсутствует в DTO.
 6. `DELETE /topics/{id}` — ADMIN, 404 если не найдена, 204 при успехе (каскад удаления prerequisite обеспечивает БД, дополнительный код не нужен).
 7. `GET /topics/{id}/prerequisites` — 404 если тема не найдена, иначе список `TopicPrerequisiteDto`.

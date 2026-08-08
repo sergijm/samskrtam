@@ -1,18 +1,20 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Toast } from 'primereact/toast';
-import { PartOfSpeech } from '../../types/lexicon';
+import type { LexiconPos } from '../../types/lexicon';
 import { LexiconSectionHeader } from './LexiconSectionHeader';
 import { useLexiconToast } from './useLexiconToast';
+import { useLexiconLocale } from '../../hooks/useLexiconLocale';
 
 interface LexiconPosProps {
-  pos: PartOfSpeech[];
+  pos: LexiconPos[];
 }
 
 /** «Части речи» — компактные чипы, отдельное измерение от «Тем». */
 const LexiconPos: React.FC<LexiconPosProps> = ({ pos }) => {
   const { t } = useTranslation();
   const { toast, showComingSoon } = useLexiconToast();
+  const locale = useLexiconLocale();
 
   return (
     <>
@@ -32,7 +34,7 @@ const LexiconPos: React.FC<LexiconPosProps> = ({ pos }) => {
               className="lexicon-chip cursor-pointer"
               onClick={() => showComingSoon()}
             >
-              <span>{t(part.nameKey)}</span>
+              <span>{locale({ ru: part.nameRu, en: part.nameEn })}</span>
               <span className="lexicon-chip-count">{part.wordCount}</span>
             </button>
           ))}

@@ -26,7 +26,7 @@ SamskrtamApp построен как референсная реализация
 - Аутентификация: Keycloak (собственный аккаунт + Google + Mail.ru)
 - Горизонтальное масштабирование: stateless-сервисы, Kafka для async
 - Bilingual UI (ru / en)
-- [Упражнения по сандхи (Eamenau)](./services/content-service/eamenau.md) — разбор правил сандхи на материале учебника Eméneau
+- [Упражнения по сандхи (Eamenau)](./services/curriculum-service/eamenau.md) — разбор правил сандхи на материале учебника Eméneau
 
 ### Non-Goals (v1.0)
 - Mobile native app
@@ -41,12 +41,12 @@ SamskrtamApp построен как референсная реализация
 | api-gateway | Java 21 | WebFlux (Reactor) | Gateway требует реактивный стек |
 | feature-flag-service | Java 21 | Virtual Threads | Простой CRUD + Redis, реактивность избыточна |
 | user-service | Java 21 | Virtual Threads | Профили, регистрация, аватарки, блокировка |
-| content-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов, иерархические категории для VOCABULARY-квизов, домен Eamenau (упражнения по сандхи) |
+| curriculum-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов, иерархические категории для VOCABULARY-квизов, домен Eamenau (упражнения по сандхи) |
 | quiz-service | Java 21 | WebFlux (Reactor) + R2DBC | Единый сервис прохождения всех квизов, публикация событий в Kafka через Outbox Pattern |
 | dictionary-service | Java 21 | Virtual Threads | Поиск по словарю, fallback на внешнее API |
 | statistics-service | Java 21 | Kafka Streams | Расчёт статистики и лидерборда |
 | sangraha-service | Java 21 | Virtual Threads | Санскритские произведения, LLM-анализ стихов |
-| curriculum-service | Java 21 | Virtual Threads | Учебный план: темы (Topic) и мягкие prerequisite-связи, независимая схема БД, без наполнения/квизов |
+| curriculum-service | Java 21 | Virtual Threads | Учебный план: темы (Topic) и мягкие prerequisite-связи + модуль lexicon (учебная лексика, таксономии, batch-импорт из sangraha-service, см. `services/curriculum-service.md` §9), независимая схема БД, без наполнения квизов-заданий |
 | shared/samskrtam-dtos | Java 21 | — | Общий модуль DTO и событий для квизов, контента и статистики |
 | shared/common-dto | Java 21 | — | Общие DTO для всех сервисов |
 
@@ -69,7 +69,7 @@ graph TD
   end
 
   subgraph Content ["📝 Content — Java 21 + Virtual Threads"]
-    CS[content-service\nнастройки и содержание квизов]
+    CS[curriculum-service\nнастройки и содержание квизов]
   end
 
   subgraph Quiz ["📚 Quiz Service — Java 21 + WebFlux (Reactor)"]
@@ -120,15 +120,15 @@ graph TD
 | [services/api-gateway.md](./services/api-gateway.md) | Java 21 + WebFlux | Spring Cloud Gateway |
 | [services/feature-flag-service.md](./services/feature-flag-service.md) | Java 21 + VT | Feature Flag Service |
 | [services/user-service.md](./services/user-service.md) | Java 21 + VT | Логин, регистрация, OAuth, управление паролем |
-| [services/content-service.md](./services/content-service.md) | Java 21 + VT | Настройки и содержание всех квизов |
-| [services/content-service/eamenau.md](./services/content-service/eamenau.md) | домен content-service | Упражнения по сандхи, фонемная система |
+| [services/curriculum-service.md](./services/curriculum-service.md) | Java 21 + VT | Настройки и содержание всех квизов |
+| [services/curriculum-service/eamenau.md](./services/curriculum-service/eamenau.md) | домен curriculum-service | Упражнения по сандхи, фонемная система |
 | [services/quest-engine.md](./services/quest-engine.md) | Java 21 | quiz-service — прохождение квизов, прогресс, spaced repetition |
 | [services/quest-catalog.md](./services/quest-catalog.md) | — | Каталог типов квестов по разделам грамматики и лексики (реализованные и план) |
 | [services/quest-types-overview.md](./services/quest-types-overview.md) | — | Полная инвентаризация типов квестов: вариации, оценка объёма, приоритет по milestone |
 | [services/curriculum.md](./services/curriculum.md) | — | Учебный план: темы, мягкие зависимости между ними, граф по слоям, соответствие Milestones |
 | [services/curriculum-service.md](./services/curriculum-service.md) | Java 21 + VT | Независимый сервис: ~70 Topic, TopicPrerequisite, LearningLevel (L0–L6), ComplexQuiz (Mixed Practice/Level Assessment) — без наполнения/квизов, OpenAPI v2 |
 | [services/learning-materials.md](./services/learning-materials.md) | Java 21 | Теория, литература, сканы, видео — привязка к темам, вне модели квестов |
-| [services/quest-item-model.md](./services/quest-item-model.md) | Java 21 | Базовые интерфейсы/абстрактные классы модели квестов (content-service + quiz-service) |
+| [services/quest-item-model.md](./services/quest-item-model.md) | Java 21 | Базовые интерфейсы/абстрактные классы модели квестов (curriculum-service + quiz-service) |
 | [quests/](./quests/README.md) | — | Юзер-стори по типам квестов, разложенные по доменам грамматики и лексики |
 | [services/dictionary-service.md](./services/dictionary-service.md) | Java 21 + VT | Словарь + внешнее API |
 | [services/statistics-service.md](./services/statistics-service.md) | Java 21 + VT | Статистика |

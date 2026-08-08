@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import sm.selflearn.samskrtam.curriculum.model.LearningLevel;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
+import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,4 +20,8 @@ public interface TopicRepository extends JpaRepository<Topic, UUID> {
     List<Topic> findByLearningLevel(LearningLevel level, Sort sort);
 
     long countByLearningLevel(LearningLevel level);
+
+    List<Topic> findByTargetItemCountGreaterThan(int targetItemCount);
+
+    List<Topic> findByDomain(TopicDomain domain);
 }

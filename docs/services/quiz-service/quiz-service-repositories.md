@@ -63,8 +63,8 @@ selected_option_id — id варианта ответа, присвоенный 
 - explanation_ru (TEXT)
 - explanation_en (TEXT)
 - declension_stem_id (UUID)
-- stem_devanagari (VARCHAR, из content-service DeclensionStem.stemDevanagari)
-- stem_translation_ru (VARCHAR, из content-service DeclensionStem.translationRu)
+- stem_devanagari (VARCHAR, из curriculum-service DeclensionStem.stemDevanagari)
+- stem_translation_ru (VARCHAR, из curriculum-service DeclensionStem.translationRu)
 - stem_translation_en (VARCHAR)
 - target_case (VARCHAR)
 - target_number (VARCHAR)
@@ -83,7 +83,7 @@ selected_option_id — id варианта ответа, присвоенный 
 
 ## 6. Генерация вариантов ответа (дистракторы) — generate-on-read, не персистится
 
-DeclensionOptionGeneratorService (для DECLENSIONS/CONJUGATIONS) и LexicalOptionGeneratorService (для VOCABULARY) генерируют варианты ответа заново при каждом обращении к вопросу (start/resume): запрашивают у content-service все формы основы (getDeclensionForms) или слова урока, выбирают до 3 дистракторов, шафлят и присваивают UUID. Ничего не сохраняется.
+DeclensionOptionGeneratorService (для DECLENSIONS/CONJUGATIONS) и LexicalOptionGeneratorService (для VOCABULARY) генерируют варианты ответа заново при каждом обращении к вопросу (start/resume): запрашивают у curriculum-service все формы основы (getDeclensionForms) или слова урока, выбирают до 3 дистракторов, шафлят и присваивают UUID. Ничего не сохраняется.
 
 Последствие: при повторном рендере ещё не отвеченного вопроса набор неправильных вариантов может отличаться от предыдущего показа. Открытый вопрос: сидировать Random от questionId для стабильности.
 

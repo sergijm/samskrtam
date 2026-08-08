@@ -243,6 +243,79 @@ TopicGraphResponse:
         $ref: '#/TopicDto'
       description: Topics with isEvergreen=true, not part of the layered graph.
 
+TopicTypeGroup:
+  type: string
+  enum: [vocabulary, declension, sandhi, conjugation, syntax, other]
+  description: UI filter/icon group of a topic on the learning map page (mirrors frontend TypeGroup).
+
+LearnTopicStatus:
+  type: string
+  enum: [mastered, in_progress, recommended, review, available]
+  description: Per-user progress state of a topic. Currently generated randomly (real progress tracking is an open question).
+
+LearnTopicDto:
+  type: object
+  required: [id, code, titleRu, titleEn, typeGroup, status, progressPercent, prerequisites]
+  properties:
+    id:
+      type: string
+      format: uuid
+    code:
+      type: string
+      example: a-stem-masc
+      description: Stable topic slug, used as the card id.
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    typeGroup:
+      $ref: '#/TopicTypeGroup'
+    route:
+      type: string
+      nullable: true
+      description: Frontend route for the "Study / Continue" button.
+    status:
+      $ref: '#/LearnTopicStatus'
+    progressPercent:
+      type: integer
+      minimum: 0
+      maximum: 100
+    prerequisites:
+      type: array
+      items:
+        type: string
+      description: Prerequisite topic codes (UI hints only, never blocking).
+
+LearnLayerDto:
+  type: object
+  required: [id, titleRu, titleEn, alwaysAvailable, topics]
+  properties:
+    id:
+      type: string
+      example: L0
+      description: L0..L6 for learning levels, or "always" for the evergreen layer.
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    alwaysAvailable:
+      type: boolean
+      description: True for the evergreen layer (Mixed review / Error correction).
+    topics:
+      type: array
+      items:
+        $ref: '#/LearnTopicDto'
+
+LearnGraphResponse:
+  type: object
+  required: [layers]
+  properties:
+    layers:
+      type: array
+      items:
+        $ref: '#/LearnLayerDto'
+      description: L0..L6 layers plus a final alwaysAvailable evergreen layer.
+
 ErrorResponse:
   type: object
   required: [status, message]

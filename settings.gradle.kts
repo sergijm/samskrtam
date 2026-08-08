@@ -7,7 +7,6 @@ include(
     ":shared:common-dtos",
     ":infrastructure:api-gateway",
     ":services:user-service",
-    ":services:content-service",
     ":services:quiz-service",
     ":services:statistics-service",
     ":services:dictionary-service",

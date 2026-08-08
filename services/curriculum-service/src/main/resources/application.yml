@@ -38,6 +38,14 @@ spring:
     schemas: curriculum
     locations: classpath:db/migration
 
+curriculum:
+  quest-items:
+    declension-match:
+      pairs-per-item: 5
+
+sangraha-service:
+  url: ${SANGRAHA_SERVICE_URL:}
+
 management:
   server:
     port: ${MANAGEMENT_PORT}

@@ -396,6 +396,25 @@ paths:
               schema:
                 $ref: 'schemas/curriculum.yaml#/ErrorResponse'
 
+  /curriculum/learn-graph:
+    get:
+      tags: [levels]
+      summary: Learning map page payload — topics grouped by LearningLevel plus an evergreen layer
+      description: >
+        Backing payload for the /dashboard curriculum map. Layers are grouped by
+        authored LearningLevel (L0..L6) plus one alwaysAvailable evergreen layer.
+        Per-user progress (status + progressPercent) is currently generated
+        randomly per request — real progress tracking is an open question
+        (see curriculum-service.md §8).
+      operationId: getLearnGraph
+      responses:
+        '200':
+          description: Layered learning map with per-topic progress
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/LearnGraphResponse'
+
   /curriculum/graph:
     get:
       tags: [graph]

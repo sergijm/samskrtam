@@ -7,7 +7,6 @@ import sm.selflearn.samskrtam.content.dto.LessonItemResponse;
 import sm.selflearn.samskrtam.quiz.dto.QuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse;
 import sm.selflearn.samskrtam.quiz.model.QuizSession;
-import sm.selflearn.samskrtam.quiz.service.ContentClient;
 import sm.selflearn.samskrtam.quiz.service.DeclensionOptionGeneratorService;
 import sm.selflearn.samskrtam.quiz.service.LexicalOptionGeneratorService;
 
@@ -16,9 +15,6 @@ import java.util.UUID;
 
 @Mapper(componentModel = "spring")
 public abstract class QuizSessionMapper {
-
-    @Autowired
-    protected ContentClient contentClient;
 
     @Autowired
     protected DeclensionOptionGeneratorService declensionOptionGeneratorService;

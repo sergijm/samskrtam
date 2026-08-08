@@ -463,3 +463,43 @@ AnalyzeVersesResponse:
       description: >-
         Id реально загруженных стихов, принятых к анализу (не найденные/удалённые
         исключены молча).
+
+# --- Классификатор произведений (works_class) ---
+WorksClassTreeNode:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    parentId:
+      type: string
+      format: uuid
+      nullable: true
+    code:
+      type: string
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    titleSaIast:
+      type: string
+    titleSaDeva:
+      type: string
+      nullable: true
+    sortOrder:
+      type: integer
+    children:
+      type: array
+      items:
+        $ref: '#/WorksClassTreeNode'
+
+WorksClassGroup:
+  type: object
+  required: [classification, classes]
+  properties:
+    classification:
+      type: string
+    classes:
+      type: array
+      items:
+        $ref: '#/WorksClassTreeNode'

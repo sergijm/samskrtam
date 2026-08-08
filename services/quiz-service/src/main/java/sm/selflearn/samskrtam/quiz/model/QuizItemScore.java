@@ -14,7 +14,7 @@ import java.util.UUID;
  * Единая модель прогресса для всех типов квизов (ADR-007).
  *
  * <p>Заменяет {@link WordScore} и {@link GrammarFormScore}.
- * Абстракция QuizItem = (itemType, externalRefId).
+ * Абстракция QuizItem = (itemType, progressTag).
  * Нет строки = NEW (score не хранится, статус вычисляется лениво из score).
  *
  * <p>Физические FK на content-service отсутствуют — целостность эвентуальная (§2.2 спеки).
@@ -36,7 +36,11 @@ public class QuizItemScore {
 
     private ItemType itemType;
 
-    private UUID externalRefId;
+    /**
+     * Progress grouping tag: caseType|numberType|gender for declensions,
+     * formIast/lemma for vocabulary.
+     */
+    private String progressTag;
 
     /** Текущее значение 0-100. Расчёт по формуле §2.5. */
     private int score;

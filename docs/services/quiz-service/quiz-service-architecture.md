@@ -9,12 +9,12 @@
 Единый сервис для прохождения квизов всех типов (склонения, спряжения, лексика). Обрабатывает жизненный цикл сессии: старт, ответы, завершение. После завершения публикует события в Kafka через Outbox Pattern.
 
 Разделение ответственности:
-- content-service — что есть в квизах (данные, настройки)
+- curriculum-service — что есть в квизах (данные, настройки)
 - quiz-service — как пользователь их проходит (сессии, ответы, события)
 
 ## 2. Стек
 
-WebFlux выбран осознанно из-за интенсивного I/O: одновременные обращения к content-service, запись в Postgres, публикация в Kafka. Реактивный pipeline позволяет держать всё в одном неблокирующем потоке.
+WebFlux выбран осознанно из-за интенсивного I/O: одновременные обращения к curriculum-service, запись в Postgres, публикация в Kafka. Реактивный pipeline позволяет держать всё в одном неблокирующем потоке.
 
 Следствие: весь стек реактивный:
 - База данных: R2DBC (не JPA/Hibernate)
@@ -33,9 +33,9 @@ build.gradle.kts:
 - postgresql (для Flyway)
 - samskrtam-dtos (shared)
 
-## 4. Интеграция с content-service (ContentClient)
+## 4. Интеграция с curriculum-service (ContentClient)
 
-WebClient для взаимодействия с content-service:
+WebClient для взаимодействия с curriculum-service:
 - generateQuizData(UUID lessonId, String userLocale): Monо<GeneratedQuizData> — POST generate-quiz-data, вызывается только на start
 - getDeclensionForms(UUID declensionStemId): Mono<List<DeclensionFormDto>> — для генерации дистракторов (вызывается на каждом рендере вопроса)
 - getDeclensionStemsForLesson(String slug)
@@ -65,7 +65,7 @@ content.declension_stems.stem_devanagari/translation_ru/en -> DeclensionQuizGene
 - stemTranslationEn: string
 
 Затронутые компоненты:
-- content-service: DeclensionStem, QuestionResponse, GeneratedQuizQuestionDto
+- curriculum-service: DeclensionStem, QuestionResponse, GeneratedQuizQuestionDto
 - quiz-service: SessionQuestion, SessionQuestionMapper, миграция session_questions
 - frontend: SessionQuestion в types/quiz.ts, рендер в QuizQuestionPanel.tsx
 

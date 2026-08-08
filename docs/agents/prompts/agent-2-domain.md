@@ -9,7 +9,7 @@
 | Сервис | Язык | Async | Порт | Base package |
 |---|---|---|---|---|
 | user-service | Java 21 | Virtual Threads | 8087 | `sm.selflearn.samskrtam.user` |
-| content-service | Java 21 | Virtual Threads | 8081 | `sm.selflearn.samskrtam.content` |
+| curriculum-service | Java 21 | Virtual Threads | 8081 | `sm.selflearn.samskrtam.content` |
 | quiz-service | Java 21 | WebFlux + R2DBC | 8082 | `sm.selflearn.samskrtam.quiz` |
 | dictionary-service | Java 21 | Virtual Threads | 8085 | `sm.selflearn.samskrtam.dictionary` |
 | statistics-service | Java 21 | Kafka Streams | 8086 | `sm.selflearn.samskrtam.statistics` |
@@ -18,7 +18,7 @@
 
 Перед задачей читай спецификацию конкретного сервиса:
 - `docs/services/user-service.md`
-- `docs/services/content-service.md`
+- `docs/services/curriculum-service.md`
 - `docs/quest-engine.md`
 - `docs/services/dictionary-service.md`
 - `docs/services/statistics-service.md`
@@ -31,7 +31,7 @@
 - Только R2DBC — JPA/Hibernate несовместимы с WebFlux
 - Kafka-события публиковать ТОЛЬКО через Outbox Pattern (вставка в таблицу `quiz.outbox_events`, не прямой publish)
 - `OutboxEventPublisherService` читает PENDING события по расписанию `${APP_OUTBOX_FIXED_DELAY_MS}`
-- WebClient для HTTP к content-service, не RestTemplate
+- WebClient для HTTP к curriculum-service, не RestTemplate
 
 **Все сервисы:**
 - Никаких дефолтов в `application.yml`: `${VAR:default}` — запрещено

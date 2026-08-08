@@ -185,7 +185,7 @@ class ScoreCalculatorTest {
         "2.5, 0",   // < 50, halfway → floor
         "2.6, 5",
         "7.4, 5",
-        "7.5, 10",  // < 50, halfway → floor
+        "7.5, 5",   // < 50, halfway → floor
         "7.6, 10",
         "47.4, 45",
         "47.5, 45", // < 50, halfway → floor

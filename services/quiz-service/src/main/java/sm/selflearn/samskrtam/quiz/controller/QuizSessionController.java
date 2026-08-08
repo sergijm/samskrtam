@@ -31,7 +31,9 @@ public class QuizSessionController {
         @ApiResponse(responseCode = "404", description = "Quiz not found")
                 public Mono<StartOrResumeResponse> startSession(
                 @PathVariable String slug,
-                @RequestParam UUID lessonId,
+                @RequestParam(required = false) UUID lessonId,
+                @RequestParam(required = false) String topicCode,
+                @RequestParam(defaultValue = "10") int count,
                 @RequestHeader("X-User-Id") UUID userId,
                 @RequestHeader("X-User-Locale") String userLocale,
                 @RequestParam(required = false) FilterScope filterScope,
@@ -41,6 +43,9 @@ public class QuizSessionController {
                 @RequestParam(required = false) StatusFilter statusFilter,
                 @RequestParam(required = false) String filterVowelTypes,
                 @RequestParam(required = false) String filterGenders) {
+            if (topicCode != null && !topicCode.isBlank()) {
+                return quizSessionService.startOrResumeSessionByTopic(topicCode, count, userId, userLocale);
+            }
             return quizSessionService.startOrResumeSession(lessonId, userId, userLocale,
                     filterScope, filterCaseTypes, filterNumberTypes, filterCombinations,
                     statusFilter, filterVowelTypes, filterGenders);
@@ -52,7 +57,9 @@ public class QuizSessionController {
         @ApiResponse(responseCode = "404", description = "Quiz not found")
         public Mono<StartOrResumeResponse> startOrResumeSession(
                 @PathVariable String slug,
-                @RequestParam UUID lessonId,
+                @RequestParam(required = false) UUID lessonId,
+                @RequestParam(required = false) String topicCode,
+                @RequestParam(defaultValue = "10") int count,
                 @RequestHeader("X-User-Id") UUID userId,
                 @RequestHeader("X-User-Locale") String userLocale,
                 @RequestParam(required = false) FilterScope filterScope,
@@ -62,6 +69,9 @@ public class QuizSessionController {
                 @RequestParam(required = false) StatusFilter statusFilter,
                 @RequestParam(required = false) String filterVowelTypes,
                 @RequestParam(required = false) String filterGenders) {
+            if (topicCode != null && !topicCode.isBlank()) {
+                return quizSessionService.startOrResumeSessionByTopic(topicCode, count, userId, userLocale);
+            }
             return quizSessionService.startOrResumeSession(lessonId, userId, userLocale,
                     filterScope, filterCaseTypes, filterNumberTypes, filterCombinations,
                     statusFilter, filterVowelTypes, filterGenders);

@@ -1,9 +1,11 @@
 /**
  * Lexicon domain types — стартовая страница «Лексика».
  *
- * UI работает с этими DTO через `LexiconService` (см. src/services/lexiconService.ts).
- * Сейчас данные приходят из mock-репозитория, позже — из API, без изменения UI.
- * `nameKey` — i18n-ключ для локализации; API будет возвращать id, UI переводит.
+ * Данные приходят из curriculum-service GET /api/v2/curriculum/lexicon через
+ * `LexiconService` (см. src/services/lexiconService.ts).
+ * Локализуемые подписи приходят с бэкенда как пары ru/en и выбираются по
+ * текущей локали (см. src/store/localeStore.ts) — таксономия слишком велика,
+ * чтобы перечислять её ключами в lexicon.json.
  */
 
 /** Общий прогресс по всему словарю (2000 слов) */
@@ -31,22 +33,25 @@ export interface FrequencyBand {
 /** Семантическая тема */
 export interface LexicalTopic {
   id: string;
-  nameKey: string;
+  nameRu: string;
+  nameEn: string;
   wordCount: number;
   masteredCount: number;
 }
 
 /** Часть речи */
-export interface PartOfSpeech {
+export interface LexiconPos {
   id: string;
-  nameKey: string;
+  nameRu: string;
+  nameEn: string;
   wordCount: number;
 }
 
 /** Произведение / источник лексики */
 export interface LexicalSource {
   id: string;
-  title: string;
+  titleRu: string;
+  titleEn: string;
   devanagari?: string;
   wordCount: number;
   masteredCount: number;
@@ -55,15 +60,17 @@ export interface LexicalSource {
 /** Пользовательский список */
 export interface UserCollection {
   id: string;
-  nameKey: string;
+  name: string;
   wordCount: number;
 }
 
 /** Готовый пресет «Быстрый старт» */
 export interface QuickStartPreset {
   id: string;
-  titleKey: string;
-  metaKey: string;
+  titleRu: string;
+  titleEn: string;
+  metaRu: string;
+  metaEn: string;
 }
 
 /** Агрегированные данные стартовой страницы лексики */
@@ -72,7 +79,7 @@ export interface LexiconDashboardData {
   today: LexiconToday;
   frequencyBands: FrequencyBand[];
   topics: LexicalTopic[];
-  pos: PartOfSpeech[];
+  pos: LexiconPos[];
   sources: LexicalSource[];
   collections: UserCollection[];
   quickStart: QuickStartPreset[];

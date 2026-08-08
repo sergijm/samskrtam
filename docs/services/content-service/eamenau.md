@@ -2,7 +2,7 @@
 
 > Статус: реализовано в коде, не описано в документации  
 > Домен: `eamenau` (отдельная PostgreSQL-схема)  
-> Расположение кода: `services/content-service/src/main/java/sm/selflearn/samskrtam/eamenau/`  
+> Расположение кода: `services/curriculum-service/src/main/java/sm/selflearn/samskrtam/eamenau/`  
 > Фронтенд: `frontend/src/pages/eamenau/`, `frontend/src/components/eamenau/`
 
 ---
@@ -62,7 +62,7 @@ Eamenau — учебный модуль на основе упражнений �
 ## API Endpoints
 
 Базовый путь: `/api/v1/eamenau`  
-Сервис: `content-service` (порт 8081)  
+Сервис: `curriculum-service` (порт 8081)  
 Аутентификация: все endpoint'ы доступны аутентифицированным пользователям (STUDENT+)  
 Исключение: `PUT /exercises/solutions/{id}` — только ADMIN
 
@@ -250,9 +250,9 @@ Phoneme >── PlaceOfArticulation
 
 ## Связанные файлы
 
-### Backend (content-service)
+### Backend (curriculum-service)
 
-**Модели** (`services/content-service/src/main/java/sm/selflearn/samskrtam/eamenau/model/`)
+**Модели** (`services/curriculum-service/src/main/java/sm/selflearn/samskrtam/eamenau/model/`)
 - `Exercise.java` — упражнение
 - `Task.java` — задача внутри упражнения
 - `Answer.java` — варианты ответа (не используется в API)
@@ -264,11 +264,11 @@ Phoneme >── PlaceOfArticulation
 - `Varga.java` — традиционная группа согласных
 - `PlaceOfArticulation.java`, `MannerOfArticulation.java`, `Voicing.java`, `Aspiration.java` — артикуляционные характеристики
 
-**Сервисы** (`services/content-service/src/main/java/sm/selflearn/samskrtam/content/service/`)
+**Сервисы** (`services/curriculum-service/src/main/java/sm/selflearn/samskrtam/content/service/`)
 - `EamenauService.java` — работа с правилами сандхи
 - `EamenauExerciseService.java` — упражнения, задачи, решения; логика diff для `SolutionSandhiRule`
 
-**Контроллеры** (`services/content-service/src/main/java/sm/selflearn/samskrtam/content/controller/`)
+**Контроллеры** (`services/curriculum-service/src/main/java/sm/selflearn/samskrtam/content/controller/`)
 - `EamenauController.java` — `GET /api/v1/eamenau/sandhi-rules`
 - `EamenauExerciseController.java` — все `/api/v1/eamenau/exercises/**`
 
@@ -279,7 +279,7 @@ Phoneme >── PlaceOfArticulation
 - `SandhiRuleDto.java`, `SandhiRuleGroupDto.java`, `SandhiRuleInfo.java`
 - `SolutionDto.java`, `SolutionUpdateRequestDto.java`
 
-**Миграции** (`services/content-service/src/main/resources/db/migration/`)
+**Миграции** (`services/curriculum-service/src/main/resources/db/migration/`)
 - `V2__create_eamenau_schema_and_sandhi_rules_table.sql` — создание схемы `eamenau` и всех таблиц
 
 ### Frontend

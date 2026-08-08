@@ -53,7 +53,7 @@ public class UserSessionService {
                 .switchIfEmpty(Mono.error(new SamskrtamException("SESSION_NOT_FOUND",
                         "Quiz session not found or does not belong to user: " + sessionId)))
                 .flatMap(session -> Mono.zip(
-                        contentClient.getLessonItem(session.getLessonId()),
+                        resolveLessonItem(session.getLessonId()),
                         quizAnswerRepository.countCorrectAnswersBySessionId(sessionId)
                 ).map(tuple -> quizSummaryAssembler.assemble(
                         session, tuple.getT1(), tuple.getT2(),
@@ -90,6 +90,13 @@ public class UserSessionService {
 
     public Mono<Long> countWordAnswers(UUID userId, UUID wordId, UUID lessonId) {
         return quizAnswerRepository.countByWordIdAndUserIdAndLessonId(wordId, userId, lessonId);
+    }
+
+    private Mono<LessonItemResponse> resolveLessonItem(UUID lessonId) {
+        if (lessonId == null) {
+            return Mono.empty();
+        }
+        return contentClient.getLessonItem(lessonId);
     }
 
     private int countFilterCombinations(QuizSession session) {

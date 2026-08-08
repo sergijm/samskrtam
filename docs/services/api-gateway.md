@@ -59,13 +59,13 @@ spring:
             - RewritePath=/api/.*, /$1
 
         # Content (public, STUDENT) — включая НОВЫЙ /content/public/lessons/{slug}/declension-paradigms
-        # ПРИМЕЧАНИЕ Агента 6: маршрут content-service отсутствовал в этом файле вообще, хотя
+        # ПРИМЕЧАНИЕ Агента 6: маршрут curriculum-service отсутствовал в этом файле вообще, хотя
         # уже фигурирует как эталонный в docs/agents/prompts/agent-1-gateway.md (таблица маршрутов,
         # /api/v1/content/public/** → STUDENT, /api/v1/content/** → ADMIN) — расхождение зафиксировано,
         # блок ниже добавлен, чтобы контракт соответствовал факту. Агенту 1: проверить, что в коде
         # (GatewayRoutesConfig.java) роль по этим двум предикатам действительно разведена так же.
         - id: content-public
-          uri: lb://content-service:8081
+          uri: lb://curriculum-service:8081
           predicates:
             - Path=/api/v1/content/public/**
           filters:
@@ -73,7 +73,7 @@ spring:
           # Auth: STUDENT (роль проверяется SecurityConfig по префиксу, см. agent-1-gateway.md)
 
         - id: content-admin
-          uri: lb://content-service:8081
+          uri: lb://curriculum-service:8081
           predicates:
             - Path=/api/v1/content/**
           filters:

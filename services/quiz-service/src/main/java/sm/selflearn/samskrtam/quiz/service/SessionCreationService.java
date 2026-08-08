@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.GeneratedQuizQuestionDto;
+import sm.selflearn.samskrtam.quiz.dto.QuestPoolItemDto;
 import sm.selflearn.samskrtam.quiz.mapper.SessionQuestionMapper;
 import sm.selflearn.samskrtam.quiz.model.FilterScope;
 import sm.selflearn.samskrtam.quiz.model.ItemType;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Отвечает за создание новых квиз-сессий всех видов (plain, filter-scoped, status-filtered).
@@ -41,6 +43,7 @@ public class SessionCreationService {
 
     // ================== Plain session ==================
 
+    @Transactional
     public Mono<sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse> createNewSession(
             UUID lessonId, UUID userId, String userLocale) {
         return contentClient.generateQuizData(lessonId, userLocale)
@@ -65,6 +68,7 @@ public class SessionCreationService {
 
     // ================== Filter-scoped session ==================
 
+        @Transactional
         public Mono<sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse> createFilteredSession(
             UUID lessonId, UUID userId, String userLocale,
             FilterScope filterScope, String filterCaseTypes,
@@ -103,6 +107,7 @@ public class SessionCreationService {
      * Create a new session with statusFilter (§3, §4 п.«2а»).
      * If the bucket pool is empty → 404 (not 200 with empty questions).
      */
+    @Transactional
     public Mono<sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse> createStatusFilteredSession(
             UUID lessonId, UUID userId, String userLocale,
             StatusFilter statusFilter) {
@@ -150,13 +155,18 @@ public class SessionCreationService {
             return saveAllAndRespond(savedSession, allQuestions, generatedQuizData, userLocale);
         }
 
+        // Convert to QuestPoolItemDto with UUID.toString() as progressTag for backward compat
+        List<QuestPoolItemDto> pool = externalRefIds.stream()
+                .map(id -> new QuestPoolItemDto(id, itemType.name(), id.toString()))
+                .collect(Collectors.toList());
+
         // Choose generator branch
         Mono<List<QuizItem>> selectedItemsMono;
         if (statusFiltered) {
             selectedItemsMono = quizGenerator.generateStatusFiltered(
-                    userId, itemType, externalRefIds, savedSession.getStatusFilter());
+                    userId, itemType, pool, savedSession.getStatusFilter());
         } else {
-            selectedItemsMono = quizGenerator.generate(userId, itemType, externalRefIds);
+            selectedItemsMono = quizGenerator.generate(userId, itemType, pool);
         }
 
         return selectedItemsMono

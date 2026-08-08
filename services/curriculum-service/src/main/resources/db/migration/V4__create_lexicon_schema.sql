@@ -22,7 +22,7 @@ CREATE TABLE curriculum.lexeme (
     updated_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT uq_lexeme_slp1_gender UNIQUE (lemma_slp1, gender),
     CONSTRAINT chk_lexeme_gender CHECK (gender IS NULL OR gender IN ('MASCULINE','FEMININE','NEUTER','UNSPECIFIED')),
-    CONSTRAINT chk_lexeme_status CHECK (status IN ('DRAFT','AI_ENRICHED','APPROVED','REJECTED'))
+    CONSTRAINT chk_lexeme_status CHECK (status IN ('DRAFT','CANDIDATE','APPROVED','REJECTED'))
 );
 
 COMMENT ON TABLE curriculum.lexeme IS 'A dictionary lemma, not a specific word form. See lexicon.md §1.';

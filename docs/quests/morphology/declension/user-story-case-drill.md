@@ -1,7 +1,14 @@
-# US-MORPH-01 — Тренировка падежных окончаний
+# US-MORPH-01 — Тренировка падежных окончаний (простые задания)
 
-> Домен: Morphology · Тип: `DECLENSION_FORM` (реализован)
-> Связанные файлы: [quest-catalog.md §2.1](../../../services/quest-catalog.md#21-declension_form--реализован) · [architecture.md §3.3](../../../architecture.md#33-хранение-окончаний-склонений)
+> Домен: Morphology · Типы: `DECLENSION_FORM_CHOICE`, `DECLENSION_FORM` · API v2, curriculum-service
+> Связанные файлы: [quest-catalog.md §2.1](../../../services/quest-catalog.md#21-declension_form-и-семейство--переезжает-в-curriculum-service-v2) ·
+> [curriculum-quest-items.md §2.1–2.2](../../../services/curriculum-quest-items.md#21-declension_form_choice--тип-1-простой-выбор) ·
+> [architecture.md §3.3](../../../architecture.md#33-хранение-окончаний-склонений) ·
+> [US-MORPH-02 — комплексные задания](./user-story-declension-complex.md)
+
+> Эта история описывает два «простых теста» (выбор из вариантов и ручной ввод). Два
+> «комплексных теста» (определить падеж по форме, сопоставить пары) — отдельная история
+> [user-story-declension-complex.md](./user-story-declension-complex.md).
 
 ## История
 
@@ -14,7 +21,9 @@
 1. Ученик открывает урок «Склонение a-основ, мужской род» на Dashboard.
 2. Система выбирает QuestItem по правилам отбора сессии (сначала DUE, затем NEW, затем LEARNING — см. [quest-engine.md §4.1](../../../services/quest-engine.md#41-старт)).
 3. Ученику показывается основа (`deva-`) и требуемая форма (nominative, единственное число).
-4. Ученик вводит ответ свободным текстом (`devaḥ`).
+4. Если QuestItem типа `DECLENSION_FORM` — ученик вводит ответ свободным текстом (`devaḥ`).
+   Если типа `DECLENSION_FORM_CHOICE` — ученик выбирает `devaḥ` из 3–4 предложенных
+   вариантов (дистракторы — словоформы той же основы, но других падежей/чисел).
 5. Система проверяет ответ, показывает верную форму при ошибке и обновляет прогресс по алгоритму повторения (SM-2, см. [quest-engine.md §3](../../../services/quest-engine.md#3-алгоритм-повторения-sm-2-упрощённый)).
 6. После нужного числа вопросов сессия завершается сводкой: сколько верно/неверно.
 
@@ -29,3 +38,4 @@
 ## Вне рамок
 
 - Смешение основ разных типов (i-, u-, r-) в одной сессии — планируется отдельным Quest уровня «повторение», не в этой истории.
+- Соотношение количества `DECLENSION_FORM_CHOICE` к `DECLENSION_FORM` внутри сессии — конфигурируется в `application.yaml` quiz-service (см. [curriculum-quest-items.md §5](../../../services/curriculum-quest-items.md#5-интеграция-с-quiz-service)), не выбирается учеником.

@@ -54,7 +54,7 @@ export const LessonStatsTab = ({ statusSummary, quizPath }: LessonStatsTabProps)
   const { newCount, learning, mastered, reviewDue } = statusSummary;
 
   const handleStatusClick = (statusFilter: string) => {
-    navigate(`${quizPath}?statusFilter=${statusFilter}`);
+    navigate(quizPath);
   };
 
   return (

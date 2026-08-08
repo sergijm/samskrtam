@@ -3,6 +3,7 @@ package sm.selflearn.samskrtam.curriculum.exception;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -17,6 +18,18 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponseDto handleNotFound(EntityNotFoundException e) {
         return new ErrorResponseDto(HttpStatus.NOT_FOUND.value(), "Not found", e.getMessage());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponseDto handleAccessDenied(AccessDeniedException e) {
+        return new ErrorResponseDto(HttpStatus.FORBIDDEN.value(), "Forbidden", e.getMessage());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponseDto handleIllegalArgument(IllegalArgumentException e) {
+        return new ErrorResponseDto(HttpStatus.BAD_REQUEST.value(), "Bad request", e.getMessage());
     }
 
     @ExceptionHandler({TopicCycleException.class, DuplicateCodeException.class})

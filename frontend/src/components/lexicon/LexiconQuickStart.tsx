@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Toast } from 'primereact/toast';
 import { QuickStartPreset } from '../../types/lexicon';
 import { useLexiconToast } from './useLexiconToast';
+import { useLexiconLocale } from '../../hooks/useLexiconLocale';
 
 interface LexiconQuickStartProps {
   presets: QuickStartPreset[];
@@ -12,6 +13,7 @@ interface LexiconQuickStartProps {
 const LexiconQuickStart: React.FC<LexiconQuickStartProps> = ({ presets }) => {
   const { t } = useTranslation();
   const { toast, showComingSoon } = useLexiconToast();
+  const locale = useLexiconLocale();
 
   return (
     <>
@@ -28,9 +30,9 @@ const LexiconQuickStart: React.FC<LexiconQuickStartProps> = ({ presets }) => {
               <div className="lexicon-card lexicon-quick-card h-full flex flex-column gap-2">
                 <div className="flex align-items-center gap-2">
                   <i className="pi pi-play-circle text-2xl text-primary" />
-                  <span className="font-bold text-lg">{t(preset.titleKey)}</span>
+                  <span className="font-bold text-lg">{locale({ ru: preset.titleRu, en: preset.titleEn })}</span>
                 </div>
-                <span className="text-sm text-500">{t(preset.metaKey)}</span>
+                <span className="text-sm text-500">{locale({ ru: preset.metaRu, en: preset.metaEn })}</span>
                 <button
                   type="button"
                   className="lexicon-link-btn align-self-start mt-auto"

@@ -8,6 +8,7 @@ export interface FeedbackState {
   correctOptionId: string;
   correctAnswerText: string;
   explanation: string;
+  correctMatches?: Array<{ leftId: string; rightId: string }>;
 }
 
 /* ---------- public contract ---------- */

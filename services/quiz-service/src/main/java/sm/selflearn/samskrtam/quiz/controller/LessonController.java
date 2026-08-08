@@ -63,17 +63,11 @@ public class LessonController {
             @RequestHeader(value = "X-User-Id", required = false) UUID userId )
     {
         log.info("GET /grammar/{} — X-User-Id={}", slug, userId);
-        return lessonService.getGrammarLesson(slug, userId)
-                .doOnNext(lesson -> {
-                    int nonZeroScores = (int) lesson.getQuestions().stream()
-                            .filter(q -> q.getScore() > 0).count();
-                    log.info("GET /grammar/{} — response: totalQuestions={}, nonZeroScores={}, sampleScores={}",
-                            slug, lesson.getTotalQuestions(), nonZeroScores,
-                            lesson.getQuestions().stream().limit(5)
-                                    .map(q -> String.format("(gender=%s,case=%s,num=%s,score=%d)",
-                                            q.getGender(), q.getCaseType(), q.getNumberType(), q.getScore()))
-                                    .toList());
-                })
-                .map(ResponseEntity::ok);
+    return lessonService.getGrammarLesson(slug, userId)
+            .doOnNext(lesson -> {
+                log.info("GET /grammar/{} — response: totalQuestions={}",
+                        slug, lesson.getTotalQuestions());
+            })
+            .map(ResponseEntity::ok);
     }
 }

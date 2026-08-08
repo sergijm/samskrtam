@@ -36,11 +36,18 @@ public class Topic {
     @Column(name = "learning_level", nullable = false, length = 2)
     private LearningLevel learningLevel;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "domain", nullable = false, length = 10)
+    private TopicDomain domain = TopicDomain.GRAMMAR;
+
     @Column(name = "is_evergreen", nullable = false)
     private boolean isEvergreen;
 
     @Column(name = "display_order")
     private Short displayOrder;
+
+    @Column(name = "target_item_count", nullable = false)
+    private int targetItemCount = 0;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

@@ -238,7 +238,7 @@ frontend/
 
 ## Соглашения для агентов
 
-**Именование веток:** feat/fix/test/chore(<scope>): description. Scope: quiz-service, gateway, content-service, frontend, shared.
+**Именование веток:** feat/fix/test/chore(<scope>): description. Scope: quiz-service, gateway, curriculum-service, frontend, shared.
 
 **Конфигурация:** без дефолтов в application.yml — только ${ENV_VAR}, секреты только через env, .env.example актуален.
 

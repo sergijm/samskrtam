@@ -1,7 +1,7 @@
 # US-MORPH-02 — Тренировка личных форм глагола (laṭ-lakāra)
 
 > Домен: Morphology · Тип: `CONJUGATION_FORM` (план)
-> Связанные файлы: [quest-catalog.md §2.3](../../../services/quest-catalog.md#23-conjugation_form--план) · [quest-item-model.md §2](../../../services/quest-item-model.md#2-content-service--генерация-smselflearnsamskrtamcontentquest)
+> Связанные файлы: [quest-catalog.md §2.3](../../../services/quest-catalog.md#23-conjugation_form--план) · [quest-item-model.md §2](../../../services/quest-item-model.md#2-curriculum-service--генерация-smselflearnsamskrtamcontentquest)
 
 ## История
 

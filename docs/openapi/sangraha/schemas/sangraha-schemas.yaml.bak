@@ -1,0 +1,465 @@
+# Схемы sangraha-service
+# Импортируются из sangraha-service.yaml через $ref: 'sangraha-schemas.yaml#/WorkSummary'
+
+WorkSummary:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    slug:
+      type: string
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    titleSaIast:
+      type: string
+    titleSaDevanagari:
+      type: string
+    descriptionRu:
+      type: string
+      nullable: true
+    descriptionEn:
+      type: string
+      nullable: true
+    author:
+      type: string
+      nullable: true
+
+WorkTree:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    slug:
+      type: string
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    titleSaIast:
+      type: string
+    titleSaDevanagari:
+      type: string
+    descriptionRu:
+      type: string
+      nullable: true
+    descriptionEn:
+      type: string
+      nullable: true
+    author:
+      type: string
+      nullable: true
+    chapters:
+      type: array
+      items:
+        $ref: '#/ChapterSummary'
+
+ChapterSummary:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    slug:
+      type: string
+    orderIndex:
+      type: integer
+      nullable: true
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    titleSaIast:
+      type: string
+      nullable: true
+    titleSaDevanagari:
+      type: string
+      nullable: true
+    categoryCode:
+      type: string
+      description: "{workSlug}.{chapterSlug} — код категории лексики"
+    verseCount:
+      type: integer
+      description: Количество стихов в главе (для отображения на плитке)
+
+ChapterWithVerses:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    slug:
+      type: string
+    orderIndex:
+      type: integer
+      nullable: true
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    titleSaIast:
+      type: string
+      nullable: true
+    titleSaDevanagari:
+      type: string
+      nullable: true
+    categoryCode:
+      type: string
+      description: "{workSlug}.{chapterSlug} — код категории лексики"
+    verses:
+      type: array
+      items:
+        $ref: '#/VersePreview'
+
+VersePreview:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    orderIndex:
+      type: integer
+    textIastPreview:
+      type: string
+      description: Первые ~80 символов textIast для отображения в списке
+      nullable: true
+    textIast:
+      type: string
+      nullable: true
+    textDevanagari:
+      type: string
+      nullable: true
+    translationRu:
+      type: string
+      nullable: true
+    translationEn:
+      type: string
+      nullable: true
+    status:
+      $ref: '#/VerseStatus'
+
+VerseDetail:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    chapterId:
+      type: string
+      format: uuid
+    orderIndex:
+      type: integer
+    rawText:
+      type: string
+      nullable: true
+      description: >-
+        Сырой ввод пользователя (последнее сохранённое значение поля text),
+        до определения письменности. Используется фронтендом в режиме
+        редактирования стиха (status = DRAFT/FAILED) вместо
+        textDevanagari/textIast — см. sangraha-service.md §7.
+    textDevanagari:
+      type: string
+      nullable: true
+    textIast:
+      type: string
+      nullable: true
+    status:
+      $ref: '#/VerseStatus'
+    analysis:
+      $ref: '#/VerseAnalysisDto'
+      nullable: true
+    words:
+      type: array
+      items:
+        $ref: '#/VerseWordDto'
+      nullable: true
+    vocabularyQuizSlug:
+      type: string
+      nullable: true
+      description: >-
+        Slug лексического квиза этого стиха (кэш `verses.vocabulary_quiz_slug`,
+        см. sangraha-service.md §3/§6/§7, ADR-009). null, если по этому стиху
+        ещё никто не нажимал «Изучить» — квиз в content-service ещё не создан.
+        Заполняется вызовом POST /verses/{verseId}/vocabulary-quiz (см. §7) и
+        после первого успешного вызова возвращается здесь же напрямую из БД,
+        без обращения к content-service.
+    vocabularyQuizId:
+      type: string
+      format: uuid
+      nullable: true
+      description: >-
+        UUID сущности Lesson в content-service (кэш `verses.vocabulary_quiz_id`,
+        см. sangraha-service.md §3/§6/§7, ADR-009 «Обновление»). Заполняется
+        вместе с vocabularyQuizSlug, тем же вызовом. Используется фронтендом
+        для старта квиз-сессии напрямую по UUID (без промежуточного
+        GET /lessons/vocabulary/{slug}) — см. §7.
+
+VerseAnalysisDto:
+  type: object
+  properties:
+    translationRu:
+      type: string
+    translationEn:
+      type: string
+    sandhiSplits:
+      type: array
+      items:
+        type: object
+        properties:
+          surface:
+            type: string
+          components:
+            type: array
+            items:
+              type: string
+          ruleNumbers:
+            type: array
+            items:
+              type: integer
+            description: >-
+              Номера правил из emenau-sandhi-rules.json (только
+              applicability=external, диапазон 41–71), применённые к этому переходу,
+              в порядке применения. Пустой массив — LLM не уверена в конкретном
+              правиле (см. sangraha-prompts/verse-analysis.md).
+    modelName:
+      type: string
+    analyzerName:
+      type: string
+      description: >-
+        Имя LLM-модели, которая фактически выполнила анализ (сохраняется
+        отдельно от modelName для совместимости; заполняется тем же значением,
+        см. sangraha-service.md §5.4).
+    analyzedAt:
+      type: string
+      format: date-time
+
+VerseWordDto:
+  type: object
+  description: >-
+    Полный грамматический разбор одной словоформы стиха. Детальное описание
+    смысла каждой группы полей — sangraha-service/verse-word-grammar.md.
+  properties:
+    id:
+      type: string
+      format: uuid
+    position:
+      type: integer
+    surfaceIast:
+      type: string
+    surfaceDevanagari:
+      type: string
+    lemmaIast:
+      type: string
+    stem:
+      type: string
+      nullable: true
+    root:
+      type: string
+      nullable: true
+    pos:
+      type: string
+      nullable: true
+    formType:
+      type: string
+      nullable: true
+      description: >-
+        FINITE|INFINITIVE|ABSOLUTIVE|PARTICIPLE|GERUNDIVE|OTHER_NONFINITE|
+        NOMINAL|ADJECTIVAL|PRONOMINAL|INDECLINABLE
+    isFinite:
+      type: boolean
+      nullable: true
+    morphology:
+      $ref: '#/VerseWordMorphologyDto'
+      nullable: true
+    derivation:
+      $ref: '#/VerseWordDerivationDto'
+      nullable: true
+    lemmaGlossRu:
+      type: string
+      nullable: true
+    lemmaGlossEn:
+      type: string
+      nullable: true
+    contextGlossRu:
+      type: string
+    contextGlossEn:
+      type: string
+    formationRuleNumbers:
+      type: array
+      items:
+        type: integer
+      description: >-
+        Номера правил из emenau-sandhi-rules.json (только
+        applicability=internal, диапазон 1–40), объясняющие, как образована именно
+        эта словоформа из корня/основы (морфофонемные изменения при присоединении
+        суффикса/окончания) — в порядке применения. Пустой массив, если словоформа
+        не требует объяснения через внутренние сандхи (простое присоединение без
+        изменений) или модель не уверена (не угадывать номер).
+    analysisConfidence:
+      type: string
+      nullable: true
+      description: >-
+        HIGH|MEDIUM|LOW. Присутствует в DTO для тестирования/отладки,
+        на VersePage не отображается (см. sangraha-service.md §7).
+    ambiguityNotes:
+      type: string
+      nullable: true
+    vocabularyWordId:
+      type: string
+      format: uuid
+      nullable: true
+
+VerseWordMorphologyDto:
+  type: object
+  nullable: true
+  description: >-
+    Инфлективная морфология словоформы. Объект целиком отсутствует
+    (null), если для слова нет применимой морфологии; отдельные поля
+    внутри тоже могут быть null (не применимы к данной части речи/форме).
+  properties:
+    caseType:
+      type: string
+      nullable: true
+    gender:
+      type: string
+      nullable: true
+    numberType:
+      type: string
+      nullable: true
+    person:
+      type: string
+      nullable: true
+    tense:
+      type: string
+      nullable: true
+    mood:
+      type: string
+      nullable: true
+    voice:
+      type: string
+      nullable: true
+
+VerseWordDerivationDto:
+  type: object
+  nullable: true
+  description: >-
+    Деривационная/словообразовательная информация словоформы. Объект
+    целиком отсутствует (null), если словообразование не установлено.
+  properties:
+    derivationType:
+      type: string
+      nullable: true
+      description: >-
+        SIMPLE_INFLECTION|ABSOLUTIVE|PARTICIPLE|GERUNDIVE|INFINITIVE|
+        CAUSATIVE|DESIDERATIVE|DENOMINATIVE|COMPOUND_VERB|OTHER
+    derivationalSuffix:
+      type: string
+      nullable: true
+    derivationalBase:
+      type: string
+      nullable: true
+    description:
+      type: string
+      nullable: true
+
+VerseStatus:
+  type: string
+  enum: [DRAFT, ANALYZING, ANALYZED, FAILED]
+
+VerseTextRequest:
+  type: object
+  required: [text]
+  properties:
+    text:
+      type: string
+      description: >-
+        Единое поле ввода — может содержать текст на деванагари или в IAST.
+        Тело POST /verses/{verseId}/analyze: значение сохраняется как есть
+        в Verse.rawText, затем backend определяет письменность и заполняет
+                textDevanagari / textIast (см. sangraha-service.md §4, §7).
+
+AnalyzeAllVersesResponse:
+  type: object
+  required: [chapterId, verseIds]
+  properties:
+    chapterId:
+      type: string
+      format: uuid
+    verseIds:
+      type: array
+      items:
+        type: string
+        format: uuid
+      description: >-
+        Идентификаторы всех стихов главы, переведённых в статус ANALYZING
+        этим запросом (см. sangraha-service.md §5.4).
+
+VerseBatchItem:
+  type: object
+  required: [id, workSlug, workTitleRu, workTitleEn, chapterSlug, chapterTitleRu, chapterTitleEn, verseOrderIndex, textIastPreview, status]
+  description: >-
+    Один стих в ответе GET /verse (sangraha-service/batch-verse-review.md).
+    В отличие от внутреннего /sangraha/internal/content/verses/batch — отдаёт
+    слаги, превью текста и status любого стиха (без фильтра по ANALYZED).
+  properties:
+    id:
+      type: string
+      format: uuid
+    workSlug:
+      type: string
+    workTitleRu:
+      type: string
+    workTitleEn:
+      type: string
+    chapterSlug:
+      type: string
+    chapterTitleRu:
+      type: string
+    chapterTitleEn:
+      type: string
+    verseOrderIndex:
+      type: integer
+    textIastPreview:
+      type: string
+      description: Первые ~80 символов textIast (та же обрезка, что в дереве главы)
+      nullable: true
+    status:
+      $ref: '#/VerseStatus'
+
+VersesBatchResponse:
+  type: object
+  required: [verses]
+  properties:
+    verses:
+      type: array
+      items:
+        $ref: '#/VerseBatchItem'
+      description: >-
+        Стихи в порядке id запроса; не найденные/удалённые id отсутствуют
+        без ошибки.
+
+AnalyzeVersesRequest:
+  type: object
+  required: [verseIds]
+  properties:
+    verseIds:
+      type: array
+      items:
+        type: string
+        format: uuid
+
+AnalyzeVersesResponse:
+  type: object
+  required: [verseIds]
+  properties:
+    verseIds:
+      type: array
+      items:
+        type: string
+        format: uuid
+      description: >-
+        Id реально загруженных стихов, принятых к анализу (не найденные/удалённые
+        исключены молча).

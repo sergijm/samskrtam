@@ -5,6 +5,7 @@ import { Toast } from 'primereact/toast';
 import { LexicalTopic } from '../../types/lexicon';
 import { LexiconSectionHeader } from './LexiconSectionHeader';
 import { useLexiconToast } from './useLexiconToast';
+import { useLexiconLocale } from '../../hooks/useLexiconLocale';
 
 interface LexiconTopicsProps {
   topics: LexicalTopic[];
@@ -16,6 +17,7 @@ const INITIAL_VISIBLE = 9;
 const LexiconTopics: React.FC<LexiconTopicsProps> = ({ topics }) => {
   const { t } = useTranslation();
   const { toast, showComingSoon } = useLexiconToast();
+  const locale = useLexiconLocale();
   const [showAll, setShowAll] = useState(false);
 
   const visible = showAll ? topics : topics.slice(0, INITIAL_VISIBLE);
@@ -41,7 +43,7 @@ const LexiconTopics: React.FC<LexiconTopicsProps> = ({ topics }) => {
                 onClick={() => showComingSoon()}
               >
                 <div className="flex align-items-center justify-content-between gap-2">
-                  <span className="font-semibold">{t(topic.nameKey)}</span>
+                  <span className="font-semibold">{locale({ ru: topic.nameRu, en: topic.nameEn })}</span>
                   <span className="text-sm text-500">
                     {topic.wordCount} {t('lexicon.words')}
                   </span>

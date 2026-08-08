@@ -18,7 +18,16 @@
     "completeQuiz": "Complete Quiz",
     "completeSessionError": "Failed to complete quiz session: {{message}}",
     "retakeQuiz": "Retake Quiz",
-    "startNewQuiz": "Start New Quiz"
+    "startNewQuiz": "Start New Quiz",
+    "freeTextPlaceholder": "Type your answer",
+    "submit": "Submit",
+    "matching": {
+      "checkButton": "Check",
+      "resetHint": "Click again to undo"
+    },
+    "freeText": {
+      "placeholder": "Type the word form…"
+    }
   },
   "quizzes": {
     "title": "List of Quizzes",

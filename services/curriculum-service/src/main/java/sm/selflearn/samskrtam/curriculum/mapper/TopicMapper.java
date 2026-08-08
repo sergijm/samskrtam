@@ -20,6 +20,8 @@ public interface TopicMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "targetItemCount", ignore = true)
+    @Mapping(target = "domain", ignore = true)
     @Mapping(target = "evergreen", source = "isEvergreen")
     Topic toEntity(CreateTopicRequest request);
 

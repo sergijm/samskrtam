@@ -2,7 +2,7 @@
 
 > Заменяет: `services/quiz-service.md`, `services/quiz-service/quiz-generator-spec.md`,
 > `services/quiz-service/quiz-declension.md`, `services/quiz-service/quiz-service-repositories.md`.
-> Связанные файлы: [README.md](../README.md) · [architecture.md](../architecture.md) · [content-service.md](./content-service.md) · [quest-catalog.md](./quest-catalog.md) · [quest-item-model.md](./quest-item-model.md)
+> Связанные файлы: [README.md](../README.md) · [architecture.md](../architecture.md) · [curriculum-service.md](./curriculum-service.md) · [quest-catalog.md](./quest-catalog.md) · [quest-item-model.md](./quest-item-model.md)
 
 ---
 
@@ -14,7 +14,7 @@
 
 | Термин | Значение |
 |---|---|
-| **QuestItem** | Атомарная обучаемая единица: словарное слово или грамматическая форма. Живёт в content-service. |
+| **QuestItem** | Атомарная обучаемая единица: словарное слово или грамматическая форма. Живёт в curriculum-service. |
 | **Quest** | Именованный набор QuestItem одной темы (было — Lesson/Quiz). Пример: «declensions-a-masc», «vocabulary-sangraha-verse-42». |
 | **QuestSession** | Один заход пользователя в Quest: последовательность попыток по подмножеству его QuestItem. |
 | **Attempt** | Одна попытка ответа на один QuestItem в рамках сессии. |
@@ -24,11 +24,11 @@
 
 ## 2. Данные
 
-### 2.1 content-service — что это за items
+### 2.1 curriculum-service — что это за items
 
 `QuestItem`: id (UUID), questId, type (`VOCABULARY_WORD` | `DECLENSION_FORM` | …, открытое перечисление), prompt (что показываем — слово/форма для перевода или основа+падеж), answer (эталонный ответ), distractors (0–3 неверных варианта, если задание — выбор из вариантов; для free-text заданий пусто).
 
-Формирование `prompt`/`answer`/`distractors` — полностью ответственность content-service, per-type генераторы (declension, vocabulary, в будущем — conjugation и др.) живут там же, каждый в своём файле рядом с `content-service.md`. quiz-service о внутреннем устройстве типов ничего не знает — работает с уже готовыми QuestItem через один контракт.
+Формирование `prompt`/`answer`/`distractors` — полностью ответственность curriculum-service, per-type генераторы (declension, vocabulary, в будущем — conjugation и др.) живут там же, каждый в своём файле рядом с `curriculum-service.md`. quiz-service о внутреннем устройстве типов ничего не знает — работает с уже готовыми QuestItem через один контракт.
 
 ### 2.2 quiz-service — прогресс
 
@@ -102,9 +102,18 @@
 
 ---
 
-## 5. Границы с content-service
+## 5. Границы с curriculum-service и curriculum-service
 
-`item_id` в `quest.progress` — UUID без физического FK на схему content (разные БД, разные сервисы). Существование проверяется прикладным кодом при старте сессии (запрос списка QuestItem у content-service); soft-delete в content-service — предпочтительный способ не терять прогресс при архивации контента.
+`item_id` в `quest.progress` — UUID без физического FK на схему источника (разные БД, разные
+сервисы). Существование проверяется прикладным кодом при старте сессии; soft-delete в
+источнике — предпочтительный способ не терять прогресс при архивации контента.
+
+Источник `QuestItem` зависит от типа: для `DECLENSION_FORM`-семейства (4 типа, см.
+[curriculum-quest-items.md](./curriculum-quest-items.md)) quiz-service обращается к
+**curriculum-service (API v2)** через `CurriculumClient`; для остальных типов (`VOCABULARY_*`
+и т.д.) — по-прежнему к **curriculum-service (API v1)** через `ContentClient`, без изменений.
+Оба клиента реализуют один и тот же внутренний контракт получения списка `QuestItem` —
+выбор клиента по `itemType`, без ветвления в алгоритме сессии/прогресса (§3–4 этого файла).
 
 ---
 
@@ -113,12 +122,12 @@
 - **filterScope/filterCaseTypes/filterNumberTypes/filterCombinations** — убраны целиком. Нужен урок только с одним падежом — заводится отдельный Quest с нужным подмножеством QuestItem на этапе создания контента, а не параметром запроса на каждый старт сессии.
 - **Двойной статус MASTERED/REVIEW** — заменён на плоский список статусов NEW/LEARNING/DUE/MASTERED без пересечений и «частных случаев».
 - **Отдельные пороги (difficultUpperThreshold/masteredLowerThreshold) на каждый itemType** — заменены одним универсальным алгоритмом интервалов (SM-2), без калибровки под тип.
-- **Ручные веса дистракторов (ENDING_MATCH и т.п.)** — генерация дистракторов остаётся в зоне ответственности content-service per-type, но как деталь генератора, не завязанная на прогресс.
+- **Ручные веса дистракторов (ENDING_MATCH и т.п.)** — генерация дистракторов остаётся в зоне ответственности curriculum-service per-type, но как деталь генератора, не завязанная на прогресс.
 
 ---
 
 ## 7. Открытые вопросы
 
 - Стартовые константы SM-2 (ease_factor=2.5, интервалы 1/3 дня) — стандартные значения алгоритма, калибровка на реальных данных — задача после запуска.
-- Формат хранения `distractors` в content-service (JSON-массив в QuestItem vs отдельная таблица) — решает Агент 2 при реализации.
+- Формат хранения `distractors` в curriculum-service (JSON-массив в QuestItem vs отдельная таблица) — решает Агент 2 при реализации.
 - Нужен ли лимит на количество NEW-единиц в одной сессии (чтобы не заваливать новыми словами) — открыто, предлагается стартовое значение 5 из `size`.

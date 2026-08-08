@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Содержит логику управления сессией: resume, retake, complete, submitAnswer.
@@ -51,13 +52,13 @@ public class SessionOperationsService {
 
     private final QuizItemScoreUpdateStrategy quizItemScoreUpdateStrategy;
     private final VocabularyWordsHelper vocabularyWordsHelper;
-    private final ContentClient contentClient;
     private final SessionFactory sessionFactory;
     private final SessionQuestionMapper sessionQuestionMapper;
     private final SessionPublisher sessionPublisher;
 
     // ================== Public Methods ==================
 
+    @Transactional
     public Mono<AnswerResponse> submitAnswer(QuizSession session, UUID userId, AnswerRequest request, String userLocale) {
         return quizAnswerRepository.existsBySessionIdAndQuestionId(session.getId(), request.getQuestionId())
                 .flatMap(alreadyAnswered -> {
@@ -70,6 +71,7 @@ public class SessionOperationsService {
                 });
     }
 
+    @Transactional
     public Mono<CompleteSessionResponse> completeSession(QuizSession session) {
         return completeAndPublishSessionStatus(session)
                 .map(savedSession -> CompleteSessionResponse.builder()
@@ -80,6 +82,7 @@ public class SessionOperationsService {
                         .build());
     }
 
+    @Transactional
     public Mono<StartOrResumeResponse> retakeSession(QuizSession session, String userLocale) {
         return quizAnswerRepository.deleteBySessionId(session.getId()).thenReturn(session)
                 .flatMap(s -> resetAndPublishSessionStatus(s, userLocale));
@@ -89,6 +92,7 @@ public class SessionOperationsService {
         return completeAndPublishSessionStatus(session);
     }
 
+    @Transactional
     public Mono<StartOrResumeResponse> resume(QuizSession session, String userLocale) {
         if (session.getStatus() != SessionStatus.IN_PROGRESS) {
             return updateAndPublishSessionStatusToInProgress(session, userLocale);

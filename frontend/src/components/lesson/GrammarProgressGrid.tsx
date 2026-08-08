@@ -24,6 +24,16 @@ const GrammarProgressGrid: React.FC<GrammarProgressGridProps> = ({
   const { i18n } = useTranslation();
   const navigate = useNavigate();
 
+  if (caseNames.length === 0 && numberNames.length === 0) {
+    return (
+      <div className="text-center p-4 text-color-secondary">
+        {i18n.language === 'ru'
+          ? 'Данные о прогрессе отсутствуют'
+          : 'No progress data available'}
+      </div>
+    );
+  }
+
   const cellByKey = new Map<string, CaseNumberAggregation>();
   for (const agg of aggregations) {
     cellByKey.set(`${agg.caseType}:${agg.numberType}`, agg);

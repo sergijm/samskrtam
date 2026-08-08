@@ -29,5 +29,11 @@ public class AnswerRequest {
 
     /** For CASE_BY_FORM/ENDING_MATCH: gender of the selected option. */
     String selectedGender;
+
+    /**
+     * Submissions for a MATCHING question (questionType = "MATCHING"): each word-form row
+     * paired with a chosen case+number label. Null/empty for non-matching questions.
+     */
+    List<MatchSubmissionDto> matchSubmissions;
 }
 

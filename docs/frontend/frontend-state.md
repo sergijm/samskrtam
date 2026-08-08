@@ -37,10 +37,50 @@ export interface SessionOption {
   id:   string;
   text: string;
 }
+```
+
+### 5а. Типы для declension-квестов (4 типа заданий)
+
+> Расширение `SessionQuestion` под 4 типа заданий склонения (`docs/services/curriculum-quest-items.md`).
+> `answerMode` — новое обязательное поле, приходит от quiz-service как есть из `QuestItem.answerMode`
+> (`docs/services/quest-item-model.md` §1). Рендер-компонент выбирается по этому полю, не по `itemType`
+> (`itemType` — только для аналитики/i18n заголовка, не для ветвления UI).
+
+```typescript
+// types/quiz.ts (дополнение)
+export type AnswerMode = 'FREE_TEXT' | 'SINGLE_CHOICE' | 'MULTI_SELECT' | 'SPAN_SELECT' | 'MATCHING';
+
+export interface SessionQuestion {
+  id:         string;
+  itemType:   string;          // 'DECLENSION_FORM' | 'DECLENSION_FORM_CHOICE' | 'CASE_RECOGNITION' | 'DECLENSION_MATCH' | ...
+  answerMode: AnswerMode;
+  text:       string;          // prompt, уже на нужном языке
+  options:    SessionOption[]; // непусто только при SINGLE_CHOICE/MULTI_SELECT, иначе []
+  matching?:  MatchingPayload; // непусто только при answerMode === 'MATCHING'
+}
+
+// payload для DECLENSION_MATCH — левый и правый список уже разделены и перемешаны раздельно
+export interface MatchingPayload {
+  left:  MatchingItem[]; // словоформы, порядок как пришёл с бэкенда
+  right: MatchingItem[]; // подписи падеж+число, порядок ПЕРЕМЕШАН на бэкенде — фронт не досортировывает
+}
+
+export interface MatchingItem {
+  id:   string; // pairId — используется только для сборки ответа, не показывается пользователю
+  text: string;
+}
+
+// ответ на MATCHING — отправляется целиком, одним вызовом submitAnswer
+export interface MatchingAnswerPayload {
+  sessionId:   string;
+  questionId:  string;
+  matches:     Array<{ leftId: string; rightId: string }>; // должен содержать все left.id ровно по одному разу
+}
 
 export interface AnswerResult {
   isCorrect:       boolean;
-  correctOptionId: string;
+  correctOptionId: string;   // не используется при answerMode === 'MATCHING' (см. correctMatches ниже)
+  correctMatches?: Array<{ leftId: string; rightId: string }>; // только при MATCHING
   explanation:     string;
   questionNumber:  number;
   totalQuestions:  number;

@@ -40,5 +40,12 @@ public class QuestionDto {
 
     /** Case ending string for reference display. */
     String caseEnding;
+
+    /**
+     * Left-side rows of a MATCHING question (questionType = "MATCHING"). The right-side
+     * labels are carried in {@code options} with optionType = "MATCH_LABEL". Null/empty
+     * for non-matching questions.
+     */
+    List<QuestionMatchRowDto> matchRows;
 }
 

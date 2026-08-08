@@ -1,6 +1,6 @@
 ﻿# Спецификация: универсальный генератор вопросов квиза
 
-> Связанные файлы: [README.md](../README.md) · [quiz-declension.md](./quiz-declension.md) · [openapi/common/schemas/vocabulary.yaml](../openapi/common/schemas/vocabulary.yaml) · [services/quiz-service.md](../services/quiz-service.md) · [services/content-service.md](../services/content-service.md) · [architecture.md §3.6](../architecture.md#36-единая-таблица-прогресса-quiz_item_score)
+> Связанные файлы: [README.md](../README.md) · [quiz-declension.md](./quiz-declension.md) · [openapi/common/schemas/vocabulary.yaml](../openapi/common/schemas/vocabulary.yaml) · [services/quiz-service.md](../services/quiz-service.md) · [services/curriculum-service.md](../services/curriculum-service.md) · [architecture.md §3.6](../architecture.md#36-единая-таблица-прогресса-quiz_item_score)
 > Ответственный агент: Агент 5 (API Contract & Documentation) — контракт; реализация Агент 2 (Domain Services, quiz-service)
 > Статус: **АКТУАЛЕН**
 
@@ -10,7 +10,7 @@
 
 Один генератор вопросов должен обслуживать любой тип квиза без изменения своей логики при добавлении нового типа. На момент написания есть два типа (лексика, склонения); в планах — спряжения, местоимения и другие грамматические темы. Инвариантность обеспечивается тем, что генератор работает не с конкретными сущностями (слово, словоформа), а с абстракцией `QuizItem` (пара itemType + externalRefId) и её прогрессом.
 
-Границы микросервисов соблюдаются: quiz-service не имеет физических (FK) ссылок на таблицы content-service. Существование `externalRefId` подтверждается на уровне приложения (через `ContentClient`, уже существующий в quiz-service), а не через БД.
+Границы микросервисов соблюдаются: quiz-service не имеет физических (FK) ссылок на таблицы curriculum-service. Существование `externalRefId` подтверждается на уровне приложения (через `ContentClient`, уже существующий в quiz-service), а не через БД.
 
 Архитектурные решения по единой таблице quiz_item_score, отсутствию FK между схемами quiz и content, производному статусу без time-decay и общему прогрессу склонений зафиксированы в architecture.md §3.6.
 
@@ -23,7 +23,7 @@
 `QuizItem` — не материализованная сущность, а составной ключ `(itemType, externalRefId)`:
 
 - itemType — перечисление: VOCABULARY_WORD, DECLENSION_FORM (открыто для расширения: CONJUGATION_FORM, PRONOUN_FORM и т.д.)
-- externalRefId — uuid сущности в content-service, конкретный смысл которой зависит от itemType:
+- externalRefId — uuid сущности в curriculum-service, конкретный смысл которой зависит от itemType:
   - VOCABULARY_WORD → `content.vocabulary_words.id`
   - DECLENSION_FORM → `content.case_endings.id` (эталонная связка vowel_type+gender+case_type+number_type, **не** конкретная основа — прогресс общий для всех основ с одинаковым сочетанием)
 
@@ -31,7 +31,7 @@
 
 ### 2.2. Хранимая модель прогресса — единая таблица `quiz.quiz_item_score`
 
-Одна таблица для всех типов, без отдельного реестра `QuizItem` (реестр не нужен — уникальность `(userId, itemType, externalRefId)` достаточна, а физический FK на content-service невозможен по границам сервисов):
+Одна таблица для всех типов, без отдельного реестра `QuizItem` (реестр не нужен — уникальность `(userId, itemType, externalRefId)` достаточна, а физический FK на curriculum-service невозможен по границам сервисов):
 
 - id
 - userId
@@ -49,11 +49,11 @@
 
 **nSuccess/nAll не дублируются** — они по-прежнему считаются on-the-fly агрегацией по `quiz.quiz_answers`/`quiz.session_questions` (существующий механизм, см. `quiz-service.md` §6а). В `quiz_item_score` хранится только то, что нельзя получить агрегацией: текущий score, stability, nextReviewAt.
 
-**Целостность внешних ссылок** — эвентуальная, не через FK. Если content-service физически удаляет `vocabulary_word`/`case_ending`, нужен один из механизмов: soft-delete на стороне content-service (предпочтительно — не требует нового Kafka-топика) или событие удаления, на которое quiz-service подписывается для очистки/архивации связанных строк `quiz_item_score`. Выбор — открытый вопрос §6.
+**Целостность внешних ссылок** — эвентуальная, не через FK. Если curriculum-service физически удаляет `vocabulary_word`/`case_ending`, нужен один из механизмов: soft-delete на стороне curriculum-service (предпочтительно — не требует нового Kafka-топика) или событие удаления, на которое quiz-service подписывается для очистки/архивации связанных строк `quiz_item_score`. Выбор — открытый вопрос §6.
 
-### 2.3. Scope — иерархия группировки живёт в content-service, не в quiz-service
+### 2.3. Scope — иерархия группировки живёт в curriculum-service, не в quiz-service
 
-quiz-service не хранит собственную иерархию категорий/уроков. При запуске квиза по любому узлу (лист или верхний уровень) quiz-service запрашивает у content-service (через `ContentClient`) список `externalRefId`, относящихся к этому узлу, и лишь затем джойнит их с `quiz_item_score` по `(userId, itemType, externalRefId)`. Иерархия/дерево категорий, глубина, привязка узла к itemType — ответственность content-service, не quiz-service; здесь фиксируется только контракт запроса ("дай список externalRefId под scope X для itemType Y").
+quiz-service не хранит собственную иерархию категорий/уроков. При запуске квиза по любому узлу (лист или верхний уровень) quiz-service запрашивает у curriculum-service (через `ContentClient`) список `externalRefId`, относящихся к этому узлу, и лишь затем джойнит их с `quiz_item_score` по `(userId, itemType, externalRefId)`. Иерархия/дерево категорий, глубина, привязка узла к itemType — ответственность curriculum-service, не quiz-service; здесь фиксируется только контракт запроса ("дай список externalRefId под scope X для itemType Y").
 
 ### 2.4. Бакеты (производный статус) — без распада во времени
 
@@ -151,19 +151,20 @@ if consecutiveMistakes >= consecutiveMistakesThreshold:
 - `QuizSession` дополняется полем `statusFilter` (nullable) по аналогии с `filterScope` — участвует в поиске IN_PROGRESS-сессии для резюма: сессия с одним statusFilter не резюмируется кликом по бейджу с другим statusFilter (или без него).
 - **Кнопка «Изучить» на VersePage** (`sangraha-service.md` §7) — ещё один вызывающий тот же `start-or-resume` без `statusFilter` (обычный смешанный due+new+reserve отбор, шаги 1-8 §4, без ветки «2а»), `slug = workSlug`. Никаких новых полей/веток не требует — переиспользует уже описанный контракт.
 
-> ⚠️ **Расхождение контракт↔реализация (зафиксировано Агентом 6, 2026-07-17):** параметр `statusFilter` присутствует в OpenAPI (`openapi/common/parameters.yaml#StatusFilterParam`, подключён к обоим путям в `openapi/quiz/quiz-sessions.yaml`) и полностью описан в этом файле (здесь и в §4 п.«2а»), но не реализован в коде quiz-service — фронтенд передаёт параметр, бэкенд его молча игнорирует. Конкретно отсутствует:
+> ✅ **Реализовано (2026-07, код):** параметр `statusFilter` присутствует в OpenAPI (`openapi/common/parameters.yaml#StatusFilterParam`, подключён к обоим путям в `openapi/quiz/quiz-sessions.yaml`) и реализован в коде quiz-service:
 > - `@RequestParam statusFilter` в `QuizSessionController.startSession`/`startOrResumeSession`;
-> - перегрузка/ветка в `QuizSessionService.startOrResumeSession` для бакетного отбора (есть только ветка по `FilterScope`);
-> - колонка `status_filter` в `QuizSession` (модель + Flyway-миграция) и её учёт в поиске IN_PROGRESS-сессии для резюма;
-> - методы отбора NEW/LEARNING в `QuizItemScoreRepository` (есть только `findDueItems` для REVIEW и `countLearnedItems`).
+> - ветка `QuizSessionService.startOrResumeWithStatusFilter` + `SessionCreationService.createStatusFilteredSession`;
+> - отбор — `QuizStatusFilteredGenerator` (§4 п.«2а»);
+> - колонка `quiz_session.status_filter` (миграция V10) и её учёт в поиске IN_PROGRESS-сессии для резюма (`QuizSessionRepository.findInProgressByStatusFilter`);
+> - методы отбора NEW/LEARNING/REVIEW в `QuizItemScoreRepository` (`findLearningItems`, `findReviewItems`).
 >
-> Задача на реализацию передана Агенту 2, тестовое покрытие — Агенту 4. Контракт (этот файл, `parameters.yaml`, `quiz-sessions.yaml`) изменений не требует — расхождение устраняется реализацией, не документацией. См. §7 п.5.
+> Расхождения реализации, выявленные при сверке с кодом (актуализация 2026-08-06), зафиксированы в `quiz-service.md` §8.
 
 ---
 
 ## 4. Алгоритм отбора (инвариантен к itemType)
 
-1. По переданным `scope` (запрос к content-service через `ContentClient` — см. §2.3) и `itemType` (опционально — без ограничения по itemType, если запрошен квиз «по всем типам сразу») получить список `externalRefId`, входящих в scope.
+1. По переданным `scope` (запрос к curriculum-service через `ContentClient` — см. §2.3) и `itemType` (опционально — без ограничения по itemType, если запрошен квиз «по всем типам сразу») получить список `externalRefId`, входящих в scope.
 2. Присоединить строки `quiz_item_score` пользователя по `(userId, itemType, externalRefId)`; вычислить бакет по правилам §2.4; разделить пул на три подмножества: due (nextReviewAt ≤ текущее время и строка существует), new (строки нет), reserve (остальное, включая единицы бакета MASTERED вне masteredCooldown).
 
 **2а. Если передан `statusFilter` (§3), шаги 3–5 заменяются одним отбором без due/new/reserve-смешения:**
@@ -186,9 +187,9 @@ if consecutiveMistakes >= consecutiveMistakesThreshold:
 
 Добавление нового типа (спряжения, местоимения и т.д.) требует только:
 
-- согласования нового значения itemType и того, какая сущность content-service выступает `externalRefId` для него;
+- согласования нового значения itemType и того, какая сущность curriculum-service выступает `externalRefId` для него;
 - реализации модуля рендеринга вопроса по `(itemType, externalRefId)`;
-- обеспечения на стороне content-service возможности отдать список `externalRefId` этого itemType под нужный scope (§2.3).
+- обеспечения на стороне curriculum-service возможности отдать список `externalRefId` этого itemType под нужный scope (§2.3).
 
 Таблица `quiz.quiz_item_score` и алгоритм генератора (§3–4) не изменяются, новых колонок/веток по itemType не требуется. Это условие проверяется Агентом 6 при ревью контракта нового типа квиза: если для нового типа предлагается собственная таблица прогресса, отдельная ветка в алгоритме отбора или физическая FK-ссылка на другую схему — это расхождение с инвариантом и должно эскалироваться Оркестратору.
 
@@ -204,7 +205,7 @@ if consecutiveMistakes >= consecutiveMistakesThreshold:
 - [x] **РЕШЕНО:** прогресс склонений общий для всех основ с одинаковым (vowel_type, gender, case_type, number_type) — см. §2.1.
 - [x] **РЕШЕНО:** физических FK между схемами quiz/content не будет — целостность эвентуальная (см. §2.2).
 - [ ] **Формула планирования `nextReviewAt`** — не спроектирована. Нужна отдельная (независимая от score) модель интервалов между повторениями (расти при успехах, сжиматься при ошибках) — SRS-планирование по времени, не путать с §2.5.
-- [ ] Механизм реакции на удаление сущности в content-service (soft-delete на стороне content-service vs событие + очистка в quiz-service) — см. §2.2.
+- [ ] Механизм реакции на удаление сущности в curriculum-service (soft-delete на стороне curriculum-service vs событие + очистка в quiz-service) — см. §2.2.
 - [ ] Конкретные числовые значения difficultUpperThreshold/masteredLowerThreshold и margin — черновые значения нужно откалибровать на реальных данных пользователей.
 - [ ] Нужна ли отдельная стратегия due-приоритизации для смешанных сессий (несколько itemType в одной сессии) — весовая формула сопоставима между типами или требует нормализации per-type?
 - [ ] Нужен ли отдельный itemType для смешанных/композитных вопросов — пока не предусмотрено.
@@ -217,5 +218,5 @@ if consecutiveMistakes >= consecutiveMistakesThreshold:
 2. Реализация generate() в quiz-service (Агент 2) не содержит ветвлений по itemType внутри алгоритма §4.
 3. Хотя бы два типа квизов (лексика, склонения) проходят через один и тот же generate() без дублирования логики отбора.
 4. Реализация не содержит периодических джобов пересчёта статуса/score (ни cron, ни scheduled-миграций) — бакет и currentScore вычисляются лениво при чтении, согласно §2.4.
-5. Ветка `statusFilter` (§3 «Ручной фильтр по бакету», §4 п.«2а») реализована в `QuizSessionController`/`QuizSessionService`/`QuizItemScoreRepository`, `QuizSession.statusFilter` учитывается при резюме сессии. **Статус: НЕ ВЫПОЛНЕНО** (см. предупреждение в §3) — задача на реализацию у Агента 2, приёмка через тесты Агента 4 (см. §6 open questions не применимо, это не открытый вопрос дизайна, а долг реализации).
-5. Документ не превышает 350 строк (см. `conventions.md`, требование к компактности документации Агента 6).
+5. Ветка `statusFilter` (§3 «Ручной фильтр по бакету», §4 п.«2а») реализована в `QuizSessionController`/`QuizSessionService`/`QuizItemScoreRepository`/`QuizStatusFilteredGenerator`, `QuizSession.statusFilter` учитывается при резюме сессии. **Статус: ВЫПОЛНЕНО** (код, 2026-07; актуализация документации 2026-08-06).
+6. Документ не превышает 350 строк (см. `conventions.md`, требование к компактности документации Агента 6).

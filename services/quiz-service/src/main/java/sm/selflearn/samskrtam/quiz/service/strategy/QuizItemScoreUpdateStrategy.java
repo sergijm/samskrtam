@@ -14,9 +14,10 @@ import java.util.UUID;
 /**
  * Единая стратегия обновления score для всех типов квизов.
  *
- * <p>Заменяет {@link VocabularyScoreUpdateStrategy} и {@link GrammarFormScoreUpdateStrategy}.
+ * <p>Единая стратегия обновления score для всех типов квизов.
  * Не ветвится по itemType — использует объединённую логику через {@link QuizItemScoreService}.
  * Отображение {@link LessonType} → {@link ItemType} выполняется здесь.
+ * Progress key — progressTag (String), вычисляется из полей DTO.
  */
 @Component
 @RequiredArgsConstructor
@@ -33,26 +34,34 @@ public class QuizItemScoreUpdateStrategy implements ScoreUpdateStrategy {
 
     @Override
     public Mono<Void> updateScore(UUID userId, UUID lessonId, GeneratedQuizQuestionDto generatedQuestion, boolean isCorrect) {
-        UUID externalRefId = resolveExternalRefId(generatedQuestion);
-        if (externalRefId == null) {
+        String progressTag = resolveProgressTag(generatedQuestion);
+        if (progressTag == null) {
             return Mono.empty();
         }
 
         ItemType itemType = resolveItemType(generatedQuestion);
-        return quizItemScoreService.upsertScore(userId, itemType, externalRefId, isCorrect).then();
+        return quizItemScoreService.upsertScore(userId, itemType, progressTag, isCorrect).then();
     }
 
     /**
-     * Определяет externalRefId по itemType + соответствующему полю DTO.
-     *
-     * <p>При добавлении нового ItemType: добавить case в switch и
-     * соответствующее *Id поле в {@link GeneratedQuizQuestionDto}.
+     * Определяет progressTag по itemType + соответствующим полям DTO.
+     * Для declension: caseType|numberType|gender
+     * Для vocabulary: correctFormIast (lemma)
      */
-    private UUID resolveExternalRefId(GeneratedQuizQuestionDto question) {
+    private String resolveProgressTag(GeneratedQuizQuestionDto question) {
         ItemType itemType = resolveItemType(question);
         return switch (itemType) {
-            case VOCABULARY_WORD -> question.getVocabularyWordId();
-            case DECLENSION_FORM -> question.getCaseEndingId();
+            case DECLENSION_FORM -> {
+                String caseType = question.getCaseType() != null ? question.getCaseType()
+                        : (question.getTargetCase() != null ? question.getTargetCase().name() : null);
+                String numberType = question.getNumberType() != null ? question.getNumberType()
+                        : (question.getTargetNumber() != null ? question.getTargetNumber().name() : null);
+                String gender = question.getGender() != null ? question.getGender() : "UNSPECIFIED";
+                yield caseType != null && numberType != null
+                        ? caseType + "|" + numberType + "|" + gender
+                        : null;
+            }
+            case VOCABULARY_WORD -> question.getCorrectFormIast();
         };
     }
 
@@ -69,7 +78,7 @@ public class QuizItemScoreUpdateStrategy implements ScoreUpdateStrategy {
                         question.getItemType());
             }
         }
-        // Fallback для обратной совместимости (пока content-service не обновлён)
+        // Fallback для обратной совместимости
         if (question.getVocabularyWordId() != null) {
             return ItemType.VOCABULARY_WORD;
         }
@@ -83,4 +92,3 @@ public class QuizItemScoreUpdateStrategy implements ScoreUpdateStrategy {
                 + ": no itemType field and no known Id field");
     }
 }
-

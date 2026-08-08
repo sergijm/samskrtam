@@ -1,7 +1,7 @@
 ﻿# Путь к корневой директории с файлами
 $BaseDir = "C:\MyDev\OliverHellwig\sanskrit\dcs\data\conllu\files"
 # Строка подключения к базе данных
-$DbConn = "postgresql://postgres:postgres@mdm-dev:5432/samskrtam"
+$DbConn = "postgresql://postgres:postgres@localhost:5436/samskrtam"
 # Путь к вашему Python-скрипту (если он не в текущей папке, укажите полный путь)
 $PythonScript = "import_dcs_conllu.py"
 

@@ -39,7 +39,7 @@ export default function QuizQuestionPanel({
         {t('quiz.question', { current: currentQuestionIndex + 1, total: totalQuestions })}
       </h2>
 
-      {(!question.questionType || question.questionType === 'FORM_BY_CASE') && (
+      {(!question.questionType || question.questionType === 'FORM_BY_CASE' || question.questionType === 'MULTIPLE_CHOICE') && (
         <>
           <div className="text-2xl font-bold text-center mb-5">
             {lessonType === LessonType.VOCABULARY ? (

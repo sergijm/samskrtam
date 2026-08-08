@@ -36,7 +36,7 @@
 
 ### 3.1. Три вкладки прогресса + вкладка «Сессии»
 
-> ⚠️ **Расхождение состава вкладок, зафиксировано Агентом 6.** Актуальный состав и порядок вкладок этой же страницы (`GrammarLessonPage`, `/lessons/grammar/:type`) — в более новом `frontend/pages/grammar-lesson-page.md` §2: Статистика → **Парадигмы** → По падежам → По числам → Подробно (вкладка «Сессии» там не описана). Список ниже (4 вкладки) не обновлялся при выделении `grammar-lesson-page.md` и по составу устарел — не редактируется в рамках текущей задачи (вне scope), но новая вкладка **«Парадигмы»** (реальные словоформы из `content.declension_forms`, а не абстрактные окончания) описана только там: `grammar-lesson-page.md` §2.2 `GrammarParadigmTable`, API — `content-service.md` §5а `GET /content/public/lessons/{slug}/declension-paradigms`. Свести оба списка воедино — открытый вопрос, см. `README.md` §7.
+> ⚠️ **Расхождение состава вкладок, зафиксировано Агентом 6.** Актуальный состав и порядок вкладок этой же страницы (`GrammarLessonPage`, `/lessons/grammar/:type`) — в более новом `frontend/pages/grammar-lesson-page.md` §2: Статистика → **Парадигмы** → По падежам → По числам → Подробно (вкладка «Сессии» там не описана). Список ниже (4 вкладки) не обновлялся при выделении `grammar-lesson-page.md` и по составу устарел — не редактируется в рамках текущей задачи (вне scope), но новая вкладка **«Парадигмы»** (реальные словоформы из `content.declension_forms`, а не абстрактные окончания) описана только там: `grammar-lesson-page.md` §2.2 `GrammarParadigmTable`, API — `curriculum-service.md` §5а `GET /content/public/lessons/{slug}/declension-paradigms`. Свести оба списка воедино — открытый вопрос, см. `README.md` §7.
 
 Компонент — `TabView` с четырьмя вкладками:
 
@@ -78,13 +78,13 @@
 
 Поиск существующей незавершённой сессии для резюма выполняется по равенству (`filterScope` + соответствующее множество, сравнение без учёта порядка) — это отдельная миграция Flyway в схеме quiz-service (ответственность Агента 2), отражается в OpenAPI при обновлении контракта старта квиза (ответственность Агента 6, см. `docs/openapi/quiz/parameters.yaml` и `quiz-sessions.yaml`).
 
-Алгоритм пре-фильтрации вопросов по `filterScope`/множеству находится в content-service — см.
-`content-service.md` (раздел «Внутреннее API для quiz-service»). quiz-service лишь:
+Алгоритм пре-фильтрации вопросов по `filterScope`/множеству находится в curriculum-service — см.
+`curriculum-service.md` (раздел «Внутреннее API для quiz-service»). quiz-service лишь:
 1) хранит `filterScope`/множество в `QuizSession` (как описано выше, для резюма);
 2) прокидывает те же значения как query-параметры в `ContentClient.generateQuizData(...)`;
-3) получает от content-service уже отфильтрованный список и, если он пуст, отвечает
+3) получает от curriculum-service уже отфильтрованный список и, если он пуст, отвечает
    `SCOPE_FILTER_EMPTY` — эта проверка остаётся в quiz-service, так как это бизнес-ошибка
-   сессии, а не content-service.
+   сессии, а не curriculum-service.
    Причина переноса: `generate-quiz-data` — единственная точка генерации вопросов, и фильтрация
    по грамматическим признакам вопроса логически относится к домену контента, а не к домену
    сессий квиза.
@@ -136,7 +136,7 @@
 
 Требование: в одном квизе вопросы разных `questionType` должны чередоваться, а не идти блоками/константным типом на весь квиз.
 
-**Где происходит выбор типа:** в content-service, в момент построения каждого `GeneratedQuizQuestionDto` (т.е. **до** того, как quiz-service вызывает `DeclensionOptionGeneratorService`). Это сохраняет инвариант §5 `quiz-generator-spec.md`: алгоритм отбора `QuizItem` (какую основу/падеж/число включить в сессию) остаётся полностью независим от того, как этот item потом отрендерится — `questionType` не влияет на выбор item, только на способ его подачи.
+**Где происходит выбор типа:** в curriculum-service, в момент построения каждого `GeneratedQuizQuestionDto` (т.е. **до** того, как quiz-service вызывает `DeclensionOptionGeneratorService`). Это сохраняет инвариант §5 `quiz-generator-spec.md`: алгоритм отбора `QuizItem` (какую основу/падеж/число включить в сессию) остаётся полностью независим от того, как этот item потом отрендерится — `questionType` не влияет на выбор item, только на способ его подачи.
 
 **Алгоритм назначения (на каждый DECLENSION_FORM-вопрос независимо):**
 1. Базовые веса: `FORM_BY_CASE = 0.5`, `CASE_BY_FORM = 0.3`, `ENDING_MATCH = 0.2`.
@@ -149,21 +149,21 @@
 
 **Не путать с распределением itemType/vowel_type в самой сессии** — это отдельный, уже существующий механизм отбора (`quiz-generator-spec.md` §3–4), он не меняется.
 
-**Открытый вопрос:** веса 0.5/0.3/0.2 — стартовое значение без A/B-данных, менять по фидбеку без ревизии контракта (это внутренняя константа content-service, не часть OpenAPI).
+**Открытый вопрос:** веса 0.5/0.3/0.2 — стартовое значение без A/B-данных, менять по фидбеку без ревизии контракта (это внутренняя константа curriculum-service, не часть OpenAPI).
 
 
 
 - **Агент 5** (этот раздел + `openapi/quiz/schemas/session.yaml`, `answers.yaml`) — контракт: `QuestionType`, полиморфный `QuestionOptionDto`, `multiSelect`, `selectedOptionIds`/`correctOptionIds`. Сделано в рамках этой ревизии документа.
 - **Агент 2** — реализация:
-  - **(bugfix)** перенос `SessionCreationService.applyScopeFilter` (quiz-service) в content-service как `QuizScopeFilterService`, применяемый **внутри** `QuestionGenerationService`/`DeclensionQuizGeneratorService` **до** обрезки по `questionsPerSession` — см. `content-service.md` §5 «Внутреннее API для quiz-service»; текущий баг: content-service генерирует `questionsPerSession` вопросов **без учёта** фильтра, а quiz-service фильтрует их постфактум, из-за чего после фильтрации остаётся 0–1 вопрос вместо полных 10;
+  - **(bugfix)** перенос `SessionCreationService.applyScopeFilter` (quiz-service) в curriculum-service как `QuizScopeFilterService`, применяемый **внутри** `QuestionGenerationService`/`DeclensionQuizGeneratorService` **до** обрезки по `questionsPerSession` — см. `curriculum-service.md` §5 «Внутреннее API для quiz-service»; текущий баг: curriculum-service генерирует `questionsPerSession` вопросов **без учёта** фильтра, а quiz-service фильтрует их постфактум, из-за чего после фильтрации остаётся 0–1 вопрос вместо полных 10;
   - **(bugfix)** текст `explanationRu/explanationEn` для `CASE_BY_FORM` (см. врезку выше в этом разделе) и его согласованность с фактическим направлением вопроса;
   - **(bugfix)** проверка корректности ответа для `CASE_BY_FORM`/`ENDING_MATCH` — сравнение по тройке (падеж/число/род), а не по тексту формы (см. врезку выше);
   - расширение модуля рендеринга DECLENSION_FORM (`DeclensionOptionGeneratorService` или аналог, см. описание в `quiz-sessions.yaml`) для генерации CASE_BY_FORM и ENDING_MATCH вопросов и их дистракторов по правилам §4.2–4.3;
   - выбор constant/формулы размера пула ENDING_MATCH (§4.3) и её фиксация постфактум в этом документе;
   - логика сравнения множеств в `QuizSessionService.submitAnswer` для `multiSelect=true` (точное совпадение, без partial credit);
   - решение по открытому вопросу §4.3 (порог ≥2 верных троек);
-  - **(§4.5) Шаг 2.7:** миграция Flyway — добавить `question_type VARCHAR NULL` в `quiz.session_questions` (content-service БД не трогается — тип назначается в content-service, но персистится в quiz-service вместе с остальным `session_questions`, аналогично существующим `case_type`/`number_type` в этой таблице);
-  - **(§4.5) Шаг 2.8:** в content-service, там же, где строится `GeneratedQuizQuestionDto` для DECLENSION_FORM (перед возвратом в quiz-service при первичной генерации сессии, НЕ при resume) — реализовать алгоритм §4.5 (веса, anti-repeat по двум предыдущим вопросам сессии, обнуление веса ENDING_MATCH при <2 омонимах) и заполнить `GeneratedQuizQuestionDto.questionType` (добавить это поле в DTO, аналогично уже существующему `itemType`);
+  - **(§4.5) Шаг 2.7:** миграция Flyway — добавить `question_type VARCHAR NULL` в `quiz.session_questions` (curriculum-service БД не трогается — тип назначается в curriculum-service, но персистится в quiz-service вместе с остальным `session_questions`, аналогично существующим `case_type`/`number_type` в этой таблице);
+  - **(§4.5) Шаг 2.8:** в curriculum-service, там же, где строится `GeneratedQuizQuestionDto` для DECLENSION_FORM (перед возвратом в quiz-service при первичной генерации сессии, НЕ при resume) — реализовать алгоритм §4.5 (веса, anti-repeat по двум предыдущим вопросам сессии, обнуление веса ENDING_MATCH при <2 омонимах) и заполнить `GeneratedQuizQuestionDto.questionType` (добавить это поле в DTO, аналогично уже существующему `itemType`);
   - **(§4.5) Шаг 2.9:** в quiz-service — `SessionQuestionMapper`/`SessionQuestionToDtoMapper` должны сохранять и читать `question_type` без пере-розыгрыша при `resume`; вызов алгоритма §4.5 должен происходить **только** в ветке первичного создания `session_questions` (там, где сейчас вызывается генерация вопросов при `start`), не в `resume`/`retake` для уже существующих строк.
 - **Агент 3** — фронтенд:
   - компонент выбора падежа/числа/рода (single-select, radio/список) для CASE_BY_FORM — переиспользовать локализованные лейблы `caseRu/caseEn` и т.д. из опций, не хардкодить справочник падежей во фронтенде;
@@ -226,7 +226,7 @@
 
 Кнопка одна, без вкладок и без live-счётчика N в этой итерации (в отличие от §3.3 — там N считается по
 уже загруженной таблице прогресса конкретного урока; здесь такой таблицы нет, а честный подсчёт N
-потребовал бы отдельного `count`-запроса к content-service — вынесено в открытые вопросы, см. ниже).
+потребовал бы отдельного `count`-запроса к curriculum-service — вынесено в открытые вопросы, см. ниже).
 Клик по кнопке вызывает тот же `POST /quiz/declensions-all/sessions/start-or-resume` (см.
 `quiz-sessions.yaml`) с `filterScope=ALL_STEMS` и текущими значениями трёх фильтров. Резюм
 незавершённой сессии — по равенству `filterScope=ALL_STEMS` + совпадению множеств `filterVowelTypes`/
@@ -239,7 +239,7 @@
 ### 5.5. Рендеринг вопросов
 
 Без изменений относительно §4 — `questionType` (FORM_BY_CASE/CASE_BY_FORM/ENDING_MATCH) назначается
-content-service тем же алгоритмом §4.5, независимо от того, что стемы вопроса взяты из разных исходных
+curriculum-service тем же алгоритмом §4.5, независимо от того, что стемы вопроса взяты из разных исходных
 уроков. Ограничение: ENDING_MATCH сравнивает окончания только внутри одного `vowelType` (см. §4.3) — при
 широком выборе нескольких гласных в фильтре пул кандидатов на дистракторы для ENDING_MATCH всё равно
 строится отдельно на каждый вопрос по его собственному `vowelType`, а не по всем выбранным гласным сразу.

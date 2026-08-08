@@ -19,7 +19,7 @@
 |---|---|---|---|
 | api-gateway | Java 21, WebFlux | `sm.selflearn.samskrtam.gateway` | Единая точка входа, аутентификация, маршрутизация |
 | user-service | Java 21, Virtual Threads | `sm.selflearn.samskrtam.user` | Профили, регистрация, Keycloak-прокси |
-| content-service | Java 21, Virtual Threads | `sm.selflearn.samskrtam.content` | Настройки и содержание уроков/квизов |
+| curriculum-service | Java 21, Virtual Threads | `sm.selflearn.samskrtam.content` | Настройки и содержание уроков/квизов |
 | quiz-service | Java 21, WebFlux + R2DBC | `sm.selflearn.samskrtam.quiz` | Прохождение квизов, Outbox → Kafka |
 | statistics-service | Java 21, Kafka Streams | `sm.selflearn.samskrtam.statistics` | Расчёт статистики и лидерборда |
 | dictionary-service | Java 21, Virtual Threads | `sm.selflearn.samskrtam.dictionary` | Поиск по словарю, cache-aside |
@@ -70,14 +70,14 @@
 
 Сервис `sangraha-service` (Java 21, Virtual Threads, схема `sangraha`) хранит иерархию Work → Chapter → Verse и выполняет LLM-анализ стиха (OpenAI-совместимый) строго через tool calling (`submit_verse_analysis`), без парсинга свободного текста.
 
-Синхронизация лексики с content-service выполняется синхронным REST-вызовом `POST content-service/content/internal/sangraha/vocabulary-quiz` — канал «один producer, один consumer» не требует Kafka. Иерархия `work.slug → chapter.slug` маппится на `VocabularyCategory.code` в content-service для тематической группировки лексики. Слова дедуплицируются по `(wordIast, stem)`; версионирование анализа не хранится (перезапись). Запись — только для роли ADMIN. Порт — из env (см. §6 `services/sangraha-service.md`).
+Синхронизация лексики с curriculum-service выполняется синхронным REST-вызовом `POST curriculum-service/content/internal/sangraha/vocabulary-quiz` — канал «один producer, один consumer» не требует Kafka. Иерархия `work.slug → chapter.slug` маппится на `VocabularyCategory.code` в curriculum-service для тематической группировки лексики. Слова дедуплицируются по `(wordIast, stem)`; версионирование анализа не хранится (перезапись). Запись — только для роли ADMIN. Порт — из env (см. §6 `services/sangraha-service.md`).
 
 Синхронизация лексики со стихом инициируется явным действием пользователя, а не автоматически при анализе стиха:
 
-- Кнопка «Изучить» на VersePage вызывает `POST /verses/{verseId}/vocabulary-quiz`. Если по стиху уже был клик — возвращается закэшированный `verse.vocabularyQuizSlug` без обращения к content-service; иначе sangraha-service синхронно, в рамках того же HTTP-запроса, вызывает content-service, получает `quizSlug`/`quizId`/`quizStatus` и кэширует их.
+- Кнопка «Изучить» на VersePage вызывает `POST /verses/{verseId}/vocabulary-quiz`. Если по стиху уже был клик — возвращается закэшированный `verse.vocabularyQuizSlug` без обращения к curriculum-service; иначе sangraha-service синхронно, в рамках того же HTTP-запроса, вызывает curriculum-service, получает `quizSlug`/`quizId`/`quizStatus` и кэширует их.
 - Квиз создаётся на уровне **стиха**, а не произведения: `Quiz.slug = "{workSlug}.{chapterSlug}.verse-{verseId}"`, slug детерминирован, что даёт идемпотентность без ретраев.
 - `VocabularyCategory` (work → chapter) остаётся общим механизмом тематической классификации лексики и используется независимо от квиза по стиху: слово одновременно входит и в свой квиз-по-стиху (`VocabularyWord` ↔ `Quiz`), и в тематическую категорию произведения/главы (`VocabularyWord` ↔ `VocabularyCategory` через `VocabularyWordCategory`) — это ортогональные связи.
-- `quizStatus` (`CREATED`/`EXISTING`) — единственный сигнал, которым content-service может обозначить, нужен ли фильтр `statusFilter=NEW` при первом старте сессии: `CREATED` → `NEW`, `EXISTING`/кэш-хит → без фильтра. Фронтенд стартует сессию сразу по `quizId` через `POST /quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&statusFilter=...`.
+- `quizStatus` (`CREATED`/`EXISTING`) — единственный сигнал, которым curriculum-service может обозначить, нужен ли фильтр `statusFilter=NEW` при первом старте сессии: `CREATED` → `NEW`, `EXISTING`/кэш-хит → без фильтра. Фронтенд стартует сессию сразу по `quizId` через `POST /quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&statusFilter=...`.
 - Надёжная доставка обеспечивается на уровне HTTP-запроса, инициированного пользователем: отдельного фонового Outbox/relay для этого потока нет, повтор равен повторному клику.
 
 ### 3.6 Прогресс и повторение — quest-engine
@@ -85,7 +85,7 @@
 Модель прогресса, статусы обучения и алгоритм планирования повторений (spaced repetition)
 описаны отдельно, как часть спецификации движка квестов — см.
 [services/quest-engine.md](services/quest-engine.md). Ключевое: единая таблица прогресса без
-физических FK на content-service, один алгоритм повторения для всех типов заданий, без
+физических FK на curriculum-service, один алгоритм повторения для всех типов заданий, без
 ручной калибровки порогов под каждый тип по отдельности.
 
 Прогресс склонений общий для всех основ с одинаковым `(vowel_type, gender, case_type, number_type)` (см. §3.3) — единица прогресса привязана к этой связке параметров, а не к конкретной основе, поэтому не дублируется там, где окончания совпадают.
