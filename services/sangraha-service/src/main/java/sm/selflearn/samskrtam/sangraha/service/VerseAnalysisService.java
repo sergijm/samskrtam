@@ -254,10 +254,19 @@ public class VerseAnalysisService {
 
     private void saveSingleVerseResult(Verse verse, JsonNode verseEntry,
                                         String rawResponse, String modelName, String analyzerName) {
-        Chapter chapter = chapterRepository.findByIdAndDeletedAtIsNull(verse.getChapterId())
-                .orElseThrow(() -> new IllegalArgumentException("Chapter not found: " + verse.getChapterId()));
-        Work work = workRepository.findById(chapter.getWorkId())
-                .orElseThrow(() -> new IllegalArgumentException("Work not found: " + chapter.getWorkId()));
+        // Standalone-стихи (страница /analysis) не привязаны к главе/произведению —
+        // контекст work/chapter для них отсутствует и в saveResults передаётся null.
+        final Chapter chapter;
+        final Work work;
+        if (verse.getChapterId() != null) {
+            chapter = chapterRepository.findByIdAndDeletedAtIsNull(verse.getChapterId())
+                    .orElseThrow(() -> new IllegalArgumentException("Chapter not found: " + verse.getChapterId()));
+            work = workRepository.findById(chapter.getWorkId())
+                    .orElseThrow(() -> new IllegalArgumentException("Work not found: " + chapter.getWorkId()));
+        } else {
+            chapter = null;
+            work = null;
+        }
 
         String textDevanagari = getString(verseEntry, "textDevanagari");
         String textIast = getString(verseEntry, "textIast");

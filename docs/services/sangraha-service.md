@@ -97,9 +97,16 @@ POST   /api/v1/sangraha/verses/{verseId}/analyze                 → сохра�
 POST   /api/v1/sangraha/chapters/{chapterId}/verses/analyze-all  → батч-анализ всех DRAFT/FAILED стихов главы (ADMIN, реализовано,
                                                                      )
 GET    /api/v1/sangraha/verse?id={uuid}&id={uuid}...             → произвольный список стихов + status каждого
-                                                                     (не только ANALYZED), см. sangraha-service/batch-verse-review.md
+                                                                      (не только ANALYZED), см. sangraha-service/batch-verse-review.md
 POST   /api/v1/sangraha/verse/analysis                           → батч-анализ произвольного списка verseId (ADMIN,
-                                                                     безусловный повтор), см. sangraha-service/batch-verse-review.md
+                                                                      безусловный повтор), см. sangraha-service/batch-verse-review.md
+POST   /api/v1/sangraha/analysis                                 → страница /analysis: создать standalone-стих (chapter_id = null,
+                                                                      owner_id = X-User-Id) и сразу запустить LLM-анализ; каждое
+                                                                      нажатие «Анализировать» создаёт новую запись (любой авторизованный,
+                                                                      персональные стихи)
+GET    /api/v1/sangraha/analysis                                 → список standalone-стихов текущего пользователя (новые сверху,
+                                                                      только превью/статус/createdAt — без контекста произведения/главы)
+DELETE /api/v1/sangraha/analysis/{verseId}                       → мягкое удаление standalone-стиха (только владелец)
 ```
 
 Ответ `GET /works/{workSlug}` (и `GET /works?id={workId}`) — двухуровневое дерево для TreeGrid:

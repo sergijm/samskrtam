@@ -23,7 +23,8 @@ import java.util.UUID;
 
 /**
  * Результат классификации лексемы (lemma-classification.md §1.7).
- * UNIQUE(lemma_id, scheme_code) — один прогон по схеме перезаписывает строку.
+ * UNIQUE(lemma_id, gender, scheme_code) — один прогон по схеме для пары
+ * (лемма, род) перезаписывает строку.
  */
 @Entity
 @Table(name = "lemma_classification", schema = "sangraha")
@@ -41,6 +42,9 @@ public class LemmaClassification {
     @ManyToOne
     @JoinColumn(name = "lemma_id", nullable = false)
     private Lemma lemma;
+
+    @Column(name = "gender")
+    private String gender;
 
     @Column(name = "scheme_code", nullable = false)
     private String schemeCode;

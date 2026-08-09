@@ -13,12 +13,33 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Pageable;
+
 @Repository
 public interface VerseWordRepository extends JpaRepository<VerseWord, UUID> {
 
     List<VerseWord> findAllByVerse_IdOrderByPositionAsc(UUID verseId);
 
-    List<VerseWord> findTop2ByLemmaIdOrderByPositionAsc(UUID lemmaId);
+    /** Страница verse_words с id > :id (курсор) — проход по корпусу без загрузки стихов. */
+    List<VerseWord> findAllByIdGreaterThanOrderByIdAsc(UUID id, Pageable pageable);
+
+    /**
+     * Различные (непустые) {@code lemma_iast} корпуса, которых ещё НЕТ в словаре
+     * {@code lemma} (по тексту lemma_iast) — вход словаря LemmaRefreshService для
+     * добавления новых строк. Пустые строки исключены (length > 0), NULL отсекается.
+     */
+    @Query("""
+            SELECT DISTINCT vw.lemmaIast FROM VerseWord vw
+            WHERE length(vw.lemmaIast) > 0
+              AND vw.verse.chapterId IS NOT NULL
+              AND NOT EXISTS (
+                  SELECT 1 FROM Lemma l WHERE l.lemmaIast = vw.lemmaIast
+              )
+            """)
+    List<String> findDistinctLemmaIast();
+
+    /** Первые {@code position} строк словаря леммы (по тексту lemma_iast) — примеры словоформ для классификации. */
+    List<VerseWord> findTop2ByLemmaIastOrderByPositionAsc(String lemmaIast);
 
     void deleteAllByVerse_Id(UUID verseId);
 

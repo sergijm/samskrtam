@@ -86,6 +86,16 @@
       "gloss": "Gloss"
     },
     "vocabularyQuiz": "Vocab Quiz",
+    "analysis": {
+      "title": "Text Analysis",
+      "newEntry": "New sentence",
+      "hint": "Each click on Analyze creates a new analysis entry",
+      "myEntries": "My analyses",
+      "noEntries": "No analyses yet",
+      "entry": "Analysis",
+      "createdAt": "Created",
+      "deleteConfirm": "Delete this analysis?"
+    },
     "error": {
       "analysisIncomplete": "Analysis data is incomplete - word list is empty.",
       "analysisMissing": "Analysis is missing despite status being Analyzed.",

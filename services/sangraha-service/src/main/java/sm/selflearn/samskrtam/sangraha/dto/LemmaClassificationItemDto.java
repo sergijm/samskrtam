@@ -5,6 +5,9 @@ import java.util.UUID;
 
 /**
  * Строка списка на ревью (lemma-classification.md §4) и строка экспорта (§5).
+ * gender приходит из строки классификации; dominantPosCode/occurrenceCount — из
+ * статистики (lemma, gender) вместе с gender (решение 2026-08-09). frequencyRank
+ * исключён: ранг жил на лемме, после расщепления на словарь+статистику не ведётся.
  */
 public record LemmaClassificationItemDto(
         UUID id,
@@ -15,7 +18,6 @@ public record LemmaClassificationItemDto(
         String gender,
         String dominantPosCode,
         Integer occurrenceCount,
-        Integer frequencyRank,
         String categoryCode,
         String glossRu,
         String glossEn,

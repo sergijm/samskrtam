@@ -9,6 +9,8 @@ import sm.selflearn.samskrtam.content.dto.DeclensionParadigmPageDto;
 import sm.selflearn.samskrtam.content.dto.Difficulty;
 import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.model.Gender;
+import sm.selflearn.samskrtam.content.model.CaseType;
+import sm.selflearn.samskrtam.content.model.NumberType;
 import sm.selflearn.samskrtam.quiz.dto.DeclensionExamplesResponseDto;
 import sm.selflearn.samskrtam.quiz.dto.LessonItemDto;
 import sm.selflearn.samskrtam.quiz.dto.LessonListResponse;
@@ -18,9 +20,12 @@ import sm.selflearn.samskrtam.quiz.dto.TopicLessonSummaryDto;
 import sm.selflearn.samskrtam.quiz.dto.VocabularyLessonDto;
 import sm.selflearn.samskrtam.quiz.dto.WordAnswerHistory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * v2 lesson endpoints that serve the lesson picker and the lesson sub-views
@@ -35,6 +40,7 @@ import java.util.UUID;
 public class LessonV2Service {
 
     private final CurriculumClient curriculumClient;
+    private final SangrahaClient sangrahaClient;
 
     /* ─── list / summary ─────────────────────────────────────────────── */
 
@@ -103,7 +109,72 @@ public class LessonV2Service {
     }
 
     public Mono<DeclensionExamplesResponseDto> examples(String slug) {
-        return Mono.just(new DeclensionExamplesResponseDto(List.of()));
+        return curriculumClient.fetchParadigmPage(slug, 0)
+                .flatMap(page -> {
+                    DeclensionParadigmDto dto = page.getParadigm();
+                    if (dto == null || dto.getVowelType() == null) {
+                        return Mono.just(new DeclensionExamplesResponseDto(List.of()));
+                    }
+                    String vowelType = dto.getVowelType().name();
+                    String gender = dto.getGender() != null ? dto.getGender().name() : "UNSPECIFIED";
+
+                    List<Map<String, String>> cells = new ArrayList<>();
+                    for (CaseType c : CaseType.values()) {
+                        for (NumberType n : new NumberType[]{NumberType.SINGULAR, NumberType.DUAL, NumberType.PLURAL}) {
+                            cells.add(Map.of("caseType", c.name(), "numberType", n.name()));
+                        }
+                    }
+
+                    return sangrahaClient.searchExamples(vowelType, gender, 5, 10, cells)
+                            .flatMap(searchResp -> {
+                                List<UUID> allVerseIds = searchResp.groups().stream()
+                                        .flatMap(g -> g.verseIds().stream())
+                                        .distinct()
+                                        .collect(Collectors.toList());
+                                if (allVerseIds.isEmpty()) {
+                                    return Mono.just(new DeclensionExamplesResponseDto(List.of()));
+                                }
+                                return sangrahaClient.fetchVersesBatch(allVerseIds)
+                                        .map(batchResp -> {
+                                            Map<UUID, SangrahaVersesBatchResponse.VerseDto> verseMap =
+                                                    batchResp.verses().stream()
+                                                            .collect(Collectors.toMap(
+                                                                    SangrahaVersesBatchResponse.VerseDto::verseId,
+                                                                    v -> v,
+                                                                    (a, b) -> a));
+
+                                            List<DeclensionExamplesResponseDto.GroupDto> groups = new ArrayList<>();
+                                            for (SangrahaExamplesSearchResponse.GroupDto group : searchResp.groups()) {
+                                                if (group.verseIds().isEmpty()) continue;
+                                                List<DeclensionExamplesResponseDto.ExampleDto> examples =
+                                                        group.verseIds().stream()
+                                                                .map(verseMap::get)
+                                                                .filter(v -> v != null)
+                                                                .map(v -> DeclensionExamplesResponseDto.ExampleDto.builder()
+                                                                        .verseId(v.verseId())
+                                                                        .workSlug(v.workSlug())
+                                                                        .textIast(v.textIast())
+                                                                        .textDevanagari(v.textDevanagari())
+                                                                        .translationRu(v.translationRu())
+                                                                        .translationEn(v.translationEn())
+                                                                        .workTitleRu(v.workTitleRu())
+                                                                        .workTitleEn(v.workTitleEn())
+                                                                        .chapterTitleRu(v.chapterTitleRu())
+                                                                        .chapterTitleEn(v.chapterTitleEn())
+                                                                        .verseOrderIndex(v.verseOrderIndex())
+                                                                        .build())
+                                                                .collect(Collectors.toList());
+                                                groups.add(DeclensionExamplesResponseDto.GroupDto.builder()
+                                                        .caseType(group.caseType())
+                                                        .numberType(group.numberType())
+                                                        .examples(examples)
+                                                        .build());
+                                            }
+                                            return new DeclensionExamplesResponseDto(groups);
+                                        });
+                            });
+                })
+                .onErrorResume(e -> Mono.just(new DeclensionExamplesResponseDto(List.of())));
     }
 
     /* ─── history dialogs (empty until quiz_item_score is sourced here) ─ */

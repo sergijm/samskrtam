@@ -40,7 +40,9 @@ public class LearnGraphService {
 
     @Transactional(readOnly = true)
     public LearnGraphResponse getLearnGraph() {
-        List<Topic> topics = topicRepository.findAll();
+        List<Topic> topics = topicRepository.findAll().stream()
+                .filter(t -> !t.isHidden())
+                .toList();
         List<TopicPrerequisite> prerequisites = topicPrerequisiteRepository.findAll();
 
         Map<UUID, Topic> topicById = topics.stream()

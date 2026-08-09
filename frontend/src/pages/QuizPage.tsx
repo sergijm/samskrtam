@@ -79,6 +79,8 @@ const QuizPage = () => {
               <QuestionRenderer
                 question={currentQuestion}
                 selectedOptionId={selectedOptionId}
+                currentQuestionIndex={currentQuestionIndex}
+                totalQuestions={questions.length}
                 disabled={!!feedback || isSubmittingAnswer}
                 feedback={feedback}
                 onSubmit={handleSubmitAnswer}
@@ -109,6 +111,8 @@ const QuizPage = () => {
               <QuizFreeTextPanel
                 question={currentQuestion}
                 disabled={isSubmittingAnswer}
+                currentQuestionIndex={currentQuestionIndex}
+                totalQuestions={questions.length}
                 feedback={feedback}
                 onFreeTextSubmit={handleSubmitAnswer}
               />

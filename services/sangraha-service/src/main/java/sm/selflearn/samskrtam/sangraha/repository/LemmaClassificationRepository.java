@@ -13,19 +13,20 @@ import java.util.UUID;
 
 public interface LemmaClassificationRepository extends JpaRepository<LemmaClassification, UUID> {
 
-    Optional<LemmaClassification> findByLemmaIdAndSchemeCode(UUID lemmaId, String schemeCode);
+    Optional<LemmaClassification> findByLemmaIdAndGenderAndSchemeCode(UUID lemmaId, String gender, String schemeCode);
 
     /**
      * Список на ревью: строки схемы со статусом, отсортированные по
-     * frequencyRank леммы (частотные приоритетнее, §4). Курсор — lemmaId >
-     * lastLemmaId.
+     * occurrenceCount статистики (lemma, gender) — частотные приоритетнее (§4).
+     * Курсор — lemmaId > lastLemmaId.
      */
     @Query("""
             SELECT lc FROM LemmaClassification lc
             JOIN lc.lemma l
+            JOIN LemmaStatistics ls ON ls.lemma = l AND ls.gender = lc.gender
             WHERE lc.schemeCode = :schemeCode AND lc.status = :status
               AND (:cursor IS NULL OR l.id > :cursor)
-            ORDER BY l.frequencyRank ASC, l.id ASC
+            ORDER BY ls.occurrenceCount DESC, l.id ASC
             """)
     List<LemmaClassification> findForReview(
             @Param("schemeCode") String schemeCode,

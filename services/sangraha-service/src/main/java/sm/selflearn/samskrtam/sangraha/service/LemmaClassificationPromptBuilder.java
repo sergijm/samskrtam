@@ -34,24 +34,24 @@ public class LemmaClassificationPromptBuilder {
     }
 
     /**
-     * Вход батча: одна строка на лему — индекс, lemmaId, форма, POS/gender,
-     * до 2 примеров употребления из корпуса (§2.2).
+     * Вход батча: одна строка на лему — индекс, lemmaId, форма, POS/gender из
+     * статистики (lemma, gender), до 2 примеров употребления из корпуса (§2.2).
      */
     public String buildUserPrompt(List<LemmaBatchItem> items) {
         StringBuilder sb = new StringBuilder("Classify the following Sanskrit lemmas.\n\n");
         for (int i = 0; i < items.size(); i++) {
             LemmaBatchItem item = items.get(i);
             sb.append("[").append(i).append("]\n");
-            sb.append("lemmaId: ").append(item.lemma.getId()).append("\n");
-            sb.append("lemmaIast: ").append(item.lemma.getLemmaIast()).append("\n");
-            sb.append("lemmaDevanagari: ").append(item.lemma.getLemmaDevanagari()).append("\n");
-            if (item.lemma.getDominantPosCode() != null) {
-                sb.append("dominantPosCode: ").append(item.lemma.getDominantPosCode()).append("\n");
+            sb.append("lemmaId: ").append(item.lemma().getId()).append("\n");
+            sb.append("lemmaIast: ").append(item.lemma().getLemmaIast()).append("\n");
+            sb.append("lemmaDevanagari: ").append(item.lemma().getLemmaDevanagari()).append("\n");
+            if (item.dominantPosCode() != null) {
+                sb.append("dominantPosCode: ").append(item.dominantPosCode()).append("\n");
             }
-            if (item.lemma.getGender() != null) {
-                sb.append("gender: ").append(item.lemma.getGender()).append("\n");
+            if (item.gender() != null) {
+                sb.append("gender: ").append(item.gender()).append("\n");
             }
-            appendExamples(sb, item.examples);
+            appendExamples(sb, item.examples());
             sb.append("\n");
         }
         return sb.toString();
@@ -103,7 +103,7 @@ public class LemmaClassificationPromptBuilder {
         return template.substring(codeStart + 5, codeEnd).trim();
     }
 
-    /** Одна лема + её примеры для user-промпта. */
-    public record LemmaBatchItem(Lemma lemma, List<String> examples) {
+    /** Одна лема + данные её статистики (lemma, gender) + примеры для user-промпта. */
+    public record LemmaBatchItem(Lemma lemma, String gender, String dominantPosCode, List<String> examples) {
     }
 }

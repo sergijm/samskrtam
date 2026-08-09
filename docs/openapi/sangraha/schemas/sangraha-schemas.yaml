@@ -503,3 +503,23 @@ WorksClassGroup:
       type: array
       items:
         $ref: '#/WorksClassTreeNode'
+
+# --- Standalone анализ (страница /analysis, verse.chapter_id = null) ---
+StandaloneVerseItem:
+  type: object
+  required: [id]
+  properties:
+    id:
+      type: string
+      format: uuid
+    preview:
+      type: string
+      nullable: true
+      description: >-
+        Превью текста (textIast → textDevanagari → rawText), обрезанное до 120
+        символов. У standalone-стиха нет контекста произведения/главы.
+    status:
+      $ref: '#/VerseStatus'
+    createdAt:
+      type: string
+      format: date-time

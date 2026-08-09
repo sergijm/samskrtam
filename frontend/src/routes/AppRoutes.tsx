@@ -43,6 +43,7 @@ import WorkPage from '../pages/sangraha/WorkPage';
 import ChapterPage from '../pages/sangraha/ChapterPage';
 import VersePage from '../pages/sangraha/VersePage';
 import VersesBatchPage from '../pages/sangraha/VersesBatchPage';
+import AnalysisPage from '../pages/analysis/AnalysisPage';
 
 // Components
 import ProtectedRoute from '../components/auth/ProtectedRoute';
@@ -140,8 +141,12 @@ export default function AppRoutes() {
       <Route path="/admin/groups" element={<ProtectedLayoutRoute><AdminGroupsPage /></ProtectedLayoutRoute>} />
 
       {/* Writing routes */}
+      <Route path="/alphabet" element={<ProtectedLayoutRoute><AlphabetPage /></ProtectedLayoutRoute>} />
       <Route path="/writing/alphabet" element={<ProtectedLayoutRoute><AlphabetPage /></ProtectedLayoutRoute>} />
       <Route path="/writing/transliteration" element={<ProtectedLayoutRoute><TransliterationPracticePage /></ProtectedLayoutRoute>} />
+
+      {/* Analysis routes */}
+      <Route path="/analysis" element={<ProtectedLayoutRoute><AnalysisPage /></ProtectedLayoutRoute>} />
 
       {/* Catch-all */}
       <Route path="*" element={<ProtectedRoute><Navigate to="/" /></ProtectedRoute>} />

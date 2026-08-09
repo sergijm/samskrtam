@@ -2,6 +2,7 @@ package sm.selflearn.samskrtam.sangraha.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import sm.selflearn.samskrtam.sangraha.dto.ClassificationRunResponse;
 import sm.selflearn.samskrtam.sangraha.model.ClassificationBatch;
 import sm.selflearn.samskrtam.sangraha.model.ClassificationRun;
@@ -9,14 +10,17 @@ import sm.selflearn.samskrtam.sangraha.model.ClassificationScheme;
 import sm.selflearn.samskrtam.sangraha.model.ClassificationStatus;
 import sm.selflearn.samskrtam.sangraha.model.Lemma;
 import sm.selflearn.samskrtam.sangraha.model.LemmaClassification;
+import sm.selflearn.samskrtam.sangraha.model.LemmaStatistics;
 import sm.selflearn.samskrtam.sangraha.repository.ClassificationBatchRepository;
 import sm.selflearn.samskrtam.sangraha.repository.ClassificationRunRepository;
 import sm.selflearn.samskrtam.sangraha.repository.ClassificationSchemeRepository;
 import sm.selflearn.samskrtam.sangraha.repository.LemmaClassificationRepository;
 import sm.selflearn.samskrtam.sangraha.repository.LemmaRepository;
+import sm.selflearn.samskrtam.sangraha.repository.LemmaStatisticsRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
 import sm.selflearn.samskrtam.sangraha.service.LemmaClassificationLlmClient.LemmaClassificationCallException;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,10 +30,10 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import org.mockito.ArgumentCaptor;
 
 class LemmaClassificationRunServiceTest {
 
@@ -37,6 +41,7 @@ class LemmaClassificationRunServiceTest {
     private final Map<UUID, ClassificationBatch> batches = new HashMap<>();
 
     private LemmaRepository lemmaRepo;
+    private LemmaStatisticsRepository statisticsRepo;
     private ClassificationRunRepository runRepo;
     private ClassificationBatchRepository batchRepo;
     private ClassificationSchemeRepository schemeRepo;
@@ -47,9 +52,18 @@ class LemmaClassificationRunServiceTest {
     private LemmaClassificationValidator validator;
     private LlmProperties llmProperties;
 
+    private final Map<UUID, List<LemmaStatistics>> statsByLemma = new HashMap<>();
+
     @BeforeEach
     void setUp() {
+        statsByLemma.clear();
         lemmaRepo = mock(LemmaRepository.class);
+        statisticsRepo = mock(LemmaStatisticsRepository.class);
+        when(statisticsRepo.findByLemmaIdIn(anyCollection())).thenAnswer(inv -> {
+            List<UUID> ids = new ArrayList<>((java.util.Collection<UUID>) inv.getArgument(0));
+            return ids.stream().flatMap(id -> statsByLemma.getOrDefault(id, List.of()).stream()).toList();
+        });
+        when(statisticsRepo.findAll()).thenAnswer(inv -> statsByLemma.values().stream().flatMap(List::stream).toList());
         runRepo = mock(ClassificationRunRepository.class);
         when(runRepo.save(any())).thenAnswer(inv -> {
             ClassificationRun r = inv.getArgument(0);
@@ -75,9 +89,9 @@ class LemmaClassificationRunServiceTest {
         when(schemeRepo.findById("UNKNOWN")).thenReturn(Optional.empty());
         classificationRepo = mock(LemmaClassificationRepository.class);
         when(classificationRepo.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
-        when(classificationRepo.findByLemmaIdAndSchemeCode(any(), any())).thenReturn(Optional.empty());
+        when(classificationRepo.findByLemmaIdAndGenderAndSchemeCode(any(), any(), any())).thenReturn(Optional.empty());
         verseWordRepo = mock(VerseWordRepository.class);
-        when(verseWordRepo.findTop2ByLemmaIdOrderByPositionAsc(any())).thenReturn(List.of());
+        when(verseWordRepo.findTop2ByLemmaIastOrderByPositionAsc(any())).thenReturn(List.of());
         llmClient = mock(LemmaClassificationLlmClient.class);
         validator = mock(LemmaClassificationValidator.class);
         when(validator.containsDevanagari(any())).thenReturn(false);
@@ -86,20 +100,32 @@ class LemmaClassificationRunServiceTest {
         llmProperties.setModel("test-model");
     }
 
-    private Lemma lemma(int rank) {
-        return Lemma.builder().id(UUID.randomUUID()).lemmaSlp1("lemma" + rank).lemmaIast("lema" + rank)
-                .lemmaDevanagari("lemma").occurrenceCount(rank).frequencyRank(rank).build();
+    private Lemma lemma(int rank, String... genders) {
+        Lemma lemma = Lemma.builder().id(UUID.randomUUID()).lemmaSlp1("lemma" + rank).lemmaIast("lema" + rank)
+                .lemmaDevanagari("lemma").build();
+        List<LemmaStatistics> lemmaStats = new ArrayList<>();
+        for (int i = 0; i < genders.length; i++) {
+            lemmaStats.add(LemmaStatistics.builder()
+                    .id(UUID.randomUUID())
+                    .lemma(lemma)
+                    .gender(genders[i])
+                    .occurrenceCount(rank + i)
+                    .dominantPosCode("NOUN")
+                    .build());
+        }
+        statsByLemma.put(lemma.getId(), lemmaStats);
+        return lemma;
     }
 
     private LemmaClassificationRunService newService() {
-        return new LemmaClassificationRunService(lemmaRepo, runRepo, batchRepo, schemeRepo, classificationRepo,
-                verseWordRepo, llmClient, validator, llmProperties);
+        return new LemmaClassificationRunService(lemmaRepo, statisticsRepo, runRepo, batchRepo, schemeRepo,
+                classificationRepo, verseWordRepo, llmClient, validator, llmProperties);
     }
 
     @Test
     void startRun_successQueue_completed() {
-        List<Lemma> candidates = List.of(lemma(10), lemma(9));
-        when(lemmaRepo.findCandidatesForClassification(eq("CURRICULUM"), eq(ClassificationStatus.REJECTED), any()))
+        List<Lemma> candidates = List.of(lemma(10, "MASCULINE"), lemma(9, "FEMININE"));
+        when(lemmaRepo.findCandidatesForClassification(eq("CURRICULUM"), eq(ClassificationStatus.REJECTED)))
                 .thenReturn(candidates);
         when(llmClient.classifyBatch(any())).thenReturn(
                 new LemmaClassificationSuggestion.BatchResult(List.of(), "test-model"));
@@ -128,8 +154,8 @@ class LemmaClassificationRunServiceTest {
 
     @Test
     void startRun_oneFailedBatch_otherSucceeds_statusWithErrors() {
-        List<Lemma> candidates = List.of(lemma(1), lemma(2));
-        when(lemmaRepo.findCandidatesForClassification(eq("CURRICULUM"), eq(ClassificationStatus.REJECTED), any()))
+        List<Lemma> candidates = List.of(lemma(1, "MASCULINE"), lemma(2, "MASCULINE"));
+        when(lemmaRepo.findCandidatesForClassification(eq("CURRICULUM"), eq(ClassificationStatus.REJECTED)))
                 .thenReturn(candidates);
         when(llmClient.classifyBatch(any()))
                 .thenThrow(new LemmaClassificationCallException("LLM down"))
@@ -153,8 +179,8 @@ class LemmaClassificationRunServiceTest {
 
     @Test
     void unknownCategoryCode_savesRowWithNullCategory_butKeepsGloss() {
-        List<Lemma> candidates = List.of(lemma(1));
-        when(lemmaRepo.findCandidatesForClassification(eq("CURRICULUM"), eq(ClassificationStatus.REJECTED), any()))
+        List<Lemma> candidates = List.of(lemma(1, "MASCULINE"));
+        when(lemmaRepo.findCandidatesForClassification(eq("CURRICULUM"), eq(ClassificationStatus.REJECTED)))
                 .thenReturn(candidates);
         when(lemmaRepo.findById(any())).thenAnswer(inv -> candidates.stream()
                 .filter(l -> l.getId().equals(inv.getArgument(0))).findFirst());
@@ -170,17 +196,18 @@ class LemmaClassificationRunServiceTest {
         assertThat(saved.getCategoryCode()).isNull();
         assertThat(saved.getGlossRu()).isEqualTo("слон");
         assertThat(saved.getGlossEn()).isEqualTo("elephant");
+        assertThat(saved.getGender()).isEqualTo("MASCULINE");
     }
 
     @Test
     void devanagariInGloss_discardsRow() {
-        List<Lemma> candidates = List.of(lemma(1));
-        when(lemmaRepo.findCandidatesForClassification(eq("CURRICULUM"), eq(ClassificationStatus.REJECTED), any()))
+        List<Lemma> candidates = List.of(lemma(1, "MASCULINE"));
+        when(lemmaRepo.findCandidatesForClassification(eq("CURRICULUM"), eq(ClassificationStatus.REJECTED)))
                 .thenReturn(candidates);
         when(validator.containsDevanagari(any())).thenAnswer(inv -> {
             String text = (String) inv.getArgument(0);
             return text != null && text.matches(".*\\p{InDevanagari}.*");
-        });;
+        });
         when(llmClient.classifyBatch(any())).thenReturn(new LemmaClassificationSuggestion.BatchResult(List.of(
                 new LemmaClassificationSuggestion(candidates.get(0).getId(), "animals", "हाथी", "elephant", null)),
                 "test-model"));
@@ -188,6 +215,25 @@ class LemmaClassificationRunServiceTest {
         ClassificationRunResponse response = newService().startRun("CURRICULUM", 1, 1, "admin");
 
         assertThat(response.classifiedLemmaCount()).isZero();
+    }
+
+    @Test
+    void startRun_sortsCandidatesByTotalOccurrencesDesc() {
+        List<Lemma> candidates = List.of(lemma(1, "MASCULINE"), lemma(5, "MASCULINE", "FEMININE"));
+        when(lemmaRepo.findCandidatesForClassification(eq("CURRICULUM"), eq(ClassificationStatus.REJECTED)))
+                .thenReturn(candidates);
+
+        ArgumentCaptor<List> itemCaptor = ArgumentCaptor.forClass(List.class);
+        when(llmClient.classifyBatch(itemCaptor.capture())).thenReturn(
+                new LemmaClassificationSuggestion.BatchResult(List.of(), "test-model"));
+
+        newService().startRun("CURRICULUM", 10, 1, "admin");
+
+        List<LemmaClassificationPromptBuilder.LemmaBatchItem> items =
+                ((List<LemmaClassificationPromptBuilder.LemmaBatchItem>) itemCaptor.getValue());
+        assertThat(items).hasSize(2);
+        // lemma5 total = 5+6=11, lemma1 total = 1 → самая частотная первая.
+        assertThat(items.get(0).lemma().getLemmaSlp1()).isEqualTo("lemma5");
     }
 
     private LemmaClassification lastSaved() {

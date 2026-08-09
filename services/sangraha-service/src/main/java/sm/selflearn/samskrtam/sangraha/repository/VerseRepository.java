@@ -48,6 +48,7 @@ public interface VerseRepository extends JpaRepository<Verse, UUID> {
     @Query("""
             SELECT v FROM Verse v
             WHERE v.status = :status AND v.deletedAt IS NULL
+              AND v.chapterId IS NOT NULL
               AND (:cursor IS NULL OR v.id > :cursor)
             ORDER BY v.id
             """)
@@ -55,5 +56,36 @@ public interface VerseRepository extends JpaRepository<Verse, UUID> {
             @Param("status") VerseStatus status,
             @Param("cursor") UUID cursor,
             org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Постраничный обход всех не удалённых стихов курсором по {@code id > cursor}
+     * (LemmaRefreshService — леммы агрегируются по всему корпусу без фильтра
+     * статуса: часть корпуса загружена внешним скриптом, у таких стихов слова
+     * и морфология уже есть при status != ANALYZED).
+     */
+    @Query("""
+            SELECT v FROM Verse v
+            WHERE v.deletedAt IS NULL
+              AND v.chapterId IS NOT NULL
+              AND (:cursor IS NULL OR v.id > :cursor)
+            ORDER BY v.id
+            """)
+    List<Verse> findAllByDeletedAtIsNullAndIdGreaterThan(
+            @Param("cursor") UUID cursor,
+            org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Standalone-стихи пользователя (страница /analysis): chapter_id = null,
+     * не удалённые, не привязанные к произведению/главе, новые сверху.
+     */
+    @Query("""
+            SELECT v FROM Verse v
+            WHERE v.chapterId IS NULL
+              AND v.ownerId = :ownerId
+              AND v.deletedAt IS NULL
+            ORDER BY v.createdAt DESC
+            """)
+    List<Verse> findAllByChapterIdIsNullAndOwnerIdAndDeletedAtIsNullOrderByCreatedAtDesc(
+            @Param("ownerId") UUID ownerId);
 
 }

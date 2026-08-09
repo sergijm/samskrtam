@@ -42,6 +42,16 @@ public class WorksClassService {
     @Transactional(readOnly = true)
     public List<WorksClassGroupDto> getClassGroups() {
         List<WorksClass> all = worksClassRepository.findAllByOrderByClassificationAscSortOrderAsc();
+
+        // Preload direct work counts per class ID
+        Map<UUID, Integer> directCounts = new HashMap<>();
+        for (Object[] row : worksWorkClassRepository.countWorksByClassId()) {
+            directCounts.put((UUID) row[0], ((Long) row[1]).intValue());
+        }
+
+        // Compute aggregated counts across ALL classifications (cross-group children)
+        Map<UUID, Integer> aggregatedCounts = computeAggregatedCounts(all, directCounts);
+
         Map<String, List<WorksClass>> byClassification = new LinkedHashMap<>();
         for (WorksClass c : all) {
             byClassification.computeIfAbsent(c.getClassification(), k -> new ArrayList<>()).add(c);
@@ -49,9 +59,67 @@ public class WorksClassService {
 
         List<WorksClassGroupDto> groups = new ArrayList<>();
         for (Map.Entry<String, List<WorksClass>> e : byClassification.entrySet()) {
-            groups.add(new WorksClassGroupDto(e.getKey(), buildForest(e.getValue())));
+            groups.add(new WorksClassGroupDto(e.getKey(),
+                    buildForestWithAggregatedCounts(e.getValue(), aggregatedCounts)));
         }
         return groups;
+    }
+
+    /**
+     * Computes the total work count for each class by expanding all descendants
+     * (cross-classification) and summing their direct counts.  This exactly
+     * mirrors what {@link #filterWorks} does with {@link #expandWithDescendants}.
+     */
+    private Map<UUID, Integer> computeAggregatedCounts(List<WorksClass> all, Map<UUID, Integer> directCounts) {
+        // Build descendant map: parentId → list of child IDs (from ALL classes)
+        Map<UUID, List<UUID>> childrenByParent = new HashMap<>();
+        for (WorksClass c : all) {
+            if (c.getParentId() != null) {
+                childrenByParent.computeIfAbsent(c.getParentId(), k -> new ArrayList<>()).add(c.getId());
+            }
+        }
+
+        Map<UUID, Integer> aggregated = new HashMap<>();
+        for (WorksClass c : all) {
+            int total = directCounts.getOrDefault(c.getId(), 0);
+            // BFS to collect all descendants
+            List<UUID> queue = new ArrayList<>();
+            List<UUID> ch = childrenByParent.get(c.getId());
+            if (ch != null) queue.addAll(ch);
+            Set<UUID> visited = new HashSet<>();
+            while (!queue.isEmpty()) {
+                UUID childId = queue.remove(queue.size() - 1);
+                if (!visited.add(childId)) continue;
+                total += directCounts.getOrDefault(childId, 0);
+                List<UUID> grandChildren = childrenByParent.get(childId);
+                if (grandChildren != null) queue.addAll(grandChildren);
+            }
+            aggregated.put(c.getId(), total);
+        }
+        return aggregated;
+    }
+
+    /** Builds forest for a single group using pre-computed aggregated counts. */
+    private List<WorksClassTreeNodeDto> buildForestWithAggregatedCounts(
+            List<WorksClass> classes, Map<UUID, Integer> aggregatedCounts) {
+        Map<UUID, WorksClassTreeNodeDto> nodes = new LinkedHashMap<>();
+        for (WorksClass c : classes) {
+            int count = aggregatedCounts.getOrDefault(c.getId(), 0);
+            nodes.put(c.getId(), new WorksClassTreeNodeDto(
+                    c.getId(), c.getParentId(), c.getCode(), c.getTitleRu(), c.getTitleEn(),
+                    c.getTitleSaIast(), c.getTitleSaDeva(), c.getSortOrder(), count, new ArrayList<>()));
+        }
+
+        List<WorksClassTreeNodeDto> roots = new ArrayList<>();
+        for (WorksClassTreeNodeDto node : nodes.values()) {
+            if (node.parentId() != null && nodes.containsKey(node.parentId())) {
+                nodes.get(node.parentId()).children().add(node);
+            } else {
+                roots.add(node);
+            }
+        }
+        sortTree(roots);
+        return roots;
     }
 
     /**
@@ -100,26 +168,6 @@ public class WorksClassService {
             }
         }
         return expanded;
-    }
-
-    private List<WorksClassTreeNodeDto> buildForest(List<WorksClass> classes) {
-        Map<UUID, WorksClassTreeNodeDto> nodes = new LinkedHashMap<>();
-        for (WorksClass c : classes) {
-            nodes.put(c.getId(), new WorksClassTreeNodeDto(
-                    c.getId(), c.getParentId(), c.getCode(), c.getTitleRu(), c.getTitleEn(),
-                    c.getTitleSaIast(), c.getTitleSaDeva(), c.getSortOrder(), new ArrayList<>()));
-        }
-
-        List<WorksClassTreeNodeDto> roots = new ArrayList<>();
-        for (WorksClassTreeNodeDto node : nodes.values()) {
-            if (node.parentId() != null && nodes.containsKey(node.parentId())) {
-                nodes.get(node.parentId()).children().add(node);
-            } else {
-                roots.add(node);
-            }
-        }
-        sortTree(roots);
-        return roots;
     }
 
     private void sortTree(List<WorksClassTreeNodeDto> nodes) {

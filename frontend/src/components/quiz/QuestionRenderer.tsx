@@ -8,6 +8,8 @@ export interface QuestionRendererProps {
   disabled?: boolean;
   feedback?: unknown;
   selectedOptionId?: string | null;
+  currentQuestionIndex: number;
+  totalQuestions: number;
   /** Доменные данные ответа (id опции / строка / MatchingAnswerPayload). */
   onSubmit: (answer: QuestionAnswerPayload) => void;
 }
@@ -21,6 +23,8 @@ export default function QuestionRenderer({
   disabled,
   feedback,
   selectedOptionId,
+  currentQuestionIndex,
+  totalQuestions,
   onSubmit,
 }: QuestionRendererProps) {
   switch (question.answerMode) {
@@ -30,6 +34,8 @@ export default function QuestionRenderer({
           question={question}
           disabled={disabled}
           feedback={feedback}
+          currentQuestionIndex={currentQuestionIndex}
+          totalQuestions={totalQuestions}
           onSubmit={(value) => onSubmit(value)}
         />
       );

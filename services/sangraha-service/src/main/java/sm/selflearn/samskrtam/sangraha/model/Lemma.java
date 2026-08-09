@@ -18,9 +18,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Агрегат по всему корпусу (lemma-classification.md §1.1). Одна строка
- * на (lemmaSlp1, gender) — тот же ключ, что у curriculum.lexeme, чтобы
- * сопоставление на стороне curriculum-service не ломалось (§5).
+ * Словарь лексем по всему корпусу (lemma-classification.md §1.1). Одна строка
+ * на {@code lemmaSlp1} (UNIQUE). Пер-lemma статистика (gender, occurrenceCount,
+ * dominantPosCode) живёт в {@link LemmaStatistics}.
  */
 @Entity
 @Table(name = "lemma", schema = "sangraha")
@@ -43,18 +43,6 @@ public class Lemma {
 
     @Column(name = "lemma_devanagari", nullable = false)
     private String lemmaDevanagari;
-
-    @Column(nullable = true)
-    private String gender;
-
-    @Column(name = "dominant_pos_code")
-    private String dominantPosCode;
-
-    @Column(name = "occurrence_count", nullable = false)
-    private int occurrenceCount;
-
-    @Column(name = "frequency_rank")
-    private Integer frequencyRank;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

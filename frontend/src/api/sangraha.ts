@@ -6,6 +6,7 @@ import type {
   VerseDetailDto,
   VerseBatchResponseDto,
   WorksClassGroupDto,
+  StandaloneVerseItemDto,
 } from '../types/sangraha';
 
 const BASE = '/api/v1/sangraha';
@@ -50,6 +51,18 @@ export const sangrahaApi = {
 
   analyzeVerses: (verseIds: string[]) =>
     api.post<{ verseIds: string[] }>(`${BASE}/verse/analysis`, { verseIds }),
+
+  // ── Standalone анализ (страница /analysis, verse.chapter_id = null) ──
+  // Каждое нажатие «Анализировать» создаёт новую запись в verses и запускает анализ.
+
+  createStandaloneAnalysis: (text: string) =>
+    api.post<VerseDetailDto>(`${BASE}/analysis`, { text }),
+
+  getStandaloneVerses: () =>
+    api.get<StandaloneVerseItemDto[]>(`${BASE}/analysis`),
+
+  deleteStandaloneVerse: (verseId: string) =>
+    api.delete<void>(`${BASE}/analysis/${verseId}`),
 };
 
 

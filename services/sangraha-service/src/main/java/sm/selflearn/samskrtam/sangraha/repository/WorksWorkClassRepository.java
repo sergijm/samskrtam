@@ -14,4 +14,7 @@ public interface WorksWorkClassRepository extends JpaRepository<WorksWorkClass, 
 
     @Query("SELECT wwc.workId FROM WorksWorkClass wwc WHERE wwc.classId IN :classIds")
     List<UUID> findWorkIdsByClassIdIn(@Param("classIds") List<UUID> classIds);
+
+    @Query("SELECT wwc.classId, COUNT(wwc.workId) FROM WorksWorkClass wwc GROUP BY wwc.classId")
+    List<Object[]> countWorksByClassId();
 }

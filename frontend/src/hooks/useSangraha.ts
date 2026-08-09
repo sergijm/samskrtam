@@ -8,6 +8,7 @@ import type {
   VerseDetailDto,
   VerseBatchResponseDto,
   WorksClassGroupDto,
+  StandaloneVerseItemDto,
 } from '../types/sangraha';
 
 export const useWorks = (classIds?: string[]) =>
@@ -111,6 +112,39 @@ export const useAnalyzeVerses = () => {
     // Инвалидация без конкретных ids — задевает любой открытый список стихов.
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sangraha', 'verse-batch'] });
+    },
+  });
+};
+
+// ── Standalone анализ (страница /analysis, verse.chapter_id = null) ──
+
+export const useStandaloneVerses = () =>
+  useQuery<StandaloneVerseItemDto[], Error>({
+    queryKey: ['sangraha', 'analysis', 'list'],
+    queryFn: async () => {
+      const res = await sangrahaApi.getStandaloneVerses();
+      return res.data;
+    },
+  });
+
+export const useCreateStandaloneAnalysis = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (text: string) => sangrahaApi.createStandaloneAnalysis(text),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'analysis', 'list'] });
+      qc.invalidateQueries({ queryKey: ['sangraha', 'verse', data.data.id] });
+    },
+  });
+};
+
+export const useDeleteStandaloneVerse = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (verseId: string) => sangrahaApi.deleteStandaloneVerse(verseId),
+    onSuccess: (_data, verseId) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'analysis', 'list'] });
+      qc.invalidateQueries({ queryKey: ['sangraha', 'verse', verseId] });
     },
   });
 };

@@ -34,11 +34,14 @@ public class Verse {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "chapter_id", nullable = false)
+    @Column(name = "chapter_id")
     private UUID chapterId;
 
     @Column(name = "order_index", nullable = false)
     private int orderIndex;
+
+    @Column(name = "owner_id")
+    private UUID ownerId;
 
     @Column(name = "text_devanagari", columnDefinition = "TEXT")
     private String textDevanagari;

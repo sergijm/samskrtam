@@ -112,9 +112,18 @@ public class VerseService {
             }
         }
 
-        Chapter chapter = chapterRepository.findById(verse.getChapterId())
-                .orElseThrow(() -> new RuntimeException("Chapter not found: " + verse.getChapterId()));
-        Work work = workService.getWorkById(chapter.getWorkId());
+        // Standalone-стихи (страница /analysis) не привязаны к главе/произведению —
+        // контекст work/chapter в событии для content-service остаётся null.
+        Chapter chapter = null;
+        Work work = null;
+        if (verse.getChapterId() != null) {
+            chapter = chapterRepository.findById(verse.getChapterId())
+                    .orElseThrow(() -> new RuntimeException("Chapter not found: " + verse.getChapterId()));
+            work = workService.getWorkById(chapter.getWorkId());
+        }
+
+        final Chapter finalChapter = chapter;
+        final Work finalWork = work;
 
         // Дедуп слов стиха по (lemmaIast, stem) перед отправкой
         Map<String, VerseWord> deduped = new LinkedHashMap<>();
@@ -139,12 +148,12 @@ public class VerseService {
 
         SangrahaVocabularyEvent request = SangrahaVocabularyEvent.builder()
                 .verseId(verseId)
-                .workSlug(work.getSlug())
-                .workTitleRu(work.getTitleRu())
-                .workTitleEn(work.getTitleEn())
-                .chapterSlug(chapter.getSlug())
-                .chapterTitleRu(chapter.getTitleRu())
-                .chapterTitleEn(chapter.getTitleEn())
+                .workSlug(finalWork == null ? null : finalWork.getSlug())
+                .workTitleRu(finalWork == null ? null : finalWork.getTitleRu())
+                .workTitleEn(finalWork == null ? null : finalWork.getTitleEn())
+                .chapterSlug(finalChapter == null ? null : finalChapter.getSlug())
+                .chapterTitleRu(finalChapter == null ? null : finalChapter.getTitleRu())
+                .chapterTitleEn(finalChapter == null ? null : finalChapter.getTitleEn())
                 .verseOrderIndex(verse.getOrderIndex())
                 .words(vocabWords)
                 .build();

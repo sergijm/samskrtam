@@ -10,7 +10,11 @@
     "grammar": "Грамматика",
     "vocabulary": "Лексика",
     "sangraha": "Тексты",
-    "writing": "Письмо"
+    "lessons": "Уроки",
+    "analysis": "Анализ",
+    "phonetics": "Фонетика",
+    "grammarAnalysis": "Грамматический разбор",
+    "underDevelopment": "Модуль в разработке"
   },
   "common": {
     "search": "Поиск",

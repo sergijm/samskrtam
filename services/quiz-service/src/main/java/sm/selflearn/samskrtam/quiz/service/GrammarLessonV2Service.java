@@ -44,6 +44,9 @@ public class GrammarLessonV2Service {
                     }
                     ItemType itemType = resolveItemType(metadata);
                     List<String> tags = List.copyOf(metadata.keySet());
+                    if (tags.isEmpty()) {
+                        return Mono.just(assemble(lesson, metadata, Map.of(), Instant.now()));
+                    }
                     return quizItemScoreRepository
                             .findByUserIdAndItemTypeAndProgressTagIn(userId, itemType, tags)
                             .collectMap(QuizItemScore::getProgressTag, score -> score)

@@ -5,6 +5,8 @@ export interface WorkSummaryDto {
   slug: string;
   titleRu: string;
   titleEn: string;
+  titleSaIast?: string | null;
+  titleSaDevanagari?: string | null;
   descriptionRu?: string | null;
   descriptionEn?: string | null;
   author?: string | null;
@@ -114,7 +116,7 @@ export interface VerseAnalysisDto {
 
 export interface VerseDetailDto {
   id: string;
-  chapterId: string;
+  chapterId?: string | null;
   orderIndex: number;
   textDevanagari?: string | null;
   textIast?: string | null;
@@ -124,6 +126,15 @@ export interface VerseDetailDto {
   words: VerseWordDto[];
         vocabularyQuizSlug?: string | null;
   vocabularyQuizId?: string | null;
+}
+
+// ── Standalone анализ (страница /analysis, verse.chapter_id = null) ──
+
+export interface StandaloneVerseItemDto {
+  id: string;
+  preview?: string | null;
+  status: VerseStatus;
+  createdAt: string;
 }
 
 // ── Batch verse review (sangraha-service/batch-verse-review.md) ──
@@ -156,6 +167,7 @@ export interface WorksClassTreeNodeDto {
   titleSaIast: string;
   titleSaDeva?: string | null;
   sortOrder: number;
+  workCount: number;
   children: WorksClassTreeNodeDto[];
 }
 

@@ -70,8 +70,7 @@ public final class DeclensionNounParadigmComposer {
 
     private static VowelType vowelTypeOf(String code) {
         return switch (code) {
-            case "a-stem-masc" -> VowelType.A_STEM;
-            case "a-stem-neut" -> VowelType.A_STEM;
+            case "a-stem-masc", "a-stem-neut", "a-stem" -> VowelType.A_STEM;
             case "a-stem-fem" -> VowelType.AA_STEM;
             case "i-stem" -> VowelType.I_STEM;
             case "u-stem" -> VowelType.U_STEM;
@@ -85,6 +84,7 @@ public final class DeclensionNounParadigmComposer {
             case "a-stem-masc" -> LexemeGender.MASCULINE;
             case "a-stem-neut" -> LexemeGender.NEUTER;
             case "a-stem-fem" -> LexemeGender.FEMININE;
+            case "a-stem" -> lexemeGender; // merged: use lexeme's own gender
             case "i-stem", "u-stem" ->
                     lexemeGender == LexemeGender.NEUTER ? LexemeGender.NEUTER : LexemeGender.MASCULINE;
             case "r-stem" ->

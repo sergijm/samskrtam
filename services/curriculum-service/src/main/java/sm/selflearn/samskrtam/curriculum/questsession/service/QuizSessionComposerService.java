@@ -24,6 +24,7 @@ import sm.selflearn.samskrtam.quest.declension.DeclensionMatchPayload;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Builds a session question sequence from requested topics (see
@@ -91,11 +92,24 @@ public class QuizSessionComposerService {
         }
 
         Collections.shuffle(unordered); // random order across all topics
-        for (int i = 0; i < unordered.size(); i++) {
-            ComposedQuizItemDto src = unordered.get(i);
-            unordered.set(i, new ComposedQuizItemDto(i + 1, src.topicCode(), src.item(), src.progressTag()));
+
+        // Separate FREE_TEXT items: at most 1, always at the end
+        List<ComposedQuizItemDto> freeTextItems = unordered.stream()
+                .filter(dto -> "FREE_TEXT".equals(dto.item().answerMode()))
+                .limit(1)
+                .collect(Collectors.toList());
+        List<ComposedQuizItemDto> otherItems = unordered.stream()
+                .filter(dto -> !"FREE_TEXT".equals(dto.item().answerMode()))
+                .collect(Collectors.toList());
+
+        List<ComposedQuizItemDto> ordered = new ArrayList<>(otherItems);
+        ordered.addAll(freeTextItems);
+
+        for (int i = 0; i < ordered.size(); i++) {
+            ComposedQuizItemDto src = ordered.get(i);
+            ordered.set(i, new ComposedQuizItemDto(i + 1, src.topicCode(), src.item(), src.progressTag()));
         }
-        return new QuizSessionComposeResponse(List.copyOf(unordered));
+        return new QuizSessionComposeResponse(List.copyOf(ordered));
     }
 
     /**

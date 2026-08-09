@@ -45,6 +45,7 @@ public class TopicService {
 
     public List<TopicDto> listTopics(boolean includeEvergreen) {
         return topicRepository.findAll().stream()
+                .filter(topic -> !topic.isHidden())
                 .filter(topic -> includeEvergreen || !topic.isEvergreen())
                 .map(topicMapper::toDto)
                 .toList();
@@ -134,7 +135,9 @@ public class TopicService {
     }
 
     public TopicGraphResponse getGraph() {
-        List<Topic> allTopics = topicRepository.findAll();
+        List<Topic> allTopics = topicRepository.findAll().stream()
+                .filter(t -> !t.isHidden())
+                .toList();
         List<TopicPrerequisite> allEdges = topicPrerequisiteRepository.findAll();
         TopicGraphResult result = topicGraphService.computeLayers(allTopics, allEdges);
 
@@ -159,6 +162,7 @@ public class TopicService {
     public List<TopicDto> listTopicsByLevel(LearningLevel level) {
         Sort sort = Sort.by(Sort.Order.asc("displayOrder").nullsLast(), Sort.Order.asc("titleRu"));
         return topicRepository.findByLearningLevel(level, sort).stream()
+                .filter(t -> !t.isHidden())
                 .map(topicMapper::toDto)
                 .toList();
     }

@@ -1,35 +1,31 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Skeleton } from 'primereact/skeleton';
-import { TreeSelect } from 'primereact/treeselect';
-import type { TreeNode } from 'primereact/treenode';
 import { useNavigate } from 'react-router-dom';
 
 import { useWorks, useWorksClasses } from '../../hooks/useSangraha';
 import type { WorksClassTreeNodeDto } from '../../types/sangraha';
 
-const toTreeNode = (node: WorksClassTreeNodeDto, lang: string): TreeNode => ({
-  key: node.id,
-  label: lang === 'ru' ? node.titleRu : node.titleEn,
-  children: node.children.map((child) => toTreeNode(child, lang)),
-  leaf: node.children.length === 0,
-});
+const FILTER_GROUPS = ['tradition', 'genre', 'school'];
 
-type SelectionMap = Record<string, Record<string, boolean>>;
+interface ClassItemProps {
+  node: WorksClassTreeNodeDto;
+  isSelected: boolean;
+  lang: string;
+  onClick: (id: string) => void;
+}
 
-/**
- * Нормализует value TreeSelect (multiple/checkbox) к плоскому списку выбранных
- * ключей.  value — объект вида { key: true } или { key: { checked: true } }.
- */
-const normalizeSelection = (value: unknown): Record<string, boolean> => {
-  const out: Record<string, boolean> = {};
-  if (value && typeof value === 'object') {
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      out[k] = v === true || (typeof v === 'object' && v !== null && (v as Record<string, unknown>).checked === true);
-    }
-  }
-  return out;
-};
+const ClassItem = ({ node, isSelected, lang, onClick }: ClassItemProps) => (
+  <li
+    className={`cursor-pointer px-2 py-0.5 border-round flex justify-content-between align-items-center ${isSelected ? 'bg-primary text-white' : 'hover:surface-hover'}`}
+    onClick={() => onClick(node.id)}
+  >
+    <span>{lang === 'ru' ? node.titleRu : node.titleEn}</span>
+    <span className="text-xs ml-2" style={{ opacity: isSelected ? 0.8 : 0.5 }}>
+      {node.workCount}
+    </span>
+  </li>
+);
 
 const WorksPage = () => {
   const { t, i18n } = useTranslation();
@@ -37,103 +33,112 @@ const WorksPage = () => {
   const lang = i18n.language;
 
   const { data: classes, isLoading: classesLoading } = useWorksClasses();
-  const [selected, setSelected] = useState<SelectionMap>({});
+  const [activeClassId, setActiveClassId] = useState<string | null>(null);
 
   const selectedIds = useMemo(
-    () => Object.values(selected).flatMap((m) => Object.keys(m).filter((k) => m[k])),
-    [selected],
+    () => (activeClassId ? [activeClassId] : []),
+    [activeClassId],
   );
 
   const { data: works, isLoading, isError } = useWorks(selectedIds);
 
-  const groupNodes = useMemo(
-    () =>
-      (classes ?? []).map((group) => ({
-        group,
-        treeNodes: group.classes.map((node) => toTreeNode(node, lang)),
-      })),
-    [classes, lang],
-  );
+  const handleClassClick = useCallback((id: string) => {
+    setActiveClassId((prev) => (prev === id ? null : id));
+  }, []);
 
-  const hasAnyFilter = selectedIds.length > 0;
+  const filterGroups = useMemo(() => {
+    if (!classes) return [];
+    return FILTER_GROUPS
+      .map((name) => {
+        const group = classes.find(
+          (g) => g.classification.toLowerCase() === name.toLowerCase(),
+        );
+        return group ? { classification: group.classification, classes: group.classes } : null;
+      })
+      .filter(Boolean) as { classification: string; classes: WorksClassTreeNodeDto[] }[];
+  }, [classes]);
 
   return (
     <div className="p-4">
       <h1 className="mb-3">{t('sangraha.works')}</h1>
 
-      {classesLoading ? (
-        <Skeleton width="100%" height="2.5rem" className="mb-3" />
-      ) : groupNodes.length > 0 ? (
-        <div className="flex flex-wrap gap-2 mb-3 align-items-center">
-          {groupNodes.map(({ group, treeNodes }) => (
-            <TreeSelect
-              key={group.classification}
-              value={selected[group.classification] ?? {}}
-              options={treeNodes}
-              onChange={(e) =>
-                setSelected((prev) => ({
-                  ...prev,
-                  [group.classification]: normalizeSelection(e.value),
-                }))
-              }
-              selectionMode="checkbox"
-              display="chip"
-              placeholder={group.classification}
-              style={{ minWidth: '16rem' }}
-            />
-          ))}
-          {hasAnyFilter && (
-            <button
-              type="button"
-              className="p-button-text p-button-sm"
-              onClick={() => setSelected({})}
-            >
-              <i className="pi pi-times mr-1" />
-              {t('sangraha.action.resetFilter')}
-            </button>
+      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+        {/* Left column: filters */}
+        <div>
+          {classesLoading ? (
+            <Skeleton width="100%" height="200px" />
+          ) : filterGroups.length > 0 ? (
+            <div className="flex flex-column gap-3">
+              {filterGroups.map((group) => (
+                <div key={group.classification} className="border-1 border-200 border-round-lg surface-card p-2">
+                  <ul className="list-none p-0 m-0 flex flex-column gap-0">
+                    {group.classes.map((node) => (
+                      <ClassItem
+                        key={node.id}
+                        node={node}
+                        isSelected={activeClassId === node.id}
+                        lang={lang}
+                        onClick={handleClassClick}
+                      />
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Right column: works */}
+        <div>
+          {isLoading ? (
+            <div>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton key={i} width="100%" height="1.5rem" className="mb-2" />
+              ))}
+            </div>
+          ) : isError ? (
+            <div className="p-error">{t('common.error')}</div>
+          ) : works && works.length > 0 ? (
+            <div className="work-tree">
+              {works.map((work) => (
+                <div
+                  key={work.id}
+                  className="work-tree-row cursor-pointer hover:surface-hover"
+                  onClick={() => navigate(`/sangraha/${work.slug}`)}
+                >
+                  <div className="work-tree-row-left">
+                    <i className="pi pi-bookmark text-primary" />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span className="font-bold">
+                        {work.titleSaIast}
+                        {work.titleSaDevanagari && (
+                          <span
+                            className="ml-2"
+                            style={{ fontFamily: '"Noto Sans Devanagari", sans-serif' }}
+                          >
+                            {work.titleSaDevanagari}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-xs text-color-secondary font-italic">
+                        {lang === 'ru' ? work.descriptionRu : work.descriptionEn}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="work-tree-row-right">
+                    {work.author && (
+                      <span className="text-sm text-color-secondary">{work.author}</span>
+                    )}
+                    <i className="pi pi-chevron-right text-color-secondary ml-2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-color-secondary p-4">{t('sangraha.noWorks')}</div>
           )}
         </div>
-      ) : null}
-
-      {isLoading ? (
-        <div>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} width="100%" height="1.5rem" className="mb-2" />
-          ))}
-        </div>
-      ) : isError ? (
-        <div className="p-error">{t('common.error')}</div>
-      ) : works && works.length > 0 ? (
-        <div className="work-tree">
-          {works.map((work) => (
-            <div
-              key={work.id}
-              className="work-tree-row cursor-pointer hover:surface-hover"
-              onClick={() => navigate(`/sangraha/${work.slug}`)}
-            >
-              <div className="work-tree-row-left">
-                <i className="pi pi-bookmark text-primary" />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span className="font-bold">
-                    {lang === 'ru' ? (work.titleRu || work.titleEn) : work.titleEn}
-                  </span>
-                  <span className="text-xs text-color-secondary font-italic">
-                    {lang === 'ru' ? work.descriptionRu : work.descriptionEn}
-                  </span>
-                </div>
-              </div>
-              <div className="work-tree-row-right">
-                {work.author && (
-                  <span className="text-sm text-color-secondary">{work.author}</span>
-                )}
-                <i className="pi pi-chevron-right text-color-secondary ml-2" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center text-color-secondary p-4">{t('sangraha.noWorks')}</div>
-      )}
+      </div>
     </div>
   );
 };

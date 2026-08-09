@@ -49,6 +49,9 @@ public class Topic {
     @Column(name = "target_item_count", nullable = false)
     private int targetItemCount = 0;
 
+    @Column(name = "hidden", nullable = false)
+    private boolean hidden;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

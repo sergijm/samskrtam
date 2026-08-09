@@ -23,7 +23,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -136,6 +138,30 @@ class VerseAnalysisServiceTest {
         // Перезапись существующего VerseAnalysis: saveResults вызывается и для ANALYZED стиха.
         verify(analysisSaver, times(2)).saveResults(
                 any(Verse.class), any(Work.class), any(Chapter.class),
+                any(String.class), any(String.class), any(String.class), any(String.class),
+                any(JsonNode.class), any(JsonNode.class),
+                any(String.class), eq("test-model"), eq("test-model"));
+    }
+
+    @Test
+    void analyze_standaloneVerse_withoutChapter_skipsWorkChapterLookupAndSavesWithNullContext() {
+        UUID verseId = uuid("000000000001");
+        Verse standalone = Verse.builder().id(verseId).chapterId(null)
+                .orderIndex(0).status(VerseStatus.DRAFT).build();
+
+        when(verseRepository.findByIdAndDeletedAtIsNull(verseId))
+                .thenReturn(java.util.Optional.of(standalone));
+        when(llmClient.call(anyList())).thenReturn(validLlmResponse(1));
+        when(responseNormalizer.normalizeToVersesArray(any(JsonNode.class)))
+                .thenReturn(validVersesArray(1));
+        when(llmClient.extractModelName(any(JsonNode.class))).thenReturn("test-model");
+
+        service.analyze(verseId, "अहं गच्छामि");
+
+        verify(chapterRepository, never()).findByIdAndDeletedAtIsNull(any(UUID.class));
+        verify(workRepository, never()).findById(any(UUID.class));
+        verify(analysisSaver).saveResults(
+                eq(standalone), isNull(), isNull(),
                 any(String.class), any(String.class), any(String.class), any(String.class),
                 any(JsonNode.class), any(JsonNode.class),
                 any(String.class), eq("test-model"), eq("test-model"));

@@ -40,6 +40,7 @@ public class TopicLessonService {
     @Transactional(readOnly = true)
     public List<TopicLessonSummaryDto> listLessons() {
         return topicRepository.findAll().stream()
+                .filter(t -> !t.isHidden())
                 .map(this::toSummary)
                 .toList();
     }

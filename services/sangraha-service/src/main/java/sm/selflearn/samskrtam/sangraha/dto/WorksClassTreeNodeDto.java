@@ -16,6 +16,7 @@ public record WorksClassTreeNodeDto(
     String titleSaIast,
     String titleSaDeva,
     int sortOrder,
+    int workCount,
     List<WorksClassTreeNodeDto> children
 ) {
 

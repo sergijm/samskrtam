@@ -51,7 +51,13 @@ public class ParadigmService {
     /* ─── regular noun classes ─────────────────────────────────────── */
 
     private DeclensionParadigmPageDto paradigmPageForRegularClass(String topicCode, int index) {
-        List<Lexeme> lexemes = lexemeRepository.findByMorphologyClasses_Code(topicCode).stream()
+        List<Lexeme> lexemes;
+        if ("a-stem".equals(topicCode)) {
+            lexemes = lexemeRepository.findByMorphologyClasses_CodeIn(List.of("a-stem-masc", "a-stem-neut"));
+        } else {
+            lexemes = lexemeRepository.findByMorphologyClasses_Code(topicCode);
+        }
+        lexemes = lexemes.stream()
                 .sorted(Comparator.comparing(Lexeme::getId))
                 .toList();
 
@@ -164,8 +170,7 @@ public class ParadigmService {
 
     private static VowelType toContentVowel(String classCode) {
         return switch (classCode) {
-            case "a-stem-masc" -> VowelType.A_STEM;
-            case "a-stem-neut" -> VowelType.A_STEM;
+            case "a-stem-masc", "a-stem-neut", "a-stem" -> VowelType.A_STEM;
             case "a-stem-fem" -> VowelType.AA_STEM;
             case "i-stem" -> VowelType.I_STEM;
             case "u-stem" -> VowelType.U_STEM;
@@ -179,6 +184,7 @@ public class ParadigmService {
             case "a-stem-masc" -> LexemeGender.MASCULINE;
             case "a-stem-neut" -> LexemeGender.NEUTER;
             case "a-stem-fem" -> LexemeGender.FEMININE;
+            case "a-stem" -> lexemeGender; // merged: use lexeme's own gender
             default -> lexemeGender;
         };
     }

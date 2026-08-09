@@ -7,6 +7,8 @@ import type { SessionQuestion } from '../../types/quiz';
 interface QuizFreeTextPanelProps {
   question: SessionQuestion;
   disabled: boolean;
+  currentQuestionIndex: number;
+  totalQuestions: number;
   feedback: unknown;
   onFreeTextSubmit: (text: string) => void;
 }
@@ -19,6 +21,8 @@ interface QuizFreeTextPanelProps {
 export default function QuizFreeTextPanel({
   question,
   disabled,
+  currentQuestionIndex,
+  totalQuestions,
   feedback,
   onFreeTextSubmit,
 }: QuizFreeTextPanelProps) {
@@ -35,6 +39,9 @@ export default function QuizFreeTextPanel({
 
   return (
     <div className="text-center">
+      <div className="text-center text-sm text-color-secondary mb-3">
+        {currentQuestionIndex + 1} / {totalQuestions}
+      </div>
       <div className="text-2xl font-bold mt-4" style={{ color: 'var(--primary-color)' }}>
         {question.text}
       </div>

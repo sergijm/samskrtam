@@ -107,7 +107,7 @@ function nonNullEntries<T extends Record<string, string | null | undefined>>(
 
 const VerseWordsList = ({ words, headerActions, wordProgressMap }: VerseWordsListProps) => {
   const { t, i18n } = useTranslation();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
 
   if (!words || words.length === 0) return null;
 
@@ -119,7 +119,15 @@ const VerseWordsList = ({ words, headerActions, wordProgressMap }: VerseWordsLis
   const lang = i18n.language;
 
   const toggleExpand = (id: string) => {
-    setExpandedId(prev => (prev === id ? null : id));
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   };
 
   const renderMorphologyChips = (m: VerseWordMorphologyDto) => {
@@ -157,7 +165,7 @@ const VerseWordsList = ({ words, headerActions, wordProgressMap }: VerseWordsLis
           const progress = showProgress && w.vocabularyWordId
             ? wordProgressMap[w.vocabularyWordId]
             : undefined;
-          const isExpanded = expandedId === w.id;
+          const isExpanded = expandedIds.has(w.id);
 
           // Short gloss for row (use contextGlossRu/En)
           const gloss = lang === 'ru'

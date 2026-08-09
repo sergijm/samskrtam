@@ -8,6 +8,8 @@ interface FreeTextQuestionProps {
   question: SessionQuestion;
   disabled?: boolean;
   feedback?: unknown;
+  currentQuestionIndex: number;
+  totalQuestions: number;
   onSubmit: (value: string) => void;
 }
 
@@ -18,6 +20,8 @@ interface FreeTextQuestionProps {
 export default function FreeTextQuestion({
   question,
   disabled,
+  currentQuestionIndex,
+  totalQuestions,
   onSubmit,
 }: FreeTextQuestionProps) {
   const { t } = useTranslation();
@@ -33,6 +37,9 @@ export default function FreeTextQuestion({
 
   return (
     <>
+      <div className="text-center text-sm text-color-secondary mb-3">
+        {currentQuestionIndex + 1} / {totalQuestions}
+      </div>
       <h3 className="text-center mb-3">{question.text}</h3>
       {question.stemDevanagari && (
         <div

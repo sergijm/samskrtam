@@ -336,6 +336,74 @@ paths:
         '409':
           description: Стих уже анализируется (status = ANALYZING)
 
+  /analysis:
+    post:
+      operationId: createStandaloneAnalysis
+      summary: Создать standalone-стих и запустить LLM-анализ (страница /analysis)
+      description: |
+        Создаёт новую запись в `verses` с `chapter_id = null` и `owner_id` текущего
+        пользователя (стих не привязан к произведению/главе) и сразу запускает
+        анализ. Каждое нажатие «Анализировать» на странице /analysis создаёт новую
+        запись. Доступ — любой авторизованный, стихи персональные.
+      tags: [Analysis]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'sangraha-schemas.yaml#/VerseTextRequest'
+      responses:
+        '200':
+          description: Созданный стих (детали, статус ANALYZING сразу после запуска анализа)
+          content:
+            application/json:
+              schema:
+                $ref: 'sangraha-schemas.yaml#/VerseDetail'
+        '400':
+          description: Пустой текст
+    get:
+      operationId: listStandaloneAnalysis
+      summary: Список standalone-стихов текущего пользователя
+      description: |
+        Standalone-стихи пользователя (chapter_id = null), новые сверху, без
+        контекста произведения/главы — только превью, статус и дата создания.
+      tags: [Analysis]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список разборов пользователя
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'sangraha-schemas.yaml#/StandaloneVerseItem'
+
+  /analysis/{verseId}:
+    delete:
+      operationId: deleteStandaloneAnalysis
+      summary: Удалить standalone-стих (только владелец)
+      tags: [Analysis]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: verseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Мягко удалён
+        '400':
+          description: Стих не standalone либо не принадлежит пользователю
+        '404':
+          description: Стих не найден
+
 components:
   securitySchemes:
     bearerAuth:

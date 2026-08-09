@@ -10,8 +10,11 @@
     "grammar": "Grammar",
     "vocabulary": "Vocabulary",
     "sangraha": "Texts",
-    "writing": "Writing"
-
+    "lessons": "Lessons",
+    "analysis": "Analysis",
+    "phonetics": "Phonetics",
+    "grammarAnalysis": "Grammatical analysis",
+    "underDevelopment": "Module under development"
   },
   "common": {
     "search": "Search",

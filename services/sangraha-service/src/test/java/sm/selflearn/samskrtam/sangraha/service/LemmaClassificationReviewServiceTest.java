@@ -8,7 +8,9 @@ import sm.selflearn.samskrtam.sangraha.dto.LemmaClassificationReviewRequest;
 import sm.selflearn.samskrtam.sangraha.model.ClassificationStatus;
 import sm.selflearn.samskrtam.sangraha.model.Lemma;
 import sm.selflearn.samskrtam.sangraha.model.LemmaClassification;
+import sm.selflearn.samskrtam.sangraha.model.LemmaStatistics;
 import sm.selflearn.samskrtam.sangraha.repository.LemmaClassificationRepository;
+import sm.selflearn.samskrtam.sangraha.repository.LemmaStatisticsRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,27 +25,38 @@ import static org.mockito.Mockito.when;
 class LemmaClassificationReviewServiceTest {
 
     private LemmaClassificationRepository repo;
+    private LemmaStatisticsRepository statsRepo;
     private LemmaClassificationValidator validator;
     private LemmaClassificationReviewService service;
 
     private final UUID id = UUID.randomUUID();
     private Lemma lemma;
+    private LemmaStatistics stats;
     private LemmaClassification row;
 
     @BeforeEach
     void setUp() {
         repo = mock(LemmaClassificationRepository.class);
+        statsRepo = mock(LemmaStatisticsRepository.class);
         validator = mock(LemmaClassificationValidator.class);
-        service = new LemmaClassificationReviewService(repo, validator);
+        service = new LemmaClassificationReviewService(repo, statsRepo, validator);
 
         lemma = Lemma.builder().id(UUID.randomUUID()).lemmaSlp1("gaja").lemmaIast("gaja")
-                .lemmaDevanagari("ग्ज").occurrenceCount(5).frequencyRank(1)
-                .dominantPosCode("NOUN").build();
-        row = LemmaClassification.builder().id(id).lemma(lemma).schemeCode("CURRICULUM")
-                .status(ClassificationStatus.CANDIDATE).build();
+                .lemmaDevanagari("गज").build();
+        stats = LemmaStatistics.builder()
+                .id(UUID.randomUUID())
+                .lemma(lemma)
+                .gender("MASCULINE")
+                .occurrenceCount(5)
+                .dominantPosCode("NOUN")
+                .build();
+        row = LemmaClassification.builder().id(id).lemma(lemma).gender("MASCULINE")
+                .schemeCode("CURRICULUM").status(ClassificationStatus.CANDIDATE).build();
 
         when(repo.findById(id)).thenReturn(Optional.of(row));
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(statsRepo.findByLemmaIdAndGender(any(), any())).thenReturn(Optional.of(stats));
+        when(statsRepo.findByLemmaIdIn(any())).thenReturn(List.of(stats));
         when(validator.isValidCategoryCode("animals")).thenReturn(true);
     }
 
@@ -78,13 +91,17 @@ class LemmaClassificationReviewServiceTest {
     }
 
     @Test
-    void listForReview_returnsRowsAndNextCursor() {
+    void listForReview_returnsRowsAndNextCursor_withStats() {
         when(repo.findForReview(any(), any(), any(), any())).thenReturn(List.of(row));
         LemmaClassificationPageDto page = service().listForReview("CURRICULUM",
                 ClassificationStatus.CANDIDATE, null, 50);
 
         assertThat(page.items()).hasSize(1);
         assertThat(page.nextCursor()).isEqualTo(lemma.getId());
+        LemmaClassificationItemDto item = page.items().get(0);
+        assertThat(item.gender()).isEqualTo("MASCULINE");
+        assertThat(item.occurrenceCount()).isEqualTo(5);
+        assertThat(item.dominantPosCode()).isEqualTo("NOUN");
     }
 
     @Test
@@ -96,7 +113,18 @@ class LemmaClassificationReviewServiceTest {
                 .hasMessageContaining("Unknown categoryCode");
     }
 
+    @Test
+    void exportApproved_returnsRowsWithDominantStats() {
+        when(repo.findForReview(any(), any(), any(), any())).thenReturn(List.of(row));
+        LemmaClassificationPageDto page = service().exportApproved("CURRICULUM", null, 100);
+
+        LemmaClassificationItemDto item = page.items().get(0);
+        assertThat(item.status()).isEqualTo("CANDIDATE");
+        assertThat(item.gender()).isEqualTo("MASCULINE");
+        assertThat(item.occurrenceCount()).isEqualTo(5);
+    }
+
     private LemmaClassificationReviewService service() {
-        return new LemmaClassificationReviewService(repo, validator);
+        return new LemmaClassificationReviewService(repo, statsRepo, validator);
     }
 }

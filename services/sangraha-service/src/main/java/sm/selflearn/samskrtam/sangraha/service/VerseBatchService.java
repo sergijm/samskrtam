@@ -152,6 +152,7 @@ public class VerseBatchService {
     private Map<UUID, Chapter> loadChapters(List<Verse> verses) {
         List<UUID> chapterIds = verses.stream()
                 .map(Verse::getChapterId)
+                .filter(Objects::nonNull)
                 .distinct()
                 .toList();
         return chapterRepository.findAllById(chapterIds)

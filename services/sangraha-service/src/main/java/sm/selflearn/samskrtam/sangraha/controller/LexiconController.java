@@ -41,11 +41,11 @@ public class LexiconController {
     private final LemmaClassificationRunService runService;
     private final LemmaClassificationReviewService reviewService;
 
-    @PostMapping("/lemmas/refresh")
-    public ResponseEntity<LemmaRefreshResponse> refreshLemmas(
+    @PostMapping("/lemmas/refresh-statistics")
+    public ResponseEntity<LemmaRefreshResponse> refreshStatistics(
             @RequestHeader(value = USER_ID_HEADER, required = false) String userId) {
         LemmaRefreshResponse response = lemmaRefreshService.refresh();
-        log.debug("Lemma refresh requested by {}", userId);
+        log.debug("Lemma refresh-statistics requested by {}", userId);
         return ResponseEntity.ok(response);
     }
 

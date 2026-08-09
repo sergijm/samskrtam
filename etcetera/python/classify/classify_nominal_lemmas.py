@@ -14,7 +14,7 @@ import psycopg
 from openai import OpenAI
 
 
-DEFAULT_BATCH_SIZE = 330
+DEFAULT_BATCH_SIZE = 300
 LOG_FILE = """C:\MyDev\samskrtam\logs/nominal_lemmas_llm.log"""
 
 # Configuration
