@@ -219,7 +219,7 @@ public class LemmaClassificationRunService {
                         .lemma(item.lemma())
                         .gender(item.gender())
                         .schemeCode(batch.getSchemeCode())
-                        .status(ClassificationStatus.CANDIDATE)
+                        .status(ClassificationStatus.APPROVED)
                         .build();
             }
             existing.setCategoryCode(categoryCode);

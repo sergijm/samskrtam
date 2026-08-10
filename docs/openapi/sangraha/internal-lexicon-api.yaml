@@ -1,11 +1,11 @@
 openapi: "3.1.0"
 info:
-  title: sangraha-service — Internal Lexicon API (admin-классификация лемм)
+  title: sangraha-service — Internal Lexicon API
   description: |
-    Service-to-service эндпоинты sangraha-service для словаря лемм и batch-классификации
-    (LexiconController). Вызываются внутренними/админ-клиентами (env SANGRAHA_SERVICE_URL,
-    минуя api-gateway). Опциональный header X-User-Id фиксирует, кто запустил
-    пересчёт/ревью (reviewedBy). Источник истины — docs/services/sangraha-service/lemma-classification.md.
+    Service-to-service эндпоинты sangraha-service для словаря лемм, batch-классификации
+    и экспорта лемм в curriculum-service (LexiconController). Вызываются внутренними/
+    админ-клиентами (env SANGRAHA_SERVICE_URL, минуя api-gateway).
+    Источник истины — docs/services/sangraha-service/lemma-classification.md.
   version: "1.0.0"
 
 servers:
@@ -35,6 +35,43 @@ paths:
             application/json:
               schema:
                 $ref: 'schemas/internal-lexicon-schemas.yaml#/LemmaRefreshResponse'
+
+  /sangraha/internal/lexicon/lemmas/export:
+    get:
+      operationId: exportLemmas
+      summary: Экспорт агрегированных лемм в curriculum-service
+      tags: [lexicon]
+      description: >
+        Курсорная выгрузка агрегированных данных лемм для batch-импорта в
+        curriculum-service. Один вызов — всё, что нужно для импорта: JOIN
+        lemma + lemma_statistics + lemma_classification (APPROVED, scheme=CURRICULUM) +
+        nominal_lemmas (stemClass → vowelType).
+        Одна строка = одна пара (lemma, gender). Данные уже агрегированы на стороне
+        sangraha — curriculum-service делает простой upsert.
+        Сортировка: occurrenceCount DESC, затем lemmaStatistics.id ASC.
+        Курсор — последний lemmaStatistics.id в странице.
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          description: Последний lemmaStatistics.id; null/отсутствует — первая страница
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          description: Размер страницы (clamp 1..500, default 500)
+          schema:
+            type: integer
+            default: 500
+      responses:
+        '200':
+          description: Страница агрегированных лемм
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/internal-lexicon-schemas.yaml#/LemmaExportPageDto'
 
   /sangraha/internal/lexicon/classification/runs:
     post:
@@ -172,12 +209,12 @@ paths:
   /sangraha/internal/lexicon/lemma-classifications/export:
     get:
       operationId: exportApprovedClassifications
-      summary: Экспорт APPROVED-классификаций в curriculum-service
+      summary: Экспорт APPROVED-классификаций (отладка)
       tags: [lexicon]
       description: >
-        Выгружает классификации со статусом APPROVED (JOIN Classification + Lemma +
-        Statistics, сортировка по occurrenceCount, курсор по lemmaId) для импорта
-        в curriculum-service (SangrahaExportClient).
+        Отдельная выгрузка APPROVED-классификаций. В основном потоке импорта
+        curriculum-service не используется — все данные уже включены в lemmas/export.
+        Оставлен для отладки и ручной проверки.
       parameters:
         - name: schemeCode
           in: query

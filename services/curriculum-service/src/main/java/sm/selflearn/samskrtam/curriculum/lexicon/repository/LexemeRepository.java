@@ -22,11 +22,7 @@ public interface LexemeRepository extends JpaRepository<Lexeme, UUID> {
 
     Optional<Lexeme> findByLemmaSlp1AndGender(String lemmaSlp1, LexemeGender gender);
 
-    boolean existsByLemmaSlp1AndGender(String lemmaSlp1, LexemeGender gender);
-
     List<Lexeme> findByStatus(LexemeStatus status);
-
-    List<Lexeme> findByLemmaIastStartingWith(String prefix);
 
     List<Lexeme> findByMorphologyClasses_Code(String morphologyClassCode);
 

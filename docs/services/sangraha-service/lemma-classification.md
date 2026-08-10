@@ -249,14 +249,15 @@ OpenAI-совместимый `/chat/completions`, tool calling, env
 
 ## 5. Экспорт в curriculum-service
 
-Дополняет `GET /sangraha/internal/content/verse-words/export` (§9
-`sangraha-service.md`) новым эндпоинтом уровня леммы:
+Отдельный эндпоинт для экспорта APPROVED-классификаций:
 
 `GET /sangraha/internal/lexicon/lemma-classifications/export?schemeCode=CURRICULUM&status=APPROVED&cursor={lemmaId}&limit=500`
 
-Одна строка на лемму: для пары из классификации берётся статистика `(lemma,
-gender)` (из `lemma_statistics`), содержит `gender` + `occurrenceCount`
-(решение 2026-08-09). `frequencyRank` исключён — ранг больше не хранится.
+В основном потоке импорта curriculum-service не используется — все данные
+(лемма + статистика + классификация) уже включены в `lemmas/export`
+(`sangraha-service.md` §10). Этот эндпоинт оставлен для отладки и ручной проверки.
+
+Одна строка: классификация + статистика `(lemma, gender)` из `lemma_statistics`.
 
 ```json
 {

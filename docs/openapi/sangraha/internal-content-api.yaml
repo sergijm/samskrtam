@@ -6,7 +6,7 @@ info:
     напрямую (env SANGRAHA_SERVICE_URL, минуя api-gateway, без роли):
     quiz-service — для вкладки «Примеры» на странице шага склонений
     (declension-examples + verses/batch, см. quiz-service.md §2, quiz-declension.md §3.2),
-    curriculum-service — для импорта лексики (verse-words/export из sangraha-service.md §10,
+    curriculum-service — для импорта лексики (lemmas/export из sangraha-service.md §10,
     nominal-lemmas). Источник истины — docs/services/sangraha-service.md §9.
   version: "1.0.0"
 
@@ -73,38 +73,6 @@ paths:
             application/json:
               schema:
                 $ref: '../common/schemas/common.yaml#/ErrorResponse'
-
-  /sangraha/internal/content/verse-words/export:
-    get:
-      operationId: exportVerseWords
-      summary: Курсорная выгрузка всех VerseWord из ANALYZED-стихов
-      tags: [content-export]
-      description: >
-        Экспорт всех слов из стихов со статусом ANALYZED для импорта лексики
-        в curriculum-service (SangrahaExportClient). Курсорная пагинация по
-        verseId (nextCursor = последний обработанный verseId; null — строк больше нет).
-      parameters:
-        - name: cursor
-          in: query
-          required: false
-          description: Последний обработанный verseId
-          schema:
-            type: string
-            format: uuid
-        - name: limit
-          in: query
-          required: false
-          description: Размер страницы (clamp 1..500, default 500)
-          schema:
-            type: integer
-            default: 500
-      responses:
-        '200':
-          description: Страница экспорта слов
-          content:
-            application/json:
-              schema:
-                $ref: 'schemas/internal-content-schemas.yaml#/VerseWordExportPageDto'
 
   /sangraha/internal/content/nominal-lemmas:
     get:

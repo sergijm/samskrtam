@@ -156,3 +156,65 @@ LemmaRefreshResponse:
       type: integer
     updatedStatisticsCount:
       type: integer
+
+LemmaExportItemDto:
+  type: object
+  description: Одна лемма для экспорта в curriculum-service (lemmas/export). Данные уже агрегированы — curriculum-service не группирует строки.
+  required: [lemmaId, lemmaSlp1, lemmaIast, lemmaDevanagari, occurrenceCount]
+  properties:
+    lemmaId:
+      type: string
+      format: uuid
+    lemmaSlp1:
+      type: string
+    lemmaIast:
+      type: string
+    lemmaDevanagari:
+      type: string
+    gender:
+      type:
+        - string
+        - 'null'
+      description: Из lemma_statistics; NULL для словоформ без морфологии.
+    dominantPosCode:
+      type:
+        - string
+        - 'null'
+      description: Наиболее частотный POS в группе (lemma, gender).
+    occurrenceCount:
+      type: integer
+    categoryCodes:
+      type: array
+      items:
+        type: string
+      description: Коды семантических тем из APPROVED-классификаций. Может быть пустым массивом или null.
+    glossRu:
+      type:
+        - string
+        - 'null'
+      description: Русский глосс из APPROVED-классификации.
+    glossEn:
+      type:
+        - string
+        - 'null'
+      description: Английский глосс из APPROVED-классификации.
+    vowelType:
+      type:
+        - string
+        - 'null'
+      description: Класс основы из nominal_lemmas.stem_class (A_STEM…R_STEM).
+
+LemmaExportPageDto:
+  type: object
+  required: [items, nextCursor]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/LemmaExportItemDto'
+    nextCursor:
+      type:
+        - string
+        - 'null'
+      format: uuid
+      description: Последний lemmaStatistics.id; null — страниц больше нет.

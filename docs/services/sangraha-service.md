@@ -345,45 +345,47 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
 
 ---
 
-## 10. Модуль классификации лексем (Lemma / LemmaClassification)
+## 10. Модуль лексем и классификации (Lemma / LemmaStatistics / LemmaClassification)
 
-Полная спецификация — [lemma-classification.md](./sangraha-service/lemma-classification.md).
-Кратко: sangraha-service агрегирует уникальные леммы по всему корпусу
-(`Lemma`, вне контекста конкретного стиха), классифицирует их по одной или
-нескольким **схемам** (`ClassificationScheme` — сейчас только `CURRICULUM`,
-`WORDNET` зарезервирована на будущее) через batch-вызовы внешней LLM с
-одновременным переводом (наиболее вероятный глосс), батчами по частотности
-употребления, с ручным ADMIN-review результата. Результат (категория +
-перевод) отдаётся curriculum-service через export-эндпоинт и используется
-пайплайном наполнения лексикона (`lexicon-content-pipeline.md`) вместо ручной
-разметки `semanticTopicId`/эвристического перевода.
+Полная спецификация классификации — [lemma-classification.md](./sangraha-service/lemma-classification.md).
+Кратко: sangraha-service ведёт словарь уникальных лемм (`lemma`, одна запись на `lemmaSlp1`),
+статистику частотности по родам (`lemma_statistics`, одна запись на пару `lemma+gender`),
+и классифицирует леммы по схеме `CURRICULUM` через batch-вызовы LLM с ручным ADMIN-review
+(`lemma_classification`). Результат (категория + перевод) используется пайплайном наполнения
+лексикона (`lexicon-content-pipeline.md`).
 
-### `GET /sangraha/internal/content/verse-words/export`
+### `GET /sangraha/internal/lexicon/lemmas/export`
 
-Третий internal-эндпоинт, используется batch-импортом лексикона curriculum-service
-(`lexicon-content-pipeline.md` §2) — постраничная выгрузка всех `VerseWord` по
-всем стихам `status = ANALYZED`, курсор по `verseId`:
+Экспорт агрегированных данных лемм для batch-импорта в curriculum-service.
+Один вызов — всё, что нужно: JOIN `lemma` + `lemma_statistics` +
+`lemma_classification` (APPROVED, scheme=CURRICULUM) + `nominal_lemmas` (stemClass → vowelType).
+Курсорная пагинация по `lemma_statistics.id`, сортировка по `occurrenceCount DESC`.
 
 ```
-GET /sangraha/internal/content/verse-words/export?cursor={verseId}&limit=500
+GET /sangraha/internal/lexicon/lemmas/export?cursor={statsId}&limit=500
 ```
 
 ```json
 {
   "items": [
-    { "verseId": "uuid", "workSlug": "bhagavad-gita", "chapterSlug": "1", "verseOrderIndex": 1,
-      "lemmaIast": "dhṛtarāṣṭra", "stem": "dhṛtarāṣṭra",
-      "surfaceIast": "dhṛtarāṣṭraḥ", "surfaceDevanagari": "धृतराष्ट्रः",
-      "pos": "NOUN", "lemmaGlossRu": "...", "lemmaGlossEn": "...",
-      "gender": "MASCULINE", "vowelType": "A_STEM" }
+    {
+      "lemmaId": "uuid", "lemmaSlp1": "nara", "lemmaIast": "nara", "lemmaDevanagari": "नर",
+      "gender": "MASCULINE", "dominantPosCode": "noun", "occurrenceCount": 42,
+      "categoryCodes": ["people-occupations", "society-ritual"], "glossRu": "человек, мужчина", "glossEn": "man",
+      "vowelType": "A_STEM"
+    }
   ],
   "nextCursor": "uuid-or-null"
 }
 ```
 
-`gender`/`vowelType` — из `VerseWordMorphology` (nullable, если разбор не дал
-значения). `nextCursor = null`, когда строк больше нет. Это единственное место,
-где весь корпус читается разом (в отличие от §6/§7, где обработка идёт по
-одному стиху) — используется исключительно batch-задачей, не публичным API,
-не через gateway.
+Одна строка = одна пара `(lemma, gender)`. Данные уже агрегированы —
+curriculum-service делает простой upsert, не группирует и не маппит коды.
+`nextCursor = null` — страниц больше нет.
+
+`gender`, `dominantPosCode`, `occurrenceCount` — из `lemma_statistics` (пересчитываются
+через `POST /sangraha/internal/lexicon/lemmas/refresh-statistics`).
+`categoryCodes`, `glossRu`, `glossEn` — из `lemma_classification` со статусом `APPROVED`
+(собираются все категории для пары (lemma, gender); если классификации нет — пустой массив, поля gloss null).
+`vowelType` — из `nominal_lemmas.stem_class`, если запись существует для данной леммы.</think>
 - **Библиотека текстов (каталог, не курикулум)** — требования к странице библиотеки, стабильному адресу строфы (`произведение.глава.строфа`, используется как `source_ref` в `usage_examples`), двухсекционному поиску по корпусу (произведения + строфы) и полю `license`/`source_type` в модели произведения — см. [frontend/information-architecture.md §3.2 и §7](../frontend/information-architecture/02-catalog.md).

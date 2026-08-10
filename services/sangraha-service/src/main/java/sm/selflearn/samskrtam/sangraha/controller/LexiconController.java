@@ -16,11 +16,13 @@ import sm.selflearn.samskrtam.sangraha.dto.ClassificationRunResponse;
 import sm.selflearn.samskrtam.sangraha.dto.LemmaClassificationItemDto;
 import sm.selflearn.samskrtam.sangraha.dto.LemmaClassificationPageDto;
 import sm.selflearn.samskrtam.sangraha.dto.LemmaClassificationReviewRequest;
+import sm.selflearn.samskrtam.sangraha.dto.LemmaExportPageDto;
 import sm.selflearn.samskrtam.sangraha.dto.LemmaRefreshResponse;
 import sm.selflearn.samskrtam.sangraha.dto.StartClassificationRunRequest;
 import sm.selflearn.samskrtam.sangraha.model.ClassificationStatus;
 import sm.selflearn.samskrtam.sangraha.service.LemmaClassificationReviewService;
 import sm.selflearn.samskrtam.sangraha.service.LemmaClassificationRunService;
+import sm.selflearn.samskrtam.sangraha.service.LemmaExportService;
 import sm.selflearn.samskrtam.sangraha.service.LemmaRefreshService;
 
 import java.util.UUID;
@@ -40,6 +42,7 @@ public class LexiconController {
     private final LemmaRefreshService lemmaRefreshService;
     private final LemmaClassificationRunService runService;
     private final LemmaClassificationReviewService reviewService;
+    private final LemmaExportService lemmaExportService;
 
     @PostMapping("/lemmas/refresh-statistics")
     public ResponseEntity<LemmaRefreshResponse> refreshStatistics(
@@ -87,5 +90,12 @@ public class LexiconController {
             @RequestParam(required = false) UUID cursor,
             @RequestParam(defaultValue = "500") int limit) {
         return ResponseEntity.ok(reviewService.exportApproved(schemeCode, cursor, limit));
+    }
+
+    @GetMapping("/lemmas/export")
+    public ResponseEntity<LemmaExportPageDto> exportLemmas(
+            @RequestParam(required = false) UUID cursor,
+            @RequestParam(defaultValue = "500") int limit) {
+        return ResponseEntity.ok(lemmaExportService.export(cursor, limit));
     }
 }

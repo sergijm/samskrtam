@@ -10,10 +10,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * HTTP-клиент к sangraha-service за постраничным экспортом VerseWord[]
- * (internal-эндпоинт GET /sangraha/internal/content/verse-words/export),
- * см. lexicon-content-pipeline.md §2. Если {@code sangraha-service.url} не задан —
- * импорт безопасно отключается (пустые страницы).
+ * HTTP-клиент к sangraha-service: постраничный экспорт агрегированных лемм
+ * (GET /sangraha/internal/lexicon/lemmas/export).
+ * Если {@code sangraha-service.url} не задан — импорт отключается (пустые страницы).
  */
 @Slf4j
 @Component
@@ -29,19 +28,19 @@ public class SangrahaExportClient {
         log.info("SangrahaExportClient enabled={}", enabled);
     }
 
-    public VerseWordExportPage fetchPage(UUID cursor, int limit) {
+    public LemmaExportPage fetchLemmaExport(UUID cursor, int limit) {
         if (!enabled) {
-            return new VerseWordExportPage(List.of(), null);
+            return new LemmaExportPage(List.of(), null);
         }
-        String uri = UriComponentsBuilder.fromPath("/sangraha/internal/content/verse-words/export")
+        String uri = UriComponentsBuilder.fromPath("/sangraha/internal/lexicon/lemmas/export")
                 .queryParam("cursor", cursor == null ? "" : cursor)
                 .queryParam("limit", limit)
                 .toUriString();
         try {
-            return restClient.get().uri(uri).retrieve().body(VerseWordExportPage.class);
+            return restClient.get().uri(uri).retrieve().body(LemmaExportPage.class);
         } catch (Exception e) {
-            log.warn("Failed to fetch verse word export page (cursor={}): {}", cursor, e.getMessage());
-            return new VerseWordExportPage(List.of(), null);
+            log.warn("Failed to fetch lemma export page (cursor={}): {}", cursor, e.getMessage());
+            return new LemmaExportPage(List.of(), null);
         }
     }
 }

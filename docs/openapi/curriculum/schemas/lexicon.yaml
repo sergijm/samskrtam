@@ -388,15 +388,13 @@ LexemeCandidateDto:
 
 SangrahaImportResult:
   type: object
-  required: [importedCount, updatedCount, totalLexemeCount, sourcesTouched]
+  required: [importedCount, updatedCount, totalLexemeCount]
   properties:
     importedCount:
       type: integer
     updatedCount:
       type: integer
     totalLexemeCount:
-      type: integer
-    sourcesTouched:
       type: integer
 
 # ---------- Reference ----------

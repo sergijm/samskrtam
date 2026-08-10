@@ -35,4 +35,14 @@ public interface LemmaClassificationRepository extends JpaRepository<LemmaClassi
             Pageable pageable);
 
     List<LemmaClassification> findBySchemeCodeAndStatus(String schemeCode, ClassificationStatus status);
+
+    @Query("""
+            SELECT lc FROM LemmaClassification lc
+            WHERE lc.schemeCode = :schemeCode AND lc.status = :status
+              AND lc.lemma.id IN :lemmaIds
+            """)
+    List<LemmaClassification> findBySchemeCodeAndStatusAndLemmaIdIn(
+            @Param("schemeCode") String schemeCode,
+            @Param("status") ClassificationStatus status,
+            @Param("lemmaIds") List<UUID> lemmaIds);
 }

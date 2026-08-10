@@ -8,8 +8,8 @@ import sm.selflearn.samskrtam.curriculum.lexicon.imports.LexiconImportService;
 import sm.selflearn.samskrtam.curriculum.lexicon.imports.SangrahaImportResult;
 
 /**
- * ADMIN-эндпоинт запуска batch-импорта лексики из корпуса sangraha-service
- * (task-curriculum-14 §E): POST /api/v2/lexicon/import/from-sangraha.
+ * ADMIN-эндпоинт запуска batch-импорта лексики из sangraha-service.
+ * POST /api/v2/lexicon/import/from-sangraha
  */
 @RestController
 @RequestMapping("/api/v2/lexicon/import")
