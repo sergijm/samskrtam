@@ -1,0 +1,653 @@
+# Schemas for the lexicon admin/dashboard API (curriculum-service API v2).
+# Source of truth: services/curriculum-service .../lexicon/controller/*.
+
+LexemeStatus:
+  type: string
+  enum: [DRAFT, CANDIDATE, APPROVED, REJECTED]
+
+LexemeGender:
+  type: string
+  enum: [MASCULINE, FEMININE, NEUTER, UNSPECIFIED]
+
+CollectionVisibility:
+  type: string
+  enum: [PRIVATE, SHARED]
+
+SourceKind:
+  type: string
+  enum: [EPIC, PHILOSOPHICAL, FABLE, OTHER]
+
+VocabularyQuizKind:
+  type: string
+  enum: [TOPIC, MIXED_TOPIC, FREQUENCY_BAND, SOURCE]
+
+# ---------- Dashboard ----------
+
+LexiconSummaryDto:
+  type: object
+  required: [totalWords, masteredCount]
+  properties:
+    totalWords:
+      type: integer
+    masteredCount:
+      type: integer
+
+LexiconTodayDto:
+  type: object
+  required: [reviewDue, newWords, weakWords]
+  properties:
+    reviewDue:
+      type: integer
+    newWords:
+      type: integer
+    weakWords:
+      type: integer
+
+LexiconFrequencyDto:
+  type: object
+  required: [id, from, to, wordCount, masteredCount]
+  properties:
+    id:
+      type: string
+    from:
+      type: integer
+    to:
+      type: integer
+    wordCount:
+      type: integer
+    masteredCount:
+      type: integer
+
+LexiconSemanticTopicDto:
+  type: object
+  required: [id, nameRu, nameEn, wordCount, masteredCount]
+  properties:
+    id:
+      type: string
+    nameRu:
+      type: string
+    nameEn:
+      type: string
+    wordCount:
+      type: integer
+    masteredCount:
+      type: integer
+
+LexiconPosDto:
+  type: object
+  required: [id, nameRu, nameEn, wordCount]
+  properties:
+    id:
+      type: string
+    nameRu:
+      type: string
+    nameEn:
+      type: string
+    wordCount:
+      type: integer
+
+LexiconSourceDto:
+  type: object
+  required: [id, titleEn, titleRu, wordCount, masteredCount]
+  properties:
+    id:
+      type: string
+    titleEn:
+      type: string
+    titleRu:
+      type: string
+    devanagari:
+      type:
+        - string
+        - 'null'
+    wordCount:
+      type: integer
+    masteredCount:
+      type: integer
+
+LexiconUserCollectionDto:
+  type: object
+  required: [id, name, wordCount]
+  properties:
+    id:
+      type: string
+    name:
+      type: string
+    wordCount:
+      type: integer
+
+LexiconQuickStartDto:
+  type: object
+  required: [id, titleRu, titleEn]
+  properties:
+    id:
+      type: string
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    metaRu:
+      type:
+        - string
+        - 'null'
+    metaEn:
+      type:
+        - string
+        - 'null'
+
+LexiconDashboardResponse:
+  type: object
+  required: [summary, today, frequencyBands, topics, pos, sources, collections, quickStart]
+  properties:
+    summary:
+      $ref: '#/LexiconSummaryDto'
+    today:
+      $ref: '#/LexiconTodayDto'
+    frequencyBands:
+      type: array
+      items:
+        $ref: '#/LexiconFrequencyDto'
+    topics:
+      type: array
+      items:
+        $ref: '#/LexiconSemanticTopicDto'
+    pos:
+      type: array
+      items:
+        $ref: '#/LexiconPosDto'
+    sources:
+      type: array
+      items:
+        $ref: '#/LexiconSourceDto'
+    collections:
+      type: array
+      items:
+        $ref: '#/LexiconUserCollectionDto'
+    quickStart:
+      type: array
+      items:
+        $ref: '#/LexiconQuickStartDto'
+
+# ---------- Lexemes (admin) ----------
+
+WordFormDto:
+  type: object
+  properties:
+    formIast:
+      type: string
+    formDevanagari:
+      type: string
+    grammaticalNote:
+      type:
+        - string
+        - 'null'
+
+LexemeAdminDto:
+  type: object
+  required: [id, lemmaIast, lemmaDevanagari, lemmaSlp1, glossRu, glossEn, status, hasSemanticTopic]
+  properties:
+    id:
+      type: string
+      format: uuid
+    lemmaIast:
+      type: string
+    lemmaDevanagari:
+      type: string
+    lemmaSlp1:
+      type: string
+    glossRu:
+      type: string
+    glossEn:
+      type: string
+    gender:
+      type: string
+    status:
+      $ref: '#/LexemeStatus'
+    frequencyRank:
+      type:
+        - integer
+        - 'null'
+    wordFormCount:
+      type: integer
+    hasSemanticTopic:
+      type: boolean
+
+LexemeAdminPage:
+  type: object
+  required: [items, page, size, totalElements, totalPages]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/LexemeAdminDto'
+    page:
+      type: integer
+    size:
+      type: integer
+    totalElements:
+      type: integer
+    totalPages:
+      type: integer
+
+LexemeUpsertRequest:
+  type: object
+  required: [lemmaIast, lemmaDevanagari, lemmaSlp1, glossRu, glossEn]
+  properties:
+    lemmaIast:
+      type: string
+    lemmaDevanagari:
+      type: string
+    lemmaSlp1:
+      type: string
+    glossRu:
+      type: string
+    glossEn:
+      type: string
+    longDefinitionRu:
+      type: string
+    longDefinitionEn:
+      type: string
+    gender:
+      $ref: '#/LexemeGender'
+    status:
+      $ref: '#/LexemeStatus'
+    posCodes:
+      type: array
+      items:
+        type: string
+    morphologyClassCodes:
+      type: array
+      items:
+        type: string
+    semanticTopicIds:
+      type: array
+      items:
+        type: string
+        format: uuid
+
+LexemeStatusUpdateRequest:
+  type: object
+  required: [status]
+  properties:
+    status:
+      $ref: '#/LexemeStatus'
+
+LexemeDetailDto:
+  type: object
+  required: [id, lemmaIast, lemmaDevanagari, lemmaSlp1, glossRu, glossEn, status]
+  properties:
+    id:
+      type: string
+      format: uuid
+    lemmaIast:
+      type: string
+    lemmaDevanagari:
+      type: string
+    lemmaSlp1:
+      type: string
+    glossRu:
+      type: string
+    glossEn:
+      type: string
+    longDefinitionRu:
+      type: string
+    longDefinitionEn:
+      type: string
+    gender:
+      $ref: '#/LexemeGender'
+    status:
+      $ref: '#/LexemeStatus'
+    posCodes:
+      type: array
+      items:
+        type: string
+    morphologyClassCodes:
+      type: array
+      items:
+        type: string
+    semanticTopicIds:
+      type: array
+      items:
+        type: string
+        format: uuid
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+# ---------- Progress ----------
+
+LexemeProgressDto:
+  type: object
+  required: [lexemeId, masteryScore, exposureCount, correctCount, incorrectCount]
+  properties:
+    lexemeId:
+      type: string
+      format: uuid
+    masteryScore:
+      type: integer
+    exposureCount:
+      type: integer
+    correctCount:
+      type: integer
+    incorrectCount:
+      type: integer
+    lastSeenAt:
+      type:
+        - string
+        - 'null'
+      format: date-time
+    nextReviewAt:
+      type:
+        - string
+        - 'null'
+      format: date-time
+
+LexemeProgressUpdateRequest:
+  type: object
+  required: [correct]
+  properties:
+    correct:
+      type: boolean
+
+# ---------- Pool ----------
+
+LexemeCandidateDto:
+  type: object
+  required: [id, lemmaIast, lemmaDevanagari, lemmaSlp1, glossRu, glossEn]
+  properties:
+    id:
+      type: string
+      format: uuid
+    lemmaIast:
+      type: string
+    lemmaDevanagari:
+      type: string
+    lemmaSlp1:
+      type: string
+    glossRu:
+      type: string
+    glossEn:
+      type: string
+    gender:
+      type: string
+    posCode:
+      type: string
+    morphologyClassCodes:
+      type: array
+      items:
+        type: string
+    wordForms:
+      type: array
+      items:
+        $ref: '#/WordFormDto'
+
+# ---------- Import ----------
+
+SangrahaImportResult:
+  type: object
+  required: [importedCount, updatedCount, totalLexemeCount, sourcesTouched]
+  properties:
+    importedCount:
+      type: integer
+    updatedCount:
+      type: integer
+    totalLexemeCount:
+      type: integer
+    sourcesTouched:
+      type: integer
+
+# ---------- Reference ----------
+
+SemanticTopicNodeDto:
+  type: object
+  required: [id, code, nameRu, nameEn]
+  properties:
+    id:
+      type: string
+      format: uuid
+    code:
+      type: string
+    nameRu:
+      type: string
+    nameEn:
+      type: string
+    parentId:
+      type:
+        - string
+        - 'null'
+      format: uuid
+    children:
+      type: array
+      items:
+        $ref: '#/SemanticTopicNodeDto'
+
+SemanticTopicUpsertRequest:
+  type: object
+  required: [code, nameRu, nameEn]
+  properties:
+    code:
+      type: string
+    nameRu:
+      type: string
+    nameEn:
+      type: string
+    parentId:
+      type:
+        - string
+        - 'null'
+      format: uuid
+
+PosGroup:
+  type: string
+  enum: [NOUN, VERB, ADJECTIVE, PRONOUN, ADVERB, PARTICLE, INDECLINABLE, NUMERAL, CONJUNCTION, INTERJECTION, OTHER]
+
+MorphologyAppliesTo:
+  type: string
+  enum: [NOUN, ADJECTIVE, VERB, PRONOUN]
+
+ReferenceClassDto:
+  type: object
+  required: [code, nameRu, nameEn]
+  properties:
+    code:
+      type: string
+    group:
+      type:
+        - string
+        - 'null'
+      description: Present for POS classes (PosGroup name); null for morphology classes.
+    appliesTo:
+      type:
+        - string
+        - 'null'
+      description: Present for morphology classes; null for POS.
+    nameRu:
+      type: string
+    nameEn:
+      type: string
+
+FrequencyBand:
+  type: object
+  required: [code, minRank, maxRank, labelRu, labelEn]
+  properties:
+    code:
+      type: string
+    minRank:
+      type: integer
+    maxRank:
+      type: integer
+    labelRu:
+      type: string
+    labelEn:
+      type: string
+    sortOrder:
+      type: integer
+
+# ---------- Vocab quiz definitions ----------
+
+VocabularyQuizDefinitionUpsertRequest:
+  type: object
+  required: [kind, titleRu, titleEn]
+  description: Exactly one of topicId/complexQuizId/sourceId/frequencyRankMax must be filled.
+  properties:
+    kind:
+      $ref: '#/VocabularyQuizKind'
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    topicId:
+      type:
+        - string
+        - 'null'
+      format: uuid
+    complexQuizId:
+      type:
+        - string
+        - 'null'
+      format: uuid
+    sourceId:
+      type:
+        - string
+        - 'null'
+      format: uuid
+    sourceLocationPrefix:
+      type: string
+    frequencyRankMax:
+      type:
+        - integer
+        - 'null'
+
+VocabularyQuizDefinition:
+  type: object
+  required: [id, kind, titleRu, titleEn]
+  properties:
+    id:
+      type: string
+      format: uuid
+    kind:
+      $ref: '#/VocabularyQuizKind'
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    topicId:
+      type:
+        - string
+        - 'null'
+      format: uuid
+    complexQuizId:
+      type:
+        - string
+        - 'null'
+      format: uuid
+    sourceId:
+      type:
+        - string
+        - 'null'
+      format: uuid
+    sourceLocationPrefix:
+      type:
+        - string
+        - 'null'
+    frequencyRankMax:
+      type:
+        - integer
+        - 'null'
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+# ---------- Sources ----------
+
+Source:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    code:
+      type: string
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    kind:
+      $ref: '#/SourceKind'
+    totalOccurrencesCache:
+      type: integer
+    uniqueLemmaCountCache:
+      type: integer
+    externalSangrahaWorkSlug:
+      type:
+        - string
+        - 'null'
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+SourceUpsertRequest:
+  type: object
+  required: [code, titleRu, titleEn, kind]
+  properties:
+    code:
+      type: string
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    kind:
+      $ref: '#/SourceKind'
+    externalSangrahaWorkSlug:
+      type:
+        - string
+        - 'null'
+
+# ---------- User collections ----------
+
+UserCollectionUpsertRequest:
+  type: object
+  required: [name, visibility]
+  properties:
+    name:
+      type: string
+    description:
+      type:
+        - string
+        - 'null'
+    visibility:
+      $ref: '#/CollectionVisibility'
+
+UserCollection:
+  type: object
+  required: [id, ownerId, name, visibility]
+  properties:
+    id:
+      type: string
+      format: uuid
+    ownerId:
+      type: string
+      format: uuid
+    name:
+      type: string
+    description:
+      type:
+        - string
+        - 'null'
+    visibility:
+      $ref: '#/CollectionVisibility'
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time

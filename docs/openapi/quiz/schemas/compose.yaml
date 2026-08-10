@@ -1,0 +1,63 @@
+# Schemas for POST /api/v2/quiz/compose (ComposeSessionController) and
+# POST /api/v2/curriculum/sessions/compose (QuizSessionComposerController).
+# The quiz-service compose maps curriculum QuestItemDto payload onto the session
+# QuestionDto shape (see docs/services/curriculum-session-composition.md).
+
+QuestSessionTopicDto:
+  type: object
+  required: [topicCode, count]
+  properties:
+    topicCode:
+      type: string
+      description: Curriculum topic code (e.g. "a-stem-masc")
+    count:
+      type: integer
+      description: Number of questions. Ignored when itemIds is present.
+    itemIds:
+      type: array
+      items:
+        type: string
+        format: uuid
+      description: Optional exact item IDs (takes precedence over count).
+
+QuestComposeRequest:
+  type: object
+  required: [topics]
+  description: >
+    Request body of POST /api/v2/quiz/compose. topics must be non-empty; each
+    topicCode must exist and yield materialized questions, otherwise 400/404.
+  properties:
+    topics:
+      type: array
+      minItems: 1
+      items:
+        $ref: '#/QuestSessionTopicDto'
+    userLocale:
+      type: string
+      description: Optional locale hint (not forwarded to curriculum-service).
+
+ComposeQuizResponse:
+  type: object
+  required: [sessionId, totalQuestions, answeredQuestions, score, currentQuestionIndex, currentQuestionNumber, questions]
+  properties:
+    sessionId:
+      type: string
+      format: uuid
+    totalQuestions:
+      type: integer
+    answeredQuestions:
+      type: integer
+      description: Always 0 for a freshly composed session.
+    score:
+      type: integer
+      description: Always 0.
+    currentQuestionIndex:
+      type: integer
+      description: 0-based index of the current question.
+    currentQuestionNumber:
+      type: integer
+      description: 1-based current question number.
+    questions:
+      type: array
+      items:
+        $ref: './session.yaml#/QuestionDto'

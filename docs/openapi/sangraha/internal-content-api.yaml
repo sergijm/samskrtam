@@ -1,11 +1,13 @@
 openapi: "3.1.0"
 info:
-  title: sangraha-service — Internal API (called by content-service)
+  title: sangraha-service — Internal API (service-to-service)
   description: |
-    Service-to-service эндпоинты, вызываемые content-service напрямую (env
-    SANGRAHA_SERVICE_URL у content-service, минуя api-gateway, без роли) для вкладки
-    «Примеры» на странице шага склонений. Источник истины — docs/services/sangraha-service.md
-    §9, docs/services/content-service/declension-examples.md.
+    Service-to-service эндпоинты sangraha-service, вызываемые другими сервисами
+    напрямую (env SANGRAHA_SERVICE_URL, минуя api-gateway, без роли):
+    quiz-service — для вкладки «Примеры» на странице шага склонений
+    (declension-examples + verses/batch, см. quiz-service.md §2, quiz-declension.md §3.2),
+    curriculum-service — для импорта лексики (verse-words/export из sangraha-service.md §10,
+    nominal-lemmas). Источник истины — docs/services/sangraha-service.md §9.
   version: "1.0.0"
 
 servers:
@@ -22,7 +24,7 @@ paths:
         Возвращает только verseId по группам, не сами цитаты (см.
         /sangraha/internal/content/verses/batch ниже). Одна группа в ответе на каждую
         запрошенную ячейку — даже с пустым verseIds (значимый результат «ничего не
-        нашлось», content-service его кэширует).
+        нашлось», quiz-service его кэширует).
       requestBody:
         required: true
         content:
@@ -71,3 +73,65 @@ paths:
             application/json:
               schema:
                 $ref: '../common/schemas/common.yaml#/ErrorResponse'
+
+  /sangraha/internal/content/verse-words/export:
+    get:
+      operationId: exportVerseWords
+      summary: Курсорная выгрузка всех VerseWord из ANALYZED-стихов
+      tags: [content-export]
+      description: >
+        Экспорт всех слов из стихов со статусом ANALYZED для импорта лексики
+        в curriculum-service (SangrahaExportClient). Курсорная пагинация по
+        verseId (nextCursor = последний обработанный verseId; null — строк больше нет).
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          description: Последний обработанный verseId
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          description: Размер страницы (clamp 1..500, default 500)
+          schema:
+            type: integer
+            default: 500
+      responses:
+        '200':
+          description: Страница экспорта слов
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/internal-content-schemas.yaml#/VerseWordExportPageDto'
+
+  /sangraha/internal/content/nominal-lemmas:
+    get:
+      operationId: getNominalLemmaCandidates
+      summary: Кандидаты импорта существительных (bootstrap склонений в curriculum-service)
+      tags: [content-export]
+      description: >
+        Список лемм-кандидатов на импорт существительных для bootstrap-склонений
+        curriculum-service, отсортированный по частоте встречаемости в verse_words.
+      parameters:
+        - name: stemClass
+          in: query
+          required: false
+          description: Класс основы (A_STEM…R_STEM); пустой — все
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Максимум кандидатов (default 100)
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Кандидаты
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/internal-content-schemas.yaml#/NominalLemmaCandidatesResponseDto'

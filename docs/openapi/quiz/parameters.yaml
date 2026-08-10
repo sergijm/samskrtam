@@ -21,11 +21,33 @@ SessionIdParam:
 LessonIdParam:
   name: lessonId
   in: query
-  required: true
-  description: UUID of the lesson
+  required: false
+  description: |
+    UUID of the lesson. Optional — ignored when `topicCode` is present.
+    In the legacy v1 flow a lessonId maps to a content lesson; current topic-based
+    sessions are driven by `topicCode` instead.
   schema:
     type: string
     format: uuid
+
+TopicCodeParam:
+  name: topicCode
+  in: query
+  required: false
+  description: |
+    Curriculum topic code (e.g. "a-stem-masc"). When present, the session is started
+    from a curriculum topic and lessonId/filter parameters are ignored.
+  schema:
+    type: string
+
+CountParam:
+  name: count
+  in: query
+  required: false
+  description: Number of questions in the session for topic-based starts.
+  schema:
+    type: integer
+    default: 10
 
 XUserIdHeader:
   name: X-User-Id
@@ -111,11 +133,11 @@ FilterVowelTypesParam:
   required: false
   description: |
     Comma-separated list of vowelType values (A_STEM, AA_STEM, I_STEM, II_STEM,
-U_STEM, UU_STEM, R_STEM, PRON_AHAM, PRON_TVAM, PRON_TAD, PRON_ETAD, PRON_IDAM,
-PRON_KIM, PRON_YAD, PRON_REFLEXIVE). Used only when filterScope=ALL_STEMS, on the
-"Vse osnovy" page (see quiz-declension.md par 5). Empty means "all vowel
-types" - expanded server-side to the full set of vowelType values that
-currently have seeded declension_stems data.
+    U_STEM, UU_STEM, R_STEM, PRON_AHAM, PRON_TVAM, PRON_TAD, PRON_ETAD, PRON_IDAM,
+    PRON_KIM, PRON_YAD, PRON_REFLEXIVE). Used only when filterScope=ALL_STEMS,
+    on the "Vse osnovy" page (see quiz-declension.md par 5). Empty means "all
+    vowel types" - expanded server-side to the full set of vowelType values
+    that currently have seeded declension_stems data.
   schema:
     type: array
     items:

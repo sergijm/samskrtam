@@ -1,0 +1,16 @@
+# Пути из sangraha-service.yaml → verses.yaml
+paths:
+  /verse:
+    $ref: 'paths/verses.yaml#/paths/~1~1verse'
+  /verse/analysis:
+    $ref: 'paths/verses.yaml#/paths/~1~1verse~1analysis'
+  /verses/{verseId}:
+    $ref: 'paths/verses.yaml#/paths/~1~1verses~1{verseId}'
+  /verses/{verseId}/vocabulary-quiz:
+    $ref: 'paths/verses.yaml#/paths/~1~1verses~1{verseId}~1vocabulary-quiz'
+  /verses/{verseId}/analysis:
+    $ref: 'paths/verses.yaml#/paths/~1~1verses~1{verseId}~1analysis'
+  /verses/{verseId}/words:
+    $ref: 'paths/verses.yaml#/paths/~1~1verses~1{verseId}~1words'
+  /verses/{verseId}/analyze:
+    $ref: 'paths/verses.yaml#/paths/~1~1verses~1{verseId}~1analyze'

@@ -1,0 +1,4 @@
+# Пути из quiz-sessions.yaml → compose.yaml
+paths:
+  /quiz/compose:
+    $ref: 'paths/compose.yaml#/paths/~1~1quiz~1compose'

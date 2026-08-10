@@ -1,0 +1,158 @@
+# Schemas for docs/openapi/sangraha/internal-lexicon-api.yaml (LexiconController in sangraha-service).
+
+ClassificationRunStatus:
+  type: string
+  enum: [RUNNING, COMPLETED, COMPLETED_WITH_ERRORS]
+  description: Прочие значения enum допустимы, но перечислены основные.
+
+ClassificationStatus:
+  type: string
+  enum: [CANDIDATE, APPROVED, REJECTED]
+
+StartClassificationRunRequest:
+  type: object
+  required: [schemeCode, batchCount]
+  properties:
+    schemeCode:
+      type: string
+      description: Код схемы классификации (обязателен, иначе 400).
+    batchSize:
+      type:
+        - integer
+        - 'null'
+      description: Размер батча (default 50 в сервисе).
+    batchCount:
+      type: integer
+      description: Количество батчей; должно быть > 0, иначе 400.
+
+ClassificationRunResponse:
+  type: object
+  required: [runId, schemeCode, requestedBatchCount, completedBatchCount, status]
+  properties:
+    runId:
+      type: string
+      format: uuid
+    schemeCode:
+      type: string
+    requestedBatchCount:
+      type: integer
+    completedBatchCount:
+      type: integer
+    status:
+      type: string
+    succeededBatchCount:
+      type: integer
+    failedBatchCount:
+      type: integer
+    classifiedLemmaCount:
+      type: integer
+
+LemmaClassificationItemDto:
+  type: object
+  required: [id, lemmaId, lemmaSlp1, lemmaIast, lemmaDevanagari, categoryCode, status]
+  properties:
+    id:
+      type: string
+      format: uuid
+    lemmaId:
+      type: string
+      format: uuid
+    lemmaSlp1:
+      type: string
+    lemmaIast:
+      type: string
+    lemmaDevanagari:
+      type: string
+    gender:
+      type:
+        - string
+        - 'null'
+    dominantPosCode:
+      type:
+        - string
+        - 'null'
+    occurrenceCount:
+      type:
+        - integer
+        - 'null'
+    categoryCode:
+      type: string
+    glossRu:
+      type:
+        - string
+        - 'null'
+    glossEn:
+      type:
+        - string
+        - 'null'
+    confidence:
+      type:
+        - integer
+        - 'null'
+    status:
+      $ref: '#/ClassificationStatus'
+    reviewedBy:
+      type:
+        - string
+        - 'null'
+    reviewedAt:
+      type:
+        - string
+        - 'null'
+      format: date-time
+
+LemmaClassificationPageDto:
+  type: object
+  required: [items, nextCursor]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/LemmaClassificationItemDto'
+    nextCursor:
+      type:
+        - string
+        - 'null'
+      format: uuid
+      description: Курсор по lemmaId; null — строк больше нет.
+
+LemmaClassificationReviewRequest:
+  type: object
+  properties:
+    status:
+      type: string
+      description: >
+        CANDIDATE | APPROVED | REJECTED. APPROVED требует валидный categoryCode.
+    categoryCode:
+      type:
+        - string
+        - 'null'
+    glossRu:
+      type:
+        - string
+        - 'null'
+    glossEn:
+      type:
+        - string
+        - 'null'
+    confidence:
+      type:
+        - integer
+        - 'null'
+
+LemmaRefreshResponse:
+  type: object
+  required: [lemmaCount, newLemmaCount, updatedLemmaCount, statisticsCount, newStatisticsCount, updatedStatisticsCount]
+  properties:
+    lemmaCount:
+      type: integer
+    newLemmaCount:
+      type: integer
+    updatedLemmaCount:
+      type: integer
+    statisticsCount:
+      type: integer
+    newStatisticsCount:
+      type: integer
+    updatedStatisticsCount:
+      type: integer

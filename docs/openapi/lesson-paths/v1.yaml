@@ -1,0 +1,144 @@
+# Пути из lesson-aggregation-openapi.yaml → lesson-paths/v1.yaml
+paths:
+
+  # ==================== v1 (legacy) ====================
+
+  /lessons/grammar/{slug}:
+    get:
+      tags: [grammar-lesson]
+      summary: Получить грамматический урок с прогрессом пользователя
+      description: >
+        Возвращает список вопросов урока с правильными ответами и
+        индивидуальной статистикой каждого вопроса для текущего пользователя.
+      operationId: getGrammarLesson
+      parameters:
+        - $ref: '../common/parameters.yaml#/SlugParam'
+      responses:
+        '200':
+          description: Урок с прогрессом пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/grammar.yaml#/GrammarLesson'
+        '404':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/NotFound'
+        '401':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/Unauthorized'
+
+  /lessons/vocabulary/{slug}/words/{wordId}/history:
+    get:
+      tags: [word-history]
+      summary: История ответов пользователя на конкретное слово в уроке
+      description: >
+        Возвращает хронологию попыток ответить на вопрос по данному слову
+        в рамках конкретного урока (quizId из slug).
+      operationId: getWordAnswerHistory
+      parameters:
+        - $ref: '../common/parameters.yaml#/SlugParam'
+        - name: wordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '../common/parameters.yaml#/PageParam'
+        - $ref: '../common/parameters.yaml#/SizeParam'
+        - $ref: '../common/parameters.yaml#/LocaleParam'
+      responses:
+        '200':
+          description: История ответов на слово
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/history.yaml#/WordAnswerHistory'
+        '404':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/NotFound'
+        '401':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/Unauthorized'
+
+  /lessons/{lessonType}:
+    get:
+      tags: [vocabulary-lesson, grammar-lesson]
+      summary: Get list of lessons by type with user progress
+      description: >
+        Returns a list of all lessons of the given type with user progress summary.
+      operationId: getLessonsByType
+      parameters:
+        - name: lessonType
+          in: path
+          required: true
+          schema:
+            $ref: '../common/schemas/lessons.yaml#/LessonType'
+      responses:
+        '200':
+          description: List of lessons
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/lessons.yaml#/LessonListResponse'
+        '401':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/Unauthorized'
+
+  /lessons/grammar/{slug}/questions/history:
+    get:
+      tags: [word-history]
+      summary: История ответов пользователя на грамматический вопрос по падежу, числу и роду
+      description: >
+        Возвращает хронологию попыток ответить на грамматический вопрос
+        по комбинации падежа (caseType), числа (numberType) и рода (gender) в рамках
+        конкретного урока. Отображается в QuestionHistoryDialog.
+
+        Gender обязателен (MASCULINE, FEMININE, NEUTER, UNSPECIFIED), так как для уроков
+        declensions-i, declensions-u, declensions-r одна комбинация (caseType, numberType)
+        существует для двух родов с разными группами слов.
+      operationId: getQuestionAnswerHistory
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: Slug грамматического урока (тип, например "DECLENSIONS")
+          schema:
+            type: string
+            example: DECLENSIONS
+        - name: caseType
+          in: query
+          required: true
+          description: Тип падежа (NOMINATIVE, ACCUSATIVE, и т.д.)
+          schema:
+            type: string
+            example: NOMINATIVE
+        - name: numberType
+          in: query
+          required: true
+          description: Тип числа (SINGULAR, PLURAL, DUAL)
+          schema:
+            type: string
+            example: SINGULAR
+        - name: gender
+          in: query
+          required: true
+          description: >
+            Грамматический род (MASCULINE, FEMININE, NEUTER, UNSPECIFIED).
+            Для уроков с одним родом (declensions-a-masc и т.д.) передаётся фактический род.
+            Для уроков с двумя родами (declensions-i, declensions-u, declensions-r)
+            передаётся MASCULINE или FEMININE — история фильтруется по gender.
+          schema:
+            type: string
+            example: MASCULINE
+        - $ref: '../common/parameters.yaml#/PageParam'
+        - $ref: '../common/parameters.yaml#/SizeParam'
+        - $ref: '../common/parameters.yaml#/LocaleParam'
+      responses:
+        '200':
+          description: История ответов на вопрос
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/history.yaml#/QuestionAnswerHistory'
+        '404':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/NotFound'
+        '401':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/Unauthorized'
+
+  # ==================== v2 (current, frontend lessonApi) ====================
+

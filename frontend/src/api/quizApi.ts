@@ -1,6 +1,5 @@
 import api from './axios';
 import { QuizListItem, QuizSummaryDto, StartSessionResponse, AnswerRequest, AnswerResponse, LessonType, ResumeSessionResponse, StartOrResumeResponse, LessonListResponse, PaginatedResponse, ComposeQuizRequest, ComposeQuizResponse, QuizSessionSummary, AnswerHistory, QuizProgress, SessionStatus } from '../types/quiz';
-import { SandhiRuleDto } from '../types/content';
 
 export type FilterScope = 'CASE_ONLY' | 'NUMBER_ONLY' | 'CASE_NUMBER_GENDER' | 'ALL_STEMS';
 
@@ -174,8 +173,5 @@ export const quizApi = {
     });
   },
 
-  getAllSandhiRules: () => {
-    return api.get<SandhiRuleDto[]>('/api/v1/eamenau/sandhi-rules');
-  },
 };
 

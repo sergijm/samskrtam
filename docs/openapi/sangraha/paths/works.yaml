@@ -1,0 +1,8 @@
+# Пути из sangraha-service.yaml → works.yaml
+paths:
+  /works:
+    $ref: 'paths/works.yaml#/paths/~1~1works'
+  /works/classes:
+    $ref: 'paths/works.yaml#/paths/~1~1works~1classes'
+  /works/{workSlug}:
+    $ref: 'paths/works.yaml#/paths/~1~1works~1{workSlug}'

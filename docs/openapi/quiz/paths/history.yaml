@@ -1,0 +1,11 @@
+# Пути из quiz-sessions.yaml → history.yaml
+paths:
+  /quiz-sessions:
+    $ref: 'paths/history.yaml#/paths/~1~1quiz-sessions'
+  /quiz-sessions/{sessionId}/summary:
+    $ref: 'paths/history.yaml#/paths/~1~1quiz-sessions~1{sessionId}~1summary'
+  /quiz-sessions/{sessionId}/answers:
+    $ref: 'paths/history.yaml#/paths/~1~1quiz-sessions~1{sessionId}~1answers'
+  /quiz-sessions/progress:
+    $ref: 'paths/history.yaml#/paths/~1~1quiz-sessions~1progress'
+

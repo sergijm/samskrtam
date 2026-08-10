@@ -1,0 +1,16 @@
+# Пути из quiz-sessions.yaml → lifecycle.yaml
+paths:
+  /quiz/{slug}/sessions/start:
+    $ref: 'paths/lifecycle.yaml#/paths/~1~1quiz~1{slug}~1sessions~1start'
+  /quiz/{slug}/sessions/start-or-resume:
+    $ref: 'paths/lifecycle.yaml#/paths/~1~1quiz~1{slug}~1sessions~1start-or-resume'
+  /quiz/{slug}/sessions/{sessionId}/resume:
+    $ref: 'paths/lifecycle.yaml#/paths/~1~1quiz~1{slug}~1sessions~1{sessionId}~1resume'
+  /quiz/{slug}/sessions/{sessionId}/answer:
+    $ref: 'paths/lifecycle.yaml#/paths/~1~1quiz~1{slug}~1sessions~1{sessionId}~1answer'
+  /quiz/{slug}/sessions/{sessionId}/complete:
+    $ref: 'paths/lifecycle.yaml#/paths/~1~1quiz~1{slug}~1sessions~1{sessionId}~1complete'
+  /quiz/{slug}/sessions/{sessionId}/retake:
+    $ref: 'paths/lifecycle.yaml#/paths/~1~1quiz~1{slug}~1sessions~1{sessionId}~1retake'
+  /quiz/{slug}/sessions/{sessionId}/new-quiz:
+    $ref: 'paths/lifecycle.yaml#/paths/~1~1quiz~1{slug}~1sessions~1{sessionId}~1new-quiz'

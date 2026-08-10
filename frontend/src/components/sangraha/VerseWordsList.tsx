@@ -150,7 +150,7 @@ const VerseWordsList = ({ words, headerActions, wordProgressMap }: VerseWordsLis
           {headerActions}
           {allFormationRuleNumbers.length > 0 && (
             <Link
-              to={`/grammar/emeneau-rules?${allFormationRuleNumbers.map(r => `rule=${r}`).join('&')}`}
+              to={`/lessons/grammar/sandhi?${allFormationRuleNumbers.map(r => `rule=${r}`).join('&')}`}
               className="text-sm text-primary"
               target="_blank"
               rel="noopener noreferrer"

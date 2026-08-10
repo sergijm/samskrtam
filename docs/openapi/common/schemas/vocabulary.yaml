@@ -49,9 +49,9 @@ VocabularyWordProgress:
 
 VocabularyLesson:
   type: object
-  required: [quizId, slug, titleRu, titleEn, difficulty, totalWords, learnedWords, progressPercent, statusSummary, words]
+  required: [lessonId, slug, titleRu, titleEn, difficulty, totalWords, learnedWords, progressPercent, statusSummary, words]
   properties:
-    quizId:
+    lessonId:
       type: string
       format: uuid
     slug:

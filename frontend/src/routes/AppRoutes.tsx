@@ -29,15 +29,15 @@ import VocabularyPage from '../pages/vocabulary/VocabularyPage';
 import VocabularyBasicPage from '../pages/vocabulary/VocabularyBasicPage';
 import VocabularyTextsPage from '../pages/vocabulary/VocabularyTextsPage';
 import UnderConstructionPage from '../pages/UnderConstructionPage';
-import EmeneauRulesPage from '../pages/EmeneauRulesPage';
-import EmeneauExercisesPage from '../pages/eamenau/EmeneauExercisesPage';
-import EmeneauExerciseDetailPage from '../pages/eamenau/EmeneauExerciseDetailPage';
 import DictionaryPage from '../pages/dictionary/DictionaryPage';
 import AlphabetPage from '../pages/writing/AlphabetPage';
 import TransliterationPracticePage from '../pages/tools/TransliterationPracticePage';
 import VocabularyLessonPage from '../pages/lessons/VocabularyLessonPage';
 import GrammarLessonPage from '../pages/lessons/GrammarLessonPage';
+import SandhiLessonPage from '../pages/lessons/SandhiLessonPage';
+import SandhiRulesByNumberPage from '../pages/grammar/SandhiRulesByNumberPage';
 import GrammarAllStemsPage from '../pages/lessons/GrammarAllStemsPage';
+import GrammarRouteResolver from '../pages/lessons/GrammarRouteResolver';
 import WorksPage from '../pages/sangraha/WorksPage';
 import WorkPage from '../pages/sangraha/WorkPage';
 import ChapterPage from '../pages/sangraha/ChapterPage';
@@ -103,10 +103,6 @@ export default function AppRoutes() {
       <Route path="/grammar" element={<ProtectedLayoutRoute><GrammarPage /></ProtectedLayoutRoute>} />
       <Route path="/grammar/declensions" element={<ProtectedLayoutRoute><QuizzesPage category="declensions" /></ProtectedLayoutRoute>} />
       <Route path="/grammar/conjugations" element={<ProtectedLayoutRoute><UnderConstructionPage /></ProtectedLayoutRoute>} />
-      <Route path="/grammar/emeneau-exercises" element={<ProtectedLayoutRoute><EmeneauExercisesPage /></ProtectedLayoutRoute>} />
-      <Route path="/grammar/emeneau-exercises/:id" element={<ProtectedLayoutRoute><EmeneauExerciseDetailPage /></ProtectedLayoutRoute>} />
-      <Route path="/grammar/emeneau-quizzes" element={<ProtectedLayoutRoute><UnderConstructionPage /></ProtectedLayoutRoute>} />
-      <Route path="/grammar/emeneau-rules" element={<ProtectedLayoutRoute><EmeneauRulesPage /></ProtectedLayoutRoute>} />
 
       {/* Vocabulary pages */}
       <Route path="/vocabulary" element={<ProtectedLayoutRoute><VocabularyPage /></ProtectedLayoutRoute>} />
@@ -119,8 +115,9 @@ export default function AppRoutes() {
 
             {/* Lesson pages */}
       <Route path="/lessons/grammar/declensions-all" element={<ProtectedLayoutRoute><GrammarAllStemsPage /></ProtectedLayoutRoute>} />
+      <Route path="/lessons/grammar/sandhi" element={<ProtectedLayoutRoute><SandhiRulesByNumberPage /></ProtectedLayoutRoute>} />
+      <Route path="/lessons/grammar/:slug" element={<ProtectedLayoutRoute><GrammarRouteResolver /></ProtectedLayoutRoute>} />
       <Route path="/lessons/vocabulary/:slug" element={<ProtectedLayoutRoute><VocabularyLessonPage /></ProtectedLayoutRoute>} />
-      <Route path="/lessons/grammar/:slug" element={<ProtectedLayoutRoute><GrammarLessonPage /></ProtectedLayoutRoute>} />
 
       {/* Quiz page */}
       <Route path="/quiz/:quizCategory/:slug/:sessionId?" element={<ProtectedLayoutRoute><QuizPage /></ProtectedLayoutRoute>} />

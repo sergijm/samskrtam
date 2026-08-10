@@ -1,36 +1,3 @@
-export interface EamenauExerciseDto {
-    id: number;
-    exerciseNumber: number;
-    exerciseLetter?: string;
-    instructionText: string;
-}
-
-export interface EamenauTaskDto {
-    id: number;
-    taskNumber: number;
-    taskText: string;
-}
-
-export interface EamenauExerciseDetailDto {
-    id: number;
-    exerciseNumber: number;
-    exerciseLetter?: string;
-    instructionText: string;
-    tasks: EamenauTaskDto[];
-}
-
-export interface SandhiRuleDto {
-    id: number;
-    ruleNumber: number;
-    ruleType: string;
-    shortDescription: string;
-    whitneyNumber: string;
-    iastExample: string;
-    hkExample: string;
-    notes: string;
-    fullText: string;
-}
-
 // =============================================
 // Declension Paradigms (grammar-lesson-page §2.2)
 // =============================================
@@ -90,5 +57,25 @@ export interface DeclensionExamplesResponseDto {
     /** Только для роли ADMIN (см. content-service/declension-examples.md, шаг 4а).
      *  Для остальных ролей поле отсутствует в JSON — проверять через `?.length > 0`. */
     missingVerseIds?: string[];
+}
+
+// =============================================
+// Sandhi Rules (curriculum-service sandhi-rules endpoint)
+// =============================================
+
+export interface SandhiRuleSummaryDto {
+    number: number;
+    section: string;
+    applicability: string;
+    text: string;
+    example: string | null;
+    reference: string;
+    dependson?: number[];
+}
+
+export interface SandhiRulesResponse {
+    topicCode: string;
+    title: string;
+    rules: SandhiRuleSummaryDto[];
 }
 

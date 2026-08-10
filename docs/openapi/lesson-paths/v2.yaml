@@ -1,0 +1,169 @@
+# Пути из lesson-aggregation-openapi.yaml → lesson-paths/v2.yaml
+paths:
+  /lessons:
+    get:
+      tags: [lesson-v2]
+      summary: Список всех уроков (v2)
+      description: >
+        База уроков приходит из curriculum-service (LessonV2Service) — список
+        всех уроков с прогрессом текущего пользователя.
+      operationId: getLessonsV2
+      responses:
+        '200':
+          description: Список уроков
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/lessons.yaml#/LessonListResponse'
+        '401':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/Unauthorized'
+
+  /lessons/{param}:
+    get:
+      tags: [lesson-v2]
+      summary: Урок по slug либо список уроков категории (v2)
+      description: >
+        Полиморфный роут. Если `param` — известная категория (declensions, declension,
+        conjugations, conjugation, vocabulary, vocabulary-basic, vocabulary-texts, grammar),
+        возвращается список уроков категории (LessonListResponse); если это slug урока —
+        карточка урока (LessonItemDto), иначе 404.
+      operationId: getLessonsByParamV2
+      parameters:
+        - name: param
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Категория (список уроков) либо slug (карточка урока)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '../common/schemas/lessons.yaml#/LessonListResponse'
+                  - $ref: '../common/schemas/lessons.yaml#/LessonItemDto'
+        '404':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/NotFound'
+        '401':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/Unauthorized'
+
+  /lessons/grammar/{topicCode}:
+    get:
+      tags: [lesson-v2]
+      summary: Грамматический урок по topicCode (v2)
+      description: >
+        Грамматический урок по коду топика curriculum-service (например
+        "a-stem-masc"). Прогресс пользователя добавляется через X-User-Id.
+      operationId: getGrammarLessonV2
+      parameters:
+        - name: topicCode
+          in: path
+          required: true
+          schema:
+            type: string
+            example: a-stem-masc
+      responses:
+        '200':
+          description: Грамматический урок
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/grammar.yaml#/GrammarLesson'
+        '404':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/NotFound'
+        '401':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/Unauthorized'
+
+  /lessons/vocabulary/{slug}:
+    get:
+      tags: [lesson-v2]
+      summary: Словарный урок (v2)
+      operationId: getVocabularyLessonV2
+      parameters:
+        - $ref: '../common/parameters.yaml#/SlugParam'
+      responses:
+        '200':
+          description: Словарный урок с прогрессом пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/vocabulary.yaml#/VocabularyLesson'
+        '404':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/NotFound'
+        '401':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/Unauthorized'
+
+  /lessons/vocabulary/{slug}/words/{wordId}/history:
+    get:
+      tags: [lesson-v2]
+      summary: История ответов на слово (v2)
+      operationId: getWordAnswerHistoryV2
+      parameters:
+        - $ref: '../common/parameters.yaml#/SlugParam'
+        - name: wordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '../common/parameters.yaml#/PageParam'
+        - $ref: '../common/parameters.yaml#/SizeParam'
+        - $ref: '../common/parameters.yaml#/LocaleParam'
+      responses:
+        '200':
+          description: История ответов на слово
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/history.yaml#/WordAnswerHistory'
+        '404':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/NotFound'
+        '401':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/Unauthorized'
+
+  /lessons/grammar/{slug}/questions/history:
+    get:
+      tags: [lesson-v2]
+      summary: История ответов на грамматический вопрос (v2)
+      operationId: getQuestionAnswerHistoryV2
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            example: DECLENSIONS
+        - name: caseType
+          in: query
+          required: true
+          schema:
+            type: string
+            example: NOMINATIVE
+        - name: numberType
+          in: query
+          required: true
+          schema:
+            type: string
+            example: SINGULAR
+        - name: gender
+          in: query
+          required: true
+          schema:
+            type: string
+            example: MASCULINE
+        - $ref: '../common/parameters.yaml#/PageParam'
+        - $ref: '../common/parameters.yaml#/SizeParam'
+        - $ref: '../common/parameters.yaml#/LocaleParam'
+      responses:
+        '200':
+          description: История ответов на вопрос
+          content:
+            application/json:
+              schema:
+                $ref: '../common/schemas/history.yaml#/QuestionAnswerHistory'
+        '404':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/NotFound'
+        '401':
+          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/Unauthorized'
+

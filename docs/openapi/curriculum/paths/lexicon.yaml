@@ -1,0 +1,10 @@
+# Пути из curriculum-service.yaml → lexicon.yaml
+paths:
+  /curriculum/lexicon:
+    $ref: 'paths/lexicon.yaml#/paths/~1~1curriculum~1lexicon'
+  /lexicon/lexemes:
+    $ref: 'paths/lexicon.yaml#/paths/~1~1lexicon~1lexemes'
+  /lexicon/lexemes/{id}:
+    $ref: 'paths/lexicon.yaml#/paths/~1~1lexicon~1lexemes~1{id}'
+  /lexicon/lexemes/{id}/status:
+    $ref: 'paths/lexicon.yaml#/paths/~1~1lexicon~1lexemes~1{id}~1status'

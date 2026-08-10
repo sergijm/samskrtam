@@ -1,12 +1,5 @@
 ﻿{
   "grammar": {
-    "sandhiExercisesTitle": "Sandhi - Emeneau (Exercises)",
-    "sandhiExercisesDescription": "Practice Sandhi rules with exercises from Emeneau's textbook.",
-    "sandhiQuizzesTitle": "Sandhi - Emeneau (Quizzes)",
-    "sandhiQuizzesDescription": "Practice Sandhi rules according to Emeneau's system.",
-    "sandhiRulesTitle": "Sandhi - Emeneau (Rules)",
-    "sandhiRulesDescription": "Explore the detailed Sandhi rules by Emeneau.",
-    "sandhiSectionTitle": "Sandhi by Emeneau",
     "declensionsSectionTitle": "Declensions",
     "conjugationsSectionTitle": "Conjugations",
     "noLessonsFound": "No lessons available yet",

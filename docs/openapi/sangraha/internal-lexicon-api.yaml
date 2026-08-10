@@ -1,0 +1,208 @@
+openapi: "3.1.0"
+info:
+  title: sangraha-service — Internal Lexicon API (admin-классификация лемм)
+  description: |
+    Service-to-service эндпоинты sangraha-service для словаря лемм и batch-классификации
+    (LexiconController). Вызываются внутренними/админ-клиентами (env SANGRAHA_SERVICE_URL,
+    минуя api-gateway). Опциональный header X-User-Id фиксирует, кто запустил
+    пересчёт/ревью (reviewedBy). Источник истины — docs/services/sangraha-service/lemma-classification.md.
+  version: "1.0.0"
+
+servers:
+  - url: http://sangraha-service:8082
+    description: Прямой service-to-service вызов, минуя api-gateway
+
+paths:
+  /sangraha/internal/lexicon/lemmas/refresh-statistics:
+    post:
+      operationId: refreshLemmaStatistics
+      summary: Пересчитать словарь лемм и lemma_statistics из корпуса VerseWord
+      tags: [lexicon]
+      description: >
+        Собирает уникальные леммы из всех VerseWord, создаёт недостающие Записи
+        lemma и пересчитывает статистику частотности (lemma_statistics).
+      parameters:
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Итоги пересчёта
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/internal-lexicon-schemas.yaml#/LemmaRefreshResponse'
+
+  /sangraha/internal/lexicon/classification/runs:
+    post:
+      operationId: startClassificationRun
+      summary: Запустить batch-прогон классификации лемм
+      tags: [lexicon]
+      parameters:
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/internal-lexicon-schemas.yaml#/StartClassificationRunRequest'
+      responses:
+        '200':
+          description: Прогон запущен, состояние прогона
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/internal-lexicon-schemas.yaml#/ClassificationRunResponse'
+        '400':
+          description: Неизвестный schemeCode или batchCount <= 0
+
+  /sangraha/internal/lexicon/classification/runs/{runId}:
+    get:
+      operationId: getClassificationRun
+      summary: Статус прогона классификации
+      tags: [lexicon]
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Состояние прогона
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/internal-lexicon-schemas.yaml#/ClassificationRunResponse'
+        '404':
+          description: Прогон не найден
+
+  /sangraha/internal/lexicon/classifications:
+    get:
+      operationId: listClassificationsForReview
+      summary: Список классификаций на ревью (курсорная пагинация)
+      tags: [lexicon]
+      parameters:
+        - name: schemeCode
+          in: query
+          required: false
+          description: Код схемы (default CURRICULUM)
+          schema:
+            type: string
+            default: CURRICULUM
+        - name: status
+          in: query
+          required: false
+          description: Статус (default CANDIDATE); неверное значение — 400
+          schema:
+            type: string
+            default: CANDIDATE
+        - name: cursor
+          in: query
+          required: false
+          description: Курсор по lemmaId
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          description: Размер страницы (clamp 1..500, default 100)
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Страница классификаций
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/internal-lexicon-schemas.yaml#/LemmaClassificationPageDto'
+        '400':
+          description: Некорректный status/schemeCode
+
+  /sangraha/internal/lexicon/classifications/{id}:
+    patch:
+      operationId: reviewClassification
+      summary: Ревью одной классификации (исправление полей и/или смена статуса)
+      tags: [lexicon]
+      description: >
+        schemeCode подразумевается CURRICULUM. APPROVED требует валидный categoryCode.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: X-User-Id
+          in: header
+          required: false
+          description: Кто провёл ревью (сохраняется в reviewedBy)
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/internal-lexicon-schemas.yaml#/LemmaClassificationReviewRequest'
+      responses:
+        '200':
+          description: Обновлённая классификация
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/internal-lexicon-schemas.yaml#/LemmaClassificationItemDto'
+        '400':
+          description: Некорректные поля (например, APPROVED без valid categoryCode)
+        '404':
+          description: Классификация не найдена
+
+  /sangraha/internal/lexicon/lemma-classifications/export:
+    get:
+      operationId: exportApprovedClassifications
+      summary: Экспорт APPROVED-классификаций в curriculum-service
+      tags: [lexicon]
+      description: >
+        Выгружает классификации со статусом APPROVED (JOIN Classification + Lemma +
+        Statistics, сортировка по occurrenceCount, курсор по lemmaId) для импорта
+        в curriculum-service (SangrahaExportClient).
+      parameters:
+        - name: schemeCode
+          in: query
+          required: false
+          description: Код схемы (default CURRICULUM)
+          schema:
+            type: string
+            default: CURRICULUM
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          description: Размер страницы (clamp 1..500, default 500)
+          schema:
+            type: integer
+            default: 500
+      responses:
+        '200':
+          description: Страница APPROVED-классификаций
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/internal-lexicon-schemas.yaml#/LemmaClassificationPageDto'

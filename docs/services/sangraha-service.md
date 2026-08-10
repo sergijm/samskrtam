@@ -91,9 +91,13 @@ POST   /api/v1/sangraha/verses/{verseId}/vocabulary-quiz         → кнопк�
                                                                      или синхронно создать/дозаполнить лексический квиз стиха в
                                                                      curriculum-service ({quizSlug, quizId, quizStatus}), закэшировать
                                                                      quizSlug/quizId (см. §6)
-POST   /api/v1/sangraha/verses/{verseId}/analyze                 → сохранить `text` и запустить LLM-анализ (ADMIN, см. §5); тело —
-                                                                     единое поле `text` (обязательно, см. §7) — backend определяет
-                                                                     письменность и заполняет textDevanagari/textIast
+GET    /api/v1/sangraha/verses/{verseId}/analysis               → стих: VerseAnalysis (морфология/словообразование, только для
+                                                                      ANALYZED), см. sangraha-service.md §2
+ GET    /api/v1/sangraha/verses/{verseId}/words                  → стих: VerseWord[] (поверхностные формы с разбором VerseWordMorphology/
+                                                                      VerseWordDerivation, только для ANALYZED), см. sangraha-service.md §2
+ POST   /api/v1/sangraha/verses/{verseId}/analyze                → сохранить `text` и запустить LLM-анализ (ADMIN, см. §5); тело —
+                                                                      единое поле `text` (обязательно, см. §7) — backend определяет
+                                                                      письменность и заполняет textDevanagari/textIast
 POST   /api/v1/sangraha/chapters/{chapterId}/verses/analyze-all  → батч-анализ всех DRAFT/FAILED стихов главы (ADMIN, реализовано,
                                                                      )
 GET    /api/v1/sangraha/verse?id={uuid}&id={uuid}...             → произвольный список стихов + status каждого

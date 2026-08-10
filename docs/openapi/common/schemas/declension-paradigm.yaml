@@ -1,0 +1,120 @@
+# Declension paradigm schemas (shared between quiz-service v2 and curriculum-service).
+# Source of truth: shared module samskrtam-dtos (DeclensionParadigmPageDto / DeclensionParadigmDto
+# / DeclensionFormDto) and quiz-service DeclensionExamplesResponseDto.
+
+Gender:
+  type: string
+  enum: [MASCULINE, FEMININE, NEUTER, UNKNOWN, UNSPECIFIED]
+
+VowelType:
+  type: string
+  enum: [A_STEM, AA_STEM, I_STEM, II_STEM, U_STEM, UU_STEM, R_STEM, PRON_AHAM, PRON_TVAM, PRON_TAD, PRON_ETAD, PRON_IDAM, PRON_KIM, PRON_YAD, PRON_REFLEXIVE]
+
+CaseType:
+  type: string
+  enum: [NOMINATIVE, ACCUSATIVE, INSTRUMENTAL, DATIVE, ABLATIVE, GENITIVE, LOCATIVE, VOCATIVE]
+
+NumberType:
+  type: string
+  enum: [SINGULAR, DUAL, PLURAL]
+
+DeclensionFormDto:
+  type: object
+  required: [declensionStemId, caseType, numberType, formIast, formDevanagari]
+  properties:
+    declensionStemId:
+      type: string
+      format: uuid
+    caseType:
+      $ref: '#/CaseType'
+    numberType:
+      $ref: '#/NumberType'
+    formIast:
+      type: string
+    formDevanagari:
+      type: string
+
+DeclensionParadigmDto:
+  type: object
+  required: [stemId, stemIast, stemDevanagari, translationRu, translationEn, gender, vowelType, forms]
+  properties:
+    stemId:
+      type: string
+      format: uuid
+    stemIast:
+      type: string
+    stemDevanagari:
+      type: string
+    translationRu:
+      type: string
+    translationEn:
+      type: string
+    gender:
+      $ref: '#/Gender'
+    vowelType:
+      $ref: '#/VowelType'
+    forms:
+      type: array
+      items:
+        $ref: '#/DeclensionFormDto'
+
+DeclensionParadigmPageDto:
+  type: object
+  required: [index, totalCount, paradigm]
+  properties:
+    index:
+      type: integer
+      description: 0-based position of the returned paradigm in the sorted stem list.
+    totalCount:
+      type: integer
+      description: Total number of stems for this lesson.
+    paradigm:
+      $ref: '#/DeclensionParadigmDto'
+
+DeclensionExamplesResponseDto:
+  type: object
+  required: [groups]
+  properties:
+    groups:
+      type: array
+      description: >
+        Example verses grouped by (caseType, numberType). v2 currently returns an
+        empty groups array — lesson base data lives in curriculum-service which has
+        no verse citations yet; shape mirrors the former content-service contract.
+      items:
+        type: object
+        required: [caseType, numberType, examples]
+        properties:
+          caseType:
+            $ref: '#/CaseType'
+          numberType:
+            $ref: '#/NumberType'
+          examples:
+            type: array
+            items:
+              type: object
+              required: [verseId, workSlug, textIast, textDevanagari, translationRu, translationEn, workTitleRu, workTitleEn, chapterTitleRu, chapterTitleEn, verseOrderIndex]
+              properties:
+                verseId:
+                  type: string
+                  format: uuid
+                workSlug:
+                  type: string
+                textIast:
+                  type: string
+                textDevanagari:
+                  type: string
+                translationRu:
+                  type: string
+                translationEn:
+                  type: string
+                workTitleRu:
+                  type: string
+                workTitleEn:
+                  type: string
+                chapterTitleRu:
+                  type: string
+                chapterTitleEn:
+                  type: string
+                verseOrderIndex:
+                  type: integer

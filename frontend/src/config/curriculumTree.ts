@@ -140,12 +140,10 @@ export const curriculumTree: CurriculumNode[] = [
         titleKey: 'section.sandhi',
         status: 'available',
         children: [
-          { id: '2.1.8.1', titleKey: 'sandhi.rules', status: 'available', route: '/grammar/emeneau-rules' },
-          { id: '2.1.8.2', titleKey: 'sandhi.exercises', status: 'available', route: '/grammar/emeneau-exercises' },
-          { id: '2.1.8.3', titleKey: 'sandhi.vowel', status: 'planned' },
-          { id: '2.1.8.4', titleKey: 'sandhi.consonant', status: 'planned' },
-          { id: '2.1.8.5', titleKey: 'sandhi.visarga', status: 'planned' },
-          { id: '2.1.8.6', titleKey: 'sandhi.segmentation', status: 'planned' },
+          { id: '2.1.8.1', titleKey: 'sandhi.rules', status: 'available', route: '/lessons/grammar/sandhi' },
+          { id: '2.1.8.2', titleKey: 'sandhi.vowel', status: 'available', route: '/lessons/grammar/sandhi-vowels-external' },
+          { id: '2.1.8.3', titleKey: 'sandhi.consonant', status: 'available', route: '/lessons/grammar/sandhi-consonants' },
+          { id: '2.1.8.4', titleKey: 'sandhi.visarga', status: 'available', route: '/lessons/grammar/sandhi-visarga' },
         ],
       },
       // --- 2.1.9 Syntax ----------------------------------------------

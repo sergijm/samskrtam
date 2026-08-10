@@ -1,0 +1,10 @@
+# Пути из curriculum-service.yaml → lexicon-progress.yaml
+paths:
+  /lexicon/users/{userId}/progress:
+    $ref: 'paths/lexicon-progress.yaml#/paths/~1~1lexicon~1users~1{userId}~1progress'
+  /lexicon/users/{userId}/progress/{lexemeId}:
+    $ref: 'paths/lexicon-progress.yaml#/paths/~1~1lexicon~1users~1{userId}~1progress~1{lexemeId}'
+  /lexicon/pool/resolve:
+    $ref: 'paths/lexicon-progress.yaml#/paths/~1~1lexicon~1pool~1resolve'
+  /lexicon/import/from-sangraha:
+    $ref: 'paths/lexicon-progress.yaml#/paths/~1~1lexicon~1import~1from-sangraha'

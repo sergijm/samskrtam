@@ -1,5 +1,6 @@
 import { useQuery, keepPreviousData, useQueries } from '@tanstack/react-query';
 import { lessonApi } from '../api/lessonApi';
+import { sandhiApi } from '../api/sandhiApi';
 import type { DeclensionParadigmPageDto } from '../types/content-dtos';
 
 export const useVocabularyLesson = (slug: string) =>
@@ -85,5 +86,19 @@ export const useDeclensionExamples = (slug: string, enabled: boolean) =>
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+  });
+
+export const useSandhiRules = (topicCode: string) =>
+  useQuery({
+    queryKey: ['sandhi-rules', topicCode],
+    queryFn: () => sandhiApi.getRules(topicCode).then(res => res.data),
+    enabled: !!topicCode,
+  });
+
+export const useSandhiRulesByNumbers = (numbers: number[]) =>
+  useQuery({
+    queryKey: ['sandhi-rules', 'by-number', numbers],
+    queryFn: () => sandhiApi.getRulesByNumbers(numbers).then(res => res.data),
+    enabled: numbers.length > 0,
   });
 

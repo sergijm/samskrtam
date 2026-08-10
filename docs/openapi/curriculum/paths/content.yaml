@@ -1,0 +1,20 @@
+# Пути из curriculum-service.yaml → content.yaml
+paths:
+  /curriculum/sandhi-rules/{topicCode}:
+    $ref: 'paths/content.yaml#/paths/~1~1curriculum~1sandhi-rules~1{topicCode}'
+  /curriculum/sandhi-rules:
+    $ref: 'paths/content.yaml#/paths/~1~1curriculum~1sandhi-rules'
+  /curriculum/topics/{topicCode}/declension-paradigms:
+    $ref: 'paths/content.yaml#/paths/~1~1curriculum~1topics~1{topicCode}~1declension-paradigms'
+  /curriculum/sessions/compose:
+    $ref: 'paths/content.yaml#/paths/~1~1curriculum~1sessions~1compose'
+  /curriculum/quest-items:
+    $ref: 'paths/content.yaml#/paths/~1~1curriculum~1quest-items'
+  /curriculum/quest-items/regenerate:
+    $ref: 'paths/content.yaml#/paths/~1~1curriculum~1quest-items~1regenerate'
+  /curriculum/topics/{topicCode}/quest-items:
+    $ref: 'paths/content.yaml#/paths/~1~1curriculum~1topics~1{topicCode}~1quest-items'
+  /curriculum/lessons:
+    $ref: 'paths/content.yaml#/paths/~1~1curriculum~1lessons'
+  /curriculum/topics/{topicCode}/lesson:
+    $ref: 'paths/content.yaml#/paths/~1~1curriculum~1topics~1{topicCode}~1lesson'

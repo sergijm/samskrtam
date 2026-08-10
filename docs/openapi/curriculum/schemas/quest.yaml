@@ -1,0 +1,242 @@
+# Schemas for quest-items, sandhi-rules, topic lessons and session composition
+# (curriculum-service API v2). Source of truth: services/curriculum-service.
+
+SandhiRuleDto:
+  type: object
+  required: [number, section, applicability, text, example, reference]
+  properties:
+    number:
+      type: integer
+    section:
+      type: string
+    applicability:
+      type: string
+    text:
+      type: string
+    example:
+      type: string
+    reference:
+      type: string
+    dependson:
+      type: array
+      items:
+        type: integer
+      description: Rule numbers this rule depends on.
+
+SandhiRulesResponse:
+  type: object
+  required: [topicCode, title, rules]
+  properties:
+    topicCode:
+      type: string
+    title:
+      type: string
+    rules:
+      type: array
+      items:
+        $ref: '#/SandhiRuleDto'
+
+QuestItemPayload:
+  type: object
+  description: Polymorphic payload, one shape per itemType (see docs/services/quest-item-model.md).
+  properties:
+    lemmaIast:
+      type: string
+    lemmaDevanagari:
+      type: string
+    morphologyClassCode:
+      type: string
+    gender:
+      type: string
+    caseType:
+      type: string
+    numberType:
+      type: string
+    correctFormIast:
+      type: string
+    correctFormDevanagari:
+      type: string
+    wordFormIast:
+      type: string
+    wordFormDevanagari:
+      type: string
+    correctCaseType:
+      type: string
+    correctNumberType:
+      type: string
+    genderRequired:
+      type: boolean
+    distractorCombinations:
+      type: array
+      items:
+        type: string
+    pairs:
+      type: array
+      description: DECLENSION_MATCH pairs.
+      items:
+        type: object
+        required: [pairId, wordFormIast, caseType, numberType]
+        properties:
+          pairId:
+            type: string
+          wordFormIast:
+            type: string
+          wordFormDevanagari:
+            type: string
+          caseType:
+            type: string
+          numberType:
+            type: string
+
+QuestItemType:
+  type: string
+  enum: [DECLENSION_FORM, DECLENSION_FORM_CHOICE, CASE_RECOGNITION, DECLENSION_MATCH]
+
+QuestItemDto:
+  type: object
+  required: [id, itemType]
+  properties:
+    id:
+      type: string
+      format: uuid
+    itemType:
+      $ref: '#/QuestItemType'
+    answerMode:
+      type: string
+    prompt:
+      type: string
+    correctAnswer:
+      type:
+        - string
+        - 'null'
+      description: Always null for DECLENSION_MATCH (omitted).
+    distractors:
+      type: array
+      items:
+        type: string
+    payload:
+      $ref: '#/QuestItemPayload'
+
+QuestPoolEntry:
+  type: object
+  required: [id, itemType]
+  properties:
+    id:
+      type: string
+      format: uuid
+    itemType:
+      $ref: '#/QuestItemType'
+    progressTag:
+      type:
+        - string
+        - 'null'
+      description: Progress tag of the QuestItem (may be null depending on type).
+
+TopicLessonSummaryDto:
+  type: object
+  required: [id, code, titleRu, titleEn, learningLevel, totalQuestions]
+  properties:
+    id:
+      type: string
+      format: uuid
+    code:
+      type: string
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    learningLevel:
+      type: string
+    totalQuestions:
+      type: integer
+
+ProgressTagInfo:
+  type: object
+  properties:
+    itemType:
+      type: string
+    gender:
+      type: string
+    caseType:
+      type: string
+    numberType:
+      type: string
+    formIast:
+      type: string
+
+TopicLessonDto:
+  type: object
+  required: [topicId, topicCode, titleRu, titleEn, learningLevel, tagMetadata]
+  properties:
+    topicId:
+      type: string
+      format: uuid
+    topicCode:
+      type: string
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    learningLevel:
+      type: string
+    tagMetadata:
+      type: object
+      additionalProperties:
+        $ref: '#/ProgressTagInfo'
+      description: Map keyed by progress tag.
+
+TopicItemSpec:
+  type: object
+  required: [topicCode]
+  properties:
+    topicCode:
+      type: string
+      description: Curriculum topic code.
+    count:
+      type: integer
+      description: Number of random questions (ignored when itemIds is present).
+    itemIds:
+      type: array
+      items:
+        type: string
+        format: uuid
+      description: Exact item IDs mode — supersedes count.
+
+QuizSessionComposeRequest:
+  type: object
+  required: [topics]
+  description: Request body of POST /api/v2/curriculum/sessions/compose.
+  properties:
+    topics:
+      type: array
+      minItems: 1
+      items:
+        $ref: '#/TopicItemSpec'
+    userLocale:
+      type: string
+      description: Optional locale hint.
+
+ComposedQuizItemDto:
+  type: object
+  required: [questionNumber, topicCode, item]
+  properties:
+    questionNumber:
+      type: integer
+      description: 1-based, assigned after cross-topic shuffle.
+    topicCode:
+      type: string
+    item:
+      $ref: '#/QuestItemDto'
+    progressTag:
+      type:
+        - string
+        - 'null'
+
+QuizSessionComposeResponse:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/ComposedQuizItemDto'
