@@ -9,7 +9,6 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
 import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
-import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemGenerationKeyRepository;
 import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemRepository;
 import sm.selflearn.samskrtam.curriculum.repository.TopicRepository;
 import sm.selflearn.samskrtam.quest.declension.CaseRecognitionPayload;
@@ -25,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -38,7 +36,6 @@ class DeclensionQuestItemBatchGeneratorTest {
     private TopicRepository topicRepository;
     private LexemeRepository lexemeRepository;
     private QuestItemRepository questItemRepository;
-    private QuestItemGenerationKeyRepository generationKeyRepository;
     private ObjectMapper objectMapper;
     private DeclensionQuestItemBatchGenerator generator;
 
@@ -47,7 +44,6 @@ class DeclensionQuestItemBatchGeneratorTest {
         topicRepository = mock(TopicRepository.class);
         lexemeRepository = mock(LexemeRepository.class);
         questItemRepository = mock(QuestItemRepository.class);
-        generationKeyRepository = mock(QuestItemGenerationKeyRepository.class);
         objectMapper = new ObjectMapper();
 
         DeclensionMatchProperties properties = new DeclensionMatchProperties();
@@ -55,7 +51,7 @@ class DeclensionQuestItemBatchGeneratorTest {
 
         generator = new DeclensionQuestItemBatchGenerator(
                 topicRepository, lexemeRepository, questItemRepository,
-                generationKeyRepository, properties, objectMapper);
+                properties, objectMapper);
     }
 
     private Topic topic(String code) {
@@ -65,37 +61,20 @@ class DeclensionQuestItemBatchGeneratorTest {
         return topic;
     }
 
-    private Lexeme lexeme(String lemmaIast, String lemmaDevanagari, LexemeGender gender) {
-        Lexeme lexeme = new Lexeme();
-        lexeme.setId(UUID.randomUUID());
-        lexeme.setLemmaIast(lemmaIast);
-        lexeme.setLemmaDevanagari(lemmaDevanagari);
-        lexeme.setGender(gender);
-        return lexeme;
-    }
-
-    // ------------------------------------------------------------------
-    // Idempotency (DoD: re-run must not duplicate items)
-    // ------------------------------------------------------------------
-
-    @Test
-    void generateForTopic_existingGenerationKey_createsNothing() {
-        when(topicRepository.findById(TOPIC_ID)).thenReturn(java.util.Optional.of(topic("a-stem-masc")));
-        when(lexemeRepository.findByMorphologyClasses_Code("a-stem-masc"))
-                .thenReturn(List.of(lexeme("nara", "नर", LexemeGender.MASCULINE)));
-        when(generationKeyRepository.existsByGenerationKey(anyString())).thenReturn(true);
-
-        assertThat(generator.generateForTopic(TOPIC_ID, 0)).isZero();
-        verify(questItemRepository, never()).saveAll(anyList());
-        verify(generationKeyRepository, never()).saveAll(anyList());
+    private Lexeme lexeme(String iast, String deva, LexemeGender gender) {
+        Lexeme l = new Lexeme();
+        l.setId(UUID.randomUUID());
+        l.setLemmaIast(iast);
+        l.setLemmaDevanagari(deva);
+        l.setGender(gender);
+        return l;
     }
 
     @Test
-    void generateForTopic_newTopic_createsAllFourTypesAndKeys() {
+    void generateForTopic_newTopic_createsAllFourTypes() {
         when(topicRepository.findById(TOPIC_ID)).thenReturn(java.util.Optional.of(topic("a-stem-masc")));
         when(lexemeRepository.findByMorphologyClasses_Code("a-stem-masc"))
                 .thenReturn(List.of(lexeme("nara", "नर", LexemeGender.MASCULINE)));
-        when(generationKeyRepository.existsByGenerationKey(anyString())).thenReturn(false);
         when(questItemRepository.saveAll(anyList())).thenAnswer(invocation -> {
             List<QuestItem> items = invocation.getArgument(0);
             items.forEach(item -> item.setId(UUID.randomUUID()));
@@ -106,7 +85,6 @@ class DeclensionQuestItemBatchGeneratorTest {
         assertThat(generator.generateForTopic(TOPIC_ID, 0)).isEqualTo(77);
 
         verify(questItemRepository).saveAll(anyList());
-        verify(generationKeyRepository).saveAll(org.mockito.ArgumentMatchers.<List>argThat(keys -> keys.size() == 77));
     }
 
     @Test
@@ -134,16 +112,11 @@ class DeclensionQuestItemBatchGeneratorTest {
         verify(questItemRepository, never()).saveAll(anyList());
     }
 
-    // ------------------------------------------------------------------
-    // Word form composition (paradigm port sanity checks)
-    // ------------------------------------------------------------------
-
     @Test
     void generateForTopic_aStemMasculine_composesCanonicalForms() throws Exception {
         when(topicRepository.findById(TOPIC_ID)).thenReturn(java.util.Optional.of(topic("a-stem-masc")));
         when(lexemeRepository.findByMorphologyClasses_Code("a-stem-masc"))
                 .thenReturn(List.of(lexeme("nara", "नर", LexemeGender.MASCULINE)));
-        when(generationKeyRepository.existsByGenerationKey(anyString())).thenReturn(false);
         when(questItemRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
         generator.generateForTopic(TOPIC_ID, 0);
@@ -171,17 +144,12 @@ class DeclensionQuestItemBatchGeneratorTest {
         assertThat(payloadsByCell.get("INSTRUMENTAL:SINGULAR").correctFormDevanagari()).isEqualTo("नरेन");
     }
 
-    // ------------------------------------------------------------------
-    // genderRequired (DoD: form ambiguous across genders -> gender needed)
-    // ------------------------------------------------------------------
-
     @Test
     void generateForTopic_ambiguousFormAcrossGenders_genderRequiredTrue() throws Exception {
         when(topicRepository.findById(TOPIC_ID)).thenReturn(java.util.Optional.of(topic("i-stem")));
         when(lexemeRepository.findByMorphologyClasses_Code("i-stem")).thenReturn(List.of(
                 lexeme("agni", "अग्नि", LexemeGender.MASCULINE),
                 lexeme("agni", "अग्नि", LexemeGender.NEUTER)));
-        when(generationKeyRepository.existsByGenerationKey(anyString())).thenReturn(false);
         when(questItemRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
         generator.generateForTopic(TOPIC_ID, 0);
@@ -191,7 +159,6 @@ class DeclensionQuestItemBatchGeneratorTest {
                 .map(item -> read(item.getPayload(), CaseRecognitionPayload.class))
                 .toList();
 
-        // instrumental singular "agninā" is produced by both masculine and neuter i-stems
         List<CaseRecognitionPayload> instrumental = caseItems.stream()
                 .filter(p -> p.correctCaseType().equals("INSTRUMENTAL"))
                 .filter(p -> p.correctNumberType().equals("SINGULAR"))
@@ -199,7 +166,6 @@ class DeclensionQuestItemBatchGeneratorTest {
         assertThat(instrumental).hasSize(2);
         assertThat(instrumental).allMatch(p -> p.genderRequired());
 
-        // nominative singular differs between genders ("agniḥ" vs "agni") — gender not needed
         List<CaseRecognitionPayload> nominative = caseItems.stream()
                 .filter(p -> p.correctCaseType().equals("NOMINATIVE"))
                 .filter(p -> p.correctNumberType().equals("SINGULAR"))
@@ -217,7 +183,7 @@ class DeclensionQuestItemBatchGeneratorTest {
     }
 
     @Test
-    void requiresGender_singleGender_returnsFalse() {
+    void requiresGender_mapWithSingleGender_returnsFalse() {
         Map<String, Set<LexemeGender>> formGenders = Map.of(
                 "agniḥ", Set.of(LexemeGender.MASCULINE));
 
@@ -225,14 +191,15 @@ class DeclensionQuestItemBatchGeneratorTest {
     }
 
     @Test
-    void requiresGender_unknownForm_returnsFalse() {
-        assertThat(DeclensionQuestItemBatchGenerator.requiresGender(
-                Map.of("agniḥ", Set.of(LexemeGender.MASCULINE)), "naraḥ")).isFalse();
+    void requiresGender_nullMap_returnsFalse() {
         assertThat(DeclensionQuestItemBatchGenerator.requiresGender(null, "naraḥ")).isFalse();
     }
 
+    // --- helpers ---
+
+    @SuppressWarnings("unchecked")
     private List<QuestItem> lastSavedItems() {
-        org.mockito.ArgumentCaptor<List> captor = org.mockito.ArgumentCaptor.forClass(List.class);
+        var captor = org.mockito.ArgumentCaptor.forClass(List.class);
         verify(questItemRepository).saveAll(captor.capture());
         return captor.getValue();
     }

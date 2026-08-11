@@ -7,6 +7,7 @@ import sm.selflearn.samskrtam.quiz.dto.GrammarLesson;
 import sm.selflearn.samskrtam.quiz.dto.GrammarQuestionProgress;
 import sm.selflearn.samskrtam.quiz.dto.LessonStatusSummary;
 import sm.selflearn.samskrtam.quiz.dto.ProgressTagInfo;
+import sm.selflearn.samskrtam.quiz.dto.TagSetProgress;
 import sm.selflearn.samskrtam.quiz.dto.TopicLessonDto;
 import sm.selflearn.samskrtam.quiz.dto.WordStatus;
 import sm.selflearn.samskrtam.quiz.localization.CaseNumberGenderLocalizer;
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -106,6 +108,7 @@ public class GrammarLessonV2Service {
         l.setProgressPercent(distinctCells > 0 ? (float) learned / distinctCells * 100f : 0f);
         l.setStatusSummary(new LessonStatusSummary(distinctCells, newCount, learning, mastered, reviewDue));
         l.setItems(items);
+        l.setTagSetProgress(computeTagSetProgress(metadata, scoresMap, now));
         return l;
     }
 
@@ -144,5 +147,66 @@ public class GrammarLessonV2Service {
             return (caseName != null ? caseName : "") + ", " + (numberName != null ? numberName : "");
         }
         return info.formIast() != null ? info.formIast() : "?";
+    }
+
+    private List<TagSetProgress> computeTagSetProgress(
+            Map<String, ProgressTagInfo> metadata,
+            Map<String, QuizItemScore> scoresMap,
+            Instant now) {
+
+        record TagDef(String setId, String labelRu, String labelEn) {}
+        List<TagDef> tagDefs = List.of(
+                new TagDef("SINGULAR", "Ед. число", "Singular"),
+                new TagDef("DUAL", "Дв. число", "Dual"),
+                new TagDef("PLURAL", "Мн. число", "Plural"),
+                new TagDef("ACC_LOC", "Acc + Loc", "Acc + Loc"),
+                new TagDef("INS_ABL", "Ins + Abl", "Ins + Abl"),
+                new TagDef("GEN_LOC", "Gen + Loc", "Gen + Loc"),
+                new TagDef("DAT_ACC", "Dat + Acc", "Dat + Acc")
+        );
+
+        List<TagSetProgress> result = new ArrayList<>();
+        for (TagDef def : tagDefs) {
+            int total = 0;
+            int sumScore = 0;
+            int learned = 0;
+            for (Map.Entry<String, ProgressTagInfo> e : metadata.entrySet()) {
+                ProgressTagInfo info = e.getValue();
+                if (!matches(def.setId(), info)) continue;
+                QuizItemScore score = scoresMap.get(e.getKey());
+                int s = score != null ? score.getScore() : 0;
+                total++;
+                sumScore += s;
+                if (s >= 95) learned++;
+            }
+            if (total == 0) continue;
+
+            int avg = total > 0 ? sumScore / total : 0;
+            String status = avg <= 0 ? "NEW" : avg < 95 ? "LEARNING" : "MASTERED";
+
+            TagSetProgress tsp = new TagSetProgress();
+            tsp.setSetId(def.setId());
+            tsp.setLabelRu(def.labelRu());
+            tsp.setLabelEn(def.labelEn());
+            tsp.setAggregatedProgress(avg);
+            tsp.setTotalCombinations(total);
+            tsp.setLearnedCombinations(learned);
+            tsp.setStatus(status);
+            result.add(tsp);
+        }
+        return result;
+    }
+
+    private boolean matches(String setId, ProgressTagInfo info) {
+        return switch (setId) {
+            case "SINGULAR" -> "SINGULAR".equals(info.numberType());
+            case "DUAL" -> "DUAL".equals(info.numberType());
+            case "PLURAL" -> "PLURAL".equals(info.numberType());
+            case "ACC_LOC" -> "ACCUSATIVE".equals(info.caseType()) || "LOCATIVE".equals(info.caseType());
+            case "INS_ABL" -> "INSTRUMENTAL".equals(info.caseType()) || "ABLATIVE".equals(info.caseType());
+            case "GEN_LOC" -> "GENITIVE".equals(info.caseType()) || "LOCATIVE".equals(info.caseType());
+            case "DAT_ACC" -> "DATIVE".equals(info.caseType()) || "ACCUSATIVE".equals(info.caseType());
+            default -> false;
+        };
     }
 }

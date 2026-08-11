@@ -15,8 +15,6 @@ import sm.selflearn.samskrtam.curriculum.questgen.morphology.CaseType;
 import sm.selflearn.samskrtam.curriculum.questgen.morphology.NumberType;
 import sm.selflearn.samskrtam.curriculum.questgen.morphology.VowelType;
 import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
-import sm.selflearn.samskrtam.curriculum.questitem.QuestItemGenerationKey;
-import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemGenerationKeyRepository;
 import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemRepository;
 import sm.selflearn.samskrtam.curriculum.repository.TopicRepository;
 import sm.selflearn.samskrtam.quest.GrammarQuestItemTypes;
@@ -66,7 +64,6 @@ public class DeclensionQuestItemBatchGenerator {
     private final TopicRepository topicRepository;
     private final LexemeRepository lexemeRepository;
     private final QuestItemRepository questItemRepository;
-    private final QuestItemGenerationKeyRepository generationKeyRepository;
     private final DeclensionMatchProperties matchProperties;
     private final ObjectMapper objectMapper;
 
@@ -78,7 +75,7 @@ public class DeclensionQuestItemBatchGenerator {
     }
 
     /** A not-yet-persisted item plus its idempotency key. */
-    private record Pending(QuestItem item, String generationKey) {
+    private record Pending(QuestItem item) {
     }
 
     /** The three groups of quest types the batch generator can produce in one pass. */
@@ -123,7 +120,7 @@ public class DeclensionQuestItemBatchGenerator {
 
         ClassBinding binding = bindMorphologyClass(topic.getCode());
         if (binding == null) {
-            return 0;
+            return generateVocabulary(topic, lexemeLimit);
         }
 
         List<Lexeme> lexemes = lexemeRepository.findByMorphologyClasses_Code(topic.getCode());
@@ -186,12 +183,6 @@ public class DeclensionQuestItemBatchGenerator {
                 continue;
             }
             Cell leading = block.get(0);
-            String key = generationKey(topic.getId(), GrammarQuestItemTypes.DECLENSION_MATCH.code(),
-                    lexeme.getId(), leading.caseType(), leading.numberType());
-            if (generationKeyRepository.existsByGenerationKey(key)) {
-                continue;
-            }
-
             List<DeclensionMatchPayload.DeclensionMatchPair> pairs = new ArrayList<>(block.size());
             for (Cell cell : block) {
                 pairs.add(new DeclensionMatchPayload.DeclensionMatchPair(
@@ -206,43 +197,28 @@ public class DeclensionQuestItemBatchGenerator {
 
             pending.add(new Pending(buildItem(topic, GrammarQuestItemTypes.DECLENSION_MATCH,
                     "Match each word form of '" + lexeme.getLemmaIast() + "' to its case and number.",
-                    null, List.of(), payload, key), key));
+                    null, List.of(), payload)));
         }
     }
 
     private void buildFormItem(Topic topic, String classCode, Lexeme lexeme, LexemeGender gender,
                                Cell cell, List<Pending> pending) {
-        String key = generationKey(topic.getId(), GrammarQuestItemTypes.DECLENSION_FORM.code(),
-                lexeme.getId(), cell.caseType(), cell.numberType());
-        if (generationKeyRepository.existsByGenerationKey(key)) {
-            return;
-        }
         DeclensionFormPayload payload = formPayload(lexeme, classCode, gender, cell);
         pending.add(new Pending(buildItem(topic, GrammarQuestItemTypes.DECLENSION_FORM,
-                prompt(lexeme, cell, false), cell.form().iast(), List.of(), payload, key), key));
+                prompt(lexeme, cell, false), cell.form().iast(), List.of(), payload)));
     }
 
     private void buildFormChoiceItem(Topic topic, String classCode, Lexeme lexeme, LexemeGender gender,
                                      Cell cell, List<Cell> cells, List<Pending> pending) {
-        String key = generationKey(topic.getId(), GrammarQuestItemTypes.DECLENSION_FORM_CHOICE.code(),
-                lexeme.getId(), cell.caseType(), cell.numberType());
-        if (generationKeyRepository.existsByGenerationKey(key)) {
-            return;
-        }
         List<String> distractors = choiceDistractors(cells, cell);
         DeclensionFormPayload payload = formPayload(lexeme, classCode, gender, cell);
         pending.add(new Pending(buildItem(topic, GrammarQuestItemTypes.DECLENSION_FORM_CHOICE,
-                prompt(lexeme, cell, true), cell.form().iast(), distractors, payload, key), key));
+                prompt(lexeme, cell, true), cell.form().iast(), distractors, payload)));
     }
 
     private void buildCaseRecognitionItem(Topic topic, String classCode, Lexeme lexeme, LexemeGender gender,
                                           Cell cell, List<Cell> cells, boolean genderRequired,
                                           List<Pending> pending) {
-        String key = generationKey(topic.getId(), GrammarQuestItemTypes.CASE_RECOGNITION.code(),
-                lexeme.getId(), cell.caseType(), cell.numberType());
-        if (generationKeyRepository.existsByGenerationKey(key)) {
-            return;
-        }
         List<String> distractorCombinations = caseCombinations(cells, cell, gender, genderRequired);
 
         String correctLabel = label(cell.caseType(), cell.numberType(), gender, genderRequired);
@@ -261,7 +237,7 @@ public class DeclensionQuestItemBatchGenerator {
                 distractorCombinations);
 
         pending.add(new Pending(buildItem(topic, GrammarQuestItemTypes.CASE_RECOGNITION,
-                prompt, correctLabel, distractorCombinations, payload, key), key));
+                prompt, correctLabel, distractorCombinations, payload)));
     }
 
     // ----------------------------------------------------------------------
@@ -270,7 +246,7 @@ public class DeclensionQuestItemBatchGenerator {
 
     private QuestItem buildItem(Topic topic, QuestItemType itemType,
                                 String prompt, String correctAnswer, List<String> distractors,
-                                Object payload, String generationKey) {
+                                Object payload) {
         QuestItem item = new QuestItem();
         item.setTopicId(topic.getId());
         item.setItemType(itemType.code());
@@ -288,14 +264,6 @@ public class DeclensionQuestItemBatchGenerator {
             return 0;
         }
         List<QuestItem> saved = questItemRepository.saveAll(pending.stream().map(Pending::item).toList());
-        List<QuestItemGenerationKey> keys = new ArrayList<>(pending.size());
-        for (int i = 0; i < pending.size(); i++) {
-            QuestItemGenerationKey genKey = new QuestItemGenerationKey();
-            genKey.setQuestItemId(saved.get(i).getId());
-            genKey.setGenerationKey(pending.get(i).generationKey());
-            keys.add(genKey);
-        }
-        generationKeyRepository.saveAll(keys);
         return saved.size();
     }
 
@@ -305,11 +273,6 @@ public class DeclensionQuestItemBatchGenerator {
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize quest item content", e);
         }
-    }
-
-    private String generationKey(UUID topicId, String itemType, UUID lexemeId,
-                                 CaseType caseType, NumberType numberType) {
-        return topicId + ":" + itemType + ":" + lexemeId + ":" + caseType.name() + ":" + numberType.name();
     }
 
     private String prompt(Lexeme lexeme, Cell cell, boolean choice) {
@@ -432,5 +395,38 @@ public class DeclensionQuestItemBatchGenerator {
             case R_STEM -> gender == LexemeGender.FEMININE ? LexemeGender.FEMININE : LexemeGender.MASCULINE;
             default -> gender == LexemeGender.NEUTER ? LexemeGender.NEUTER : LexemeGender.MASCULINE;
         };
+    }
+
+    private int generateVocabulary(Topic topic, int lexemeLimit) {
+        List<Lexeme> lexemes = lexemeRepository.findAll();
+        if (lexemes.isEmpty()) {
+            return 0;
+        }
+        if (lexemeLimit > 0 && lexemeLimit < lexemes.size()) {
+            Collections.shuffle(lexemes, RANDOM);
+            lexemes = lexemes.subList(0, lexemeLimit);
+        }
+
+        List<Pending> pending = new ArrayList<>();
+        for (Lexeme lexeme : lexemes) {
+            String prompt = "Translate '" + lexeme.getLemmaIast()
+                    + "' (" + lexeme.getLemmaDevanagari() + ")";
+            QuestItem item = new QuestItem();
+            item.setTopicId(topic.getId());
+            item.setItemType("VOCABULARY_WORD");
+            item.setAnswerMode("FREE_TEXT");
+            item.setPrompt(prompt);
+            item.setCorrectAnswer(lexeme.getGlossRu());
+            item.setDistractors(toJson(List.of()));
+            item.setPayload(toJson(Map.of(
+                    "lemmaIast", lexeme.getLemmaIast(),
+                    "lemmaDevanagari", lexeme.getLemmaDevanagari(),
+                    "glossRu", lexeme.getGlossRu(),
+                    "glossEn", lexeme.getGlossEn()
+            )));
+            item.setGeneratorSource(GENERATOR_SOURCE);
+            pending.add(new Pending(item));
+        }
+        return persist(pending);
     }
 }
