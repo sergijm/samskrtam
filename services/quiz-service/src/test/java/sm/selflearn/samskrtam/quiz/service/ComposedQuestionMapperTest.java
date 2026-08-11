@@ -29,7 +29,7 @@ class ComposedQuestionMapperTest {
         QuestItemDto item = new QuestItemDto(
                 qid, "DECLENSION_FORM_CHOICE", "SINGLE_CHOICE",
                 "Choose the acc. sg. of nara", "B", List.of("A", "C"), null);
-        ComposedQuestionDto composed = new ComposedQuestionDto(3, "a-stem-masc", item);
+        ComposedQuestionDto composed = new ComposedQuestionDto(3, "a-stem-masc", item, "ACCUSATIVE|SINGULAR|MASCULINE");
 
         SessionQuestion q = mapper.toSessionQuestion(UUID.randomUUID(), composed);
 
@@ -53,7 +53,7 @@ class ComposedQuestionMapperTest {
     void optionIdsAreDeterministicPerText() throws Exception {
         UUID qid = UUID.randomUUID();
         QuestItemDto item = new QuestItemDto(qid, "TYPE", "SINGLE_CHOICE", "p", "B", List.of("A", "C"), null);
-        ComposedQuestionDto composed = new ComposedQuestionDto(1, "t", item);
+        ComposedQuestionDto composed = new ComposedQuestionDto(1, "t", item, "ACCUSATIVE|SINGULAR|MASCULINE");
 
         SessionQuestion first = mapper.toSessionQuestion(UUID.randomUUID(), composed);
         SessionQuestion second = mapper.toSessionQuestion(UUID.randomUUID(), composed);
@@ -89,7 +89,7 @@ class ComposedQuestionMapperTest {
     void questionDtoOptionsPreserveStoredIds() {
         UUID qid = UUID.randomUUID();
         QuestItemDto item = new QuestItemDto(qid, "n", "SINGLE_CHOICE", "p", "B", List.of("A"), null);
-        SessionQuestion q = mapper.toSessionQuestion(UUID.randomUUID(), new ComposedQuestionDto(1, "t", item));
+        SessionQuestion q = mapper.toSessionQuestion(UUID.randomUUID(), new ComposedQuestionDto(1, "t", item, "ACCUSATIVE|SINGULAR|MASCULINE"));
 
         var dto = mapper.toQuestionDto(q);
         assertThat(dto.getOptions()).hasSize(2);
@@ -109,7 +109,7 @@ class ComposedQuestionMapperTest {
         QuestItemDto item = new QuestItemDto(
                 qid, "DECLENSION_MATCH", "MATCHING", "Match", null, List.of(),
                 objectMapper.valueToTree(payload));
-        SessionQuestion q = mapper.toSessionQuestion(UUID.randomUUID(), new ComposedQuestionDto(1, "a-stem", item));
+        SessionQuestion q = mapper.toSessionQuestion(UUID.randomUUID(), new ComposedQuestionDto(1, "a-stem", item, "ACCUSATIVE|SINGULAR|MASCULINE"));
 
         assertThat(q.getQuestionType()).isEqualTo("MATCHING");
         assertThat(q.getCorrectAnswer()).isNull();

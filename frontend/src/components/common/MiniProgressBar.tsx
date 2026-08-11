@@ -23,7 +23,7 @@ export interface MiniProgressBarProps {
  * Миниатюрный прогресс-бар для колонки «Изучено» в таблицах уроков.
  *
  * Используется в:
- * - CaseAggregationTable, NumberAggregationTable, GrammarDetailsTable (уроки склонений)
+ * - GrammarProgressGrid (уроки склонений)
  * - VocabularyLessonPage (лексические уроки)
  * - VerseWordsList (таблица слов на VersePage)
  */

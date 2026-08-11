@@ -67,95 +67,16 @@ XUserLocaleHeader:
     type: string
     example: ru
 
-FilterScopeParam:
-  name: filterScope
+ProgressTagSetIdParam:
+  name: progressTagSetId
   in: query
   required: false
   description: |
-    Filter scope for quiz session.
-    CASE_ONLY - aggregated by case (tab "Po padezham"), uses filterCaseTypes.
-    NUMBER_ONLY - aggregated by number (tab "Po chislam"), uses filterNumberTypes.
-    CASE_NUMBER_GENDER - detailed filter (tab "Podrobno"), uses filterCombinations.
-    ALL_STEMS - cross-lesson filter for the virtual "declensions-all" lesson
-    (see quiz-declension.md par 5). Uses filterVowelTypes/filterGenders/filterNumberTypes
-    together; filterCaseTypes/filterCombinations are not used with this scope.
+    Stable id of a named progress-tag set used to start/resume a session scoped to a
+    subset of a lesson's progress (see quest-engine.md §2.4, quiz-declension.md §3.4).
+    NEW/LEARNING/MASTERED/DIFFICULT exist for every lesson; SINGULAR/DUAL/PLURAL and
+    case pairs ACC_LOC/INS_ABL/GEN_LOC/DAT_ACC only for DECLENSION lessons. Resume is
+    matched by the equality of progressTagSetId stored on the IN_PROGRESS session.
   schema:
     type: string
-    enum: [CASE_ONLY, NUMBER_ONLY, CASE_NUMBER_GENDER, ALL_STEMS]
-
-FilterCaseTypesParam:
-  name: filterCaseTypes
-  in: query
-  required: false
-  description: |
-    Comma-separated list of case type values (NOMINATIVE, ACCUSATIVE, etc.).
-    Used when filterScope=CASE_ONLY. Multiple rows selected on the case-summary tab.
-    Empty means "all cases" - expanded server-side to the full set at session start.
-  schema:
-    type: array
-    items:
-      type: string
-  explode: false
-
-FilterNumberTypesParam:
-  name: filterNumberTypes
-  in: query
-  required: false
-  description: |
-    Comma-separated list of number type values (SINGULAR, DUAL, PLURAL).
-    Used when filterScope=NUMBER_ONLY. Multiple rows selected on the number-summary tab.
-    Empty means "all numbers" - expanded server-side to the full set at session start.
-  schema:
-    type: array
-    items:
-      type: string
-  explode: false
-
-FilterCombinationsParam:
-  name: filterCombinations
-  in: query
-  required: false
-  description: |
-    Comma-separated list of (caseType:numberType:gender) triples, e.g.
-    "NOMINATIVE:SINGULAR:MASCULINE,ACCUSATIVE:PLURAL:FEMININE".
-    Used when filterScope=CASE_NUMBER_GENDER. Multiple rows selected on the detailed tab.
-    Gender UNSPECIFIED is used for stems without gender distinction (see ADR-005).
-    Empty means "all combinations" - expanded server-side to the full set at session start.
-  schema:
-    type: array
-    items:
-      type: string
-  explode: false
-
-FilterVowelTypesParam:
-  name: filterVowelTypes
-  in: query
-  required: false
-  description: |
-    Comma-separated list of vowelType values (A_STEM, AA_STEM, I_STEM, II_STEM,
-    U_STEM, UU_STEM, R_STEM, PRON_AHAM, PRON_TVAM, PRON_TAD, PRON_ETAD, PRON_IDAM,
-    PRON_KIM, PRON_YAD, PRON_REFLEXIVE). Used only when filterScope=ALL_STEMS,
-    on the "Vse osnovy" page (see quiz-declension.md par 5). Empty means "all
-    vowel types" - expanded server-side to the full set of vowelType values
-    that currently have seeded declension_stems data.
-  schema:
-    type: array
-    items:
-      type: string
-  explode: false
-
-FilterGendersParam:
-  name: filterGenders
-  in: query
-  required: false
-  description: |
-    Comma-separated list of gender values (MASCULINE, FEMININE, NEUTER,
-    UNSPECIFIED). Used only when filterScope=ALL_STEMS. Empty means "all
-    genders" - expanded server-side to the full set, respecting ADR-005
-    (I/I_LONG/U/U_LONG/R stems only ever have UNSPECIFIED gender, so a
-    MASCULINE/FEMININE/NEUTER choice never matches those vowel types).
-  schema:
-    type: array
-    items:
-      type: string
-  explode: false
+    enum: [NEW, LEARNING, MASTERED, DIFFICULT, SINGULAR, DUAL, PLURAL, ACC_LOC, INS_ABL, GEN_LOC, DAT_ACC]

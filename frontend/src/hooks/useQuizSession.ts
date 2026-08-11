@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   useComposeQuizSession,
   useQuizBySlug,
@@ -10,30 +10,21 @@ import { useQuizSessionState } from './useQuizSessionState';
 import { useSubmitAnswerHandler } from './useQuizSessionSubmit';
 import type { StartOrResumeResponse, ComposeQuizResponse, SessionQuestion } from '../types/quiz';
 
-/**
- * Оркестратор квиз-сессии:
- *  - стейт        → useQuizSessionState
- *  - инициализация → useEffect (location.state / resume / compose-default)
- *  - завершение    → useEffect (completeSession)
- *  - отправка      → useSubmitAnswerHandler
- *  - агрегация loading/error
- */
 export function useQuizSession(
   slug: string | undefined,
   sessionIdFromParams: string | undefined,
 ) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const progressTagSetId = searchParams.get('progressTagSetId');
 
-  /* ---- state ---- */
   const state = useQuizSessionState();
 
-  /* ---- mutations ---- */
   const composeSession = useComposeQuizSession();
   const resumeSession = useResumeQuizSession();
   const completeSession = useCompleteQuizSession();
 
-  /* ---- quiz summary ---- */
   const shouldFetch = !state.quizSummaryData && !location.state?.sessionData && !!slug;
   const {
     data: fetchedQuizSummary,
@@ -42,13 +33,10 @@ export function useQuizSession(
     error: summaryError,
   } = useQuizBySlug(shouldFetch ? slug || '' : '');
 
-  /* ---- submit handlers ---- */
   const { handleSubmitAnswer, handleNextQuestion, submitAnswerMutation } =
     useSubmitAnswerHandler(state);
 
-  /* ═══════ init effect ═══════ */
   useEffect(() => {
-    // 1) navigation state (from compose holder pages)
     if (location.state?.sessionData) {
       const sd = location.state.sessionData as StartOrResumeResponse;
       state.setQuizSummaryData(sd);
@@ -66,7 +54,7 @@ export function useQuizSession(
     state.setHasAttemptedSessionLoad(true);
     state.setQuizSummaryData(fetchedQuizSummary as unknown as StartOrResumeResponse);
 
-    const { lessonType, id: quizId, slug: quizSlug } = fetchedQuizSummary;
+    const { id: quizId, slug: quizSlug } = fetchedQuizSummary;
 
     const apply = (data: { sessionId: string; questions: SessionQuestion[]; currentQuestionIndex?: number }) => {
       state.setSessionId(data.sessionId);
@@ -78,19 +66,17 @@ export function useQuizSession(
     const applyAndNav = (data: StartOrResumeResponse) => {
       state.setQuizSummaryData(data);
       apply(data);
-      navigate(`/quiz/${lessonType.toLowerCase()}/${quizSlug}/${data.sessionId}`, { replace: true });
+      navigate(`/quiz/grammar/${quizSlug}/${data.sessionId}`, { replace: true });
     };
 
-    // 2) resume an existing session
     if (sessionIdFromParams) {
       resumeSession.mutate(
-        { sessionId: sessionIdFromParams, lessonType },
+        { sessionId: sessionIdFromParams },
         { onSuccess: apply, onError: (e) => console.error('resume failed:', e) },
       );
       return;
     }
 
-    // 3) default: compose the lesson from its curriculum topic
     composeSession.mutate(
       {
         topicCode: quizSlug || slug || '',
@@ -124,25 +110,21 @@ export function useQuizSession(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state, fetchedQuizSummary, sessionIdFromParams, state.hasAttemptedSessionLoad]);
 
-  /* ═══════ completion effect ═══════ */
+  /* ---- completion effect ---- */
   useEffect(() => {
     const allDone =
       state.questions.length > 0 &&
       state.currentQuestionIndex >= state.questions.length;
 
-    if (allDone && state.sessionId && state.quizSummaryData?.lessonType && !state.sessionCompletionAttempted) {
+    if (allDone && state.sessionId && !state.sessionCompletionAttempted) {
       state.setSessionCompletionAttempted(true);
       completeSession.mutate(
-        { sessionId: state.sessionId, lessonType: state.quizSummaryData.lessonType },
+        { sessionId: state.sessionId },
         {
           onSuccess: () =>
-            navigate(`/quiz-sessions/${state.sessionId}/history`, {
-              state: { lessonType: state.quizSummaryData?.lessonType },
-            }),
+            navigate(`/quiz-sessions/${state.sessionId}/history`),
           onError: () =>
-            navigate(`/quiz-sessions/${state.sessionId}/history`, {
-              state: { lessonType: state.quizSummaryData?.lessonType },
-            }),
+            navigate(`/quiz-sessions/${state.sessionId}/history`),
         },
       );
     }
@@ -150,13 +132,11 @@ export function useQuizSession(
     state.currentQuestionIndex,
     state.questions.length,
     state.sessionId,
-    state.quizSummaryData?.lessonType,
     state.sessionCompletionAttempted,
     completeSession,
     navigate,
   ]);
 
-  /* ---- aggregates ---- */
   const isLoading =
     isSummaryLoading ||
     composeSession.isPending ||

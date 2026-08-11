@@ -6,9 +6,7 @@ import {
 } from '../../hooks/useSangraha';
 import { useAuthStore } from '../../store/authStore';
 import { useLocaleStore } from '../../store/localeStore';
-import { quizApi } from '../../api/quizApi';
 import { sangrahaApi } from '../../api/sangraha';
-import { LessonType } from '../../types/quiz';
 import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
@@ -83,22 +81,11 @@ const VersePage = () => {
     if (!verseId) return;
     try {
       const quizRes = await getOrCreateVocabularyQuiz.mutateAsync(verseId);
-      const { quizSlug, quizId } = quizRes.data;
+      const { quizSlug } = quizRes.data;
 
       queryClient.invalidateQueries({ queryKey: ['lesson', 'vocabulary', quizSlug] });
 
-      const locale = useLocaleStore.getState().locale;
-      const sessionRes = await quizApi.startOrResumeWithStatusFilter(
-        quizId,
-        LessonType.VOCABULARY,
-        locale,
-        'NEW',
-      );
-      const sessionData = sessionRes.data;
-
-      navigate(`/quiz/vocabulary/${quizSlug}/${sessionData.sessionId}`, {
-        state: { sessionData },
-      });
+      navigate(`/quiz/vocabulary/${quizSlug}/new`);
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     }

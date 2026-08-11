@@ -21,17 +21,6 @@
     "UNKNOWN": "unknown gender",
     "UNSPECIFIED": "unspecified gender"
   },
-                "allStems": {
-    "title": "All stems",
-    "subtitle": "All stems",
-    "startQuiz": "Start quiz",
-    "filterVowelTypes": "By vowel stem",
-    "filterNumberTypes": "By number",
-    "filterGenders": "By gender",
-    "filterCaseTypes": "By case",
-    "noQuestionsForFilters": "No questions match the selected filters, try a different combination",
-    "scopeFilterEmpty": "No questions match the selected filters, try a different combination"
-  },
   "vowelType": {
     "A_STEM": "a",
     "AA_STEM": "ā",

@@ -36,7 +36,6 @@ import VocabularyLessonPage from '../pages/lessons/VocabularyLessonPage';
 import GrammarLessonPage from '../pages/lessons/GrammarLessonPage';
 import SandhiLessonPage from '../pages/lessons/SandhiLessonPage';
 import SandhiRulesByNumberPage from '../pages/grammar/SandhiRulesByNumberPage';
-import GrammarAllStemsPage from '../pages/lessons/GrammarAllStemsPage';
 import GrammarRouteResolver from '../pages/lessons/GrammarRouteResolver';
 import WorksPage from '../pages/sangraha/WorksPage';
 import WorkPage from '../pages/sangraha/WorkPage';
@@ -114,7 +113,6 @@ export default function AppRoutes() {
       <Route path="/vocabulary/texts" element={<ProtectedLayoutRoute><VocabularyTextsPage /></ProtectedLayoutRoute>} />
 
             {/* Lesson pages */}
-      <Route path="/lessons/grammar/declensions-all" element={<ProtectedLayoutRoute><GrammarAllStemsPage /></ProtectedLayoutRoute>} />
       <Route path="/lessons/grammar/sandhi" element={<ProtectedLayoutRoute><SandhiRulesByNumberPage /></ProtectedLayoutRoute>} />
       <Route path="/lessons/grammar/:slug" element={<ProtectedLayoutRoute><GrammarRouteResolver /></ProtectedLayoutRoute>} />
       <Route path="/lessons/vocabulary/:slug" element={<ProtectedLayoutRoute><VocabularyLessonPage /></ProtectedLayoutRoute>} />

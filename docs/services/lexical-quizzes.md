@@ -24,7 +24,7 @@ generate-on-read — по той же архитектуре, что уже пр
 conjugation квизов (`quiz-sessions.yaml`, «Distractors are generated on-the-fly и
 NOT persisted»).
 
-Интеграционная точка (новая, аналог `ContentClient` у quiz-service):
+Интеграционная точка (`CurriculumClient` у quiz-service):
 `GET /api/v2/lexicon/pool/resolve` — принимает критерии отбора (§3), возвращает
 список кандидатов `lexemeId` (+ достаточные для генерации вопроса поля: lemma,
 gloss, pos, gender, доступные `WordForm`) без разбивки на «вопросы» — сборка

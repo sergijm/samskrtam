@@ -280,8 +280,9 @@ NOT NULL, DEFAULT 0), correctCount (INTEGER, NOT NULL, DEFAULT 0), incorrectCoun
 
 Формула обновления `masteryScore`/`nextReviewAt` при ответе — та же
 spaced-repetition логика, что уже применяется для грамматических item-score в
-quiz-service (`ADR-007`, бакеты `NEW`/`LEARNING`/`REVIEW` по `nextReviewAt`, см.
-`quiz-sessions.yaml` `StatusFilterParam`) — переиспользуется алгоритм, не код (эта
+quiz-service (`ADR-007`, статусы `NEW`/`LEARNING`/`MASTERED` + ортогональный `DIFFICULT`,
+срезы сессий через `progressTagSetId`, см.
+`quiz-sessions.yaml` `ProgressTagSetIdParam`) — переиспользуется алгоритм, не код (эта
 таблица физически в curriculum-service, не в `quiz-service`, т.к. принадлежит
 лексическому домену, а не сессиям конкретного квиза — то же разделение
 ответственности, что и у `quiz_item_score`/`grammar_form_score` в quiz-service

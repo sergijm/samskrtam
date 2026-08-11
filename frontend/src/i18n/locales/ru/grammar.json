@@ -21,32 +21,22 @@
     "UNKNOWN": "род неизвестен",
     "UNSPECIFIED": "род не указан"
   },
-                "allStems": {
-    "title": "Все основы",
-    "vowelType": {
-      "A_STEM": "a",
-      "AA_STEM": "ā",
-      "I_STEM": "i",
-      "II_STEM": "ī",
-      "U_STEM": "u",
-      "UU_STEM": "ū",
-      "R_STEM": "ṛ",
-      "PRON_AHAM": "aham (я)",
-      "PRON_TVAM": "tvam (ты)",
-      "PRON_TAD": "tad (тот)",
-      "PRON_ETAD": "etad (этот)",
-      "PRON_IDAM": "idam (этот)",
-      "PRON_KIM": "kim (кто?)",
-      "PRON_YAD": "yad (который)",
-      "PRON_REFLEXIVE": "возвр."
-    },
-    "startQuiz": "Начать квиз",
-    "filterVowelTypes": "По гласным основам",
-    "filterNumberTypes": "По числам",
-    "filterGenders": "По родам",
-    "filterCaseTypes": "По падежам",
-    "noQuestionsForFilters": "По выбранным фильтрам нет вопросов, попробуйте другую комбинацию",
-    "scopeFilterEmpty": "По выбранным фильтрам нет вопросов, попробуйте другую комбинацию"
+  "vowelType": {
+    "A_STEM": "a",
+    "AA_STEM": "ā",
+    "I_STEM": "i",
+    "II_STEM": "ī",
+    "U_STEM": "u",
+    "UU_STEM": "ū",
+    "R_STEM": "ṛ",
+    "PRON_AHAM": "aham (я)",
+    "PRON_TVAM": "tvam (ты)",
+    "PRON_TAD": "tad (тот)",
+    "PRON_ETAD": "etad (этот)",
+    "PRON_IDAM": "idam (этот)",
+    "PRON_KIM": "kim (кто?)",
+    "PRON_YAD": "yad (который)",
+    "PRON_REFLEXIVE": "возвр."
   },
   "vowelType": {
     "A_STEM": "a",

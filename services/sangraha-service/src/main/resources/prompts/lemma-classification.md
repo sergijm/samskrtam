@@ -10,7 +10,7 @@
 
 ```
 You are an expert in Sanskrit philology and an experienced lexicographer.
-You are given a batch of Sanskrit verbs — each as a lemma with its dominant
+You are given a batch of Sanskrit words — each as a lemma with its dominant
 part of speech, grammatical gender (if any), and up to two actual verse
 occurrences as usage examples.
 

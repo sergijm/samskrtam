@@ -255,12 +255,12 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
     - Из ответа `{ quizSlug, quizId, quizStatus }` фронтенд **не** делает
       промежуточный `GET /api/v1/lessons/vocabulary/{slug}` — он не нужен для
       запуска сессии. Вместо этого сразу вызывает
-      `POST /api/v1/quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&statusFilter={statusFilter}`
+      `POST /api/v1/quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&progressTagSetId={progressTagSetId}`
       (quiz-service, `quest-engine.md` §3-4) — по UUID, не по slug.
-      `statusFilter` вычисляется на фронте из `quizStatus`: `quizStatus="CREATED"` →
-      `statusFilter=NEW` (весь пул квиза — новые слова, обычный смешанный
+      `progressTagSetId` вычисляется на фронте из `quizStatus`: `quizStatus="CREATED"` →
+      `progressTagSetId=NEW` (весь пул квиза — новые слова, обычный смешанный
       due/new/reserve-отбор не нужен, слов ещё никто не проходил); `quizStatus="EXISTING"`
-      → `statusFilter` не передаётся (обычный смешанный отбор).
+      → `progressTagSetId` не передаётся (обычный смешанный отбор).
     - После успешного старта сессии — переход на `/quiz/vocabulary/{quizSlug}/{sessionId}`
       (существующий маршрут `QuizPage`, см. `frontend-state.md`/`AppRoutes`) с передачей
       результата через `navigate(url, { state: { sessionData } })` — паттерн,

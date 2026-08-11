@@ -163,7 +163,7 @@ curriculum:
 
 ## 5. Интеграция с quiz-service
 
-Замена части `ContentClient` (v1, curriculum-service) на новый `CurriculumClient` (v2,
+`CurriculumClient` (v2,
 curriculum-service) **только** для типов из этого документа — остальные типы (vocabulary
 и др.) продолжают идти через curriculum-service v1, см. `quest-engine.md` §5 (обновлено).
 

@@ -2,6 +2,10 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { MiniProgressBar } from '../common/MiniProgressBar';
+import {
+  caseToProgressTagSetId,
+  numberToProgressTagSetId,
+} from '../../utils/grammarAggregation';
 import type {
   CaseAggregation,
   CaseNumberAggregation,
@@ -40,11 +44,17 @@ const GrammarProgressGrid: React.FC<GrammarProgressGridProps> = ({
   }
 
   const handleCaseClick = (caseType: string) => {
-    navigate(`/quiz/grammar/${quizSlug}?filterScope=CASE_ONLY&filterCaseType=${caseType}`);
+    const set = caseToProgressTagSetId(caseType);
+    navigate(set
+      ? `/quiz/grammar/${quizSlug}?progressTagSetId=${set}`
+      : `/quiz/grammar/${quizSlug}`);
   };
 
   const handleNumberClick = (numberType: string) => {
-    navigate(`/quiz/grammar/${quizSlug}?filterScope=NUMBER_ONLY&filterNumberTypes=${numberType}`);
+    const set = numberToProgressTagSetId(numberType);
+    navigate(set
+      ? `/quiz/grammar/${quizSlug}?progressTagSetId=${set}`
+      : `/quiz/grammar/${quizSlug}`);
   };
 
   return (

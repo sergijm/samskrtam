@@ -1,48 +1,49 @@
 import { useQuery } from '@tanstack/react-query';
 import { quizApi } from '../api/quizApi';
-import { LessonType, SessionStatus, QuizSessionSummary, PaginatedResponse, AnswerHistory } from '../types/quiz';
-
-export const useUserQuizSessions = (
-  userId: string, // userId is now passed as a query parameter
-  page: number,
-  size: number,
-  sortBy: string,
-  sortDirection: string,
-  lessonType?: LessonType,
-  status?: SessionStatus
-) => {
-  return useQuery<PaginatedResponse<QuizSessionSummary>, Error>({
-    queryKey: ['userQuizSessions', { userId, page, size, sortBy, sortDirection, lessonType, status }], // userId is part of the query key
-    queryFn: async () => {
-      const response = await quizApi.getUserQuizSessions(userId, page, size, sortBy, sortDirection, lessonType, status);
-      return response.data;
-    },
-    enabled: !!userId, // Only run the query if userId is available
-    keepPreviousData: true, // Keep previous data while fetching new data for pagination/filters
-  });
-};
 
 export const useSessionAnswerHistory = (
   sessionId: string,
   userId: string,
-) => { // Removed pagination parameters
-  return useQuery<AnswerHistory[], Error>({ // Expects List<AnswerHistory>
-    queryKey: ['sessionAnswerHistory', { sessionId, userId }], // Removed pagination parameters from queryKey
+) => {
+  return useQuery<{ questions: Array<{ questionNumber: number; text: string; correctAnswer: string | null; questionType: string }> }, Error>({
+    queryKey: ['sessionQuestions', { sessionId }],
     queryFn: async () => {
-      const response = await quizApi.getSessionAnswerHistory(sessionId, userId); // Removed pagination parameters
-      return response.data;
+      const response = await quizApi.getSessionQuestions(sessionId);
+      return { questions: response.data };
     },
-    enabled: !!sessionId && !!userId, // Only run the query if sessionId and userId are available
+    enabled: !!sessionId,
   });
 };
 
-// New hook to fetch a single QuizSessionSummary by sessionId and userId
 export const useQuizSessionSummary = (sessionId: string, userId: string) => {
-  return useQuery<QuizSessionSummary, Error>({
-    queryKey: ['quizSessionSummary', { sessionId, userId }],
+  return useQuery<{
+    id: string;
+    totalQuestions: number;
+    answeredQuestions: number;
+    score: number;
+    status: string;
+    slug?: string;
+    lessonType?: string;
+    sessionId: string;
+    startedAt?: string;
+    completedAt?: string;
+  }, Error>({
+    queryKey: ['quizSessionSummary', { sessionId }],
     queryFn: async () => {
-      const response = await quizApi.getQuizSessionSummary(sessionId); // Use new API method
-      return response.data;
+      const response = await quizApi.getSession(sessionId);
+      const s = response.data as any;
+      return {
+        id: s.id,
+        totalQuestions: s.totalQuestions,
+        answeredQuestions: s.answeredQuestions,
+        score: s.score,
+        status: s.status,
+        slug: s.lessonId ?? undefined,
+        lessonType: s.lessonType ?? undefined,
+        sessionId: s.id,
+        startedAt: s.startedAt,
+        completedAt: s.completedAt,
+      };
     },
     enabled: !!sessionId && !!userId,
   });

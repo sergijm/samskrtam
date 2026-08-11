@@ -1,6 +1,6 @@
 ﻿# Lesson Pages — VocabularyLessonPage и GrammarLessonPage
 
-> ⚠️ **Требует согласования:** этот документ описывает UI-контракт (`filterScope`, `statusFilter=REVIEW`, `lessonId`) в терминах старой модели прогресса quiz-service. Модель прогресса и API сессий переработаны — см. [services/quest-engine.md](../../services/quest-engine.md). Детали фронтенд-контракта в этом файле нуждаются в пересмотре под новый API (`questId`, статусы NEW/LEARNING/DUE/MASTERED, без ручного `filterScope`).
+> Статус: актуализирован под модель прогресс-сетов (ProgressTagSet) — см. [services/quest-engine.md](../../services/quest-engine.md). Запуск квиза — через стабильный `progressTagSetId`, без ручных фильтров по бакету/параметрам вопроса.
 
 > Связанные файлы: [frontend-overview.md](../frontend-overview.md) · [curriculum-service.md](../../services/curriculum-service.md) · [quest-engine.md](../../services/quest-engine.md) · [statistics-service.md](../../services/statistics-service.md)
 > Status: **DRAFT**
@@ -47,15 +47,14 @@
 
 | Бейдж | Значение | Клик запускает/резюмирует квиз |
 |---|---|---|
-| Изучено | `{statusSummary.mastered}/{statusSummary.total}` | `statusFilter=REVIEW` — сессия по MASTERED-элементам в стадии review (`reviewDue > 0`; см. architecture.md §3.6) |
-| Новые | `{statusSummary.newCount}` | `statusFilter=NEW` — сессия по неизученным элементам |
-| В процессе | `{statusSummary.learning}` | `statusFilter=LEARNING` — сессия по начатым, но не изученным элементам |
+| Изучено | `{statusSummary.mastered}/{statusSummary.total}` | `progressTagSetId=MASTERED` — сессия по mastered-элементам (score ≥ masteredLowerThreshold; внутри среза отбор деталей — см. quest-engine.md §2.4) |
+| Новые | `{statusSummary.newCount}` | `progressTagSetId=NEW` — сессия по неизученным элементам |
+| В процессе | `{statusSummary.learning}` | `progressTagSetId=LEARNING` — сессия по начатым, но не изученным элементам |
 
 **Поведение:**
-- Каждый клик вызывает `POST /quiz/{slug}/sessions/start-or-resume?lessonId=...&statusFilter=<NEW|LEARNING|REVIEW>` (см. quest-engine.md §3/§4, ../openapi/quiz/parameters.yaml `StatusFilterParam`) и переходит на `/quiz/vocabulary/:slug` (или `/quiz/grammar/:type`) — квиз стартует или продолжается (resume) в зависимости от наличия IN_PROGRESS-сессии с тем же `statusFilter`.
-- Бейдж с нулевым значением (`total === 0`, `newCount === 0`, `learning === 0`, либо для «Изучено» — `reviewDue === 0`) недоступен для клика (`disabled`), но остаётся видимым.
-- Заменяет прежний placeholder `navigate('/quiz/vocabulary/:slug?filterScope=REVIEW_DUE')` из `VocabularyLessonPage`/`GrammarLessonPage` — параметр `filterScope` для этой цели **не используется** (он занят под фильтр падеж/число/род в `GrammarLessonPage`, см. quest-engine.md §3.4); корректный параметр — `statusFilter`.
-- Кнопка «Повторить» рядом с «Начать квиз» (см. §1) становится избыточной и удаляется — её функцию берёт на себя бейдж «Изучено».
+- Каждый клик вызывает `POST /quiz/{slug}/sessions/start-or-resume?progressTagSetId=<NEW|LEARNING|MASTERED>` (см. quest-engine.md §2.4/§4, ../openapi/quiz/parameters.yaml `ProgressTagSetIdParam`) и переходит на `/quiz/vocabulary/:slug` (или `/quiz/grammar/:type`) — квиз стартует или продолжается (resume) в зависимости от наличия IN_PROGRESS-сессии с тем же `progressTagSetId`.
+- Бейдж с нулевым значением (`total === 0`, `newCount === 0`, `learning === 0`, `mastered === 0`) недоступен для клика (`disabled`), но остаётся видимым.
+- Бейдж «Изучено» полностью берёт на себя роль повторения изученного — отдельная кнопка «Повторить» рядом с «Начать квиз» не нужна и отсутствует.
 
 **Таблица слов (`DataTable`):**
 
@@ -68,13 +67,13 @@
 
 **Правила статуса слова (модель architecture.md §3.6, `quiz.quiz_item_score`, не successRate):**
 - **NEW** — нет строки `quiz_item_score` для `(userId, itemType, externalRefId)`
-- **LEARNING** — есть строка, `score < 90`
-- **MASTERED** — `score >= 90`
-- **REVIEW** (частный случай MASTERED, см. architecture.md §3.6) — `score >= 90` и `nextReviewAt <= now`; отображается вместо MASTERED, включает кнопку «Повторить»
+- **LEARNING** — есть строка, `score < masteredLowerThreshold`
+- **MASTERED** — `score >= masteredLowerThreshold`
+- **DIFFICULT** — ортогональная ось к перечисленным (независимо от статуса): `consecutiveMistakes >= 2` или `score <= difficultUpperThreshold`; выход из сета с гистерезисом (см. quest-engine.md §2.4)
 
 `nSuccess`/`nAll`/`successRate` в таблице попыток остаются (on-the-fly агрегация по `quiz_answers`, не влияют на статус) — используются только в колонке «Попытки» и `WordHistoryDialog`.
 
-**LessonStatusSummary (шапка урока, под `LessonHeader`):** счётчики TOTAL / NEW / LEARNING / MASTERED (REVIEW складывается в MASTERED в этой сводке, но именно наличие REVIEW>0 включает кнопку «Повторить» рядом с «Начать квиз» — целевой запуск сессии с приоритетом due-элементов). Считается на бэкенде, отдаётся полем `statusSummary` в `VocabularyLesson`/`GrammarLesson` (см. §7).
+**LessonStatusSummary (шапка урока, под `LessonHeader`):** счётчики TOTAL / NEW / LEARNING / MASTERED (и counts по DIFFICULT) — это ровно те значения, что стоят в бейджах `LessonStatsBadges` (см. §2.1). Считается на бэкенде как число progressTag в соответствующих прогресс-сетах урока, отдаётся полем `statusSummary` в `VocabularyLesson`/`GrammarLesson` (см. §7).
 
 
 ### WordHistoryDialog
@@ -223,8 +222,8 @@ export interface LessonStatusSummary {
   total:        number;
   newCount:     number;   // JSON: "new" — зарезервированное слово в TS/JS
   learning:     number;
-  mastered:     number;   // включает REVIEW (score >= 90)
-  reviewDue:    number;   // подмножество mastered с nextReviewAt <= now; >0 → показать кнопку "Повторить"
+  mastered:     number;   // score >= masteredLowerThreshold
+  difficult:    number;   // ортогональная ось: consecutiveMistakes >= 2 || score <= difficultUpperThreshold
 }
 
 export interface VocabularyLesson {
@@ -279,14 +278,14 @@ export interface WordAnswerHistory {
 - [ ] На GrammarLessonPage в шапке урока отображаются только заголовок и кнопка «Начать квиз»; статистика в шапке отсутствует
 - [ ] На GrammarLessonPage вкладка «Статистика» отображает четыре строки (Всего / Не изучено / В процессе / Изучено), расположенные вертикально, с названием и значением в каждой строке
 - [ ] Строки «Не изучено», «В процессе», «Изучено» содержат кнопки «Изучить», «Продолжить», «Повторить» соответственно; строка «Всего» без кнопки
-- [ ] Клик по каждой из трёх кнопок / бейджей запускает или резюмирует квиз с соответствующим `statusFilter` (NEW/LEARNING/REVIEW) и переходит на страницу квиза
+- [ ] Клик по каждой из трёх кнопок / бейджей запускает или резюмирует квиз с соответствующим `progressTagSetId` (NEW/LEARNING/MASTERED) и переходит на страницу квиза
 - [ ] Кнопка/бейдж с нулевым значением недоступны для клика, но остаются видимыми
 - [ ] Иконки статуса корректно отображаются для всех трёх состояний
 - [ ] На GrammarLessonPage порядок вкладок: 1) Статистика, 2) Парадигмы, 3) По падежам, 4) Подробно
 - [ ] Вкладка «Парадигмы» строит таблицу падеж(строки, 8 шт.)×число(столбцы) из `lesson.questions`, без дополнительного запроса к API
 - [ ] Если урок покрывает несколько родов — на вкладке «Парадигмы» отдельная таблица на каждый род с подзаголовком, формы разных родов не смешиваются в одной ячейке
 - [ ] Ячейка без формы в уроке отображается как «—», не как ошибка/пустой крэш
-- [ ] Клик по заполненной ячейке «Парадигм» стартует/резюмирует квиз с `filterScope=CASE_NUMBER_GENDER&filterCombinations=<caseType>:<numberType>:<gender>` и переходит на страницу квиза
+- [ ] Клик по заполненной ячейке «Парадигм» или заголовку строки/столбца «Прогресса» стартует/резюмирует квиз с `progressTagSetId=<SINGULAR|DUAL|PLURAL|ACC_LOC|INS_ABL|GEN_LOC|DAT_ACC>` и переходит на страницу квиза
 - [ ] Клик на `{nSuccess}/{nAll}` открывает диалог с историей
 - [ ] История фильтруется по `quizId` — слово из другого урока не попадает в историю
 - [ ] Кнопка «Начать квиз» ведёт на QuizPage и стартует сессию без фильтра

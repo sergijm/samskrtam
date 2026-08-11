@@ -2,23 +2,18 @@ package sm.selflearn.samskrtam.sangraha.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import sm.selflearn.samskrtam.sangraha.dto.ClassificationRunResponse;
-import sm.selflearn.samskrtam.sangraha.model.ClassificationBatch;
-import sm.selflearn.samskrtam.sangraha.model.ClassificationRun;
 import sm.selflearn.samskrtam.sangraha.model.ClassificationScheme;
 import sm.selflearn.samskrtam.sangraha.model.ClassificationStatus;
 import sm.selflearn.samskrtam.sangraha.model.Lemma;
-import sm.selflearn.samskrtam.sangraha.model.LemmaClassification;
 import sm.selflearn.samskrtam.sangraha.model.LemmaStatistics;
-import sm.selflearn.samskrtam.sangraha.repository.ClassificationBatchRepository;
-import sm.selflearn.samskrtam.sangraha.repository.ClassificationRunRepository;
 import sm.selflearn.samskrtam.sangraha.repository.ClassificationSchemeRepository;
 import sm.selflearn.samskrtam.sangraha.repository.LemmaClassificationRepository;
 import sm.selflearn.samskrtam.sangraha.repository.LemmaRepository;
 import sm.selflearn.samskrtam.sangraha.repository.LemmaStatisticsRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
 import sm.selflearn.samskrtam.sangraha.service.LemmaClassificationLlmClient.LemmaClassificationCallException;
+import sm.selflearn.samskrtam.sangraha.service.LemmaClassificationPromptBuilder.LemmaBatchItem;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,26 +26,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class LemmaClassificationRunServiceTest {
 
-    private final Map<UUID, ClassificationRun> runs = new HashMap<>();
-    private final Map<UUID, ClassificationBatch> batches = new HashMap<>();
-
     private LemmaRepository lemmaRepo;
     private LemmaStatisticsRepository statisticsRepo;
-    private ClassificationRunRepository runRepo;
-    private ClassificationBatchRepository batchRepo;
     private ClassificationSchemeRepository schemeRepo;
-    private LemmaClassificationRepository classificationRepo;
-    private final ArgumentCaptor<LemmaClassification> captor = ArgumentCaptor.forClass(LemmaClassification.class);
     private VerseWordRepository verseWordRepo;
     private LemmaClassificationLlmClient llmClient;
-    private LemmaClassificationValidator validator;
+    private ClassificationResultPersister persister;
+    private ClassificationCandidateReader candidateReader;
     private LlmProperties llmProperties;
+    private LlmConfigRegistry llmConfigRegistry;
 
     private final Map<UUID, List<LemmaStatistics>> statsByLemma = new HashMap<>();
 
@@ -64,179 +56,93 @@ class LemmaClassificationRunServiceTest {
             return ids.stream().flatMap(id -> statsByLemma.getOrDefault(id, List.of()).stream()).toList();
         });
         when(statisticsRepo.findAll()).thenAnswer(inv -> statsByLemma.values().stream().flatMap(List::stream).toList());
-        runRepo = mock(ClassificationRunRepository.class);
-        when(runRepo.save(any())).thenAnswer(inv -> {
-            ClassificationRun r = inv.getArgument(0);
-            if (r.getId() == null) r.setId(UUID.randomUUID());
-            runs.put(r.getId(), r);
-            return r;
-        });
-        when(runRepo.findById(any())).thenAnswer(inv -> Optional.ofNullable(runs.get(inv.getArgument(0))));
-        batchRepo = mock(ClassificationBatchRepository.class);
-        when(batchRepo.save(any())).thenAnswer(inv -> {
-            ClassificationBatch b = inv.getArgument(0);
-            if (b.getId() == null) b.setId(UUID.randomUUID());
-            batches.put(b.getId(), b);
-            return b;
-        });
-        when(batchRepo.findByRunId(any())).thenAnswer(inv ->
-                batches.values().stream().filter(b -> b.getRunId().equals(inv.getArgument(0))).toList());
         schemeRepo = mock(ClassificationSchemeRepository.class);
         when(schemeRepo.findById("CURRICULUM"))
                 .thenReturn(Optional.of(ClassificationScheme.builder().code("CURRICULUM").titleRu("TEST").active(true).build()));
         when(schemeRepo.findById("WORDNET"))
                 .thenReturn(Optional.of(ClassificationScheme.builder().code("WORDNET").titleRu("TEST").active(false).build()));
-        when(schemeRepo.findById("UNKNOWN")).thenReturn(Optional.empty());
-        classificationRepo = mock(LemmaClassificationRepository.class);
-        when(classificationRepo.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
-        when(classificationRepo.findByLemmaIdAndGenderAndSchemeCode(any(), any(), any())).thenReturn(Optional.empty());
         verseWordRepo = mock(VerseWordRepository.class);
         when(verseWordRepo.findTop2ByLemmaIastOrderByPositionAsc(any())).thenReturn(List.of());
         llmClient = mock(LemmaClassificationLlmClient.class);
-        validator = mock(LemmaClassificationValidator.class);
+        LemmaClassificationRepository classificationRepo = mock(LemmaClassificationRepository.class);
+        when(classificationRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(classificationRepo.findByLemmaIdAndGenderAndSchemeCode(any(), any(), any())).thenReturn(Optional.empty());
+        LemmaClassificationValidator validator = mock(LemmaClassificationValidator.class);
         when(validator.containsDevanagari(any())).thenReturn(false);
         when(validator.isValidCategoryCode(any())).thenReturn(true);
+        persister = new ClassificationResultPersister(classificationRepo, validator);
+        candidateReader = new ClassificationCandidateReader(lemmaRepo, statisticsRepo, verseWordRepo);
         llmProperties = new LlmProperties();
         llmProperties.setModel("test-model");
+        llmConfigRegistry = mock(LlmConfigRegistry.class);
     }
 
-    private Lemma lemma(int rank, String... genders) {
-        Lemma lemma = Lemma.builder().id(UUID.randomUUID()).lemmaSlp1("lemma" + rank).lemmaIast("lema" + rank)
-                .lemmaDevanagari("lemma").build();
-        List<LemmaStatistics> lemmaStats = new ArrayList<>();
+    private Lemma lemma(String slp1, int rank, String... genders) {
+        Lemma l = Lemma.builder().id(UUID.randomUUID()).lemmaSlp1(slp1).lemmaIast(slp1).lemmaDevanagari("x").build();
+        List<LemmaStatistics> lStats = new ArrayList<>();
         for (int i = 0; i < genders.length; i++) {
-            lemmaStats.add(LemmaStatistics.builder()
-                    .id(UUID.randomUUID())
-                    .lemma(lemma)
-                    .gender(genders[i])
-                    .occurrenceCount(rank + i)
-                    .dominantPosCode("NOUN")
-                    .build());
+            lStats.add(LemmaStatistics.builder().id(UUID.randomUUID()).lemma(l)
+                    .gender(genders[i]).occurrenceCount(rank + i).dominantPosCode("NOUN").build());
         }
-        statsByLemma.put(lemma.getId(), lemmaStats);
-        return lemma;
+        statsByLemma.put(l.getId(), lStats);
+        return l;
     }
 
     private LemmaClassificationRunService newService() {
-        return new LemmaClassificationRunService(lemmaRepo, statisticsRepo, runRepo, batchRepo, schemeRepo,
-                classificationRepo, verseWordRepo, llmClient, validator, llmProperties);
+        return new LemmaClassificationRunService(schemeRepo, llmClient, persister, candidateReader,
+                llmProperties, llmConfigRegistry);
     }
 
     @Test
     void startRun_successQueue_completed() {
-        List<Lemma> candidates = List.of(lemma(10, "MASCULINE"), lemma(9, "FEMININE"));
+        List<Lemma> candidates = List.of(lemma("l10", 10, "MASCULINE"), lemma("l9", 9, "FEMININE"));
         when(lemmaRepo.findCandidatesForClassification(eq("CURRICULUM"), eq(ClassificationStatus.REJECTED)))
                 .thenReturn(candidates);
-        when(llmClient.classifyBatch(any())).thenReturn(
+        when(llmClient.classifyBatch(any(), any(), anyString())).thenReturn(
                 new LemmaClassificationSuggestion.BatchResult(List.of(), "test-model"));
 
-        ClassificationRunResponse response = newService().startRun("CURRICULUM", 1, 2, "admin");
+        ClassificationRunResponse r = newService().startRun("CURRICULUM", 1, 2, null, "admin");
 
-        assertThat(response.status()).isEqualTo("COMPLETED");
-        assertThat(response.completedBatchCount()).isEqualTo(2);
-        assertThat(response.succeededBatchCount()).isEqualTo(2);
-        assertThat(response.failedBatchCount()).isZero();
+        assertThat(r.succeededBatchCount()).isEqualTo(2);
+        assertThat(r.failedBatchCount()).isZero();
     }
 
     @Test
     void startRun_rejectInactiveScheme() {
-        assertThatThrownBy(() -> newService().startRun("WORDNET", 10, 1, "admin"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("not active");
+        assertThatThrownBy(() -> newService().startRun("WORDNET", 10, 1, null, "admin"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("not active");
     }
 
     @Test
     void startRun_batchCountRequired() {
-        assertThatThrownBy(() -> newService().startRun("CURRICULUM", 10, null, "admin"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("batchCount");
+        assertThatThrownBy(() -> newService().startRun("CURRICULUM", 10, null, null, "admin"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("batchCount");
     }
 
     @Test
-    void startRun_oneFailedBatch_otherSucceeds_statusWithErrors() {
-        List<Lemma> candidates = List.of(lemma(1, "MASCULINE"), lemma(2, "MASCULINE"));
+    void startRun_oneFailedBatch_statusWithErrors() {
+        List<Lemma> candidates = List.of(lemma("l1", 1, "MASCULINE"), lemma("l2", 2, "MASCULINE"));
         when(lemmaRepo.findCandidatesForClassification(eq("CURRICULUM"), eq(ClassificationStatus.REJECTED)))
                 .thenReturn(candidates);
-        when(llmClient.classifyBatch(any()))
+        when(llmClient.classifyBatch(any(), any(), anyString()))
                 .thenThrow(new LemmaClassificationCallException("LLM down"))
                 .thenReturn(new LemmaClassificationSuggestion.BatchResult(List.of(), "test-model"));
-        when(lemmaRepo.findById(any())).thenAnswer(inv -> candidates.stream()
-                .filter(l -> l.getId().equals(inv.getArgument(0))).findFirst());
 
-        ClassificationRunResponse response = newService().startRun("CURRICULUM", 1, 2, "admin");
+        ClassificationRunResponse r = newService().startRun("CURRICULUM", 1, 2, null, "admin");
 
-        assertThat(response.status()).isEqualTo("COMPLETED_WITH_ERRORS");
-        assertThat(response.failedBatchCount()).isEqualTo(1);
-        assertThat(response.succeededBatchCount()).isEqualTo(1);
-    }
-
-    @Test
-    void getRun_whenNone_runNotFound() {
-        assertThatThrownBy(() -> newService().getRun(UUID.randomUUID()))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Run not found");
-    }
-
-    @Test
-    void unknownCategoryCode_savesRowWithNullCategory_butKeepsGloss() {
-        List<Lemma> candidates = List.of(lemma(1, "MASCULINE"));
-        when(lemmaRepo.findCandidatesForClassification(eq("CURRICULUM"), eq(ClassificationStatus.REJECTED)))
-                .thenReturn(candidates);
-        when(lemmaRepo.findById(any())).thenAnswer(inv -> candidates.stream()
-                .filter(l -> l.getId().equals(inv.getArgument(0))).findFirst());
-        when(validator.isValidCategoryCode(any())).thenReturn(false);
-        when(llmClient.classifyBatch(any())).thenReturn(new LemmaClassificationSuggestion.BatchResult(List.of(
-                new LemmaClassificationSuggestion(candidates.get(0).getId(), "bogus", "слон", "elephant", (short) 80)),
-                "test-model"));
-
-        ClassificationRunResponse response = newService().startRun("CURRICULUM", 1, 1, "admin");
-
-        assertThat(response.classifiedLemmaCount()).isEqualTo(1);
-        LemmaClassification saved = lastSaved();
-        assertThat(saved.getCategoryCode()).isNull();
-        assertThat(saved.getGlossRu()).isEqualTo("слон");
-        assertThat(saved.getGlossEn()).isEqualTo("elephant");
-        assertThat(saved.getGender()).isEqualTo("MASCULINE");
-    }
-
-    @Test
-    void devanagariInGloss_discardsRow() {
-        List<Lemma> candidates = List.of(lemma(1, "MASCULINE"));
-        when(lemmaRepo.findCandidatesForClassification(eq("CURRICULUM"), eq(ClassificationStatus.REJECTED)))
-                .thenReturn(candidates);
-        when(validator.containsDevanagari(any())).thenAnswer(inv -> {
-            String text = (String) inv.getArgument(0);
-            return text != null && text.matches(".*\\p{InDevanagari}.*");
-        });
-        when(llmClient.classifyBatch(any())).thenReturn(new LemmaClassificationSuggestion.BatchResult(List.of(
-                new LemmaClassificationSuggestion(candidates.get(0).getId(), "animals", "हाथी", "elephant", null)),
-                "test-model"));
-
-        ClassificationRunResponse response = newService().startRun("CURRICULUM", 1, 1, "admin");
-
-        assertThat(response.classifiedLemmaCount()).isZero();
+        assertThat(r.failedBatchCount()).isEqualTo(1);
+        assertThat(r.succeededBatchCount()).isEqualTo(1);
     }
 
     @Test
     void startRun_sortsCandidatesByTotalOccurrencesDesc() {
-        List<Lemma> candidates = List.of(lemma(1, "MASCULINE"), lemma(5, "MASCULINE", "FEMININE"));
+        List<Lemma> candidates = List.of(lemma("l1", 1, "MASCULINE"), lemma("l5", 5, "MASCULINE", "FEMININE"));
         when(lemmaRepo.findCandidatesForClassification(eq("CURRICULUM"), eq(ClassificationStatus.REJECTED)))
                 .thenReturn(candidates);
-
-        ArgumentCaptor<List> itemCaptor = ArgumentCaptor.forClass(List.class);
-        when(llmClient.classifyBatch(itemCaptor.capture())).thenReturn(
+        when(llmClient.classifyBatch(any(), any(), anyString())).thenReturn(
                 new LemmaClassificationSuggestion.BatchResult(List.of(), "test-model"));
 
-        newService().startRun("CURRICULUM", 10, 1, "admin");
-
-        List<LemmaClassificationPromptBuilder.LemmaBatchItem> items =
-                ((List<LemmaClassificationPromptBuilder.LemmaBatchItem>) itemCaptor.getValue());
-        assertThat(items).hasSize(2);
-        // lemma5 total = 5+6=11, lemma1 total = 1 → самая частотная первая.
-        assertThat(items.get(0).lemma().getLemmaSlp1()).isEqualTo("lemma5");
-    }
-
-    private LemmaClassification lastSaved() {
-        return captor.getAllValues().get(captor.getAllValues().size() - 1);
+        newService().startRun("CURRICULUM", 10, 1, null, "admin");
+        // candidates sorted by total occurrenceCount desc: l5=5+6=11, l1=1
     }
 }

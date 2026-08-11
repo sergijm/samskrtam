@@ -2,17 +2,15 @@
 
 WordStatus:
   type: string
-  enum: [NEW, LEARNING, REVIEW, MASTERED]
+  enum: [NEW, LEARNING, MASTERED]
   description: >
     Вычисляемое поле ответа API, не хранится в БД. Определяется по правилам ADR-007
     (обновление 2026-07, единый порог для VOCABULARY_WORD и DECLENSION_FORM):
-    нет строки в quiz_item_score → NEW; score < 90 → LEARNING; score >= 90 и
-    nextReviewAt > now (или не наступил masteredCooldown) → MASTERED; score >= 90 и
-    nextReviewAt <= now (просрочен контрольный показ) → REVIEW. REVIEW — частный
-    случай MASTERED по score, различается только по времени следующего показа;
-    в LessonStatusSummary REVIEW учитывается внутри mastered (см. lessons.yaml).
-    DIFFICULT (ADR-007 §2.4) в этом поле не используется — открытый бакет для
-    будущего расширения генератора, к статусу урока пока не относится.
+    нет строки в quiz_item_score → NEW; score < 90 → LEARNING; score >= 90 → MASTERED.
+    DUE (nextReviewAt <= now) — внутренний атрибут отбора внутри сета MASTERED, статусом
+    не показывается (см. quest-engine.md §2.4). DIFFICULT (consecutiveMistakes >= 2
+    или score <= difficultUpperThreshold) — ортогональная ось, независимая от этого
+    поля; учитывается в LessonStatusSummary.difficult (см. lessons.yaml).
 
 VocabularyWordProgress:
   type: object
@@ -69,7 +67,7 @@ VocabularyLesson:
     learnedWords:
       type: integer
       minimum: 0
-      description: score >= 90 (masteredLowerThreshold), включая REVIEW. См. также statusSummary.mastered.
+      description: score >= 90 (masteredLowerThreshold). См. также statusSummary.mastered.
     progressPercent:
       type: number
       format: float

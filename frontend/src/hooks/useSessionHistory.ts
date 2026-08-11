@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMe } from './useUser';
 import { useSessionAnswerHistory, useQuizSessionSummary } from './useUserQuizSessions';
-import { useCompleteQuizSession, useRetakeQuizSession, useStartNewQuizSession } from './useQuiz';
+import { useCompleteQuizSession, useRetakeQuizSession } from './useQuiz';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function useSessionHistory() {
@@ -30,15 +30,13 @@ export function useSessionHistory() {
 
   const completeSessionMutation = useCompleteQuizSession();
   const retakeSessionMutation = useRetakeQuizSession();
-  const startNewQuizSessionMutation = useStartNewQuizSession();
 
   const isLoading =
     isUserLoading ||
     isAnswersLoading ||
     isSummaryLoading ||
     completeSessionMutation.isPending ||
-    retakeSessionMutation.isPending ||
-    startNewQuizSessionMutation.isPending;
+    retakeSessionMutation.isPending;
 
   const isError = isAnswersError || isSummaryError;
   const errorMessage = answersError?.message || summaryError?.message;
@@ -47,17 +45,17 @@ export function useSessionHistory() {
 
   const handleResume = () => {
     if (!sessionSummary) return;
-    const { lessonType, slug, sessionId: sid } = sessionSummary;
-    navigate(`/quiz/${lessonType.toLowerCase()}/${slug}/${sid}`);
+    const { slug, sessionId: sid } = sessionSummary;
+    navigate(`/quiz/grammar/${slug}/${sid}`);
   };
 
   const handleRetake = () => {
-    if (!sessionId || !sessionSummary) return;
+    if (!sessionId) return;
     retakeSessionMutation.mutate(
-      { sessionId, lessonType: sessionSummary.lessonType, slug: sessionSummary.slug },
+      { sessionId },
       {
         onSuccess: (data) =>
-          navigate(`/quiz/${data.lessonType.toLowerCase()}/${data.slug}/${data.sessionId}`, {
+          navigate(`/quiz/grammar/${data.slug ?? ''}/${data.sessionId}`, {
             state: { sessionData: data },
           }),
         onError: (err) => console.error('Failed to retake quiz:', err),
@@ -66,23 +64,14 @@ export function useSessionHistory() {
   };
 
   const handleStartNew = () => {
-    if (!sessionId || !sessionSummary) return;
-    startNewQuizSessionMutation.mutate(
-      { sessionId, lessonType: sessionSummary.lessonType, slug: sessionSummary.slug },
-      {
-        onSuccess: (data) =>
-          navigate(`/quiz/${data.lessonType.toLowerCase()}/${data.slug}/${data.sessionId}`, {
-            state: { sessionData: data },
-          }),
-        onError: (err) => console.error('Failed to start new quiz:', err),
-      }
-    );
+    if (!sessionSummary) return;
+    navigate(`/quiz/grammar/${sessionSummary.slug}`);
   };
 
   const handleComplete = () => {
-    if (!sessionId || !sessionSummary?.lessonType) return;
+    if (!sessionId) return;
     completeSessionMutation.mutate(
-      { sessionId, lessonType: sessionSummary.lessonType },
+      { sessionId },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ['quizSessionSummary', sessionId] });
@@ -106,7 +95,6 @@ export function useSessionHistory() {
     handleStartNew,
     handleComplete,
     retakeLoading: retakeSessionMutation.isPending,
-    startNewLoading: startNewQuizSessionMutation.isPending,
     completeError: completeSessionMutation.error?.message,
   };
 }

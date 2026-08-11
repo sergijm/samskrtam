@@ -101,28 +101,6 @@ paths:
         '400':
           description: Неизвестный schemeCode или batchCount <= 0
 
-  /sangraha/internal/lexicon/classification/runs/{runId}:
-    get:
-      operationId: getClassificationRun
-      summary: Статус прогона классификации
-      tags: [lexicon]
-      parameters:
-        - name: runId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Состояние прогона
-          content:
-            application/json:
-              schema:
-                $ref: 'schemas/internal-lexicon-schemas.yaml#/ClassificationRunResponse'
-        '404':
-          description: Прогон не найден
-
   /sangraha/internal/lexicon/classifications:
     get:
       operationId: listClassificationsForReview

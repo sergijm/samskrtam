@@ -57,13 +57,8 @@ public class LexiconController {
             @RequestBody StartClassificationRunRequest request,
             @RequestHeader(value = USER_ID_HEADER, required = false) String userId) {
         ClassificationRunResponse response = runService.startRun(
-                request.schemeCode(), request.batchSize(), request.batchCount(), userId);
+                request.schemeCode(), request.batchSize(), request.batchCount(), request.llmModel(), userId);
         return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/classification/runs/{runId}")
-    public ResponseEntity<ClassificationRunResponse> getRun(@PathVariable UUID runId) {
-        return ResponseEntity.ok(runService.getRun(runId));
     }
 
     @GetMapping("/classifications")

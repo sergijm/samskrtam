@@ -18,7 +18,7 @@
 **Разделение ответственности (архитектурное решение 2026-08):**
 - curriculum-service — **что спросить**: композиция последовательности, рендер вопросов, дистракторы.
 - quiz-service — **как проходит пользователь**: отбор с учётом прогресса (due/new/reserve,
-  statusFilter), жизненный цикл сессии, `quiz_item_score`, outbox-события.
+  прогресс-сеты `progressTagSetId`), жизненный цикл сессии, `quiz_item_score`, outbox-события.
 
 Топиков много и они двух доменов (GRAMMAR — десятки, LEXICON — десятки, см.
 curriculum-service.md §V3 `topic.domain`). Сессия может смешивать оба домена и несколько
@@ -127,7 +127,7 @@ POST `/api/v2/curriculum/sessions/compose`
 ## 5. План интеграции с quiz-service (следующий инкремент)
 
 Целевой поток (контракт уже согласован):
-1. quiz-service получает от фронтенда сессию как набор `(topicCode, count)` + опц. `statusFilter`.
+1. quiz-service получает от фронтенда сессию как набор `(topicCode, count)` + опц. `progressTagSetId`.
 2. quiz-service запрашивает у curriculum-service **полный пул** топика
    (`QuestItemRepository.findByTopicId`) и применяет свой прогресс-отбор (`quiz_item_score`,
    SRS): выбирает count единиц на топик с учётом due/new/reserve.

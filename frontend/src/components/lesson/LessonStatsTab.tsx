@@ -53,8 +53,8 @@ export const LessonStatsTab = ({ statusSummary, quizPath }: LessonStatsTabProps)
 
   const { newCount, learning, mastered, reviewDue } = statusSummary;
 
-  const handleStatusClick = (statusFilter: string) => {
-    navigate(quizPath);
+  const handleStatusClick = (progressTagSetId: string) => {
+    navigate(`${quizPath}?progressTagSetId=${progressTagSetId}`);
   };
 
   return (
@@ -90,7 +90,7 @@ export const LessonStatsTab = ({ statusSummary, quizPath }: LessonStatsTabProps)
         buttonLabel={isRu ? 'Повторить' : 'Review'}
         buttonIcon="pi pi-history"
         disabled={reviewDue <= 0}
-        onClick={() => handleStatusClick('REVIEW')}
+        onClick={() => handleStatusClick('MASTERED')}
       />
     </div>
   );

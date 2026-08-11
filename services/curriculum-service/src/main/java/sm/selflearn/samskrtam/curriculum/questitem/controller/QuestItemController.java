@@ -61,7 +61,6 @@ public class QuestItemController {
      * newly generated items.
      */
     @PostMapping("/regenerate")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Integer>> regenerate(
             @RequestParam UUID topicId,
             @RequestParam String itemType) {

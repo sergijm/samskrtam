@@ -140,85 +140,28 @@ XUserLocaleHeader:
     example: ru
 
 
-FilterScopeParam:
+ProgressTagSetIdParam:
 
-  name: filterScope
-
-  in: query
-
-  required: false
-
-  description: Filter scope for quiz session (CASE_ONLY or CASE_NUMBER_GENDER)
-
-  schema:
-
-    type: string
-
-    enum: [CASE_ONLY, CASE_NUMBER_GENDER]
-
-
-FilterCaseTypeParam:
-
-  name: filterCaseType
-
-  in: query
-
-  required: false
-
-  description: Case type filter (NOMINATIVE, ACCUSATIVE, etc.)
-
-  schema:
-
-    type: string
-
-
-FilterNumberTypeParam:
-
-  name: filterNumberType
-
-  in: query
-
-  required: false
-
-  description: Number type filter (SINGULAR, DUAL, PLURAL)
-
-  schema:
-
-    type: string
-
-
-FilterGenderParam:
-
-  name: filterGender
-
-  in: query
-
-  required: false
-
-  description: Gender filter (MASCULINE, FEMININE, NEUTER, UNSPECIFIED)
-
-  schema:
-
-    type: string
-
-
-StatusFilterParam:
-
-  name: statusFilter
+  name: progressTagSetId
 
   in: query
 
   required: false
 
   description: >
-    Manual bucket filter for session generation, independent of filterScope
-    (see quiz-generator-spec.md §3/§4). NEW - items without a quiz_item_score
-    row. LEARNING - started items not yet mastered (LEARNING or DIFFICULT
-    bucket). REVIEW - mastered items past nextReviewAt (ADR-007). Used by the
-    LessonStatsBadges component to start/resume a session scoped to one bucket.
+    Stable id of a named progress-tag set used to start/resume a session scoped to a
+    subset of a lesson's progress (see quest-engine.md §2.4, quiz-generator-spec.md §3/§4).
+    NEW - tags without a quiz_item_score row. LEARNING - started tags not yet mastered.
+    MASTERED - tags at or above masteredLowerThreshold (DUE detail selection happens
+    inside this set). DIFFICULT - orthogonal set (consecutiveMistakes >= 2 or score <=
+    difficultUpperThreshold), with hysteresis on exit. Declension lessons add
+    SINGULAR/DUAL/PLURAL (by number) and case pairs ACC_LOC/INS_ABL/GEN_LOC/DAT_ACC.
+    Used by the LessonStatsBadges/LessonStatsTab components and GrammarProgressGrid
+    headers to start/resume a session over one named set. Resume is matched by the
+    equality of progressTagSetId stored on the IN_PROGRESS session.
 
   schema:
 
     type: string
 
-    enum: [NEW, LEARNING, REVIEW]
+    enum: [NEW, LEARNING, MASTERED, DIFFICULT, SINGULAR, DUAL, PLURAL, ACC_LOC, INS_ABL, GEN_LOC, DAT_ACC]

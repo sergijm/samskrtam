@@ -1,14 +1,9 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSubmitQuizAnswer } from './useQuiz';
-import { LessonType } from '../types/quizEnums';
 import type { QuestionAnswerPayload, AnswerRequest } from '../types/quiz';
 import type { QuizSessionState } from './useQuizSessionState';
 
-/**
- * Принимает ВЕСЬ QuizSessionState (raw + derived).
- * Возвращает handleSubmitAnswer / handleNextQuestion / submitAnswerMutation.
- */
 export function useSubmitAnswerHandler(s: QuizSessionState) {
   const { i18n } = useTranslation();
   const submitAnswerMutation = useSubmitQuizAnswer();
@@ -16,8 +11,8 @@ export function useSubmitAnswerHandler(s: QuizSessionState) {
   const handleSubmitAnswer = useCallback((
     optionIdToSubmit: QuestionAnswerPayload,
   ) => {
-    const { sessionId, currentQuestion, quizSummaryData, startTime, questions, currentQuestionIndex } = s;
-    if (!sessionId || !currentQuestion || !quizSummaryData) return;
+    const { sessionId, currentQuestion, startTime, questions, currentQuestionIndex } = s;
+    if (!sessionId || !currentQuestion) return;
 
     const isMatching =
       currentQuestion.answerMode === 'MATCHING' || currentQuestion.questionType === 'MATCHING';
@@ -64,12 +59,7 @@ export function useSubmitAnswerHandler(s: QuizSessionState) {
         responseTimeMs: Date.now() - startTime,
       };
       submitAnswerMutation.mutate(
-        {
-          sessionId,
-          quizIdentifier: quizSummaryData.quizId,
-          lessonType: quizSummaryData.lessonType,
-          answerRequest: freeTextRequest,
-        },
+        { sessionId, answerRequest: freeTextRequest },
         { onSuccess: handleResponse, onError: handleError },
       );
       return;
@@ -91,12 +81,7 @@ export function useSubmitAnswerHandler(s: QuizSessionState) {
         matchSubmissions: submissions,
       };
       submitAnswerMutation.mutate(
-        {
-          sessionId,
-          quizIdentifier: quizSummaryData.quizId,
-          lessonType: quizSummaryData.lessonType,
-          answerRequest,
-        },
+        { sessionId, answerRequest },
         { onSuccess: handleResponse, onError: handleError },
       );
       return;
@@ -105,7 +90,6 @@ export function useSubmitAnswerHandler(s: QuizSessionState) {
     const optionIdsArray = Array.isArray(optionIdToSubmit) ? optionIdToSubmit as string[] : [optionIdToSubmit as string];
 
     if (isMultiSelect) {
-      // For multi-select, store array; single option stored as string for backward compat
       s.setSelectedOptionIds(optionIdsArray);
     } else {
       const singleId = Array.isArray(optionIdToSubmit) ? optionIdToSubmit[0] as string : optionIdToSubmit as string;
@@ -114,24 +98,16 @@ export function useSubmitAnswerHandler(s: QuizSessionState) {
 
     const questionId = currentQuestion.id;
     const responseTimeMs = Date.now() - startTime;
-    const selectedOption = currentQuestion.options.find((opt) => opt.id === optionIdsArray[0]);
-    const selectedFormIast = selectedOption?.formIast;
 
     const answerRequest: AnswerRequest = {
       questionId,
       selectedOptionId: isMultiSelect ? '' : optionIdsArray[0],
-      selectedFormIast: quizSummaryData.lessonType !== LessonType.VOCABULARY ? selectedFormIast : undefined,
       responseTimeMs,
       ...(isMultiSelect ? { selectedOptionIds: optionIdsArray } : {}),
     };
 
     submitAnswerMutation.mutate(
-      {
-        sessionId,
-        quizIdentifier: quizSummaryData.quizId,
-        lessonType: quizSummaryData.lessonType,
-        answerRequest,
-      },
+      { sessionId, answerRequest },
       {
         onSuccess: (data) => {
           if (data.isCorrect) {
@@ -179,4 +155,3 @@ export function useSubmitAnswerHandler(s: QuizSessionState) {
 
   return { handleSubmitAnswer, handleNextQuestion, submitAnswerMutation };
 }
-

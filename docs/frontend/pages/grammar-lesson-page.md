@@ -1,9 +1,9 @@
 # GrammarLessonPage (`/lessons/grammar/:type`)
 
-> ⚠️ **Требует согласования:** этот документ описывает UI-контракт (`filterScope`, `statusFilter=REVIEW`, `lessonId`) в терминах старой модели прогресса quiz-service. Модель прогресса и API сессий переработаны — см. [services/quest-engine.md](../../services/quest-engine.md). Детали фронтенд-контракта в этом файле нуждаются в пересмотре под новый API (`questId`, статусы NEW/LEARNING/DUE/MASTERED, без ручного `filterScope`).
+> Актуализирован под модель прогресс-сетов (ProgressTagSet) — см. [services/quest-engine.md](../../services/quest-engine.md). Запуск квиза — по стабильному `progressTagSetId`, без ручных фильтров.
 
 > Вынесено из [lesson-pages-spec.md](./lesson-pages-spec.md) §3 по правилу лимита 350 строк (conventions.md §9, паттерн «индекс + подпапка»).
-> Связанные файлы: [lesson-pages-spec.md](./lesson-pages-spec.md) (общая концепция, VocabularyLessonPage, роутинг, типы, acceptance criteria) · [quest-engine.md](../../services/quest-engine.md) §3.4 (filterScope) · [quest-engine.md](../../services/quest-engine.md) §3 (statusFilter)
+> Связанные файлы: [lesson-pages-spec.md](./lesson-pages-spec.md) (общая концепция, VocabularyLessonPage, роутинг, типы, acceptance criteria) · [quest-engine.md](../../services/quest-engine.md) §3 (прогресс-сеты)
 > Status: **DRAFT**
 
 ---
@@ -32,8 +32,8 @@
 |---|---|
 | `NEW` | серый (`text-color-secondary` / нейтральный) |
 | `LEARNING` | синий (`text-primary`) |
-| `REVIEW` | жёлтый (`text-yellow-500`) |
 | `MASTERED` | зелёный (`text-green-500`) |
+| `DIFFICULT` (ортогональная ось) | красный (`text-red-500`) |
 
 Цвета переиспользуют ту же палитру, что и `WordStatusIcon` (см. `frontend/src/components/lesson/WordStatusIcon.tsx`), чтобы не заводить второй источник цветовой кодировки статуса. Реализация — через `PrimeReact ProgressBar` с кастомным CSS-классом на цвет заливки (`--progressbar-value-bg` / аналог, конкретный механизм окраски определяет Агент 3 при реализации, единственное требование — использовать один и тот же маппинг статус→цвет во всех трёх таблицах, вынесенный в общую утилиту, а не дублируемый в каждом компоненте).
 
@@ -55,8 +55,8 @@
 
 **Разметка таблицы:**
 - Заголовок первой колонки пуст (угловая ячейка).
-- Первая строка — заголовки столбцов: название числа (`numberRu`/`numberEn` по локали, берётся из `aggregateByNumber(questions)` — переиспользуется только как источник локализованных названий, не для агрегации). **Кликабельно** → запускает/резюмирует квиз `filterScope=NUMBER_ONLY&filterNumberTypes=<numberType>` (тот же переход, что раньше выполняла строка/кнопка `NumberAggregationTable` — контракт не меняется, см. `quest-engine.md` §3.4).
-- Первая колонка каждой строки — название падежа (`caseRu`/`caseEn`, аналогично из `aggregateByCase`). **Кликабельно** → `filterScope=CASE_ONLY&filterCaseType=<caseType>` (контракт бывшей `CaseAggregationTable`, не меняется).
+- Первая строка — заголовки столбцов: название числа (`numberRu`/`numberEn` по локали, берётся из `aggregateByNumber(questions)` — переиспользуется только как источник локализованных названий, не для агрегации). **Кликабельно** → запускает/резюмирует квиз `progressTagSetId=<SINGULAR|DUAL|PLURAL>` по срезу соответствующего числа (см. quest-engine.md §2.4).
+- Первая колонка каждой строки — название падежа (`caseRu`/`caseEn`, аналогично из `aggregateByCase`). **Кликабельно** → `progressTagSetId=<ACC_LOC|INS_ABL|GEN_LOC|DAT_ACC>` — квиз по паре падежей, в которую входит данный (омонимичные окончания, architecture.md §3.3; если падеж не входит ни в одну пару — по этому одному падежу).
 - Остальные ячейки (падеж×число) — `MiniProgressBar` (см. `components/common/MiniProgressBar.tsx`, уже используется в старых `CaseAggregationTable`/`NumberAggregationTable`) со `value=aggregatedProgress`, `status` для цвета, **без `onClick`** — по прямому решению пользователя клик по самой ячейке ничего не запускает (там нет отдельного смысла «выбрать»: запуск квиза целиком описывается осями заголовков). Ячейка без данных (нет вопросов для этой пары падеж×число в уроке) рендерится пустой/прочерком, без `MiniProgressBar`.
 - Детальная таблица вопросов (бывшая «Подробно», клик `{nSuccess}/{nAll}` → `QuestionHistoryDialog`) в этой вкладке не воспроизводится — при удалении `GrammarDetailsTable` из страницы удаляется и вызов `QuestionHistoryDialog` вместе с состояниями `selectedCaseType`/`selectedNumberType`/`selectedGender`/`questionHistoryDialogVisible`/`sortField`/`sortOrder`, которые существовали только ради неё.
 
@@ -71,13 +71,13 @@
 | Строка | Значение | Кнопка | Клик запускает/резюмирует квиз |
 |---|---|---|---|
 | Всего | `{statusSummary.total}` | — | — |
-| Не изучено | `{statusSummary.newCount}` | «Изучить» | `statusFilter=NEW` |
-| В процессе | `{statusSummary.learning}` | «Продолжить» | `statusFilter=LEARNING` |
-| Изучено | `{statusSummary.mastered}` | «Повторить» | `statusFilter=REVIEW` (доступно при `reviewDue > 0`, см. architecture.md §3.6) |
+| Не изучено | `{statusSummary.newCount}` | «Изучить» | `progressTagSetId=NEW` |
+| В процессе | `{statusSummary.learning}` | «Продолжить» | `progressTagSetId=LEARNING` |
+| Изучено | `{statusSummary.mastered}` | «Повторить» | `progressTagSetId=MASTERED` (внутри сета отбор деталей — см. quest-engine.md §2.4) |
 
-**Поведение:** идентично `LessonStatsBadges` — клик по кнопке вызывает `POST /quiz/{slug}/sessions/start-or-resume?...&statusFilter=<NEW|LEARNING|REVIEW>` и переходит на `/quiz/grammar/:type`, квиз стартует или резюмируется в зависимости от наличия IN_PROGRESS-сессии с тем же `statusFilter`. Кнопка строки с нулевым значением (`newCount === 0`, `learning === 0`, либо для «Изучено» — `reviewDue === 0`) недоступна (`disabled`), строка остаётся видимой.
+**Поведение:** идентично `LessonStatsBadges` — клик по кнопке вызывает `POST /quiz/{slug}/sessions/start-or-resume?progressTagSetId=<NEW|LEARNING|MASTERED>` и переходит на `/quiz/grammar/:type`, квиз стартует или резюмируется в зависимости от наличия IN_PROGRESS-сессии с тем же `progressTagSetId`. Кнопка строки с нулевым значением (`newCount === 0`, `learning === 0`, `mastered === 0`) недоступна (`disabled`), строка остаётся видимой.
 
-Кнопки этой вкладки готовы и выполняют полезное действие — `statusFilter` реализован на бэкенде (см. [quest-engine.md §3](../../services/quest-engine.md) и `quiz-generator-spec.md` §3/§7 п.5).
+Кнопки этой вкладки готовы и выполняют полезное действие — `progressTagSetId` реализован на бэкенде (см. [quest-engine.md §2.4](../../services/quest-engine.md) и `quiz-generator-spec.md` §3/§7 п.5).
 
 ## 2.2. GrammarParadigmTable (вкладка «Парадигмы»)
 
@@ -132,4 +132,4 @@
 
 
 
-**Клик по ячейке** (когда есть форма) — запускает или резюмирует квиз, отфильтрованный именно на эту комбинацию: `POST /quiz/{slug}/sessions/start-or-resume?...&filterScope=CASE_NUMBER_GENDER&filterCombinations=<caseType>:<numberType>:<gender>` (тот же контракт, что уже используют `filterScope`-фильтры declension-квиза, см. quest-engine.md §3.4 — в отличие от `statusFilter`, эта ветка **реализована** на бэкенде, доп. работы у Агента 2 не требуется), затем переход на `/quiz/grammar/:type`.
+**Клик по ячейке** (когда есть форма) — запускает или резюмирует квиз, отфильтрованный именно на эту комбинацию: `POST /quiz/{slug}/sessions/start-or-resume?progressTagSetId=<ACC_LOC|INS_ABL|GEN_LOC|DAT_ACC|SINGULAR|DUAL|PLURAL>` по ближайшему именованному срезу, покрывающему ячейку (тот же контракт, что используют заголовки §2.1а и бейджи LessonStatsTab — см. quest-engine.md §2.4, ветка **реализована** на бэкенде, доп. работы у Агента 2 не требуется), затем переход на `/quiz/grammar/:type`.

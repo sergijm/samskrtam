@@ -70,11 +70,9 @@ submitAnswer_anyAnswer_savesOutboxEvent()         // Outbox Pattern
 completeSession_allAnswered_changesStatusToDone()
 completeSession_publishes_QuizSessionStatusChangedEvent() // Outbox
 
-// integration/api/QuizSessionControllerTest.java
-GET /sessions/start → 200 + sessionId
-POST /sessions/{id}/answer без JWT → 401
-POST /sessions/{id}/answer с STUDENT JWT → 200
-GET /sessions/{id}/resume → восстанавливает состояние
+// integration/api/QuizSessionV2ControllerTest.java
+POST /api/v2/quiz/compose → 200 + sessionId
+GET /api/v2/quiz/sessions/{sessionId}/answers без JWT → 401
 ```
 
 ### curriculum-service
@@ -198,7 +196,7 @@ test
 ```
 ✅ Написаны тесты:
 - services/quiz-service/src/test/.../unit/service/QuizSessionServiceTest.java (12 тестов)
-- services/quiz-service/src/test/.../integration/api/QuizSessionControllerTest.java (5 тестов)
+- services/quiz-service/src/test/.../integration/api/QuizSessionV2ControllerTest.java (5 тестов)
 
 ✅ Покрытие: 83% (порог 80% ✓)
 

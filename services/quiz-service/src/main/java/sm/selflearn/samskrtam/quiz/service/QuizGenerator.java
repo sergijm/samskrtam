@@ -7,9 +7,9 @@ import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.quiz.config.QuizGeneratorConfig;
 import sm.selflearn.samskrtam.quiz.dto.QuestPoolItemDto;
 import sm.selflearn.samskrtam.quiz.model.ItemType;
+import sm.selflearn.samskrtam.quiz.model.ProgressTagSetId;
 import sm.selflearn.samskrtam.quiz.model.QuizItem;
 import sm.selflearn.samskrtam.quiz.model.QuizItemScore;
-import sm.selflearn.samskrtam.quiz.model.StatusFilter;
 import sm.selflearn.samskrtam.quiz.repository.QuizItemScoreRepository;
 
 import java.time.Instant;
@@ -38,7 +38,7 @@ public class QuizGenerator {
 
     private final QuizItemScoreRepository quizItemScoreRepository;
     private final QuizGeneratorConfig config;
-    private final QuizStatusFilteredGenerator statusFilteredGenerator;
+    private final QuizProgressTagSetGenerator progressTagSetGenerator;
 
     /**
      * Отобрать список {@link QuizItem} для сессии.
@@ -218,14 +218,23 @@ public class QuizGenerator {
     }
 
     /**
-     * Отобрать список {@link QuizItem} для сессии с ручным фильтром по бакету (§4 п.«2а»).
-     * Делегирует в {@link QuizStatusFilteredGenerator}.
+     * Отобрать список {@link QuizItem} для сессии по именованному прогресс-сету (§4 п.«2а»).
+     * Делегирует в {@link QuizProgressTagSetGenerator}.
+     *
+     * @return Mono со списком QuizItem; если пул сета пуст — Mono.empty() (→ SCOPE_FILTER_EMPTY)
      */
-    public Mono<List<QuizItem>> generateStatusFiltered(
+    public Mono<List<QuizItem>> generateByProgressTagSet(
             UUID userId,
             ItemType itemType,
             List<QuestPoolItemDto> pool,
-            StatusFilter statusFilter) {
-        return statusFilteredGenerator.generate(userId, itemType, pool, statusFilter);
+            String progressTagSetId) {
+        ProgressTagSetId set;
+        try {
+            set = ProgressTagSetId.valueOf(progressTagSetId);
+        } catch (IllegalArgumentException e) {
+            throw new sm.selflearn.samskrtam.common.SamskrtamException(
+                    "UNKNOWN_PROGRESS_TAG_SET", "Unknown progress tag set: " + progressTagSetId);
+        }
+        return progressTagSetGenerator.generate(userId, itemType, pool, set);
     }
 }

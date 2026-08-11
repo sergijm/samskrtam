@@ -18,9 +18,7 @@ import {
 } from '../../hooks/useSangraha';
 import { useVocabularyLesson } from '../../hooks/useLessons';
 import { sangrahaApi } from '../../api/sangraha';
-import { quizApi } from '../../api/quizApi';
 import { useLocaleStore } from '../../store/localeStore';
-import { LessonType } from '../../types/quiz';
 import { verseStatusIcon } from '../../utils/verseStatus';
 import type { VerseStatus } from '../../types/sangraha';
 import type { StandaloneVerseItemDto } from '../../types/sangraha';
@@ -116,22 +114,11 @@ const AnalysisPage = () => {
     if (!selectedId) return;
     try {
       const quizRes = await study.mutateAsync(selectedId);
-      const { quizSlug, quizId } = quizRes.data;
+      const { quizSlug } = quizRes.data;
 
       queryClient.invalidateQueries({ queryKey: ['lesson', 'vocabulary', quizSlug] });
 
-      const locale = useLocaleStore.getState().locale;
-      const sessionRes = await quizApi.startOrResumeWithStatusFilter(
-        quizId,
-        LessonType.VOCABULARY,
-        locale,
-        'NEW',
-      );
-      const sessionData = sessionRes.data;
-
-      navigate(`/quiz/vocabulary/${quizSlug}/${sessionData.sessionId}`, {
-        state: { sessionData },
-      });
+      navigate(`/quiz/vocabulary/${quizSlug}/new`);
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     }

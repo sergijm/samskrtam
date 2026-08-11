@@ -6,60 +6,58 @@
 
 ## 1. Поддерживаемые типы квизов
 
-Сервис поддерживает все типы квизов платформы: склонения (DECLENSIONS), спряжения (CONJUGATIONS), лексика (VOCABULARY). Тип квиза указывается в пути эндпоинта и определяет логику генерации вопросов и проверки ответов.
+Сервис поддерживает все типы квизов платформы: склонения (DECLENSIONS), спряжения (CONJUGATIONS), лексика (VOCABULARY). Тип квиза определяется itemType quest-единиц топика.
 
 ## 2. Жизненный цикл сессии
 
-Сессия последовательно проходит три состояния: IN_PROGRESS, COMPLETED (возможно FAILED в будущем).
+Сессия последовательно проходит состояния: IN_PROGRESS → COMPLETED.
 
-### Старт сессии
+### Старт сессии (compose)
 
-Клиент отправляет GET-запрос с типом квиза и опциональным quizId. Сервис:
-- Вызывает curriculum-service (POST generate-quiz-data) для генерации набора вопросов.
-- Сохраняет сессию в таблицу quiz_session со статусом IN_PROGRESS.
-- Сохраняет полный список вопросов в таблицу session_questions — это единственное персистентное хранилище вопросов сессии.
-- Для DECLENSIONS/CONJUGATIONS генерирует варианты ответа (дистракторы) на лету с помощью DeclensionOptionGeneratorService / LexicalOptionGeneratorService (см. описание дистракторов в файле quiz-service-repositories.md). Дистракторы не сохраняются.
-- Публикует событие QuizSessionStatusChangedEvent (status=IN_PROGRESS) через Outbox Pattern.
-- Возвращает StartSessionResponse, содержащий первый вопрос с вариантами.
+Клиент отправляет POST `/api/v2/quiz/compose` с `QuestComposeRequest`. Сервис:
+- Получает лёгкий пул топика у curriculum-service (id, itemType, progressTag)
+- Выполняет прогресс-отбор через `QuizGenerator` (due/new/reserve)
+- Отправляет отобранные itemIds в curriculum-service на композицию (материализация prompt + correctAnswer + distractors + payload)
+- Сохраняет сессию в `quiz_session` со статусом IN_PROGRESS
+- Сохраняет вопросы в `session_questions` (опции фиксируются при старте)
+- Публикует `QuizSessionStatusChangedEvent` (status=IN_PROGRESS) через Outbox
+- Возвращает `ComposeQuizResponse` с первым вопросом и вариантами
 
-### Возобновление сессии
+### Возобновление сессии (resume)
 
-Клиент отправляет GET-запрос с идентификатором сессии. Сервис:
-- Восстанавливает QuizSession по ID из БД.
-- Загружает вопросы сессии из session_questions (curriculum-service для этого не вызывается).
-- Для текущего вопроса генерирует дистракторы заново — здесь вызывается curriculum-service (getDeclensionForms) для получения форм для дистракторов.
-- Возвращает ResumeSessionResponse с текущим вопросом и вариантами.
+Клиент отправляет GET с идентификатором сессии. Сервис:
+- Восстанавливает `QuizSession` по ID из БД
+- Загружает вопросы из `session_questions` (curriculum-service для этого не вызывается)
+- Регидратирует опции через `ComposedQuestionMapper` (детерминированные id)
+- Возвращает `StartOrResumeResponse` с текущим вопросом
 
-### Ответ на вопрос
+### Ответ на вопрос (answer)
 
-Клиент отправляет POST-запрос с идентификатором сессии и телом AnswerRequest. Сервис:
-- Проверяет существование сессии и принадлежность пользователю.
-- Проверяет, что вопрос ещё не был отвечен.
-- Загружает детали вопроса из session_questions (не из curriculum-service).
-- Проверяет правильность ответа по строковому сравнению (selected_form_iast / correct_form_iast). Для VOCABULARY учитывается targetLanguage.
-- Сохраняет ответ в quiz_answers и обновляет сессию (answered_questions, score).
-- Публикует QuizAnsweredEvent через Outbox Pattern.
-- Возвращает AnswerResponse с результатом и, если квиз завершён, следующим вопросом.
+Клиент отправляет POST с идентификатором сессии и `AnswerRequest`. Сервис:
+- Проверяет существование сессии и принадлежность пользователю
+- Проверяет что вопрос ещё не был отвечен
+- Загружает детали вопроса из `session_questions`
+- Сравнивает выбранную опцию с `correctAnswer` (или проверяет match-сабмишены)
+- Сохраняет ответ в `quiz_answers` и обновляет сессию (answered_questions, score)
+- Публикует `QuizAnsweredEvent` через Outbox
+- Возвращает `AnswerResponse`
 
-### Завершение сессии
+### Завершение сессии (complete)
 
-Клиент отправляет POST-запрос с идентификатором сессии. Сервис:
-- Проверяет существование сессии и принадлежность пользователю.
-- Загружает все ответы и вопросы сессии.
-- Обновляет статус сессии на COMPLETED.
-- Публикует QuizSessionStatusChangedEvent (status=COMPLETED) через Outbox Pattern.
-- Возвращает CompleteSessionResponse с итоговой статистикой.
-
-### Проверка прогресса
-
-Клиент отправляет GET-запрос с userId и quizId. Сервис находит последнюю незавершённую сессию для этой пары и возвращает QuizProgressDto.
+Клиент отправляет POST с идентификатором сессии. Сервис:
+- Проверяет существование и принадлежность
+- Загружает все ответы и вопросы
+- Обновляет статус на COMPLETED
+- Публикует `QuizSessionStatusChangedEvent` через Outbox
+- Возвращает `CompleteSessionResponse`
 
 ## 3. Реактивный pipeline (QuizSessionService)
 
-Все методы сервиса строятся как реактивные цепочки Reactor (Mono/Flux) с использованием R2DBC, WebClient и ReactiveKafkaProducerTemplate. Ключевой принцип — атомарность: запись в БД и публикация события Outbox выполняются в рамках одной транзакционной цепочки.
+Все методы — реактивные цепочки Reactor (Mono/Flux) с R2DBC, WebClient и ReactiveKafkaProducerTemplate. Ключевой принцип — атомарность: запись в БД и публикация Outbox в одной транзакционной цепочке.
 
 Методы:
-- startSession: получает вопросы от curriculum-service, сохраняет сессию и вопросы, публикует Outbox-событие.
-- resumeSession: восстанавливает сессию и вопросы, генерирует дистракторы с вызовом curriculum-service.
-- submitAnswer: проверяет ответ, сохраняет, публикует Outbox-событие.
-- completeSession: завершает сессию, публикует Outbox-событие.
+- `startOrResumeSessionByTopic`: compose в curriculum-service, сохранение сессии и вопросов, Outbox
+- `resumeSession`: восстановление из БД, регидратация опций
+- `submitAnswer`: проверка, сохранение, Outbox
+- `completeSession`: завершение, Outbox
+- `retakeSession`: сброс ответов, новый показ вопросов
