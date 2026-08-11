@@ -1,4 +1,4 @@
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSandhiRules } from '../../hooks/useLessons';
 import { Skeleton } from 'primereact/skeleton';
@@ -15,14 +15,6 @@ const SANDHI_TITLES: Record<string, { ru: string; en: string }> = {
   'sandhi-visarga': {
     ru: 'Внешние сандхи: висарга',
     en: 'External sandhi: visarga',
-  },
-  'sandhi-vowels-internal': {
-    ru: 'Внутренние сандхи: гласные',
-    en: 'Internal sandhi: vowels',
-  },
-  'sandhi-consonants-internal': {
-    ru: 'Внутренние сандхи: согласные',
-    en: 'Internal sandhi: consonants',
   },
 };
 

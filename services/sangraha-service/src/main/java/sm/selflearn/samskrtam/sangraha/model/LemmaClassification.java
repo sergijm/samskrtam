@@ -68,6 +68,9 @@ public class LemmaClassification {
     @Column(name = "llm_model")
     private String llmModel;
 
+    @Column(name = "batch_id")
+    private UUID batchId;
+
     @Column(name = "reviewed_by")
     private String reviewedBy;
 

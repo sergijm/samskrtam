@@ -79,21 +79,6 @@ public class LlmConfigRegistry {
         return Optional.ofNullable(configs.get(model));
     }
 
-    /**
-     * Резолвит конфигурацию модели с подстановкой placeholder'ов из Environment.
-     * Используется для per-request выбора модели (StartClassificationRunRequest.llmModel).
-     * Не меняет глобальный {@link LlmProperties}.
-     */
-    public Optional<LlmConfig> resolveFor(String modelName) {
-        LlmConfig raw = configs.get(modelName);
-        if (raw == null) return Optional.empty();
-        return Optional.of(new LlmConfig(
-                raw.baseUrl() != null ? resolvePlaceholders(raw.baseUrl()) : null,
-                raw.apiKey() != null ? resolvePlaceholders(raw.apiKey()) : null,
-                raw.twoPass(),
-                raw.maxCompletionTokens()));
-    }
-
     private void apply(LlmConfig config) {
         if (config.baseUrl() != null) llmProperties.setBaseUrl(resolvePlaceholders(config.baseUrl()));
         if (config.apiKey() != null) llmProperties.setApiKey(resolvePlaceholders(config.apiKey()));

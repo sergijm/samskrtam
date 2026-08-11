@@ -17,33 +17,392 @@ servers:
 
 paths:
   /works:
-    $ref: 'paths/works.yaml#/paths/~1works'
+    get:
+      operationId: listWorks
+      summary: Плитки произведений с опциональным фильтром по классификатору
+      tags: [Works]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: classId
+          in: query
+          required: false
+          description: |
+            Повторяющийся параметр — фильтрация по категориям классификатора
+            (множественный выбор). Произведение подходит, если связано хотя бы
+            с одной категорией из запроса, включая все её подкатегории
+            (рекурсивно). Без параметра — все произведения.
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+      responses:
+        '200':
+          description: Список произведений
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'sangraha-schemas.yaml#/WorkSummary'
+
   /works/classes:
-    $ref: 'paths/works.yaml#/paths/~1works~1classes'
+    get:
+      operationId: listWorksClasses
+      summary: Дерево классификатора произведений (для дропдаунов с множественным выбором)
+      description: |
+        Категории сгруппированы по значению classification (GENRE, ERA, …) —
+        одна группа = один TreeSelect на фронтенде.
+      tags: [Works]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Дерево классификатора
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'sangraha-schemas.yaml#/WorksClassGroup'
+
   /works/{workSlug}:
-    $ref: 'paths/works.yaml#/paths/~1works~1{workSlug}'
+    get:
+      operationId: getWorkTreeBySlug
+      summary: Произведение + список глав (без стихов) по slug
+      description: |
+        Основной эндпоинт для страницы произведения (фронтенд: /sangraha/{workSlug}).
+        Возвращает id, slug, titleRu/En и chapters[] с краткой информацией о главах
+        (ChapterSummary — без verses, только verseCount). Стихи загружаются отдельно
+        через GET /chapters/{chapterId}/verses.
+      tags: [Works]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: workSlug
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z0-9][a-z0-9-]*$'
+      responses:
+        '200':
+          description: Произведение со списком глав (без стихов)
+          content:
+            application/json:
+              schema:
+                $ref: 'sangraha-schemas.yaml#/WorkTree'
+        '404':
+          description: Произведение не найдено
+
+  # ── Chapters: single chapter with its verses (NEW) ──
+
   /chapters/{chapterId}/verses:
-    $ref: 'paths/chapters.yaml#/paths/~1chapters~1{chapterId}~1verses'
+    get:
+      operationId: getChapterVerses
+      summary: Одна глава со списком стихов
+      description: |
+        Возвращает главу и полный список её стихов (VersePreview[]).
+        Фронтенд: страница /sangraha/{workSlug}/chapters/{chapterId}.
+      tags: [Chapters]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Глава со списком стихов
+          content:
+            application/json:
+              schema:
+                $ref: 'sangraha-schemas.yaml#/ChapterWithVerses'
+        '404':
+          description: Глава не найдена
+
   /chapters/{chapterId}/verses/analyze-all:
-    $ref: 'paths/chapters.yaml#/paths/~1chapters~1{chapterId}~1verses~1analyze-all'
+    post:
+      operationId: analyzeAllVerses
+      summary: Запустить пакетный LLM-анализ всех стихов главы — кнопка «Анализировать всё»
+      description: |
+        Переводит все стихи главы со статусом DRAFT/FAILED в ANALYZING и запускает
+        один batch-вызов LLM (`submit_verse_analyses`, см.
+        sangraha-prompts/verse-analysis.md) на все эти стихи сразу. Результаты
+        сопоставляются со стихами по verseIndex и сохраняются по одному, той же
+        транзакцией на стих, что и одиночный анализ (см. sangraha-service.md §5.4).
+        Стихи уже в статусе ANALYZING/ANALYZED пропускаются.
+      tags: [Chapters]
+      security:
+        - bearerAuth:
+            - ADMIN
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Пакетный анализ запущен
+          content:
+            application/json:
+              schema:
+                $ref: 'sangraha-schemas.yaml#/AnalyzeAllVersesResponse'
+        '404':
+          description: Глава не найдена
+        '409':
+          description: В главе нет стихов, доступных для анализа
+
+  # ── Verses (read-only + analyze + vocabulary-quiz) ──
+
   /verse:
-    $ref: 'paths/verses.yaml#/paths/~1verse'
+    get:
+      operationId: getVersesByIds
+      summary: Стихи по произвольному списку id (для массового просмотра/ревью)
+      description: |
+        Чтение без ограничения размера списка id (в отличие от анализа — размер
+        на этой ручке не важен). Не найденные/удалённые id просто отсутствуют
+        в verses[] — без ошибки. В отличие от внутреннего /sangraha/internal/content/
+        verses/batch отдаёт status (DRAFT|ANALYZING|ANALYZED|FAILED) каждого стиха.
+        Фронтенд: страница /sangraha/verses, см. sangraha-service/batch-verse-review.md.
+      tags: [Verses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          required: false
+          description: Повторяющийся параметр — список verseId
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+      responses:
+        '200':
+          description: Стихи по порядку id в запросе
+          content:
+            application/json:
+              schema:
+                $ref: 'sangraha-schemas.yaml#/VersesBatchResponse'
+
   /verse/analysis:
-    $ref: 'paths/verses.yaml#/paths/~1verse~1analysis'
+    post:
+      operationId: analyzeVerses
+      summary: Батч-анализ произвольного списка стихов (безусловный повтор)
+      description: |
+        Анализирует все переданные verseId независимо от текущего status — включая
+        уже ANALYZED (полная перезапись существующего VerseAnalysis/VerseWord[]).
+        В отличие от analyze-all — фильтрации по DRAFT/FAILED нет. Входной список
+        разбивается на чанки, обрабатываются последовательно синхронно.
+        Не найденные/удалённые id исключаются молча. См.
+        sangraha-service/batch-verse-review.md.
+      tags: [Verses]
+      security:
+        - bearerAuth:
+            - ADMIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'sangraha-schemas.yaml#/AnalyzeVersesRequest'
+      responses:
+        '202':
+          description: Анализ запущен
+          content:
+            application/json:
+              schema:
+                $ref: 'sangraha-schemas.yaml#/AnalyzeVersesResponse'
+
   /verses/{verseId}:
-    $ref: 'paths/verses.yaml#/paths/~1verses~1{verseId}'
+    get:
+      operationId: getVerse
+      summary: Получить стих (текст + анализ, если ANALYZED)
+      tags: [Verses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: verseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Детали стиха
+          content:
+            application/json:
+              schema:
+                $ref: 'sangraha-schemas.yaml#/VerseDetail'
+        '404':
+          description: Стих не найден
+
   /verses/{verseId}/vocabulary-quiz:
-    $ref: 'paths/verses.yaml#/paths/~1verses~1{verseId}~1vocabulary-quiz'
-  /verses/{verseId}/analysis:
-    $ref: 'paths/verses.yaml#/paths/~1verses~1{verseId}~1analysis'
-  /verses/{verseId}/words:
-    $ref: 'paths/verses.yaml#/paths/~1verses~1{verseId}~1words'
+    post:
+      operationId: getOrCreateVocabularyQuiz
+      summary: Получить (или создать) лексический квиз этого стиха — кнопка «Изучить»
+      description: |
+        Если `verses.vocabulary_quiz_slug`/`vocabulary_quiz_id` уже заполнены —
+        возвращает их немедленно (без quizStatus), без обращения к content-service.
+        Иначе собирает уникальные слова стиха (VerseWord[], дедуп по lemmaIast+stem)
+        и синхронно вызывает content-service `POST /content/internal/sangraha/vocabulary-quiz`
+        (см. content-service.md §11), сохраняет полученные `quizSlug`/`quizId` в
+        `verses.vocabulary_quiz_slug`/`vocabulary_quiz_id` и возвращает их вместе с
+        `quizStatus`.
+      tags: [Verses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: verseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Идентификаторы лексического квиза
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [quizSlug, quizId]
+                properties:
+                  quizSlug:
+                    type: string
+                  quizId:
+                    type: string
+                    format: uuid
+                  quizStatus:
+                    type: string
+                    enum: [CREATED, EXISTING]
+                    nullable: true
+                    description: >-
+                      Присутствует только когда content-service был реально
+                      вызван (не кэш-хит).
+        '404':
+          description: Стих не найден
+        '409':
+          description: Стих ещё не проанализирован (status != ANALYZED) либо не содержит слов
+
   /verses/{verseId}/analyze:
-    $ref: 'paths/verses.yaml#/paths/~1verses~1{verseId}~1analyze'
+    post:
+      operationId: analyzeVerse
+      summary: Сохранить текст и запустить LLM-анализ стиха
+      description: |
+        Единственная точка сохранения текста стиха (Verse CRUD удалён).
+        Принимает обязательное тело `VerseTextRequest` с полем `text`.
+      tags: [Verses]
+      security:
+        - bearerAuth:
+            - ADMIN
+      parameters:
+        - name: verseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'sangraha-schemas.yaml#/VerseTextRequest'
+      responses:
+        '202':
+          description: raw_text сохранён, анализ запущен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verseId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    example: ANALYZING
+        '404':
+          description: Стих не найден
+        '409':
+          description: Стих уже анализируется (status = ANALYZING)
+
   /analysis:
-    $ref: 'paths/analysis.yaml#/paths/~1analysis'
+    post:
+      operationId: createStandaloneAnalysis
+      summary: Создать standalone-стих и запустить LLM-анализ (страница /analysis)
+      description: |
+        Создаёт новую запись в `verses` с `chapter_id = null` и `owner_id` текущего
+        пользователя (стих не привязан к произведению/главе) и сразу запускает
+        анализ. Каждое нажатие «Анализировать» на странице /analysis создаёт новую
+        запись. Доступ — любой авторизованный, стихи персональные.
+      tags: [Analysis]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'sangraha-schemas.yaml#/VerseTextRequest'
+      responses:
+        '200':
+          description: Созданный стих (детали, статус ANALYZING сразу после запуска анализа)
+          content:
+            application/json:
+              schema:
+                $ref: 'sangraha-schemas.yaml#/VerseDetail'
+        '400':
+          description: Пустой текст
+    get:
+      operationId: listStandaloneAnalysis
+      summary: Список standalone-стихов текущего пользователя
+      description: |
+        Standalone-стихи пользователя (chapter_id = null), новые сверху, без
+        контекста произведения/главы — только превью, статус и дата создания.
+      tags: [Analysis]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список разборов пользователя
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'sangraha-schemas.yaml#/StandaloneVerseItem'
+
   /analysis/{verseId}:
-    $ref: 'paths/analysis.yaml#/paths/~1analysis~1{verseId}'
+    delete:
+      operationId: deleteStandaloneAnalysis
+      summary: Удалить standalone-стих (только владелец)
+      tags: [Analysis]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: verseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Мягко удалён
+        '400':
+          description: Стих не standalone либо не принадлежит пользователю
+        '404':
+          description: Стих не найден
 
 components:
   securitySchemes:

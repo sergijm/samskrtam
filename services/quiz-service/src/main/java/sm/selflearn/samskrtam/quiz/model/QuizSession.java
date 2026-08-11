@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.quiz.model;
 
+import io.r2dbc.postgresql.codec.Json;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -26,12 +27,46 @@ public class QuizSession {
     private Instant completedAt;
     private String vocabularyWordsJson;
 
+    // Filter columns for filtered quiz sessions (see docs/services/quiz-service/quiz-declension.md §3.4)
+    private FilterScope filterScope;
+
     /**
-     * Стабильный идентификатор прогресс-сета, по которому запущена/резюмируется сессия
-     * (NEW/LEARNING/MASTERED/DIFFICULT/SINGULAR/DUAL/PLURAL/ACC_LOC/INS_ABL/GEN_LOC/DAT_ACC).
-     * Null — сессия по всему уроку без среза. Участвует в поиске IN_PROGRESS-сессии
-     * для резюма по равенству (см. quest-engine.md §2.4, quiz-declension.md §3.4).
+     * JSONB array of caseType strings. Non-null only when filterScope = CASE_ONLY.
+     * Example: ["NOMINATIVE","ACCUSATIVE"]
      */
-    private String progressTagSetId;
+    private Json filterCaseTypes;
+
+    /**
+     * JSONB array of numberType strings. Non-null only when filterScope = NUMBER_ONLY.
+     * Example: ["SINGULAR","DUAL"]
+     */
+    private Json filterNumberTypes;
+
+    /**
+     * JSONB array of {caseType,numberType,gender} objects.
+     * Non-null only when filterScope = CASE_NUMBER_GENDER.
+     * Example: [{"caseType":"NOMINATIVE","numberType":"SINGULAR","gender":"MASCULINE"}]
+     */
+    private Json filterCombinations;
+
+        /**
+     * Status filter (NEW|LEARNING|REVIEW) for bucket-based quiz sessions.
+     * Null when no status filter applied. Participates in IN_PROGRESS session
+     * lookup for resume: a session with one statusFilter is not resumed
+     * by a click on a badge with a different statusFilter (or without one).
+     */
+    private StatusFilter statusFilter;
+
+    /**
+     * JSONB array of vowelType strings. Non-null only when filterScope = ALL_STEMS.
+     * Example: ["A_STEM","AA_STEM","I_STEM"]
+     */
+    private Json filterVowelTypes;
+
+    /**
+     * JSONB array of gender strings. Non-null only when filterScope = ALL_STEMS.
+     * Example: ["MASCULINE","FEMININE"]
+     */
+    private Json filterGenders;
 }
 

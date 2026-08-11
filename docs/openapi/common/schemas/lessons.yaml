@@ -9,7 +9,7 @@ LessonStatusSummary:
   description: >
     Сводка по статусам QuizItem урока для текущего пользователя (LessonPage).
     Считается на бэкенде из quiz.quiz_item_score (ADR-007), не на фронтенде.
-  required: [total, newCount, learning, mastered, difficult]
+  required: [total, newCount, learning, mastered, reviewDue]
   properties:
     total:
       type: integer
@@ -22,20 +22,20 @@ LessonStatusSummary:
     learning:
       type: integer
       minimum: 0
-      description: Есть строка, score < masteredLowerThreshold (90). Кнопка "Продолжить".
+      description: Есть строка, score < masteredLowerThreshold (90). Кнопка "Повторить".
     mastered:
       type: integer
       minimum: 0
       description: >
-        score >= masteredLowerThreshold (90). Кнопка "Повторить" (сет MASTERED;
-        отбор деталей внутри сета — по DUE, см. quest-engine.md §2.4).
-    difficult:
+        score >= masteredLowerThreshold (90). Включает элементы в статусе REVIEW
+        (см. WordStatus) — reviewDue является подмножеством mastered, не отдельной долей total.
+    reviewDue:
       type: integer
       minimum: 0
       description: >
-        Ортогональная ось, независимая от статуса: строка есть и (consecutiveMistakes >= 2
-        ИЛИ score <= difficultUpperThreshold). Входит в total, пересекается с learning/mastered
-        (см. quest-engine.md §2.4).
+        Подмножество mastered: score >= 90 и nextReviewAt <= now (просрочен контрольный
+        показ). reviewDue > 0 включает кнопку "Повторить" на LessonPage, запускающую
+        сессию с приоритетом due-элементов.
 
 LessonItemDto:
   type: object
@@ -67,7 +67,7 @@ LessonItemDto:
       type: integer
       description: >
         Количество QuizItem урока со score >= masteredLowerThreshold (90) в
-        quiz.quiz_item_score. 100% на плитке урока соответствует
+        quiz.quiz_item_score (включая REVIEW). 100% на плитке урока соответствует
         learnedWords == totalWordsOwn, т.е. все QuizItem урока в статусе MASTERED.
 
 LessonListResponse:

@@ -95,10 +95,3 @@ export const useSandhiRules = (topicCode: string) =>
     enabled: !!topicCode,
   });
 
-export const useSandhiRulesByNumbers = (numbers: number[]) =>
-  useQuery({
-    queryKey: ['sandhi-rules', 'by-number', numbers],
-    queryFn: () => sandhiApi.getRulesByNumbers(numbers).then(res => res.data),
-    enabled: numbers.length > 0,
-  });
-

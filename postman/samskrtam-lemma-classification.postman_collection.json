@@ -1,0 +1,211 @@
+{
+  "info": {
+    "name": "Samskrtam Lemma Classification (direct)",
+    "description": "Прямой вызов sangraha-service (мимо gateway) для классификации лемм. Endpoints: docs/services/sangraha-service/lemma-classification.md. Порт sangraha-service из .env — SANGRAHA_SERVICE_PORT (по умолчанию 8089). Токен не нужен — сервис доверяет заголовку X-User-Id (на проде ADMin; gateway подменяет его на реального пользователя).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "sangrahaBaseUrl",
+      "value": "http://localhost:8089",
+      "type": "string"
+    },
+    {
+      "key": "adminUserId",
+      "value": "00000000-0000-0000-0000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "runId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "classificationId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Refresh lemma statistics",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{adminUserId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "{{sangrahaBaseUrl}}/sangraha/internal/lexicon/lemmas/refresh-statistics",
+          "host": ["{{sangrahaBaseUrl}}"],
+          "path": ["sangraha", "internal", "lexicon", "lemmas", "refresh-statistics"]
+        },
+        "description": "Пересчёт словаря Lemma + статистики LemmaStatistics из корпуса VerseWord (§1.3). Ответ: {lemmaCount, newLemmaCount, updatedLemmaCount, statisticsCount, newStatisticsCount, updatedStatisticsCount}. Выполнить перед классификацией, если корпус менялся."
+      }
+    },
+    {
+      "name": "2. Start classification run",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{adminUserId}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schemeCode\": \"CURRICULUM\",\n  \"batchSize\": 50,\n  \"batchCount\": 10\n}"
+        },
+        "url": {
+          "raw": "{{sangrahaBaseUrl}}/sangraha/internal/lexicon/classification/runs",
+          "host": ["{{sangrahaBaseUrl}}"],
+          "path": ["sangraha", "internal", "lexicon", "classification", "runs"]
+        },
+        "description": "Запуск batch-классификации (§3). batchCount обязателен (лимит на прогон), batchSize по умолчанию 50. Ответ содержит runId — сохраняется в переменную коллекции."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('runId', json.runId);",
+              "pm.test('run started', () => pm.expect(json.runId).to.be.a('string').and.not.empty);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Run status",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{adminUserId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{sangrahaBaseUrl}}/sangraha/internal/lexicon/classification/runs/{{runId}}",
+          "host": ["{{sangrahaBaseUrl}}"],
+          "path": ["sangraha", "internal", "lexicon", "classification", "runs", "{{runId}}"]
+        },
+        "description": "Статус прогона (§3 шаг 6): {runId, schemeCode, requestedBatchCount, completedBatchCount, status, succeededBatchCount, failedBatchCount, classifiedLemmaCount}."
+      }
+    },
+    {
+      "name": "4. List for review",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{adminUserId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{sangrahaBaseUrl}}/sangraha/internal/lexicon/classifications?schemeCode=CURRICULUM&status=CANDIDATE&limit=100",
+          "host": ["{{sangrahaBaseUrl}}"],
+          "path": ["sangraha", "internal", "lexicon", "classifications"],
+          "query": [
+            {
+              "key": "schemeCode",
+              "value": "CURRICULUM"
+            },
+            {
+              "key": "status",
+              "value": "CANDIDATE"
+            },
+            {
+              "key": "limit",
+              "value": "100"
+            }
+          ]
+        },
+        "description": "Список на review (§4): кандидаты, отсортированы по убыванию occurrenceCount статистики (частотные первыми). Пагинация курсором: следующий лист — добавить &cursor={{nextCursor}} из ответа. Первый id сохраняется в переменную classificationId."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.items && json.items.length > 0) {",
+              "  pm.collectionVariables.set('classificationId', json.items[0].id);",
+              "}",
+              "pm.test('returns items', () => pm.expect(json.items).to.be.an('array'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Review / approve",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{adminUserId}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"APPROVED\",\n  \"categoryCode\": \"animals\",\n  \"glossRu\": \"слон\",\n  \"glossEn\": \"elephant\",\n  \"confidence\": 85\n}"
+        },
+        "url": {
+          "raw": "{{sangrahaBaseUrl}}/sangraha/internal/lexicon/classifications/{{classificationId}}",
+          "host": ["{{sangrahaBaseUrl}}"],
+          "path": ["sangraha", "internal", "lexicon", "classifications", "{{classificationId}}"]
+        },
+        "description": "Исправление полей + подтверждение (§4). status=REJECTED — просто отклонить (лемма не экспортируется и не переклассифицируется автоматически). APPROVED требует валидный categoryCode. categoryCode можно опустить (останется текущий)."
+      }
+    },
+    {
+      "name": "6. Export APPROVED",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{adminUserId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{sangrahaBaseUrl}}/sangraha/internal/lexicon/lemma-classifications/export?schemeCode=CURRICULUM&limit=500",
+          "host": ["{{sangrahaBaseUrl}}"],
+          "path": ["sangraha", "internal", "lexicon", "lemma-classifications", "export"],
+          "query": [
+            {
+              "key": "schemeCode",
+              "value": "CURRICULUM"
+            },
+            {
+              "key": "limit",
+              "value": "500"
+            }
+          ]
+        },
+        "description": "Экспорт только APPROVED для curriculum-service (§5). Пагинация курсором по lemmaId (nextCursor из ответа)."
+      }
+    }
+  ]
+}

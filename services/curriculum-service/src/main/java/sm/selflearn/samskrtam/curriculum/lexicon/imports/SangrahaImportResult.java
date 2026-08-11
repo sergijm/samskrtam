@@ -7,6 +7,7 @@ package sm.selflearn.samskrtam.curriculum.lexicon.imports;
 public record SangrahaImportResult(
         int importedCount,
         int updatedCount,
-        int totalLexemeCount
+        int totalLexemeCount,
+        int sourcesTouched
 ) {
 }

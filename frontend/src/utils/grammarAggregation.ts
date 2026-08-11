@@ -139,31 +139,3 @@ export const aggregateByCaseAndNumber = (questions: GrammarQuestionProgress[]): 
   }
   return result;
 };
-
-/**
- * Маппинг numberType → progressTagSetId (см. quest-engine.md §2.4).
- */
-export const numberToProgressTagSetId = (numberType: string): string =>
-  ({ SINGULAR: 'SINGULAR', DUAL: 'DUAL', PLURAL: 'PLURAL' } as Record<string, string>)[numberType] ?? '';
-
-/**
- * Маппинг caseType → progressTagSetId пары омонимичных падежей
- * (ACC_LOC/INS_ABL/GEN_LOC/DAT_ACC, см. quest-engine.md §2.4).
- * Падежи вне пар (NOMINATIVE/VOCATIVE) возвращают '' — квиз без среза.
- */
-export const caseToProgressTagSetId = (caseType: string): string => {
-  switch (caseType) {
-    case 'ACCUSATIVE':
-    case 'LOCATIVE':
-      return 'ACC_LOC';
-    case 'INSTRUMENTAL':
-    case 'ABLATIVE':
-      return 'INS_ABL';
-    case 'GENITIVE':
-      return 'GEN_LOC';
-    case 'DATIVE':
-      return 'DAT_ACC';
-    default:
-      return '';
-  }
-};

@@ -37,29 +37,74 @@ public interface QuizSessionRepository extends ReactiveCrudRepository<QuizSessio
             "WHERE user_id = :userId " +
             "AND lesson_id = :lessonId " +
             "AND status = 'IN_PROGRESS' " +
-            "AND (:status IS NULL OR status = :status) " +
-            "AND progress_tag_set_id IS NULL " +
+            "AND filter_scope IS NULL " +
+            "AND status_filter IS NULL " +
             "ORDER BY started_at DESC LIMIT 1")
     Mono<QuizSession> findTopByUserIdAndLessonIdAndStatusOrderByStartedAtDesc(UUID userId, UUID lessonId, SessionStatus status);
 
     @Modifying
     @Query("UPDATE quiz.quiz_session SET answered_questions = answered_questions + 1, score = CASE WHEN :isCorrect THEN score + 1 ELSE score END WHERE id = :sessionId")
     Mono<Void> incrementAnsweredQuestionsAndScore(UUID sessionId, boolean isCorrect);
+    /**
+     * Find an in-progress session matching the given filter scope and JSONB set.
+     * The JSON strings must be canonical (sorted) for equality comparison.
+     *
+     * @param filterCaseTypes JSONB array string for CASE_ONLY, null otherwise
+     * @param filterNumberTypes JSONB array string for NUMBER_ONLY, null otherwise
+     * @param filterCombinations JSONB array string for CASE_NUMBER_GENDER, null otherwise
+     */
+        @Query("SELECT * FROM quiz.quiz_session " +
+            "WHERE user_id = :userId " +
+            "AND lesson_id = :lessonId " +
+            "AND status = 'IN_PROGRESS' " +
+            "AND status_filter IS NULL " +
+            "AND filter_scope = CAST(:filterScope AS VARCHAR) " +
+            "AND (:filterCaseTypes IS NULL OR filter_case_types = CAST(:filterCaseTypes AS JSONB)) " +
+            "AND (:filterNumberTypes IS NULL OR filter_number_types = CAST(:filterNumberTypes AS JSONB)) " +
+            "AND (:filterCombinations IS NULL OR filter_combinations = CAST(:filterCombinations AS JSONB)) " +
+            "ORDER BY started_at DESC LIMIT 1")
+    Mono<QuizSession> findInProgressByFilter(UUID userId, UUID lessonId, String filterScope,
+                                              String filterCaseTypes, String filterNumberTypes,
+                                              String filterCombinations);
 
     /**
-     * Find an in-progress session matching the given progress-tag set slice.
-     * Resume is matched by the equality of progress_tag_set_id (NULL matches sessions
-     * without a slice). See quest-engine.md §2.4, quiz-declension.md §3.4.
+     * Find an in-progress session matching the given statusFilter.
+     * Sessions without statusFilter (null) or with a different statusFilter are excluded.
      *
-     * @param progressTagSetId stable ProgressTagSet id, or null for whole-lesson sessions
+     * @param statusFilter NEW|LEARNING|REVIEW
+     */
+        @Query("SELECT * FROM quiz.quiz_session " +
+            "WHERE user_id = :userId " +
+            "AND lesson_id = :lessonId " +
+            "AND status = 'IN_PROGRESS' " +
+            "AND filter_scope IS NULL " +
+            "AND status_filter = CAST(:statusFilter AS VARCHAR) " +
+            "ORDER BY started_at DESC LIMIT 1")
+    Mono<QuizSession> findInProgressByStatusFilter(UUID userId, UUID lessonId, String statusFilter);
+
+        /**
+     * Find an in-progress ALL_STEMS session matching filterVowelTypes, filterGenders, filterNumberTypes and filterCaseTypes.
+     * Uses JSONB equality for set comparison. All canonical JSON arrays must be compared as JSONB.
+     *
+     * @param filterVowelTypes  JSONB array string for ALL_STEMS, or null
+     * @param filterGenders     JSONB array string for ALL_STEMS, or null
+     * @param filterNumberTypes JSONB array string, or null
+     * @param filterCaseTypes   JSONB array string, or null
      */
     @Query("SELECT * FROM quiz.quiz_session " +
-            "WHERE user_id = cast( :userId as UUID)" +
-            "AND lesson_id = cast( :lessonId as UUID) " +
-            "AND (:status IS NULL OR status = :status) " +
-            "AND progress_tag_set_id IS NOT DISTINCT FROM CAST(:progressTagSetId AS VARCHAR) " +
+            "WHERE user_id = :userId " +
+            "AND lesson_id = :lessonId " +
+            "AND status = 'IN_PROGRESS' " +
+            "AND status_filter IS NULL " +
+            "AND filter_scope = CAST(:filterScope AS VARCHAR) " +
+            "AND (:filterVowelTypes IS NULL OR filter_vowel_types::jsonb = CAST(:filterVowelTypes AS JSONB)) " +
+            "AND (:filterGenders IS NULL OR filter_genders::jsonb = CAST(:filterGenders AS JSONB)) " +
+            "AND (:filterNumberTypes IS NULL OR filter_number_types::jsonb = CAST(:filterNumberTypes AS JSONB)) " +
+            "AND (:filterCaseTypes IS NULL OR filter_case_types::jsonb = CAST(:filterCaseTypes AS JSONB)) " +
             "ORDER BY started_at DESC LIMIT 1")
-    Mono<QuizSession> findInProgressByProgressTagSet(UUID userId, UUID lessonId, SessionStatus status, String progressTagSetId);
+    Mono<QuizSession> findInProgressByAllStemsFilter(UUID userId, UUID lessonId, String filterScope,
+                                                      String filterVowelTypes, String filterGenders,
+                                                      String filterNumberTypes, String filterCaseTypes);
 
     /** Paginated sessions filtered by quizId (lessonId). */
     @Query("SELECT * FROM quiz.quiz_session " +

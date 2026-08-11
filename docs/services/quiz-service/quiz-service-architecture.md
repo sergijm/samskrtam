@@ -33,29 +33,40 @@ build.gradle.kts:
 - postgresql (для Flyway)
 - samskrtam-dtos (shared)
 
-## 4. Интеграция с curriculum-service (CurriculumClient)
+## 4. Интеграция с curriculum-service (ContentClient)
 
-WebClient для взаимодействия с curriculum-service (API v2):
-- `fetchTopicPool(String topicCode)` — лёгкий пул (id, itemType, progressTag) для прогресс-отбора
-- `fetchQuestItems(UUID topicId, String itemType, int limit)` — случайная выборка материализованных вопросов
-- `composeSession(List<QuestSessionTopicDto>, String userLocale)` — композиция сессии из отобранных itemIds
-- `fetchTopicLesson(String topicCode)` — read-model урока (metadata + tagMetadata)
-- `fetchLessons()` — список всех уроков
-- `fetchParadigmPage(String topicCode, int index)` — страница парадигмы склонений
+WebClient для взаимодействия с curriculum-service:
+- generateQuizData(UUID lessonId, String userLocale): Monо<GeneratedQuizData> — POST generate-quiz-data, вызывается только на start
+- getDeclensionForms(UUID declensionStemId): Mono<List<DeclensionFormDto>> — для генерации дистракторов (вызывается на каждом рендере вопроса)
+- getDeclensionStemsForLesson(String slug)
+- getCaseEndingsByVowelType(String vowelType)
+- getVocabularyWordsForLesson(UUID lessonId, int limit)
+- getVocabularyWordById(UUID wordId)
+- getLessonItem(UUID lessonId)
+- getLessonItemBySlug(String slug)
+- getQuizzesByCategory(String category)
 
-Resume/answer/complete читают вопросы из своей БД.
+Методы getGeneratedQuizData/getGeneratedQuestion удалены — resume/answer/complete читают вопросы из своей БД.
 
-## 5. Вопросы сессии — материализуются при старте и персистятся
+## 5. Депрекация correctAnswerRu/correctAnswerEn в пользу caseEnding
 
-Curriculum-service материализует вопросы (prompt + correctAnswer + distractors + payload), quiz-service сохраняет их в `session_questions` при старте и далее читает только из БД. Опции фиксируются при старте, id опций детерминированы — resume воспроизводит те же опции.
+Поле caseEnding — единственный источник эталонного окончания для грамматических вопросов. correctAnswerRu/correctAnswerEn помечены @Deprecated, больше не заполняются, оставлены для обратной совместимости.
+
+Frontend: должен использовать caseEnding для отображения правильного окончания.
 
 ## 6. Контракт вопроса для фронтенда — деванагари и перевод основы
 
 Путь данных:
-curriculum.quest_item.prompt/correct_answer/distractors → curriculum-service compose → quiz-service сохраняет в session_questions → оттуда отдаётся во фронтенд.
+content.declension_stems.stem_devanagari/translation_ru/en -> DeclensionQuizGeneratorService копирует в QuestionResponse -> quiz-service сохраняет в session_questions -> оттуда отдаётся на StartSessionResponse/ResumeSessionResponse/AnswerResponse во фронтенд.
+
+Поля (только для DECLENSIONS/CONJUGATIONS, для VOCABULARY пустые):
+- stemDevanagari: string
+- stemTranslationRu: string
+- stemTranslationEn: string
 
 Затронутые компоненты:
-- curriculum-service: QuestItem, compose endpoint
-- quiz-service: SessionQuestion, ComposedQuestionMapper, миграция session_questions columns (V14)
+- curriculum-service: DeclensionStem, QuestionResponse, GeneratedQuizQuestionDto
+- quiz-service: SessionQuestion, SessionQuestionMapper, миграция session_questions
+- frontend: SessionQuestion в types/quiz.ts, рендер в QuizQuestionPanel.tsx
 
 AnswerResponse без изменений — перевод основы для варианта ответа не требуется.

@@ -127,7 +127,7 @@ public class QuizProgressTagSetGenerator {
         if (tags.isEmpty()) return Mono.just(Collections.emptyList());
 
         return quizItemScoreRepository
-                .findMasteredItems(userId, itemType, tags,
+                .findReviewItems(userId, itemType, tags,
                         config.getBuckets().getMasteredLowerThreshold(), Instant.now())
                 .collectList()
                 .map(scores -> flattenScoresToItems(scores, tagToIds, sessionSize, itemType));

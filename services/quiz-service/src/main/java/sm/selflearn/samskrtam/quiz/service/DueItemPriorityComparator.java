@@ -12,7 +12,7 @@ import java.util.UUID;
 
 /**
  * Чистая логика приоритизации due-элементов.
- * Используется {@link QuizGenerator} и {@link QuizProgressTagSetGenerator}.
+ * Используется {@link QuizGenerator} и {@link QuizStatusFilteredGenerator}.
  *
  * <p>Поддерживает стратегии:
  * <ul>

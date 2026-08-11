@@ -25,7 +25,7 @@ import java.util.UUID;
  * base data (metadata + unique progress tags with morphology attributes) comes from
  * curriculum-service via {@link CurriculumClient}; per-tag progress is read from
  * {@code quiz_item_score} (keyed as the resolved ItemType + progress_tag) and merged
- * in. This is the curriculum-service-based grammar lesson builder.
+ * in. This is the v2 replacement of the content-service-based {@link GrammarProgressBuilder}.
  */
 @Service
 @RequiredArgsConstructor

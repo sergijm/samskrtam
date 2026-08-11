@@ -40,6 +40,7 @@ export const curriculumTree: CurriculumNode[] = [
         titleKey: 'section.nouns',
         status: 'available',
         children: [
+          { id: '2.1.1.1', titleKey: 'nouns.all_stems', status: 'available', route: '/lessons/grammar/declensions-all' },
           { id: '2.1.1.2', titleKey: 'nouns.a_masc', status: 'available', route: '/lessons/grammar/declensions-a-masc' },
           { id: '2.1.1.3', titleKey: 'nouns.aa_fem', status: 'available', route: '/lessons/grammar/declensions-aa-fem' },
           { id: '2.1.1.4', titleKey: 'nouns.i_u_stems',   status: 'available', route: '/lessons/grammar/declensions-i-u' },
@@ -139,10 +140,12 @@ export const curriculumTree: CurriculumNode[] = [
         titleKey: 'section.sandhi',
         status: 'available',
         children: [
-          { id: '2.1.8.1', titleKey: 'sandhi.rules', status: 'available', route: '/lessons/grammar/sandhi' },
-          { id: '2.1.8.2', titleKey: 'sandhi.vowel', status: 'available', route: '/lessons/grammar/sandhi-vowels-external' },
-          { id: '2.1.8.3', titleKey: 'sandhi.consonant', status: 'available', route: '/lessons/grammar/sandhi-consonants' },
-          { id: '2.1.8.4', titleKey: 'sandhi.visarga', status: 'available', route: '/lessons/grammar/sandhi-visarga' },
+          { id: '2.1.8.1', titleKey: 'sandhi.rules', status: 'available', route: '/grammar/emeneau-rules' },
+          { id: '2.1.8.2', titleKey: 'sandhi.exercises', status: 'available', route: '/grammar/emeneau-exercises' },
+          { id: '2.1.8.3', titleKey: 'sandhi.vowel', status: 'planned' },
+          { id: '2.1.8.4', titleKey: 'sandhi.consonant', status: 'planned' },
+          { id: '2.1.8.5', titleKey: 'sandhi.visarga', status: 'planned' },
+          { id: '2.1.8.6', titleKey: 'sandhi.segmentation', status: 'planned' },
         ],
       },
       // --- 2.1.9 Syntax ----------------------------------------------

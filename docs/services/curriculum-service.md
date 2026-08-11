@@ -205,7 +205,7 @@ Quest Items (v2, DECLENSION_FORM family) — отдельный раздел API
 из корпуса sangraha-service, без AI-enrichment — только эвристики и ручной
 ADMIN-review).
 
-**Явно не заменяет** существовавший per-verse поток (`content.vocabulary_words`,
-сервис content-service удалён из репозитория) — это два параллельных
+**Явно не заменяет** существующий per-verse поток (`content.vocabulary_words`,
+отдельный сервис, см. `content-service.md` §11) — это два параллельных
 механизма над одним и тем же сырьём sangraha-service; их слияние — отдельная
 будущая задача (`lexicon.md` §0 п.2, `lexicon-content-pipeline.md` §6).

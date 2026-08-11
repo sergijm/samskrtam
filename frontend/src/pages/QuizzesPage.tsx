@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from 'primereact/card';
 import { ProgressBar } from 'primereact/progressbar';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuizList } from '../hooks/useQuiz';
+import { useQuizList, useStartOrResumeQuizSession } from '../hooks/useQuiz';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
 import { useMe } from '../hooks/useUser';
@@ -18,6 +18,7 @@ const QuizzesPage: React.FC<QuizzesPageProps> = ({ category: propCategory }) => 
   const navigate = useNavigate();
   const { data: quizList, isLoading: isQuizListLoading, isError: isQuizListError, error: quizListError } = useQuizList(propCategory);
   const { data: user, isLoading: isUserLoading } = useMe();
+  const startOrResumeMutation = useStartOrResumeQuizSession();
 
   const handleQuizClick = (lesson: LessonItemDto) => {
     if (!user) {
@@ -25,17 +26,31 @@ const QuizzesPage: React.FC<QuizzesPageProps> = ({ category: propCategory }) => 
       return;
     }
 
+    // For vocabulary quizzes, navigate to lesson page instead of lesson page
     if ( isVocabularyQuiz(lesson.lessonType)) {
       navigate(`/lessons/vocabulary/${lesson.slug}`);
       return;
     }
 
+    // For grammar quizzes, navigate to lesson page instead of lesson page
     if (isDeclensionsQuiz(lesson.lessonType)) {
       navigate(`/lessons/grammar/${lesson.slug}`);
       return;
     }
 
-    navigate(`/lessons/grammar/${lesson.slug}`);
+    // Fallback to original behavior if needed
+    startOrResumeMutation.mutate(
+      { quizId: lesson.id, lessonType: lesson.lessonType },
+      {
+        onSuccess: (data) => {
+          const quizCategory = data.lessonType.toLowerCase();
+          navigate(`/lesson/${quizCategory}/${lesson.slug}/${data.sessionId}`, { state: { sessionData: data } });
+        },
+        onError: (err) => {
+          console.error('Failed to start or resume lesson session:', err);
+        },
+      }
+    );
   };
 
   if (isQuizListLoading || isUserLoading) {

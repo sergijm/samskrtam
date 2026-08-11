@@ -98,40 +98,42 @@ public class DeclensionQuestItemBatchGenerator {
      *         already generated or the topic is not a declension class)
      */
     @Transactional
-    public int generateForTopic(UUID topicId) {
-        return generate(topicId, EnumSet.allOf(GenerationGroup.class));
+    public int generateForTopic(UUID topicId, int lexemeLimit) {
+        return generate(topicId, EnumSet.allOf(GenerationGroup.class), lexemeLimit);
     }
 
-    /** Generates only DECLENSION_FORM and DECLENSION_FORM_CHOICE. */
     @Transactional
-    public int generateFormsForTopic(UUID topicId) {
-        return generate(topicId, EnumSet.of(GenerationGroup.FORMS));
+    public int generateFormsForTopic(UUID topicId, int lexemeLimit) {
+        return generate(topicId, EnumSet.of(GenerationGroup.FORMS), lexemeLimit);
     }
 
-    /** Generates only CASE_RECOGNITION. */
     @Transactional
-    public int generateCaseRecognitionForTopic(UUID topicId) {
-        return generate(topicId, EnumSet.of(GenerationGroup.CASE_RECOGNITION));
+    public int generateCaseRecognitionForTopic(UUID topicId, int lexemeLimit) {
+        return generate(topicId, EnumSet.of(GenerationGroup.CASE_RECOGNITION), lexemeLimit);
     }
 
-    /** Generates only DECLENSION_MATCH. */
     @Transactional
-    public int generateMatchForTopic(UUID topicId) {
-        return generate(topicId, EnumSet.of(GenerationGroup.MATCH));
+    public int generateMatchForTopic(UUID topicId, int lexemeLimit) {
+        return generate(topicId, EnumSet.of(GenerationGroup.MATCH), lexemeLimit);
     }
 
-    private int generate(UUID topicId, Set<GenerationGroup> groups) {
+    private int generate(UUID topicId, Set<GenerationGroup> groups, int lexemeLimit) {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new EntityNotFoundException("Topic not found: " + topicId));
 
         ClassBinding binding = bindMorphologyClass(topic.getCode());
         if (binding == null) {
-            return 0; // not a declension class — nothing to generate for this topic
+            return 0;
         }
 
         List<Lexeme> lexemes = lexemeRepository.findByMorphologyClasses_Code(topic.getCode());
         if (lexemes.isEmpty()) {
             return 0;
+        }
+
+        if (lexemeLimit > 0 && lexemeLimit < lexemes.size()) {
+            Collections.shuffle(lexemes, RANDOM);
+            lexemes = lexemes.subList(0, lexemeLimit);
         }
 
         String classCode = topic.getCode();

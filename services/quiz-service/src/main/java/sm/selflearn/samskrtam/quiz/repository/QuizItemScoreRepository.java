@@ -85,7 +85,7 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
             """)
     Mono<Long> countLearnedItems(UUID userId, ItemType itemType, int minScore);
 
-    /** Найти записи LEARNING (score &lt; masteredLowerThreshold) — для progressTagSetId=LEARNING. */
+    /** Найти записи LEARNING/DIFFICULT (score &lt; masteredLowerThreshold) — для statusFilter=LEARNING. */
     @Query("""
             SELECT * FROM quiz.quiz_item_score
             WHERE user_id = :userId
@@ -96,11 +96,7 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
     Flux<QuizItemScore> findLearningItems(
             UUID userId, ItemType itemType, List<String> progressTags, int masteredLowerThreshold);
 
-    /**
-     * Найти записи MASTERED, подлежащие повтору (score >= masteredLowerThreshold
-     * AND next_review_at <= now) — для progressTagSetId=MASTERED.
-     * Внутри сета MASTERED отбор деталей — по DUE (см. quest-engine.md §2.4).
-     */
+    /** Найти записи REVIEW (score &gt;= masteredLowerThreshold AND next_review_at &lt;= now) — для statusFilter=REVIEW. */
     @Query("""
             SELECT * FROM quiz.quiz_item_score
             WHERE user_id = :userId
@@ -110,23 +106,27 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
               AND next_review_at <= :now
             ORDER BY next_review_at ASC
             """)
-    Flux<QuizItemScore> findMasteredItems(
+    Flux<QuizItemScore> findReviewItems(
             UUID userId, ItemType itemType, List<String> progressTags, int masteredLowerThreshold, Instant now);
 
-    /**
-     * Найти записи DIFFICULT (consecutive_mistakes >= 2 ИЛИ score <= difficultUpperThreshold,
-     * с гистерезисом выхода difficultExitMargin) — для progressTagSetId=DIFFICULT.
-     */
+    /** Найти записи DIFFICULT (score &lt;= difficultUpperThreshold) с гистерезисом выхода. */
     @Query("""
             SELECT * FROM quiz.quiz_item_score
             WHERE user_id = :userId
               AND item_type = :itemType
               AND progress_tag IN (:progressTags)
-              AND (consecutive_mistakes >= 2
-                   OR score <= :difficultUpperThreshold + :difficultExitMargin)
-            ORDER BY score ASC
+              AND (consecutive_mistakes >= 2 OR score <= :difficultUpperThreshold)
+              AND (score <= :difficultUpperThreshold + :exitMargin)
             """)
     Flux<QuizItemScore> findDifficultItems(
             UUID userId, ItemType itemType, List<String> progressTags,
-            int difficultUpperThreshold, int difficultExitMargin);
+            int difficultUpperThreshold, int exitMargin);
+
+    /** Найти все записи пользователя — для получения списка уже существующих тегов. */
+    @Query("""
+            SELECT progress_tag FROM quiz.quiz_item_score
+            WHERE user_id = :userId
+              AND item_type = :itemType
+            """)
+    Flux<String> findExistingProgressTags(UUID userId, ItemType itemType);
 }

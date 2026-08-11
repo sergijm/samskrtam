@@ -12,25 +12,16 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import sm.selflearn.samskrtam.sangraha.dto.ClassificationRunResponse;
 import sm.selflearn.samskrtam.sangraha.dto.LemmaClassificationItemDto;
 import sm.selflearn.samskrtam.sangraha.dto.LemmaClassificationPageDto;
 import sm.selflearn.samskrtam.sangraha.dto.LemmaClassificationReviewRequest;
-import sm.selflearn.samskrtam.sangraha.dto.LemmaExportPageDto;
 import sm.selflearn.samskrtam.sangraha.dto.LemmaRefreshResponse;
-import sm.selflearn.samskrtam.sangraha.dto.StartClassificationRunRequest;
 import sm.selflearn.samskrtam.sangraha.model.ClassificationStatus;
 import sm.selflearn.samskrtam.sangraha.service.LemmaClassificationReviewService;
-import sm.selflearn.samskrtam.sangraha.service.LemmaClassificationRunService;
-import sm.selflearn.samskrtam.sangraha.service.LemmaExportService;
 import sm.selflearn.samskrtam.sangraha.service.LemmaRefreshService;
 
 import java.util.UUID;
 
-/**
- * Internal endpoints модуля lexicon-classification (lemma-classification.md,
- * task-sangraha-17..19). Все требуют {@code X-User-Id} администратора.
- */
 @Slf4j
 @RestController
 @RequestMapping("/sangraha/internal/lexicon")
@@ -40,24 +31,13 @@ public class LexiconController {
     private static final String USER_ID_HEADER = "X-User-Id";
 
     private final LemmaRefreshService lemmaRefreshService;
-    private final LemmaClassificationRunService runService;
     private final LemmaClassificationReviewService reviewService;
-    private final LemmaExportService lemmaExportService;
 
     @PostMapping("/lemmas/refresh-statistics")
     public ResponseEntity<LemmaRefreshResponse> refreshStatistics(
             @RequestHeader(value = USER_ID_HEADER, required = false) String userId) {
         LemmaRefreshResponse response = lemmaRefreshService.refresh();
         log.debug("Lemma refresh-statistics requested by {}", userId);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/classification/runs")
-    public ResponseEntity<ClassificationRunResponse> startRun(
-            @RequestBody StartClassificationRunRequest request,
-            @RequestHeader(value = USER_ID_HEADER, required = false) String userId) {
-        ClassificationRunResponse response = runService.startRun(
-                request.schemeCode(), request.batchSize(), request.batchCount(), request.llmModel(), userId);
         return ResponseEntity.ok(response);
     }
 
@@ -85,12 +65,5 @@ public class LexiconController {
             @RequestParam(required = false) UUID cursor,
             @RequestParam(defaultValue = "500") int limit) {
         return ResponseEntity.ok(reviewService.exportApproved(schemeCode, cursor, limit));
-    }
-
-    @GetMapping("/lemmas/export")
-    public ResponseEntity<LemmaExportPageDto> exportLemmas(
-            @RequestParam(required = false) UUID cursor,
-            @RequestParam(defaultValue = "500") int limit) {
-        return ResponseEntity.ok(lemmaExportService.export(cursor, limit));
     }
 }

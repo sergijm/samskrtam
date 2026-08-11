@@ -26,7 +26,7 @@ const SandhiSplitsList = ({ sandhiSplits }: SandhiSplitsListProps) => {
         <span>{t('sangraha.fields.sandhiSplits')}</span>
         {allRuleNumbers.length > 0 && (
           <Link
-            to={`/lessons/grammar/sandhi?${allRuleNumbers.map(r => `rule=${r}`).join('&')}`}
+            to={`/grammar/emeneau-rules?${allRuleNumbers.map(r => `rule=${r}`).join('&')}`}
             className="text-sm text-primary"
             target="_blank"
             rel="noopener noreferrer"

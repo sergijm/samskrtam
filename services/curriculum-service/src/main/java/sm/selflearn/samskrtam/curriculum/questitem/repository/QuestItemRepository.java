@@ -57,6 +57,11 @@ public interface QuestItemRepository extends JpaRepository<QuestItem, UUID> {
      */
     @Modifying
     @Transactional
+    @Query("delete from QuestItem qi where qi.topicId = :topicId")
+    int deleteByTopicId(@Param("topicId") UUID topicId);
+
+    @Modifying
+    @Transactional
     @Query("delete from QuestItem qi where qi.topicId = :topicId and qi.itemType = :itemType")
     int deleteByTopicIdAndItemType(@Param("topicId") UUID topicId, @Param("itemType") String itemType);
 }

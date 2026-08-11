@@ -85,7 +85,7 @@ class DeclensionQuestItemBatchGeneratorTest {
                 .thenReturn(List.of(lexeme("nara", "नर", LexemeGender.MASCULINE)));
         when(generationKeyRepository.existsByGenerationKey(anyString())).thenReturn(true);
 
-        assertThat(generator.generateForTopic(TOPIC_ID)).isZero();
+        assertThat(generator.generateForTopic(TOPIC_ID, 0)).isZero();
         verify(questItemRepository, never()).saveAll(anyList());
         verify(generationKeyRepository, never()).saveAll(anyList());
     }
@@ -103,7 +103,7 @@ class DeclensionQuestItemBatchGeneratorTest {
         });
 
         // 24 cells -> 24 FORM + 24 FORM_CHOICE + 24 CASE_RECOGNITION + 5 MATCH blocks (ceil(24/5))
-        assertThat(generator.generateForTopic(TOPIC_ID)).isEqualTo(77);
+        assertThat(generator.generateForTopic(TOPIC_ID, 0)).isEqualTo(77);
 
         verify(questItemRepository).saveAll(anyList());
         verify(generationKeyRepository).saveAll(org.mockito.ArgumentMatchers.<List>argThat(keys -> keys.size() == 77));
@@ -113,7 +113,7 @@ class DeclensionQuestItemBatchGeneratorTest {
     void generateForTopic_unknownTopic_throwsEntityNotFound() {
         when(topicRepository.findById(TOPIC_ID)).thenReturn(java.util.Optional.empty());
 
-        assertThatThrownBy(() -> generator.generateForTopic(TOPIC_ID))
+        assertThatThrownBy(() -> generator.generateForTopic(TOPIC_ID, 0))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 
@@ -121,7 +121,7 @@ class DeclensionQuestItemBatchGeneratorTest {
     void generateForTopic_nonDeclensionTopic_noop() {
         when(topicRepository.findById(TOPIC_ID)).thenReturn(java.util.Optional.of(topic("class-1")));
 
-        assertThat(generator.generateForTopic(TOPIC_ID)).isZero();
+        assertThat(generator.generateForTopic(TOPIC_ID, 0)).isZero();
         verify(questItemRepository, never()).saveAll(anyList());
     }
 
@@ -130,7 +130,7 @@ class DeclensionQuestItemBatchGeneratorTest {
         when(topicRepository.findById(TOPIC_ID)).thenReturn(java.util.Optional.of(topic("a-stem-masc")));
         when(lexemeRepository.findByMorphologyClasses_Code("a-stem-masc")).thenReturn(List.of());
 
-        assertThat(generator.generateForTopic(TOPIC_ID)).isZero();
+        assertThat(generator.generateForTopic(TOPIC_ID, 0)).isZero();
         verify(questItemRepository, never()).saveAll(anyList());
     }
 
@@ -146,7 +146,7 @@ class DeclensionQuestItemBatchGeneratorTest {
         when(generationKeyRepository.existsByGenerationKey(anyString())).thenReturn(false);
         when(questItemRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        generator.generateForTopic(TOPIC_ID);
+        generator.generateForTopic(TOPIC_ID, 0);
 
         List<QuestItem> saved = lastSavedItems();
         Map<String, DeclensionFormPayload> payloadsByCell = saved.stream()
@@ -184,7 +184,7 @@ class DeclensionQuestItemBatchGeneratorTest {
         when(generationKeyRepository.existsByGenerationKey(anyString())).thenReturn(false);
         when(questItemRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        generator.generateForTopic(TOPIC_ID);
+        generator.generateForTopic(TOPIC_ID, 0);
 
         List<CaseRecognitionPayload> caseItems = lastSavedItems().stream()
                 .filter(item -> item.getItemType().equals("CASE_RECOGNITION"))

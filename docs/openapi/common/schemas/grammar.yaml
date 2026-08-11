@@ -113,7 +113,7 @@ GrammarLesson:
     learnedQuestions:
       type: integer
       minimum: 0
-      description: score >= 90 (masteredLowerThreshold). См. также statusSummary.mastered.
+      description: score >= 90 (masteredLowerThreshold), включая REVIEW. См. также statusSummary.mastered.
     progressPercent:
       type: number
       format: float

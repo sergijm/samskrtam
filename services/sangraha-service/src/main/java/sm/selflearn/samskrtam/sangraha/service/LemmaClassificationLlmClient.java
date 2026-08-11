@@ -51,38 +51,18 @@ public class LemmaClassificationLlmClient {
     }
 
     /**
-     * Классифицирует батч — глобальная модель (из LlmProperties).
+     * Классифицирует один батч лемм.
+     *
+     * @throws LemmaClassificationCallException если LLM недоступна, ответ невалиден,
+     *         tool не вызван или JSON не разобран (весь батч FAILED, §2.3, шаг 11)
      */
     public LemmaClassificationSuggestion.BatchResult classifyBatch(List<LemmaBatchItem> items) {
-        return classifyBatch(items, null, null);
-    }
-
-    /**
-     * Классифицирует батч с указанной конфигурацией модели.
-     * Если config == null — глобальный {@link LlmProperties}.
-     */
-    public LemmaClassificationSuggestion.BatchResult classifyBatch(List<LemmaBatchItem> items, LlmConfig config, String model) {
         String systemPrompt = promptBuilder.buildSystemPrompt();
         String userPrompt = promptBuilder.buildUserPrompt(items);
 
-        String actualModel = model != null ? model : llmProperties.getModel();
-        String actualBaseUrl = config != null && config.baseUrl() != null ? config.baseUrl() : llmProperties.getBaseUrl();
-        String actualApiKey = config != null && config.apiKey() != null ? config.apiKey() : llmProperties.getApiKey();
-        Integer maxTokens = config != null && config.maxCompletionTokens() != null
-                ? config.maxCompletionTokens() : llmProperties.getMaxCompletionTokens();
-
-        log.info("LLM classify: model={}, baseUrl={}, lemmas={}, systemLen={}, userLen={}",
-                actualModel, actualBaseUrl, items.size(), systemPrompt.length(), userPrompt.length());
-        log.debug("LLM system prompt:\n{}", systemPrompt);
-        log.debug("LLM user prompt:\n{}", userPrompt);
-
-        OpenAIClient client = isSameAsGlobal(actualBaseUrl, actualApiKey)
-                ? openAIClient
-                : OpenAIOkHttpClient.builder().baseUrl(actualBaseUrl).apiKey(actualApiKey).build();
-
         ChatCompletion response;
         try {
-            response = call(client, actualModel, systemPrompt, userPrompt, maxTokens);
+            response = call(systemPrompt, userPrompt);
         } catch (Exception e) {
             log.error("LLM call failed for batch of {} lemmas", items.size(), e);
             throw new LemmaClassificationCallException("LLM call failed: " + e.getMessage(), e);
@@ -90,9 +70,6 @@ public class LemmaClassificationLlmClient {
 
         String llmModel = extractModelName(response);
         JsonNode responseNode = objectMapper.valueToTree(response);
-        log.info("LLM response: model={}, usage={}", extractModelName(response),
-                responseNode.path("usage"));
-        log.debug("LLM response body:\n{}", responseNode.toPrettyString());
         JsonNode classifications = extractClassifications(responseNode);
         if (classifications == null) {
             throw new LemmaClassificationCallException("Model did not call submit_lemma_classification or response was unparseable");
@@ -103,8 +80,7 @@ public class LemmaClassificationLlmClient {
         return new LemmaClassificationSuggestion.BatchResult(parsed, llmModel);
     }
 
-    private ChatCompletion call(OpenAIClient client, String model, String systemPrompt,
-                                 String userPrompt, Integer maxCompletionTokens) throws Exception {
+    private ChatCompletion call(String systemPrompt, String userPrompt) throws Exception {
         String schemaJson = objectMapper.writeValueAsString(toolSchemaBuilder.buildSchema());
         FunctionParameters functionParameters = objectMapper.readValue(schemaJson, FunctionParameters.class);
 
@@ -121,7 +97,7 @@ public class LemmaClassificationLlmClient {
         );
 
         var builder = ChatCompletionCreateParams.builder()
-                .model(model)
+                .model(llmProperties.getModel())
                 .addSystemMessage(systemPrompt)
                 .addUserMessage(userPrompt)
                 .tools(List.of(tool))
@@ -132,16 +108,11 @@ public class LemmaClassificationLlmClient {
                                         .build())
                                 .build()
                 ));
-        if (maxCompletionTokens != null) {
-            builder.maxCompletionTokens(maxCompletionTokens);
+        if (llmProperties.getMaxCompletionTokens() != null) {
+            builder.maxCompletionTokens(llmProperties.getMaxCompletionTokens());
         }
 
-        return client.chat().completions().create(builder.build());
-    }
-
-    private boolean isSameAsGlobal(String baseUrl, String apiKey) {
-        return llmProperties.getBaseUrl() != null && llmProperties.getBaseUrl().equals(baseUrl)
-                && llmProperties.getApiKey() != null && llmProperties.getApiKey().equals(apiKey);
+        return openAIClient.chat().completions().create(builder.build());
     }
 
     private JsonNode extractClassifications(JsonNode response) {

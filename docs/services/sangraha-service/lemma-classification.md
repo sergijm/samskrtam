@@ -131,23 +131,34 @@ NULL — род из статистики пары, классифицируем
 glossRu (VARCHAR 200, NULL), glossEn (VARCHAR 200, NULL), confidence (SMALLINT,
 NULL — 0–100, если модель вернула), status (VARCHAR 20, NOT NULL, DEFAULT
 `CANDIDATE` — `CANDIDATE`|`APPROVED`|`REJECTED`), llmModel (VARCHAR 100, NOT
-NULL), runId (UUID, FK → classification_run.id), reviewedBy (VARCHAR, NULL), reviewedAt (TIMESTAMPTZ,
+NULL), batchId (UUID, FK), reviewedBy (VARCHAR, NULL), reviewedAt (TIMESTAMPTZ,
 NULL), createdAt / updatedAt.
 
 `UNIQUE(lemmaId, gender, schemeCode)` — одна классификация на пару (лемма, род)
 по схеме; повторный run апдейтит строку.
 
-### 1.7 `LemmaClassification`
+### 1.8 `ClassificationBatch` / `ClassificationRun`
+
+`classification_batch` (одна строка = один LLM-вызов): id (UUID, PK), schemeCode,
+runId (FK → classification_run.id ON DELETE CASCADE), lemmaCount (SMALLINT, NOT
+NULL), status (`PENDING`|`SUCCESS`|`FAILED`), errorMessage (TEXT, NULL),
+llmModel (VARCHAR 100, NOT NULL), createdAt / completedAt.
+
+`classification_run`: id (UUID, PK), schemeCode, requestedBatchCount (SMALLINT,
+NOT NULL — ADMIN-лимит, §3), completedBatchCount (SMALLINT, NOT NULL, DEFAULT 0),
+status (`RUNNING`|`COMPLETED`|`COMPLETED_WITH_ERRORS`), requestedBy, createdAt /
+completedAt. Один run — несколько батчей; неудача одного батча (LLM недоступна/
+ответ невалиден) не откатывает весь run: остальные батчи обрабатываются
+независимо, FAILED-батч оставляет свои пары неклассифицированными до следующего
+run (retry = просто повторный запуск, §3 шаг 1 снова берёт неклассифицированные).
+
 ---
 
 ## 2. LLM-вызов — batch-классификация + перевод
 
-OpenAI-совместимый `/chat/completions`, tool calling.
-Глобальные настройки — env `SANGRAHA_LLM_MODEL`, `SANGRAHA_LLM_API_KEY`;
-конфигурации конкретных моделей (baseUrl, maxCompletionTokens) — файл `llm.yaml`
-(ключ — имя модели, значение — блок `base-url`/`api-key`/`max-completion-tokens`).
-Модель для каждого прогона может быть указана явно в теле запроса (`llmModel`);
-если не указана — используется глобальный `SANGRAHA_LLM_MODEL`.
+Переиспользуются конвенции §5 текущего документа (`sangraha-service.md`):
+OpenAI-совместимый `/chat/completions`, tool calling, env
+`SANGRAHA_LLM_BASE_URL`/`SANGRAHA_LLM_API_KEY`/`SANGRAHA_LLM_MODEL`.
 
 ### 2.1 Промпт
 
@@ -199,28 +210,25 @@ OpenAI-совместимый `/chat/completions`, tool calling.
 
 `POST /sangraha/internal/lexicon/classification/runs` (ADMIN):
 
-```json
-{ "schemeCode": "CURRICULUM", "batchSize": 50, "batchCount": 10, "llmModel": null }
-```
-
-1. **Кандидаты.** `Lemma`, у которых есть хотя бы одна пара (лемма, gender) в
+1. **Кандидаты.** `Lemma`, у которых есть хотя бы одна пара (леммы, gender) в
    `lemma_statistics` БЕЗ строки `LemmaClassification` по схеме с
    `status != REJECTED` (ранее отклонённые не подставляются автоматически).
    Сортировка — по **сумме `occurrenceCount`** по всем gender леммы (по убыванию,
    самые частотные — первыми, решение 2026-08-09).
 2. **Лимит прогона.** Первые `batchSize × batchCount` кандидатов (дефолт
    `batchSize = 50`, `batchCount` **обязателен** — явный ручной ADMIN-лимит).
-3. **Модель.** `llmModel` — имя модели из `llm.yaml`; если не указан, используется
-   глобальный `SANGRAHA_LLM_MODEL`. Конфигурация (baseUrl, apiKey, maxCompletionTokens)
-   резолвится из `llm.yaml` с подстановкой `${VAR}`; если модель не найдена — 400.
-4. **Батчинг.** Кандидаты разбиваются на группы по `batchSize` подряд по
+3. **Батчинг.** Кандидаты разбиваются на группы по `batchSize` подряд по
    отсортированному списку (детерминированно).
-5. **Выполнение.** Батчи последовательно: LLM-вызов (§2) → валидация (§2.3–2.4) →
-   сохранение `LemmaClassification` в отдельной транзакции (`REQUIRES_NEW`,
-   `status = APPROVED`, gender пары из §2.2).
-6. **Ошибка** одного батча — `FAILED` с `errorMessage`, run продолжает со
+4. **Выполнение.** Батча последовательно: `ClassificationBatch(PENDING)` → LLM
+   (§2) → валидация (§2.3–2.4) → upsert `LemmaClassification` (`status =
+   CANDIDATE`, gender пары из §2.2) → `SUCCESS`/`FAILED`.
+5. **Ошибка** одного батная — `FAILED` с `errorMessage`, run продолжает со
    следующими (леммы неклассифицированы, попадут в следующий run).
-7. **Ответ:** `{ succeededBatchCount, failedBatchCount, classifiedLemmaCount }`.
+6. **Ответ:** `{ runId, requestedBatchCount, completedBatchCount,
+   succeededBatchCount, failedBatchCount, classifiedLemmaCount }`.
+
+`GET /sangraha/internal/lexicon/classification/runs/{runId}` — статус прогона
+(при синхронном вызове просто отдаёт итог).
 
 ---
 
@@ -241,15 +249,14 @@ OpenAI-совместимый `/chat/completions`, tool calling.
 
 ## 5. Экспорт в curriculum-service
 
-Отдельный эндпоинт для экспорта APPROVED-классификаций:
+Дополняет `GET /sangraha/internal/content/verse-words/export` (§9
+`sangraha-service.md`) новым эндпоинтом уровня леммы:
 
 `GET /sangraha/internal/lexicon/lemma-classifications/export?schemeCode=CURRICULUM&status=APPROVED&cursor={lemmaId}&limit=500`
 
-В основном потоке импорта curriculum-service не используется — все данные
-(лемма + статистика + классификация) уже включены в `lemmas/export`
-(`sangraha-service.md` §10). Этот эндпоинт оставлен для отладки и ручной проверки.
-
-Одна строка: классификация + статистика `(lemma, gender)` из `lemma_statistics`.
+Одна строка на лемму: для пары из классификации берётся статистика `(lemma,
+gender)` (из `lemma_statistics`), содержит `gender` + `occurrenceCount`
+(решение 2026-08-09). `frequencyRank` исключён — ранг больше не хранится.
 
 ```json
 {

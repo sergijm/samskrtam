@@ -1,0 +1,158 @@
+{
+  "info": {
+    "name": "Curriculum Quest Items API v2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Quest Items",
+      "item": [
+        {
+          "name": "Get quest items (random sample)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Locale", "value": "en" }
+            ],
+            "url": {
+              "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/quest-items?topicId={{topicId}}&itemType=DECLENSION_FORM_CHOICE&limit=20",
+              "host": ["{{curriculumBaseUrl}}"],
+              "path": ["api", "v2", "curriculum", "quest-items"],
+              "query": [
+                { "key": "topicId", "value": "{{topicId}}" },
+                { "key": "itemType", "value": "DECLENSION_FORM_CHOICE" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Regenerate quest items (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{adminUserId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topicId\": \"{{topicId}}\",\n  \"itemType\": \"DECLENSION_FORM_CHOICE\",\n  \"lexemeLimit\": 0\n}"
+            },
+            "url": {
+              "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/quest-items/regenerate",
+              "host": ["{{curriculumBaseUrl}}"],
+              "path": ["api", "v2", "curriculum", "quest-items", "regenerate"]
+            },
+            "description": "Deletes existing quest items of itemType for topic and regenerates.\nitemType: DECLENSION_FORM | DECLENSION_FORM_CHOICE | CASE_RECOGNITION | DECLENSION_MATCH\nlexemeLimit: 0 = all lexemes, >0 = random subset of N lexemes"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Topic Quest Pool",
+      "item": [
+        {
+          "name": "Get topic quest pool (lightweight)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "url": {
+              "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicCode}}/quest-items",
+              "host": ["{{curriculumBaseUrl}}"],
+              "path": ["api", "v2", "curriculum", "topics", "{{topicCode}}", "quest-items"]
+            },
+            "description": "Returns (id, itemType, progressTag) triples for progress-aware selection"
+          }
+        },
+        {
+          "name": "Get topic lesson (full read model)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "url": {
+              "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicCode}}/lesson",
+              "host": ["{{curriculumBaseUrl}}"],
+              "path": ["api", "v2", "curriculum", "topics", "{{topicCode}}", "lesson"]
+            },
+            "description": "Returns topic metadata + tagMetadata map (morphology attributes per progressTag)"
+          }
+        },
+        {
+          "name": "List all lessons",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "url": {
+              "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/lessons",
+              "host": ["{{curriculumBaseUrl}}"],
+              "path": ["api", "v2", "curriculum", "lessons"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Session Composition",
+      "item": [
+        {
+          "name": "Compose session (topics)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Locale", "value": "en" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topics\": [\n    {\n      \"topicCode\": \"a-stem-masc\",\n      \"count\": 10\n    }\n  ],\n  \"userLocale\": \"en\"\n}"
+            },
+            "url": {
+              "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/sessions/compose",
+              "host": ["{{curriculumBaseUrl}}"],
+              "path": ["api", "v2", "curriculum", "sessions", "compose"]
+            },
+            "description": "Composes quiz questions from materialized quest items. topicCode = curriculum.topic.code.\nCan mix grammar + lexical topics in one request."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Declension Paradigms",
+      "item": [
+        {
+          "name": "Get declension paradigm page",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" }
+            ],
+            "url": {
+              "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicCode}}/declension-paradigms?index=0",
+              "host": ["{{curriculumBaseUrl}}"],
+              "path": ["api", "v2", "curriculum", "topics", "{{topicCode}}", "declension-paradigms"],
+              "query": [
+                { "key": "index", "value": "0" }
+              ]
+            },
+            "description": "Returns one page of the suppletive declension paradigm carousel"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8091" },
+    { "key": "userId", "value": "00000000-0000-0000-0000-000000000001" },
+    { "key": "adminUserId", "value": "00000000-0000-0000-0000-000000000001" },
+    { "key": "topicId", "value": "00000000-0000-0000-0000-000000000002" },
+    { "key": "topicCode", "value": "a-stem-masc" }
+  ]
+}

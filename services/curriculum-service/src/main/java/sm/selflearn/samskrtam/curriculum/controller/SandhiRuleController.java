@@ -6,12 +6,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import sm.selflearn.samskrtam.curriculum.dto.SandhiRulesResponse;
 import sm.selflearn.samskrtam.curriculum.service.SandhiRuleService;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v2/curriculum")
@@ -25,12 +22,5 @@ public class SandhiRuleController {
     public ResponseEntity<SandhiRulesResponse> getSandhiRules(@PathVariable String topicCode) {
         log.info("GET /sandhi-rules/{}", topicCode);
         return ResponseEntity.ok(sandhiRuleService.getRulesForTopic(topicCode));
-    }
-
-    @GetMapping("/sandhi-rules")
-    public ResponseEntity<SandhiRulesResponse> getSandhiRulesByNumbers(
-            @RequestParam("rule") List<Integer> numbers) {
-        log.info("GET /sandhi-rules?rule={}", numbers);
-        return ResponseEntity.ok(sandhiRuleService.getRulesByNumbers(numbers));
     }
 }

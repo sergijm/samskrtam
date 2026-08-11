@@ -1,231 +1,1 @@
-# Quiz Session DTOs
-
-QuestionType:
-  type: string
-  enum: [FORM_BY_CASE, CASE_BY_FORM, ENDING_MATCH]
-  description: >
-    Rendering variant for a DECLENSION_FORM question. Orthogonal to itemType/externalRefId
-    (see quiz-generator-spec.md §2.1, §5) — the generator selects a QuizItem
-    (case_endings.id) irrespective of questionType; questionType is assigned by the
-    rendering module and does not affect selection, scoring model, or quiz_item_score.
-    FORM_BY_CASE — given (stem, caseType, numberType, gender), pick the correct word form
-    among distractor forms. Single-select. See quiz-declension.md §4.1 (original/default type).
-    CASE_BY_FORM — given a word form (stem inflected), pick the correct (caseType,
-    numberType, gender) combination among distractor combinations. Single-select,
-    inverse of FORM_BY_CASE. See quiz-declension.md §4.2.
-    ENDING_MATCH — given a bare caseEnding (IAST, no stem), select ALL
-    (caseType, numberType, gender) combinations for which this ending is correct among a
-    mixed pool of correct and incorrect combinations. Multi-select. See quiz-declension.md §4.3.
-
-QuestionOptionDto:
-  type: object
-  required: [id, optionType]
-  description: >
-    Polymorphic by optionType. FORM options carry formIast/formDevanagari (existing shape,
-    used by FORM_BY_CASE). CASE_COMBINATION options carry caseType/numberType/gender plus
-    localized labels (used by CASE_BY_FORM and ENDING_MATCH). MATCH_LABEL options carry
-    caseType/numberType and serve as the right-side labels of a MATCHING question
-    (compose path); one label per unique (caseType, numberType) pair in the question.
-  properties:
-    id:
-      $ref: 'common.yaml#/UUID'
-    optionType:
-      type: string
-      enum: [FORM, CASE_COMBINATION, MATCH_LABEL]
-    formIast:
-      type: string
-      description: IAST transliteration of the option. Present when optionType=FORM.
-    formDevanagari:
-      type: string
-      description: Devanagari script of the option. Present when optionType=FORM.
-    caseType:
-      type: string
-      description: Present when optionType=CASE_COMBINATION.
-    caseRu:
-      type: string
-      description: Present when optionType=CASE_COMBINATION.
-    caseEn:
-      type: string
-      description: Present when optionType=CASE_COMBINATION.
-    numberType:
-      type: string
-      description: Present when optionType=CASE_COMBINATION.
-    numberRu:
-      type: string
-      description: Present when optionType=CASE_COMBINATION.
-    numberEn:
-      type: string
-      description: Present when optionType=CASE_COMBINATION.
-    gender:
-      type: string
-      description: >
-        Present when optionType=CASE_COMBINATION. UNSPECIFIED for vowel_type I/I_LONG/U/U_LONG/R
-        stems (ADR-005), consistent with grammar.yaml#GrammarQuestionProgress.gender.
-    genderRu:
-      type: string
-      description: Present when optionType=CASE_COMBINATION.
-    genderEn:
-      type: string
-      description: Present when optionType=CASE_COMBINATION.
-
-QuestionDto:
-  type: object
-  required: [id, questionNumber, text, options]
-  properties:
-    id:
-      $ref: 'common.yaml#/UUID'
-    questionNumber:
-      type: integer
-      description: Sequential number of the question in the session
-    questionType:
-      allOf:
-        - $ref: '#/QuestionType'
-      description: >
-        Defaults to FORM_BY_CASE if absent, for backward compatibility with clients that
-        predate this field (see quiz-declension.md §4).
-    text:
-      type: string
-      description: General question text
-    options:
-      type: array
-      description: >
-        For questionType=ENDING_MATCH this pool mixes multiple correct and multiple
-        incorrect CASE_COMBINATION options in one array (no separate correct/incorrect
-        arrays) — see quiz-declension.md §4.3 for the distractor mix ratio.
-      items:
-        $ref: '#/QuestionOptionDto'
-    multiSelect:
-      type: boolean
-      default: false
-      description: >
-        True only for questionType=ENDING_MATCH. When true, the client must allow
-        selecting several options and submit them via AnswerRequest.selectedOptionIds
-        (see answers.yaml#AnswerRequest).
-    stem:
-      type: string
-      description: >
-        Declension stem (for grammar questions). Absent for questionType=ENDING_MATCH,
-        which asks about the ending in isolation from any concrete stem.
-    formIast:
-      type: string
-      description: >
-        The inflected word form being asked about, IAST. Present only for
-        questionType=CASE_BY_FORM (the prompt form, distinct from options[].formIast
-        which does not apply to this questionType).
-    formDevanagari:
-      type: string
-      description: Devanagari of formIast. Present only for questionType=CASE_BY_FORM.
-    caseEnding:
-      type: string
-      description: >
-        The bare ending being asked about, IAST (e.g. 'au'). Present only for
-        questionType=ENDING_MATCH.
-    caseType:
-      type: string
-      description: >
-        Grammatical case (NOMINATIVE, ACCUSATIVE, etc.). Present for FORM_BY_CASE (part of
-        the prompt). Absent for CASE_BY_FORM and ENDING_MATCH, where caseType is what the
-        user must determine/select, not given.
-    numberType:
-      type: string
-      description: Number (SINGULAR, PLURAL, DUAL). Same presence rule as caseType above.
-    gender:
-      type: string
-      description: Grammatical gender (MASCULINE, FEMININE, NEUTER). Same presence rule as caseType above.
-    stemDevanagari:
-      type: string
-      description: Devanagari of the stem
-    stemTranslationRu:
-      type: string
-      description: Russian translation of the stem
-    stemTranslationEn:
-      type: string
-      description: English translation of the stem
-    matchRows:
-      type: array
-      description: >
-        Left-side rows of a MATCHING question (questionType "MATCHING", produced by
-        compose path). The right-side labels are carried in options with
-        optionType=MATCH_LABEL. Present only for compose-driven DECLENSION_MATCH
-        questions; null/empty otherwise.
-      items:
-        $ref: '#/QuestionMatchRowDto'
-
-QuestionMatchRowDto:
-  type: object
-  required: [id, wordFormIast, wordFormDevanagari, caseType, numberType]
-  description: >
-    One left-side row of a MATCHING question: a word form the user pairs with a
-    case+number label. Stable id is the payload pair id submitted back via
-    AnswerRequest.matchSubmissions[].rowId (see answer-request schema).
-  properties:
-    id:
-      $ref: 'common.yaml#/UUID'
-    wordFormIast:
-      type: string
-    wordFormDevanagari:
-      type: string
-    caseType:
-      type: string
-    numberType:
-      type: string
-
-StartOrResumeResponse:
-  type: object
-  required: [sessionId, lessonId, lessonType, questions, totalQuestions, answeredQuestions, score, currentQuestionIndex, currentQuestionNumber, slug]
-  properties:
-    sessionId:
-      $ref: 'common.yaml#/UUID'
-    lessonId:
-      $ref: 'common.yaml#/UUID'
-    lessonType:
-      $ref: 'common.yaml#/LessonType'
-    questions:
-      type: array
-      description: Questions for the current session (only unanswered for resume)
-      items:
-        $ref: '#/QuestionDto'
-    totalQuestions:
-      type: integer
-    answeredQuestions:
-      type: integer
-    score:
-      type: integer
-    currentQuestionIndex:
-      type: integer
-      description: 0-based index of the current unanswered question
-    currentQuestionNumber:
-      type: integer
-      description: 1-based current question number
-    lessonTitleRu:
-      type: string
-    lessonTitleEn:
-      type: string
-    lessonDescriptionRu:
-      type: string
-    lessonDescriptionEn:
-      type: string
-    slug:
-      type: string
-      description: Slug of the quiz lesson
-
-ProgressTagSetInfo:
-  type: object
-  required: [progressTagSetId]
-  properties:
-    progressTagSetId:
-      type: string
-      enum: [NEW, LEARNING, MASTERED, DIFFICULT, SINGULAR, DUAL, PLURAL, ACC_LOC, INS_ABL, GEN_LOC, DAT_ACC]
-      description: >
-        Stable id of the named progress-tag set this session was started over
-        (see quest-engine.md §2.4). Null/absent for sessions started without a set
-        (ordinary due/new/reserve mixed selection).
-    progressTags:
-      type: array
-      items:
-        type: string
-      description: >
-        The resolved list of concrete progress tags the set expands to at session
-        start (declension: caseType:numberType:gender triples; vocabulary: word
-        formIast). Present for informational purposes; resume matches on
-        progressTagSetId only.
+# Quiz Session DTOsQuestionType:  type: string  enum: [FORM_BY_CASE, CASE_BY_FORM, ENDING_MATCH]  description: >    Rendering variant for a DECLENSION_FORM question. Orthogonal to itemType/externalRefId    (see quiz-generator-spec.md §2.1, §5) — the generator selects a QuizItem    (case_endings.id) irrespective of questionType; questionType is assigned by the    rendering module and does not affect selection, scoring model, or quiz_item_score.    FORM_BY_CASE — given (stem, caseType, numberType, gender), pick the correct word form    among distractor forms. Single-select. See quiz-declension.md §4.1 (original/default type).    CASE_BY_FORM — given a word form (stem inflected), pick the correct (caseType,    numberType, gender) combination among distractor combinations. Single-select,    inverse of FORM_BY_CASE. See quiz-declension.md §4.2.    ENDING_MATCH — given a bare caseEnding (IAST, no stem), select ALL    (caseType, numberType, gender) combinations for which this ending is correct among a    mixed pool of correct and incorrect combinations. Multi-select. See quiz-declension.md §4.3.QuestionOptionDto:  type: object  required: [id, optionType]  description: >    Polymorphic by optionType. FORM options carry formIast/formDevanagari (existing shape,    used by FORM_BY_CASE). CASE_COMBINATION options carry caseType/numberType/gender plus    localized labels (used by CASE_BY_FORM and ENDING_MATCH).  properties:    id:      $ref: 'common.yaml#/UUID'    optionType:      type: string      enum: [FORM, CASE_COMBINATION]    formIast:      type: string      description: IAST transliteration of the option. Present when optionType=FORM.    formDevanagari:      type: string      description: Devanagari script of the option. Present when optionType=FORM.    caseType:      type: string      description: Present when optionType=CASE_COMBINATION.    caseRu:      type: string      description: Present when optionType=CASE_COMBINATION.    caseEn:      type: string      description: Present when optionType=CASE_COMBINATION.    numberType:      type: string      description: Present when optionType=CASE_COMBINATION.    numberRu:      type: string      description: Present when optionType=CASE_COMBINATION.    numberEn:      type: string      description: Present when optionType=CASE_COMBINATION.    gender:      type: string      description: >        Present when optionType=CASE_COMBINATION. UNSPECIFIED for vowel_type I/I_LONG/U/U_LONG/R        stems (ADR-005), consistent with grammar.yaml#GrammarQuestionProgress.gender.    genderRu:      type: string      description: Present when optionType=CASE_COMBINATION.    genderEn:      type: string      description: Present when optionType=CASE_COMBINATION.QuestionDto:  type: object  required: [id, questionNumber, text, options]  properties:    id:      $ref: 'common.yaml#/UUID'    questionNumber:      type: integer      description: Sequential number of the question in the session    questionType:      allOf:        - $ref: '#/QuestionType'      description: >        Defaults to FORM_BY_CASE if absent, for backward compatibility with clients that        predate this field (see quiz-declension.md §4).    text:      type: string      description: General question text    options:      type: array      description: >        For questionType=ENDING_MATCH this pool mixes multiple correct and multiple        incorrect CASE_COMBINATION options in one array (no separate correct/incorrect        arrays) — see quiz-declension.md §4.3 for the distractor mix ratio.      items:        $ref: '#/QuestionOptionDto'    multiSelect:      type: boolean      default: false      description: >        True only for questionType=ENDING_MATCH. When true, the client must allow        selecting several options and submit them via AnswerRequest.selectedOptionIds        (see answers.yaml#AnswerRequest).    stem:      type: string      description: >        Declension stem (for grammar questions). Absent for questionType=ENDING_MATCH,        which asks about the ending in isolation from any concrete stem.    formIast:      type: string      description: >        The inflected word form being asked about, IAST. Present only for        questionType=CASE_BY_FORM (the prompt form, distinct from options[].formIast        which does not apply to this questionType).    formDevanagari:      type: string      description: Devanagari of formIast. Present only for questionType=CASE_BY_FORM.    caseEnding:      type: string      description: >        The bare ending being asked about, IAST (e.g. 'au'). Present only for        questionType=ENDING_MATCH.    caseType:      type: string      description: >        Grammatical case (NOMINATIVE, ACCUSATIVE, etc.). Present for FORM_BY_CASE (part of        the prompt). Absent for CASE_BY_FORM and ENDING_MATCH, where caseType is what the        user must determine/select, not given.    numberType:      type: string      description: Number (SINGULAR, PLURAL, DUAL). Same presence rule as caseType above.    gender:      type: string      description: Grammatical gender (MASCULINE, FEMININE, NEUTER). Same presence rule as caseType above.    stemDevanagari:      type: string      description: Devanagari of the stem    stemTranslationRu:      type: string      description: Russian translation of the stem    stemTranslationEn:      type: string      description: English translation of the stemStartOrResumeResponse:  type: object  required: [sessionId, lessonId, lessonType, questions, totalQuestions, answeredQuestions, score, currentQuestionIndex, currentQuestionNumber, slug]  properties:    sessionId:      $ref: 'common.yaml#/UUID'    lessonId:      $ref: 'common.yaml#/UUID'    lessonType:      $ref: 'common.yaml#/LessonType'    questions:      type: array      description: Questions for the current session (only unanswered for resume)      items:        $ref: '#/QuestionDto'    totalQuestions:      type: integer    answeredQuestions:      type: integer    score:      type: integer    currentQuestionIndex:      type: integer      description: 0-based index of the current unanswered question    currentQuestionNumber:      type: integer      description: 1-based current question number    lessonTitleRu:      type: string    lessonTitleEn:      type: string    lessonDescriptionRu:      type: string    lessonDescriptionEn:      type: string    slug:      type: string      description: Slug of the quiz lessonFilterInfo:  type: object  required: [filterScope]  properties:    filterScope:      type: string      enum: [CASE_ONLY, NUMBER_ONLY, CASE_NUMBER_GENDER, ALL_STEMS]    filterCaseTypes:      type: array      items:        type: string      description: Present when filterScope=CASE_ONLY    filterNumberTypes:      type: array      items:        type: string      description: Present when filterScope=NUMBER_ONLY or filterScope=ALL_STEMS    filterCombinations:      type: array      items:        type: object        properties:          caseType:            type: string          numberType:            type: string          gender:            type: string      description: Present when filterScope=CASE_NUMBER_GENDER    filterVowelTypes:      type: array      items:        type: string      description: >        Present when filterScope=ALL_STEMS. See quiz-declension.md par 5 and        parameters.yaml#FilterVowelTypesParam.    filterGenders:      type: array      items:        type: string      description: >        Present when filterScope=ALL_STEMS. See quiz-declension.md par 5 and        parameters.yaml#FilterGendersParam.

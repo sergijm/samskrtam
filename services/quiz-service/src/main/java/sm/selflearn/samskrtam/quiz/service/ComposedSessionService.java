@@ -33,7 +33,10 @@ import java.util.UUID;
  * Lifecycle operations for curriculum-driven (composed) quiz sessions.
  *
  * <p>These sessions have {@code lessonId == null} and their questions carry curriculum
- * materialized data (answerMode/correctAnswer/options/payload).
+ * materialized data (answerMode/correctAnswer/options/payload). The legacy
+ * {@link SessionOperationsService} assumes content-generated questions
+ * (targetCase/targetNumber/correctFormIast/vocabulary), which do not apply here — so the
+ * composed path is isolated rather than branch-injected.
  *
  * <p>Progress writing to {@code quiz_item_score} is intentionally deferred (decision
  * 2026-08: curriculum itemType → progress key not touched yet); answer correctness and

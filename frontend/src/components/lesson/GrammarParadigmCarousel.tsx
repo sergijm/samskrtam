@@ -5,11 +5,7 @@ import { Button } from 'primereact/button';
 import { Skeleton } from 'primereact/skeleton';
 import { useDeclensionParadigm } from '../../hooks/useLessons';
 import { lookup, ABBR_CASE, ABBR_CASE_RU } from '../../utils/grammarTerms';
-import {
-  CASE_TYPES,
-  caseToProgressTagSetId,
-  numberToProgressTagSetId,
-} from '../../utils/grammarAggregation';
+import { CASE_TYPES } from '../../utils/grammarAggregation';
 import type { DeclensionFormDto, DeclensionParadigmDto } from '../../types/content-dtos';
 
 interface GrammarParadigmCarouselProps {
@@ -40,7 +36,7 @@ const renderTable = (
 
   const handleCellClick = (caseType: string, numberType: string) => {
     navigate(
-      `/quiz/grammar/${quizSlug}?progressTagSetId=${numberToProgressTagSetId(numberType) || caseToProgressTagSetId(caseType)}`
+      `/quiz/grammar/${quizSlug}?filterScope=CASE_NUMBER_GENDER&filterCaseType=${caseType}&filterNumberType=${numberType}&filterGender=${paradigm.gender}`
     );
   };
 

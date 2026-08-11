@@ -6,8 +6,8 @@ from collections import defaultdict
 DEFAULT_DIR = r"C:\MyDev\samskrtam"
 
 # Расширения файлов для анализа
-EXTENSIONS = ('.java', '.ts', '.tsx', '.yaml', '.yml')
-#EXTENSIONS = '.java'
+#EXTENSIONS = ('.java', '.ts', '.tsx', '.yaml', '.yml')
+EXTENSIONS = '.java'
 #EXTENSIONS = ('.tsx', '.ts')
 #EXTENSIONS = ( '.yaml')
 #EXTENSIONS = '.md'
@@ -211,15 +211,15 @@ def main():
 
     # Топ-10 самых больших файлов (всех)
     print("\n" + "="*80)
-    print("🏆 ТОП-50 САМЫХ БОЛЬШИХ ФАЙЛОВ")
+    print("🏆 ТОП-20 САМЫХ БОЛЬШИХ ФАЙЛОВ")
     print("="*80)
-    top_files = sorted(large_files, key=lambda x: x['lines'], reverse=True)[:50]
+    top_files = sorted(large_files, key=lambda x: x['lines'], reverse=True)[:20]
     for idx, file_info in enumerate(top_files, 1):
         java_marker = "☕" if file_info['extension'] == '.java' else "📄"
         print(f"  {idx:2d}. {java_marker} {file_info['rel_path']}   📝 {file_info['lines']:,} строк | 📁 {file_info['extension'] or 'без расширения'}")
 
     # Сохраняем результаты в файл
-    output_file = os.path.join(directory, "../large_files_report.txt")
+    output_file = os.path.join(directory, "large_files_report.txt")
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write("="*80 + "\n")
         f.write("📊 ОТЧЕТ О ФАЙЛАХ С БОЛЕЕ 100 СТРОК КОДА\n")

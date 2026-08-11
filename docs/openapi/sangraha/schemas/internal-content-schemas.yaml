@@ -1,9 +1,9 @@
 # Schemas for docs/openapi/sangraha/internal-content-api.yaml.
 # vowelType/gender/caseType/numberType значения намеренно совпадают по имени с
-# content.VowelType/Gender/CaseType/NumberType (см. docs/openapi/common/schemas/
-# declension-paradigm.yaml) — sangraha-service своего собственного понятия vowelType
-# не имеет, определяет его на лету по VerseWord.stem для регулярных классов;
-# для PRON_* — по фиксированному lemmaIast (см. sangraha-service.md §9).
+# content.VowelType/Gender/CaseType/NumberType (docs/openapi/content/schemas/content.yaml) —
+# sangraha-service своего собственного понятия vowelType не имеет, определяет его на лету
+# по VerseWord.stem для регулярных классов; для PRON_* — по фиксированному lemmaIast
+# (см. sangraha-service.md §9).
 
 DeclensionExamplesSearchRequestDto:
   type: object
@@ -100,40 +100,3 @@ VersesBatchResponseDto:
             type: string
           verseOrderIndex:
             type: integer
-
-NominalLemmaCandidateDto:
-  type: object
-  required: [lemmaIast, frequency]
-  properties:
-    lemmaIast:
-      type: string
-    lemmaDevanagari:
-      type: string
-    lemmaSlp1:
-      type: string
-    stemIast:
-      type: string
-    stemClass:
-      type: string
-    confidence:
-      type:
-        - string
-        - 'null'
-      description: Имя enum AnalysisConfidence; всегда null в текущей реализации.
-    gender:
-      type:
-        - string
-        - 'null'
-      description: "Имя enum Gender (sangraha: MASCULINE, FEMININE, NEUTER, UNSPECIFIED)."
-    frequency:
-      type: integer
-      format: int64
-
-NominalLemmaCandidatesResponseDto:
-  type: object
-  required: [candidates]
-  properties:
-    candidates:
-      type: array
-      items:
-        $ref: '#/NominalLemmaCandidateDto'

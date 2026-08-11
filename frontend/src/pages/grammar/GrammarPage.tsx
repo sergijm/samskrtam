@@ -14,11 +14,11 @@ const GrammarPage = () => {
   const { data: declensions = [], isLoading: declLoading } = useDeclensionLessons();
   const { data: conjugations = [], isLoading: conjLoading } = useConjugationLessons();
 
-  // Секции Сандхи
+  // Хардкодные секции Сандхи — остаются как есть
   const sandhiItems = [
-    { title: t('curriculum.sandhi.vowel'),   link: '/lessons/grammar/sandhi-vowels-external', icon: 'pi pi-sort-alpha-down' },
-    { title: t('curriculum.sandhi.consonant'), link: '/lessons/grammar/sandhi-consonants',   icon: 'pi pi-sort-alpha-down-alt' },
-    { title: t('curriculum.sandhi.visarga'),  link: '/lessons/grammar/sandhi-visarga',       icon: 'pi pi-asterisk' },
+    { title: t('grammar.sandhiExercisesTitle'), description: t('grammar.sandhiExercisesDescription'), link: '/grammar/emeneau-exercises', icon: 'pi pi-pencil' },
+    { title: t('grammar.sandhiQuizzesTitle'),   description: t('grammar.sandhiQuizzesDescription'),   link: '/grammar/emeneau-quizzes',   icon: 'pi pi-question-circle' },
+    { title: t('grammar.sandhiRulesTitle'),     description: t('grammar.sandhiRulesDescription'),     link: '/grammar/emeneau-rules',     icon: 'pi pi-book' },
   ];
 
   // Рендер одной карточки из API (склонения / спряжения)
@@ -54,6 +54,7 @@ const GrammarPage = () => {
       >
         <div className="p-card-body flex flex-column flex-grow-1">
           <div className="p-card-title">{item.title}</div>
+          <div className="p-card-subtitle">{item.description}</div>
           <div className="flex-grow-1 flex align-items-center justify-content-center">
             <i className={`${item.icon} text-5xl text-primary`} />
           </div>
@@ -66,9 +67,9 @@ const GrammarPage = () => {
     <div className="flex flex-column p-4" style={{ maxWidth: '1600px', margin: '0 auto' }}>
       <h1 className="text-center mb-5">{t('nav.grammar')}</h1>
 
-      {/* Секция 1: Сандхи */}
+      {/* Секция 1: Сандхи по Эмено */}
       <section className="mb-5">
-        <h2 className="mb-3">{t('section.sandhi')}</h2>
+        <h2 className="mb-3">{t('grammar.sandhiSectionTitle')}</h2>
         <div className="grid">
           {sandhiItems.map(renderStaticCard)}
         </div>

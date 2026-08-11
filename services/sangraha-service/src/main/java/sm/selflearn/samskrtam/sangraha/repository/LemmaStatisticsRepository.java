@@ -18,6 +18,20 @@ public interface LemmaStatisticsRepository extends JpaRepository<LemmaStatistics
 
     List<LemmaStatistics> findByLemmaIdIn(Collection<UUID> lemmaIds);
 
+    @Query("""
+            SELECT s FROM LemmaStatistics s
+            WHERE s.lemma.id IN (
+                SELECT lc.lemma.id FROM sm.selflearn.samskrtam.sangraha.model.LemmaClassification lc
+                WHERE lc.schemeCode = 'CURRICULUM'
+                AND lc.status = 'APPROVED'
+            )
+            AND (:cursor IS NULL OR s.id > :cursor)
+            ORDER BY s.id ASC
+            """)
+    List<LemmaStatistics> findForExport(
+            @Param("cursor") UUID cursor,
+            Pageable pageable);
+
     /**
      * Пересчёт статистики для переданных лемм через нативную функцию
      * {@code sangraha.compute_lemma_statistics} (оконные функции): каждая строка
@@ -35,21 +49,4 @@ public interface LemmaStatisticsRepository extends JpaRepository<LemmaStatistics
                 updated_at = now()
             """, nativeQuery = true)
     int refreshStatistics(@Param("lemmaIds") UUID[] lemmaIds);
-
-    /**
-     * Экспорт лемм, имеющих APPROVED-классификацию для CURRICULUM.
-     * JOIN lemma_classification по (lemma_id, gender), фильтр status=APPROVED.
-     * Сортировка по occurrenceCount DESC, курсор по ls.id.
-     */
-    @Query("""
-            SELECT ls FROM LemmaStatistics ls
-            JOIN FETCH ls.lemma l
-            JOIN LemmaClassification lc ON lc.lemma = l
-                AND (lc.gender = ls.gender OR (lc.gender IS NULL AND ls.gender IS NULL))
-                AND lc.schemeCode = 'CURRICULUM'
-                AND lc.status = 'APPROVED'
-            WHERE (:cursor IS NULL OR ls.id > :cursor)
-            ORDER BY ls.occurrenceCount DESC, ls.id ASC
-            """)
-    List<LemmaStatistics> findForExport(@Param("cursor") UUID cursor, Pageable pageable);
 }

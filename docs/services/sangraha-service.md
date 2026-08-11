@@ -91,13 +91,9 @@ POST   /api/v1/sangraha/verses/{verseId}/vocabulary-quiz         → кнопк�
                                                                      или синхронно создать/дозаполнить лексический квиз стиха в
                                                                      curriculum-service ({quizSlug, quizId, quizStatus}), закэшировать
                                                                      quizSlug/quizId (см. §6)
-GET    /api/v1/sangraha/verses/{verseId}/analysis               → стих: VerseAnalysis (морфология/словообразование, только для
-                                                                      ANALYZED), см. sangraha-service.md §2
- GET    /api/v1/sangraha/verses/{verseId}/words                  → стих: VerseWord[] (поверхностные формы с разбором VerseWordMorphology/
-                                                                      VerseWordDerivation, только для ANALYZED), см. sangraha-service.md §2
- POST   /api/v1/sangraha/verses/{verseId}/analyze                → сохранить `text` и запустить LLM-анализ (ADMIN, см. §5); тело —
-                                                                      единое поле `text` (обязательно, см. §7) — backend определяет
-                                                                      письменность и заполняет textDevanagari/textIast
+POST   /api/v1/sangraha/verses/{verseId}/analyze                 → сохранить `text` и запустить LLM-анализ (ADMIN, см. §5); тело —
+                                                                     единое поле `text` (обязательно, см. §7) — backend определяет
+                                                                     письменность и заполняет textDevanagari/textIast
 POST   /api/v1/sangraha/chapters/{chapterId}/verses/analyze-all  → батч-анализ всех DRAFT/FAILED стихов главы (ADMIN, реализовано,
                                                                      )
 GET    /api/v1/sangraha/verse?id={uuid}&id={uuid}...             → произвольный список стихов + status каждого
@@ -255,12 +251,12 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
     - Из ответа `{ quizSlug, quizId, quizStatus }` фронтенд **не** делает
       промежуточный `GET /api/v1/lessons/vocabulary/{slug}` — он не нужен для
       запуска сессии. Вместо этого сразу вызывает
-      `POST /api/v1/quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&progressTagSetId={progressTagSetId}`
+      `POST /api/v1/quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&statusFilter={statusFilter}`
       (quiz-service, `quest-engine.md` §3-4) — по UUID, не по slug.
-      `progressTagSetId` вычисляется на фронте из `quizStatus`: `quizStatus="CREATED"` →
-      `progressTagSetId=NEW` (весь пул квиза — новые слова, обычный смешанный
+      `statusFilter` вычисляется на фронте из `quizStatus`: `quizStatus="CREATED"` →
+      `statusFilter=NEW` (весь пул квиза — новые слова, обычный смешанный
       due/new/reserve-отбор не нужен, слов ещё никто не проходил); `quizStatus="EXISTING"`
-      → `progressTagSetId` не передаётся (обычный смешанный отбор).
+      → `statusFilter` не передаётся (обычный смешанный отбор).
     - После успешного старта сессии — переход на `/quiz/vocabulary/{quizSlug}/{sessionId}`
       (существующий маршрут `QuizPage`, см. `frontend-state.md`/`AppRoutes`) с передачей
       результата через `navigate(url, { state: { sessionData } })` — паттерн,
@@ -345,47 +341,45 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
 
 ---
 
-## 10. Модуль лексем и классификации (Lemma / LemmaStatistics / LemmaClassification)
+## 10. Модуль классификации лексем (Lemma / LemmaClassification)
 
-Полная спецификация классификации — [lemma-classification.md](./sangraha-service/lemma-classification.md).
-Кратко: sangraha-service ведёт словарь уникальных лемм (`lemma`, одна запись на `lemmaSlp1`),
-статистику частотности по родам (`lemma_statistics`, одна запись на пару `lemma+gender`),
-и классифицирует леммы по схеме `CURRICULUM` через batch-вызовы LLM с ручным ADMIN-review
-(`lemma_classification`). Результат (категория + перевод) используется пайплайном наполнения
-лексикона (`lexicon-content-pipeline.md`).
+Полная спецификация — [lemma-classification.md](./sangraha-service/lemma-classification.md).
+Кратко: sangraha-service агрегирует уникальные леммы по всему корпусу
+(`Lemma`, вне контекста конкретного стиха), классифицирует их по одной или
+нескольким **схемам** (`ClassificationScheme` — сейчас только `CURRICULUM`,
+`WORDNET` зарезервирована на будущее) через batch-вызовы внешней LLM с
+одновременным переводом (наиболее вероятный глосс), батчами по частотности
+употребления, с ручным ADMIN-review результата. Результат (категория +
+перевод) отдаётся curriculum-service через export-эндпоинт и используется
+пайплайном наполнения лексикона (`lexicon-content-pipeline.md`) вместо ручной
+разметки `semanticTopicId`/эвристического перевода.
 
-### `GET /sangraha/internal/lexicon/lemmas/export`
+### `GET /sangraha/internal/content/verse-words/export`
 
-Экспорт агрегированных данных лемм для batch-импорта в curriculum-service.
-Один вызов — всё, что нужно: JOIN `lemma` + `lemma_statistics` +
-`lemma_classification` (APPROVED, scheme=CURRICULUM) + `nominal_lemmas` (stemClass → vowelType).
-Курсорная пагинация по `lemma_statistics.id`, сортировка по `occurrenceCount DESC`.
+Третий internal-эндпоинт, используется batch-импортом лексикона curriculum-service
+(`lexicon-content-pipeline.md` §2) — постраничная выгрузка всех `VerseWord` по
+всем стихам `status = ANALYZED`, курсор по `verseId`:
 
 ```
-GET /sangraha/internal/lexicon/lemmas/export?cursor={statsId}&limit=500
+GET /sangraha/internal/content/verse-words/export?cursor={verseId}&limit=500
 ```
 
 ```json
 {
   "items": [
-    {
-      "lemmaId": "uuid", "lemmaSlp1": "nara", "lemmaIast": "nara", "lemmaDevanagari": "नर",
-      "gender": "MASCULINE", "dominantPosCode": "noun", "occurrenceCount": 42,
-      "categoryCodes": ["people-occupations", "society-ritual"], "glossRu": "человек, мужчина", "glossEn": "man",
-      "vowelType": "A_STEM"
-    }
+    { "verseId": "uuid", "workSlug": "bhagavad-gita", "chapterSlug": "1", "verseOrderIndex": 1,
+      "lemmaIast": "dhṛtarāṣṭra", "stem": "dhṛtarāṣṭra",
+      "surfaceIast": "dhṛtarāṣṭraḥ", "surfaceDevanagari": "धृतराष्ट्रः",
+      "pos": "NOUN", "lemmaGlossRu": "...", "lemmaGlossEn": "...",
+      "gender": "MASCULINE", "vowelType": "A_STEM" }
   ],
   "nextCursor": "uuid-or-null"
 }
 ```
 
-Одна строка = одна пара `(lemma, gender)`. Данные уже агрегированы —
-curriculum-service делает простой upsert, не группирует и не маппит коды.
-`nextCursor = null` — страниц больше нет.
-
-`gender`, `dominantPosCode`, `occurrenceCount` — из `lemma_statistics` (пересчитываются
-через `POST /sangraha/internal/lexicon/lemmas/refresh-statistics`).
-`categoryCodes`, `glossRu`, `glossEn` — из `lemma_classification` со статусом `APPROVED`
-(собираются все категории для пары (lemma, gender); если классификации нет — пустой массив, поля gloss null).
-`vowelType` — из `nominal_lemmas.stem_class`, если запись существует для данной леммы.</think>
+`gender`/`vowelType` — из `VerseWordMorphology` (nullable, если разбор не дал
+значения). `nextCursor = null`, когда строк больше нет. Это единственное место,
+где весь корпус читается разом (в отличие от §6/§7, где обработка идёт по
+одному стиху) — используется исключительно batch-задачей, не публичным API,
+не через gateway.
 - **Библиотека текстов (каталог, не курикулум)** — требования к странице библиотеки, стабильному адресу строфы (`произведение.глава.строфа`, используется как `source_ref` в `usage_examples`), двухсекционному поиску по корпусу (произведения + строфы) и полю `license`/`source_type` в модели произведения — см. [frontend/information-architecture.md §3.2 и §7](../frontend/information-architecture/02-catalog.md).

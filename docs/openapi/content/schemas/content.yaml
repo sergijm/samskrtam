@@ -1,0 +1,389 @@
+# Schemas reverse-engineered from services/content-service/src/main/java/.../content/dto
+# and content/model (enums). Any drift found vs docs/services/content-service.md prose is
+# intentional and flagged inline — this file reflects the CODE, not the aspirational docs.
+
+LessonType:
+  type: string
+  description: sm.selflearn.samskrtam.content.dto.LessonType (shared/samskrtam-dtos).
+  enum: [DECLENSIONS, CONJUGATIONS, VOCABULARY, VOCABULARY_BASIC, VOCABULARY_TEXTS]
+
+Difficulty:
+  type: string
+  enum: [BEGINNER, INTERMEDIATE, ADVANCED]
+
+Gender:
+  type: string
+  description: >
+    content.model.Gender. Note UNKNOWN vs UNSPECIFIED both exist as distinct values in code
+    (docs elsewhere only mention UNSPECIFIED for genderless stems) — kept as-is, code is
+    the source of truth.
+  enum: [MASCULINE, FEMININE, NEUTER, UNKNOWN, UNSPECIFIED]
+
+VowelType:
+  type: string
+  description: >
+    NEW значения PRON_AHAM/PRON_TVAM/PRON_TAD/PRON_ETAD/PRON_IDAM/PRON_KIM/PRON_YAD —
+    местоимения (см. adr.md ADR-008): каждое имя/класс местоимения — отдельный
+    vowelType, а не производный от обычных основ, т.к. формы супплетивны
+    (declension_forms хранит готовые словоформы, не суффикс+основа — конкатенации
+    не требуется). PRON_AHAM/PRON_TVAM — gender=UNSPECIFIED (личные местоимения не
+    различают род, см. content-service.md §3). PRON_TAD/PRON_ETAD/PRON_IDAM/PRON_KIM/
+    PRON_YAD — по 3 рода на класс (MASCULINE/FEMININE/NEUTER), как a-основы одного
+    рода (ADR-004).
+  enum: [A_STEM, AA_STEM, I_STEM, II_STEM, U_STEM, UU_STEM, R_STEM, PRON_AHAM, PRON_TVAM, PRON_TAD, PRON_ETAD, PRON_IDAM, PRON_KIM, PRON_YAD, PRON_REFLEXIVE]
+
+CaseType:
+  type: string
+  enum: [NOMINATIVE, ACCUSATIVE, INSTRUMENTAL, DATIVE, ABLATIVE, GENITIVE, LOCATIVE, VOCATIVE]
+
+NumberType:
+  type: string
+  enum: [SINGULAR, DUAL, PLURAL]
+
+LessonItemResponse:
+  type: object
+  description: sm.selflearn.samskrtam.content.dto.LessonItemResponse (all fields non-null in code, @Data/@Builder without @NonNull annotations, so nullability not enforced by Lombok — modelled as required per constructor/builder convention used elsewhere in the project).
+  required: [id, lessonType, difficulty, slug, totalQuestions, wordCount]
+  properties:
+    id:
+      type: string
+      format: uuid
+    title:
+      type: string
+      description: Legacy/locale-agnostic title field, kept alongside titleRu/titleEn.
+    titleRu:
+      type: string
+    titleEn:
+      type: string
+    description:
+      type: string
+    descriptionRu:
+      type: string
+    descriptionEn:
+      type: string
+    lessonType:
+      $ref: '#/LessonType'
+    difficulty:
+      $ref: '#/Difficulty'
+    slug:
+      type: string
+    totalQuestions:
+      type: integer
+    wordCount:
+      type: integer
+
+DeclensionStemDto:
+  type: object
+  required: [id, lessonId, slug, vowelType]
+  properties:
+    id:
+      type: string
+      format: uuid
+    lessonId:
+      type: string
+      format: uuid
+    slug:
+      type: string
+    stemIast:
+      type:
+        - string
+        - 'null'
+      description: >
+        NEW — поле было в content-service.md §3 (сущность DeclensionStem) с самого начала,
+        но отсутствовало в этой DTO-схеме (расхождение зафиксировано Агентом 6, задача Агенту 2 —
+        добавить в DeclensionStemMapper). Обязательно для рендера парадигмы (переиспользуется в
+        DeclensionParadigmDto ниже) — без него заголовок таблицы парадигмы нечем заполнить
+        на IAST, только деванагари/slug.
+    gender:
+      $ref: '#/Gender'
+    vowelType:
+      $ref: '#/VowelType'
+    stemDevanagari:
+      type:
+        - string
+        - 'null'
+    translationRu:
+      type:
+        - string
+        - 'null'
+    translationEn:
+      type:
+        - string
+        - 'null'
+
+CaseEndingDto:
+  type: object
+  required: [id, vowelType, caseType, numberType, endingIast]
+  properties:
+    id:
+      type: string
+      format: uuid
+    vowelType:
+      $ref: '#/VowelType'
+    gender:
+      $ref: '#/Gender'
+    caseType:
+      $ref: '#/CaseType'
+    numberType:
+      $ref: '#/NumberType'
+    endingIast:
+      type: string
+    endingDevanagari:
+      type:
+        - string
+        - 'null'
+
+DeclensionFormDto:
+  type: object
+  required: [declensionStemId, caseType, numberType, formIast, formDevanagari]
+  properties:
+    declensionStemId:
+      type: string
+      format: uuid
+    caseType:
+      $ref: '#/CaseType'
+    numberType:
+      $ref: '#/NumberType'
+    formIast:
+      type: string
+    formDevanagari:
+      type: string
+
+DeclensionParadigmDto:
+  type: object
+  description: >
+    NEW. Одна полная парадигма одного стема (композиция DeclensionStemDto без
+    id/lessonId/slug — они не нужны фронтенду для рендера справочной таблицы — и
+    вложенного списка DeclensionFormDto, чтобы избежать N+1: стем + все его формы одним
+    запросом). Возвращается по одной штуке внутри DeclensionParadigmPageDto (см. ниже) —
+    НЕ массивом сразу всех стемов урока, см. обоснование там же.
+  required: [stemId, vowelType, gender, forms]
+  properties:
+    stemId:
+      type: string
+      format: uuid
+    stemIast:
+      type:
+        - string
+        - 'null'
+    stemDevanagari:
+      type:
+        - string
+        - 'null'
+    translationRu:
+      type:
+        - string
+        - 'null'
+    translationEn:
+      type:
+        - string
+        - 'null'
+    gender:
+      $ref: '#/Gender'
+    vowelType:
+      $ref: '#/VowelType'
+    forms:
+      type: array
+      items:
+        $ref: '#/DeclensionFormDto'
+      description: Обычно 24 элемента (8 падежей × 3 числа), может быть меньше для неполных сидов.
+
+DeclensionParadigmPageDto:
+  type: object
+  description: >
+    NEW. Ответ GET /content/public/lessons/{slug}/declension-paradigms?index=N (см.
+    content-api.yaml, content-service.md §5а). Урок склонений обычно содержит НЕСКОЛЬКО
+    стемов-примеров одного (vowelType, gender) — см. quiz-generator-spec.md §2.1, "прогресс
+    общий для всех основ одного сочетания признаков" — поэтому загружать формы всех стемов
+    урока одним ответом нецелесообразно (лишний трафик, почти всегда не нужен пользователю
+    целиком). Вместо массива всех парадигм — одна текущая парадигма (по индексу `index`,
+    0-based, порядок стемов стабилен — по `stemId`/дате создания, определяет Агент 2) +
+    метаданные для карусели (счётчик "N / total", доступность стрелок).
+  required: [index, totalCount, paradigm]
+  properties:
+    index:
+      type: integer
+      description: 0-based позиция возвращённого paradigm в общем списке стемов урока.
+    totalCount:
+      type: integer
+      description: Общее количество стемов урока (для disable стрелки "вперёд" на последнем и подписи "N / total").
+    paradigm:
+      $ref: '#/DeclensionParadigmDto'
+
+SangrahaVocabularyQuizRequestDto:
+  type: object
+  description: >
+    Тело запроса POST /content/internal/sangraha/vocabulary-quiz. Источник истины —
+    sangraha-service.md §6/§7, content-service.md §11.
+  required: [verseId, workSlug, chapterSlug, words]
+  properties:
+    verseId:
+      type: string
+      format: uuid
+    workSlug:
+      type: string
+    workTitleRu:
+      type: string
+    workTitleEn:
+      type: string
+    chapterSlug:
+      type: string
+    chapterTitleRu:
+      type: string
+    chapterTitleEn:
+      type: string
+    verseOrderIndex:
+      type: integer
+    words:
+      type: array
+      items:
+        type: object
+        required: [wordIast, stem]
+        properties:
+          verseWordId:
+            type: string
+            format: uuid
+            description: id VerseWord в sangraha-service; используется только для сборки wordMappings в ответе.
+          wordIast:
+            type: string
+            description: Лемма слова (lemmaIast), не поверхностная словоформа.
+          wordDevanagari:
+            type: string
+          stem:
+            type: string
+          root:
+            type:
+              - string
+              - 'null'
+          gender:
+            $ref: '#/Gender'
+          translationRu:
+            type: string
+            description: Словарный перевод леммы (lemmaGlossRu), не контекстный перевод словоформы.
+          translationEn:
+            type: string
+            description: Словарный перевод леммы (lemmaGlossEn), не контекстный перевод словоформы.
+          explanationRu:
+            type:
+              - string
+              - 'null'
+          explanationEn:
+            type:
+              - string
+              - 'null'
+
+SangrahaVocabularyQuizResponseDto:
+  type: object
+  description: >
+    Ответ на POST /content/internal/sangraha/vocabulary-quiz. Источник истины —
+    content-service.md §11.
+  required: [quizSlug, quizId, quizStatus]
+  properties:
+    quizSlug:
+      type: string
+      description: '"{workSlug}.{chapterSlug}.verse-{verseId}"'
+    quizId:
+      type: string
+      format: uuid
+      description: UUID сущности Lesson (LessonType.VOCABULARY).
+    quizStatus:
+      type: string
+      enum: [CREATED, EXISTING]
+    wordMappings:
+      type: array
+      description: verseWordId → vocabularyWordId для каждого успешно обработанного слова.
+      items:
+        type: object
+        required: [verseWordId, vocabularyWordId]
+        properties:
+          verseWordId:
+            type: string
+            format: uuid
+          vocabularyWordId:
+            type: string
+            format: uuid
+
+VocabularyWordDto:
+  type: object
+  required: [id, wordIast]
+  properties:
+    id:
+      type: string
+      format: uuid
+    wordIast:
+      type: string
+    wordDevanagari:
+      type:
+        - string
+        - 'null'
+    translationEn:
+      type:
+        - string
+        - 'null'
+    translationRu:
+      type:
+        - string
+        - 'null'
+    gender:
+      $ref: '#/Gender'
+    stem:
+      type:
+        - string
+        - 'null'
+    root:
+      type:
+        - string
+        - 'null'
+    explanationRu:
+      type:
+        - string
+        - 'null'
+    explanationEn:
+      type:
+        - string
+        - 'null'
+
+DeclensionExamplesResponseDto:
+  type: object
+  description: >
+    Ответ GET /lessons/{slug}/examples (вкладка «Примеры»,
+    см. content-service.md §12, services/content-service/declension-examples.md).
+  required: [groups]
+  properties:
+    groups:
+      type: array
+      items:
+        type: object
+        required: [caseType, numberType, examples]
+        properties:
+          caseType:
+            $ref: '#/CaseType'
+          numberType:
+            $ref: '#/NumberType'
+          examples:
+            type: array
+            items:
+              type: object
+              required: [verseId, textIast, textDevanagari, translationRu, translationEn, workTitleRu, workTitleEn, chapterTitleRu, chapterTitleEn, verseOrderIndex]
+              properties:
+                verseId:
+                  type: string
+                  format: uuid
+                textIast:
+                  type: string
+                textDevanagari:
+                  type: string
+                translationRu:
+                  type: string
+                translationEn:
+                  type: string
+                workTitleRu:
+                  type: string
+                workTitleEn:
+                  type: string
+                chapterTitleRu:
+                  type: string
+                chapterTitleEn:
+                  type: string
+                verseOrderIndex:
+                  type: integer

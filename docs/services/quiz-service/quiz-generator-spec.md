@@ -10,7 +10,7 @@
 
 Один генератор вопросов должен обслуживать любой тип квиза без изменения своей логики при добавлении нового типа. На момент написания есть два типа (лексика, склонения); в планах — спряжения, местоимения и другие грамматические темы. Инвариантность обеспечивается тем, что генератор работает не с конкретными сущностями (слово, словоформа), а с абстракцией `QuizItem` (пара itemType + externalRefId) и её прогрессом.
 
-Границы микросервисов соблюдаются: quiz-service не имеет физических (FK) ссылок на таблицы curriculum-service. Существование `externalRefId` подтверждается на уровне приложения (через `CurriculumClient`), а не через БД.
+Границы микросервисов соблюдаются: quiz-service не имеет физических (FK) ссылок на таблицы curriculum-service. Существование `externalRefId` подтверждается на уровне приложения (через `ContentClient`, уже существующий в quiz-service), а не через БД.
 
 Архитектурные решения по единой таблице quiz_item_score, отсутствию FK между схемами quiz и content, производному статусу без time-decay и общему прогрессу склонений зафиксированы в architecture.md §3.6.
 
@@ -53,24 +53,20 @@
 
 ### 2.3. Scope — иерархия группировки живёт в curriculum-service, не в quiz-service
 
-quiz-service не хранит собственную иерархию категорий/уроков. При запуске квиза по любому узлу quiz-service запрашивает у curriculum-service (через `CurriculumClient`) список `externalRefId`, относящихся к этому узлу, и лишь затем джойнит их с `quiz_item_score`. Иерархия/дерево категорий — ответственность curriculum-service, не quiz-service.
+quiz-service не хранит собственную иерархию категорий/уроков. При запуске квиза по любому узлу (лист или верхний уровень) quiz-service запрашивает у curriculum-service (через `ContentClient`) список `externalRefId`, относящихся к этому узлу, и лишь затем джойнит их с `quiz_item_score` по `(userId, itemType, externalRefId)`. Иерархия/дерево категорий, глубина, привязка узла к itemType — ответственность curriculum-service, не quiz-service; здесь фиксируется только контракт запроса ("дай список externalRefId под scope X для itemType Y").
 
-### 2.4. Статусы (производные) — без распада во времени
+### 2.4. Бакеты (производный статус) — без распада во времени
 
-Статусы (NEW/LEARNING/MASTERED) не хранятся — вычисляются из **текущего хранимого** `score` в момент чтения:
+Статус (NEW/LEARNING/DIFFICULT/MASTERED) не хранится — вычисляется из **текущего хранимого** `score` в момент чтения:
 
 - **NEW** — нет строки в `quiz_item_score`.
-- **LEARNING** — строка есть, score ниже masteredLowerThreshold.
+- **DIFFICULT** — score ниже difficultUpperThreshold.
+- **LEARNING** — score между difficultUpperThreshold и masteredLowerThreshold.
 - **MASTERED** — score выше masteredLowerThreshold.
-
-**DIFFICULT** — ортогональная ось, независимая от статуса: строка есть и (`consecutiveMistakes ≥ 2` ИЛИ
-`score ≤ difficultUpperThreshold`); пересекается с LEARNING/MASTERED, но не является отдельным бакетом
-(см. quest-engine.md §2.4). Гистерезис на выходе (`difficultExitMargin`) — единица не должна "прыгать"
-между сетами от колебаний score/ошибок в 1-2 пункта у самой границы.
 
 **Решено: time-decay не реализуется** (score не "тает" сам по себе, если пользователь давно не отвечал — нет ни cron, ни лениво вычисляемой функции от времени простоя). Забывание проявляется естественно: если MASTERED-слово давно не спрашивали и пользователь ответил неверно на редкой контрольной проверке (см. `masteredCooldown` в §3), формула §2.5 резко уронит score сама — отдельный механизм распада не нужен. `stability` в этой модели отвечает не за скорость распада, а за то, насколько единичная ошибка "прощается" устоявшейся единице (см. §2.5) — планирование интервала повторения (`nextReviewAt`) выполняется отдельной, ещё не спроектированной формулой (§6).
 
-Гистерезис на границе MASTERED (`masteredExitMargin`) остаётся — единица не должна "прыгать" между статусами от колебаний score в 1-2 пункта у самой границы.
+Гистерезис на границах бакетов (`difficultExitMargin`/`masteredExitMargin`) остаётся — единица не должна "прыгать" между бакетами от колебаний score в 1-2 пункта у самой границы.
 
 ### 2.5. Формула расчёта score
 
@@ -142,79 +138,48 @@ if consecutiveMistakes >= consecutiveMistakesThreshold:
 **Общие ограничения:**
 - minGapBetweenSameWordRepeats — минимальный интервал (в вопросах сессии) между повторными показами одной и той же единицы
 - interleaveCategories — признак перемешивания подкатегорий внутри scope вместо блочного прохождения
-- masteredCooldown — интервал, через который единица в статусе MASTERED всё же попадает на контрольный показ (единственный механизм проверки «не забыто ли», раз time-decay не реализуется — см. §2.4)
+- masteredCooldown — интервал, через который единица в бакете MASTERED всё же попадает на контрольный показ (единственный механизм проверки «не забыто ли», раз time-decay не реализуется — см. §2.4)
 
-**Пороги статусов (§2.4):**
-- masteredLowerThreshold — нижняя граница score для статуса MASTERED
-- difficultUpperThreshold — порог score для ортогональной оси DIFFICULT (с учётом consecutiveMistakes)
-- difficultExitMargin / masteredExitMargin — гистерезис при выходе из сета/статуса
+**Пороги бакетов (§2.4):**
+- difficultUpperThreshold — верхняя граница score для бакета DIFFICULT
+- masteredLowerThreshold — нижняя граница score для бакета MASTERED
+- difficultExitMargin / masteredExitMargin — гистерезис при выходе из бакета
 
-**Прогресс-сеты (ProgressTagSet) — старт/резюм квиза с LessonPage по именованному срезу прогресса:**
+**Ручной фильтр по бакету (statusFilter) — старт квиза с LessonPage по клику на бейдж статистики:**
+- statusFilter — перечисление, опциональный параметр `start`/`start-or-resume`: `NEW`, `LEARNING`, `REVIEW`. Независим от `filterScope` (§3.4 quiz-declension.md), который фильтрует по грамматическому признаку (падеж/число/род) и применяется только к DECLENSION_FORM. `statusFilter` применим к любому itemType (в первую очередь VOCABULARY_WORD, но не ограничен им) и задаётся вместо обычного смешанного отбора due+new+reserve.
+- Соответствие бейджам LessonStatsBadges/LessonStatsTab (frontend, см. lesson-pages-spec.md): бейдж/строка «Изучено» (`{mastered}/{total}`) → `statusFilter=REVIEW`; «Не изучено»/«Новые» (`{newCount}`) → `statusFilter=NEW`; «В процессе» (`{learning}`) → `statusFilter=LEARNING`.
+- `QuizSession` дополняется полем `statusFilter` (nullable) по аналогии с `filterScope` — участвует в поиске IN_PROGRESS-сессии для резюма: сессия с одним statusFilter не резюмируется кликом по бейджу с другим statusFilter (или без него).
+- **Кнопка «Изучить» на VersePage** (`sangraha-service.md` §7) — ещё один вызывающий тот же `start-or-resume` без `statusFilter` (обычный смешанный due+new+reserve отбор, шаги 1-8 §4, без ветки «2а»), `slug = workSlug`. Никаких новых полей/веток не требует — переиспользует уже описанный контракт.
 
-- `progressTag` — атомарный признак предмета обучения в ключе агрегации прогресса: для
-  DECLENSION_FORM — `(caseType, numberType, gender)` (см. quiz-declension.md §2), для
-  VOCABULARY_WORD — `formIast` слова.
-- `progressTagSetId` — строковый id именованного `ProgressTagSet` (подмножества progressTag урока),
-  опциональный параметр `start`/`start-or-resume`. Прогресс сета — средний score по входящим в него
-  progressTag. Состав сетов фиксирован дизайн-таблицей (см. quest-engine.md §2.4), одинаковая семантика
-  для всех itemType:
-  - **NEW** — progressTag без строки `quiz_item_score`;
-  - **LEARNING** — начато, но не MASTERED (строка есть, score ниже masteredLowerThreshold);
-  - **MASTERED** — score ≥ masteredLowerThreshold;
-  - **DIFFICULT** — ортогональная ось к первым трём: строка есть и (`consecutiveMistakes ≥ 2` ИЛИ
-    `score ≤ difficultUpperThreshold`); выход с гистерезисом `difficultExitMargin`;
-  - для уроков склонений дополнительно: **SINGULAR**/**DUAL**/**PLURAL** (по numberType) и пары падежей
-    **ACC_LOC**, **INS_ABL**, **GEN_LOC**, **DAT_ACC** (тренировка омонимичных окончаний,
-    architecture.md §3.3) — состав см. quiz-declension.md §3.4.
-- Сет адресует квиз по **весь срез** (всем его progressTag), без ограничений `maxNewPerSession`/`dueCapRatio`.
-- Соответствие бейджам LessonStatsBadges/LessonStatsTab (frontend, см. lesson-pages-spec.md): бейдж/строка
-  «Изучено» (`{mastered}/{total}`) → `progressTagSetId=MASTERED`; «Не изучено»/«Новые» (`{newCount}`) →
-  `progressTagSetId=NEW`; «В процессе» (`{learning}`) → `progressTagSetId=LEARNING`.
-- `QuizSession` хранит `progressTagSetId` (nullable) — участвует в поиске IN_PROGRESS-сессии для резюма:
-  сессия одного сета не резюмируется кликом по бейджу другого сета (или без id).
-- **Кнопка «Изучить» на VersePage** (`sangraha-service.md` §7) — тот же `start-or-resume` с
-  `progressTagSetId=NEW`, когда квиз стиха создан впервые (весь пул — новые слова, обычный смешанный
-  due+new+reserve отбор не нужен); для существующего квиза `progressTagSetId` не передаётся (обычный
-  смешанный отбор). `slug = workSlug`. Никаких новых полей/веток не требует — переиспользует общий
-  контракт.
-
-> ✅ **Реализовано (2026-07, код):** параметр `progressTagSetId` присутствует в OpenAPI
-> (`openapi/common/parameters.yaml#ProgressTagSetIdParam`) и реализован в коде quiz-service:
-> - отбор — `QuizProgressTagSetGenerator` (§4 п.«2а»);
-> - колонка `quiz_session.progress_tag_set_id` (миграция V11) и её учёт в поиске IN_PROGRESS-сессии для
->   резюма (`QuizSessionRepository.findInProgressByProgressTagSet`);
-> - методы отбора в `QuizItemScoreRepository` (`findNewItems`, `findLearningItems`, `findDifficultItems`,
->   `findMasteredItems`).
+> ✅ **Реализовано (2026-07, код):** параметр `statusFilter` присутствует в OpenAPI (`openapi/common/parameters.yaml#StatusFilterParam`, подключён к обоим путям в `openapi/quiz/quiz-sessions.yaml`) и реализован в коде quiz-service:
+> - `@RequestParam statusFilter` в `QuizSessionController.startSession`/`startOrResumeSession`;
+> - ветка `QuizSessionService.startOrResumeWithStatusFilter` + `SessionCreationService.createStatusFilteredSession`;
+> - отбор — `QuizStatusFilteredGenerator` (§4 п.«2а»);
+> - колонка `quiz_session.status_filter` (миграция V10) и её учёт в поиске IN_PROGRESS-сессии для резюма (`QuizSessionRepository.findInProgressByStatusFilter`);
+> - методы отбора NEW/LEARNING/REVIEW в `QuizItemScoreRepository` (`findLearningItems`, `findReviewItems`).
 >
-> Расхождения реализации, выявленные при сверке с кодом (актуализация 2026-08-06), зафиксированы в
-> `quiz-service.md` §8.
+> Расхождения реализации, выявленные при сверке с кодом (актуализация 2026-08-06), зафиксированы в `quiz-service.md` §8.
 
 ---
 
 ## 4. Алгоритм отбора (инвариантен к itemType)
 
-1. По переданному scope (запрос к curriculum-service через `CurriculumClient` — см. §2.3) и `itemType` получить список `externalRefId`, входящих в scope.
-2. Присоединить строки `quiz_item_score` пользователя по `(userId, itemType, externalRefId)`; вычислить статус по правилам §2.4; разделить пул на три подмножества: due (nextReviewAt ≤ текущее время и строка существует), new (строки нет), reserve (остальное, включая единицы в статусе MASTERED вне masteredCooldown).
+1. По переданным `scope` (запрос к curriculum-service через `ContentClient` — см. §2.3) и `itemType` (опционально — без ограничения по itemType, если запрошен квиз «по всем типам сразу») получить список `externalRefId`, входящих в scope.
+2. Присоединить строки `quiz_item_score` пользователя по `(userId, itemType, externalRefId)`; вычислить бакет по правилам §2.4; разделить пул на три подмножества: due (nextReviewAt ≤ текущее время и строка существует), new (строки нет), reserve (остальное, включая единицы бакета MASTERED вне masteredCooldown).
 
-**2а. Если передан `progressTagSetId` (§3), шаги 3–5 заменяются одним отбором без due/new/reserve-смешения:**
-- Срез резолвится в список progressTag данной единицы scope: для статусных сетов — по правилам §2.4
-  (`NEW` → нет строки; `LEARNING` → строка есть и score < masteredLowerThreshold; `MASTERED` → score ≥
-  masteredLowerThreshold; `DIFFICULT` → строка есть и (`consecutiveMistakes ≥ 2` ИЛИ `score ≤
-  difficultUpperThreshold`)); для сетов по числу (`SINGULAR`/`DUAL`/`PLURAL`) и по парам падежей
-  (`ACC_LOC`/`INS_ABL`/`GEN_LOC`/`DAT_ACC`) — по грамматическому признаку progressTag в пределах scope,
-  все статусы внутри среза, без фильтра по nextReviewAt.
-- Пул = все `QuizItem`, чей progressTag входит в срез; ограничения `maxNewPerSession`/`dueCapRatio`/`allowReserveWhenNoDue`
-  не применяются.
-- Если после отбора пул пуст — сессия не создаётся, quiz-service возвращает `SCOPE_FILTER_EMPTY`
-  (реакция на фронтенде — вне контракта квиза, см. lesson-pages-spec.md: бейдж со значением 0 некликабелен).
-- Внутри пула — сортировка по dueSortStrategy (как для due), ограничение до sessionSize.
+**2а. Если передан `statusFilter` (§3), шаги 3–5 заменяются одним отбором без due/new/reserve-смешения:**
+- `statusFilter=NEW` → пул = подмножество new целиком (без ограничения `maxNewPerSession`).
+- `statusFilter=LEARNING` → пул = единицы с существующей строкой `quiz_item_score`, чей бакет LEARNING или DIFFICULT (то есть «начато, но не MASTERED»); nextReviewAt не учитывается (в отличие от обычного due-отбора).
+- `statusFilter=REVIEW` → пул = единицы бакета MASTERED с `nextReviewAt ≤ текущее время` (REVIEW-бакет, architecture.md §3.6).
+- Если после отбора пул пуст — сессия не создаётся, quiz-service возвращает 404/пустой результат (реакция на это на фронтенде — вне контракта квиза, см. lesson-pages-spec.md: бейдж со значением 0 некликабелен/задизейблен).
+- Внутри пула — сортировка по dueSortStrategy (как для due), ограничение до sessionSize; dueCapRatio/allowReserveWhenNoDue не применяются.
 - Шаги 6–8 (interleave, minGap, requeue, обновление score) выполняются как обычно.
 3. Внутри due вычислить приоритет каждой единицы по весовой формуле из overdueWeight, scoreWeight, mistakeWeight (при dueSortStrategy = WEIGHTED) либо по одному из простых критериев (при OVERDUE_FIRST/LOWEST_SCORE_FIRST); отобрать верхние по приоритету в пределах sessionSize × dueCapRatio, остаток оставить в очереди без изменения nextReviewAt.
 4. Добавить из new не более maxNewPerSession единиц, ограниченно свободным местом в sessionSize.
 5. Если сессия не набрана до sessionSize и allowReserveWhenNoDue = true — добить из reserve по reserveFillStrategy.
 6. Расставить итоговый список с учётом interleaveCategories (не группировать подряд единицы одной подкатегории) и minGapBetweenSameWordRepeats.
 7. Передать итоговый список `QuizItem` в модуль рендеринга, соответствующий каждому itemType — генератор далее не участвует в построении текста вопроса и вариантов ответа.
-8. Во время прохождения сессии при ошибке применить requeue (шаги requeueDelayPositions) и обновить consecutiveMistakes; на каждый ответ (не по завершении сессии, а сразу) пересчитать score и stability по формуле §2.5 (upsert строки `quiz_item_score`, создавая её при первом ответе на NEW-единицу). Планирование nextReviewAt — отдельная формула, не описанная в этой версии контракта (см. §6). Статус нигде не устанавливается явно — вычисляется заново при следующем чтении по правилам §2.4.
+8. Во время прохождения сессии при ошибке применить requeue (шаги requeueDelayPositions) и обновить consecutiveMistakes; на каждый ответ (не по завершении сессии, а сразу) пересчитать score и stability по формуле §2.5 (upsert строки `quiz_item_score`, создавая её при первом ответе на NEW-единицу). Планирование nextReviewAt — отдельная формула, не описанная в этой версии контракта (см. §6). Бакет нигде не устанавливается явно — вычисляется заново при следующем чтении по правилам §2.4.
 
 ---
 
@@ -233,7 +198,7 @@ if consecutiveMistakes >= consecutiveMistakesThreshold:
 ## 6. Открытые вопросы
 
 - [x] **РЕШЕНО:** status не хранится, вычисляется из score — см. §2.4.
-- [x] **РЕШЕНО:** «Трудное» — ортогональная ось (consecutiveMistakes/низкий score), а не отдельный бакет — см. §2.4, quest-engine.md §2.4.
+- [x] **РЕШЕНО:** «Трудное» сводится к низкому score (бакет DIFFICULT), отдельного флага не заводим.
 - [x] **РЕШЕНО:** stability зависит от истории повторений конкретной единицы (растёт при успехах, снижается при ошибках) и влияет на резкость штрафа за ошибку — см. §2.5.
 - [x] **РЕШЕНО:** time-decay не реализуется (вариант а) — забывание проявляется через формулу §2.5 при следующем ответе, не через фоновый пересчёт.
 - [x] **РЕШЕНО:** формула score, точка равновесия ошибки (5), правило округления — см. §2.5.
@@ -252,6 +217,6 @@ if consecutiveMistakes >= consecutiveMistakesThreshold:
 1. Схема `quiz.quiz_item_score` отражена в OpenAPI (Агент 5) без привязки к конкретному itemType, без физических FK на другие схемы.
 2. Реализация generate() в quiz-service (Агент 2) не содержит ветвлений по itemType внутри алгоритма §4.
 3. Хотя бы два типа квизов (лексика, склонения) проходят через один и тот же generate() без дублирования логики отбора.
-4. Реализация не содержит периодических джобов пересчёта статуса/score (ни cron, ни scheduled-миграций) — статус и currentScore вычисляются лениво при чтении, согласно §2.4.
-5. Ветка `progressTagSetId` (§3 «Прогресс-сеты», §4 п.«2а») реализована через `QuizProgressTagSetGenerator` и `QuizItemScoreRepository`; `QuizSession.progressTagSetId` учитывается при резюме сессии. **Статус: ВЫПОЛНЕНО**.
+4. Реализация не содержит периодических джобов пересчёта статуса/score (ни cron, ни scheduled-миграций) — бакет и currentScore вычисляются лениво при чтении, согласно §2.4.
+5. Ветка `statusFilter` (§3 «Ручной фильтр по бакету», §4 п.«2а») реализована в `QuizSessionController`/`QuizSessionService`/`QuizItemScoreRepository`/`QuizStatusFilteredGenerator`, `QuizSession.statusFilter` учитывается при резюме сессии. **Статус: ВЫПОЛНЕНО** (код, 2026-07; актуализация документации 2026-08-06).
 6. Документ не превышает 350 строк (см. `conventions.md`, требование к компактности документации Агента 6).

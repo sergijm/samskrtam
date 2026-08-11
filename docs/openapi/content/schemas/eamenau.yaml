@@ -1,0 +1,126 @@
+# Schemas reverse-engineered from services/content-service/src/main/java/.../emenau
+# and .../content/dto (Eamenau/Emenau DTOs live in the content.dto package despite the
+# controllers being in the emenau.controller package — inconsistency in the code itself,
+# kept as-is).
+
+SandhiRuleGroupDto:
+  type: object
+  properties:
+    id:
+      type: integer
+    description:
+      type: string
+    code:
+      type: string
+
+SandhiRuleDto:
+  type: object
+  required: [id]
+  properties:
+    id:
+      type: integer
+    ruleNumber:
+      type: integer
+    ruleType:
+      type: string
+    shortDescription:
+      type: string
+    whitneyNumber:
+      type: string
+    iastExample:
+      type: string
+    hkExample:
+      type: string
+    notes:
+      type: string
+    fullText:
+      type: string
+    sandhiRuleGroups:
+      type: array
+      uniqueItems: true
+      items:
+        $ref: '#/SandhiRuleGroupDto'
+
+SandhiRuleInfo:
+  type: object
+  required: [ruleNumber]
+  properties:
+    ruleNumber:
+      type: integer
+    shortDescription:
+      type: string
+
+SolutionDto:
+  type: object
+  required: [id]
+  properties:
+    id:
+      type: integer
+    solutionText:
+      type: string
+    stepByStep:
+      type: string
+    sandhiRules:
+      type: array
+      items:
+        $ref: '#/SandhiRuleInfo'
+
+EamenauTaskDto:
+  type: object
+  required: [id]
+  properties:
+    id:
+      type: integer
+    taskNumber:
+      type: integer
+    taskText:
+      type: string
+    solution:
+      $ref: '#/SolutionDto'
+
+EmenauExerciseDto:
+  type: object
+  required: [id]
+  properties:
+    id:
+      type: integer
+    exerciseNumber:
+      type: integer
+    exerciseLetter:
+      type: string
+    instructionText:
+      type: string
+
+EmenauExerciseDetailDto:
+  type: object
+  required: [id]
+  properties:
+    id:
+      type: integer
+    exerciseNumber:
+      type: integer
+    exerciseLetter:
+      type: string
+    instructionText:
+      type: string
+    tasks:
+      type: array
+      items:
+        $ref: '#/EamenauTaskDto'
+
+SolutionUpdateRequestDto:
+  type: object
+  description: >
+    Request body for PUT /eamenau/exercises/solutions/{solutionId}. No @NotNull/validation
+    annotations in code (plain @Data) — both fields are effectively optional at the API
+    contract level, validation (if any) happens inside EamenauExerciseService.
+  properties:
+    stepByStep:
+      type:
+        - string
+        - 'null'
+    ruleNumbers:
+      type:
+        - string
+        - 'null'
+      description: Comma-separated rule numbers, as a raw string (not an array) in the current implementation.
