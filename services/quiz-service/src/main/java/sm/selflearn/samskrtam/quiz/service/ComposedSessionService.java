@@ -14,6 +14,7 @@ import sm.selflearn.samskrtam.quiz.dto.QuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse;
 import sm.selflearn.samskrtam.quiz.event.QuizAnsweredEvent;
 import sm.selflearn.samskrtam.quiz.event.QuizSessionStatusChangedEvent;
+import sm.selflearn.samskrtam.quiz.model.ItemType;
 import sm.selflearn.samskrtam.quiz.model.QuizAnswer;
 import sm.selflearn.samskrtam.quiz.model.QuizSession;
 import sm.selflearn.samskrtam.quiz.model.SessionQuestion;
@@ -217,8 +218,8 @@ public class ComposedSessionService {
     }
 
     /**
-     * Writes progress for an answered quest item: keyed as ({@link QuestProgressTypes
-     * resolved item type}, progress_tag) in {@code quiz_item_score}. The progress tag
+     * Writes progress for an answered quest item: keyed as (resolved item type,
+     * progress_tag) in {@code quiz_item_score}. The progress tag
      * groups all quest items sharing the same morphology attributes (case+number+gender)
      * or vocabulary lemma into a single progress row.
      */
@@ -230,7 +231,15 @@ public class ComposedSessionService {
             return Mono.empty();
         }
         return quizItemScoreService.upsertScore(
-                userId, QuestProgressTypes.resolve(stored.getItemType()), progressTag, isCorrect);
+                userId, resolveProgressItemType(stored.getItemType()), progressTag, isCorrect);
+    }
+
+    private static ItemType resolveProgressItemType(String questItemTypeCode) {
+        if (questItemTypeCode == null) return ItemType.VOCABULARY_WORD;
+        if (questItemTypeCode.startsWith("DECLENSION_") || questItemTypeCode.startsWith("CASE_")) {
+            return ItemType.DECLENSION_FORM;
+        }
+        return ItemType.VOCABULARY_WORD;
     }
 
     /**

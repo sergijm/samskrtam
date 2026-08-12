@@ -10,7 +10,7 @@ import java.util.List;
  * vowel-types whose paradigms are served by {@code ParadigmService}. Grammar
  * topics without a suppletive paradigm (regular nouns, verbs, …) resolve to an
  * empty list — their paradigms are composed on the fly from the quest_item pool
- * (see DeclensionQuestItemBatchGenerator), not stored here.
+ * (see DeclensionQuizItemGenerator), not stored here.
  *
  * <p>Closed under the existing {@code slug} contract: whoever calls the v2
  * declension-paradigm page passes the topic code as the lesson slug.

@@ -67,15 +67,6 @@ export interface GrammarLesson {
   progressPercent:  number;
     statusSummary?:   LessonStatusSummary;
   items?:           GrammarQuestionProgress[];
-  tagSetProgress?:   Array<{
-    setId: string;
-    labelRu: string;
-    labelEn: string;
-    aggregatedProgress: number;
-    totalCombinations: number;
-    learnedCombinations: number;
-    status: string;
-  }>;
 }
 
 export interface AnswerHistoryEntry {

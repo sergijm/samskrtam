@@ -15,6 +15,57 @@ import java.util.UUID;
 public interface QuestItemRepository extends JpaRepository<QuestItem, UUID> {
 
     /**
+     * Selects one quest item per (progress_tag, item_type, answer_mode) group
+     * using a window function — the first random row per partition.
+     * Used when no progress_tag collection is requested (full lesson).
+     *
+     * @param limit 0 = no limit (returns all distinct groups)
+     */
+    @Query(value = """
+            SELECT * FROM (
+              SELECT *,
+                row_number() OVER (PARTITION BY progress_tag, item_type, answer_mode ORDER BY random()) AS rn
+              FROM curriculum.quest_item
+              WHERE topic_id = :topicId
+                AND (:itemType IS NULL OR item_type = :itemType)
+                AND (:answerMode IS NULL OR answer_mode = :answerMode)
+                AND progress_tag IS NOT NULL
+            ) sub WHERE sub.rn = 1
+            ORDER BY random()
+            LIMIT NULLIF(:limit, 0)
+            """, nativeQuery = true)
+    List<QuestItem> selectByTopic(
+            @Param("topicId") UUID topicId,
+            @Param("itemType") String itemType,
+            @Param("answerMode") String answerMode,
+            @Param("limit") int limit);
+
+    /**
+     * Same as {@link #selectByTopic} but filters by a collection of progress tags.
+     * Used for grammar-set and status-set selection (progressTagSetId).
+     */
+    @Query(value = """
+            SELECT * FROM (
+              SELECT *,
+                row_number() OVER (PARTITION BY progress_tag, item_type, answer_mode ORDER BY random()) AS rn
+              FROM curriculum.quest_item
+              WHERE topic_id = :topicId
+                AND progress_tag = ANY(:progressTags)
+                AND (:itemType IS NULL OR item_type = :itemType)
+                AND (:answerMode IS NULL OR answer_mode = :answerMode)
+                AND progress_tag IS NOT NULL
+            ) sub WHERE sub.rn = 1
+            ORDER BY random()
+            LIMIT NULLIF(:limit, 0)
+            """, nativeQuery = true)
+    List<QuestItem> selectByTopicAndProgressTags(
+            @Param("topicId") UUID topicId,
+            @Param("progressTags") String[] progressTags,
+            @Param("itemType") String itemType,
+            @Param("answerMode") String answerMode,
+            @Param("limit") int limit);
+
+    /**
      * Random sample of ready-made quest items for a topic/type. Non-deterministic
      * ordering across calls (PostgreSQL {@code random()}) — see
      * curriculum-quest-items.md §5 (fetch for a session start).
@@ -57,11 +108,25 @@ public interface QuestItemRepository extends JpaRepository<QuestItem, UUID> {
      */
     @Modifying
     @Transactional
-    @Query("delete from QuestItem qi where qi.topicId = :topicId")
-    int deleteByTopicId(@Param("topicId") UUID topicId);
-
-    @Modifying
-    @Transactional
     @Query("delete from QuestItem qi where qi.topicId = :topicId and qi.itemType = :itemType")
     int deleteByTopicIdAndItemType(@Param("topicId") UUID topicId, @Param("itemType") String itemType);
+
+    /**
+     * Clears the whole {@code quest_item} table before a full regeneration. The
+     * related {@code quest_item_generation_key} rows are removed by the DB-level
+     * ON DELETE CASCADE on {@code quest_item_generation_key.quest_item_id}.
+     *
+     * @return number of removed quest items
+     */
+    @Modifying
+    @Transactional
+    @Query("delete from QuestItem qi")
+    int deleteAllQuestItems();
+
+    /**
+     * Number of distinct {@code progress_tag}s of a single topic (rows without
+     * a tag are ignored).
+     */
+    @Query("select count(distinct qi.progressTag) from QuestItem qi where qi.topicId = :topicId and qi.progressTag is not null")
+    long countDistinctProgressTagByTopicId(@Param("topicId") UUID topicId);
 }

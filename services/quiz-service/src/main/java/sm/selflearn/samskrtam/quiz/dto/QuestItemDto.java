@@ -18,6 +18,7 @@ import java.util.UUID;
  * @param correctAnswer эталонный ответ; {@code null} для MATCHING
  * @param distractors   неверные варианты для SINGLE_CHOICE; пусто для FREE_TEXT/MATCHING
  * @param payload       типоспецифичные данные, прокидываются без разбора
+ * @param progressTag   тег прогресса (caseType|numberType|gender или lemmaSlp1)
  */
 public record QuestItemDto(
         UUID id,
@@ -26,6 +27,7 @@ public record QuestItemDto(
         String prompt,
         String correctAnswer,
         List<String> distractors,
-        JsonNode payload
+        JsonNode payload,
+        String progressTag
 ) {
 }

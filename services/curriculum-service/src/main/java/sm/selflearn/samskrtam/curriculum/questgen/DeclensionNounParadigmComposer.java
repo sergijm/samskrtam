@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Composes the full declension paradigm of a regular noun lexeme for a given
  * declension class, sharing the exact morphology-class binding and gender
- * resolution used by {@link DeclensionQuestItemBatchGenerator}. Kept in the
+ * resolution used by {@link DeclensionQuizItemGenerator}. Kept in the
  * same package so it can reach the package-private {@link WordFormBuilder} and
  * {@link DeclensionParadigm}. Used by the v2 paradigm page for regular (non
  * suppletive) noun classes, mirroring one composed paradigm per lexeme.

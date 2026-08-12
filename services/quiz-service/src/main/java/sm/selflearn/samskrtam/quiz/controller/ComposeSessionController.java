@@ -11,37 +11,47 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.quiz.dto.ComposeQuizResponse;
-import sm.selflearn.samskrtam.quiz.dto.QuestComposeRequest;
-import sm.selflearn.samskrtam.quiz.service.QuestComposeService;
+import sm.selflearn.samskrtam.quiz.model.ProgressTagSetId;
+import sm.selflearn.samskrtam.quiz.service.QuizComposeService;
 
 import java.util.UUID;
 
 /**
- * Universal (curriculum-driven) quiz sessions: the caller specifies topics and a question
- * count per topic (mixed grammar + lexical topics allowed); curriculum-service renders the
- * materialized questions with options, quiz-service persists the session and serves it.
- *
- * <p>Contract-first: see docs/services/curriculum-session-composition.md.
+ * Universal (curriculum-driven) quiz sessions: selects one quest item per
+ * (progress_tag, item_type, answer_mode) group using a window-function query,
+ * then composes and persists the session.
  */
 @RestController
 @RequestMapping("/api/v2/quiz")
 @RequiredArgsConstructor
-@Tag(name = "Quest Compose Sessions", description = "Universal curriculum-driven quiz sessions (topics instead of lessons)")
+@Tag(name = "Quest Compose Sessions", description = "Universal curriculum-driven quiz sessions")
 public class ComposeSessionController {
 
-    private final QuestComposeService questComposeService;
+    private final QuizComposeService quizComposeService;
+
+    public record ComposeRequest(
+            String topicCode,
+            ProgressTagSetId progressTagSetId,
+            String itemType,
+            String answerMode,
+            int limit
+    ) {}
 
     @PostMapping("/compose")
-    @Operation(summary = "Compose and start a curriculum-driven quiz session from topics",
-            description = "Requests topics + counts, gets materialized questions from curriculum-service, "
-                    + "persists the session with options fixed at start, returns the first question set")
+    @Operation(summary = "Compose and start a curriculum-driven quiz session",
+            description = "Selects one item per (tag,type,mode) via window function, persists the session, returns questions")
     @ApiResponse(responseCode = "200", description = "Session composed and started")
-    @ApiResponse(responseCode = "400", description = "Empty topics or a topic with no materialized questions")
-    @ApiResponse(responseCode = "404", description = "Unknown topic code")
+    @ApiResponse(responseCode = "400", description = "Empty selection or unknown topic")
     public Mono<ComposeQuizResponse> compose(
             @RequestHeader("X-User-Id") UUID userId,
             @RequestHeader(value = "X-User-Locale", required = false) String userLocale,
-            @RequestBody QuestComposeRequest request) {
-        return questComposeService.compose(userId, request);
+            @RequestBody ComposeRequest request) {
+        return quizComposeService.compose(
+                userId,
+                request.topicCode(),
+                request.progressTagSetId(),
+                request.itemType(),
+                request.answerMode(),
+                request.limit());
     }
 }

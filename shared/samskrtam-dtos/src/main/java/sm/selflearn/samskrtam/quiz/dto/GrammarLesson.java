@@ -14,7 +14,6 @@ public class GrammarLesson {
     private float progressPercent;
     private LessonStatusSummary statusSummary;
     private List<GrammarQuestionProgress> items;
-    private List<TagSetProgress> tagSetProgress;
 
     // Getters and setters
     public UUID getLessonId() {
@@ -95,13 +94,5 @@ public class GrammarLesson {
 
     public void setItems(List<GrammarQuestionProgress> items) {
         this.items = items;
-    }
-
-    public List<TagSetProgress> getTagSetProgress() {
-        return tagSetProgress;
-    }
-
-    public void setTagSetProgress(List<TagSetProgress> tagSetProgress) {
-        this.tagSetProgress = tagSetProgress;
     }
 }

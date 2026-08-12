@@ -58,6 +58,9 @@ public class QuestItem {
     @Column(name = "generator_source", nullable = false, length = 60)
     private String generatorSource;
 
+    @Column(name = "progress_tag", length = 255)
+    private String progressTag;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

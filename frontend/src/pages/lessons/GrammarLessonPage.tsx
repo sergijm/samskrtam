@@ -7,7 +7,6 @@ import { LessonHeader } from '../../components/lesson/LessonHeader';
 import { LessonStatsTab } from '../../components/lesson/LessonStatsTab';
 import GrammarParadigmCarousel from '../../components/lesson/GrammarParadigmCarousel';
 import GrammarProgressGrid from '../../components/lesson/GrammarProgressGrid';
-import GrammarProgressTagSets from '../../components/lesson/GrammarProgressTagSets';
 import DeclensionExamplesPanel from '../../components/lesson/DeclensionExamplesPanel';
 import DeclensionEndingsReferenceTable from '../../components/lesson/DeclensionEndingsReferenceTable';
 import DeclensionEndingWordsTable from '../../components/lesson/DeclensionEndingWordsTable';
@@ -175,12 +174,6 @@ const GrammarLessonPage = () => {
                   numberNames={lesson.items ? aggregateByNumber(lesson.items) : []}
                   quizSlug={slug || ''}
                 />
-                {lesson.tagSetProgress && (
-                  <GrammarProgressTagSets
-                    tagSets={lesson.tagSetProgress}
-                    quizSlug={slug || ''}
-                  />
-                )}
               </TabPanel>
             </TabView>
           </div>
