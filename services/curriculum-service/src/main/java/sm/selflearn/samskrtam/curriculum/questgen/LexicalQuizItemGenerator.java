@@ -22,15 +22,17 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * Generates the VOCABULARY_WORD quest type (recognition direction:
- * lemma -> meaning) for every lexical topic (domain {@code LEXICON}, slug
- * prefix {@code lex-}, see V6). One {@code quest_item} row per lexeme bound to
- * the topic; distractors are the glosses of other lexemes of the same topic.
- * Rows without a gloss in either language, and topics with too few glossed
- * lexemes for a meaningful choice, are skipped.
+ * lemma -> meaning) for every LEXICON lesson backed by a semantic classifier
+ * node (domain {@code LEXICON}, {@code topic.semantic_topic_id} not null, see
+ * V16). One {@code quest_item} row per lexeme tagged with the lesson's
+ * semantic topic; distractors are the glosses of other lexemes of the same
+ * topic. Rows without a gloss in either language, and topics with too few
+ * glossed lexemes for a meaningful choice, are skipped.
  *
  * <p>Every produced row carries {@code progress_tag = lemmaSlp1} and is fully
  * bilingual ({@code *_ru} columns mirror the English content), matching the
@@ -62,7 +64,11 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
     @Override
     @Transactional
     public int generate(Topic topic) {
-        List<Lexeme> lexemes = lexemeRepository.findByLexicalTopics_Code(topic.getCode());
+        UUID semanticTopicId = topic.getSemanticTopicId();
+        if (semanticTopicId == null) {
+            return 0;
+        }
+        List<Lexeme> lexemes = lexemeRepository.findBySemanticTopics_Id(semanticTopicId);
         if (lexemes.size() < DISTRACTOR_COUNT + 1) {
             return 0;
         }

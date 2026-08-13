@@ -24,10 +24,19 @@ public interface LexemeRepository extends JpaRepository<Lexeme, UUID> {
     boolean existsByLemmaSlp1AndGender(String lemmaSlp1, LexemeGender gender);
 
     /**
-     * Lexemes bound to a lexical topic (via {@code curriculum.lexical_topic_binding}).
-     * Used by the lexical quiz generator to materialize VOCABULARY_WORD items per topic.
+     * Lexemes tagged with a semantic classifier node. Used by the lexical quiz
+     * generator: a LEXICON lesson carries {@code semantic_topic_id}, and its
+     * composition is the set of lexemes with that semantic topic
+     * ({@code curriculum.lexeme_semantic_topic}).
      */
-    List<Lexeme> findByLexicalTopics_Code(String topicCode);
+    List<Lexeme> findBySemanticTopics_Id(UUID semanticTopicId);
+
+    /**
+     * Lexeme ids tagged with any of the given semantic nodes. Used by the pool
+     * resolver to translate topic ids into a lexeme pool in one query.
+     */
+    @Query("select distinct l.id from Lexeme l join l.semanticTopics s where s.id in :semanticTopicIds")
+    List<UUID> findLexemeIdsBySemanticTopicIds(@Param("semanticTopicIds") Collection<UUID> semanticTopicIds);
 
     List<Lexeme> findByLemmaIastStartingWith(String prefix);
 

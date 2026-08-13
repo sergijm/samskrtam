@@ -40,6 +40,10 @@ public class Topic {
     @Column(name = "domain", nullable = false, length = 10)
     private TopicDomain domain = TopicDomain.GRAMMAR;
 
+    /** Semantic classifier node the lesson is built from (LEXICON lessons); null otherwise. */
+    @Column(name = "semantic_topic_id")
+    private UUID semanticTopicId;
+
     @Column(name = "is_evergreen", nullable = false)
     private boolean isEvergreen;
 

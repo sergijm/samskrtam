@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 class LexicalQuizItemGeneratorTest {
 
     private static final UUID TOPIC_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+    private static final UUID SEMANTIC_TOPIC_ID = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
 
     private TopicRepository topicRepository;
     private LexemeRepository lexemeRepository;
@@ -49,6 +50,7 @@ class LexicalQuizItemGeneratorTest {
         Topic topic = new Topic();
         topic.setId(TOPIC_ID);
         topic.setCode(code);
+        topic.setSemanticTopicId(SEMANTIC_TOPIC_ID);
         return topic;
     }
 
@@ -81,7 +83,7 @@ class LexicalQuizItemGeneratorTest {
                 lexeme("gaja", "gaja", "गज", "elephant", "слон"),
                 lexeme("siṃha", "simha", "सिंह", "lion", "лев"),
                 lexeme("vyāghra", "vyaghra", "व्याघ्र", "tiger", "тигр"));
-        when(lexemeRepository.findByLexicalTopics_Code("lex-animals"))
+        when(lexemeRepository.findBySemanticTopics_Id(SEMANTIC_TOPIC_ID))
                 .thenReturn(lexemes);
         when(questItemRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -117,7 +119,7 @@ class LexicalQuizItemGeneratorTest {
                 lexeme("gaja", "gaja", "गज", "elephant", "слон"),
                 lexeme("siṃha", "simha", "सिंह", "lion", "лев"),
                 lexeme("vyāghra", "vyaghra", "व्याघ्र", "tiger", "тигр"));
-        when(lexemeRepository.findByLexicalTopics_Code("lex-animals"))
+        when(lexemeRepository.findBySemanticTopics_Id(SEMANTIC_TOPIC_ID))
                 .thenReturn(lexemes);
         when(questItemRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -136,7 +138,7 @@ class LexicalQuizItemGeneratorTest {
                 lexeme("nara", "nara", "नर", "man", "мужчина"),
                 lexeme("gaja", "gaja", "गज", "elephant", "слон"),
                 lexeme("siṃha", "simha", "सिंह", "lion", "лев"));
-        when(lexemeRepository.findByLexicalTopics_Code("lex-animals"))
+        when(lexemeRepository.findBySemanticTopics_Id(SEMANTIC_TOPIC_ID))
                 .thenReturn(lexemes);
 
         assertThat(generator.generate(topic("lex-animals"))).isZero();
@@ -155,7 +157,7 @@ class LexicalQuizItemGeneratorTest {
                 lexeme("gaja", "gaja", "गज", "elephant", "слон"),
                 lexeme("siṃha", "simha", "सिंह", "lion", "лев"),
                 lexeme("vyāghra", "vyaghra", "व्याघ्र", "tiger", "тигр"));
-        when(lexemeRepository.findByLexicalTopics_Code("lex-animals"))
+        when(lexemeRepository.findBySemanticTopics_Id(SEMANTIC_TOPIC_ID))
                 .thenReturn(lexemes);
         when(questItemRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -165,8 +167,8 @@ class LexicalQuizItemGeneratorTest {
     }
 
     @Test
-    void generate_noApprovedLexemes_noop() {
-        when(lexemeRepository.findByLexicalTopics_Code("lex-animals"))
+    void generate_noLexemes_noop() {
+        when(lexemeRepository.findBySemanticTopics_Id(SEMANTIC_TOPIC_ID))
                 .thenReturn(List.of());
 
         assertThat(generator.generate(topic("lex-animals"))).isZero();

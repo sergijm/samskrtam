@@ -11,12 +11,14 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.UserLexemeProgress;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexicalTopicBindingRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.SourceOccurrenceRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserCollectionItemRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserLexemeProgressRepository;
+import sm.selflearn.samskrtam.curriculum.model.Topic;
+import sm.selflearn.samskrtam.curriculum.repository.TopicRepository;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -27,8 +29,9 @@ import java.util.UUID;
 
 /**
  * Разрешение пула кандидатов для lexical-сессий (lexical-quizzes.md §3,
- * task-curriculum-15). База пула — все лексемы; переданные измерения
- * пересекаются (AND), значения внутри измерения объединяются (OR).
+ * task-curriculum-15). База пула — все лексемы; тема-фильтр резолвится через
+ * {@code topic.semantic_topic_id} в {@code lexeme_semantic_topic}. Переданные
+ * измерения пересекаются (AND), значения внутри измерения объединяются (OR).
  * Балансировка: квота на тему при topicIds.size() &gt; 1 и финальный reshuffle
  * «не более 2 подряд одного posCode».
  */
@@ -40,8 +43,8 @@ public class LexemePoolService {
     public static final int MASTERY_MASTERED = 90;
 
     private final LexemeRepository lexemeRepository;
+    private final TopicRepository topicRepository;
     private final LexemeFrequencyRepository lexemeFrequencyRepository;
-    private final LexicalTopicBindingRepository lexicalTopicBindingRepository;
     private final SourceOccurrenceRepository sourceOccurrenceRepository;
     private final UserCollectionItemRepository userCollectionItemRepository;
     private final UserLexemeProgressRepository userLexemeProgressRepository;
@@ -85,11 +88,26 @@ public class LexemePoolService {
             return ids;
         }
         Set<UUID> allowed = new HashSet<>();
-        for (UUID topicId : topicIds) {
-            lexicalTopicBindingRepository.findByIdLexicalTopicId(topicId)
-                    .forEach(binding -> allowed.add(binding.getId().getLexemeId()));
-        }
+        topicLexemeIds(topicIds).values().forEach(allowed::addAll);
         return intersect(ids, allowed);
+    }
+
+    /**
+     * topicId → set of lexeme ids, resolved via each topic's {@code semantic_topic_id}
+     * into {@code lexeme_semantic_topic}. Topics without a semantic node (e.g. the
+     * frequency-based evergreen review) contribute nothing.
+     */
+    private Map<UUID, Set<UUID>> topicLexemeIds(Collection<UUID> topicIds) {
+        Map<UUID, Set<UUID>> result = new LinkedHashMap<>();
+        for (Topic topic : topicRepository.findAllById(topicIds)) {
+            if (topic.getSemanticTopicId() == null) {
+                continue;
+            }
+            Set<UUID> lexemeIds = new HashSet<>(
+                    lexemeRepository.findLexemeIdsBySemanticTopicIds(List.of(topic.getSemanticTopicId())));
+            result.put(topic.getId(), lexemeIds);
+        }
+        return result;
     }
 
     private List<UUID> applyFrequencyFilter(List<UUID> ids, Integer min, Integer max) {
@@ -167,18 +185,17 @@ public class LexemePoolService {
     private List<Lexeme> applyTopicQuota(List<Lexeme> lexemes, List<UUID> topicIds, int poolLimit) {
         int perTopicQuota = (int) Math.ceil((double) poolLimit / topicIds.size()) + 2;
 
-        Map<UUID, List<Lexeme>> byTopic = new LinkedHashMap<>();
+        Map<UUID, Set<UUID>> byTopic = topicLexemeIds(topicIds);
+        Map<UUID, List<Lexeme>> grouped = new LinkedHashMap<>();
         for (UUID topicId : topicIds) {
-            Set<UUID> lexemeIds = new HashSet<>();
-            lexicalTopicBindingRepository.findByIdLexicalTopicId(topicId)
-                    .forEach(binding -> lexemeIds.add(binding.getId().getLexemeId()));
-            byTopic.put(topicId, lexemes.stream().filter(l -> lexemeIds.contains(l.getId())).toList());
+            Set<UUID> lexemeIds = byTopic.getOrDefault(topicId, Set.of());
+            grouped.put(topicId, lexemes.stream().filter(l -> lexemeIds.contains(l.getId())).toList());
         }
 
         Set<UUID> selected = new HashSet<>();
         List<Lexeme> result = new ArrayList<>();
         for (UUID topicId : topicIds) {
-            List<Lexeme> candidates = new ArrayList<>(byTopic.getOrDefault(topicId, List.of()));
+            List<Lexeme> candidates = new ArrayList<>(grouped.getOrDefault(topicId, List.of()));
             Collections.shuffle(candidates);
             int taken = 0;
             for (Lexeme candidate : candidates) {

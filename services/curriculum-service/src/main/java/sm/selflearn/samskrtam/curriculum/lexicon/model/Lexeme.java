@@ -19,7 +19,6 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import sm.selflearn.samskrtam.curriculum.model.Topic;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -101,15 +100,6 @@ public class Lexeme {
         inverseJoinColumns = @JoinColumn(name = "morphology_class_code")
     )
     private Set<MorphologyClass> morphologyClasses = new HashSet<>();
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "lexical_topic_binding",
-        schema = "curriculum",
-        joinColumns = @JoinColumn(name = "lexeme_id"),
-        inverseJoinColumns = @JoinColumn(name = "lexical_topic_id")
-    )
-    private Set<Topic> lexicalTopics = new HashSet<>();
 
     @OneToMany(mappedBy = "lexeme", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<SourceOccurrence> sourceOccurrences = new ArrayList<>();

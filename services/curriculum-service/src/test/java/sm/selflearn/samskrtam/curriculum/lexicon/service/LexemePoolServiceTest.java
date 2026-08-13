@@ -4,17 +4,16 @@ import org.junit.jupiter.api.Test;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.PoolCriteria;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexicalTopicBinding;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexicalTopicBindingId;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.UserLexemeProgress;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.UserLexemeProgressId;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexicalTopicBindingRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.SourceOccurrenceRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserCollectionItemRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserLexemeProgressRepository;
+import sm.selflearn.samskrtam.curriculum.model.Topic;
+import sm.selflearn.samskrtam.curriculum.repository.TopicRepository;
 
 import java.util.HashSet;
 import java.util.List;
@@ -50,8 +49,8 @@ class LexemePoolServiceTest {
         when(lexemeRepo.findAll()).thenReturn(List.of(lexeme));
         when(lexemeRepo.findWithDetailsByIdIn(any())).thenReturn(List.of(lexeme));
 
-        LexemePoolService service = poolService(lexemeRepo, mock(LexemeFrequencyRepository.class),
-                mock(LexicalTopicBindingRepository.class), mock(SourceOccurrenceRepository.class),
+        LexemePoolService service = poolService(lexemeRepo, mock(TopicRepository.class),
+                mock(LexemeFrequencyRepository.class), mock(SourceOccurrenceRepository.class),
                 mock(UserCollectionItemRepository.class), mock(UserLexemeProgressRepository.class));
 
         assertThat(service.resolve(null)).hasSize(1);
@@ -81,8 +80,8 @@ class LexemePoolServiceTest {
         UserLexemeProgressRepository progressRepo = mock(UserLexemeProgressRepository.class);
         when(progressRepo.findByIdUserId(userId)).thenReturn(List.of(masteredProgress));
 
-LexemePoolService service = poolService(lexemeRepo, mock(LexemeFrequencyRepository.class),
-                mock(LexicalTopicBindingRepository.class), mock(SourceOccurrenceRepository.class),
+LexemePoolService service = poolService(lexemeRepo, mock(TopicRepository.class),
+                mock(LexemeFrequencyRepository.class), mock(SourceOccurrenceRepository.class),
                 mock(UserCollectionItemRepository.class), progressRepo);
 
         PoolCriteria criteria = new PoolCriteria(List.of(), null, null, List.of(), List.of(),
@@ -122,14 +121,17 @@ LexemePoolService service = poolService(lexemeRepo, mock(LexemeFrequencyReposito
                                 .filter(l -> l.getId().equals(id)).findFirst().orElseThrow())
                         .toList());
 
-        LexicalTopicBindingRepository bindingRepo = mock(LexicalTopicBindingRepository.class);
-        when(bindingRepo.findByIdLexicalTopicId(topicA))
-                .thenReturn(bindings(topicA, a1, a2, a3));
-        when(bindingRepo.findByIdLexicalTopicId(topicB))
-                .thenReturn(bindings(topicB, b1, b2));
+        UUID semanticA = UUID.randomUUID();
+        UUID semanticB = UUID.randomUUID();
+        TopicRepository topicRepo = mock(TopicRepository.class);
+        when(topicRepo.findAllById(any())).thenReturn(List.of(topic(topicA, semanticA), topic(topicB, semanticB)));
+        when(lexemeRepo.findLexemeIdsBySemanticTopicIds(List.of(semanticA)))
+                .thenReturn(List.of(a1.getId(), a2.getId(), a3.getId()));
+        when(lexemeRepo.findLexemeIdsBySemanticTopicIds(List.of(semanticB)))
+                .thenReturn(List.of(b1.getId(), b2.getId()));
 
-        LexemePoolService service = poolService(lexemeRepo, mock(LexemeFrequencyRepository.class),
-                bindingRepo, mock(SourceOccurrenceRepository.class),
+        LexemePoolService service = poolService(lexemeRepo, topicRepo, mock(LexemeFrequencyRepository.class),
+                mock(SourceOccurrenceRepository.class),
                 mock(UserCollectionItemRepository.class), mock(UserLexemeProgressRepository.class));
 
         // poolLimit=6, 2 темы → квота = ceil(6/2)+2 = 5 (не лимитирует в этом случае).
@@ -145,15 +147,11 @@ LexemePoolService service = poolService(lexemeRepo, mock(LexemeFrequencyReposito
         assertThat(result).isNotEmpty();
     }
 
-    private List<LexicalTopicBinding> bindings(UUID topicId, Lexeme... lexemes) {
-        return java.util.Arrays.stream(lexemes).map(l -> {
-            LexicalTopicBinding b = new LexicalTopicBinding();
-            LexicalTopicBindingId id = new LexicalTopicBindingId();
-            id.setLexicalTopicId(topicId);
-            id.setLexemeId(l.getId());
-            b.setId(id);
-            return b;
-        }).toList();
+    private Topic topic(UUID id, UUID semanticTopicId) {
+        Topic topic = new Topic();
+        topic.setId(id);
+        topic.setSemanticTopicId(semanticTopicId);
+        return topic;
     }
 
     private int codeRunLength(List<Lexeme> lexemes) {
@@ -175,12 +173,12 @@ LexemePoolService service = poolService(lexemeRepo, mock(LexemeFrequencyReposito
 
     private LexemePoolService poolService(
             LexemeRepository lexemeRepo,
+            TopicRepository topicRepository,
             LexemeFrequencyRepository freqRepo,
-            LexicalTopicBindingRepository bindingRepo,
             SourceOccurrenceRepository occurrenceRepo,
             UserCollectionItemRepository collectionRepo,
             UserLexemeProgressRepository progressRepo) {
-        return new LexemePoolService(lexemeRepo, freqRepo, bindingRepo, occurrenceRepo,
+        return new LexemePoolService(lexemeRepo, topicRepository, freqRepo, occurrenceRepo,
                 collectionRepo, progressRepo);
     }
 }
