@@ -11,7 +11,6 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.UserLexemeProgress;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.SourceOccurrenceRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserCollectionItemRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserLexemeProgressRepository;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
@@ -45,7 +44,6 @@ public class LexemePoolService {
     private final LexemeRepository lexemeRepository;
     private final TopicRepository topicRepository;
     private final LexemeFrequencyRepository lexemeFrequencyRepository;
-    private final SourceOccurrenceRepository sourceOccurrenceRepository;
     private final UserCollectionItemRepository userCollectionItemRepository;
     private final UserLexemeProgressRepository userLexemeProgressRepository;
 
@@ -53,7 +51,7 @@ public class LexemePoolService {
     public List<LexemeCandidateDto> resolve(PoolCriteria criteria) {
         if (criteria == null) {
             criteria = new PoolCriteria(List.of(), null, null, List.of(), List.of(),
-                    null, null, null, null, 100);
+                    null, null, 100);
         }
 
         List<UUID> ids = baseIds();
@@ -61,7 +59,6 @@ public class LexemePoolService {
         ids = applyFrequencyFilter(ids, criteria.frequencyRankMin(), criteria.frequencyRankMax());
         ids = applyPosFilter(ids, criteria.posCodes());
         ids = applyMorphologyFilter(ids, criteria.morphologyClassCodes());
-        ids = applySourceFilter(ids, criteria.sourceId(), criteria.sourceLocationPrefix());
         ids = applyCollectionFilter(ids, criteria.collectionId());
         ids = applyMasteredExclusion(ids, criteria.excludeMasteredForUserId());
 
@@ -137,15 +134,6 @@ public class LexemePoolService {
         Set<UUID> allowed = new HashSet<>();
         byMorph.forEach(l -> allowed.add(l.getId()));
         return intersect(ids, allowed);
-    }
-
-    private List<UUID> applySourceFilter(List<UUID> ids, UUID sourceId, String prefix) {
-        if (sourceId == null) {
-            return ids;
-        }
-        List<UUID> fromSource = sourceOccurrenceRepository
-                .findLexemeIdsBySourceIdAndLocationPrefix(sourceId, prefix);
-        return intersect(ids, new HashSet<>(fromSource));
     }
 
     private List<UUID> applyCollectionFilter(List<UUID> ids, UUID collectionId) {

@@ -102,9 +102,6 @@ public class Lexeme {
     private Set<MorphologyClass> morphologyClasses = new HashSet<>();
 
     @OneToMany(mappedBy = "lexeme", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<SourceOccurrence> sourceOccurrences = new ArrayList<>();
-
-    @OneToMany(mappedBy = "lexeme", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<UserCollectionItem> collectionItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "lexeme", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

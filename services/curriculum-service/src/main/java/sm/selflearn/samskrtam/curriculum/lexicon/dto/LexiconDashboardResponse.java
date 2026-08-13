@@ -14,7 +14,6 @@ public record LexiconDashboardResponse(
         List<LexiconFrequencyDto> frequencyBands,
         List<LexiconSemanticTopicDto> topics,
         List<LexiconPosDto> pos,
-        List<LexiconSourceDto> sources,
         List<LexiconUserCollectionDto> collections,
         List<LexiconQuickStartDto> quickStart
 ) {

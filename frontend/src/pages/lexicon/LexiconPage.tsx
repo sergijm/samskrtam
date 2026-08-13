@@ -10,7 +10,6 @@ import LexiconQuickStart from '../../components/lexicon/LexiconQuickStart';
 import LexiconFrequency from '../../components/lexicon/LexiconFrequency';
 import LexiconTopics from '../../components/lexicon/LexiconTopics';
 import LexiconPos from '../../components/lexicon/LexiconPos';
-import LexiconSources from '../../components/lexicon/LexiconSources';
 import LexiconCollections from '../../components/lexicon/LexiconCollections';
 
 /**
@@ -51,7 +50,6 @@ const LexiconPage: React.FC = () => {
       <LexiconFrequency bands={data.frequencyBands} />
       <LexiconTopics topics={data.topics} />
       <LexiconPos pos={data.pos} />
-      <LexiconSources sources={data.sources} />
       <LexiconCollections collections={data.collections} />
     </div>
   );

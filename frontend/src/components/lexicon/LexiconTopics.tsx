@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { ProgressBar } from 'primereact/progressbar';
 import { Toast } from 'primereact/toast';
 import { LexicalTopic } from '../../types/lexicon';
@@ -16,6 +17,7 @@ const INITIAL_VISIBLE = 9;
 /** «Темы» — семантические группы слов. Показываем 9, остальные по «Все темы →». */
 const LexiconTopics: React.FC<LexiconTopicsProps> = ({ topics }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { toast, showComingSoon } = useLexiconToast();
   const locale = useLexiconLocale();
   const [showAll, setShowAll] = useState(false);
@@ -40,7 +42,7 @@ const LexiconTopics: React.FC<LexiconTopicsProps> = ({ topics }) => {
             <div key={topic.id} className="col-12 sm:col-6 lg:col-4 xl:col-3">
               <div
                 className="lexicon-card lexicon-topic-card h-full cursor-pointer"
-                onClick={() => showComingSoon()}
+                onClick={() => navigate(`/lessons/vocabulary/${topic.id}`)}
               >
                 <div className="flex align-items-center justify-content-between gap-2">
                   <span className="font-semibold">{locale({ ru: topic.nameRu, en: topic.nameEn })}</span>

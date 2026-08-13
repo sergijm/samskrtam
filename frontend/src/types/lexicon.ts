@@ -47,16 +47,6 @@ export interface LexiconPos {
   wordCount: number;
 }
 
-/** Произведение / источник лексики */
-export interface LexicalSource {
-  id: string;
-  titleRu: string;
-  titleEn: string;
-  devanagari?: string;
-  wordCount: number;
-  masteredCount: number;
-}
-
 /** Пользовательский список */
 export interface UserCollection {
   id: string;
@@ -80,7 +70,6 @@ export interface LexiconDashboardData {
   frequencyBands: FrequencyBand[];
   topics: LexicalTopic[];
   pos: LexiconPos[];
-  sources: LexicalSource[];
   collections: UserCollection[];
   quickStart: QuickStartPreset[];
 }

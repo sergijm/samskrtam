@@ -528,6 +528,20 @@ html {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
+/* ─── Grammar (GrammarPage) ─── */
+.grammar-page .grammar-card {
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: 0.9rem;
+    padding: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.grammar-page .grammar-card.cursor-pointer:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
 /* Hero */
 .lexicon-hero-cta {
     display: inline-flex;

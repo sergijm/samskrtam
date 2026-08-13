@@ -14,8 +14,6 @@ public record PoolCriteria(
         Integer frequencyRankMax,
         List<String> posCodes,
         List<String> morphologyClassCodes,
-        UUID sourceId,
-        String sourceLocationPrefix,
         UUID collectionId,
         UUID excludeMasteredForUserId,
         Integer poolLimit

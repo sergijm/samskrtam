@@ -76,14 +76,16 @@ public class QuestItemController {
     @GetMapping
     public List<QuestItemDto> getQuestItems(
             @RequestParam UUID topicId,
-            @RequestParam String itemType,
+            @RequestParam(required = false) String itemType,
             @RequestParam(defaultValue = "20") int limit) {
         if (!topicRepository.existsById(topicId)) {
             throw new EntityNotFoundException("Topic not found: " + topicId);
         }
         int capped = Math.max(1, Math.min(limit, MAX_LIMIT));
-        return questItemRepository.findRandomByTopicIdAndItemType(topicId, itemType, capped)
-                .stream()
+        List<QuestItem> items = itemType != null
+                ? questItemRepository.findRandomByTopicIdAndItemType(topicId, itemType, capped)
+                : questItemRepository.findRandomByTopicId(topicId, capped);
+        return items.stream()
                 .map(questItemMapper::toDto)
                 .toList();
     }

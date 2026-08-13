@@ -5,21 +5,16 @@ import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconDashboardResponse;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconFrequencyDto;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconPosDto;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconSemanticTopicDto;
-import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconSourceDto;
 import sm.selflearn.samskrtam.curriculum.lexicon.mapper.LexiconFrequencyMapperImpl;
 import sm.selflearn.samskrtam.curriculum.lexicon.mapper.LexiconSemanticTopicMapperImpl;
 import sm.selflearn.samskrtam.curriculum.lexicon.mapper.LexiconPosMapperImpl;
-import sm.selflearn.samskrtam.curriculum.lexicon.mapper.LexiconSourceMapperImpl;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.FrequencyBand;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PosGroup;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticTopic;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.Source;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.SourceKind;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.FrequencyBandRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticTopicRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.SourceRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserCollectionRepository;
 
 import java.util.List;
@@ -35,14 +30,12 @@ class LexiconDashboardServiceTest {
             FrequencyBandRepository bands,
             SemanticTopicRepository topics,
             PartOfSpeechRepository pos,
-            SourceRepository sources,
             UserCollectionRepository collections) {
         return new LexiconDashboardService(
-                bands, topics, pos, sources, collections,
+                bands, topics, pos, collections,
                 new LexiconFrequencyMapperImpl(),
                 new LexiconSemanticTopicMapperImpl(),
-                new LexiconPosMapperImpl(),
-                new LexiconSourceMapperImpl());
+                new LexiconPosMapperImpl());
     }
 
     private FrequencyBand band(String code, int min, int max) {
@@ -72,32 +65,20 @@ class LexiconDashboardServiceTest {
         return p;
     }
 
-    private Source source(String code) {
-        Source s = new Source();
-        s.setId(UUID.randomUUID());
-        s.setTitleRu(code);
-        s.setTitleEn(code);
-        s.setKind(SourceKind.EPIC);
-        s.setUniqueLemmaCountCache(400);
-        return s;
-    }
-
     @Test
     void getDashboard_mapsTaxonomyAndReportsRandomProgress() {
         FrequencyBandRepository bands = mock(FrequencyBandRepository.class);
         SemanticTopicRepository topics = mock(SemanticTopicRepository.class);
         PartOfSpeechRepository pos = mock(PartOfSpeechRepository.class);
-        SourceRepository sources = mock(SourceRepository.class);
         UserCollectionRepository collections = mock(UserCollectionRepository.class);
 
         when(bands.findAllByOrderBySortOrderAsc())
                 .thenReturn(List.of(band("CORE", 1, 100), band("ESSENTIAL", 101, 250)));
         when(topics.findAll()).thenReturn(List.of(topic("nature", "Природа", "Nature")));
         when(pos.findAll()).thenReturn(List.of(pos("noun")));
-        when(sources.findAll()).thenReturn(List.of(source("gita")));
 
         LexiconDashboardResponse response =
-                service(bands, topics, pos, sources, collections).getDashboard();
+                service(bands, topics, pos, collections).getDashboard();
 
         assertThat(response.summary().totalWords()).isEqualTo(LexiconDashboardService.TOTAL_WORDS);
         assertThat(response.summary().masteredCount())
@@ -115,10 +96,6 @@ class LexiconDashboardServiceTest {
         assertThat(response.topics().get(0).nameEn()).isEqualTo("Nature");
 
         assertThat(response.pos()).extracting(LexiconPosDto::id).containsExactly("noun");
-
-        LexiconSourceDto gita = response.sources().get(0);
-        assertThat(gita.wordCount()).isEqualTo(400);
-        assertThat(gita.titleEn()).isEqualTo("gita");
 
         assertThat(response.quickStart()).hasSize(3);
         assertThat(response.collections()).isEmpty();

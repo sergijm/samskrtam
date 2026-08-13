@@ -105,8 +105,19 @@ public class LessonV2Service {
             }
 
             List<String> progressTags = items.stream()
-                    .map(QuestItemDto::progressTag)
+                    .map(it -> it.progressTag() != null ? it.progressTag() : it.correctAnswer())
+                    .filter(tag -> tag != null && !tag.isBlank())
                     .toList();
+
+            if (progressTags.isEmpty()) {
+                dto.setLearnedWords(0);
+                dto.setProgressPercent(0f);
+                dto.setWords(items.stream()
+                        .map(this::emptyWordProgress)
+                        .collect(Collectors.toList()));
+                dto.setStatusSummary(new LessonStatusSummary(items.size(), items.size(), 0, 0, 0));
+                return Mono.just(dto);
+            }
 
             Instant now = Instant.now();
             return quizItemScoreRepository

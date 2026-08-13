@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.VocabularyQuizDefinitionUpsertRequest;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.VocabularyQuizKind;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.SourceRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.VocabularyQuizDefinitionRepository;
 import sm.selflearn.samskrtam.curriculum.model.ComplexQuiz;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
@@ -25,10 +24,9 @@ class VocabularyQuizDefinitionServiceTest {
     private VocabularyQuizDefinitionService service(
             VocabularyQuizDefinitionRepository definitionRepo,
             TopicRepository topicRepo,
-            ComplexQuizRepository complexQuizRepo,
-            SourceRepository sourceRepo) {
+            ComplexQuizRepository complexQuizRepo) {
         return new VocabularyQuizDefinitionService(
-                definitionRepo, topicRepo, complexQuizRepo, sourceRepo);
+                definitionRepo, topicRepo, complexQuizRepo);
     }
 
     @Test
@@ -45,10 +43,10 @@ class VocabularyQuizDefinitionServiceTest {
 
         VocabularyQuizDefinitionUpsertRequest request =
                 new VocabularyQuizDefinitionUpsertRequest(
-                        VocabularyQuizKind.TOPIC, "t", "t", topicId, quizId, null, null, null);
+                        VocabularyQuizKind.TOPIC, "t", "t", topicId, quizId, null);
 
         VocabularyQuizDefinitionService svc =
-                service(definitionRepo, topicRepo, complexQuizRepo, mock(SourceRepository.class));
+                service(definitionRepo, topicRepo, complexQuizRepo);
 
         assertThatThrownBy(() -> svc.create(request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -67,11 +65,11 @@ class VocabularyQuizDefinitionServiceTest {
         VocabularyQuizDefinitionUpsertRequest request =
                 new VocabularyQuizDefinitionUpsertRequest(
                         VocabularyQuizKind.FREQUENCY_BAND, "Core", "Core",
-                        null, null, null, null, 100);
+                        null, null, 100);
 
         VocabularyQuizDefinitionService svc =
                 service(definitionRepo, mock(TopicRepository.class),
-                        mock(ComplexQuizRepository.class), mock(SourceRepository.class));
+                        mock(ComplexQuizRepository.class));
 
         var saved = svc.create(request);
 
