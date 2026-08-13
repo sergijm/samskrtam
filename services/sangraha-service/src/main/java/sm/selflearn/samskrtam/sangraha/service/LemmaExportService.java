@@ -36,21 +36,16 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class LemmaExportService {
 
-    private static final String CURSOR_SEPARATOR = ":";
-
     private final LemmaStatisticsRepository statisticsRepository;
     private final LemmaClassificationRepository classificationRepository;
     private final NominalLemmaRepository nominalLemmaRepository;
 
     @Transactional(readOnly = true)
-    public LemmaExportPageDto export(String cursor, int limit) {
+    public LemmaExportPageDto export(UUID cursor, int limit) {
         int pageSize = Math.min(Math.max(limit, 1), 500);
-        Cursor c = parseCursor(cursor);
 
         List<LemmaStatistics> stats = statisticsRepository.findForExport(
-                c == null ? null : c.occurrenceCount(),
-                c == null ? null : c.id(),
-                PageRequest.of(0, pageSize + 1));
+                cursor, PageRequest.of(0, pageSize + 1));
 
         if (stats.isEmpty()) {
             return new LemmaExportPageDto(List.of(), null);
@@ -97,29 +92,8 @@ public class LemmaExportService {
             ));
         }
 
-        String nextCursor = hasMore ? cursorString(stats.get(stats.size() - 1)) : null;
+        UUID nextCursor = hasMore ? stats.get(stats.size() - 1).getId() : null;
         return new LemmaExportPageDto(items, nextCursor);
-    }
-
-    private static Cursor parseCursor(String cursor) {
-        if (cursor == null || cursor.isBlank()) {
-            return null;
-        }
-        int sep = cursor.indexOf(CURSOR_SEPARATOR);
-        if (sep < 0) {
-            return null;
-        }
-        try {
-            int count = Integer.parseInt(cursor.substring(0, sep));
-            UUID id = UUID.fromString(cursor.substring(sep + 1));
-            return new Cursor(count, id);
-        } catch (RuntimeException e) {
-            return null;
-        }
-    }
-
-    private static String cursorString(LemmaStatistics s) {
-        return s.getOccurrenceCount() + CURSOR_SEPARATOR + s.getId();
     }
 
     private Map<String, LemmaClassification> loadClassifications(List<UUID> lemmaIds) {
@@ -161,8 +135,5 @@ public class LemmaExportService {
             }
         }
         return result;
-    }
-
-    private record Cursor(int occurrenceCount, UUID id) {
     }
 }

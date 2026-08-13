@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticTopic;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticTopicRepository;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
 import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
 import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
@@ -32,6 +34,7 @@ class LexicalQuizItemGeneratorTest {
     private TopicRepository topicRepository;
     private LexemeRepository lexemeRepository;
     private QuestItemRepository questItemRepository;
+    private SemanticTopicRepository semanticTopicRepository;
     private ObjectMapper objectMapper;
     private LexicalQuizItemGenerator generator;
 
@@ -40,10 +43,12 @@ class LexicalQuizItemGeneratorTest {
         topicRepository = mock(TopicRepository.class);
         lexemeRepository = mock(LexemeRepository.class);
         questItemRepository = mock(QuestItemRepository.class);
+        semanticTopicRepository = mock(SemanticTopicRepository.class);
         objectMapper = new ObjectMapper();
 
         generator = new LexicalQuizItemGenerator(
-                topicRepository, lexemeRepository, questItemRepository, objectMapper);
+                topicRepository, lexemeRepository, questItemRepository,
+                semanticTopicRepository, objectMapper);
     }
 
     private Topic topic(String code) {
@@ -52,6 +57,16 @@ class LexicalQuizItemGeneratorTest {
         topic.setCode(code);
         topic.setSemanticTopicId(SEMANTIC_TOPIC_ID);
         return topic;
+    }
+
+    private SemanticTopic semanticTopic(String code, SemanticTopic parent) {
+        SemanticTopic st = new SemanticTopic();
+        st.setId(UUID.randomUUID());
+        st.setCode(code);
+        st.setNameRu("ru");
+        st.setNameEn("en");
+        st.setParent(parent);
+        return st;
     }
 
     private Lexeme lexeme(String slp1, String iast, String deva, String glossEn, String glossRu) {
@@ -67,12 +82,26 @@ class LexicalQuizItemGeneratorTest {
     }
 
     @Test
-    void supportedTopicSlugs_returnsLexiconTopics() {
-        when(topicRepository.findByDomain(TopicDomain.LEXICON))
-                .thenReturn(List.of(topic("lex-animals"), topic("lex-colors")));
+    void supportedDomain_returnsLexicon() {
+        assertThat(generator.supportedDomain()).isEqualTo(TopicDomain.LEXICON);
+    }
 
-        assertThat(generator.supportedTopicSlugs())
-                .containsExactlyInAnyOrder("lex-animals", "lex-colors");
+    @Test
+    void ensureTopicsExist_createsMissingTopics() {
+        SemanticTopic root = semanticTopic("nature", null);
+        SemanticTopic animals = semanticTopic("animals", root);
+        when(semanticTopicRepository.findAll()).thenReturn(List.of(root, animals));
+        when(topicRepository.findByCode("animals")).thenReturn(java.util.Optional.empty());
+        when(topicRepository.findByCode("nature")).thenReturn(java.util.Optional.of(topic("nature")));
+
+        generator.ensureTopicsExist();
+
+        org.mockito.ArgumentCaptor<Topic> captor = org.mockito.ArgumentCaptor.forClass(Topic.class);
+        verify(topicRepository).save(captor.capture());
+        Topic created = captor.getValue();
+        assertThat(created.getCode()).isEqualTo("animals");
+        assertThat(created.getDomain()).isEqualTo(TopicDomain.LEXICON);
+        assertThat(created.getSemanticTopicId()).isNotNull();
     }
 
     @Test

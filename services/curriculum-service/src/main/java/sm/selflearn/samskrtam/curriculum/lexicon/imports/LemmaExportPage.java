@@ -5,7 +5,7 @@ import java.util.UUID;
 
 /**
  * Страница экспорта лемм из sangraha-service (lemmas/export).
- * Соответствует {@code LemmaExportPageDto}.
+ * Соответствует {@code LemmaExportPageDto}. Курсор — {@code lemmaStatistics.id}.
  */
 public record LemmaExportPage(
         List<LemmaExportItem> items,

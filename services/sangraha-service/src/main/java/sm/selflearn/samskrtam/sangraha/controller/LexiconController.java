@@ -64,7 +64,7 @@ public class LexiconController {
 
     @GetMapping("/lemmas/export")
     public ResponseEntity<LemmaExportPageDto> exportLemmas(
-            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) UUID cursor,
             @RequestParam(defaultValue = "500") int limit) {
         return ResponseEntity.ok(lemmaExportService.export(cursor, limit));
     }

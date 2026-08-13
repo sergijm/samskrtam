@@ -9,6 +9,7 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
+import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
 import sm.selflearn.samskrtam.curriculum.questgen.morphology.CaseType;
 import sm.selflearn.samskrtam.curriculum.questgen.morphology.NumberType;
 import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
@@ -96,9 +97,10 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
     private record Cell(CaseType caseType, NumberType numberType, DeclensionNounParadigmComposer.Form form) {
     }
 
+
     @Override
-    public Set<String> supportedTopicSlugs() {
-        return SLUG_CLASS_CODES.keySet();
+    public TopicDomain supportedDomain() {
+        return TopicDomain.GRAMMAR;
     }
 
     @Override

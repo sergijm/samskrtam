@@ -3,23 +3,19 @@ package sm.selflearn.samskrtam.curriculum.lexicon.imports;
 import org.junit.jupiter.api.Test;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeFrequency;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeFrequencyId;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyAppliesTo;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PosGroup;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.Source;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.SourceKind;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.SourceOccurrence;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticTopic;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.MorphologyClassRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.SourceOccurrenceRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.SourceRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.service.TransliterationService;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticTopicRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,12 +28,12 @@ import static org.mockito.Mockito.when;
 
 class LexiconImportServiceTest {
 
-    private static VerseWordExportItem item(String work, String chapter, int order,
-                                            String lemma, String stem, String surface,
-                                            String pos, String glossRu, String gender) {
-        return new VerseWordExportItem(
-                UUID.randomUUID(), work, chapter, order,
-                lemma, stem, surface, surface, pos, glossRu, "gloss-en", gender, null);
+    private static LemmaExportItem item(String slp1, String iast, String devanagari,
+                                        String gender, String pos, int count,
+                                        List<String> categories, String glossRu, String glossEn,
+                                        String vowelType) {
+        return new LemmaExportItem(UUID.randomUUID(), slp1, iast, devanagari, gender, pos,
+                count, categories, glossRu, glossEn, vowelType);
     }
 
     private LexiconImportService service(
@@ -46,79 +42,74 @@ class LexiconImportServiceTest {
             LexemeFrequencyRepository freqRepo,
             PartOfSpeechRepository posRepo,
             MorphologyClassRepository morphologyRepo,
-            SourceRepository sourceRepo,
-            SourceOccurrenceRepository occurrenceRepo) {
-        return new LexiconImportService(
-                client, new TransliterationService(),
-                lexemeRepo, freqRepo, posRepo, morphologyRepo, sourceRepo, occurrenceRepo);
+            SemanticTopicRepository semanticTopicRepo) {
+        return new LexiconImportService(client, lexemeRepo, freqRepo, posRepo, morphologyRepo, semanticTopicRepo);
     }
 
     @Test
-    void importFromSangraha_groupsByLemmaGender_andComputesRank() {
-        VerseWordExportItem nara1 = item("gita", "ch1", 1, "nara", "nara", "naraḥ", "NOUN", "мужчина", "MASCULINE");
-        VerseWordExportItem nara2 = item("gita", "ch1", 2, "nara", "nara", "naram", "NOUN", "мужчина", "MASCULINE");
-        VerseWordExportItem jala = item("gita", "ch1", 1, "jala", "jala", "jalam", "NOUN", "вода", "NEUTER");
+    void importFromSangraha_bindsSemanticTopicsAndMapsGrammar() {
+        LemmaExportItem nara = item("nara", "nara", "नर", "MASCULINE", "NOUN", 10,
+                List.of("people-family"), "мужчина", "man", "A_STEM");
         SangrahaExportClient client = mock(SangrahaExportClient.class);
-        when(client.fetchPage(any(), anyInt()))
-                .thenReturn(new VerseWordExportPage(List.of(nara1, nara2, jala), null));
+        when(client.fetchLemmaExport(any(), anyInt()))
+                .thenReturn(new LemmaExportPage(List.of(nara), null));
 
         LexemeRepository lexemeRepo = mock(LexemeRepository.class);
+        List<Lexeme> saved = new ArrayList<>();
         when(lexemeRepo.findByLemmaSlp1AndGender(any(), any())).thenReturn(Optional.empty());
-
-        PartOfSpeech pos = new PartOfSpeech();
-        pos.setCode("noun");
-        pos.setGroup(PosGroup.NOMINAL);
-        PartOfSpeechRepository posRepo = mock(PartOfSpeechRepository.class);
-        when(posRepo.findByCode("noun")).thenReturn(Optional.of(pos));
-
-        MorphologyClass morphology = new MorphologyClass();
-        morphology.setCode("a-stem-masc");
-        morphology.setAppliesTo(MorphologyAppliesTo.NOUN);
-        MorphologyClassRepository morphologyRepo = mock(MorphologyClassRepository.class);
-        when(morphologyRepo.findByCode("a-stem-masc")).thenReturn(Optional.of(morphology));
-        when(morphologyRepo.findByCode("a-stem-neut")).thenReturn(Optional.of(new MorphologyClass()));
-
-        SourceRepository sourceRepo = mock(SourceRepository.class);
-        java.util.Map<String, Source> sourcesBySlug = new java.util.HashMap<>();
-        when(sourceRepo.findByExternalSangrahaWorkSlug(any()))
-                .thenAnswer(invocation -> Optional.ofNullable(sourcesBySlug.get(invocation.getArgument(0))));
-        when(sourceRepo.save(any())).thenAnswer(invocation -> {
-            Source s = invocation.getArgument(0);
-            if (s.getId() == null) {
-                s.setId(UUID.randomUUID());
-            }
-            sourcesBySlug.put(s.getExternalSangrahaWorkSlug(), s);
-            return s;
-        });
-
-        LexemeFrequencyRepository freqRepo = mock(LexemeFrequencyRepository.class);
-        when(freqRepo.findById(any())).thenReturn(Optional.empty());
-        when(freqRepo.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        SourceOccurrenceRepository occurrenceRepo = mock(SourceOccurrenceRepository.class);
-        when(occurrenceRepo.findBySourceIdAndLocationRef(any(), any())).thenReturn(List.of());
-        when(occurrenceRepo.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        when(lexemeRepo.save(any())).thenAnswer(invocation -> {
-            Lexeme l = invocation.getArgument(0);
+        when(lexemeRepo.save(any())).thenAnswer(inv -> {
+            Lexeme l = inv.getArgument(0);
             if (l.getId() == null) {
                 l.setId(UUID.randomUUID());
             }
+            saved.add(l);
             return l;
         });
-        when(lexemeRepo.count()).thenReturn(2L);
+        when(lexemeRepo.count()).thenReturn(1L);
+
+        PartOfSpeech noun = new PartOfSpeech();
+        noun.setCode("noun");
+        noun.setGroup(PosGroup.NOMINAL);
+        PartOfSpeechRepository posRepo = mock(PartOfSpeechRepository.class);
+        when(posRepo.findByCode("noun")).thenReturn(Optional.of(noun));
+
+        MorphologyClass aStem = new MorphologyClass();
+        aStem.setCode("a-stem-masc");
+        aStem.setAppliesTo(MorphologyAppliesTo.NOUN);
+        MorphologyClassRepository morphologyRepo = mock(MorphologyClassRepository.class);
+        when(morphologyRepo.findByCode("a-stem-masc")).thenReturn(Optional.of(aStem));
+
+        SemanticTopic family = new SemanticTopic();
+        family.setCode("people-family");
+        SemanticTopicRepository semanticTopicRepo = mock(SemanticTopicRepository.class);
+        when(semanticTopicRepo.findByCode("people-family")).thenReturn(Optional.of(family));
+
+        LexemeFrequencyRepository freqRepo = mock(LexemeFrequencyRepository.class);
+        List<LexemeFrequency> freqs = new ArrayList<>();
+        when(freqRepo.findById(any())).thenReturn(Optional.empty());
+        when(freqRepo.save(any())).thenAnswer(inv -> {
+            LexemeFrequency f = inv.getArgument(0);
+            freqs.add(f);
+            return f;
+        });
 
         LexiconImportService importService =
-                service(client, lexemeRepo, freqRepo, posRepo, morphologyRepo, sourceRepo, occurrenceRepo);
+                service(client, lexemeRepo, freqRepo, posRepo, morphologyRepo, semanticTopicRepo);
 
         SangrahaImportResult result = importService.importFromSangraha();
 
-        assertThat(result.importedCount()).isEqualTo(2);
+        assertThat(result.importedCount()).isEqualTo(1);
         assertThat(result.updatedCount()).isZero();
-        assertThat(result.totalLexemeCount()).isEqualTo(2);
-        assertThat(result.sourcesTouched()).isEqualTo(1);
+        assertThat(result.totalLexemeCount()).isEqualTo(1);
 
-        assertThat(lexemeRepo).isNotNull();
+        Lexeme savedLexeme = saved.get(0);
+        assertThat(savedLexeme.getSemanticTopics()).extracting(SemanticTopic::getCode)
+                .containsExactly("people-family");
+        assertThat(savedLexeme.getPartsOfSpeech()).extracting(PartOfSpeech::getCode)
+                .containsExactly("noun");
+        assertThat(savedLexeme.getMorphologyClasses()).extracting(MorphologyClass::getCode)
+                .containsExactly("a-stem-masc");
+        assertThat(freqs).extracting(LexemeFrequency::getRank).containsExactly(1);
     }
 
     @Test
@@ -132,81 +123,53 @@ class LexiconImportServiceTest {
     }
 
     @Test
-    void classifyStem_lastLetterFallback() {
-        assertThat(LexiconImportService.classifyStem("rāma", LexemeGender.MASCULINE))
+    void mapMorphologyCode_vowelTypeToMorphologyClass() {
+        assertThat(LexiconImportService.mapMorphologyCode("MASCULINE", "A_STEM"))
                 .isEqualTo("a-stem-masc");
-        assertThat(LexiconImportService.classifyStem("nārī", LexemeGender.FEMININE))
-                .isEqualTo("i-stem");
-        assertThat(LexiconImportService.classifyStem("guru", LexemeGender.MASCULINE))
-                .isEqualTo("u-stem");
-        assertThat(LexiconImportService.classifyStem(null, null)).isNull();
-        assertThat(LexiconImportService.classifyStem("k", LexemeGender.MASCULINE)).isNull();
-    }
-
-    @Test
-    void mapMorphology_vowelTypeTakesPriority() {
-        assertThat(LexiconImportService.mapMorphology("A_STEM", "rāma", LexemeGender.MASCULINE))
-                .isEqualTo("a-stem-masc");
-        assertThat(LexiconImportService.mapMorphology("AA_STEM", "rāma", LexemeGender.FEMININE))
-                .isEqualTo("a-stem-fem");
-        assertThat(LexiconImportService.mapMorphology(null, "deva", LexemeGender.NEUTER))
+        assertThat(LexiconImportService.mapMorphologyCode("NEUTER", "A_STEM"))
                 .isEqualTo("a-stem-neut");
-    }
-
-    @Test
-    void pickRepresentative_mostFrequentAndSmallestVerseIdTieBreak() {
-        VerseWordExportItem rare = item("gita", "ch1", 2, "nara", "naram", "naram", "NOUN", "мужчину", "MASCULINE");
-        VerseWordExportItem mostFrequent = item("gita", "ch1", 9, "nara", "nara", "naram", "NOUN", "мужчина", "MASCULINE");
-        VerseWordExportItem mostFrequentSecond = item("gita", "ch1", 7, "nara", "nara", "naram", "NOUN", "мужчина", "MASCULINE");
-        VerseWordExportItem expected = mostFrequent.verseId().compareTo(mostFrequentSecond.verseId()) < 0
-                ? mostFrequent : mostFrequentSecond;
-        VerseWordExportItem representative = LexiconImportService.pickRepresentative(
-                List.of(rare, mostFrequent, mostFrequentSecond));
-        assertThat(representative.stem()).isEqualTo("nara");
-        assertThat(representative.lemmaGlossRu()).isEqualTo("мужчина");
-        assertThat(representative.verseId()).isEqualTo(expected.verseId());
+        assertThat(LexiconImportService.mapMorphologyCode("FEMININE", "A_STEM"))
+                .isEqualTo("a-stem-fem");
+        assertThat(LexiconImportService.mapMorphologyCode("FEMININE", "AA_STEM"))
+                .isEqualTo("a-stem-fem");
+        assertThat(LexiconImportService.mapMorphologyCode("MASCULINE", "II_STEM"))
+                .isEqualTo("i-stem");
+        assertThat(LexiconImportService.mapMorphologyCode("MASCULINE", "UU_STEM"))
+                .isEqualTo("u-stem");
+        assertThat(LexiconImportService.mapMorphologyCode("MASCULINE", "R_STEM"))
+                .isEqualTo("r-stem");
+        assertThat(LexiconImportService.mapMorphologyCode("MASCULINE", null)).isNull();
+        assertThat(LexiconImportService.mapMorphologyCode("MASCULINE", "PRON_AHAM")).isNull();
     }
 
     @Test
     void importFromSangraha_secondRunOnSameData_createsNoDuplicates() {
-        VerseWordExportItem nara = item("gita", "ch1", 1, "nara", "nara", "naraḥ", "NOUN", "мужчина", "MASCULINE");
+        LemmaExportItem nara = item("nara", "nara", "नर", "MASCULINE", "NOUN", 10,
+                List.of("people-family"), "мужчина", "man", "A_STEM");
         SangrahaExportClient client = mock(SangrahaExportClient.class);
-        when(client.fetchPage(any(), anyInt()))
-                .thenReturn(new VerseWordExportPage(List.of(nara), null));
+        when(client.fetchLemmaExport(any(), anyInt()))
+                .thenReturn(new LemmaExportPage(List.of(nara), null));
 
-        // Stateful in-memory lexemeRepo: dedup by (lemmaSlp1, gender).
         LexemeRepository lexemeRepo = mock(LexemeRepository.class);
         java.util.Map<String, Lexeme> lexemesByKey = new java.util.HashMap<>();
-        when(lexemeRepo.findByLemmaSlp1AndGender(any(), any())).thenAnswer(invocation -> {
-            String slp1 = invocation.getArgument(0);
-            LexemeGender gender = invocation.getArgument(1);
+        when(lexemeRepo.findByLemmaSlp1AndGender(any(), any())).thenAnswer(inv -> {
+            String slp1 = inv.getArgument(0);
+            LexemeGender gender = inv.getArgument(1);
             return Optional.ofNullable(lexemesByKey.get(slp1 + "|" + gender));
         });
-        when(lexemeRepo.save(any())).thenAnswer(invocation -> {
-            Lexeme l = invocation.getArgument(0);
+        when(lexemeRepo.save(any())).thenAnswer(inv -> {
+            Lexeme l = inv.getArgument(0);
             if (l.getId() == null) {
                 l.setId(UUID.randomUUID());
             }
             lexemesByKey.put(l.getLemmaSlp1() + "|" + l.getGender(), l);
             return l;
         });
-        when(lexemeRepo.count()).thenAnswer(invocation -> (long) lexemesByKey.size());
-
-        // Stateful in-memory occurrenceRepo: dedup by (sourceId, locationRef).
-        SourceOccurrenceRepository occurrenceRepo = mock(SourceOccurrenceRepository.class);
-        java.util.Map<String, java.util.List<SourceOccurrence>> occBySource = new java.util.HashMap<>();
-        when(occurrenceRepo.findBySourceIdAndLocationRef(any(), any())).thenAnswer(invocation -> {
-            UUID sourceId = invocation.getArgument(0);
-            String loc = invocation.getArgument(1);
-            return occBySource.getOrDefault(sourceId + "|" + loc, List.of());
-        });
-        when(occurrenceRepo.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(occurrenceRepo.countBySourceId(any())).thenReturn(1L);
-        when(occurrenceRepo.countDistinctBySourceId(any())).thenReturn(1L);
+        when(lexemeRepo.count()).thenAnswer(inv -> (long) lexemesByKey.size());
 
         LexemeFrequencyRepository freqRepo = mock(LexemeFrequencyRepository.class);
         when(freqRepo.findById(any())).thenReturn(Optional.empty());
-        when(freqRepo.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(freqRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         PartOfSpeechRepository posRepo = mock(PartOfSpeechRepository.class);
         PartOfSpeech noun = new PartOfSpeech();
@@ -215,27 +178,19 @@ class LexiconImportServiceTest {
         when(posRepo.findByCode("noun")).thenReturn(Optional.of(noun));
 
         MorphologyClassRepository morphologyRepo = mock(MorphologyClassRepository.class);
-        when(morphologyRepo.findByCode(any())).thenAnswer(invocation -> {
+        when(morphologyRepo.findByCode(any())).thenAnswer(inv -> {
             MorphologyClass mc = new MorphologyClass();
-            mc.setCode(invocation.getArgument(0));
+            mc.setCode(inv.getArgument(0));
             return Optional.of(mc);
         });
 
-        SourceRepository sourceRepo = mock(SourceRepository.class);
-        java.util.Map<String, Source> sourcesBySlug = new java.util.HashMap<>();
-        when(sourceRepo.findByExternalSangrahaWorkSlug(any()))
-                .thenAnswer(invocation -> Optional.ofNullable(sourcesBySlug.get(invocation.getArgument(0))));
-        when(sourceRepo.save(any())).thenAnswer(invocation -> {
-            Source s = invocation.getArgument(0);
-            if (s.getId() == null) {
-                s.setId(UUID.randomUUID());
-            }
-            sourcesBySlug.put(s.getExternalSangrahaWorkSlug(), s);
-            return s;
-        });
+        SemanticTopicRepository semanticTopicRepo = mock(SemanticTopicRepository.class);
+        SemanticTopic family = new SemanticTopic();
+        family.setCode("people-family");
+        when(semanticTopicRepo.findByCode("people-family")).thenReturn(Optional.of(family));
 
         LexiconImportService importService =
-                service(client, lexemeRepo, freqRepo, posRepo, morphologyRepo, sourceRepo, occurrenceRepo);
+                service(client, lexemeRepo, freqRepo, posRepo, morphologyRepo, semanticTopicRepo);
 
         SangrahaImportResult first = importService.importFromSangraha();
         SangrahaImportResult second = importService.importFromSangraha();

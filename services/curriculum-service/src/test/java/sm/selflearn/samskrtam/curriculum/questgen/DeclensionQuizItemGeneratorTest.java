@@ -8,6 +8,7 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
+import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
 import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
 import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemRepository;
 import sm.selflearn.samskrtam.quest.declension.CaseRecognitionPayload;
@@ -75,9 +76,8 @@ class DeclensionQuizItemGeneratorTest {
     }
 
     @Test
-    void supportedTopicSlugs_returnsDeclensionSlugs() {
-        assertThat(generator.supportedTopicSlugs())
-                .containsExactlyInAnyOrder("a-stem", "a-stem-fem", "i-u-stems", "r-stems");
+    void supportedDomain_returnsGrammar() {
+        assertThat(generator.supportedDomain()).isEqualTo(TopicDomain.GRAMMAR);
     }
 
     @Test

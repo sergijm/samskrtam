@@ -2,13 +2,14 @@ package sm.selflearn.samskrtam.curriculum.questgen;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
+import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
 import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemRepository;
 import sm.selflearn.samskrtam.curriculum.repository.TopicRepository;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 class QuizItemGenerationServiceTest {
 
+    private ApplicationContext applicationContext;
     private TopicRepository topicRepository;
     private QuestItemRepository questItemRepository;
     private QuizItemGenerator declensionGenerator;
@@ -28,22 +30,26 @@ class QuizItemGenerationServiceTest {
     private Topic aStem;
     private Topic classOne;
     private Topic iUStems;
-    private Topic rStems;
 
     @BeforeEach
     void setUp() {
+        applicationContext = mock(ApplicationContext.class);
         topicRepository = mock(TopicRepository.class);
         questItemRepository = mock(QuestItemRepository.class);
 
         declensionGenerator = mock(QuizItemGenerator.class);
-        when(declensionGenerator.supportedTopicSlugs()).thenReturn(Set.of("a-stem", "i-u-stems"));
+        when(declensionGenerator.supportedDomain()).thenReturn(TopicDomain.GRAMMAR);
         unusedGenerator = mock(QuizItemGenerator.class);
-        when(unusedGenerator.supportedTopicSlugs()).thenReturn(Set.of());
+        when(unusedGenerator.supportedDomain()).thenReturn(TopicDomain.GRAMMAR); // collides, first wins
+
+        when(applicationContext.getBeansOfType(QuizItemGenerator.class))
+                .thenReturn(Map.of(
+                        "declensionQuizItemGenerator", declensionGenerator,
+                        "unusedGenerator", unusedGenerator));
 
         aStem = topic("a-stem");
         classOne = topic("class-1");
         iUStems = topic("i-u-stems");
-        rStems = topic("r-stems");
     }
 
     private Topic topic(String code) {
@@ -54,33 +60,31 @@ class QuizItemGenerationServiceTest {
     }
 
     private QuizItemGenerationService service() {
-        return new QuizItemGenerationService(
-                List.of(declensionGenerator, unusedGenerator), topicRepository, questItemRepository);
+        return new QuizItemGenerationService(applicationContext, topicRepository, questItemRepository);
     }
 
     @Test
-    void regenerate_clearsTable_generatesOnlyForSupportedSlugs() {
-        when(topicRepository.findAll()).thenReturn(List.of(aStem, classOne, iUStems, rStems));
+    void regenerate_passesAllGrammarTopics_toDeclensionGenerator() {
+        when(topicRepository.findAll()).thenReturn(List.of(aStem, classOne, iUStems));
         when(questItemRepository.deleteAllQuestItems()).thenReturn(99);
         when(declensionGenerator.generate(aStem)).thenReturn(77);
+        when(declensionGenerator.generate(classOne)).thenReturn(0);
         when(declensionGenerator.generate(iUStems)).thenReturn(152);
         when(questItemRepository.countDistinctProgressTagByTopicId(aStem.getId())).thenReturn(24L);
+        when(questItemRepository.countDistinctProgressTagByTopicId(classOne.getId())).thenReturn(0L);
         when(questItemRepository.countDistinctProgressTagByTopicId(iUStems.getId())).thenReturn(18L);
 
         Map<String, Map<String, Integer>> stats = service().regenerate();
 
         verify(questItemRepository).deleteAllQuestItems();
         verify(declensionGenerator).generate(aStem);
+        verify(declensionGenerator).generate(classOne);
         verify(declensionGenerator).generate(iUStems);
-        verify(declensionGenerator, never()).generate(classOne);
-        verify(declensionGenerator, never()).generate(rStems);
-        verify(questItemRepository).countDistinctProgressTagByTopicId(aStem.getId());
-        verify(questItemRepository).countDistinctProgressTagByTopicId(iUStems.getId());
 
         assertThat(stats)
                 .containsEntry("a-stem", Map.of("generated", 77, "uniqueProgressTags", 24))
-                .containsEntry("i-u-stems", Map.of("generated", 152, "uniqueProgressTags", 18))
-                .doesNotContainKeys("class-1", "r-stems");
+                .containsEntry("class-1", Map.of("generated", 0, "uniqueProgressTags", 0))
+                .containsEntry("i-u-stems", Map.of("generated", 152, "uniqueProgressTags", 18));
     }
 
     @Test

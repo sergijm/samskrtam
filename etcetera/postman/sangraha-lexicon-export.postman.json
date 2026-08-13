@@ -15,7 +15,7 @@
       "key": "cursor",
       "value": "",
       "type": "string",
-      "description": "Keyset-курсор вида \"occurrenceCount:lemmaStatisticsId\" последней строки страницы. Пустая строка — первая страница."
+      "description": "UUID последнего lemmaStatistics.id страницы. Пустая строка — первая страница."
     },
     {
       "key": "limit",
@@ -29,7 +29,7 @@
       "name": "Lemmas Export",
       "request": {
         "method": "GET",
-        "description": "Курсорная выгрузка уникальных пар (lemma, gender), отсортированных по частоте вхождения по убыванию.\n\nИсточники:\n- lemma — словарные поля (lemmaSlp1, lemmaIast, lemmaDevanagari)\n- lemma_statistics — gender, occurrenceCount, dominantPosCode\n- lemma_classification (scheme=CURRICULUM, любой статус) — categoryCode, glossRu, glossEn (опционально)\n- nominal_lemmas — stemClass → vowelType\n\nОдна строка = одна пара (lemma, gender). Строки без классификации экспортируются с пустыми categoryCodes/gloss.\n\nnextCursor === null → страниц больше нет.",
+        "description": "Курсорная выгрузка уникальных пар (lemma, gender), отсортированных по частоте вхождения по убыванию.\n\nИсточники:\n- lemma — словарные поля (lemmaSlp1, lemmaIast, lemmaDevanagari) [JOIN FETCH]\n- lemma_statistics — gender, occurrenceCount, dominantPosCode\n- lemma_classification (scheme=CURRICULUM, любой статус) — categoryCode, glossRu, glossEn (опционально)\n- nominal_lemmas — stemClass → vowelType\n\nОдна строка = одна пара (lemma, gender). Строки без классификации экспортируются с пустыми categoryCodes/gloss.\n\nnextCursor === null → страниц больше нет.",
         "url": {
           "raw": "{{sangrahaBaseUrl}}/sangraha/internal/lexicon/lemmas/export?cursor={{cursor}}&limit={{limit}}",
           "host": ["{{sangrahaBaseUrl}}"],

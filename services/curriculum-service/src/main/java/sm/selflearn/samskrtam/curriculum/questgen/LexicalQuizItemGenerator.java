@@ -3,10 +3,14 @@ package sm.selflearn.samskrtam.curriculum.questgen;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticTopic;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticTopicRepository;
+import sm.selflearn.samskrtam.curriculum.model.LearningLevel;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
 import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
 import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
@@ -20,31 +24,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Generates the VOCABULARY_WORD quest type (recognition direction:
- * lemma -> meaning) for every LEXICON lesson backed by a semantic classifier
- * node (domain {@code LEXICON}, {@code topic.semantic_topic_id} not null, see
- * V16). One {@code quest_item} row per lexeme tagged with the lesson's
- * semantic topic; distractors are the glosses of other lexemes of the same
- * topic. Rows without a gloss in either language, and topics with too few
- * glossed lexemes for a meaningful choice, are skipped.
- *
- * <p>Every produced row carries {@code progress_tag = lemmaSlp1} and is fully
- * bilingual ({@code *_ru} columns mirror the English content), matching the
- * localization convention of the declension generator.
- */
 @Service
 @RequiredArgsConstructor
 public class LexicalQuizItemGenerator extends QuizItemGenerator {
 
     public static final String GENERATOR_SOURCE = "LEXICAL_BATCH";
 
-    /** Max number of distractor glosses per choice item. */
     static final int DISTRACTOR_COUNT = 3;
 
     private static final Random RANDOM = new Random();
@@ -52,13 +43,69 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
     private final TopicRepository topicRepository;
     private final LexemeRepository lexemeRepository;
     private final QuestItemRepository questItemRepository;
+    private final SemanticTopicRepository semanticTopicRepository;
     private final ObjectMapper objectMapper;
 
+    static final Map<String, LearningLevel> SEMANTIC_LEVEL = Map.ofEntries(
+            Map.entry("family-kin", LearningLevel.L0),
+            Map.entry("body-parts", LearningLevel.L0),
+            Map.entry("physical-action", LearningLevel.L0),
+            Map.entry("animals", LearningLevel.L1),
+            Map.entry("plants-trees", LearningLevel.L1),
+            Map.entry("landscape", LearningLevel.L1),
+            Map.entry("water", LearningLevel.L1),
+            Map.entry("food-drink", LearningLevel.L1),
+            Map.entry("house-dwelling", LearningLevel.L1),
+            Map.entry("garments", LearningLevel.L1),
+            Map.entry("sky-weather", LearningLevel.L2),
+            Map.entry("professions", LearningLevel.L2),
+            Map.entry("travel-vehicles", LearningLevel.L2),
+            Map.entry("tools-materials", LearningLevel.L2),
+            Map.entry("motion-verbs", LearningLevel.L2),
+            Map.entry("speech-acts", LearningLevel.L2),
+            Map.entry("senses", LearningLevel.L2),
+            Map.entry("time-seasons", LearningLevel.L2),
+            Map.entry("social-relations", LearningLevel.L3),
+            Map.entry("emotions-positive", LearningLevel.L3),
+            Map.entry("emotions-negative", LearningLevel.L3),
+            Map.entry("desire-will", LearningLevel.L3),
+            Map.entry("quantity-number", LearningLevel.L3),
+            Map.entry("space-direction", LearningLevel.L3),
+            Map.entry("rest-stillness", LearningLevel.L4),
+            Map.entry("naming-address", LearningLevel.L4),
+            Map.entry("question-answer", LearningLevel.L4),
+            Map.entry("thought-memory", LearningLevel.L4),
+            Map.entry("learning", LearningLevel.L4),
+            Map.entry("ritual-worship", LearningLevel.L4),
+            Map.entry("law-rule", LearningLevel.L4),
+            Map.entry("phi-moksha", LearningLevel.L4),
+            Map.entry("war-conflict", LearningLevel.L5));
+
+
     @Override
-    public Set<String> supportedTopicSlugs() {
-        return topicRepository.findByDomain(TopicDomain.LEXICON).stream()
-                .map(Topic::getCode)
-                .collect(Collectors.toUnmodifiableSet());
+    public TopicDomain supportedDomain() {
+        return TopicDomain.LEXICON;
+    }
+
+    @Override
+    public void ensureTopicsExist() {
+        List<SemanticTopic> leaves = semanticTopicRepository.findAll().stream()
+                .filter(st -> st.getParent() != null)
+                .toList();
+        for (SemanticTopic leaf : leaves) {
+            if (topicRepository.findByCode(leaf.getCode()).isPresent()) {
+                continue;
+            }
+            Topic topic = new Topic();
+            topic.setCode(leaf.getCode());
+            topic.setTitleRu(leaf.getNameRu());
+            topic.setTitleEn(leaf.getNameEn());
+            topic.setLearningLevel(SEMANTIC_LEVEL.getOrDefault(leaf.getCode(), LearningLevel.L0));
+            topic.setDomain(TopicDomain.LEXICON);
+            topic.setSemanticTopicId(leaf.getId());
+            topic.setEvergreen(false);
+            topicRepository.save(topic);
+        }
     }
 
     @Override
@@ -129,8 +176,7 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
         return candidates;
     }
 
-    private record GlossPair(String en, String ru) {
-    }
+    private record GlossPair(String en, String ru) {}
 
     private QuestItem buildItem(Topic topic, Lexeme lexeme,
                                 List<String> distractorsEn, List<String> distractorsRu) {

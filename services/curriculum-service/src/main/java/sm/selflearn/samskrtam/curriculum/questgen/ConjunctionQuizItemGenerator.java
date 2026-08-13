@@ -2,20 +2,21 @@ package sm.selflearn.samskrtam.curriculum.questgen;
 
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
+import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
 
 import java.util.Set;
 
 /**
  * Future CONJUNCTION quiz generator — a placeholder registered in the
- * {@code Map<slug, QuizItemGenerator>} registry. Currently supports no topic
- * slugs and produces nothing.
+ * per-domain generator registry. Currently produces nothing.
  */
 @Service
 public class ConjunctionQuizItemGenerator extends QuizItemGenerator {
 
+
     @Override
-    public Set<String> supportedTopicSlugs() {
-        return Set.of();
+    public TopicDomain supportedDomain() {
+        return TopicDomain.CONJUNCTION;
     }
 
     @Override
