@@ -77,7 +77,7 @@ public class LessonV2Controller {
             @PathVariable("slug") String slug,
             @RequestHeader(value = "X-User-Id", required = false) UUID userId) {
         log.info("v2 GET /vocabulary/{} — X-User-Id={}", slug, userId);
-        return lessonV2Service.vocabularyLesson(slug).map(ResponseEntity::ok);
+        return lessonV2Service.vocabularyLesson(slug, userId).map(ResponseEntity::ok);
     }
 
     @GetMapping("/vocabulary/{slug}/words/{wordId}/history")

@@ -11,12 +11,14 @@ import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.DeclensionParadigmPageDto;
 import sm.selflearn.samskrtam.quiz.dto.QuestItemDto;
+import sm.selflearn.samskrtam.quiz.dto.TopicDto;
 import sm.selflearn.samskrtam.quiz.dto.TopicLessonDto;
 import sm.selflearn.samskrtam.quiz.dto.TopicLessonSummaryDto;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * WebClient к curriculum-service (API v2).
@@ -92,6 +94,45 @@ public class CurriculumClient {
                         r -> Mono.error(new SamskrtamException("LESSONS_NOT_FOUND",
                                 "Lesson list not found in curriculum-service")))
                 .bodyToFlux(TopicLessonSummaryDto.class)
+                .collectList();
+    }
+
+    /**
+     * Fetch topics from curriculum-service (v2), optionally filtered by domain.
+     */
+    public Mono<List<TopicDto>> fetchTopics(String domain) {
+        return webClient.get()
+                .uri(uriBuilder -> {
+                    uriBuilder.path("/api/v2/curriculum/topics");
+                    if (domain != null) {
+                        uriBuilder.queryParam("domain", domain);
+                    }
+                    return uriBuilder.build();
+                })
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("TOPICS_NOT_FOUND",
+                                "Topics not found in curriculum-service")))
+                .bodyToFlux(TopicDto.class)
+                .collectList();
+    }
+
+    /**
+     * Fetch quest items for a topic by item type (v2).
+     */
+    public Mono<List<QuestItemDto>> fetchQuestItemsByTopic(UUID topicId, String itemType) {
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/v2/curriculum/quest-items")
+                        .queryParam("topicId", topicId)
+                        .queryParam("itemType", itemType)
+                        .queryParam("limit", 10000)
+                        .build())
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("QUEST_ITEMS_NOT_FOUND",
+                                "Quest items not found for topic=" + topicId)))
+                .bodyToFlux(QuestItemDto.class)
                 .collectList();
     }
 

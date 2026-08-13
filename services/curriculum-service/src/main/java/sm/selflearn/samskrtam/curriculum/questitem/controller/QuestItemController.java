@@ -31,7 +31,7 @@ import java.util.UUID;
 public class QuestItemController {
 
     static final int DEFAULT_LIMIT = 20;
-    static final int MAX_LIMIT = 100;
+    static final int MAX_LIMIT = 10_000;
 
     private final QuestItemRepository questItemRepository;
     private final TopicRepository topicRepository;

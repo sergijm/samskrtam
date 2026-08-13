@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.quiz.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -11,15 +12,12 @@ import sm.selflearn.samskrtam.content.dto.LessonType;
 import sm.selflearn.samskrtam.content.model.Gender;
 import sm.selflearn.samskrtam.content.model.CaseType;
 import sm.selflearn.samskrtam.content.model.NumberType;
-import sm.selflearn.samskrtam.quiz.dto.DeclensionExamplesResponseDto;
-import sm.selflearn.samskrtam.quiz.dto.LessonItemDto;
-import sm.selflearn.samskrtam.quiz.dto.LessonListResponse;
-import sm.selflearn.samskrtam.quiz.dto.LessonStatusSummary;
-import sm.selflearn.samskrtam.quiz.dto.QuestionAnswerHistory;
-import sm.selflearn.samskrtam.quiz.dto.TopicLessonSummaryDto;
-import sm.selflearn.samskrtam.quiz.dto.VocabularyLessonDto;
-import sm.selflearn.samskrtam.quiz.dto.WordAnswerHistory;
+import sm.selflearn.samskrtam.quiz.dto.*;
+import sm.selflearn.samskrtam.quiz.model.ItemType;
+import sm.selflearn.samskrtam.quiz.model.QuizItemScore;
+import sm.selflearn.samskrtam.quiz.repository.QuizItemScoreRepository;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -30,10 +28,7 @@ import java.util.stream.Collectors;
 /**
  * v2 lesson endpoints that serve the lesson picker and the lesson sub-views
  * (list / by-category / by-slug summary / vocabulary / paradigms / examples /
- * histories). The lesson base data comes from curriculum-service via
- * {@link CurriculumClient}; content-service is not used. Where curriculum has no
- * data yet (vocabulary, verse examples), a valid empty response is returned so the
- * page never 400/500s.
+ * histories).
  */
 @Service
 @RequiredArgsConstructor
@@ -41,26 +36,36 @@ public class LessonV2Service {
 
     private final CurriculumClient curriculumClient;
     private final SangrahaClient sangrahaClient;
+    private final QuizItemScoreRepository quizItemScoreRepository;
+    private final WordStatusResolver wordStatusResolver;
 
     /* ─── list / summary ─────────────────────────────────────────────── */
 
     public Mono<LessonListResponse> listAll() {
-        return curriculumClient.fetchLessons()
-                .map(summaries -> new LessonListResponse(
-                        summaries.stream().map(this::toLessonItem).toList()));
+        return curriculumClient.fetchTopics(null)
+                .map(topics -> new LessonListResponse(
+                        topics.stream().map(this::toLessonItem).toList()));
     }
 
     public Mono<LessonListResponse> listByCategory(String category) {
-        if (isDeclensionsCategory(category)) {
-            return listAll();
+        String domain = switch (category.toLowerCase(Locale.ROOT)) {
+            case "declensions", "declension", "grammar" -> "GRAMMAR";
+            case "vocabulary", "vocabulary-basic", "vocabulary-texts" -> "LEXICON";
+            case "conjugations", "conjugation" -> "GRAMMAR";
+            default -> null;
+        };
+        if (domain == null) {
+            return Mono.just(new LessonListResponse(List.of()));
         }
-        return Mono.just(new LessonListResponse(List.of()));
+        return curriculumClient.fetchTopics(domain)
+                .map(topics -> new LessonListResponse(
+                        topics.stream().map(this::toLessonItem).toList()));
     }
 
     public Mono<LessonItemDto> lessonBySlug(String slug) {
-        return curriculumClient.fetchLessons()
+        return curriculumClient.fetchTopics(null)
                 .map(list -> list.stream()
-                        .filter(s -> s.code().equalsIgnoreCase(slug))
+                        .filter(t -> t.code().equalsIgnoreCase(slug))
                         .findFirst()
                         .map(this::toLessonItem)
                         .orElse(null));
@@ -68,8 +73,99 @@ public class LessonV2Service {
 
     /* ─── vocabulary ─────────────────────────────────────────────────── */
 
-    public Mono<VocabularyLessonDto> vocabularyLesson(String slug) {
-        return Mono.just(emptyVocabularyLesson(slug));
+    public Mono<VocabularyLessonDto> vocabularyLesson(String slug, UUID userId) {
+        return curriculumClient.fetchTopics(null)
+                .flatMap(topics -> topics.stream()
+                        .filter(t -> t.code().equalsIgnoreCase(slug))
+                        .findFirst()
+                        .map(t -> buildVocabularyLesson(t, userId))
+                        .orElseGet(() -> Mono.just(emptyVocabularyLesson(slug))));
+    }
+
+    private Mono<VocabularyLessonDto> buildVocabularyLesson(TopicDto topic, UUID userId) {
+        return curriculumClient.fetchQuestItemsByTopic(topic.id(), "VOCABULARY_WORD")
+                .flatMap(items -> {
+
+            VocabularyLessonDto dto = new VocabularyLessonDto();
+            dto.setLessonId(topic.id());
+            dto.setSlug(topic.code());
+            dto.setTitleRu(topic.titleRu());
+            dto.setTitleEn(topic.titleEn());
+            dto.setDifficulty(mapDifficulty(topic.learningLevel()).name());
+            dto.setTotalWords(items.size());
+
+            if (userId == null || items.isEmpty()) {
+                dto.setLearnedWords(0);
+                dto.setProgressPercent(0f);
+                dto.setWords(items.stream()
+                        .map(this::emptyWordProgress)
+                        .collect(Collectors.toList()));
+                dto.setStatusSummary(new LessonStatusSummary(items.size(), items.size(), 0, 0, 0));
+                return Mono.just(dto);
+            }
+
+            List<String> progressTags = items.stream()
+                    .map(QuestItemDto::progressTag)
+                    .toList();
+
+            Instant now = Instant.now();
+            return quizItemScoreRepository
+                    .findByUserIdAndItemTypeAndProgressTagIn(userId, ItemType.VOCABULARY_WORD, progressTags)
+                    .collectMap(QuizItemScore::getProgressTag, score -> score)
+                    .map(scoresMap -> {
+                        int newCount = 0, learning = 0, mastered = 0, reviewDue = 0;
+                        List<VocabularyWordProgress> wordProgressList = new ArrayList<>();
+
+                        for (QuestItemDto item : items) {
+                            QuizItemScore itemScore = scoresMap.get(item.progressTag());
+                            WordStatus status = wordStatusResolver.resolve(itemScore, now);
+
+                            switch (status) {
+                                case NEW -> newCount++;
+                                case LEARNING -> learning++;
+                                case MASTERED -> mastered++;
+                                case REVIEW -> reviewDue++;
+                            }
+
+                            VocabularyWordProgress p = new VocabularyWordProgress();
+                            p.setWordId(item.id());
+                            p.setWord(extractString(item.payload(), "lemmaIast"));
+                            p.setWordDevanagari(extractString(item.payload(), "lemmaDevanagari"));
+                            p.setTranslationRu(item.correctAnswerRu());
+                            p.setTranslationEn(item.correctAnswer());
+                            p.setStatus(status);
+                            p.setScore(itemScore != null ? itemScore.getScore() : 0);
+                            wordProgressList.add(p);
+                        }
+
+                        dto.setWords(wordProgressList);
+                        int learned = mastered + reviewDue;
+                        dto.setLearnedWords(learned);
+                        dto.setProgressPercent(items.isEmpty() ? 0f : (float) learned / items.size() * 100f);
+                        dto.setStatusSummary(new LessonStatusSummary(items.size(), newCount, learning, mastered, reviewDue));
+                        return dto;
+                    });
+                });
+    }
+
+    private VocabularyWordProgress emptyWordProgress(QuestItemDto item) {
+        VocabularyWordProgress p = new VocabularyWordProgress();
+        p.setWordId(item.id());
+        p.setWord(extractString(item.payload(), "lemmaIast"));
+        p.setWordDevanagari(extractString(item.payload(), "lemmaDevanagari"));
+        p.setTranslationRu(item.correctAnswerRu());
+        p.setTranslationEn(item.correctAnswer());
+        p.setNSuccess(0);
+        p.setNAll(0);
+        p.setScore(0);
+        p.setStatus(WordStatus.NEW);
+        return p;
+    }
+
+    private String extractString(JsonNode payload, String field) {
+        if (payload == null) return "";
+        JsonNode node = payload.get(field);
+        return node != null && !node.isNull() ? node.asText() : "";
     }
 
     private VocabularyLessonDto emptyVocabularyLesson(String slug) {
@@ -193,8 +289,8 @@ public class LessonV2Service {
     }
 
     public Mono<QuestionAnswerHistory> questionHistory(String slug, String caseType, String numberType,
-                                                       String gender, UUID userId, Pageable pageable,
-                                                       Locale locale) {
+                                                        String gender, UUID userId, Pageable pageable,
+                                                        Locale locale) {
         return Mono.just(QuestionAnswerHistory.builder()
                 .questionId(null)
                 .textRu("")
@@ -208,18 +304,19 @@ public class LessonV2Service {
 
     /* ─── mapping helpers ────────────────────────────────────────────── */
 
-    private LessonItemDto toLessonItem(TopicLessonSummaryDto s) {
+    private LessonItemDto toLessonItem(TopicDto t) {
+        boolean isVocabulary = "LEXICON".equals(t.domain());
         return LessonItemDto.builder()
-                .id(s.id())
-                .slug(s.code())
-                .titleRu(s.titleRu())
-                .titleEn(s.titleEn())
+                .id(t.id())
+                .slug(t.code())
+                .titleRu(t.titleRu())
+                .titleEn(t.titleEn())
                 .descriptionRu("")
                 .descriptionEn("")
-                .lessonType(LessonType.DECLENSIONS)
-                .difficulty(mapDifficulty(s.learningLevel()))
-                .totalQuestions(s.totalQuestions())
-                .totalWordsOwn(0)
+                .lessonType(isVocabulary ? LessonType.VOCABULARY : LessonType.DECLENSIONS)
+                .difficulty(mapDifficulty(t.learningLevel()))
+                .totalQuestions(0)
+                .totalWordsOwn(isVocabulary ? 0 : 0)
                 .learnedWords(0)
                 .build();
     }
@@ -232,16 +329,6 @@ public class LessonV2Service {
             case "L0", "L1", "L2" -> Difficulty.BEGINNER;
             case "L3", "L4" -> Difficulty.INTERMEDIATE;
             default -> Difficulty.ADVANCED;
-        };
-    }
-
-    private boolean isDeclensionsCategory(String category) {
-        if (category == null) {
-            return false;
-        }
-        return switch (category.toLowerCase(Locale.ROOT)) {
-            case "declensions", "declension", "grammar" -> true;
-            default -> false;
         };
     }
 }

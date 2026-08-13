@@ -1,6 +1,7 @@
 package sm.selflearn.samskrtam.curriculum.dto;
 
 import sm.selflearn.samskrtam.curriculum.model.LearningLevel;
+import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -12,6 +13,7 @@ public record TopicDto(
         String titleRu,
         String titleEn,
         LearningLevel learningLevel,
+        TopicDomain domain,
         boolean isEvergreen,
         Short displayOrder,
         List<LearningLevel> appearsInLevels,
