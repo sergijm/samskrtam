@@ -63,10 +63,6 @@ public class Lexeme {
     @Column(name = "gender", length = 20)
     private LexemeGender gender;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
-    private LexemeStatus status = LexemeStatus.DRAFT;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

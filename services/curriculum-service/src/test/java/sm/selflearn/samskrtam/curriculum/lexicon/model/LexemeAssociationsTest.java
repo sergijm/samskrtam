@@ -45,7 +45,6 @@ class LexemeAssociationsTest {
         lexeme.setGlossRu("человек");
         lexeme.setGlossEn("man");
         lexeme.setGender(LexemeGender.MASCULINE);
-        lexeme.setStatus(LexemeStatus.DRAFT);
 
         lexeme.setSemanticTopics(Set.of(topic("nature"), topic("people")));
         lexeme.setPartsOfSpeech(Set.of(pos("noun")));
@@ -57,11 +56,5 @@ class LexemeAssociationsTest {
         assertThat(lexeme.getPartsOfSpeech()).extracting(PartOfSpeech::getCode).containsExactly("noun");
         assertThat(lexeme.getMorphologyClasses())
                 .extracting(MorphologyClass::getCode).containsExactly("a-stem-masc");
-    }
-
-    @Test
-    void lexeme_defaultStatus_isDraft() {
-        Lexeme lexeme = new Lexeme();
-        assertThat(lexeme.getStatus()).isEqualTo(LexemeStatus.DRAFT);
     }
 }

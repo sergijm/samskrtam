@@ -72,7 +72,6 @@ public class LexiconImportService {
                         created.setGlossRu(emptyIfNull(grouped.representative().lemmaGlossRu()));
                         created.setGlossEn(emptyIfNull(grouped.representative().lemmaGlossEn()));
                         created.setGender(grouped.gender());
-                        created.setStatus(LexemeStatus.CANDIDATE);
                         return created;
                     });
             boolean isNew = lexeme.getId() == null;
@@ -105,7 +104,7 @@ public class LexiconImportService {
             }
         }
 
-        cleanupGlosslessCandidates();
+        cleanupGlosslessLexemes();
 
         recalcSourceCaches(touchedSources);
 
@@ -403,18 +402,17 @@ public class LexiconImportService {
 
 
     /**
-     * Удаляет лексемы со статусом CANDIDATE, у которых нет ни RU-, ни EN-глосса.
-     * Они не могли появиться при нормальном импорте (groupByLemmaAndGender отбрасывает
-     * строки без глосса), но могут остаться после ручных правок или предыдущих версий.
+     * Удаляет лексемы без RU- и EN-глосса. Они не могли появиться при нормальном
+     * импорте (groupByLemmaAndGender отбрасывает строки без глосса), но могут
+     * остаться после ручных правок или предыдущих версий.
      */
-    private void cleanupGlosslessCandidates() {
-        List<Lexeme> candidates = lexemeRepository.findByStatus(LexemeStatus.CANDIDATE);
-        List<Lexeme> toDelete = candidates.stream()
+    private void cleanupGlosslessLexemes() {
+        List<Lexeme> glossless = lexemeRepository.findAll().stream()
                 .filter(l -> isBlank(l.getGlossRu()) && isBlank(l.getGlossEn()))
                 .toList();
-        if (!toDelete.isEmpty()) {
-            log.info("Cleaning up {} glossless CANDIDATE lexemes", toDelete.size());
-            lexemeRepository.deleteAll(toDelete);
+        if (!glossless.isEmpty()) {
+            log.info("Cleaning up {} glossless lexemes", glossless.size());
+            lexemeRepository.deleteAll(glossless);
         }
     }
 

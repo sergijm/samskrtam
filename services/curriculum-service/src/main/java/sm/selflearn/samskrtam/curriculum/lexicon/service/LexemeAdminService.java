@@ -15,10 +15,8 @@ import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexemeUpsertRequest;
 import sm.selflearn.samskrtam.curriculum.lexicon.imports.LexiconImportService;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeStatus;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.PosGroup;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticTopic;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
@@ -28,13 +26,11 @@ import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticTopicReposit
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
 /**
- * ADMIN-CRUD лексем и смена статуса с валидацией перехода в APPROVED
- * (task-curriculum-16 §1–§4, lexicon-content-pipeline.md §3).
+ * ADMIN-CRUD лексем (task-curriculum-16 §1–§4).
  */
 @Service
 @RequiredArgsConstructor
@@ -45,13 +41,12 @@ public class LexemeAdminService {
     private final PartOfSpeechRepository partOfSpeechRepository;
     private final MorphologyClassRepository morphologyClassRepository;
     private final SemanticTopicRepository semanticTopicRepository;
-    private final TransliterationService transliterationService;
 
     @Transactional(readOnly = true)
-    public LexemeAdminPage list(LexemeStatus status, String posCode, UUID semanticTopicId,
+    public LexemeAdminPage list(String posCode, UUID semanticTopicId,
                                 boolean noSemanticTopic, int page, int size) {
         Page<Lexeme> result = lexemeRepository.search(
-                status, posCode, semanticTopicId, noSemanticTopic, PageRequest.of(page, size));
+                posCode, semanticTopicId, noSemanticTopic, PageRequest.of(page, size));
         List<LexemeAdminDto> items = result.getContent().stream()
                 .map(this::toAdminDto)
                 .toList();
@@ -70,9 +65,6 @@ public class LexemeAdminService {
     public LexemeDetailDto create(LexemeUpsertRequest request) {
         Lexeme lexeme = new Lexeme();
         apply(lexeme, request);
-        if (lexeme.getStatus() == null) {
-            lexeme.setStatus(LexemeStatus.DRAFT);
-        }
         lexemeRepository.save(lexeme);
         replaceTaxonomies(lexeme, request.posCodes(), request.morphologyClassCodes(),
                 request.semanticTopicIds());
@@ -86,29 +78,6 @@ public class LexemeAdminService {
         apply(lexeme, request);
         replaceTaxonomies(lexeme, request.posCodes(), request.morphologyClassCodes(),
                 request.semanticTopicIds());
-        return toDetailDto(lexeme);
-    }
-
-    /**
-     * Смена статуса DRAFT|CANDIDATE → APPROVED|REJECTED. Переход в APPROVED
-     * блокируется (422) при незаполненном gender у NOMINAL POS или при
-     * несверенной транслитерации IAST↔Devanagari.
-     */
-    @Transactional
-    public LexemeDetailDto changeStatus(UUID id, LexemeStatus target) {
-        Lexeme lexeme = lexemeRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lexeme not found"));
-        LexemeStatus from = lexeme.getStatus();
-        validateTransition(from, target);
-
-        if (target == LexemeStatus.APPROVED) {
-            String validationError = approvalBlocker(lexeme);
-            if (validationError != null) {
-                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, validationError);
-            }
-        }
-        lexeme.setStatus(target);
-        lexemeRepository.save(lexeme);
         return toDetailDto(lexeme);
     }
 
@@ -164,9 +133,6 @@ public class LexemeAdminService {
         lexeme.setLongDefinitionRu(request.longDefinitionRu());
         lexeme.setLongDefinitionEn(request.longDefinitionEn());
         lexeme.setGender(request.gender());
-        if (request.status() != null) {
-            lexeme.setStatus(request.status());
-        }
     }
 
     private void replaceTaxonomies(Lexeme lexeme, List<String> posCodes,
@@ -200,41 +166,6 @@ public class LexemeAdminService {
         return result;
     }
 
-    private void validateTransition(LexemeStatus from, LexemeStatus target) {
-        if (target == LexemeStatus.APPROVED
-                && from != LexemeStatus.DRAFT && from != LexemeStatus.CANDIDATE && from != LexemeStatus.APPROVED) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "APPROVED может принимать только DRAFT/ CANDIDATE");
-        }
-        if (target == LexemeStatus.REJECTED
-                && from != LexemeStatus.DRAFT && from != LexemeStatus.CANDIDATE) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "REJECTED только из DRAFT/ CANDIDATE");
-        }
-    }
-
-    /**
-     * Возвращает текст-причину блокировки перехода в APPROVED, либо null.
-     */
-    private String approvalBlocker(Lexeme lexeme) {
-        boolean nominal = lexeme.getPartsOfSpeech().stream()
-                .map(PartOfSpeech::getGroup)
-                .filter(Objects::nonNull)
-                .anyMatch(group -> group == PosGroup.NOMINAL);
-        if (nominal && lexeme.getGender() == null) {
-            return "gender обязателен для NOMINAL POS";
-        }
-        if (lexeme.getLemmaIast() == null || lexeme.getLemmaDevanagari() == null
-                || lexeme.getLemmaIast().isBlank() || lexeme.getLemmaDevanagari().isBlank()) {
-            return "lemmaIast и lemmaDevanagari обязательны";
-        }
-        String expectedDev = transliterationService.iastToDevanagari(lexeme.getLemmaIast());
-        if (!lexeme.getLemmaDevanagari().equals(expectedDev)) {
-            return "lemmaDevanagari не совпадает с транслитерацией lemmaIast";
-        }
-        return null;
-    }
-
     private LexemeAdminDto toAdminDto(Lexeme lexeme) {
         Integer rank = frequencyRepository
                 .findByIdLexemeIdAndIdSource(lexeme.getId(), LexiconImportService.FREQUENCY_SOURCE)
@@ -248,7 +179,6 @@ public class LexemeAdminService {
                 lexeme.getGlossRu(),
                 lexeme.getGlossEn(),
                 lexeme.getGender() == null ? null : lexeme.getGender().name(),
-                lexeme.getStatus(),
                 rank,
                 lexeme.getWordForms().size(),
                 !lexeme.getSemanticTopics().isEmpty());
@@ -269,7 +199,6 @@ public class LexemeAdminService {
                 lexeme.getLongDefinitionRu(),
                 lexeme.getLongDefinitionEn(),
                 lexeme.getGender(),
-                lexeme.getStatus(),
                 lexeme.getPartsOfSpeech().stream().map(PartOfSpeech::getCode).toList(),
                 lexeme.getMorphologyClasses().stream().map(MorphologyClass::getCode).toList(),
                 lexeme.getSemanticTopics().stream().map(SemanticTopic::getId).toList(),

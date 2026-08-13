@@ -1,7 +1,5 @@
 package sm.selflearn.samskrtam.curriculum.lexicon.dto;
 
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeStatus;
-
 import java.util.UUID;
 
 /**
@@ -15,7 +13,6 @@ public record LexemeAdminDto(
         String glossRu,
         String glossEn,
         String gender,
-        LexemeStatus status,
         Integer frequencyRank,
         int wordFormCount,
         boolean hasSemanticTopic

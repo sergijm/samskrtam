@@ -1,7 +1,6 @@
 package sm.selflearn.samskrtam.curriculum.lexicon.dto;
 
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeStatus;
 
 import java.time.Instant;
 import java.util.List;
@@ -20,7 +19,6 @@ public record LexemeDetailDto(
         String longDefinitionRu,
         String longDefinitionEn,
         LexemeGender gender,
-        LexemeStatus status,
         List<String> posCodes,
         List<String> morphologyClassCodes,
         List<UUID> semanticTopicIds,

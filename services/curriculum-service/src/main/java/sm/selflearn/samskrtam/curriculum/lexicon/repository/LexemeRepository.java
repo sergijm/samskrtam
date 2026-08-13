@@ -9,7 +9,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeStatus;
 
 import java.util.Collection;
 import java.util.List;
@@ -24,7 +23,11 @@ public interface LexemeRepository extends JpaRepository<Lexeme, UUID> {
 
     boolean existsByLemmaSlp1AndGender(String lemmaSlp1, LexemeGender gender);
 
-    List<Lexeme> findByStatus(LexemeStatus status);
+    /**
+     * Lexemes bound to a lexical topic (via {@code curriculum.lexical_topic_binding}).
+     * Used by the lexical quiz generator to materialize VOCABULARY_WORD items per topic.
+     */
+    List<Lexeme> findByLexicalTopics_Code(String topicCode);
 
     List<Lexeme> findByLemmaIastStartingWith(String prefix);
 
@@ -50,13 +53,11 @@ public interface LexemeRepository extends JpaRepository<Lexeme, UUID> {
 
     @Query("select distinct l from Lexeme l "
             + "left join l.semanticTopics st "
-            + "where (:status is null or l.status = :status) "
-            + "and (:posCode is null or :posCode = '' or exists (select p from l.partsOfSpeech p where p.code = :posCode)) "
+            + "where (:posCode is null or :posCode = '' or exists (select p from l.partsOfSpeech p where p.code = :posCode)) "
             + "and (:noSemanticTopic = false or st is null) "
             + "and (:semanticTopicId is null or exists (select t from l.semanticTopics t where t.id = :semanticTopicId)) "
             + "order by l.lemmaSlp1")
     Page<Lexeme> search(
-            @Param("status") LexemeStatus status,
             @Param("posCode") String posCode,
             @Param("semanticTopicId") UUID semanticTopicId,
             @Param("noSemanticTopic") boolean noSemantic,

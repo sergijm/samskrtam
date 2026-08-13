@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.PoolCriteria;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeStatus;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexicalTopicBinding;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexicalTopicBindingId;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
@@ -38,7 +37,6 @@ class LexemePoolServiceTest {
         l.setGlossRu("глосс");
         l.setGlossEn("gloss");
         l.setGender(LexemeGender.MASCULINE);
-        l.setStatus(LexemeStatus.APPROVED);
         PartOfSpeech pos = new PartOfSpeech();
         pos.setCode(posCode);
         l.setPartsOfSpeech(Set.of(pos));
@@ -46,11 +44,11 @@ class LexemePoolServiceTest {
     }
 
     @Test
-    void resolve_neverReturnsNonApproved() {
+    void resolve_returnsAllLexemes() {
         LexemeRepository lexemeRepo = mock(LexemeRepository.class);
-        Lexeme approved = lexeme(UUID.randomUUID(), "noun");
-        when(lexemeRepo.findByStatus(LexemeStatus.APPROVED)).thenReturn(List.of(approved));
-        when(lexemeRepo.findWithDetailsByIdIn(any())).thenReturn(List.of(approved));
+        Lexeme lexeme = lexeme(UUID.randomUUID(), "noun");
+        when(lexemeRepo.findAll()).thenReturn(List.of(lexeme));
+        when(lexemeRepo.findWithDetailsByIdIn(any())).thenReturn(List.of(lexeme));
 
         LexemePoolService service = poolService(lexemeRepo, mock(LexemeFrequencyRepository.class),
                 mock(LexicalTopicBindingRepository.class), mock(SourceOccurrenceRepository.class),
@@ -68,7 +66,7 @@ class LexemePoolServiceTest {
         LexemeRepository lexemeRepo = mock(LexemeRepository.class);
         Lexeme mastered = lexeme(lexemeMasteredId, "noun");
         Lexeme fresh = lexeme(lexemeNewId, "noun");
-        when(lexemeRepo.findByStatus(LexemeStatus.APPROVED)).thenReturn(List.of(mastered, fresh));
+        when(lexemeRepo.findAll()).thenReturn(List.of(mastered, fresh));
         when(lexemeRepo.findWithDetailsByIdIn(any()))
                 .thenAnswer(inv -> inv.<List<UUID>>getArgument(0).stream()
                         .map(id -> id.equals(lexemeMasteredId) ? mastered : fresh)
@@ -116,7 +114,7 @@ LexemePoolService service = poolService(lexemeRepo, mock(LexemeFrequencyReposito
         Lexeme b2 = lexeme(UUID.randomUUID(), "verb");
 
         LexemeRepository lexemeRepo = mock(LexemeRepository.class);
-        when(lexemeRepo.findByStatus(LexemeStatus.APPROVED))
+        when(lexemeRepo.findAll())
                 .thenReturn(List.of(a1, a2, a3, b1, b2));
         when(lexemeRepo.findWithDetailsByIdIn(any()))
                 .thenAnswer(inv -> inv.<List<UUID>>getArgument(0).stream()

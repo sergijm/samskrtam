@@ -8,7 +8,6 @@ import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexemeCandidateDto;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.PoolCriteria;
 import sm.selflearn.samskrtam.curriculum.lexicon.imports.LexiconImportService;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeStatus;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.UserLexemeProgress;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
@@ -28,10 +27,10 @@ import java.util.UUID;
 
 /**
  * Разрешение пула кандидатов для lexical-сессий (lexical-quizzes.md §3,
- * task-curriculum-15). Базовый жёсткий фильтр — status = APPROVED; все
- * переданные измерения пересекаются (AND), значения внутри измерения
- * объединяются (OR). Балансировка: квота на тему при topicIds.size() &gt; 1
- * и финальный reshuffle «не более 2 подряд одного posCode».
+ * task-curriculum-15). База пула — все лексемы; переданные измерения
+ * пересекаются (AND), значения внутри измерения объединяются (OR).
+ * Балансировка: квота на тему при topicIds.size() &gt; 1 и финальный reshuffle
+ * «не более 2 подряд одного posCode».
  */
 @Slf4j
 @Service
@@ -54,7 +53,7 @@ public class LexemePoolService {
                     null, null, null, null, 100);
         }
 
-        List<UUID> ids = baseApprovedIds();
+        List<UUID> ids = baseIds();
         ids = applyTopicFilter(ids, criteria.topicIds());
         ids = applyFrequencyFilter(ids, criteria.frequencyRankMin(), criteria.frequencyRankMax());
         ids = applyPosFilter(ids, criteria.posCodes());
@@ -74,8 +73,8 @@ public class LexemePoolService {
         return lexemes.stream().map(this::toDto).toList();
     }
 
-    private List<UUID> baseApprovedIds() {
-        return lexemeRepository.findByStatus(LexemeStatus.APPROVED)
+    private List<UUID> baseIds() {
+        return lexemeRepository.findAll()
                 .stream()
                 .map(Lexeme::getId)
                 .toList();

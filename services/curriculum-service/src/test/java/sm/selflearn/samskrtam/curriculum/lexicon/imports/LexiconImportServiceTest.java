@@ -5,7 +5,6 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeFrequency;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeFrequencyId;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeStatus;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyAppliesTo;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
