@@ -1,0 +1,45 @@
+{
+  "info": {
+    "name": "Sangraha-Service — Lexicon Export",
+    "description": "Service-to-service эндпоинт sangraha-service для экспорта агрегированных лемм (уникальные пары lemma+gender, отсортированные по частоте) в curriculum-service (минуя gateway).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "sangrahaBaseUrl",
+      "value": "http://localhost:8082",
+      "type": "string",
+      "description": "Порт sangraha-service"
+    },
+    {
+      "key": "cursor",
+      "value": "",
+      "type": "string",
+      "description": "Keyset-курсор вида \"occurrenceCount:lemmaStatisticsId\" последней строки страницы. Пустая строка — первая страница."
+    },
+    {
+      "key": "limit",
+      "value": "500",
+      "type": "string",
+      "description": "Размер страницы (1..500)"
+    }
+  ],
+  "item": [
+    {
+      "name": "Lemmas Export",
+      "request": {
+        "method": "GET",
+        "description": "Курсорная выгрузка уникальных пар (lemma, gender), отсортированных по частоте вхождения по убыванию.\n\nИсточники:\n- lemma — словарные поля (lemmaSlp1, lemmaIast, lemmaDevanagari)\n- lemma_statistics — gender, occurrenceCount, dominantPosCode\n- lemma_classification (scheme=CURRICULUM, любой статус) — categoryCode, glossRu, glossEn (опционально)\n- nominal_lemmas — stemClass → vowelType\n\nОдна строка = одна пара (lemma, gender). Строки без классификации экспортируются с пустыми categoryCodes/gloss.\n\nnextCursor === null → страниц больше нет.",
+        "url": {
+          "raw": "{{sangrahaBaseUrl}}/sangraha/internal/lexicon/lemmas/export?cursor={{cursor}}&limit={{limit}}",
+          "host": ["{{sangrahaBaseUrl}}"],
+          "path": ["sangraha", "internal", "lexicon", "lemmas", "export"],
+          "query": [
+            {"key": "cursor", "value": "{{cursor}}", "disabled": false},
+            {"key": "limit", "value": "{{limit}}", "disabled": false}
+          ]
+        }
+      }
+    }
+  ]
+}

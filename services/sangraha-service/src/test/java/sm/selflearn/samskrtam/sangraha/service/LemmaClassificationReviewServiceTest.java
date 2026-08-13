@@ -113,17 +113,6 @@ class LemmaClassificationReviewServiceTest {
                 .hasMessageContaining("Unknown categoryCode");
     }
 
-    @Test
-    void exportApproved_returnsRowsWithDominantStats() {
-        when(repo.findForReview(any(), any(), any(), any())).thenReturn(List.of(row));
-        LemmaClassificationPageDto page = service().exportApproved("CURRICULUM", null, 100);
-
-        LemmaClassificationItemDto item = page.items().get(0);
-        assertThat(item.status()).isEqualTo("CANDIDATE");
-        assertThat(item.gender()).isEqualTo("MASCULINE");
-        assertThat(item.occurrenceCount()).isEqualTo(5);
-    }
-
     private LemmaClassificationReviewService service() {
         return new LemmaClassificationReviewService(repo, statsRepo, validator);
     }
