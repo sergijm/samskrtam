@@ -44,12 +44,22 @@ public class QuestItem {
     @Column(name = "prompt", nullable = false)
     private String prompt;
 
+    @Column(name = "prompt_ru")
+    private String promptRu;
+
     @Column(name = "correct_answer", length = 200)
     private String correctAnswer;
+
+    @Column(name = "correct_answer_ru", length = 200)
+    private String correctAnswerRu;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "distractors", nullable = false, columnDefinition = "jsonb")
     private String distractors;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "distractors_ru", columnDefinition = "jsonb")
+    private String distractorsRu;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "payload", nullable = false, columnDefinition = "jsonb")

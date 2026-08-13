@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import type { SessionQuestion } from '../../types/quiz';
+import { promptText } from '../../utils/grammarTerms';
 
 interface FreeTextQuestionProps {
   question: SessionQuestion;
@@ -24,7 +25,7 @@ export default function FreeTextQuestion({
   totalQuestions,
   onSubmit,
 }: FreeTextQuestionProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [value, setValue] = useState('');
 
   const trimmed = value.trim();
@@ -40,7 +41,7 @@ export default function FreeTextQuestion({
       <div className="text-center text-sm text-color-secondary mb-3">
         {currentQuestionIndex + 1} / {totalQuestions}
       </div>
-      <h3 className="text-center mb-3">{question.text}</h3>
+      <h3 className="text-center mb-3">{promptText(question, i18n.language)}</h3>
       {question.stemDevanagari && (
         <div
           className="text-center mb-3"

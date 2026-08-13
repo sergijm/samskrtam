@@ -41,7 +41,7 @@ spring:
 curriculum:
   quest-items:
     declension-match:
-      pairs-per-item: 5
+      pairs-per-item: 6
 
 sangraha-service:
   url: ${SANGRAHA_SERVICE_URL:}

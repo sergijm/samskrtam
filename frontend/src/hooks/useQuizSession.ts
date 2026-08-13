@@ -28,6 +28,10 @@ export function useQuizSession(
   /* ---- state ---- */
   const state = useQuizSessionState();
 
+  /* ---- progress-tag slice from URL (?progressTagSetId=...) ---- */
+  const progressTagSetId =
+    new URLSearchParams(location.search).get('progressTagSetId') || undefined;
+
   /* ---- mutations ---- */
   const composeSession = useComposeQuizSession();
   const resumeSession = useResumeQuizSession();
@@ -97,6 +101,7 @@ export function useQuizSession(
         count: fetchedQuizSummary.totalQuestions && fetchedQuizSummary.totalQuestions > 0
           ? fetchedQuizSummary.totalQuestions
           : 10,
+        progressTagSetId,
       },
       {
         onSuccess: (data: ComposeQuizResponse) => {

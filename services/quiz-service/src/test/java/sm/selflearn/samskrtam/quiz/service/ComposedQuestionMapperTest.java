@@ -28,7 +28,7 @@ class ComposedQuestionMapperTest {
         UUID qid = UUID.randomUUID();
         QuestItemDto item = new QuestItemDto(
                 qid, "DECLENSION_FORM_CHOICE", "SINGLE_CHOICE",
-                "Choose the acc. sg. of nara", "B", List.of("A", "C"), null, null);
+                "Choose the acc. sg. of nara", null, "B", null, List.of("A", "C"), null, null, null);
         ComposedQuestionDto composed = new ComposedQuestionDto(3, "a-stem-masc", item, null);
 
         SessionQuestion q = mapper.toSessionQuestion(UUID.randomUUID(), composed);
@@ -50,9 +50,38 @@ class ComposedQuestionMapperTest {
     }
 
     @Test
+    void bilingualItemCarriesRussianPromptAndOptionText() throws Exception {
+        UUID qid = UUID.randomUUID();
+        QuestItemDto item = new QuestItemDto(
+                qid, "CASE_RECOGNITION", "SINGLE_CHOICE",
+                "Identify the case and number of 'naram'.", "RU prompt",
+                "Accusative Singular", "RU accusative singular",
+                List.of("Nominative Singular", "Locative Plural"),
+                List.of("RU nominative singular", "RU locative plural"),
+                null, null);
+        SessionQuestion q = mapper.toSessionQuestion(
+                UUID.randomUUID(), new ComposedQuestionDto(1, "a-stem", item, null));
+
+        assertThat(q.getText()).isEqualTo("Identify the case and number of 'naram'.");
+        assertThat(q.getTextRu()).isEqualTo("RU prompt");
+
+        var array = (com.fasterxml.jackson.databind.node.ArrayNode)
+                objectMapper.readTree(q.getOptions().asString());
+        assertThat(array).hasSize(3);
+        for (var node : array) {
+            assertThat(node.get("text").asText()).isNotBlank();
+            assertThat(node.get("textRu").asText()).isNotBlank();
+        }
+
+        var dto = mapper.toQuestionDto(q);
+        assertThat(dto.getTextRu()).isEqualTo("RU prompt");
+        assertThat(dto.getOptions()).extracting("textRu").doesNotContainNull();
+    }
+
+    @Test
     void optionIdsAreDeterministicPerText() throws Exception {
         UUID qid = UUID.randomUUID();
-        QuestItemDto item = new QuestItemDto(qid, "TYPE", "SINGLE_CHOICE", "p", "B", List.of("A", "C"), null, null);
+        QuestItemDto item = new QuestItemDto(qid, "TYPE", "SINGLE_CHOICE", "p", null, "B", null, List.of("A", "C"), null, null, null);
         ComposedQuestionDto composed = new ComposedQuestionDto(1, "t", item, null);
 
         SessionQuestion first = mapper.toSessionQuestion(UUID.randomUUID(), composed);
@@ -73,13 +102,13 @@ class ComposedQuestionMapperTest {
 
     @Test
     void freeTextAnswerModeMapsToFreeTextQuestionType() {
-        QuestItemDto item = new QuestItemDto(UUID.randomUUID(), "n", "FREE_TEXT", "p", "ans", List.of(), null, null);
+        QuestItemDto item = new QuestItemDto(UUID.randomUUID(), "n", "FREE_TEXT", "p", null, "ans", null, List.of(), null, null, null);
         assertThat(mapper.questionType(item.answerMode())).isEqualTo("FREE_TEXT");
     }
 
     @Test
     void freeTextItemBuildsNoOptions() throws Exception {
-        QuestItemDto item = new QuestItemDto(UUID.randomUUID(), "n", "FREE_TEXT", "p", "ans", List.of(), null, null);
+        QuestItemDto item = new QuestItemDto(UUID.randomUUID(), "n", "FREE_TEXT", "p", null, "ans", null, List.of(), null, null, null);
         String json = mapper.buildOptionsJson(item);
         var array = (com.fasterxml.jackson.databind.node.ArrayNode) objectMapper.readTree(json);
         assertThat(array).isEmpty();
@@ -88,7 +117,7 @@ class ComposedQuestionMapperTest {
     @Test
     void questionDtoOptionsPreserveStoredIds() {
         UUID qid = UUID.randomUUID();
-        QuestItemDto item = new QuestItemDto(qid, "n", "SINGLE_CHOICE", "p", "B", List.of("A"), null, null);
+        QuestItemDto item = new QuestItemDto(qid, "n", "SINGLE_CHOICE", "p", null, "B", null, List.of("A"), null, null, null);
         SessionQuestion q = mapper.toSessionQuestion(UUID.randomUUID(), new ComposedQuestionDto(1, "t", item, null));
 
         var dto = mapper.toQuestionDto(q);
@@ -107,7 +136,7 @@ class ComposedQuestionMapperTest {
                         new DeclensionMatchPayload.DeclensionMatchPair(pair1, "naram", "नरम्", "ACCUSATIVE", "SINGULAR"),
                         new DeclensionMatchPayload.DeclensionMatchPair(pair2, "nare", "नरे", "LOCATIVE", "SINGULAR")));
         QuestItemDto item = new QuestItemDto(
-                qid, "DECLENSION_MATCH", "MATCHING", "Match", null, List.of(),
+                qid, "DECLENSION_MATCH", "MATCHING", "Match", null, null, null, List.of(), null,
                 objectMapper.valueToTree(payload), null);
         SessionQuestion q = mapper.toSessionQuestion(UUID.randomUUID(), new ComposedQuestionDto(1, "a-stem", item, null));
 

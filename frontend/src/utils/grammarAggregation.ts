@@ -38,6 +38,38 @@ export interface CaseNumberAggregation {
   status: WordStatus;
 }
 
+/** Semantic case pairs served as progress-tag slices (mirror ProgressTagSetId). */
+export interface CasePair {
+  setId: string;
+  caseTypeA: string;
+  caseTypeB: string;
+}
+
+export const CASE_PAIRS: CasePair[] = [
+  { setId: 'GEN_LOC', caseTypeA: 'GENITIVE', caseTypeB: 'LOCATIVE' },
+  { setId: 'GEN_ABL', caseTypeA: 'GENITIVE', caseTypeB: 'ABLATIVE' },
+  { setId: 'DAT_ACC', caseTypeA: 'DATIVE', caseTypeB: 'ACCUSATIVE' },
+  { setId: 'INS_ABL', caseTypeA: 'INSTRUMENTAL', caseTypeB: 'ABLATIVE' },
+  { setId: 'INS_LOC', caseTypeA: 'INSTRUMENTAL', caseTypeB: 'LOCATIVE' },
+  { setId: 'ACC_LOC', caseTypeA: 'ACCUSATIVE', caseTypeB: 'LOCATIVE' },
+  { setId: 'DAT_GEN', caseTypeA: 'DATIVE', caseTypeB: 'GENITIVE' },
+  { setId: 'ABL_LOC', caseTypeA: 'ABLATIVE', caseTypeB: 'LOCATIVE' },
+];
+
+export interface CasePairAggregation {
+  setId: string;
+  caseTypeA: string;
+  caseTypeB: string;
+  caseRuA: string;
+  caseRuB: string;
+  caseEnA: string;
+  caseEnB: string;
+  aggregatedProgress: number;
+  totalCombinations: number;
+  learnedCombinations: number;
+  status: WordStatus;
+}
+
 function avgProgress(items: GrammarQuestionProgress[]): number {
   if (items.length === 0) return 0;
   const sum = items.reduce((acc, q) => acc + (q.score || 0), 0);
@@ -136,6 +168,36 @@ export const aggregateByCaseAndNumber = (questions: GrammarQuestionProgress[]): 
         status: progressStatus(progress),
       });
     }
+  }
+  return result;
+};
+
+export const aggregateByCasePair = (questions: GrammarQuestionProgress[]): CasePairAggregation[] => {
+  const result: CasePairAggregation[] = [];
+  for (const pair of CASE_PAIRS) {
+    const items = questions.filter(
+      q => q.caseType === pair.caseTypeA || q.caseType === pair.caseTypeB,
+    );
+    if (items.length === 0) continue;
+
+    const progress = avgProgress(items);
+    const learned = items.filter(q => q.score >= MASTERY_THRESHOLD).length;
+    const a = items.find(q => q.caseType === pair.caseTypeA);
+    const b = items.find(q => q.caseType === pair.caseTypeB);
+
+    result.push({
+      setId: pair.setId,
+      caseTypeA: pair.caseTypeA,
+      caseTypeB: pair.caseTypeB,
+      caseRuA: a?.caseRu ?? pair.caseTypeA,
+      caseRuB: b?.caseRu ?? pair.caseTypeB,
+      caseEnA: a?.caseEn ?? pair.caseTypeA,
+      caseEnB: b?.caseEn ?? pair.caseTypeB,
+      aggregatedProgress: progress,
+      totalCombinations: items.length,
+      learnedCombinations: learned,
+      status: progressStatus(progress),
+    });
   }
   return result;
 };

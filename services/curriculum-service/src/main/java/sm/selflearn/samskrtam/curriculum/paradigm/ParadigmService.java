@@ -51,13 +51,14 @@ public class ParadigmService {
     /* ─── regular noun classes ─────────────────────────────────────── */
 
     private DeclensionParadigmPageDto paradigmPageForRegularClass(String topicCode, int index) {
-        List<Lexeme> lexemes;
+        List<String> classCodes;
         if ("a-stem".equals(topicCode)) {
-            lexemes = lexemeRepository.findByMorphologyClasses_CodeIn(List.of("a-stem-masc", "a-stem-neut"));
+            // merged lesson: lexemes live under the concrete a-stem classes
+            classCodes = List.of("a-stem-masc", "a-stem-neut");
         } else {
-            lexemes = lexemeRepository.findByMorphologyClasses_Code(topicCode);
+            classCodes = List.of(topicCode);
         }
-        lexemes = lexemes.stream()
+        List<Lexeme> lexemes = lexemeRepository.findWithMorphologyByCodeIn(classCodes).stream()
                 .sorted(Comparator.comparing(Lexeme::getId))
                 .toList();
 
@@ -69,8 +70,17 @@ public class ParadigmService {
         }
 
         Lexeme lexeme = lexemes.get(index);
+        // Compose against the lexeme's actual morphology class (not the merged
+        // topic code) so the gender is resolved per class even when the lexeme
+        // itself carries no gender — mirrors DeclensionQuizItemGenerator.
+        String lexemeClassCode = resolveClassCode(lexeme, classCodes);
+        if (lexemeClassCode == null) {
+            return DeclensionParadigmPageDto.builder()
+                    .index(index).totalCount(totalCount).paradigm(null)
+                    .build();
+        }
         List<DeclensionNounParadigmComposer.Cell> cells = DeclensionNounParadigmComposer.compose(
-                topicCode, lexeme.getLemmaIast(), lexeme.getLemmaDevanagari(), lexeme.getGender());
+                lexemeClassCode, lexeme.getLemmaIast(), lexeme.getLemmaDevanagari(), lexeme.getGender());
 
         List<DeclensionFormDto> forms = cells.stream()
                 .map(cell -> DeclensionFormDto.builder()
@@ -88,8 +98,8 @@ public class ParadigmService {
                 .stemDevanagari(lexeme.getLemmaDevanagari())
                 .translationRu(lexeme.getGlossRu())
                 .translationEn(lexeme.getGlossEn())
-                .gender(toContentGender(resolveGender(topicCode, lexeme.getGender())))
-                .vowelType(toContentVowel(topicCode))
+                .gender(toContentGender(resolveGender(lexemeClassCode, lexeme.getGender())))
+                .vowelType(toContentVowel(lexemeClassCode))
                 .forms(forms)
                 .build();
 
@@ -179,13 +189,31 @@ public class ParadigmService {
         };
     }
 
+    /** First of {@code classCodes} the lexeme is actually bound to, or null. */
+    private static String resolveClassCode(Lexeme lexeme, List<String> classCodes) {
+        if (lexeme.getMorphologyClasses() == null) {
+            return null;
+        }
+        for (String code : classCodes) {
+            boolean bound = lexeme.getMorphologyClasses().stream().anyMatch(mc -> mc.getCode().equals(code));
+            if (bound) {
+                return code;
+            }
+        }
+        return null;
+    }
+
     private static LexemeGender resolveGender(String classCode, LexemeGender lexemeGender) {
         return switch (classCode) {
             case "a-stem-masc" -> LexemeGender.MASCULINE;
             case "a-stem-neut" -> LexemeGender.NEUTER;
             case "a-stem-fem" -> LexemeGender.FEMININE;
             case "a-stem" -> lexemeGender; // merged: use lexeme's own gender
-            default -> lexemeGender;
+            case "i-stem", "u-stem" ->
+                    lexemeGender == LexemeGender.NEUTER ? LexemeGender.NEUTER : LexemeGender.MASCULINE;
+            case "r-stem" ->
+                    lexemeGender == LexemeGender.FEMININE ? LexemeGender.FEMININE : LexemeGender.MASCULINE;
+            default -> lexemeGender == null ? LexemeGender.UNSPECIFIED : lexemeGender;
         };
     }
 }

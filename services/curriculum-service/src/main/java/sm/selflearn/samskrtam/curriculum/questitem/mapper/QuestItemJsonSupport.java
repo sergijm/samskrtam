@@ -51,4 +51,9 @@ public class QuestItemJsonSupport {
     public String correctAnswer(QuestItem item) {
         return "MATCHING".equals(item.getAnswerMode()) ? null : item.getCorrectAnswer();
     }
+
+    /** Same MATCHING rule as {@link #correctAnswer} applied to the Russian variant. */
+    public String correctAnswerRu(QuestItem item) {
+        return "MATCHING".equals(item.getAnswerMode()) ? null : item.getCorrectAnswerRu();
+    }
 }

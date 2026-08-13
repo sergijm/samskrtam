@@ -17,8 +17,11 @@ public record QuestItemDto(
         String itemType,
         String answerMode,
         String prompt,
+        String promptRu,
         String correctAnswer,
+        String correctAnswerRu,
         List<String> distractors,
+        List<String> distractorsRu,
         Object payload
 ) {
 }

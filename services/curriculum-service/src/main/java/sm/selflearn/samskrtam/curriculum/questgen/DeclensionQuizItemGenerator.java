@@ -18,6 +18,7 @@ import sm.selflearn.samskrtam.quest.QuestItemType;
 import sm.selflearn.samskrtam.quest.declension.CaseRecognitionPayload;
 import sm.selflearn.samskrtam.quest.declension.DeclensionFormPayload;
 import sm.selflearn.samskrtam.quest.declension.DeclensionMatchPayload;
+import sm.selflearn.samskrtam.quiz.localization.CaseNumberGenderLocalizer;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,6 +61,23 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
     static final int MAX_LEXEMES = 10;
 
     private static final Random RANDOM = new Random();
+
+    /** Родительный падеж (для «формы … падежа») русских названий падежей. */
+    private static final Map<String, String> CASE_GENITIVE_RU = Map.ofEntries(
+            Map.entry("NOMINATIVE", "именительного"),
+            Map.entry("ACCUSATIVE", "винительного"),
+            Map.entry("INSTRUMENTAL", "творительного"),
+            Map.entry("DATIVE", "дательного"),
+            Map.entry("ABLATIVE", "отложительного"),
+            Map.entry("GENITIVE", "родительного"),
+            Map.entry("LOCATIVE", "местного"),
+            Map.entry("VOCATIVE", "звательного"));
+
+    /** Родительный падеж (для «… числа») русских названий чисел. */
+    private static final Map<String, String> NUMBER_GENITIVE_RU = Map.ofEntries(
+            Map.entry("SINGULAR", "единственного"),
+            Map.entry("DUAL", "двойственного"),
+            Map.entry("PLURAL", "множественного"));
 
     /** Topic slug → the morphology classes the topic's declension is built from. */
     private static final Map<String, List<String>> SLUG_CLASS_CODES = Map.ofEntries(
@@ -127,7 +145,9 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
         DeclensionFormPayload payload = formPayload(lexeme, classCode, gender, cell);
         String progressTag = progressTag(cell, gender);
         items.add(buildItem(topic, GrammarQuestItemTypes.DECLENSION_FORM,
-                prompt(lexeme, cell, false), cell.form().iast(), List.of(), payload, progressTag));
+                prompt(lexeme, cell, false), cell.form().iast(), List.of(),
+                promptRu(lexeme, cell, false), null, null,
+                payload, progressTag));
     }
 
     private void buildFormChoice(Topic topic, Lexeme lexeme, String classCode, LexemeGender gender,
@@ -135,8 +155,9 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
         List<String> distractors = choiceDistractors(cells, cell);
         DeclensionFormPayload payload = formPayload(lexeme, classCode, gender, cell);
         items.add(buildItem(topic, GrammarQuestItemTypes.DECLENSION_FORM_CHOICE,
-                prompt(lexeme, cell, true), cell.form().iast(), distractors, payload,
-                progressTag(cell, gender)));
+                prompt(lexeme, cell, true), cell.form().iast(), distractors,
+                promptRu(lexeme, cell, true), null, null,
+                payload, progressTag(cell, gender)));
     }
 
     private void buildCaseRecognition(Topic topic, Lexeme lexeme, String classCode, LexemeGender gender,
@@ -144,10 +165,14 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
                                       Map<String, Set<LexemeGender>> formGenders, List<QuestItem> items) {
         boolean genderRequired = formGenders.getOrDefault(cell.form().iast(), Set.of()).size() > 1;
         List<String> distractorCombinations = caseCombinations(cells, cell, gender, genderRequired);
+        List<String> distractorCombinationsRu = caseCombinationsRu(cells, cell, gender, genderRequired);
 
         String correctLabel = label(cell.caseType(), cell.numberType(), gender, genderRequired);
+        String correctLabelRu = labelRu(cell.caseType(), cell.numberType(), gender, genderRequired);
         String prompt = "Identify the case" + (genderRequired ? ", number and gender" : " and number")
                 + " of the word form '" + cell.form().iast() + "'.";
+        String promptRu = "Определите " + (genderRequired ? "падеж, число и род" : "падеж и число")
+                + " словоформы " + quoteRu(cell.form().iast()) + ".";
 
         CaseRecognitionPayload payload = new CaseRecognitionPayload(
                 cell.form().iast(),
@@ -161,8 +186,9 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
                 distractorCombinations);
 
         items.add(buildItem(topic, GrammarQuestItemTypes.CASE_RECOGNITION,
-                prompt, correctLabel, distractorCombinations, payload,
-                progressTag(cell, gender)));
+                prompt, correctLabel, distractorCombinations,
+                promptRu, correctLabelRu, distractorCombinationsRu,
+                payload, progressTag(cell, gender)));
     }
 
     private void buildMatch(Topic topic, Lexeme lexeme, String classCode, LexemeGender gender,
@@ -192,7 +218,11 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
             String progressTag = leading.caseType() + "|" + leading.numberType() + "|" + LexemeGender.UNSPECIFIED;
             items.add(buildItem(topic, GrammarQuestItemTypes.DECLENSION_MATCH,
                     "Match each word form of '" + lexeme.getLemmaIast() + "' to its case and number.",
-                    null, List.of(), payload, progressTag));
+                    null, List.of(),
+                    "Сопоставьте каждую форму слова " + quoteRu(lexeme.getLemmaIast())
+                            + " с её падежом и числом.",
+                    null, null,
+                    payload, progressTag));
         }
     }
 
@@ -202,14 +232,18 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
 
     private QuestItem buildItem(Topic topic, QuestItemType itemType,
                                 String prompt, String correctAnswer, List<String> distractors,
+                                String promptRu, String correctAnswerRu, List<String> distractorsRu,
                                 Object payload, String progressTag) {
         QuestItem item = new QuestItem();
         item.setTopicId(topic.getId());
         item.setItemType(itemType.code());
         item.setAnswerMode(itemType.defaultAnswerMode().name());
         item.setPrompt(prompt);
+        item.setPromptRu(promptRu);
         item.setCorrectAnswer(correctAnswer);
+        item.setCorrectAnswerRu(correctAnswerRu);
         item.setDistractors(toJson(distractors));
+        item.setDistractorsRu(distractorsRu == null ? null : toJson(distractorsRu));
         item.setPayload(toJson(payload));
         item.setProgressTag(progressTag);
         item.setGeneratorSource(GENERATOR_SOURCE);
@@ -237,6 +271,19 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
                 + " form of '" + lexeme.getLemmaIast() + "'.";
     }
 
+    private String promptRu(Lexeme lexeme, Cell cell, boolean choice) {
+        String verb = choice ? "Выберите" : "Введите";
+        return verb + " правильную форму " + CASE_GENITIVE_RU.getOrDefault(
+                cell.caseType().name(), cell.caseType().name().toLowerCase())
+                + " падежа, " + NUMBER_GENITIVE_RU.getOrDefault(
+                cell.numberType().name(), cell.numberType().name().toLowerCase())
+                + " числа слова " + quoteRu(lexeme.getLemmaIast()) + ".";
+    }
+
+    private static String quoteRu(String value) {
+        return "\u00AB" + value + "\u00BB";
+    }
+
     private DeclensionFormPayload formPayload(Lexeme lexeme, String classCode, LexemeGender gender, Cell cell) {
         return new DeclensionFormPayload(
                 lexeme.getLemmaIast(),
@@ -256,6 +303,12 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
     private String label(CaseType caseType, NumberType numberType, LexemeGender gender, boolean withGender) {
         String base = titleCase(caseType.name()) + " " + titleCase(numberType.name());
         return withGender ? base + " " + titleCase(gender.name()) : base;
+    }
+
+    private String labelRu(CaseType caseType, NumberType numberType, LexemeGender gender, boolean withGender) {
+        String base = CaseNumberGenderLocalizer.caseTypeRu(caseType.name()) + " "
+                + CaseNumberGenderLocalizer.numberTypeRu(numberType.name());
+        return withGender ? base + " " + CaseNumberGenderLocalizer.genderRu(gender.name()) : base;
     }
 
     private static String titleCase(String value) {
@@ -285,6 +338,24 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
                 continue; // ambiguous cell — useless as a distractor
             }
             combos.add(label(cell.caseType(), cell.numberType(), gender, withGender));
+            if (combos.size() == 3) {
+                break;
+            }
+        }
+        return combos;
+    }
+
+    private List<String> caseCombinationsRu(List<Cell> cells, Cell correct,
+                                            LexemeGender gender, boolean withGender) {
+        List<String> combos = new ArrayList<>();
+        for (Cell cell : cells) {
+            if (cell.caseType() == correct.caseType() && cell.numberType() == correct.numberType()) {
+                continue;
+            }
+            if (cell.form().iast().equals(correct.form().iast())) {
+                continue; // ambiguous cell — useless as a distractor
+            }
+            combos.add(labelRu(cell.caseType(), cell.numberType(), gender, withGender));
             if (combos.size() == 3) {
                 break;
             }

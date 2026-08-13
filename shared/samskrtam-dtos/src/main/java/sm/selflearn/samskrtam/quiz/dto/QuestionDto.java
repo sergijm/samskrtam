@@ -12,6 +12,12 @@ public class QuestionDto {
     UUID id;
     int questionNumber;
     String text;
+
+    /**
+     * Russian variant of {@link #text} for bilingual questions (curriculum compose flow).
+     * Null for legacy content-based questions and when no Russian variant is available.
+     */
+    String textRu;
     List<QuestionOptionDto> options;
 
     // Existing structured question fields
@@ -28,6 +34,13 @@ public class QuestionDto {
      * Supported: null/"FORM_BY_CASE", "CASE_BY_FORM", "MULTIPLE_CHOICE".
      */
     String questionType;
+
+    /**
+     * Answer mode (curriculum compose flow): FREE_TEXT, SINGLE_CHOICE, MATCHING.
+     * Null for legacy content-based sessions — the frontend dispatches on
+     * {@link #questionType} in that case.
+     */
+    String answerMode;
 
     /** Whether this question supports multi-select (e.g. CASE_BY_FORM). Default false. */
     boolean multiSelect;

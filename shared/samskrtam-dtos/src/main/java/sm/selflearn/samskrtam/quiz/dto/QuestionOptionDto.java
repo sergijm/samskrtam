@@ -19,6 +19,12 @@ public class QuestionOptionDto {
     /** IAST form of the declension, used when optionType = "FORM" (default). */
     String formIast;
 
+    /**
+     * Russian variant of the option text (bilingual curriculum options). Null when the
+     * option text is language-neutral (e.g. a word form) or no Russian variant exists.
+     */
+    String textRu;
+
     /** Devanagari form, used when optionType = "FORM" (default). */
     String formDevanagari;
 

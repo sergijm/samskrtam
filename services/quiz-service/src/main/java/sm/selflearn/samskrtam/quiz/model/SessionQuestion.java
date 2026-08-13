@@ -19,6 +19,7 @@ public class SessionQuestion {
     private UUID questionId;
     private int questionNumber;
     private String text;
+    private String textRu;
     private String explanationRu;
     private String explanationEn;
     private UUID declensionStemId;

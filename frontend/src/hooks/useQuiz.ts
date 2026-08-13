@@ -54,11 +54,13 @@ export const useComposeQuizSession = () => {
   return useMutation<
     ComposeQuizResponse,
     Error,
-    { topicCode: string; count: number }
+    { topicCode: string; count: number; progressTagSetId?: string }
   >({
-    mutationFn: async ({ topicCode, count }) => {
+    mutationFn: async ({ topicCode, count, progressTagSetId }) => {
       const request: ComposeQuizRequest = {
-        topics: [{ topicCode, count }],
+        topicCode,
+        progressTagSetId,
+        limit: count,
         userLocale: locale,
       };
       const response = await quizApi.composeSession(request);

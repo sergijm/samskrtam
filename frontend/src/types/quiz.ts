@@ -35,6 +35,7 @@ export interface SessionQuestion {
     id: string;
     questionNumber: number;
     text: string;
+    textRu?: string;
     options: QuestionOption[];
     stem: string;
     caseType: string;
@@ -151,13 +152,13 @@ export interface StartOrResumeResponse {
     slug: string;
 }
 
-export interface ComposeTopic {
-    topicCode: string;
-    count: number;
-}
-
 export interface ComposeQuizRequest {
-    topics: ComposeTopic[];
+    topicCode: string;
+    /** Optional progress-tag slice: e.g. NOMINATIVE, DUAL, GEN_ABL. */
+    progressTagSetId?: string;
+    itemType?: string;
+    answerMode?: string;
+    limit?: number;
     userLocale: string;
 }
 
@@ -175,6 +176,7 @@ export interface SessionQuestion {
     id: string;
     questionNumber: number;
     text: string;
+    textRu?: string;
     options: QuestionOption[];
     stem: string;
     caseType: string;
@@ -203,6 +205,8 @@ export interface QuestionMatchRow {
 export interface QuestionOption {
     id: string;
     formIast: string;
+    /** Russian variant of the option text (bilingual curriculum options); absent → render `formIast`. */
+    textRu?: string;
     formDevanagari: string;
     optionType?: string;
     caseType?: string;

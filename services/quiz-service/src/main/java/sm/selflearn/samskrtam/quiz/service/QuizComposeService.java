@@ -113,7 +113,9 @@ List<SessionQuestion> questions = new ArrayList<>();
             case LEARNING -> selectStatusItems(userId, topicCode, itemType, answerMode, true);
             case MASTERED -> selectStatusItems(userId, topicCode, itemType, answerMode, false);
             case DIFFICULT -> selectDifficultItems(userId, topicCode, itemType, answerMode);
-            case SINGULAR, DUAL, PLURAL, ACC_LOC, INS_ABL, GEN_LOC, DAT_ACC ->
+            case SINGULAR, DUAL, PLURAL, NOMINATIVE, ACCUSATIVE, INSTRUMENTAL, DATIVE, ABLATIVE,
+                    GENITIVE, LOCATIVE, VOCATIVE, ACC_LOC, INS_ABL, GEN_LOC, DAT_ACC, GEN_ABL,
+                    INS_LOC, DAT_GEN, ABL_LOC ->
                     selectGrammarItems(topicCode, setId, itemType, answerMode, sessionSize);
         };
     }
@@ -214,6 +216,18 @@ List<SessionQuestion> questions = new ArrayList<>();
             case INS_ABL -> List.of("INSTRUMENTAL", "ABLATIVE");
             case GEN_LOC -> List.of("GENITIVE", "LOCATIVE");
             case DAT_ACC -> List.of("DATIVE", "ACCUSATIVE");
+            case GEN_ABL -> List.of("GENITIVE", "ABLATIVE");
+            case INS_LOC -> List.of("INSTRUMENTAL", "LOCATIVE");
+            case DAT_GEN -> List.of("DATIVE", "GENITIVE");
+            case ABL_LOC -> List.of("ABLATIVE", "LOCATIVE");
+            case NOMINATIVE -> List.of("NOMINATIVE");
+            case ACCUSATIVE -> List.of("ACCUSATIVE");
+            case INSTRUMENTAL -> List.of("INSTRUMENTAL");
+            case DATIVE -> List.of("DATIVE");
+            case ABLATIVE -> List.of("ABLATIVE");
+            case GENITIVE -> List.of("GENITIVE");
+            case LOCATIVE -> List.of("LOCATIVE");
+            case VOCATIVE -> List.of("VOCATIVE");
             default -> List.of(allCases);
         };
         List<String> numbers = switch (setId) {

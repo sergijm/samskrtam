@@ -15,8 +15,11 @@ import java.util.UUID;
  * @param itemType      код QuestItemType (DECLENSION_FORM, ...)
  * @param answerMode    способ проверки ответа (FREE_TEXT, SINGLE_CHOICE, MATCHING, ...)
  * @param prompt        что показываем пользователю
+ * @param promptRu      русский вариант текста вопроса (выбирает клиент по своему языку)
  * @param correctAnswer эталонный ответ; {@code null} для MATCHING
+ * @param correctAnswerRu русский вариант эталонной метки (CASE_RECOGNITION; иначе {@code null})
  * @param distractors   неверные варианты для SINGLE_CHOICE; пусто для FREE_TEXT/MATCHING
+ * @param distractorsRu русские варианты дистракторов (CASE_RECOGNITION; иначе {@code null})
  * @param payload       типоспецифичные данные, прокидываются без разбора
  * @param progressTag   тег прогресса (caseType|numberType|gender или lemmaSlp1)
  */
@@ -25,8 +28,11 @@ public record QuestItemDto(
         String itemType,
         String answerMode,
         String prompt,
+        String promptRu,
         String correctAnswer,
+        String correctAnswerRu,
         List<String> distractors,
+        List<String> distractorsRu,
         JsonNode payload,
         String progressTag
 ) {

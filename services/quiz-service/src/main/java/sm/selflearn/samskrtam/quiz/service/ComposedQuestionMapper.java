@@ -68,6 +68,7 @@ public class ComposedQuestionMapper {
         if (item.distractors() != null) {
             texts.addAll(item.distractors());
         }
+        Map<String, String> ruByText = ruVariantByText(item);
         Collections.shuffle(texts);
         for (String text : texts) {
             UUID optionId = UUID.nameUUIDFromBytes(
@@ -75,9 +76,35 @@ public class ComposedQuestionMapper {
             ObjectNode option = objectMapper.createObjectNode();
             option.put("id", optionId.toString());
             option.put("text", text);
+            String textRu = ruByText.get(text);
+            if (textRu != null) {
+                option.put("textRu", textRu);
+            }
             options.add(option);
         }
         return arrayToJson(options);
+    }
+
+    /**
+     * Russian variant lookup keyed by the canonical English option text, aligned by index
+     * between {@code correctAnswer}/{@code distractors} and
+     * {@code correctAnswerRu}/{@code distractorsRu}. Only the bilingual variants are mapped;
+     * language-neutral option texts (word forms) have no Russian variant.
+     */
+    private Map<String, String> ruVariantByText(QuestItemDto item) {
+        Map<String, String> ruByText = new LinkedHashMap<>();
+        if (item.correctAnswer() != null && item.correctAnswerRu() != null) {
+            ruByText.put(item.correctAnswer(), item.correctAnswerRu());
+        }
+        if (item.distractors() != null && item.distractorsRu() != null) {
+            int size = Math.min(item.distractors().size(), item.distractorsRu().size());
+            for (int i = 0; i < size; i++) {
+                if (item.distractorsRu().get(i) != null) {
+                    ruByText.put(item.distractors().get(i), item.distractorsRu().get(i));
+                }
+            }
+        }
+        return ruByText;
     }
 
     /**
@@ -153,6 +180,7 @@ public class ComposedQuestionMapper {
                 .questionId(item.id())
                 .questionNumber(composed.questionNumber())
                 .text(item.prompt())
+                .textRu(item.promptRu())
                 .itemType(item.itemType())
                 .answerMode(item.answerMode())
                 .correctAnswer(item.correctAnswer())
@@ -169,7 +197,9 @@ public class ComposedQuestionMapper {
                 .id(q.getQuestionId())
                 .questionNumber(q.getQuestionNumber())
                 .text(q.getText())
+                .textRu(q.getTextRu())
                 .questionType(q.getQuestionType())
+                .answerMode(q.getAnswerMode())
                 .multiSelect(false)
                 .options(parseOptions(q.getOptions()));
         if ("MATCHING".equals(q.getQuestionType())) {
@@ -211,6 +241,7 @@ public class ComposedQuestionMapper {
                     .id(UUID.fromString(node.get("id").asText()))
                     .optionType(node.has("caseType") ? "MATCH_LABEL" : "FORM")
                     .formIast(node.get("text").asText())
+                    .textRu(node.has("textRu") ? node.get("textRu").asText() : null)
                     .caseType(node.has("caseType") ? node.get("caseType").asText() : null)
                     .numberType(node.has("numberType") ? node.get("numberType").asText() : null)
                     .build()));
