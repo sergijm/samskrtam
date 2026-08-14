@@ -19,49 +19,62 @@ import java.util.List;
 public class LlmPromptBuilder {
 
     private final ObjectMapper objectMapper;
-    private final LlmProperties llmProperties;
     private final PromptLoader promptLoader;
-
-    /**
-     * Извлекает содержимое секции ## system из промпта verse-analysis-pass1-reasoning.
-     */
-    public String extractPass1SystemPrompt() {
-        String fullPrompt = promptLoader.getVerseAnalysisPass1Prompt();
-        int systemStart = fullPrompt.indexOf("## system\n");
-        if (systemStart < 0) return fullPrompt;
-        int codeStart = fullPrompt.indexOf("```\n", systemStart);
-        if (codeStart < 0) return fullPrompt;
-        int codeEnd = fullPrompt.indexOf("\n```", codeStart + 5);
-        if (codeEnd < 0) return fullPrompt;
-        return fullPrompt.substring(codeStart + 5, codeEnd).trim();
-    }
-
-    /**
-     * Извлекает содержимое секции ## system из промпта verse-analysis-pass2-formalize.
-     */
-    public String extractPass2SystemPrompt() {
-        String fullPrompt = promptLoader.getVerseAnalysisPass2Prompt();
-        int systemStart = fullPrompt.indexOf("## system\n");
-        if (systemStart < 0) return fullPrompt;
-        int codeStart = fullPrompt.indexOf("```\n", systemStart);
-        if (codeStart < 0) return fullPrompt;
-        int codeEnd = fullPrompt.indexOf("\n```", codeStart + 5);
-        if (codeEnd < 0) return fullPrompt;
-        return fullPrompt.substring(codeStart + 5, codeEnd).trim();
-    }
 
     /**
      * Извлекает содержимое секции ## system из markdown-файла промпта verse-analysis.
      */
     public String extractSystemPrompt() {
-        String fullPrompt = promptLoader.getVerseAnalysisPrompt();
-        int systemStart = fullPrompt.indexOf("## system\n");
-        if (systemStart < 0) return fullPrompt;
-        int codeStart = fullPrompt.indexOf("```\n", systemStart);
-        if (codeStart < 0) return fullPrompt;
-        int codeEnd = fullPrompt.indexOf("\n```", codeStart + 5);
-        if (codeEnd < 0) return fullPrompt;
-        return fullPrompt.substring(codeStart + 5, codeEnd).trim();
+        return extractFencedSection(promptLoader.getVerseAnalysisPrompt());
+    }
+
+    /**
+     * Извлекает текст первого fenced-блока (``` ... ```) внутри секции «## system».
+     * Учитывает вложенные code-fence (примеры внутри инструкций) — берётся
+     * ПОСЛЕДНЯЯ закрывающая ограда до следующего «## »-заголовка, а не первая.
+     */
+    private String extractFencedSection(String fullPrompt) {
+        if (fullPrompt == null) {
+            return "";
+        }
+        int systemStart = findHeading(fullPrompt, "## system");
+        if (systemStart < 0) {
+            return fullPrompt.trim();
+        }
+        int nextSection = fullPrompt.indexOf("\n## ", systemStart + 1);
+        String section = nextSection >= 0
+                ? fullPrompt.substring(systemStart, nextSection)
+                : fullPrompt.substring(systemStart);
+
+        int codeStart = section.indexOf("```\n");
+        if (codeStart < 0) {
+            return section.trim();
+        }
+        int contentStart = codeStart + 4; // после "```\n"
+        int codeEnd = section.lastIndexOf("\n```");
+        if (codeEnd < contentStart) {
+            return section.substring(contentStart).trim();
+        }
+        return section.substring(contentStart, codeEnd).trim();
+    }
+
+    /** Ищет заголовок «## system» именно в начале строки (не в упоминаниях внутри текста). */
+    private int findHeading(String fullPrompt, String heading) {
+        int from = 0;
+        while (true) {
+            int idx = fullPrompt.indexOf(heading, from);
+            if (idx < 0) {
+                return -1;
+            }
+            boolean lineStart = idx == 0 || fullPrompt.charAt(idx - 1) == '\n';
+            boolean lineEnd = idx + heading.length() >= fullPrompt.length()
+                    || fullPrompt.charAt(idx + heading.length()) == '\n'
+                    || fullPrompt.charAt(idx + heading.length()) == '\r';
+            if (lineStart && lineEnd) {
+                return idx;
+            }
+            from = idx + 1;
+        }
     }
 
         /**

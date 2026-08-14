@@ -38,7 +38,7 @@ spring:
 # Бывшие топики: sangraha-vocabulary-events (producer), vocabulary-sync-results (consumer).
 sangraha:
   llm:
-    # Конфигурации подключения (base-url/two-pass/max-completion-tokens) — в llm.yaml
+    # Конфигурации подключения (base-url/max-completion-tokens) — в llm.yaml
     # в корне репозитория (см. LlmConfigRegistry). Активная выбирается по SANGRAHA_LLM_MODEL.
     api-key: ${SANGRAHA_LLM_API_KEY}
     model: ${SANGRAHA_LLM_MODEL}
@@ -48,6 +48,10 @@ sangraha:
 app:
   content-service:
     url: ${CONTENT_SERVICE_URL}
+  curriculum-service:
+    # Опционально: если задан, инкрементальные пачки лемм стиха уходят в
+    # curriculum-service после анализа (lexicon-content-pipeline.md §7).
+    url: ${CURRICULUM_SERVICE_URL:}
 
 management:
   server:

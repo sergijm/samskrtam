@@ -40,8 +40,9 @@ export const sangrahaApi = {
   analyzeAllVerses: (chapterId: string) =>
     api.post<{ chapterId: string; verseIds: string[] }>(`${BASE}/chapters/${chapterId}/verses/analyze-all`),
 
-    getOrCreateVocabularyQuiz: (verseId: string) =>
-    api.post<{ quizSlug: string; quizId: string; quizStatus: string }>(`${BASE}/verses/${verseId}/vocabulary-quiz`),
+  // Кнопка «Изучить»: экспорт пачки лемм стиха в curriculum-service + код урока
+  studyVerse: (verseId: string) =>
+    api.post<{ verseTopicCode: string }>(`${BASE}/verses/${verseId}/study`),
 
   // Batch verse review (sangraha-service/batch-verse-review.md)
   // Axios сериализует массивы как `id[]=...`, а бэкенд ждёт повторяющийся `id=...` —

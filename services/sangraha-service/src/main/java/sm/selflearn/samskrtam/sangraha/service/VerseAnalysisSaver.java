@@ -37,7 +37,8 @@ public class VerseAnalysisSaver {
             String textDevanagari, String textIast,
             String translationRu, String translationEn,
             JsonNode sandhiSplitsNode, JsonNode wordsNode,
-            String rawResponse, String modelName, String analyzerName
+            String rawResponse, String modelName, String analyzerName,
+            String rawPrompt
     ) {
         // 1. Заполняем текст стиха, если не был введён вручную
         if (verse.getTextDevanagari() == null || verse.getTextDevanagari().isBlank()) {
@@ -56,6 +57,7 @@ public class VerseAnalysisSaver {
                 .translationEn(translationEn)
                 .sandhiSplits(sandhiSplitsNode.toString())
                 .rawModelResponse(rawResponse)
+                .rawPrompt(rawPrompt)
                 .modelName(modelName)
                 .analyzerName(analyzerName)
                 .analyzedAt(Instant.now())

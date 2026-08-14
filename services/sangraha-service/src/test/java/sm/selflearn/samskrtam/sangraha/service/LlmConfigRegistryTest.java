@@ -31,12 +31,10 @@ class LlmConfigRegistryTest {
                     claude-sonnet-5:
                       base-url: https://api.aitunnel.ru/v1
                       api-key: ${SANGRAHA_LLM_API_KEY}
-                      two-pass: false
                       max-completion-tokens: 128000
                     deepseek-v4-pro:
                       base-url: https://api.aitunnel.ru/v1
                       api-key: ${DEEPSEEK_API_KEY}
-                      two-pass: true
                       max-completion-tokens: 8192
                 """);
         environment = new MockEnvironment();
@@ -60,7 +58,6 @@ class LlmConfigRegistryTest {
 
         assertThat(llmProperties.getBaseUrl()).isEqualTo("https://api.aitunnel.ru/v1");
         assertThat(llmProperties.getApiKey()).isEqualTo("sk-aitunnel-test");
-        assertThat(llmProperties.isTwoPass()).isFalse();
         assertThat(llmProperties.getMaxCompletionTokens()).isEqualTo(128000);
     }
 
@@ -72,7 +69,6 @@ class LlmConfigRegistryTest {
         registry.applyActiveConfig();
 
         assertThat(llmProperties.getApiKey()).isEqualTo("sk-deepseek-test");
-        assertThat(llmProperties.isTwoPass()).isTrue();
         assertThat(llmProperties.getMaxCompletionTokens()).isEqualTo(8192);
     }
 
@@ -86,7 +82,6 @@ class LlmConfigRegistryTest {
 
         assertThat(llmProperties.getBaseUrl()).isEqualTo("https://env.example.com/v1");
         assertThat(llmProperties.getApiKey()).isEqualTo("fallback-key");
-        assertThat(llmProperties.isTwoPass()).isFalse();
     }
 
     @Test
@@ -96,7 +91,6 @@ class LlmConfigRegistryTest {
 
         Optional<LlmConfig> claude = registry.findByModel("claude-sonnet-5");
         assertThat(claude).isPresent();
-        assertThat(claude.get().twoPass()).isFalse();
         assertThat(registry.findByModel("nope")).isEmpty();
     }
 }

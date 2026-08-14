@@ -18,19 +18,9 @@ public class LlmCallStrategyFactory {
     private final ObjectMapper objectMapper;
 
     /**
-     * Creates the appropriate strategy based on {@link LlmProperties#isTwoPass()}.
+     * Creates the appropriate strategy. Always single-pass (two-pass removed).
      */
     public LlmCallStrategy create(OpenAIClient openAIClient) {
-        if (llmProperties.isTwoPass()) {
-            return new TwoPassStrategy(
-                    openAIClient,
-                    promptBuilder,
-                    toolSchemaBuilder,
-                    objectMapper,
-                    llmProperties.getModel(),
-                    llmProperties.getMaxCompletionTokens()
-            );
-        }
         return new SinglePassStrategy(
                 openAIClient,
                 promptBuilder,

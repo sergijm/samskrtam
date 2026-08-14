@@ -202,10 +202,18 @@ sangraha постит пачку, curriculum-service принимает (ран�
 могут отличаться — их **не склеиваем** (для этого существует `meaningNumber`,
 см. `lexicon.md` §1).
 
+**Реализовано.** Часть §7 имплементирована: `curriculum-service` принимает пачку
+по `POST /api/v2/lexicon/import/verse-batch` (`LexiconImportController`,
+`VerseLexemeImportService`, `VerseLexemeImportServiceTest`); sangraha-service после
+успешного `analysisSaver.saveResults(...)` отправляет пачку без блокировки анализа
+(`VerseBatchPushService`, сбои только логируются — анализ стиха не откатывается).
+Ниже — исходная механика (шаги) и уточнения из реализации.
+
 Механика:
-1. sangraha-service отправляет пачку лемм одного стиха в новый internal-эндпоинт
-   curriculum-service (`POST`, тело — массив того же DTO `LemmaExportItem`, что и
-   первичный экспорт, §2 шаг 1; точный путь фиксируется при реализации).
+1. sangraha-service отправляет пачку лемм одного стиха в internal-эндпоинт
+   curriculum-service: `POST /api/v2/lexicon/import/verse-batch`, тело —
+   `VerseLemmaBatchRequest` (метаданные стиха/главы/произведения + `words` —
+   массив того же DTO `LemmaExportItem`, что и первичный экспорт, §2 шаг 1).
 2. Упсерт каждого элемента по идентичности значения `(lemmaSlp1, gender,
    нормализованный gloss)` (`lexicon.md` §1): совпадение → апдейт существующей
    строки, несовпадение → новая строка с `meaningNumber = max(значение для этого
@@ -216,8 +224,10 @@ sangraha постит пачку, curriculum-service принимает (ран�
    `Topic` с `domain = VERSE` и `code = "{slp1_work}_{chapter_number}"` (slug
    произведения в SLP1 + номер главы), связь `lexical_topic_binding` →
    `lexemeId` слов пачки. Повторная отправка той же пачки (переанализ стиха)
-   идемпотентна: урок обновляется, дубли не создаются. Детали урока (типы
-   заданий, пул) — `lexical-quizzes.md`.
+   идемпотентна: урок обновляется, дубли не создаются. Связь **накапливается** по
+   стихам главы (пачка каждого следующего стиха добавляет свои лексемы, урок
+   главы один на пару «произведение, глава») — не перезаписывается целиком.
+   Детали урока (типы заданий, пул) — `lexical-quizzes.md`.
 4. Пачка воспроизводит по направлению прежний on-demand поток
    `vocabulary-quiz` (§5), но пишет в `curriculum.lexeme` и завершается
    `VERSE`-уроком (шаг 3) вместо `content.vocabulary_words` — прежний поток и

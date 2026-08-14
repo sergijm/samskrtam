@@ -63,6 +63,7 @@ public class LexiconImportService {
                         created.setGlossRu(emptyIfNull(row.glossRu()));
                         created.setGlossEn(emptyIfNull(row.glossEn()));
                         created.setGender(gender);
+                        created.setMeaningNumber(lexemeRepository.findMaxMeaningNumber(row.lemmaSlp1()) + 1);
                         return created;
                     });
             boolean isNew = lexeme.getId() == null;

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticTopic;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexicalTopicBindingRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticTopicRepository;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
 import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
@@ -48,7 +49,7 @@ class LexicalQuizItemGeneratorTest {
 
         generator = new LexicalQuizItemGenerator(
                 topicRepository, lexemeRepository, questItemRepository,
-                semanticTopicRepository, objectMapper);
+                semanticTopicRepository, mock(LexicalTopicBindingRepository.class), objectMapper);
     }
 
     private Topic topic(String code) {

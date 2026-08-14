@@ -14,13 +14,9 @@ import {
   useCreateStandaloneAnalysis,
   useDeleteStandaloneVerse,
   useVerseDetail,
-  useGetOrCreateVocabularyQuiz,
 } from '../../hooks/useSangraha';
 import { useVocabularyLesson } from '../../hooks/useLessons';
 import { sangrahaApi } from '../../api/sangraha';
-import { quizApi } from '../../api/quizApi';
-import { useLocaleStore } from '../../store/localeStore';
-import { LessonType } from '../../types/quiz';
 import { verseStatusIcon } from '../../utils/verseStatus';
 import type { VerseStatus } from '../../types/sangraha';
 import type { StandaloneVerseItemDto } from '../../types/sangraha';
@@ -52,9 +48,8 @@ const AnalysisPage = () => {
   // Детальный просмотр выбранного standalone-стиха
   const { data: verse, isLoading: verseLoading } = useVerseDetail(selectedId || '');
 
-  const study = useGetOrCreateVocabularyQuiz();
-  const vocabSlug = verse?.vocabularyQuizSlug;
-  const { data: vocabularyLesson } = useVocabularyLesson(vocabSlug || '');
+  const verseTopicCode = verse?.verseTopicCode;
+  const { data: vocabularyLesson } = useVocabularyLesson(verseTopicCode || '');
 
   const wordProgressMap = useMemo<Record<string, VocabularyWordProgress> | null>(() => {
     if (!vocabularyLesson?.words) return null;
@@ -111,31 +106,17 @@ const AnalysisPage = () => {
     }
   }, [selectedId, editText, queryClient, t]);
 
-  // ── «Изучить» — vocabulary quiz по словам стиха ──
+  // ── «Изучить» — экспорт пачки лемм стиха и переход на урок ──
   const handleStudy = useCallback(async () => {
     if (!selectedId) return;
     try {
-      const quizRes = await study.mutateAsync(selectedId);
-      const { quizSlug, quizId } = quizRes.data;
-
-      queryClient.invalidateQueries({ queryKey: ['lesson', 'vocabulary', quizSlug] });
-
-      const locale = useLocaleStore.getState().locale;
-      const sessionRes = await quizApi.startOrResumeWithStatusFilter(
-        quizId,
-        LessonType.VOCABULARY,
-        locale,
-        'NEW',
-      );
-      const sessionData = sessionRes.data;
-
-      navigate(`/quiz/vocabulary/${quizSlug}/${sessionData.sessionId}`, {
-        state: { sessionData },
-      });
+      const res = await sangrahaApi.studyVerse(selectedId);
+      const { verseTopicCode: code } = res.data;
+      navigate(`/lessons/vocabulary/${code}`);
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     }
-  }, [selectedId, study, navigate, t, queryClient]);
+  }, [selectedId, navigate, t]);
 
   const handleDelete = useCallback(
     async (item: StandaloneVerseItemDto) => {
@@ -284,7 +265,6 @@ const AnalysisPage = () => {
                           iconName={studyIcon}
                           className="p-button-text"
                           onClick={handleStudy}
-                          loading={study.isPending}
                         />
                       }
                     />

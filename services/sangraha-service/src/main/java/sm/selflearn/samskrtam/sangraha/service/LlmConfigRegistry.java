@@ -26,7 +26,7 @@ import java.util.Optional;
  * {@code api-key: ${SANGRAHA_LLM_API_KEY}}.
  *
  * В {@code @PostConstruct} применяет найденную конфигурацию к {@link LlmProperties}
- * (baseUrl/apiKey/twoPass/maxCompletionTokens). Клиенты LLM (LlmClient,
+ * (baseUrl/apiKey/maxCompletionTokens). Клиенты LLM (LlmClient,
  * ChapterMetadataClient) аннотированы {@code @DependsOn} этого бина, поэтому
  * порядок гарантирован.
  *
@@ -57,7 +57,7 @@ public class LlmConfigRegistry {
         LlmConfigFile file = load();
         if (file == null || file.llm() == null || file.llm().configs() == null) {
             log.warn("llm.yaml не найден или не содержит llm.configs — "
-                    + "используем baseUrl/twoPass/maxCompletionTokens из env (SANGRAHA_LLM_BASE_URL и т.п.)");
+                    + "используем baseUrl/maxCompletionTokens из env (SANGRAHA_LLM_BASE_URL и т.п.)");
             return;
         }
         configs = file.llm().configs();
@@ -69,8 +69,8 @@ public class LlmConfigRegistry {
             return;
         }
         apply(active);
-        log.info("LLM config applied: model={}, baseUrl={}, twoPass={}, maxCompletionTokens={}",
-                llmProperties.getModel(), llmProperties.getBaseUrl(), llmProperties.isTwoPass(),
+        log.info("LLM config applied: model={}, baseUrl={}, maxCompletionTokens={}",
+                llmProperties.getModel(), llmProperties.getBaseUrl(),
                 llmProperties.getMaxCompletionTokens());
     }
 
@@ -82,7 +82,6 @@ public class LlmConfigRegistry {
     private void apply(LlmConfig config) {
         if (config.baseUrl() != null) llmProperties.setBaseUrl(resolvePlaceholders(config.baseUrl()));
         if (config.apiKey() != null) llmProperties.setApiKey(resolvePlaceholders(config.apiKey()));
-        if (config.twoPass() != null) llmProperties.setTwoPass(config.twoPass());
         if (config.maxCompletionTokens() != null) {
             llmProperties.setMaxCompletionTokens(config.maxCompletionTokens());
         }

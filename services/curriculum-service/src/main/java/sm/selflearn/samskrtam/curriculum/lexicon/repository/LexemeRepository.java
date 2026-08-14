@@ -23,6 +23,16 @@ public interface LexemeRepository extends JpaRepository<Lexeme, UUID> {
 
     boolean existsByLemmaSlp1AndGender(String lemmaSlp1, LexemeGender gender);
 
+    /** Все значения написания, по возрастанию meaningNumber — для поиска по идентичности значения. */
+    List<Lexeme> findByLemmaSlp1AndGenderOrderByMeaningNumberAsc(String lemmaSlp1, LexemeGender gender);
+
+    /**
+     * Максимальный {@code meaningNumber} написания (0, если строк ещё нет).
+     * Новое значение инкрементальной пачки получает max+1 (lexicon-content-pipeline.md §7).
+     */
+    @Query("select coalesce(max(l.meaningNumber), 0) from Lexeme l where l.lemmaSlp1 = :lemmaSlp1")
+    int findMaxMeaningNumber(@Param("lemmaSlp1") String lemmaSlp1);
+
     /**
      * Lexemes tagged with a semantic classifier node. Used by the lexical quiz
      * generator: a LEXICON lesson carries {@code semantic_topic_id}, and its

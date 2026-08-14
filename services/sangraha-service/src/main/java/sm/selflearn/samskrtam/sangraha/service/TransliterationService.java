@@ -64,6 +64,7 @@ public class TransliterationService {
      * Конвертация из IAST в SLP1
      */
     public String iastToSlp1(String iast) {
+        if (iast == null || iast.isBlank()) return "";
         try {
             return sanscript.t(iast, "iast", "slp1");
         } catch (Exception e) {

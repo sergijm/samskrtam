@@ -62,6 +62,10 @@ public class Lexeme {
     @Column(name = "gender", length = 20)
     private LexemeGender gender;
 
+    /** Порядковый номер значения леммы внутри написания (lexicon.md §1); первичный импорт = 1. */
+    @Column(name = "meaning_number", nullable = false)
+    private int meaningNumber = 1;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

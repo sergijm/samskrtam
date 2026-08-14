@@ -315,7 +315,7 @@ public class LessonV2Service {
     /* ─── mapping helpers ────────────────────────────────────────────── */
 
     private LessonItemDto toLessonItem(TopicDto t) {
-        boolean isVocabulary = "LEXICON".equals(t.domain());
+        boolean isVocabulary = "LEXICON".equals(t.domain()) || "VERSE".equals(t.domain());
         return LessonItemDto.builder()
                 .id(t.id())
                 .slug(t.code())

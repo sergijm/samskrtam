@@ -15,6 +15,9 @@ public interface LemmaRepository extends JpaRepository<Lemma, UUID> {
 
     Optional<Lemma> findByLemmaSlp1(String lemmaSlp1);
 
+    /** Разрешение lemmaSlp1 по IAST-написанию (инкрементальные пачки стиха, §7). */
+    Optional<Lemma> findByLemmaIast(String lemmaIast);
+
     /** Словарные строки по набору SLP1 (для оценки new/updated при refresh словаря). */
     List<Lemma> findByLemmaSlp1In(Collection<String> lemmaSlp1s);
 

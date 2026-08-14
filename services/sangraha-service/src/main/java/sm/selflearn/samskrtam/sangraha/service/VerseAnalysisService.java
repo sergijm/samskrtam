@@ -1,16 +1,17 @@
 package sm.selflearn.samskrtam.sangraha.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
 import sm.selflearn.samskrtam.sangraha.model.VerseStatus;
+import sm.selflearn.samskrtam.sangraha.model.VerseWord;
 import sm.selflearn.samskrtam.sangraha.model.Work;
 import sm.selflearn.samskrtam.sangraha.model.Chapter;
 import sm.selflearn.samskrtam.sangraha.repository.ChapterRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
+import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
 
 import java.time.Instant;
@@ -39,13 +40,13 @@ public class VerseAnalysisService {
     private final VerseRepository verseRepository;
     private final ChapterRepository chapterRepository;
     private final WorkRepository workRepository;
+    private final VerseWordRepository verseWordRepository;
     private final LlmClient llmClient;
     private final VerseAnalysisSaver analysisSaver;
     private final VerseAnalysisResponseNormalizer responseNormalizer;
     private final ToolCallValidator toolCallValidator;
     private final JsonSchemas jsonSchemas;
-    private final LlmProperties llmProperties;
-    private final ObjectMapper objectMapper;
+    private final VerseBatchPushService verseBatchPushService;
 
     /**
      * Запускает анализ одного стиха LLM.
@@ -145,13 +146,15 @@ public class VerseAnalysisService {
             verseRepository.save(v);
         }
 
-        log.info("Starting batch analysis for {} verses (mode: {})", verses.size(),
-                llmProperties.isTwoPass() ? "two-pass" : "single-pass");
+        log.info("Starting batch analysis for {} verses", verses.size());
 
         // 2. LLM-вызов
         JsonNode llmResponse;
+        String rawPrompt;
         try {
-            llmResponse = llmClient.call(verses);
+            var result = llmClient.callWithResult(verses);
+            llmResponse = result == null ? null : result.response();
+            rawPrompt = result == null ? null : result.rawPrompt();
         } catch (Exception e) {
             log.error("LLM batch analysis failed for {} verses", verses.size(), e);
             for (Verse v : verses) {
@@ -216,7 +219,8 @@ public class VerseAnalysisService {
                         verseEntry,
                         llmResponse.toString(),
                         modelName,
-                        analyzerName
+                        analyzerName,
+                        rawPrompt
                 );
             } catch (Exception e) {
                 log.error(
@@ -253,7 +257,8 @@ public class VerseAnalysisService {
 
 
     private void saveSingleVerseResult(Verse verse, JsonNode verseEntry,
-                                        String rawResponse, String modelName, String analyzerName) {
+                                        String rawResponse, String modelName, String analyzerName,
+                                        String rawPrompt) {
         // Standalone-стихи (страница /analysis) не привязаны к главе/произведению —
         // контекст work/chapter для них отсутствует и в saveResults передаётся null.
         final Chapter chapter;
@@ -286,7 +291,11 @@ public class VerseAnalysisService {
         try {
             analysisSaver.saveResults(verse, work, chapter,
                     textDevanagari, textIast, translationRu, translationEn,
-                    sandhiSplitsNode, wordsNode, rawResponse, modelName, analyzerName);
+                    sandhiSplitsNode, wordsNode, rawResponse, modelName, analyzerName, rawPrompt);
+            // Инкрементальная пачка лемм в curriculum-service (lexicon-content-pipeline.md §7).
+            // Вне транзакции: сбой curriculum-service не откатывает анализ (см. VerseBatchPushService).
+            verseBatchPushService.push(verse, work, chapter,
+                    verseWordRepository.findAllByVerse_IdOrderByPositionAsc(verse.getId()));
         } catch (Exception e) {
             log.error("Failed to save analysis results for verse {}, reverting to DRAFT", verse.getId(), e);
             analysisSaver.revertToDraft(verse);

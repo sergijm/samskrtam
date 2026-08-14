@@ -13,6 +13,5 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 public record LlmConfig(
         String baseUrl,
         String apiKey,
-        Boolean twoPass,
         Integer maxCompletionTokens
 ) {}

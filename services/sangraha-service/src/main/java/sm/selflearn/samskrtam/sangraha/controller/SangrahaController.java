@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 import sm.selflearn.samskrtam.sangraha.dto.ChapterVersesDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseBatchResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
-import sm.selflearn.samskrtam.sangraha.dto.VocabularyQuizResponse;
 import sm.selflearn.samskrtam.sangraha.dto.WorksClassGroupDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorkTreeDto;
 import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
@@ -72,17 +71,19 @@ public class SangrahaController {
         return ResponseEntity.ok(verseBatchService.fetchBatchReview(id));
     }
 
-    // ── Verses (read-only + vocabulary-quiz) ──────────────────────
+    // ── Verses (read-only) ──────────────────────────────────────────
     @GetMapping("/verses/{verseId}")
     public ResponseEntity<VerseDetailDto> getVerse(@PathVariable UUID verseId) {
         return ResponseEntity.ok(verseService.getVerseDetail(verseId));
     }
 
-    @PostMapping("/verses/{verseId}/vocabulary-quiz")
-    public ResponseEntity<VocabularyQuizResponse> getOrCreateVocabularyQuiz(@PathVariable UUID verseId) {
-        VocabularyQuizResponse response = verseService.getOrCreateVocabularyQuiz(verseId);
-        return ResponseEntity.ok(response);
+    // ── «Изучить»: экспорт пачки лемм стиха + код урока ─────────────
+    @PostMapping("/verses/{verseId}/study")
+    public ResponseEntity<StudyVerseResponse> studyVerse(@PathVariable UUID verseId) {
+        return ResponseEntity.ok(new StudyVerseResponse(verseService.triggerStudyExport(verseId)));
     }
+
+    public record StudyVerseResponse(String verseTopicCode) {}
 
     // ── Verse Analysis (read-only) ────────────────────────────────
 

@@ -32,7 +32,7 @@ public class VerseMapper {
      * не падал, но логируем ошибку.
      */
         public VerseDetailDto toDetailDto(Verse verse, VerseAnalysis analysis, List<VerseWord> words,
-                                       String vocabularyQuizSlug) {
+                                       String verseTopicCode) {
         VerseAnalysisDto analysisDto = null;
         if (analysis != null) {
             analysisDto = toAnalysisDto(analysis);
@@ -67,7 +67,7 @@ public class VerseMapper {
             verse.getStatus(),
             analysisDto,
             wordDtos,
-            vocabularyQuizSlug
+            verseTopicCode
         );
     }
 

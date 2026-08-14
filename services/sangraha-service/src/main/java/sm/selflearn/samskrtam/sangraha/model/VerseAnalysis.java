@@ -43,6 +43,9 @@ public class VerseAnalysis {
     @Column(name = "raw_model_response", columnDefinition = "JSONB")
     private String rawModelResponse;
 
+    @Column(name = "raw_prompt", columnDefinition = "TEXT")
+    private String rawPrompt;
+
     @Column(name = "model_name", nullable = false)
     private String modelName;
 

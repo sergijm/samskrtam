@@ -3,6 +3,7 @@ package sm.selflearn.samskrtam.curriculum.model;
 public enum TopicDomain {
     GRAMMAR,             // legacy — to be removed after V21 migration
     LEXICON,
+    VERSE,               // per-chapter lexical lesson from verse lemma batches (§7)
     CONJUNCTION,
     PHONOLOGY_SCRIPT,
     SANDHI,

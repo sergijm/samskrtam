@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticTopic;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexicalTopicBindingRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticTopicRepository;
 import sm.selflearn.samskrtam.curriculum.model.LearningLevel;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
@@ -45,6 +46,7 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
     private final LexemeRepository lexemeRepository;
     private final QuestItemRepository questItemRepository;
     private final SemanticTopicRepository semanticTopicRepository;
+    private final LexicalTopicBindingRepository lexicalTopicBindingRepository;
     private final ObjectMapper objectMapper;
 
     static final Map<String, LearningLevel> SEMANTIC_LEVEL = Map.ofEntries(
@@ -85,7 +87,7 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
 
     @Override
     public boolean isDomainSupported(TopicDomain domain) {
-        return domain == TopicDomain.LEXICON;
+        return domain == TopicDomain.LEXICON || domain == TopicDomain.VERSE;
     }
 
     @Override
@@ -113,11 +115,7 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
     @Override
     @Transactional
     public int generate(Topic topic) {
-        UUID semanticTopicId = topic.getSemanticTopicId();
-        if (semanticTopicId == null) {
-            return 0;
-        }
-        List<Lexeme> lexemes = lexemeRepository.findBySemanticTopics_Id(semanticTopicId);
+        List<Lexeme> lexemes = resolveLexemes(topic);
         if (lexemes.size() < DISTRACTOR_COUNT + 1) {
             return 0;
         }
@@ -144,6 +142,27 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
             items.add(buildItem(topic, lexeme, distractorsEn, distractorsRu));
         }
         return persist(items);
+    }
+
+    /**
+     * LEXICON-тема берёт лексемы по {@code semantic_topic_id} (lexeme_semantic_topic),
+     * VERSE-тема — по {@code lexical_topic_binding} (пачка стихов главы, §7).
+     */
+    private List<Lexeme> resolveLexemes(Topic topic) {
+        if (topic.getDomain() == TopicDomain.VERSE) {
+            List<UUID> lexemeIds = lexicalTopicBindingRepository.findByIdLexicalTopicId(topic.getId()).stream()
+                    .map(b -> b.getId().getLexemeId())
+                    .toList();
+            if (lexemeIds.isEmpty()) {
+                return List.of();
+            }
+            return lexemeRepository.findWithDetailsByIdIn(lexemeIds);
+        }
+        UUID semanticTopicId = topic.getSemanticTopicId();
+        if (semanticTopicId == null) {
+            return List.of();
+        }
+        return lexemeRepository.findBySemanticTopics_Id(semanticTopicId);
     }
 
     private static boolean isGlossed(Lexeme lexeme) {

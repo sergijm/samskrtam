@@ -200,4 +200,60 @@ class LexiconImportServiceTest {
         assertThat(second.updatedCount()).isEqualTo(1);
         assertThat(lexemesByKey).hasSize(1);
     }
+
+    @Test
+    void importFromSangraha_sameSlp1DifferentGender_assignsDistinctMeaningNumbers() {
+        LemmaExportItem tadMasculine = item("tad", "tad", "तद्", "MASCULINE", "PRONOUN", 10,
+                List.of(), "тот", "that", null);
+        LemmaExportItem tadNeuter = item("tad", "tad", "तद्", "NEUTER", "PRONOUN", 8,
+                List.of(), "то", "that", null);
+        SangrahaExportClient client = mock(SangrahaExportClient.class);
+        when(client.fetchLemmaExport(any(), anyInt()))
+                .thenReturn(new LemmaExportPage(List.of(tadMasculine, tadNeuter), null));
+
+        LexemeRepository lexemeRepo = mock(LexemeRepository.class);
+        java.util.Map<String, Lexeme> lexemesByKey = new java.util.HashMap<>();
+        java.util.Map<String, Integer> maxMeaningBySlp1 = new java.util.HashMap<>();
+        when(lexemeRepo.findByLemmaSlp1AndGender(any(), any())).thenAnswer(inv -> {
+            String slp1 = inv.getArgument(0);
+            LexemeGender gender = inv.getArgument(1);
+            return Optional.ofNullable(lexemesByKey.get(slp1 + "|" + gender));
+        });
+        when(lexemeRepo.findMaxMeaningNumber(any())).thenAnswer(inv ->
+                maxMeaningBySlp1.getOrDefault(inv.getArgument(0), 0));
+        when(lexemeRepo.save(any())).thenAnswer(inv -> {
+            Lexeme l = inv.getArgument(0);
+            if (l.getId() == null) {
+                l.setId(UUID.randomUUID());
+            }
+            lexemesByKey.put(l.getLemmaSlp1() + "|" + l.getGender(), l);
+            maxMeaningBySlp1.merge(l.getLemmaSlp1(), l.getMeaningNumber(), Math::max);
+            return l;
+        });
+        when(lexemeRepo.count()).thenAnswer(inv -> (long) lexemesByKey.size());
+
+        LexemeFrequencyRepository freqRepo = mock(LexemeFrequencyRepository.class);
+        when(freqRepo.findById(any())).thenReturn(Optional.empty());
+        when(freqRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        PartOfSpeechRepository posRepo = mock(PartOfSpeechRepository.class);
+        PartOfSpeech pronoun = new PartOfSpeech();
+        pronoun.setCode("pronoun");
+        pronoun.setGroup(PosGroup.NOMINAL);
+        when(posRepo.findByCode("pronoun")).thenReturn(Optional.of(pronoun));
+
+        MorphologyClassRepository morphologyRepo = mock(MorphologyClassRepository.class);
+        when(morphologyRepo.findByCode(any())).thenReturn(Optional.empty());
+
+        SemanticTopicRepository semanticTopicRepo = mock(SemanticTopicRepository.class);
+
+        LexiconImportService importService =
+                service(client, lexemeRepo, freqRepo, posRepo, morphologyRepo, semanticTopicRepo);
+
+        SangrahaImportResult result = importService.importFromSangraha();
+
+        assertThat(result.importedCount()).isEqualTo(2);
+        assertThat(lexemesByKey.values()).extracting(Lexeme::getMeaningNumber)
+                .containsExactlyInAnyOrder(1, 2);
+    }
 }

@@ -124,8 +124,7 @@ export interface VerseDetailDto {
   status: VerseStatus;
   analysis?: VerseAnalysisDto | null;
   words: VerseWordDto[];
-        vocabularyQuizSlug?: string | null;
-  vocabularyQuizId?: string | null;
+  verseTopicCode?: string | null;
 }
 
 // ── Standalone анализ (страница /analysis, verse.chapter_id = null) ──
