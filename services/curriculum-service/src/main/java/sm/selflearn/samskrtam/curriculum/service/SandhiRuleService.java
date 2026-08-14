@@ -59,6 +59,10 @@ public class SandhiRuleService {
         }
     }
 
+    public SandhiRulesResponse getAllRules() {
+        return new SandhiRulesResponse(null, "Все правила сандхи", allRules);
+    }
+
     public SandhiRulesResponse getRulesForTopic(String topicCode) {
         List<String> sections = TOPIC_TO_SECTIONS.getOrDefault(topicCode, List.of());
 

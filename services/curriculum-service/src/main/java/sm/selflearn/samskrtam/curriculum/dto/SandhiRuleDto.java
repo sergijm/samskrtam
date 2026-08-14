@@ -1,7 +1,10 @@
 package sm.selflearn.samskrtam.curriculum.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.List;
 
 /**
  * DTO for a single Emeneau sandhi rule from the static JSON resource.
@@ -14,5 +17,7 @@ public record SandhiRuleDto(
         String applicability,
         String text,
         String example,
-        String reference
+        String reference,
+        @JsonAlias("depends_on") List<Integer> dependsOn,
+        @JsonAlias("depends_on_note") String dependsOnNote
 ) {}

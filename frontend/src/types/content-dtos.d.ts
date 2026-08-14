@@ -103,6 +103,8 @@ export interface SandhiRuleSummaryDto {
     text: string;
     example: string | null;
     reference: string;
+    dependsOn?: number[];
+    dependsOnNote?: string | null;
 }
 
 export interface SandhiRulesResponse {

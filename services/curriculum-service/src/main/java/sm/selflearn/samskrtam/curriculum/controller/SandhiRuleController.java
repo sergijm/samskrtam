@@ -18,6 +18,12 @@ public class SandhiRuleController {
 
     private final SandhiRuleService sandhiRuleService;
 
+    @GetMapping("/sandhi-rules")
+    public ResponseEntity<SandhiRulesResponse> getAllSandhiRules() {
+        log.info("GET /sandhi-rules (all)");
+        return ResponseEntity.ok(sandhiRuleService.getAllRules());
+    }
+
     @GetMapping("/sandhi-rules/{topicCode}")
     public ResponseEntity<SandhiRulesResponse> getSandhiRules(@PathVariable String topicCode) {
         log.info("GET /sandhi-rules/{}", topicCode);

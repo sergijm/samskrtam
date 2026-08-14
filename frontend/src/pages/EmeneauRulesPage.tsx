@@ -1,53 +1,46 @@
-import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card } from 'primereact/card';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
-import { Button } from 'primereact/button';
 import { useSandhiRules } from '../hooks/useContent';
 import { useLocation } from 'react-router-dom';
-import { OverlayPanel } from 'primereact/overlaypanel';
-import { Tooltip } from 'primereact/tooltip';
 
 const EmeneauRulesPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const { data: allSandhiRules, isLoading, isError, error } = useSandhiRules();
 
-  const [currentPage, setCurrentPage] = useState(() => {
-    const storedPage = localStorage.getItem('emeneauRulesPage');
-    return storedPage ? parseInt(storedPage, 10) : 0;
-  });
-  const rulesPerPage = 10;
+  const isRu = i18n.language === 'ru';
+  const dependsOnLabel = isRu ? 'Зависит от' : 'Depends on';
 
-  // Filter rules based on URL parameters
   const getFilteredRules = () => {
     const params = new URLSearchParams(location.search);
-    const ruleParams = params.getAll('rule'); // Changed to 'rule'
+    const ruleParams = params.getAll('rule').map(Number).filter(n => !isNaN(n));
 
     if (ruleParams.length > 0 && allSandhiRules) {
-      const ruleNumbersToFilter = ruleParams.map(Number);
-      return allSandhiRules.filter(rule => ruleNumbersToFilter.includes(rule.ruleNumber));
+      const byNumber = new Map(allSandhiRules.map(r => [r.number, r]));
+      const requested = new Set(ruleParams);
+      const selected = new Set<number>();
+      const stack = [...ruleParams];
+      while (stack.length) {
+        const n = stack.pop()!;
+        if (selected.has(n)) continue;
+        selected.add(n);
+        byNumber.get(n)?.dependsOn?.forEach(d => stack.push(d));
+      }
+
+      const requestedRules = ruleParams
+        .filter(n => byNumber.has(n))
+        .map(n => byNumber.get(n)!);
+      const dependencyRules = allSandhiRules
+        .filter(r => selected.has(r.number) && !requested.has(r.number))
+        .sort((a, b) => a.number - b.number);
+
+      return { rules: [...requestedRules, ...dependencyRules], requested };
     }
-    return allSandhiRules;
+    return { rules: allSandhiRules, requested: null };
   };
 
-  const sandhiRules = getFilteredRules();
-
-  useEffect(() => {
-    localStorage.setItem('emeneauRulesPage', currentPage.toString());
-  }, [currentPage]);
-
-  const totalRules = sandhiRules?.length || 0;
-  const totalPages = Math.ceil(totalRules / rulesPerPage);
-
-  useEffect(() => {
-    if (currentPage >= totalPages && totalPages > 0) {
-      setCurrentPage(totalPages - 1);
-    } else if (currentPage < 0 && totalPages > 0) {
-      setCurrentPage(0);
-    }
-  }, [currentPage, totalPages]);
+  const { rules: sandhiRules, requested } = getFilteredRules();
 
   if (isLoading) {
     return (
@@ -65,67 +58,41 @@ const EmeneauRulesPage = () => {
     );
   }
 
-  const startIndex = currentPage * rulesPerPage;
-  const endIndex = Math.min(startIndex + rulesPerPage, totalRules);
-  const currentRules = sandhiRules?.slice(startIndex, endIndex) || [];
-
-  const pageRange = Array.from({ length: totalPages }, (_, i) => i);
-
   return (
     <div className="flex flex-column align-items-center justify-content-center p-4">
       <h1 className="text-center mb-5">{t('grammar.sandhiRulesTitle')}</h1>
       <div className="w-full" style={{ maxWidth: '800px' }}>
-        {totalRules > rulesPerPage && (
-          <div className="flex justify-content-center gap-2 mb-4 flex-wrap">
-            {pageRange.map((pageIdx) => (
-              <Button
-                key={pageIdx}
-                label={`${pageIdx * rulesPerPage + 1}-${Math.min((pageIdx + 1) * rulesPerPage, totalRules)}`}
-                className={`p-button-sm ${currentPage === pageIdx ? 'p-button-primary' : 'p-button-outlined'}`}
-                onClick={() => setCurrentPage(pageIdx)}
-              />
-            ))}
-          </div>
-        )}
-
-        {currentRules.map((rule) => (
-          <Card
-            key={rule.id}
-            className="mb-4 relative" // Added relative positioning for absolute child
-          >
-            <div className="p-card-title flex justify-content-between align-items-start">
-              <div>
-                <span className="text-lg font-bold">{rule.ruleNumber}</span>
-                {rule.whitneyNumber && <span className="text-lg font-bold ml-2">({rule.whitneyNumber})</span>}
-                {rule.shortDescription && <span className="text-lg font-bold ml-2">{rule.shortDescription}</span>}
+        {sandhiRules?.map((rule) => {
+          const isDependency = requested !== null && !requested.has(rule.number);
+          return (
+            <div key={rule.number} className="mb-4">
+              <div className="flex align-items-center gap-2 mb-2">
+                <span
+                  className={
+                    isDependency
+                      ? 'bg-surface-300 text-color border-circle w-2rem h-2rem flex align-items-center justify-content-center font-bold text-sm'
+                      : 'bg-orange-500 text-white border-circle w-2rem h-2rem flex align-items-center justify-content-center font-bold text-sm'
+                  }
+                >
+                  {rule.number}
+                </span>
+                {rule.reference && (
+                  <span className="text-sm text-color-secondary">({rule.reference})</span>
+                )}
+                {!isDependency && rule.dependsOn && rule.dependsOn.length > 0 && (
+                  <span className="ml-auto text-xs text-color-secondary">
+                    {dependsOnLabel}: № {rule.dependsOn.join(', ')}
+                  </span>
+                )}
               </div>
-              {rule.sandhiRuleGroups && rule.sandhiRuleGroups.length > 0 && (
-                <div className="flex gap-2 absolute top-0 right-0 p-3"> {/* Positioned top-right */}
-                  {rule.sandhiRuleGroups.map((group) => (
-                    <React.Fragment key={group.id}>
-                      <i
-                        className="pi pi-tag text-xl cursor-pointer" // Example icon, adjust as needed
-                        data-pr-tooltip={group.description}
-                        data-pr-position="top"
-                      ></i>
-                      <Tooltip target=".pi-tag" />
-                    </React.Fragment>
-                  ))}
-                </div>
+              <p className="m-0 mb-1">{rule.text}</p>
+              {rule.example && (
+                <p className="m-0 text-color-secondary font-italic">{rule.example}</p>
               )}
             </div>
-            <div className="p-card-content">
-              <p className="m-0">{rule.fullText}</p>
-              {rule.iastExample && (
-                <p className="m-0 pl-4 text-color-secondary font-italic"><br/>{rule.iastExample}</p>
-              )}
-            </div>
-          </Card>
-        ))}
-        {currentRules.length === 0 && totalRules > 0 && (
-          <Message severity="info" text={t('emeneau.noRulesFoundForPage')} />
-        )}
-        {totalRules === 0 && (
+          );
+        })}
+        {(!sandhiRules || sandhiRules.length === 0) && (
           <Message severity="info" text={t('emeneau.noRulesFound')} />
         )}
       </div>
