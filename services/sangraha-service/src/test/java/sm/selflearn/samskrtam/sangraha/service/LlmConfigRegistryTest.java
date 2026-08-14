@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Тесты LlmConfigRegistry: загрузка llm.yaml, резолв ${VAR} из .env и применение
@@ -73,19 +74,39 @@ class LlmConfigRegistryTest {
     }
 
     @Test
-    void applyActiveConfig_unknownModel_leavesEnvSettingsUntouched() {
+    void applyActiveConfig_unknownModel_throwsIllegalState() {
         llmProperties.setModel("unknown-model");
-        llmProperties.setBaseUrl("https://env.example.com/v1");
+        LlmConfigRegistry registry = new LlmConfigRegistry(llmProperties, tempConfig.toString(), environment);
+
+        assertThatThrownBy(registry::applyActiveConfig)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("unknown-model");
+    }
+
+    @Test
+    void applyActiveConfig_yamlWithObsoleteTwoPass_stillLoadsAndApplies() throws IOException {
+        Files.writeString(tempConfig, """
+                llm:
+                  configs:
+                    claude-sonnet-5:
+                      base-url: https://api.aitunnel.ru/v1
+                      api-key: ${SANGRAHA_LLM_API_KEY}
+                      two-pass: false
+                      max-completion-tokens: 128000
+                """);
+        llmProperties.setModel("claude-sonnet-5");
         LlmConfigRegistry registry = new LlmConfigRegistry(llmProperties, tempConfig.toString(), environment);
 
         registry.applyActiveConfig();
 
-        assertThat(llmProperties.getBaseUrl()).isEqualTo("https://env.example.com/v1");
-        assertThat(llmProperties.getApiKey()).isEqualTo("fallback-key");
+        assertThat(llmProperties.getBaseUrl()).isEqualTo("https://api.aitunnel.ru/v1");
+        assertThat(llmProperties.getApiKey()).isEqualTo("sk-aitunnel-test");
+        assertThat(llmProperties.getMaxCompletionTokens()).isEqualTo(128000);
     }
 
     @Test
     void findByModel_returnsConfigOrEmpty() {
+        llmProperties.setModel("claude-sonnet-5");
         LlmConfigRegistry registry = new LlmConfigRegistry(llmProperties, tempConfig.toString(), environment);
         registry.applyActiveConfig();
 

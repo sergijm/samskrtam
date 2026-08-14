@@ -62,6 +62,7 @@ const AnalysisPage = () => {
 
   const [editText, setEditText] = useState('');
   const [analyzePending, setAnalyzePending] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   // При выборе нового стиха сбрасываем поле редактирования текста
   const selectVerse = useCallback(
@@ -90,7 +91,7 @@ const AnalysisPage = () => {
     }
   }, [newText, create, selectVerse, t]);
 
-  // ── Повторный анализ (DRAFT/FAILED) ──
+  // ── Повторный анализ (DRAFT/FAILED/повторное редактирование) ──
   const handleAnalyze = useCallback(async () => {
     if (!selectedId) return;
     setAnalyzePending(true);
@@ -103,6 +104,7 @@ const AnalysisPage = () => {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     } finally {
       setAnalyzePending(false);
+      setIsEditing(false);
     }
   }, [selectedId, editText, queryClient, t]);
 
@@ -179,6 +181,17 @@ const AnalysisPage = () => {
                 className="ml-2"
               />
             )}
+            {isAnalyzed && (
+              <CtaButton
+                labelKey="common.edit"
+                iconName="pi-pencil"
+                className="p-button-text ml-auto"
+                onClick={() => {
+                  setEditText(verse?.rawText ?? verse?.textDevanagari ?? verse?.textIast ?? '');
+                  setIsEditing(true);
+                }}
+              />
+            )}
           </div>
 
           {verseLoading ? (
@@ -198,8 +211,8 @@ const AnalysisPage = () => {
                 </div>
               )}
 
-              {/* DRAFT/FAILED: ввод текста + анализ */}
-              {isDraftOrFailed && !isAnalyzing && (
+              {/* DRAFT/FAILED or editing: input + Analyze button */}
+              {(isDraftOrFailed || isEditing) && !isAnalyzing && (
                 <div className="mb-4">
                   <div className="mb-3">
                     <label className="block mb-1 font-semibold">{t('sangraha.fields.text')}</label>
@@ -211,13 +224,23 @@ const AnalysisPage = () => {
                       placeholder={t('sangraha.placeholder.text')}
                     />
                   </div>
-                  <CtaButton
-                    labelKey="sangraha.action.analyze"
-                    iconName="pi-robot"
-                    className="p-button-success"
-                    onClick={handleAnalyze}
-                    loading={analyzePending}
-                  />
+                  <div className="flex align-items-center gap-2">
+                    <CtaButton
+                      labelKey="sangraha.action.analyze"
+                      iconName="pi-robot"
+                      className="p-button-success"
+                      onClick={handleAnalyze}
+                      loading={analyzePending}
+                    />
+                    {isEditing && (
+                      <CtaButton
+                        labelKey="common.cancel"
+                        iconName="pi-times"
+                        className="p-button-text"
+                        onClick={() => setIsEditing(false)}
+                      />
+                    )}
+                  </div>
                 </div>
               )}
 
