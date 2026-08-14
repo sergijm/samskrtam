@@ -46,10 +46,10 @@ const GrammarProgressTagSets: React.FC<Props> = ({ items, quizSlug }) => {
   const lang = i18n.language;
 
   return (
-    <div className="mt-4">
-      <div className="grid">
+    <div className="mt-4 pt-3 border-top-1 border-200">
+      <div className="grid pl-2">
         <div className="col-12 md:col-6">
-          <div className="flex flex-column gap-0">
+          <div className="flex flex-column gap-1">
             {cases.map(agg => (
               <Row
                 key={agg.caseType}
@@ -61,7 +61,7 @@ const GrammarProgressTagSets: React.FC<Props> = ({ items, quizSlug }) => {
               />
             ))}
           </div>
-          <div className="flex flex-column gap-0 mt-1">
+          <div className="flex flex-column gap-1 mt-3">
             {numbers.map(agg => (
               <Row
                 key={agg.numberType}
@@ -74,8 +74,8 @@ const GrammarProgressTagSets: React.FC<Props> = ({ items, quizSlug }) => {
             ))}
           </div>
         </div>
-        <div className="col-12 md:col-6">
-          <div className="flex flex-column gap-0">
+        <div className="col-12 md:col-6 md:pl-6">
+          <div className="flex flex-column gap-1">
             {pairs.map(agg => (
               <Row
                 key={agg.setId}
@@ -100,14 +100,15 @@ const Row: React.FC<{
   lang: string;
   onStart: (setId: string) => void;
 }> = ({ id, name, progress, lang, onStart }) => (
-  <div className="flex align-items-center gap-3">
-    <span className="flex-1 text-sm">{name}</span>
+  <div className="flex align-items-center gap-4" style={{ minHeight: 0 }}>
+    <span className="flex-1 text-sm" style={{ lineHeight: '1.25rem' }}>{name}</span>
     <MiniProgressBar value={progress.aggregatedProgress} status={progress.status} width="110px" />
     <Button
       icon="pi pi-angle-double-right"
       severity="secondary"
       text
       rounded
+      style={{ width: '1.5rem', height: '1.5rem', padding: 0 }}
       tooltip={lang === 'ru' ? 'Квиз' : 'Quiz'}
       tooltipOptions={{ position: 'top' }}
       onClick={() => onStart(id)}

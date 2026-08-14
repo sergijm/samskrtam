@@ -64,6 +64,27 @@ class QuestItemMapperTest {
         assertThat(dto.correctAnswer()).isEqualTo("naraḥ");
     }
 
+    @Test
+    void toDto_mapsProgressTag() throws Exception {
+        QuestItem item = item("FREE_TEXT", "naraḥ", "[]", "{\"a\":1}");
+        item.setProgressTag("NOMINATIVE|SINGULAR|MASCULINE");
+
+        QuestItemDto dto = mapper.toDto(item);
+        String json = objectMapper.writeValueAsString(dto);
+
+        assertThat(dto.progressTag()).isEqualTo("NOMINATIVE|SINGULAR|MASCULINE");
+        assertThat(json).contains("\"progressTag\":\"NOMINATIVE|SINGULAR|MASCULINE\"");
+    }
+
+    @Test
+    void toDto_nullProgressTag_isOmittedFromJson() throws Exception {
+        QuestItem item = item("FREE_TEXT", "naraḥ", "[]", "{\"a\":1}");
+
+        String json = objectMapper.writeValueAsString(mapper.toDto(item));
+
+        assertThat(json).doesNotContain("progressTag");
+    }
+
     private static QuestItem item(String answerMode, String correctAnswer,
                                   String distractorsJson, String payloadJson) {
         QuestItem item = new QuestItem();

@@ -72,7 +72,7 @@ const GrammarProgressGrid: React.FC<GrammarProgressGridProps> = ({
           {caseNames.map(caseItem => (
             <tr key={caseItem.caseType}>
               <td
-                className="p-2 border-bottom-1 border-100 cursor-pointer hover:surface-100 transition-colors"
+                className="px-2 py-1 cursor-pointer hover:surface-100 transition-colors"
                 onClick={() => handleCaseClick(caseItem.caseType)}
                 title={i18n.language === 'ru' ? 'Начать квиз по этому падежу' : 'Start quiz for this case'}
               >
@@ -84,15 +84,20 @@ const GrammarProgressGrid: React.FC<GrammarProgressGridProps> = ({
                   return (
                     <td
                       key={num.numberType}
-                      className="text-center p-2 border-bottom-1 border-100 text-color-secondary"
+                      className="text-center px-2 py-1 text-color-secondary"
                     >
                       —
                     </td>
                   );
                 }
                 return (
-                  <td key={num.numberType} className="text-center p-2 border-bottom-1 border-100">
-                    <MiniProgressBar value={agg.aggregatedProgress} status={agg.status} />
+                  <td key={num.numberType} className="text-center px-2 py-1">
+                    <MiniProgressBar
+                      value={agg.aggregatedProgress}
+                      status={agg.status}
+                      width="110px"
+                      className="justify-content-center"
+                    />
                   </td>
                 );
               })}

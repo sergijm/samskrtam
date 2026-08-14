@@ -43,9 +43,10 @@ class QuizItemGenerationServiceTest {
         when(unusedGenerator.supportedDomain()).thenReturn(TopicDomain.NOMINAL_MORPHOLOGY); // collides, first wins
 
         when(applicationContext.getBeansOfType(QuizItemGenerator.class))
-                .thenReturn(Map.of(
-                        "declensionQuizItemGenerator", declensionGenerator,
-                        "unusedGenerator", unusedGenerator));
+                .thenReturn(new java.util.LinkedHashMap<>(
+                        java.util.Map.of(
+                                "declensionQuizItemGenerator", declensionGenerator,
+                                "unusedGenerator", unusedGenerator)));
 
         aStem = topic("a-stem");
         classOne = topic("class-1");
@@ -56,6 +57,7 @@ class QuizItemGenerationServiceTest {
         Topic topic = new Topic();
         topic.setId(UUID.randomUUID());
         topic.setCode(code);
+        topic.setDomain(TopicDomain.NOMINAL_MORPHOLOGY);
         return topic;
     }
 
