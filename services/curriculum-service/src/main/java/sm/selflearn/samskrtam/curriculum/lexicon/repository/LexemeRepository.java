@@ -67,6 +67,15 @@ public interface LexemeRepository extends JpaRepository<Lexeme, UUID> {
     @Query("select distinct l from Lexeme l join fetch l.morphologyClasses mc where mc.code in :codes")
     List<Lexeme> findWithMorphologyByCodeIn(@Param("codes") Collection<String> codes);
 
+    /**
+     * Distinct <b>noun</b> lexemes bound to any of the given morphology classes,
+     * with {@code morphologyClasses} eagerly fetched.
+     */
+    @Query("select distinct l from Lexeme l join fetch l.morphologyClasses mc "
+         + "join l.partsOfSpeech pos "
+         + "where mc.code in :codes and pos.code = 'noun'")
+    List<Lexeme> findNounsWithMorphologyByCodeIn(@Param("codes") Collection<String> codes);
+
     @EntityGraph(attributePaths = {"partsOfSpeech", "morphologyClasses", "wordForms"})
     List<Lexeme> findWithDetailsByIdIn(Collection<UUID> ids);
 

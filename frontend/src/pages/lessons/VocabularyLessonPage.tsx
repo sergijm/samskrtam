@@ -6,39 +6,23 @@ import { LessonHeader } from "../../components/lesson/LessonHeader";
 import { LessonStatsTab } from "../../components/lesson/LessonStatsTab";
 import { WordHistoryDialog } from "../../components/lesson/WordHistoryDialog";
 import { SessionsTab } from "../../components/lesson/SessionsTab";
-import { WordStatusIcon } from "../../components/lesson/WordStatusIcon";
 import { ProgressBar } from "primereact/progressbar";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { TabView, TabPanel } from "primereact/tabview";
 import { Skeleton } from "primereact/skeleton";
 import { statusToProgressColor } from "../../utils/statusColor";
-import type { VocabularyWordProgress, WordStatus } from "../../types/lesson";
-
-const statusLabel = (status: WordStatus, isRu: boolean): string => {
-  switch (status) {
-    case "NEW": return isRu ? "Новый" : "New";
-    case "LEARNING": return isRu ? "Учу" : "Learning";
-    case "REVIEW": return isRu ? "Повтор" : "Review";
-    case "MASTERED": return isRu ? "Знаю" : "Mastered";
-  }
-};
+import type { VocabularyWordProgress } from "../../types/lesson";
 
 const WordProgressCell = ({ row }: { row: VocabularyWordProgress }) => {
   const color = statusToProgressColor(row.status);
   return (
-    <div className="flex align-items-center gap-2">
-      <WordStatusIcon status={row.status} />
-      <ProgressBar
-        value={row.score ?? 0}
-        color={color}
-        style={{ height: "6px", width: "60px" }}
-        showValue={false}
-      />
-      <span className="text-xs" style={{ minWidth: "5rem" }}>
-        {`${row.score ?? 0}% ${statusLabel(row.status, false)}`}
-      </span>
-    </div>
+    <ProgressBar
+      value={row.score ?? 0}
+      color={color}
+      style={{ height: "6px", width: "60px" }}
+      showValue={false}
+    />
   );
 };
 

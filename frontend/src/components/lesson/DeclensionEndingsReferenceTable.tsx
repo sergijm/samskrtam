@@ -13,20 +13,20 @@ const DeclensionEndingsReferenceTable: React.FC<DeclensionEndingsReferenceTableP
 
   const caseLabel = (caseKey: string): string => {
     const mapRu: Record<string, string> = {
-      nominative: "\u0418\u043c.", accusative: "\u0412\u0438\u043d.", instrumental: "\u0422\u0432.",
-      dative: "\u0414\u0430\u0442.", ablative: "\u041e\u0442\u043b.", genitive: "\u0420\u043e\u0434.",
-      locative: "\u041c\u0435\u0441\u0442.", vocative: "\u0417\u0432.",
+      nominative: "Именительный", accusative: "Винительный", instrumental: "Творительный",
+      dative: "Дательный", ablative: "Отложительный", genitive: "Родительный",
+      locative: "Местный", vocative: "Звательный",
     };
     const mapEn: Record<string, string> = {
-      nominative: "N.", accusative: "A.", instrumental: "I.",
-      dative: "D.", ablative: "Abl.", genitive: "G.",
-      locative: "L.", vocative: "V.",
+      nominative: "Nominative", accusative: "Accusative", instrumental: "Instrumental",
+      dative: "Dative", ablative: "Ablative", genitive: "Genitive",
+      locative: "Locative", vocative: "Vocative",
     };
     return i18n.language === "ru" ? (mapRu[caseKey] ?? caseKey) : (mapEn[caseKey] ?? caseKey);
   };
 
   const identityVocativeSg = i18n.language === "ru" ? "= \u043e\u0441\u043d\u043e\u0432\u0435" : "= stem";
-  const identityVocativeDuPl = i18n.language === "ru" ? "= N." : "= N.";
+  const identityVocativeDuPl = i18n.language === "ru" ? "= Именительный" : "= Nominative";
 
   return (
     <div className="overflow-x-auto mb-3">

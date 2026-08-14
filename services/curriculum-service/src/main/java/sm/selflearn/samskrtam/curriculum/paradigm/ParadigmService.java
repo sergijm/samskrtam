@@ -65,11 +65,12 @@ public class ParadigmService {
         } else {
             classCodes = List.of(topicCode);
         }
-        List<Lexeme> lexemes = lexemeRepository.findWithMorphologyByCodeIn(classCodes);
+        List<Lexeme> lexemes = lexemeRepository.findNounsWithMorphologyByCodeIn(classCodes);
         Map<UUID, Integer> ranks = frequencyRanks(lexemes);
         lexemes = lexemes.stream()
                 .sorted(Comparator.comparing((Lexeme l) -> rankOrMax(ranks, l), Comparator.naturalOrder())
                         .thenComparing(Lexeme::getId))
+                .limit(20)
                 .toList();
 
         int totalCount = lexemes.size();
