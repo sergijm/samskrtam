@@ -17,18 +17,15 @@ CREATE TABLE curriculum.lexeme (
     long_definition_ru     TEXT NULL,
     long_definition_en     TEXT NULL,
     gender                 VARCHAR(20) NULL,
-    status                 VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
     created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT uq_lexeme_slp1_gender UNIQUE (lemma_slp1, gender),
-    CONSTRAINT chk_lexeme_gender CHECK (gender IS NULL OR gender IN ('MASCULINE','FEMININE','NEUTER','UNSPECIFIED')),
-    CONSTRAINT chk_lexeme_status CHECK (status IN ('DRAFT','AI_ENRICHED','APPROVED','REJECTED'))
+    CONSTRAINT chk_lexeme_gender CHECK (gender IS NULL OR gender IN ('MASCULINE','FEMININE','NEUTER','UNSPECIFIED'))
 );
 
 COMMENT ON TABLE curriculum.lexeme IS 'A dictionary lemma, not a specific word form. See lexicon.md §1.';
 
 CREATE INDEX idx_lexeme_slp1 ON curriculum.lexeme (lemma_slp1);
-CREATE INDEX idx_lexeme_status ON curriculum.lexeme (status);
 
 CREATE TABLE curriculum.word_form (
     id                     UUID PRIMARY KEY DEFAULT gen_random_uuid(),

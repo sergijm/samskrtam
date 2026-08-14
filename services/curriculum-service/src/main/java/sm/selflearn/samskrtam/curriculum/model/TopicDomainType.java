@@ -7,5 +7,6 @@ package sm.selflearn.samskrtam.curriculum.model;
  */
 public enum TopicDomainType {
     GRAMMAR,
-    LEXICON
+    LEXICON,
+    VERSE
 }

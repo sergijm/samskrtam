@@ -84,8 +84,8 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
 
 
     @Override
-    public TopicDomain supportedDomain() {
-        return TopicDomain.LEXICON;
+    public boolean isDomainSupported(TopicDomain domain) {
+        return domain == TopicDomain.LEXICON;
     }
 
     @Override

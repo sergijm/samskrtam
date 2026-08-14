@@ -10,13 +10,13 @@
 
 ## 0. Зачем и где
 
-Раньше (`lexicon-content-pipeline.md` §2–§3, первая версия) `semanticTopicId` и
+Раньше (`lexicon-content-pipeline.md` §2, первая версия) `semanticTopicId` и
 проверка перевода были единственным полем без эвристики — целиком ручной труд
 ADMIN на стороне curriculum-service. Этот документ закрывает именно этот
 пробел: **классификация лексем по семантике + перевод — отдельный модуль
 внутри sangraha-service**, использующий внешнюю LLM батчами, с ручным
 ADMIN-review результата (не автоматическое доверие модели — тот же принцип,
-что уже в §3 старого pipeline).
+что уже в §2 старого pipeline).
 
 **Почему в sangraha-service, а не в curriculum-service:** классификация
 работает на леммах, агрегированных по всему корпусу (частотность, вхождения),
@@ -274,7 +274,7 @@ gender)` (из `lemma_statistics`), содержит `gender` + `occurrenceCount
 наличии готовой APPROVED-классификации использует `categoryCode` →
 `semanticTopicId` и gloss'ы напрямую вместо эвристики по представителю с
 наибольшим числом вхождений — de facto заменяет шаг ручной разметки
-`lexicon-content-pipeline.md` §3 (правка §7).
+`lexicon-content-pipeline.md` §3 (правка §6).
 
 ---
 

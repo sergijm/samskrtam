@@ -29,10 +29,11 @@
    словарей (Monier-Williams, Frisch) для поиска словарных статей по клику. Он не
    хранит учебные метаданные (частотность, тематику, прогресс) и не должен — этот
    домен со словарями не конкурирует и в этой итерации **не используется** как
-   источник наполнения (решение: единственный источник 2000 лемм — корпус
-   sangraha-service, см. §0 п.2 и `lexicon-content-pipeline.md` §1; привлечение
-   dictionary-service как доп. источника `meaning`/`gender` — возможное будущее
-   расширение, не в периметре текущей итерации).
+   источник наполнения (решение: основной источник 2000 лемм — корпус
+   sangraha-service, см. §0 п.2 и `lexicon-content-pipeline.md` §1; внешний
+   словарь dictionary-service привлекается только точечно — для экзотических
+   лемм, отсутствующих в корпусе, в т.ч. как источник `meaning`/`gender` — это
+   отдельная будущая задача, не в периметре текущей итерации).
 
 2. **`curriculum-service.VocabularyWord`/`VocabularyCategory`** (§39, §296–300
    `curriculum-service.md`) — это уже существующая, но **связанная контрактом с
@@ -52,6 +53,11 @@
    **Решение:** не переписывать `curriculum-service.VocabularyWord` немедленно —
    таблицы §1–§6 ниже становятся новым источником истины для *учебной* лексики
    (2000 лемм + таксономии + progress), но живут физически в curriculum-service.
+   Основной источник наполнения — корпус sangraha-service (§0 п.1 и
+   `lexicon-content-pipeline.md` §1); внешний словарь dictionary-service
+   привлекается только точечно — для экзотических лемм, отсутствующих в корпусе
+   (в т.ч. как источник `meaning`/`gender`), это отдельная будущая задача
+   (`lexicon-content-pipeline.md` §4).
    Существующий sangraha→curriculum-service поток
    (`POST /content/internal/sangraha/vocabulary-quiz`) в этой итерации **не
    трогается** — он продолжает создавать per-verse VOCABULARY-квизы как раньше.
@@ -102,19 +108,29 @@ id (UUID, PK)
 lemmaIast (VARCHAR 100, NOT NULL)
 lemmaDevanagari (VARCHAR 100, NOT NULL)
 lemmaSlp1 (VARCHAR 100, NOT NULL — нормализованная форма для поиска/дедупа, тот же принцип, что `slp1Normalized` в dictionary-service)
+meaningNumber (INTEGER, NOT NULL, DEFAULT 1 — порядковый номер значения леммы: разные значения одного написания — разные строки с разными `meaningNumber`, см. «Уникальность/дедуп»)
 glossRu / glossEn (VARCHAR 300, NOT NULL — короткое значение для flashcard/quiz, не энциклопедическая статья)
 longDefinitionRu / longDefinitionEn (TEXT, NULL — более полное объяснение для `LearningMaterial`, не для quiz-вопроса)
-gender (VARCHAR 20, NULL — `MASCULINE`|`FEMININE`|`NEUTER`|`UNSPECIFIED`; осмысленно только для именных лексем)
-status (VARCHAR 20, NOT NULL, DEFAULT `DRAFT` — `DRAFT`|`CANDIDATE`|`APPROVED`|`REJECTED`;
-`CANDIDATE` = импортирована из sangraha-corpus, поля заполнены **эвристиками**, без
-LLM (решение по задаче: без AI-enrichment), ожидает ручного ADMIN-review — см.
-`lexicon-content-pipeline.md` §2–§3)
+gender (VARCHAR 20, NULL — `MASCULINE`|`FEMININE`|`NEUTER`|`UNSPECIFIED`; осмысленно только для именных лексем; участвует в идентичности значения)
 createdAt / updatedAt (TIMESTAMPTZ, NOT NULL)
 
-**Уникальность/дедуп:** `UNIQUE(lemmaSlp1, gender)` — умышленно не просто по
-`lemmaSlp1`, т.к. омонимы с разным родом (редко, но встречается) — разные лексемы;
-омонимы с одинаковым родом и разным значением в этой версии **не разделяются**
-(упрощение — см. открытые вопросы `lexicon-content-pipeline.md` §5).
+**Уникальность/дедуп:** `UNIQUE(lemma_slp1, meaning_number)` — одно написание
+может иметь несколько строк, если у него несколько значений.
+
+**Идентичность значения.** Две строки одного написания относятся к одному
+значению, если совпадают `gender` и нормализованные `glossRu`/`glossEn`
+(нормализация — trim, сравнение без учёта регистра; пустой входящий gloss —
+wildcard). Совпадение → апдейт существующей строки; несовпадение → новая строка с
+`meaningNumber = max(значение для этого lemma_slp1) + 1`. Так разные переводы одной
+леммы (глоссы LLM по разным стихам отличаются) живут отдельными строками и **не
+склеиваются** — в отличие от первой версии, где омонимы одного рода сознательно
+не разделялись (причина — инкрементальный поток пачек, см.
+`lexicon-content-pipeline.md` §7).
+
+**Нумерация.** `meaningNumber=1` — самое частотное значение написания (первичный
+импорт, `lexicon-content-pipeline.md` §2); нумерация вычисляется один раз и при
+последующих инкрементальных пачках не пересчитывается (новым значениям — только
+`max+1`). Поле — внутренняя идентичность строк, в публичные API/UI не выводится.
 
 **Явно НЕ на Lexeme:** `frequencyRank`, `semanticTopic`, `pos`, `morphologyClass`,
 `source` — всё это отдельные таблицы-связи (§2–§5), не колонки, ровно по

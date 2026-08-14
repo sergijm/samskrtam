@@ -10,7 +10,7 @@ import java.util.Set;
  */
 public abstract class QuizItemGenerator {
 
-    public abstract TopicDomain supportedDomain();
+    public abstract boolean isDomainSupported(TopicDomain domain);
 
     public abstract int generate(Topic topic);
 

@@ -56,7 +56,7 @@ private final ApplicationContext applicationContext;
         for (Topic topic : topicRepository.findAll()) {
             QuizItemGenerator generator = applicationContext.getBeansOfType(QuizItemGenerator.class)
                     .values().stream()
-                    .filter(g -> g.supportedDomain() == topic.getDomain())
+                    .filter(g -> g.isDomainSupported(topic.getDomain()))
                     .findFirst().orElse(null);
             if (generator == null) {
                 continue;

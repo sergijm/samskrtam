@@ -83,7 +83,7 @@ class LexicalQuizItemGeneratorTest {
 
     @Test
     void supportedDomain_returnsLexicon() {
-        assertThat(generator.supportedDomain()).isEqualTo(TopicDomain.LEXICON);
+        assertThat(generator.isDomainSupported(TopicDomain.LEXICON)).isTrue();
     }
 
     @Test

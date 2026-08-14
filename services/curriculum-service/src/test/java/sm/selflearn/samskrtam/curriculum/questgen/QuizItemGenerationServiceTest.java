@@ -38,9 +38,9 @@ class QuizItemGenerationServiceTest {
         questItemRepository = mock(QuestItemRepository.class);
 
         declensionGenerator = mock(QuizItemGenerator.class);
-        when(declensionGenerator.supportedDomain()).thenReturn(TopicDomain.NOMINAL_MORPHOLOGY);
+        when(declensionGenerator.isDomainSupported(TopicDomain.NOMINAL_MORPHOLOGY)).thenReturn(true);
         unusedGenerator = mock(QuizItemGenerator.class);
-        when(unusedGenerator.supportedDomain()).thenReturn(TopicDomain.NOMINAL_MORPHOLOGY); // collides, first wins
+        when(unusedGenerator.isDomainSupported(TopicDomain.NOMINAL_MORPHOLOGY)).thenReturn(true); // collides, first wins
 
         when(applicationContext.getBeansOfType(QuizItemGenerator.class))
                 .thenReturn(new java.util.LinkedHashMap<>(

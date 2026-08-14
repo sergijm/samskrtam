@@ -15,8 +15,8 @@ public class ConjunctionQuizItemGenerator extends QuizItemGenerator {
 
 
     @Override
-    public TopicDomain supportedDomain() {
-        return TopicDomain.CONJUNCTION;
+    public boolean isDomainSupported(TopicDomain domain) {
+        return domain == TopicDomain.CONJUNCTION;
     }
 
     @Override

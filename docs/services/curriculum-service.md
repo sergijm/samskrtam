@@ -201,11 +201,12 @@ Quest Items (v2, DECLENSION_FORM family) — отдельный раздел API
 Полная спецификация — [lexicon.md](./lexicon.md) (доменная модель),
 [lexical-curriculum.md](./lexical-curriculum.md) (таксономии, 68 Lexical Topics),
 [lexical-quizzes.md](./lexical-quizzes.md) (типы квизов, adaptive selection),
-[lexicon-content-pipeline.md](./lexicon-content-pipeline.md) (batch-импорт лемм
-из корпуса sangraha-service, без AI-enrichment — только эвристики и ручной
-ADMIN-review).
+[lexicon-content-pipeline.md](./lexicon-content-pipeline.md) (импорт лемм из
+корпуса sangraha-service, без AI-enrichment — только эвристики и ручной
+ADMIN-review; точечная догрузка экзотических лемм из внешнего словаря — будущая
+задача).
 
 **Явно не заменяет** существующий per-verse поток (`content.vocabulary_words`,
 отдельный сервис, см. `content-service.md` §11) — это два параллельных
 механизма над одним и тем же сырьём sangraha-service; их слияние — отдельная
-будущая задача (`lexicon.md` §0 п.2, `lexicon-content-pipeline.md` §6).
+будущая задача (`lexicon.md` §0 п.2, `lexicon-content-pipeline.md` §5).

@@ -1,5 +1,5 @@
 -- Illustrative proof-of-concept seed (25 lexemes), NOT the full 2000-word batch.
--- See lexicon-content-pipeline.md §4. All rows APPROVED (hand-checked, common
+-- See lexicon-content-pipeline.md §3. All rows hand-checked (common
 -- function words / core vocabulary, safe to ship without an AI-enrichment pass).
 
 INSERT INTO curriculum.frequency_band (code, min_rank, max_rank, label_ru, label_en, sort_order) VALUES
@@ -47,38 +47,37 @@ INSERT INTO curriculum.semantic_topic (id, code, name_ru, name_en, parent_id) VA
     (gen_random_uuid(), 'abstract', 'Абстрактное', 'Abstract', NULL);
 
 -- 25 illustrative core lexemes (function words, basic pronouns/numerals/verbs)
-INSERT INTO curriculum.lexeme (id, lemma_iast, lemma_devanagari, lemma_slp1, gloss_ru, gloss_en, gender, status) VALUES
-    (gen_random_uuid(), 'ca', 'च', 'ca', 'и', 'and', NULL, 'APPROVED'),
-    (gen_random_uuid(), 'na', 'न', 'na', 'не', 'not', NULL, 'APPROVED'),
-    (gen_random_uuid(), 'tu', 'तु', 'tu', 'но, же', 'but, indeed', NULL, 'APPROVED'),
-    (gen_random_uuid(), 'iti', 'इति', 'iti', 'так (конец цитаты)', 'thus (quotation marker)', NULL, 'APPROVED'),
-    (gen_random_uuid(), 'eva', 'एव', 'eva', 'именно, только', 'indeed, only', NULL, 'APPROVED'),
-    (gen_random_uuid(), 'api', 'अपि', 'api', 'также, даже', 'also, even', NULL, 'APPROVED'),
-    (gen_random_uuid(), 'yathā', 'यथा', 'yathA', 'как', 'as, just as', NULL, 'APPROVED'),
-    (gen_random_uuid(), 'tathā', 'तथा', 'tathA', 'так', 'so, thus', NULL, 'APPROVED'),
-    (gen_random_uuid(), 'yadi', 'यदि', 'yadi', 'если', 'if', NULL, 'APPROVED'),
-    (gen_random_uuid(), 'sa', 'स', 'sa', 'он, тот', 'he, that (demonstrative pronoun)', 'MASCULINE', 'APPROVED'),
-    (gen_random_uuid(), 'tad', 'तद्', 'tad', 'то', 'that (demonstrative pronoun)', 'NEUTER', 'APPROVED'),
-    (gen_random_uuid(), 'aham', 'अहम्', 'aham', 'я', 'I', 'UNSPECIFIED', 'APPROVED'),
-    (gen_random_uuid(), 'tvam', 'त्वम्', 'tvam', 'ты', 'you (singular)', 'UNSPECIFIED', 'APPROVED'),
-    (gen_random_uuid(), 'ka', 'क', 'ka', 'кто, какой', 'who, which (interrogative)', 'MASCULINE', 'APPROVED'),
-    (gen_random_uuid(), 'sarva', 'सर्व', 'sarva', 'весь, всякий', 'all, every', 'MASCULINE', 'APPROVED'),
-    (gen_random_uuid(), 'eka', 'एक', 'eka', 'один', 'one', 'MASCULINE', 'APPROVED'),
-    (gen_random_uuid(), 'dvi', 'द्वि', 'dvi', 'два', 'two', 'UNSPECIFIED', 'APPROVED'),
-    (gen_random_uuid(), 'tri', 'त्रि', 'tri', 'три', 'three', 'UNSPECIFIED', 'APPROVED'),
-    (gen_random_uuid(), 'bhū', 'भू', 'BU', 'быть, становиться', 'to be, to become', NULL, 'APPROVED'),
-    (gen_random_uuid(), 'as', 'अस्', 'as', 'быть', 'to be', NULL, 'APPROVED'),
-    (gen_random_uuid(), 'gam', 'गम्', 'gam', 'идти', 'to go', NULL, 'APPROVED'),
-    (gen_random_uuid(), 'kṛ', 'कृ', 'kf', 'делать', 'to do, to make', NULL, 'APPROVED'),
-    (gen_random_uuid(), 'vad', 'वद्', 'vad', 'говорить', 'to speak', NULL, 'APPROVED'),
-    (gen_random_uuid(), 'nara', 'नर', 'nara', 'человек, мужчина', 'man, person', 'MASCULINE', 'APPROVED'),
-    (gen_random_uuid(), 'gaja', 'गज', 'gaja', 'слон', 'elephant', 'MASCULINE', 'APPROVED');
+INSERT INTO curriculum.lexeme (id, lemma_iast, lemma_devanagari, lemma_slp1, gloss_ru, gloss_en, gender) VALUES
+    (gen_random_uuid(), 'ca', 'च', 'ca', 'и', 'and', NULL),
+    (gen_random_uuid(), 'na', 'न', 'na', 'не', 'not', NULL),
+    (gen_random_uuid(), 'tu', 'तु', 'tu', 'но, же', 'but, indeed', NULL),
+    (gen_random_uuid(), 'iti', 'इति', 'iti', 'так (конец цитаты)', 'thus (quotation marker)', NULL),
+    (gen_random_uuid(), 'eva', 'एव', 'eva', 'именно, только', 'indeed, only', NULL),
+    (gen_random_uuid(), 'api', 'अपि', 'api', 'также, даже', 'also, even', NULL),
+    (gen_random_uuid(), 'yathā', 'यथा', 'yathA', 'как', 'as, just as', NULL),
+    (gen_random_uuid(), 'tathā', 'तथा', 'tathA', 'так', 'so, thus', NULL),
+    (gen_random_uuid(), 'yadi', 'यदि', 'yadi', 'если', 'if', NULL),
+    (gen_random_uuid(), 'sa', 'स', 'sa', 'он, тот', 'he, that (demonstrative pronoun)', 'MASCULINE'),
+    (gen_random_uuid(), 'tad', 'तद्', 'tad', 'то', 'that (demonstrative pronoun)', 'NEUTER'),
+    (gen_random_uuid(), 'aham', 'अहम्', 'aham', 'я', 'I', 'UNSPECIFIED'),
+    (gen_random_uuid(), 'tvam', 'त्वम्', 'tvam', 'ты', 'you (singular)', 'UNSPECIFIED'),
+    (gen_random_uuid(), 'ka', 'क', 'ka', 'кто, какой', 'who, which (interrogative)', 'MASCULINE'),
+    (gen_random_uuid(), 'sarva', 'सर्व', 'sarva', 'весь, всякий', 'all, every', 'MASCULINE'),
+    (gen_random_uuid(), 'eka', 'एक', 'eka', 'один', 'one', 'MASCULINE'),
+    (gen_random_uuid(), 'dvi', 'द्वि', 'dvi', 'два', 'two', 'UNSPECIFIED'),
+    (gen_random_uuid(), 'tri', 'त्रि', 'tri', 'три', 'three', 'UNSPECIFIED'),
+    (gen_random_uuid(), 'bhū', 'भू', 'BU', 'быть, становиться', 'to be, to become', NULL),
+    (gen_random_uuid(), 'as', 'अस्', 'as', 'быть', 'to be', NULL),
+    (gen_random_uuid(), 'gam', 'गम्', 'gam', 'идти', 'to go', NULL),
+    (gen_random_uuid(), 'kṛ', 'कृ', 'kf', 'делать', 'to do, to make', NULL),
+    (gen_random_uuid(), 'vad', 'वद्', 'vad', 'говорить', 'to speak', NULL),
+    (gen_random_uuid(), 'nara', 'नर', 'nara', 'человек, мужчина', 'man, person', 'MASCULINE'),
+    (gen_random_uuid(), 'gaja', 'गज', 'gaja', 'слон', 'elephant', 'MASCULINE');
 
 -- Frequency ranks (1-25, illustrative order only)
 INSERT INTO curriculum.lexeme_frequency (lexeme_id, source, rank)
 SELECT id, 'CURATED_2000', ROW_NUMBER() OVER (ORDER BY lemma_iast)
-FROM curriculum.lexeme
-WHERE status = 'APPROVED';
+FROM curriculum.lexeme;
 
 -- POS tagging for the sample (illustrative subset)
 INSERT INTO curriculum.lexeme_pos (lexeme_id, pos_code)

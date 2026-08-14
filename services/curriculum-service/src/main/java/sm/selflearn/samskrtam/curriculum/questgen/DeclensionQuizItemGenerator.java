@@ -99,8 +99,8 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
 
 
     @Override
-    public TopicDomain supportedDomain() {
-        return TopicDomain.NOMINAL_MORPHOLOGY;
+    public boolean isDomainSupported(TopicDomain domain) {
+        return domain == TopicDomain.NOMINAL_MORPHOLOGY;
     }
 
     @Override
