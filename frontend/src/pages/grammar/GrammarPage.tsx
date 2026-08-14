@@ -1,27 +1,51 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useDeclensionLessons } from '../../hooks/useQuiz';
 import { ProgressBar } from 'primereact/progressbar';
-import { Skeleton } from 'primereact/skeleton';
 import { Message } from 'primereact/message';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { LessonItemDto } from '../../types/quiz';
+
+interface DomainMeta {
+  labelRu: string;
+  labelEn: string;
+  icon: string;
+}
+
+const DOMAIN_META: Record<string, DomainMeta> = {
+  PHONOLOGY_SCRIPT:   { labelRu: 'Письменность и фонология',       labelEn: 'Script & Phonology',       icon: 'pi-pencil' },
+  SANDHI:             { labelRu: 'Sandhi',                         labelEn: 'Sandhi',                   icon: 'pi-sync' },
+  GRAMMAR_FOUNDATIONS:{ labelRu: 'Основы грамматики',             labelEn: 'Grammar Foundations',      icon: 'pi-info-circle' },
+  NOMINAL_MORPHOLOGY: { labelRu: 'Склонение',                     labelEn: 'Nominal Morphology',       icon: 'pi-table' },
+  PRONOUNS:           { labelRu: 'Местоимения',                   labelEn: 'Pronouns',                 icon: 'pi-user' },
+  VERBAL_MORPHOLOGY:  { labelRu: 'Глагольная морфология',        labelEn: 'Verbal Morphology',        icon: 'pi-play' },
+  NONFINITE_FORMS:    { labelRu: 'Неличные формы глагола',        labelEn: 'Non-finite Forms',         icon: 'pi-list' },
+  NUMERALS:           { labelRu: 'Числительные',                  labelEn: 'Numerals',                 icon: 'pi-sort-numeric-down' },
+  CASE_SYNTAX:        { labelRu: 'Падежи и kāraka',              labelEn: 'Case & kāraka',            icon: 'pi-tag' },
+  SYNTAX:             { labelRu: 'Синтаксис',                     labelEn: 'Syntax',                   icon: 'pi-sitemap' },
+  WORD_FORMATION:     { labelRu: 'Словообразование',             labelEn: 'Word Formation',           icon: 'pi-prime' },
+  ADVANCED_READING:   { labelRu: 'Продвинутое чтение',           labelEn: 'Advanced Reading',         icon: 'pi-book' },
+  GRAMMAR:            { labelRu: 'Грамматика',                    labelEn: 'Grammar',                  icon: 'pi-book' },
+};
 
 const GrammarPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const isRu = i18n.language === 'ru';
 
-  const { data: declensions = [], isLoading, isError } = useDeclensionLessons();
+  const { data: lessons = [], isLoading, isError } = useDeclensionLessons();
 
-  const sandhiItems = [
-    { title: t('grammar.sandhiExercisesTitle'), description: t('grammar.sandhiExercisesDescription'), link: '/grammar/emeneau-exercises', icon: 'pi-pencil' },
-    { title: t('grammar.sandhiQuizzesTitle'),   description: t('grammar.sandhiQuizzesDescription'),   link: '/grammar/emeneau-quizzes',   icon: 'pi-question-circle' },
-    { title: t('grammar.sandhiRulesTitle'),     description: t('grammar.sandhiRulesDescription'),     link: '/grammar/emeneau-rules',     icon: 'pi-book' },
-  ];
-
-  const totalQuestions = declensions.reduce((sum, d) => sum + d.totalQuestions, 0);
+  const grouped = useMemo(() => {
+    const map = new Map<string, LessonItemDto[]>();
+    for (const l of lessons) {
+      const d = l.domain || 'GRAMMAR';
+      if (!map.has(d)) map.set(d, []);
+      map.get(d)!.push(l);
+    }
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b));
+  }, [lessons]);
 
   if (isLoading) {
     return (
@@ -41,7 +65,6 @@ const GrammarPage = () => {
 
   return (
     <div className="grammar-page p-3 md:p-4">
-      {/* Hero */}
       <div className="lexicon-hero mb-5">
         <div className="flex flex-column md:flex-row md:align-items-end md:justify-content-between gap-3">
           <div>
@@ -52,58 +75,35 @@ const GrammarPage = () => {
         <div className="lexicon-hero-stats mt-4">
           <div className="flex justify-content-between align-items-center mb-1">
             <span className="font-semibold">
-              {declensions.length} {isRu ? 'тем' : 'topics'}
-            </span>
-            <span className="font-semibold text-primary">
-              {totalQuestions} {t('quizzes.questions')}
+              {lessons.length} {isRu ? 'тем' : 'topics'} · {grouped.length} {isRu ? 'групп' : 'groups'}
             </span>
           </div>
           <ProgressBar value={100} style={{ height: '0.75rem' }} />
         </div>
       </div>
 
-      {/* Sandhi section */}
-      <section className="mb-5">
-        <div className="flex align-items-center gap-2 mb-3">
-          <i className="pi pi-pencil text-lg text-primary" />
-          <h2 className="m-0 text-xl">{t('grammar.sandhiSectionTitle')}</h2>
-        </div>
-        <div className="grid">
-          {sandhiItems.map((item) => (
-            <div key={item.icon} className="col-12 sm:col-6 lg:col-4 xl:col-3">
-              <div
-                className="grammar-card h-full cursor-pointer"
-                onClick={() => navigate(item.link)}
-              >
-                <div className="flex align-items-center justify-content-between gap-2">
-                  <span className="font-semibold">{item.title}</span>
-                  <i className={`pi ${item.icon} text-2xl text-primary`} />
-                </div>
-                <div className="text-sm text-500 mt-1">
-                  {item.description}
-                </div>
-              </div>
+      {grouped.map(([domain, items]) => {
+        const meta = DOMAIN_META[domain] || { labelRu: domain, labelEn: domain, icon: 'pi-folder' };
+        const label = isRu ? meta.labelRu : meta.labelEn;
+        return (
+          <section key={domain} className="mb-5">
+            <div className="flex align-items-center gap-2 mb-3">
+              <i className={`pi ${meta.icon} text-lg text-primary`} />
+              <h2 className="m-0 text-xl">{label}</h2>
+              <span className="text-sm text-500">({items.length})</span>
             </div>
-          ))}
-        </div>
-      </section>
+            <div className="grid">
+              {items.map((lesson) => (
+                <GrammarCard key={lesson.id} lesson={lesson} onClick={() => navigate(`/lessons/grammar/${lesson.slug}`)} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
 
-      {/* Declensions section */}
-      <section className="mb-5">
-        <div className="flex align-items-center gap-2 mb-3">
-          <i className="pi pi-table text-lg text-primary" />
-          <h2 className="m-0 text-xl">{t('grammar.declensionsSectionTitle')}</h2>
-        </div>
-        {declensions.length === 0 ? (
-          <Message severity="info" text={t('grammar.noLessonsFound')} />
-        ) : (
-          <div className="grid">
-            {declensions.map((lesson) => (
-              <GrammarCard key={lesson.id} lesson={lesson} onClick={() => navigate(`/lessons/grammar/${lesson.slug}`)} />
-            ))}
-          </div>
-        )}
-      </section>
+      {lessons.length === 0 && (
+        <Message severity="info" text={t('grammar.noLessonsFound')} />
+      )}
     </div>
   );
 };
@@ -123,15 +123,9 @@ const GrammarCard = ({ lesson, onClick }: { lesson: LessonItemDto; onClick: () =
           </span>
         </div>
         {lesson.difficulty && (
-          <div className="text-sm text-500 mt-1">
-            {lesson.difficulty}
-          </div>
+          <div className="text-sm text-500 mt-1">{lesson.difficulty}</div>
         )}
-        <ProgressBar
-          value={lesson.totalQuestions > 0 ? Math.round((lesson.learnedWords / (lesson.learnedWords + 1 || lesson.totalQuestions)) * 100) : 0}
-          style={{ height: '0.4rem' }}
-          className="mt-2"
-        />
+        <ProgressBar value={0} style={{ height: '0.4rem' }} className="mt-2" />
       </div>
     </div>
   );

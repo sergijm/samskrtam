@@ -42,28 +42,27 @@ public class LessonV2Service {
     /* ─── list / summary ─────────────────────────────────────────────── */
 
     public Mono<LessonListResponse> listAll() {
-        return curriculumClient.fetchTopics(null)
+        return curriculumClient.fetchTopics(null, null)
                 .map(topics -> new LessonListResponse(
                         topics.stream().map(this::toLessonItem).toList()));
     }
 
     public Mono<LessonListResponse> listByCategory(String category) {
-        String domain = switch (category.toLowerCase(Locale.ROOT)) {
-            case "declensions", "declension", "grammar" -> "GRAMMAR";
-            case "vocabulary", "vocabulary-basic", "vocabulary-texts" -> "LEXICON";
-            case "conjugations", "conjugation" -> "GRAMMAR";
-            default -> null;
+        return switch (category.toLowerCase(Locale.ROOT)) {
+            case "grammar", "declensions", "declension", "conjugations", "conjugation" ->
+                    curriculumClient.fetchTopicsByDomainType("GRAMMAR")
+                            .map(topics -> new LessonListResponse(
+                                    topics.stream().map(this::toLessonItem).toList()));
+            case "lexicon", "vocabulary", "vocabulary-basic", "vocabulary-texts" ->
+                    curriculumClient.fetchTopicsByDomainType("LEXICON")
+                            .map(topics -> new LessonListResponse(
+                                    topics.stream().map(this::toLessonItem).toList()));
+            default -> Mono.just(new LessonListResponse(List.of()));
         };
-        if (domain == null) {
-            return Mono.just(new LessonListResponse(List.of()));
-        }
-        return curriculumClient.fetchTopics(domain)
-                .map(topics -> new LessonListResponse(
-                        topics.stream().map(this::toLessonItem).toList()));
     }
 
     public Mono<LessonItemDto> lessonBySlug(String slug) {
-        return curriculumClient.fetchTopics(null)
+        return curriculumClient.fetchTopics(null, null)
                 .map(list -> list.stream()
                         .filter(t -> t.code().equalsIgnoreCase(slug))
                         .findFirst()
@@ -74,7 +73,7 @@ public class LessonV2Service {
     /* ─── vocabulary ─────────────────────────────────────────────────── */
 
     public Mono<VocabularyLessonDto> vocabularyLesson(String slug, UUID userId) {
-        return curriculumClient.fetchTopics(null)
+        return curriculumClient.fetchTopics(null, null)
                 .flatMap(topics -> topics.stream()
                         .filter(t -> t.code().equalsIgnoreCase(slug))
                         .findFirst()
@@ -329,6 +328,8 @@ public class LessonV2Service {
                 .totalQuestions(0)
                 .totalWordsOwn(isVocabulary ? 0 : 0)
                 .learnedWords(0)
+                .domain(t.domain())
+                .domainType(t.domainType())
                 .build();
     }
 

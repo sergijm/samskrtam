@@ -68,14 +68,18 @@ public class CurriculumClient {
     }
 
     /**
-     * Fetch topics from curriculum-service (v2), optionally filtered by domain.
+     * Fetch topics from curriculum-service (v2), optionally filtered by
+     * fine-grained domain and coarse domainType.
      */
-    public Mono<List<TopicDto>> fetchTopics(String domain) {
+    public Mono<List<TopicDto>> fetchTopics(String domain, String domainType) {
         return webClient.get()
                 .uri(uriBuilder -> {
                     uriBuilder.path("/api/v2/curriculum/topics");
                     if (domain != null) {
                         uriBuilder.queryParam("domain", domain);
+                    }
+                    if (domainType != null) {
+                        uriBuilder.queryParam("domainType", domainType);
                     }
                     return uriBuilder.build();
                 })
@@ -85,6 +89,13 @@ public class CurriculumClient {
                                 "Topics not found in curriculum-service")))
                 .bodyToFlux(TopicDto.class)
                 .collectList();
+    }
+
+    /**
+     * Fetch topics filtered only by coarse domainType (GRAMMAR | LEXICON).
+     */
+    public Mono<List<TopicDto>> fetchTopicsByDomainType(String domainType) {
+        return fetchTopics(null, domainType);
     }
 
     /**

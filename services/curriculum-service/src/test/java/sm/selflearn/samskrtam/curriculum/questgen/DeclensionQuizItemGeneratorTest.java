@@ -77,7 +77,7 @@ class DeclensionQuizItemGeneratorTest {
 
     @Test
     void supportedDomain_returnsGrammar() {
-        assertThat(generator.supportedDomain()).isEqualTo(TopicDomain.GRAMMAR);
+        assertThat(generator.supportedDomain()).isEqualTo(TopicDomain.NOMINAL_MORPHOLOGY);
     }
 
     @Test

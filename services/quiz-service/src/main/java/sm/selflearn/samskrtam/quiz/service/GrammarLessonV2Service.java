@@ -40,7 +40,7 @@ public class GrammarLessonV2Service {
     private final WordStatusResolver wordStatusResolver;
 
     public Mono<GrammarLesson> build(String topicCode, UUID userId) {
-        return curriculumClient.fetchTopics(null)
+        return curriculumClient.fetchTopics(null, null)
                 .flatMap(topics -> topics.stream()
                         .filter(t -> t.code().equalsIgnoreCase(topicCode))
                         .findFirst()

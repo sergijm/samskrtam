@@ -130,8 +130,9 @@ public class LessonV2Controller {
             return false;
         }
         return switch (param.toLowerCase(Locale.ROOT)) {
-            case "declensions", "declension", "conjugations", "conjugation",
-                 "vocabulary", "vocabulary-basic", "vocabulary-texts", "grammar" -> true;
+            case "grammar", "declensions", "declension", "conjugations", "conjugation",
+                 "lexicon",
+                 "vocabulary", "vocabulary-basic", "vocabulary-texts" -> true;
             default -> false;
         };
     }

@@ -9,13 +9,19 @@ import sm.selflearn.samskrtam.content.dto.DeclensionParadigmPageDto;
 import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeFrequency;
+import sm.selflearn.samskrtam.curriculum.lexicon.imports.LexiconImportService;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
 import sm.selflearn.samskrtam.curriculum.questgen.DeclensionNounParadigmComposer;
 import sm.selflearn.samskrtam.curriculum.questgen.morphology.CaseType;
 import sm.selflearn.samskrtam.curriculum.questgen.morphology.NumberType;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Serves the v2 declension-paradigm page. Two sources, selected by {@code Topic.code}
@@ -39,6 +45,7 @@ public class ParadigmService {
     private final ParadigmStemRepository paradigmStemRepository;
     private final ParadigmFormRepository paradigmFormRepository;
     private final LexemeRepository lexemeRepository;
+    private final LexemeFrequencyRepository lexemeFrequencyRepository;
 
     @Transactional(readOnly = true)
     public DeclensionParadigmPageDto getParadigmPage(String topicCode, int index) {
@@ -58,8 +65,11 @@ public class ParadigmService {
         } else {
             classCodes = List.of(topicCode);
         }
-        List<Lexeme> lexemes = lexemeRepository.findWithMorphologyByCodeIn(classCodes).stream()
-                .sorted(Comparator.comparing(Lexeme::getId))
+        List<Lexeme> lexemes = lexemeRepository.findWithMorphologyByCodeIn(classCodes);
+        Map<UUID, Integer> ranks = frequencyRanks(lexemes);
+        lexemes = lexemes.stream()
+                .sorted(Comparator.comparing((Lexeme l) -> rankOrMax(ranks, l), Comparator.naturalOrder())
+                        .thenComparing(Lexeme::getId))
                 .toList();
 
         int totalCount = lexemes.size();
@@ -160,6 +170,21 @@ public class ParadigmService {
     }
 
     /* ─── mapping helpers ─────────────────────────────────────────── */
+
+    /** SANGRAHA_CORPUS frequency rank by lexeme id; lexemes without an entry sort last. */
+    private Map<UUID, Integer> frequencyRanks(List<Lexeme> lexemes) {
+        if (lexemes.isEmpty()) {
+            return Map.of();
+        }
+        List<UUID> ids = lexemes.stream().map(Lexeme::getId).toList();
+        return lexemeFrequencyRepository.findBySourceAndLexemeIdIn(
+                        LexiconImportService.FREQUENCY_SOURCE, ids).stream()
+                .collect(HashMap::new, (m, f) -> m.put(f.getId().getLexemeId(), f.getRank()), Map::putAll);
+    }
+
+    private static int rankOrMax(Map<UUID, Integer> ranks, Lexeme lexeme) {
+        return ranks.getOrDefault(lexeme.getId(), Integer.MAX_VALUE);
+    }
 
     private static sm.selflearn.samskrtam.content.model.Gender toContentGender(LexemeGender gender) {
         return switch (gender) {

@@ -13,6 +13,7 @@ public record TopicDto(
         String titleEn,
         String learningLevel,
         String domain,
+        String domainType,
         boolean isEvergreen
 ) {
 }

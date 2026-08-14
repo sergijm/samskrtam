@@ -18,9 +18,9 @@ export const useQuizList = (category?: string) => {
 export const useDeclensionLessons = () => {
   const { locale } = useLocaleStore();
   return useQuery<LessonItemDto[], Error>({
-    queryKey: ['quizzes', 'list', 'DECLENSIONS', locale],
+    queryKey: ['quizzes', 'list', 'GRAMMAR', locale],
     queryFn: async () => {
-      const response = await quizApi.getQuizList('DECLENSIONS');
+      const response = await quizApi.getQuizList('GRAMMAR');
       return response.data.lessons;
     },
   });

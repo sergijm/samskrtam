@@ -260,8 +260,10 @@ export interface LessonListResponse {
 }
 
 export interface LessonItemDto extends QuizListItem {
-        totalWordsOwn: number;
+    totalWordsOwn: number;
     learnedWords: number;
+    domain?: string;
+    domainType?: string;
 }
 
 

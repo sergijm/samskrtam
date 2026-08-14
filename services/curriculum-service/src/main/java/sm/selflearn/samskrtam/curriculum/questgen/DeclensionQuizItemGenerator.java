@@ -100,7 +100,7 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
 
     @Override
     public TopicDomain supportedDomain() {
-        return TopicDomain.GRAMMAR;
+        return TopicDomain.NOMINAL_MORPHOLOGY;
     }
 
     @Override

@@ -37,8 +37,13 @@ public class Topic {
     private LearningLevel learningLevel;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "domain", nullable = false, length = 10)
+    @Column(name = "domain", nullable = false, length = 25)
     private TopicDomain domain = TopicDomain.GRAMMAR;
+
+    /** Coarse top-level classifier: GRAMMAR or LEXICON. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "domain_type", nullable = false, length = 16)
+    private TopicDomainType domainType = TopicDomainType.GRAMMAR;
 
     /** Semantic classifier node the lesson is built from (LEXICON lessons); null otherwise. */
     @Column(name = "semantic_topic_id")

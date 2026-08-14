@@ -9,7 +9,6 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.UserLexemeProgress;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.UserLexemeProgressId;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.SourceOccurrenceRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserCollectionItemRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserLexemeProgressRepository;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
@@ -50,7 +49,7 @@ class LexemePoolServiceTest {
         when(lexemeRepo.findWithDetailsByIdIn(any())).thenReturn(List.of(lexeme));
 
         LexemePoolService service = poolService(lexemeRepo, mock(TopicRepository.class),
-                mock(LexemeFrequencyRepository.class), mock(SourceOccurrenceRepository.class),
+                mock(LexemeFrequencyRepository.class),
                 mock(UserCollectionItemRepository.class), mock(UserLexemeProgressRepository.class));
 
         assertThat(service.resolve(null)).hasSize(1);
@@ -81,11 +80,11 @@ class LexemePoolServiceTest {
         when(progressRepo.findByIdUserId(userId)).thenReturn(List.of(masteredProgress));
 
 LexemePoolService service = poolService(lexemeRepo, mock(TopicRepository.class),
-                mock(LexemeFrequencyRepository.class), mock(SourceOccurrenceRepository.class),
+                mock(LexemeFrequencyRepository.class),
                 mock(UserCollectionItemRepository.class), progressRepo);
 
         PoolCriteria criteria = new PoolCriteria(List.of(), null, null, List.of(), List.of(),
-                null, null, null, userId, 100);
+                null, userId, 100);
         var result = service.resolve(criteria);
         assertThat(result).hasSize(1);
         assertThat(result.get(0).id()).isEqualTo(lexemeNewId);
@@ -131,13 +130,12 @@ LexemePoolService service = poolService(lexemeRepo, mock(TopicRepository.class),
                 .thenReturn(List.of(b1.getId(), b2.getId()));
 
         LexemePoolService service = poolService(lexemeRepo, topicRepo, mock(LexemeFrequencyRepository.class),
-                mock(SourceOccurrenceRepository.class),
                 mock(UserCollectionItemRepository.class), mock(UserLexemeProgressRepository.class));
 
         // poolLimit=6, 2 темы → квота = ceil(6/2)+2 = 5 (не лимитирует в этом случае).
         // Проверяем, что обе темы представлены и квота уважается при лимите 3.
         PoolCriteria tight = new PoolCriteria(List.of(topicA, topicB), null, null,
-                List.of(), List.of(), null, null, null, null, 3);
+                List.of(), List.of(), null, null, 3);
         var result = service.resolve(tight);
 
         int fromA = (int) result.stream().filter(c -> c.posCode().equals("noun")).count();
@@ -175,10 +173,9 @@ LexemePoolService service = poolService(lexemeRepo, mock(TopicRepository.class),
             LexemeRepository lexemeRepo,
             TopicRepository topicRepository,
             LexemeFrequencyRepository freqRepo,
-            SourceOccurrenceRepository occurrenceRepo,
             UserCollectionItemRepository collectionRepo,
             UserLexemeProgressRepository progressRepo) {
-        return new LexemePoolService(lexemeRepo, topicRepository, freqRepo, occurrenceRepo,
+        return new LexemePoolService(lexemeRepo, topicRepository, freqRepo,
                 collectionRepo, progressRepo);
     }
 }

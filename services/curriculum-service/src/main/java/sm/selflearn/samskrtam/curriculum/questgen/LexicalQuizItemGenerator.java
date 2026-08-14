@@ -13,6 +13,7 @@ import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticTopicReposit
 import sm.selflearn.samskrtam.curriculum.model.LearningLevel;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
 import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
+import sm.selflearn.samskrtam.curriculum.model.TopicDomainType;
 import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
 import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemRepository;
 import sm.selflearn.samskrtam.curriculum.repository.TopicRepository;
@@ -102,6 +103,7 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
             topic.setTitleEn(leaf.getNameEn());
             topic.setLearningLevel(SEMANTIC_LEVEL.getOrDefault(leaf.getCode(), LearningLevel.L0));
             topic.setDomain(TopicDomain.LEXICON);
+            topic.setDomainType(TopicDomainType.LEXICON);
             topic.setSemanticTopicId(leaf.getId());
             topic.setEvergreen(false);
             topicRepository.save(topic);

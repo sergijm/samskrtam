@@ -6,8 +6,11 @@ import sm.selflearn.samskrtam.content.dto.DeclensionParadigmPageDto;
 import sm.selflearn.samskrtam.content.model.Gender;
 import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeFrequency;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeFrequencyId;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyClass;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
 
 import java.util.HashSet;
@@ -24,13 +27,16 @@ import static org.mockito.Mockito.when;
 class ParadigmServiceTest {
 
     private LexemeRepository lexemeRepository;
+    private LexemeFrequencyRepository lexemeFrequencyRepository;
     private ParadigmService service;
 
     @BeforeEach
     void setUp() {
         lexemeRepository = mock(LexemeRepository.class);
+        lexemeFrequencyRepository = mock(LexemeFrequencyRepository.class);
         service = new ParadigmService(
-                mock(ParadigmStemRepository.class), mock(ParadigmFormRepository.class), lexemeRepository);
+                mock(ParadigmStemRepository.class), mock(ParadigmFormRepository.class),
+                lexemeRepository, lexemeFrequencyRepository);
     }
 
     private Lexeme lexeme(UUID id, String iast, String deva, LexemeGender gender, String... classCodes) {
@@ -95,5 +101,36 @@ class ParadigmServiceTest {
         assertThat(page.getTotalCount()).isEqualTo(2);
         assertThat(page.getParadigm()).isNotNull();
         assertThat(page.getParadigm().getGender()).isEqualTo(Gender.NEUTER);
+    }
+
+    @Test
+    void aStemMerged_orderedByFrequencyRankAscending() {
+        UUID rareId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID commonId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        when(lexemeRepository.findWithMorphologyByCodeIn(eq(List.of("a-stem-masc", "a-stem-neut"))))
+                .thenReturn(List.of(
+                        lexeme(rareId, "hara", "हर", LexemeGender.MASCULINE, "a-stem-masc"),
+                        lexeme(commonId, "nara", "नर", LexemeGender.MASCULINE, "a-stem-masc")));
+
+        LexemeFrequency common = frequency(commonId, 1);
+        LexemeFrequency rare = frequency(rareId, 50);
+        when(lexemeFrequencyRepository.findBySourceAndLexemeIdIn(eq("SANGRAHA_CORPUS"), anyCollection()))
+                .thenReturn(List.of(common, rare));
+
+        DeclensionParadigmPageDto page0 = service.getParadigmPage("a-stem", 0);
+        DeclensionParadigmPageDto page1 = service.getParadigmPage("a-stem", 1);
+
+        assertThat(page0.getParadigm().getStemIast()).isEqualTo("nara");
+        assertThat(page1.getParadigm().getStemIast()).isEqualTo("hara");
+    }
+
+    private LexemeFrequency frequency(UUID lexemeId, int rank) {
+        LexemeFrequencyId id = new LexemeFrequencyId();
+        id.setLexemeId(lexemeId);
+        id.setSource("SANGRAHA_CORPUS");
+        LexemeFrequency f = new LexemeFrequency();
+        f.setId(id);
+        f.setRank(rank);
+        return f;
     }
 }
