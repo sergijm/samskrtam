@@ -10,6 +10,7 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.MorphologyClassRepository;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
+import sm.selflearn.samskrtam.curriculum.paradigm.DeclensionClassMapper;
 import sm.selflearn.samskrtam.curriculum.repository.TopicRepository;
 
 import java.util.List;
@@ -17,9 +18,12 @@ import java.util.Optional;
 
 /**
  * Наполняет лексикон curriculum существительными, полученными от sangraha-service,
- * для тем склонений (a-stem-masc/neut/fem, i/u/r). Каждая тема с
+ * для тем склонений (a-stem-masc/neut/fem, i/u/r). Одна тема может покрывать
+ * несколько классов основы (например {@code i-u-stems} → i-stem + u-stem, см.
+ * {@link DeclensionClassMapper#topicToClassCodes(String)}): каждая тема с
  * {@code targetItemCount > 0} тянет до этого числа кандидатов того же класса
- * основы и создаёт {@link Lexeme}, привязанные к MorphologyClass с кодом темы.
+ * основы и создаёт {@link Lexeme}, привязанные к MorphologyClass соответствующего
+ * класса.
  */
 @Slf4j
 @Service
@@ -42,21 +46,21 @@ public class DeclensionDataImporter {
         List<Topic> targets = topicRepository.findByTargetItemCountGreaterThan(0);
         int created = 0;
         for (Topic topic : targets) {
-            String classCode = topic.getCode();
-            if (lexemeRepository.countByMorphologyClasses_Code(classCode) > 0) {
-                log.debug("Morphology class {} already has lexemes; skipping {}", classCode, topic.getTitleRu());
-                continue;
+            for (String classCode : DeclensionClassMapper.topicToClassCodes(topic.getCode())) {
+                if (lexemeRepository.countByMorphologyClasses_Code(classCode) > 0) {
+                    log.debug("Morphology class {} already has lexemes; skipping {}", classCode, topic.getTitleRu());
+                    continue;
+                }
+                created += importTopic(topic, classCode);
             }
-            created += importTopic(topic);
         }
         return created;
     }
 
-    private int importTopic(Topic topic) {
-        String classCode = topic.getCode();
+    private int importTopic(Topic topic, String classCode) {
         String stemClass = stemClassFor(classCode);
         if (stemClass == null) {
-            log.debug("Topic {} is not a noun declension class; skipped", classCode);
+            log.debug("Class {} of topic {} is not a noun declension class; skipped", classCode, topic.getCode());
             return 0;
         }
         int target = Math.max(0, topic.getTargetItemCount());
@@ -99,20 +103,32 @@ public class DeclensionDataImporter {
             lexemeRepository.save(lexeme);
             count++;
         }
-        log.info("Imported {} lexemes for topic {} (target={})", count, topic.getTitleEn(), target);
+        log.info("Imported {} lexemes for topic {} class {} (target={})", count, topic.getTitleEn(), classCode, target);
         return count;
     }
 
     // ---- mapping helpers -------------------------------------------------
 
-    /** topic.code → sangraha stemClass (соответствует VowelType регулярного класса). */
-    private String stemClassFor(String code) {
-        return switch (code) {
-            case "a-stem-masc", "a-stem-neut" -> "A_STEM";
+    /** morphology class code → sangraha stemClass (соответствует VowelType регулярного класса). */
+    private String stemClassFor(String classCode) {
+        return switch (classCode) {
+            case "a-stem-masc", "a-stem-neut", "a-stem" -> "A_STEM";
             case "a-stem-fem" -> "AA_STEM";
             case "i-stem" -> "I_STEM";
             case "u-stem" -> "U_STEM";
             case "r-stem" -> "R_STEM";
+            case "in-stem" -> "IN_STEM";
+            case "an-stem" -> "AN_STEM";
+            case "as-stem" -> "AS_STEM";
+            case "ant-stem" -> "ANT_STEM";
+            case "vat-stem" -> "VAT_STEM";
+            case "root-stem" -> "ROOT_STEM";
+            case "o-stem" -> "O_STEM";
+            case "au-stem" -> "AU_STEM";
+            case "is-stem" -> "IS_STEM";
+            case "us-stem" -> "US_STEM";
+            case "ii-stem" -> "II_STEM";
+            case "uu-stem" -> "UU_STEM";
             default -> null;
         };
     }
@@ -122,6 +138,7 @@ public class DeclensionDataImporter {
             case "a-stem-masc" -> Optional.of(LexemeGender.MASCULINE);
             case "a-stem-neut" -> Optional.of(LexemeGender.NEUTER);
             case "a-stem-fem" -> Optional.of(LexemeGender.FEMININE);
+            case "ii-stem", "uu-stem" -> Optional.of(LexemeGender.FEMININE);
             default -> Optional.empty();
         };
     }

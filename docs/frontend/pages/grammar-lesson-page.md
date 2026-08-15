@@ -47,18 +47,30 @@
 
 **Клик на `{nSuccess}/{nAll}`** → открывает `QuestionHistoryDialog` — аналог WordHistoryDialog для грамматических вопросов.
 
-## 2.1а. GrammarProgressGrid (вкладка «Прогресс»)
+## 2.1а. GrammarProgressGrid + GrammarProgressTagSets (вкладка «Прогресс»)
 
-**НОВОЕ.** Заменяет вкладки «По падежам» (`CaseAggregationTable`), «По числам» (`NumberAggregationTable`) и «Подробно» (`GrammarDetailsTable`) одной сводной таблицей: строки — падежи (`CASE_TYPES`, фиксированный порядок), столбцы — числа (`NUMBER_TYPES = ['SINGULAR','DUAL','PLURAL']`, фиксированный порядок). Никаких новых бэкенд-запросов не требуется — источник данных тот же `lesson.questions: GrammarQuestionProgress[]`, что и у старых `CaseAggregationTable`/`NumberAggregationTable`/`GrammarDetailsTable`.
+**НОВОЕ.** Вкладка состоит из двух компонентов: `GrammarProgressGrid` (сводная таблица падеж × число) и `GrammarProgressTagSets` (срезы-строки по падежам, числам и парам падежей) под ней. Заменяет удалённые `CaseAggregationTable`/`NumberAggregationTable`/`GrammarDetailsTable`.
 
-**Агрегация.** Новая функция `aggregateByCaseAndNumber(questions: GrammarQuestionProgress[])` в `utils/grammarAggregation.ts` (рядом с существующими `aggregateByCase`/`aggregateByNumber`, которые остаются — переиспользуются для расчёта заголовков строк/столбцов, см. ниже): группировка вопросов по паре `(caseType, numberType)`, для каждой непустой пары — `{ caseType, numberType, aggregatedProgress: Math.round(learned/total*100), status: aggregatedProgress >= MASTERY_THRESHOLD ? 'MASTERED' : 'LEARNING', totalCombinations, learnedCombinations }` (`learned` — количество вопросов с `score >= MASTERY_THRESHOLD`, идентично существующим `aggregateByCase`/`aggregateByNumber`). Возвращает `Map`/массив, по которому компонент ищет ячейку по ключу `${caseType}:${numberType}`.
+**Данные.** Агрегация прогресса **вычисляется на бэкенде** (`GrammarProgressAggregationService` в quiz-service) и приходит в ответе `GET /api/v2/lessons/grammar/{topicCode}` четырьмя массивами `GrammarLesson`:
+- `caseAggregations: CaseAggregation[]` — по падежам (для заголовков строк и строк срезов);
+- `numberAggregations: NumberAggregation[]` — по числам (заголовки столбцов и строки срезов);
+- `grid: CaseNumberAggregation[]` — по парам `(caseType, numberType)` (ячейки сетки);
+- `pairAggregations: PairAggregation[]` — по парам падежей (`setId` = `progressTagSetId`, `caseRuA/caseRuB` — локализованные названия пары).
 
-**Разметка таблицы:**
+`lesson.questions` / `GrammarQuestionProgress` клиенту больше не отдаются; фронтовая агрегация (`aggregateByCaseAndNumber` и пр.) удалена из `utils/grammarAggregation.ts` — там остались только константы `CASE_TYPES`/`NUMBER_TYPES`.
+
+Семантика агрегатов (см. OpenAPI `schemas/grammar.yaml`): `aggregatedProgress = Math.round(avg(score))` по вопросам группы, `learnedCombinations` — вопросы с `score >= MASTERY_THRESHOLD (90)`, `status` — `NEW` при `avg <= 0`, `LEARNING` при `< 90`, иначе `MASTERED` (`REVIEW` на уровне агрегата не используется). Порядок падежей/чисел/пар фиксирован на бэкенде, совпадает с бывшими фронтовыми `CASE_TYPES`×`NUMBER_TYPES` и порядком `CASE_PAIRS` (GEN_LOC, GEN_ABL, DAT_ACC, INS_ABL, INS_LOC, ACC_LOC, DAT_GEN, ABL_LOC).
+
+**Разметка `GrammarProgressGrid`:**
 - Заголовок первой колонки пуст (угловая ячейка).
-- Первая строка — заголовки столбцов: название числа (`numberRu`/`numberEn` по локали, берётся из `aggregateByNumber(questions)` — переиспользуется только как источник локализованных названий, не для агрегации). **Кликабельно** → запускает/резюмирует квиз `filterScope=NUMBER_ONLY&filterNumberTypes=<numberType>` (тот же переход, что раньше выполняла строка/кнопка `NumberAggregationTable` — контракт не меняется, см. `quest-engine.md` §3.4).
-- Первая колонка каждой строки — название падежа (`caseRu`/`caseEn`, аналогично из `aggregateByCase`). **Кликабельно** → `filterScope=CASE_ONLY&filterCaseType=<caseType>` (контракт бывшей `CaseAggregationTable`, не меняется).
-- Остальные ячейки (падеж×число) — `MiniProgressBar` (см. `components/common/MiniProgressBar.tsx`, уже используется в старых `CaseAggregationTable`/`NumberAggregationTable`) со `value=aggregatedProgress`, `status` для цвета, **без `onClick`** — по прямому решению пользователя клик по самой ячейке ничего не запускает (там нет отдельного смысла «выбрать»: запуск квиза целиком описывается осями заголовков). Ячейка без данных (нет вопросов для этой пары падеж×число в уроке) рендерится пустой/прочерком, без `MiniProgressBar`.
-- Детальная таблица вопросов (бывшая «Подробно», клик `{nSuccess}/{nAll}` → `QuestionHistoryDialog`) в этой вкладке не воспроизводится — при удалении `GrammarDetailsTable` из страницы удаляется и вызов `QuestionHistoryDialog` вместе с состояниями `selectedCaseType`/`selectedNumberType`/`selectedGender`/`questionHistoryDialogVisible`/`sortField`/`sortOrder`, которые существовали только ради неё.
+- Первая строка — заголовки столбцов: `numberRu`/`numberEn` по локали из `numberAggregations`. **Кликабельно** → запускает/резюмирует квиз `filterScope=NUMBER_ONLY&filterNumberTypes=<numberType>` (контракт бывшей `NumberAggregationTable` не меняется, см. `quest-engine.md` §3.4).
+- Первая колонка каждой строки — `caseRu`/`caseEn` из `caseAggregations`. **Кликабельно** → `filterScope=CASE_ONLY&filterCaseType=<caseType>` (контракт бывшей `CaseAggregationTable`, не меняется).
+- Ячейки (падеж×число) — `MiniProgressBar` со `value=aggregatedProgress`, `status` для цвета, **без `onClick`** (клик по самой ячейке ничего не запускает; запуск квиза описывается осями заголовков). Ячейка без данных (нет агрегата для этой пары в `grid`) рендерится прочерком.
+- `GrammarLessonPage` ищет ячейку по ключу `${caseType}:${numberType}` в массиве `grid`.
+
+**Разметка `GrammarProgressTagSets`:** две колонки — слева строки по падежам и числам, справа по парам падежей. Каждая строка: название (`caseRu/caseEn`, `numberRu/numberEn`, `caseRuA ↔ caseRuB` по локали), `MiniProgressBar` (`aggregatedProgress`/`status`), кнопка запуска квиза → `?progressTagSetId=<setId>` (для падежей/чисел `setId` = `caseType`/`numberType`). Компонент рендерится из `caseAggregations`/`numberAggregations`/`pairAggregations`; при пустых массивах не отображается.
+
+- Детальная таблица вопросов (бывшая «Подробно», клик `{nSuccess}/{nAll}` → `QuestionHistoryDialog`) не воспроизводится — при удалении `GrammarDetailsTable` удалены и состояния `selectedCaseType`/`selectedNumberType`/`selectedGender`/`questionHistoryDialogVisible`/`sortField`/`sortOrder`, существовавшие только ради неё.
 
 
 

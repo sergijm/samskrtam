@@ -1,0 +1,321 @@
+﻿@startuml
+
+hide methods
+hide stereotypes
+
+' ============================================================
+' LEMMA
+' Словарная единица.
+' ============================================================
+
+entity lemma {
+    * id : BIGINT <<PK>>
+    --
+    lemma : VARCHAR
+    ' Лемма в нормализованном виде
+
+    declension_pattern_id : SMALLINT <<FK>>
+    ' Модель склонения
+}
+
+
+' ============================================================
+' STEM_CLASS
+' Крупное семейство основ:
+'   A
+'   I_U
+'   LONG_VOWEL
+'   R
+'   CONSONANT
+' ============================================================
+
+entity stem_class {
+    * id : SMALLINT <<PK>>
+    --
+    code : VARCHAR
+    ' Машинный код класса
+
+    name : VARCHAR
+    ' Название класса
+
+    description : TEXT
+    ' Описание
+}
+
+
+' ============================================================
+' DECLENSION_PATTERN
+' Конкретная модель склонения.
+' ============================================================
+
+entity declension_pattern {
+    * id : SMALLINT <<PK>>
+    --
+    stem_class_id : SMALLINT <<FK>>
+    ' Большой класс основы
+
+    code : VARCHAR
+    ' Код модели, например AN_MASC
+
+    name : VARCHAR
+    ' Название модели
+
+    gender : CHAR(1)
+    ' m / f / n
+
+    ending_set_id : SMALLINT <<FK>>
+    ' Набор окончаний
+
+    description : TEXT
+    ' Описание модели
+}
+
+
+' ============================================================
+' STEM
+' Конкретные варианты основы конкретной леммы.
+'
+' Например:
+'   rājan-
+'       STRONG -> rājān-
+'       WEAK   -> rājñ-
+'
+' Для простой основы:
+'       BASE -> deva-
+' ============================================================
+
+entity stem {
+    * id : BIGINT <<PK>>
+    --
+    lemma_id : BIGINT <<FK>>
+    ' Лемма
+
+    grade : VARCHAR
+    ' BASE / STRONG / MIDDLE / WEAK
+
+    value : VARCHAR
+    ' Конкретная форма основы
+
+    is_default : BOOLEAN
+    ' Является ли основной формой
+}
+
+
+' ============================================================
+' GRAMMATICAL_CELL
+' 8 падежей × 3 числа = 24 ячейки.
+' ============================================================
+
+entity grammatical_cell {
+    * id : SMALLINT <<PK>>
+    --
+    case_code : VARCHAR
+    ' nom / acc / ins / dat / abl / gen / loc / voc
+
+    number_code : VARCHAR
+    ' sg / du / pl
+}
+
+
+' ============================================================
+' STEM_RULE
+' Определяет, какая ступень основы нужна в данной ячейке.
+'
+' Например:
+'   AN_MASC + Nom.Sg -> STRONG
+'   AN_MASC + Instr.Sg -> WEAK
+' ============================================================
+
+entity stem_rule {
+    * pattern_id : SMALLINT <<FK>>
+    * cell_id : SMALLINT <<FK>>
+    --
+    grade : VARCHAR
+    ' BASE / STRONG / MIDDLE / WEAK
+
+    priority : SMALLINT
+    ' Приоритет при наличии нескольких правил
+}
+
+
+' ============================================================
+' ENDING_SET
+' Логический набор окончаний.
+' ============================================================
+
+entity ending_set {
+    * id : SMALLINT <<PK>>
+    --
+    code : VARCHAR
+    ' Например A_MASC_ENDINGS
+
+    name : VARCHAR
+    ' Название
+
+    description : TEXT
+    ' Описание
+}
+
+
+' ============================================================
+' ENDING
+' Конкретное морфологическое окончание для ячейки.
+' ============================================================
+
+entity ending {
+    * ending_set_id : SMALLINT <<FK>>
+    * cell_id : SMALLINT <<FK>>
+    --
+    value : VARCHAR
+    ' Окончание
+
+    operation : VARCHAR
+    ' APPEND / ZERO / REPLACE и т.п.
+}
+
+
+' ============================================================
+' STEM_ALTERNATION
+' Правило получения одной ступени основы из другой.
+'
+' Например:
+'   BASE -> STRONG
+'   BASE -> WEAK
+'
+' Используется для продуктивных моделей.
+' ============================================================
+
+entity stem_alternation {
+    * id : BIGINT <<PK>>
+    --
+    pattern_id : SMALLINT <<FK>>
+    ' Модель, в которой действует правило
+
+    from_grade : VARCHAR
+    ' Исходная ступень
+
+    to_grade : VARCHAR
+    ' Результирующая ступень
+
+    operation : VARCHAR
+    ' Операция преобразования
+
+    description : TEXT
+    ' Описание
+
+    priority : SMALLINT
+    ' Порядок применения
+}
+
+
+' ============================================================
+' SPECIAL_RULE
+' Дополнительное морфофонологическое правило.
+' ============================================================
+
+entity special_rule {
+    * id : BIGINT <<PK>>
+    --
+    code : VARCHAR
+    ' Код правила
+
+    rule_type : VARCHAR
+    ' Тип правила
+
+    environment : VARCHAR
+    ' Условие применения
+
+    operation : VARCHAR
+    ' Операция
+
+    priority : SMALLINT
+    ' Порядок применения
+
+    description : TEXT
+    ' Описание
+}
+
+
+' ============================================================
+' PATTERN_RULE
+' Связь модели склонения со специальными правилами.
+' ============================================================
+
+entity pattern_rule {
+    * pattern_id : SMALLINT <<FK>>
+    * rule_id : BIGINT <<FK>>
+    --
+    priority : SMALLINT
+    ' Порядок применения в данном pattern
+}
+
+
+' ============================================================
+' DECLINED_FORM
+'
+' РЕЗУЛЬТАТ склонения конкретной леммы.
+'
+' Одна лемма может иметь до 24 записей:
+'
+'   rājan- + Nom.Sg
+'   rājan- + Acc.Sg
+'   ...
+'
+' Здесь хранится уже ГОТОВАЯ ФОРМА.
+' ============================================================
+
+entity declined_form {
+    * id : BIGINT <<PK>>
+    --
+    lemma_id : BIGINT <<FK>>
+    ' Какая лемма была просклонена
+
+    cell_id : SMALLINT <<FK>>
+    ' Какая грамматическая ячейка
+
+    form : VARCHAR
+    ' Готовая словоформа
+
+    stem_id : BIGINT <<FK>>
+    ' Какой вариант основы был использован
+
+    ending_set_id : SMALLINT <<FK>>
+    ' Какой набор окончаний использовался
+
+    generated_at : TIMESTAMP
+    ' Когда форма была сгенерирована
+
+    generator_version : VARCHAR
+    ' Версия алгоритма, которым получена форма
+}
+
+
+' ============================================================
+' RELATIONSHIPS
+' ============================================================
+
+lemma }o--|| declension_pattern
+
+stem_class ||--o{ declension_pattern
+
+lemma ||--o{ stem
+
+declension_pattern ||--o{ stem_rule
+grammatical_cell ||--o{ stem_rule
+
+ending_set ||--o{ declension_pattern
+ending_set ||--o{ ending
+grammatical_cell ||--o{ ending
+
+declension_pattern ||--o{ stem_alternation
+
+declension_pattern ||--o{ pattern_rule
+special_rule ||--o{ pattern_rule
+
+' Результаты склонения
+lemma ||--o{ declined_form
+grammatical_cell ||--o{ declined_form
+stem ||--o{ declined_form
+ending_set ||--o{ declined_form
+
+@enduml

@@ -65,10 +65,10 @@ const renderTable = (
 
       {/* Paradigm table */}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full border-collapse text-sm" style={{ tableLayout: 'fixed' }}>
           <thead>
             <tr>
-              <th className="text-left p-2 border-bottom-1 border-200 font-semibold" style={{ width: '25%' }}>
+              <th className="text-left p-2 border-bottom-1 border-200 font-semibold">
                 {i18n.language === 'ru' ? 'Падеж' : 'Case'}
               </th>
               {columns.map(num => (

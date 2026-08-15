@@ -12,28 +12,6 @@ export interface VocabularyWordProgress {
   status:       WordStatus;
 }
 
-export interface GrammarQuestionProgress {
-  questionId:     string;
-  textRu:         string;
-  textEn:         string;
-  correctAnswerRu?: string;
-  correctAnswerEn?: string;
-  nSuccess:       number;
-  nAll:           number;
-  score:          number;
-  status:       WordStatus;
-  caseType:       string;
-  caseRu:         string;
-  caseEn:         string;
-  numberType:     string;
-  numberRu:       string;
-  numberEn:       string;
-  gender:         string;
-  genderRu:       string;
-  genderEn:       string;
-  caseEnding:     string | null;
-}
-
 export interface LessonStatusSummary {
   total:        number;
   /** JSON field name is "new" — reserved word in TS, mapped via backend */
@@ -41,6 +19,49 @@ export interface LessonStatusSummary {
   learning:     number;
   mastered:     number;
   reviewDue:    number;
+}
+
+export interface CaseAggregation {
+  caseType: string;
+  caseRu: string;
+  caseEn: string;
+  aggregatedProgress: number;
+  totalCombinations: number;
+  learnedCombinations: number;
+  status: WordStatus;
+}
+
+export interface NumberAggregation {
+  numberType: string;
+  numberRu: string;
+  numberEn: string;
+  aggregatedProgress: number;
+  totalCombinations: number;
+  learnedCombinations: number;
+  status: WordStatus;
+}
+
+export interface CaseNumberAggregation {
+  caseType: string;
+  numberType: string;
+  aggregatedProgress: number;
+  totalCombinations: number;
+  learnedCombinations: number;
+  status: WordStatus;
+}
+
+export interface PairAggregation {
+  setId: string;
+  caseTypeA: string;
+  caseTypeB: string;
+  caseRuA: string;
+  caseRuB: string;
+  caseEnA: string;
+  caseEnB: string;
+  aggregatedProgress: number;
+  totalCombinations: number;
+  learnedCombinations: number;
+  status: WordStatus;
 }
 
 export interface VocabularyLesson {
@@ -65,8 +86,11 @@ export interface GrammarLesson {
   totalQuestions:   number;
   learnedQuestions: number;
   progressPercent:  number;
-    statusSummary?:   LessonStatusSummary;
-  items?:           GrammarQuestionProgress[];
+  statusSummary?:   LessonStatusSummary;
+  caseAggregations?: CaseAggregation[];
+  numberAggregations?: NumberAggregation[];
+  grid?:            CaseNumberAggregation[];
+  pairAggregations?: PairAggregation[];
 }
 
 export interface AnswerHistoryEntry {

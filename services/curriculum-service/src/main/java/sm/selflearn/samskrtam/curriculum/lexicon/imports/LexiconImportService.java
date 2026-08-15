@@ -212,8 +212,10 @@ public class LexiconImportService {
                         : g == LexemeGender.FEMININE ? "a-stem-fem" : "a-stem-masc";
             }
             case "AA_STEM" -> "a-stem-fem";
-            case "I_STEM", "II_STEM" -> "i-stem";
-            case "U_STEM", "UU_STEM" -> "u-stem";
+            case "I_STEM" -> "i-stem";
+            case "II_STEM" -> "ii-stem";
+            case "U_STEM" -> "u-stem";
+            case "UU_STEM" -> "uu-stem";
             case "R_STEM" -> "r-stem";
             default -> null;
         };

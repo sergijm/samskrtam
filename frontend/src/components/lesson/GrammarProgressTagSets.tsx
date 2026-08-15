@@ -3,15 +3,17 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from 'primereact/button';
 import { MiniProgressBar } from '../common/MiniProgressBar';
-import {
-  aggregateByCase,
-  aggregateByNumber,
-  aggregateByCasePair,
-} from '../../utils/grammarAggregation';
-import type { GrammarQuestionProgress, WordStatus } from '../../types/lesson';
+import type {
+  CaseAggregation,
+  NumberAggregation,
+  PairAggregation,
+  WordStatus,
+} from '../../types/lesson';
 
 interface Props {
-  items: GrammarQuestionProgress[];
+  cases: CaseAggregation[];
+  numbers: NumberAggregation[];
+  pairs: PairAggregation[];
   quizSlug: string;
 }
 
@@ -28,16 +30,15 @@ interface RowProgress {
  * the right one holds the per-case-pair rows. Each row is a single line:
  * name (left), mini progress bar, then a start-quiz button (double chevron).
  * The button opens a quiz filtered by the corresponding progressTagSetId.
+ *
+ * Data comes pre-aggregated from the backend (`GrammarLesson` → this page →
+ * `caseAggregations`/`numberAggregations`/`pairAggregations`).
  */
-const GrammarProgressTagSets: React.FC<Props> = ({ items, quizSlug }) => {
+const GrammarProgressTagSets: React.FC<Props> = ({ cases, numbers, pairs, quizSlug }) => {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
 
-  if (!items || items.length === 0) return null;
-
-  const cases = aggregateByCase(items);
-  const numbers = aggregateByNumber(items);
-  const pairs = aggregateByCasePair(items);
+  if (cases.length === 0 && numbers.length === 0 && pairs.length === 0) return null;
 
   const startQuiz = (setId: string) => {
     navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${setId}`);

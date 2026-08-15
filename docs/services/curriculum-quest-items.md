@@ -146,7 +146,9 @@ curriculum:
       pairs-per-item: 5
 ```
 
-Алгоритм на один `Topic` (связан с конкретным `morphologyClassCode` через код темы, например
+Алгоритм на один `Topic` (тема связана с одним или несколькими `morphologyClassCode` через общий
+маппинг `DeclensionClassMapper.topicToClassCodes` — одна тема может покрывать несколько классов
+основы, например `i-u-stems` → `i-stem` + `u-stem`; при 1:1 код темы совпадает с классом, например
 `a-stem-masc`):
 1. Выбрать все `Lexeme`, у которых есть связь с этим `morphologyClassCode` (`curriculum.lexeme_morphology`).
 2. Для каждой леммы и каждой пары (падеж, число) из парадигмы класса основы — построить

@@ -10,10 +10,13 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
 import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
+import sm.selflearn.samskrtam.curriculum.paradigm.DeclensionClassMapper;
+import sm.selflearn.samskrtam.curriculum.paradigm.ParadigmFormRepository;
 import sm.selflearn.samskrtam.curriculum.questgen.morphology.CaseType;
 import sm.selflearn.samskrtam.curriculum.questgen.morphology.NumberType;
 import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
 import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemRepository;
+import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.quest.GrammarQuestItemTypes;
 import sm.selflearn.samskrtam.quest.QuestItemType;
 import sm.selflearn.samskrtam.quest.declension.CaseRecognitionPayload;
@@ -37,18 +40,18 @@ import java.util.UUID;
  * {@code DECLENSION_FORM_CHOICE}, {@code CASE_RECOGNITION},
  * {@code DECLENSION_MATCH}) for the regular noun topics of the curriculum.
  *
- * <p>The topic slug maps to one or more {@code morphology_class.code}s (the
- * merged {@code a-stem} lesson covers both {@code a-stem-masc} and
- * {@code a-stem-neut}, {@code i-u-stems} covers {@code i-stem}/{@code u-stem},
- * {@code r-stems} covers {@code r-stem}); every lexeme bound to one of those
- * classes is a candidate. No more than {@value #MAX_LEXEMES} lexemes are used
- * per topic (random sample when there are more), and for each lexeme all
- * possible questions are composed from its paradigm cells — see
- * curriculum-quest-items.md §4.
+ * <p>The topic slug maps to one or more {@code morphology_class.code}s via
+ * {@code DeclensionClassMapper} (the merged {@code a-stem} lesson covers both
+ * {@code a-stem-masc} and {@code a-stem-neut}, {@code i-u-stems} covers
+ * {@code i-stem}/{@code u-stem}, {@code r-stems} covers {@code r-stem}); every
+ * lexeme bound to one of those classes is a candidate. No more than
+ * {@value #MAX_LEXEMES} lexemes are used per topic (random sample when there
+ * are more), and for each lexeme all possible questions are composed from its
+ * paradigm cells — see curriculum-quest-items.md §4.
  *
- * <p>Word forms are composed from the lemma and the canonical paradigm endings
- * ({@link DeclensionNounParadigmComposer}, ported from
- * {@code content.case_endings}). Every produced row carries a {@code progress_tag}
+ * <p>Paradigm cells are read from {@code curriculum.declension_form}
+ * ({@link ParadigmFormRepository}), keyed by {@code lexeme_id}; nothing is
+ * composed at generator time. Every produced row carries a {@code progress_tag}
  * ({@code caseType|numberType|gender}; {@code DECLENSION_MATCH} takes the first
  * pair and {@code gender=UNSPECIFIED}), see migration V13.
  */
@@ -80,21 +83,17 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
             Map.entry("DUAL", "двойственного"),
             Map.entry("PLURAL", "множественного"));
 
-    /** Topic slug → the morphology classes the topic's declension is built from. */
-    private static final Map<String, List<String>> SLUG_CLASS_CODES = Map.ofEntries(
-            Map.entry("a-stem", List.of("a-stem-masc", "a-stem-neut")), // merged lesson (V10)
-            Map.entry("a-stem-fem", List.of("a-stem-fem")),
-            Map.entry("i-u-stems", List.of("i-stem", "u-stem")),
-            Map.entry("r-stems", List.of("r-stem"))
-    );
-
     private final LexemeRepository lexemeRepository;
     private final QuestItemRepository questItemRepository;
+    private final ParadigmFormRepository paradigmFormRepository;
     private final DeclensionMatchProperties matchProperties;
     private final ObjectMapper objectMapper;
 
-    /** One paradigm cell: (case, number) plus the composed word form. */
-    private record Cell(CaseType caseType, NumberType numberType, DeclensionNounParadigmComposer.Form form) {
+    /** One paradigm cell: (case, number) plus the word form. */
+    private record Cell(CaseType caseType, NumberType numberType, Form form) {
+    }
+
+    private record Form(String iast, String devanagari) {
     }
 
 
@@ -106,8 +105,8 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
     @Override
     @Transactional
     public int generate(Topic topic) {
-        List<String> classCodes = SLUG_CLASS_CODES.get(topic.getCode());
-        if (classCodes == null) {
+        List<String> classCodes = DeclensionClassMapper.topicToClassCodes(topic.getCode());
+        if (classCodes.isEmpty()) {
             return 0;
         }
 
@@ -366,10 +365,15 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
     }
 
     private List<Cell> cells(String classCode, Lexeme lexeme) {
-        return DeclensionNounParadigmComposer.compose(
-                        classCode, lexeme.getLemmaIast(), lexeme.getLemmaDevanagari(), lexeme.getGender())
-                .stream()
-                .map(c -> new Cell(c.caseType(), c.numberType(), c.form()))
+        VowelType vowelType = DeclensionClassMapper.toVowelType(classCode);
+        if (vowelType == null) {
+            return List.of();
+        }
+        return paradigmFormRepository.findByLemmaIastAndVowelType(lexeme.getLemmaIast(), vowelType).stream()
+                .map(f -> new Cell(
+                        CaseType.valueOf(f.getCaseType().name()),
+                        NumberType.valueOf(f.getNumberType().name()),
+                        new Form(f.getFormIast(), f.getFormDevanagari())))
                 .toList();
     }
 
@@ -423,7 +427,8 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
             case "a-stem-fem" -> LexemeGender.FEMININE;
             case "i-stem", "u-stem" ->
                     lexemeGender == LexemeGender.NEUTER ? LexemeGender.NEUTER : LexemeGender.MASCULINE;
-            case "r-stem" ->
+            case "r-stem", "in-stem", "an-stem", "as-stem", "ant-stem",
+                    "vat-stem", "root-stem", "o-stem", "au-stem", "is-stem", "us-stem" ->
                     lexemeGender == LexemeGender.FEMININE ? LexemeGender.FEMININE : LexemeGender.MASCULINE;
             default -> lexemeGender == null ? LexemeGender.UNSPECIFIED : lexemeGender;
         };

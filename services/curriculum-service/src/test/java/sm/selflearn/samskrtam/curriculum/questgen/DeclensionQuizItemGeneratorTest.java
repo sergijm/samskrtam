@@ -3,17 +3,23 @@ package sm.selflearn.samskrtam.curriculum.questgen;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import sm.selflearn.samskrtam.content.model.CaseType;
+import sm.selflearn.samskrtam.content.model.NumberType;
+import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
 import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
+import sm.selflearn.samskrtam.curriculum.paradigm.ParadigmForm;
+import sm.selflearn.samskrtam.curriculum.paradigm.ParadigmFormRepository;
 import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
 import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemRepository;
 import sm.selflearn.samskrtam.quest.declension.CaseRecognitionPayload;
 import sm.selflearn.samskrtam.quest.declension.DeclensionFormPayload;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -36,6 +43,7 @@ class DeclensionQuizItemGeneratorTest {
 
     private LexemeRepository lexemeRepository;
     private QuestItemRepository questItemRepository;
+    private ParadigmFormRepository paradigmFormRepository;
     private ObjectMapper objectMapper;
     private DeclensionQuizItemGenerator generator;
 
@@ -43,13 +51,14 @@ class DeclensionQuizItemGeneratorTest {
     void setUp() {
         lexemeRepository = mock(LexemeRepository.class);
         questItemRepository = mock(QuestItemRepository.class);
+        paradigmFormRepository = mock(ParadigmFormRepository.class);
         objectMapper = new ObjectMapper();
 
         DeclensionMatchProperties properties = new DeclensionMatchProperties();
         properties.setPairsPerItem(5);
 
         generator = new DeclensionQuizItemGenerator(
-                lexemeRepository, questItemRepository, properties, objectMapper);
+                lexemeRepository, questItemRepository, paradigmFormRepository, properties, objectMapper);
     }
 
     private Topic topic(String code) {
@@ -75,6 +84,47 @@ class DeclensionQuizItemGeneratorTest {
         return l;
     }
 
+    /** Full 24-cell paradigm (8 cases x 3 numbers), forms taken from a-stem-masc canonical endings. */
+    private List<ParadigmForm> aStemParadigm(String lemmaIast) {
+        List<ParadigmForm> forms = new ArrayList<>();
+        final String lemma = lemmaIast;
+        for (CaseType caseType : CaseType.values()) {
+            for (NumberType numberType : NumberType.values()) {
+                ParadigmForm f = new ParadigmForm();
+                f.setLemmaIast(lemma);
+                f.setVowelType(VowelType.A_STEM);
+                f.setCaseType(caseType);
+                f.setNumberType(numberType);
+                f.setFormIast(formIast(caseType, numberType));
+                f.setFormDevanagari("नर");
+                forms.add(f);
+            }
+        }
+        return forms;
+    }
+
+    private String formIast(CaseType caseType, NumberType numberType) {
+        if (numberType != NumberType.SINGULAR) {
+            return "nara-" + caseType.name().toLowerCase() + "-" + numberType.name().toLowerCase();
+        }
+        return switch (caseType) {
+            case NOMINATIVE -> "naraḥ";
+            case ACCUSATIVE -> "naram";
+            case INSTRUMENTAL -> "narena";
+            case DATIVE -> "narāya";
+            case ABLATIVE -> "narāt";
+            case GENITIVE -> "narasya";
+            case LOCATIVE -> "nare";
+            case VOCATIVE -> "nara";
+        };
+    }
+
+    /** Stubs the stored paradigm of an a-stem lemma. */
+    private void stubParadigm(Lexeme lexeme) {
+        when(paradigmFormRepository.findByLemmaIastAndVowelType(lexeme.getLemmaIast(), VowelType.A_STEM))
+                .thenReturn(aStemParadigm(lexeme.getLemmaIast()));
+    }
+
     @Test
     void supportedDomain_returnsGrammar() {
         assertThat(generator.isDomainSupported(TopicDomain.NOMINAL_MORPHOLOGY)).isTrue();
@@ -82,8 +132,10 @@ class DeclensionQuizItemGeneratorTest {
 
     @Test
     void generate_aStemTopic_createsAllFourTypes() {
+        Lexeme nara = lexeme("nara", "नर", LexemeGender.MASCULINE, "a-stem-masc");
         when(lexemeRepository.findWithMorphologyByCodeIn(anyCollection()))
-                .thenReturn(List.of(lexeme("nara", "नर", LexemeGender.MASCULINE, "a-stem-masc")));
+                .thenReturn(List.of(nara));
+        stubParadigm(nara);
         when(questItemRepository.saveAll(anyList())).thenAnswer(invocation -> {
             List<QuestItem> items = invocation.getArgument(0);
             items.forEach(item -> item.setId(UUID.randomUUID()));
@@ -112,9 +164,11 @@ class DeclensionQuizItemGeneratorTest {
     }
 
     @Test
-    void generate_aStemMasculine_composesCanonicalForms() throws Exception {
+    void generate_aStemMasculine_usesStoredForms() throws Exception {
+        Lexeme nara = lexeme("nara", "नर", LexemeGender.MASCULINE, "a-stem-masc");
         when(lexemeRepository.findWithMorphologyByCodeIn(anyCollection()))
-                .thenReturn(List.of(lexeme("nara", "नर", LexemeGender.MASCULINE, "a-stem-masc")));
+                .thenReturn(List.of(nara));
+        stubParadigm(nara);
         when(questItemRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
         generator.generate(topic("a-stem"));
@@ -133,19 +187,16 @@ class DeclensionQuizItemGeneratorTest {
         assertThat(payloadsByCell.get("GENITIVE:SINGULAR").correctFormIast()).isEqualTo("narasya");
         assertThat(payloadsByCell.get("LOCATIVE:SINGULAR").correctFormIast()).isEqualTo("nare");
         assertThat(payloadsByCell.get("VOCATIVE:SINGULAR").correctFormIast()).isEqualTo("nara");
-        assertThat(payloadsByCell.get("NOMINATIVE:PLURAL").correctFormIast()).isEqualTo("narāḥ");
-        assertThat(payloadsByCell.get("INSTRUMENTAL:PLURAL").correctFormIast()).isEqualTo("naraiḥ");
-        assertThat(payloadsByCell.get("LOCATIVE:PLURAL").correctFormIast()).isEqualTo("nareṣu");
-        assertThat(payloadsByCell.get("DATIVE:PLURAL").correctFormIast()).isEqualTo("narebhyaḥ");
 
-        assertThat(payloadsByCell.get("NOMINATIVE:SINGULAR").correctFormDevanagari()).isEqualTo("नरः");
-        assertThat(payloadsByCell.get("INSTRUMENTAL:SINGULAR").correctFormDevanagari()).isEqualTo("नरेन");
+        assertThat(payloadsByCell.get("NOMINATIVE:SINGULAR").correctFormDevanagari()).isEqualTo("नर");
     }
 
     @Test
     void generate_setsProgressTagOnAllItems() throws Exception {
+        Lexeme nara = lexeme("nara", "नर", LexemeGender.MASCULINE, "a-stem-masc");
         when(lexemeRepository.findWithMorphologyByCodeIn(anyCollection()))
-                .thenReturn(List.of(lexeme("nara", "नर", LexemeGender.MASCULINE, "a-stem-masc")));
+                .thenReturn(List.of(nara));
+        stubParadigm(nara);
         when(questItemRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
         generator.generate(topic("a-stem"));
@@ -168,9 +219,16 @@ class DeclensionQuizItemGeneratorTest {
 
     @Test
     void generate_ambiguousFormAcrossGenders_genderRequiredTrue() throws Exception {
-        when(lexemeRepository.findWithMorphologyByCodeIn(anyCollection())).thenReturn(List.of(
-                lexeme("agni", "अग्नि", LexemeGender.MASCULINE, "i-stem"),
-                lexeme("agni", "अग्नि", LexemeGender.NEUTER, "i-stem")));
+        // Two i-stem lemmas whose instrumental singular is the shared form "agninā";
+        // nominative singular differs, so only the shared form needs gender disambiguation.
+        Lexeme agniMasc = lexeme("agni", "अग्नि", LexemeGender.MASCULINE, "i-stem");
+        Lexeme variNeut = lexeme("vāri", "वारि", LexemeGender.NEUTER, "i-stem");
+        when(lexemeRepository.findWithMorphologyByCodeIn(anyCollection()))
+                .thenReturn(List.of(agniMasc, variNeut));
+        when(paradigmFormRepository.findByLemmaIastAndVowelType("agni", VowelType.I_STEM))
+                .thenReturn(iStemParadigm("agni", "agniḥ"));
+        when(paradigmFormRepository.findByLemmaIastAndVowelType("vāri", VowelType.I_STEM))
+                .thenReturn(iStemParadigm("vāri", "vāri"));
         when(questItemRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
         generator.generate(topic("i-u-stems"));
@@ -200,6 +258,7 @@ class DeclensionQuizItemGeneratorTest {
         List<Lexeme> many = java.util.stream.IntStream.range(0, 12)
                 .mapToObj(i -> lexeme("nara" + i, "नर", LexemeGender.MASCULINE, "a-stem-masc"))
                 .toList();
+        many.forEach(this::stubParadigm);
         when(lexemeRepository.findWithMorphologyByCodeIn(anyCollection())).thenReturn(many);
         when(questItemRepository.saveAll(anyList())).thenAnswer(invocation -> {
             List<QuestItem> items = invocation.getArgument(0);
@@ -209,6 +268,28 @@ class DeclensionQuizItemGeneratorTest {
 
         // 10 lexemes * (24 + 24 + 24 + 5) items each
         assertThat(generator.generate(topic("a-stem"))).isEqualTo(10 * 77);
+    }
+
+    /** i-stem paradigm: instrumental singular identical across lemmas, nominative singular differs. */
+    private List<ParadigmForm> iStemParadigm(String lemmaIast, String nominativeSingular) {
+        List<ParadigmForm> forms = new ArrayList<>();
+        for (CaseType caseType : CaseType.values()) {
+            for (NumberType numberType : NumberType.values()) {
+                ParadigmForm f = new ParadigmForm();
+                f.setLemmaIast(lemmaIast);
+                f.setVowelType(VowelType.I_STEM);
+                f.setCaseType(caseType);
+                f.setNumberType(numberType);
+                String form = (caseType == CaseType.INSTRUMENTAL && numberType == NumberType.SINGULAR)
+                        ? "agninā"
+                        : (caseType == CaseType.NOMINATIVE && numberType == NumberType.SINGULAR)
+                                ? nominativeSingular
+                                : "agni-" + caseType.name().toLowerCase() + "-" + numberType.name().toLowerCase();
+                f.setFormIast(form);
+                forms.add(f);
+            }
+        }
+        return forms;
     }
 
     // --- helpers ---

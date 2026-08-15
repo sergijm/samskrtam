@@ -132,10 +132,14 @@ class LexiconImportServiceTest {
                 .isEqualTo("a-stem-fem");
         assertThat(LexiconImportService.mapMorphologyCode("FEMININE", "AA_STEM"))
                 .isEqualTo("a-stem-fem");
-        assertThat(LexiconImportService.mapMorphologyCode("MASCULINE", "II_STEM"))
+        assertThat(LexiconImportService.mapMorphologyCode("MASCULINE", "I_STEM"))
                 .isEqualTo("i-stem");
-        assertThat(LexiconImportService.mapMorphologyCode("MASCULINE", "UU_STEM"))
+        assertThat(LexiconImportService.mapMorphologyCode("MASCULINE", "II_STEM"))
+                .isEqualTo("ii-stem");
+        assertThat(LexiconImportService.mapMorphologyCode("MASCULINE", "U_STEM"))
                 .isEqualTo("u-stem");
+        assertThat(LexiconImportService.mapMorphologyCode("MASCULINE", "UU_STEM"))
+                .isEqualTo("uu-stem");
         assertThat(LexiconImportService.mapMorphologyCode("MASCULINE", "R_STEM"))
                 .isEqualTo("r-stem");
         assertThat(LexiconImportService.mapMorphologyCode("MASCULINE", null)).isNull();

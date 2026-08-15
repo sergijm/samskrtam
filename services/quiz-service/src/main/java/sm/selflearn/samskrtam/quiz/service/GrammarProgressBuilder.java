@@ -16,6 +16,7 @@ import sm.selflearn.samskrtam.quiz.repository.QuizItemScoreRepository;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Строит полную GrammarLesson на основе основ (DeclensionStemDto)
@@ -35,6 +36,7 @@ public class GrammarProgressBuilder {
     private final QuizItemScoreRepository quizItemScoreRepository;
     private final ContentClient contentClient;
     private final GrammarQuestionProgressFactory progressFactory;
+    private final GrammarProgressAggregationService aggregationService;
 
     /**
      * Основной метод: строит GrammarLesson для заданного slug.
@@ -174,7 +176,16 @@ private Mono<GrammarQuestionProgress> buildGroupProgress(
         lesson.setLearnedQuestions(learned);
         lesson.setProgressPercent(distinctCells > 0 ? (float) learned / distinctCells * 100f : 0f);
         lesson.setStatusSummary(new LessonStatusSummary(distinctCells, newCount, learning, mastered, reviewDue));
-        lesson.setItems(deduplicated);
+
+        List<GrammarProgressAggregationService.ItemAgg> aggInput = deduplicated.stream()
+                .map(GrammarProgressAggregationService::from)
+                .collect(Collectors.toList());
+        GrammarProgressAggregationService.GrammarProgressAggregations aggregations =
+                aggregationService.aggregate(aggInput);
+        lesson.setCaseAggregations(aggregations.caseAggregations());
+        lesson.setNumberAggregations(aggregations.numberAggregations());
+        lesson.setGrid(aggregations.grid());
+        lesson.setPairAggregations(aggregations.pairAggregations());
         return lesson;
     }
 }

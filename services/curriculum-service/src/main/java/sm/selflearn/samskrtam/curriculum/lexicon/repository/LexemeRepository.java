@@ -50,6 +50,9 @@ public interface LexemeRepository extends JpaRepository<Lexeme, UUID> {
 
     List<Lexeme> findByLemmaIastStartingWith(String prefix);
 
+    /** Lexemes whose lemma IAST is exactly one of the given values (e.g. suppletive pronouns). */
+    List<Lexeme> findByLemmaIastIn(Collection<String> lemmaIasts);
+
     List<Lexeme> findByMorphologyClasses_Code(String morphologyClassCode);
 
     long countByMorphologyClasses_Code(String morphologyClassCode);

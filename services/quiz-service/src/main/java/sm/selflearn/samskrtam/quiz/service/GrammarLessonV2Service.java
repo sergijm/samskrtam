@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.quiz.dto.*;
-import sm.selflearn.samskrtam.quiz.localization.CaseNumberGenderLocalizer;
 import sm.selflearn.samskrtam.quiz.model.ItemType;
 import sm.selflearn.samskrtam.quiz.model.QuizItemScore;
 import sm.selflearn.samskrtam.quiz.repository.QuizItemScoreRepository;
@@ -18,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Builds a grammar lesson (progress grid) for a curriculum topic (API v2).
@@ -35,9 +35,13 @@ public class GrammarLessonV2Service {
     private record TagInfo(String itemType, String gender, String caseType,
                            String numberType, String formIast) {}
 
+    private record TagProgress(String caseType, String numberType,
+                               int score, WordStatus status) {}
+
     private final CurriculumClient curriculumClient;
     private final QuizItemScoreRepository quizItemScoreRepository;
     private final WordStatusResolver wordStatusResolver;
+    private final GrammarProgressAggregationService aggregationService;
 
     public Mono<GrammarLesson> build(String topicCode, UUID userId) {
         return curriculumClient.fetchTopics(null, null)
@@ -53,7 +57,7 @@ public class GrammarLessonV2Service {
                 .flatMap(items -> {
                     Map<String, TagInfo> metadata = extractTags(items);
                     if (userId == null || metadata.isEmpty()) {
-                        return Mono.just(emptyLesson(topic, metadata.size(), metadata));
+                        return Mono.just(emptyLesson(topic, metadata));
                     }
                     ItemType itemType = resolveItemType(metadata);
                     List<String> tags = List.copyOf(metadata.keySet());
@@ -64,18 +68,22 @@ public class GrammarLessonV2Service {
                 });
     }
 
-    private GrammarLesson emptyLesson(TopicDto topic, int total, Map<String, TagInfo> metadata) {
-        List<GrammarQuestionProgress> items = new ArrayList<>();
+    private GrammarLesson emptyLesson(TopicDto topic, Map<String, TagInfo> metadata) {
+        List<TagProgress> progress = new ArrayList<>();
         for (var entry : metadata.entrySet()) {
-            items.add(toProgress(entry.getKey(), entry.getValue(), null, WordStatus.NEW));
+            TagInfo info = entry.getValue();
+            progress.add(new TagProgress(info.caseType(), info.numberType(),
+                    0, WordStatus.NEW));
         }
-        return populate(topic, total, items, new LessonStatusSummary(total, total, 0, 0, 0), 0, 0f);
+        LessonStatusSummary summary = new LessonStatusSummary(metadata.size(),
+                metadata.size(), 0, 0, 0);
+        return populate(topic, progress, summary, 0, 0f);
     }
 
     private GrammarLesson assemble(TopicDto topic, Map<String, TagInfo> metadata,
                                     Map<String, QuizItemScore> scoresMap) {
         int newCount = 0, learning = 0, mastered = 0, reviewDue = 0;
-        List<GrammarQuestionProgress> items = new ArrayList<>();
+        List<TagProgress> progress = new ArrayList<>();
 
         Instant now = Instant.now();
         for (var entry : metadata.entrySet()) {
@@ -90,29 +98,40 @@ public class GrammarLessonV2Service {
                 case MASTERED -> mastered++;
                 case REVIEW -> reviewDue++;
             }
-            items.add(toProgress(tag, info, score, status));
+            progress.add(new TagProgress(info.caseType(), info.numberType(),
+                    score != null ? score.getScore() : 0, status));
         }
 
         int total = metadata.size();
         int learned = mastered + reviewDue;
-        return populate(topic, total, items,
+        return populate(topic, progress,
                 new LessonStatusSummary(total, newCount, learning, mastered, reviewDue),
                 learned, total > 0 ? (float) learned / total * 100f : 0f);
     }
 
-    private GrammarLesson populate(TopicDto topic, int total, List<GrammarQuestionProgress> items,
+    private GrammarLesson populate(TopicDto topic, List<TagProgress> progress,
                                     LessonStatusSummary summary, int learned, float pct) {
+        List<GrammarProgressAggregationService.ItemAgg> items = progress.stream()
+                .map(p -> new GrammarProgressAggregationService.ItemAgg(
+                        p.caseType(), p.numberType(), p.score()))
+                .collect(Collectors.toList());
+        GrammarProgressAggregationService.GrammarProgressAggregations aggregations =
+                aggregationService.aggregate(items);
+
         GrammarLesson l = new GrammarLesson();
         l.setLessonId(topic.id());
         l.setType("DECLENSIONS");
         l.setTitleRu(topic.titleRu());
         l.setTitleEn(topic.titleEn());
         l.setDifficulty(topic.learningLevel());
-        l.setTotalQuestions(total);
+        l.setTotalQuestions(progress.size());
         l.setLearnedQuestions(learned);
         l.setProgressPercent(pct);
         l.setStatusSummary(summary);
-        l.setItems(items);
+        l.setCaseAggregations(aggregations.caseAggregations());
+        l.setNumberAggregations(aggregations.numberAggregations());
+        l.setGrid(aggregations.grid());
+        l.setPairAggregations(aggregations.pairAggregations());
         return l;
     }
 
@@ -157,43 +176,6 @@ public class GrammarLessonV2Service {
             }
         }
         return ItemType.DECLENSION_FORM;
-    }
-
-    private GrammarQuestionProgress toProgress(String tag, TagInfo info,
-                                                QuizItemScore score, WordStatus status) {
-        String caseType = info.caseType();
-        String numberType = info.numberType();
-        String gender = info.gender() != null ? info.gender() : "UNSPECIFIED";
-
-        GrammarQuestionProgress p = new GrammarQuestionProgress();
-        p.setQuestionId(UUID.nameUUIDFromBytes(tag.getBytes()));
-        p.setTextRu(contentLabel("ru", caseType, numberType, info));
-        p.setTextEn(contentLabel("en", caseType, numberType, info));
-        p.setCaseType(caseType);
-        p.setCaseRu(CaseNumberGenderLocalizer.caseTypeRu(caseType));
-        p.setCaseEn(CaseNumberGenderLocalizer.caseTypeEn(caseType));
-        p.setNumberType(numberType);
-        p.setNumberRu(CaseNumberGenderLocalizer.numberTypeRu(numberType));
-        p.setNumberEn(CaseNumberGenderLocalizer.numberTypeEn(numberType));
-        p.setGender(gender);
-        p.setGenderRu(CaseNumberGenderLocalizer.genderRu(gender));
-        p.setGenderEn(CaseNumberGenderLocalizer.genderEn(gender));
-        p.setScore(score != null ? score.getScore() : 0);
-        p.setStatus(status);
-        return p;
-    }
-
-    private String contentLabel(String lang, String caseType, String numberType, TagInfo info) {
-        String caseName = "ru".equals(lang)
-                ? CaseNumberGenderLocalizer.caseTypeRu(caseType)
-                : CaseNumberGenderLocalizer.caseTypeEn(caseType);
-        String numberName = "ru".equals(lang)
-                ? CaseNumberGenderLocalizer.numberTypeRu(numberType)
-                : CaseNumberGenderLocalizer.numberTypeEn(numberType);
-        if (caseName != null || numberName != null) {
-            return (caseName != null ? caseName : "") + ", " + (numberName != null ? numberName : "");
-        }
-        return info.formIast() != null ? info.formIast() : "?";
     }
 
     private <T> T parse(String json, Class<T> type) {

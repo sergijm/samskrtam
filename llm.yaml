@@ -8,7 +8,7 @@ llm:
     deepseek-v4-pro:
       base-url: https://api.aitunnel.ru/v1
       api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
-      max-completion-tokens: 64000
+      max-completion-tokens: 128000
 
     # ================================================
     # ТОП-5 ФЛАГМАНСКИХ МОДЕЛЕЙ
@@ -31,10 +31,29 @@ llm:
       base-url: https://api.aitunnel.ru/v1
       api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
       max-completion-tokens: 64000
+
     qwen3.7-plus:
       base-url: https://api.aitunnel.ru/v1
       api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
       max-completion-tokens: 65000  # Максимальный вывод модели [citation:11]
+
+
+    # ---------------------------------------
+    gemini-3.5-flash:
+      base-url: https://api.aitunnel.ru/v1
+      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      max-completion-tokens: 65000
+
+    gemini-3.6-flash:
+      base-url: https://api.aitunnel.ru/v1
+      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      max-completion-tokens: 65000
+
+    gemini-3.7-flash:
+      base-url: https://api.aitunnel.ru/v1
+      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      max-completion-tokens: 65000
+
 
     # ================================================
     # ТОП-5 ДЕШЕВЫХ МОДЕЛЕЙ
@@ -49,11 +68,12 @@ llm:
       api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
       
       max-completion-tokens: 4096
-    gpt-5-luna:
+
+    gpt-5.6-luna:
       base-url: https://api.aitunnel.ru/v1
       api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
-      
-      max-completion-tokens: 8192
+      max-completion-tokens: 128000
+
     gpt-5-mini:
       base-url: https://api.aitunnel.ru/v1
       api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk

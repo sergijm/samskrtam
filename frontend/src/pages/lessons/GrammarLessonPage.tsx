@@ -11,11 +11,6 @@ import GrammarProgressTagSets from '../../components/lesson/GrammarProgressTagSe
 import DeclensionExamplesPanel from '../../components/lesson/DeclensionExamplesPanel';
 import DeclensionEndingsReferenceTable from '../../components/lesson/DeclensionEndingsReferenceTable';
 import DeclensionEndingWordsTable from '../../components/lesson/DeclensionEndingWordsTable';
-import {
-  aggregateByCaseAndNumber,
-  aggregateByCase,
-  aggregateByNumber,
-} from '../../utils/grammarAggregation';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { Skeleton } from 'primereact/skeleton';
 import { useDeclensionParadigm } from '../../hooks/useLessons';
@@ -170,14 +165,17 @@ const GrammarLessonPage = () => {
               </TabPanel>
               <TabPanel header={i18n.language === 'ru' ? 'Прогресс' : 'Progress'}>
                 <GrammarProgressGrid
-                  aggregations={lesson.items ? aggregateByCaseAndNumber(lesson.items) : []}
-                  caseNames={lesson.items ? aggregateByCase(lesson.items) : []}
-                  numberNames={lesson.items ? aggregateByNumber(lesson.items) : []}
+                  aggregations={lesson.grid ?? []}
+                  caseNames={lesson.caseAggregations ?? []}
+                  numberNames={lesson.numberAggregations ?? []}
                   quizSlug={slug || ''}
                 />
-                {lesson.items && (
-                  <GrammarProgressTagSets items={lesson.items} quizSlug={slug || ''} />
-                )}
+                <GrammarProgressTagSets
+                  cases={lesson.caseAggregations ?? []}
+                  numbers={lesson.numberAggregations ?? []}
+                  pairs={lesson.pairAggregations ?? []}
+                  quizSlug={slug || ''}
+                />
               </TabPanel>
             </TabView>
           </div>

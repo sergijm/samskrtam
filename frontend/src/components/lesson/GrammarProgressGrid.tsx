@@ -6,7 +6,7 @@ import type {
   CaseAggregation,
   CaseNumberAggregation,
   NumberAggregation,
-} from '../../utils/grammarAggregation';
+} from '../../types/lesson';
 
 interface GrammarProgressGridProps {
   aggregations: CaseNumberAggregation[];

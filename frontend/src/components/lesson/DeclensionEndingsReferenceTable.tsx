@@ -1,12 +1,17 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import type { EndingsTableData } from "../../data/aStemEndingsTable";
+import type { EndingsTableData, EndingsCell } from "../../data/aStemEndingsTable";
 
 interface DeclensionEndingsReferenceTableProps {
   data: EndingsTableData;
   onCellClick?: (caseKey: string, columnKey: string) => void;
   selectedCell?: { caseKey: string; columnKey: string } | null;
 }
+
+const GRADE_STYLES: Record<string, string> = {
+  strong: "bg-orange-100",
+  zero: "bg-gray-100",
+};
 
 const DeclensionEndingsReferenceTable: React.FC<DeclensionEndingsReferenceTableProps> = ({ data, onCellClick, selectedCell }) => {
   const { i18n } = useTranslation();
@@ -26,14 +31,14 @@ const DeclensionEndingsReferenceTable: React.FC<DeclensionEndingsReferenceTableP
   };
 
   const identityVocativeSg = i18n.language === "ru" ? "= \u043e\u0441\u043d\u043e\u0432\u0435" : "= stem";
-  const identityVocativeDuPl = i18n.language === "ru" ? "= Именительный" : "= Nominative";
+  const identityVocativeDuPl = i18n.language === "ru" ? "= N." : "= N.";
 
   return (
     <div className="overflow-x-auto mb-3">
-      <table className="w-full border-collapse text-sm">
+      <table className="w-full border-collapse text-sm" style={{ tableLayout: "fixed" }}>
         <thead>
           <tr>
-            <th className="text-left p-2 border-1 border-200 font-semibold" style={{ width: "16%" }}>
+            <th className="text-left p-2 border-1 border-200 font-semibold">
               {i18n.language === "ru" ? "\u041f\u0430\u0434\u0435\u0436" : "Case"}
             </th>
             {data.columns.map((col) => (
@@ -46,13 +51,16 @@ const DeclensionEndingsReferenceTable: React.FC<DeclensionEndingsReferenceTableP
         <tbody>
           {data.rows.map((row) => {
             const isVocative = row.caseKey === "vocative";
+            let colSkip = 0;
             return (
               <tr key={row.caseKey}>
                 <td className="p-2 border-1 border-200 text-color-secondary font-medium">
                   {caseLabel(row.caseKey)}
                 </td>
                 {data.columns.map((col) => {
+                  if (colSkip > 0) { colSkip--; return null; }
                   const cell = row.cells[col.key];
+                  if (cell?.colSpan && cell.colSpan > 1) { colSkip = cell.colSpan - 1; }
                   const cellClick = cell && !cell.isIdentity
                     ? () => onCellClick?.(row.caseKey, col.key)
                     : undefined;
@@ -71,7 +79,7 @@ const DeclensionEndingsReferenceTable: React.FC<DeclensionEndingsReferenceTableP
 };
 
 function renderCell(
-  cell: { text: string; rowSpan?: number; isIdentity?: boolean; identityDuPl?: boolean } | undefined,
+  cell: EndingsCell | undefined,
   isVocative: boolean,
   identitySgLabel: string,
   identityDuPlLabel: string,
@@ -82,25 +90,28 @@ function renderCell(
   if (!cell) {
     return <td key={key} className="text-center p-2 border-1 border-200 text-color-secondary">{'\u2014'}</td>;
   }
-  if (cell.rowSpan === 0) {
+  if (cell.rowSpan === 0 || cell.colSpan === 0) {
     return null;
   }
   const rowSpan = cell.rowSpan && cell.rowSpan > 1 ? cell.rowSpan : undefined;
+  const colSpan = cell.colSpan && cell.colSpan > 1 ? cell.colSpan : undefined;
   if (isVocative && cell.isIdentity) {
     const label = cell.identityDuPl ? identityDuPlLabel : identitySgLabel;
     return (
-      <td key={key} className="text-center p-2 border-1 border-200 text-color-secondary italic" rowSpan={rowSpan} style={{ fontSize: "0.85rem" }}>
+      <td key={key} className="text-center p-2 border-1 border-200 text-color-secondary italic" rowSpan={rowSpan} colSpan={colSpan} style={{ fontSize: "0.85rem" }}>
         {label}
       </td>
     );
   }
   const clickable = Boolean(onClick && cell.text && cell.text !== '\u2014');
   const selectedClass = clickable && isSelected ? " text-primary" : "";
+  const gradeClass = cell.grade ? ` ${GRADE_STYLES[cell.grade]}` : "";
   return (
     <td
       key={key}
-      className={`text-center p-2 border-1 border-200 font-bold${clickable ? " cursor-pointer hover:surface-100 transition-colors" : ""}${selectedClass}`}
+      className={`text-center p-2 border-1 border-200 font-bold${clickable ? " cursor-pointer hover:surface-100 transition-colors" : ""}${selectedClass}${gradeClass}`}
       rowSpan={rowSpan}
+      colSpan={colSpan}
       style={{ fontFamily: "inherit" }}
       onClick={clickable ? onClick : undefined}
     >
