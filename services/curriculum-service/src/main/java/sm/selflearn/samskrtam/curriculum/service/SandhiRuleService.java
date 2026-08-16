@@ -20,6 +20,7 @@ public class SandhiRuleService {
 
     private final ObjectMapper objectMapper;
     private List<SandhiRuleDto> allRules = List.of();
+    private Map<String, String> categoryGlossary = Map.of();
 
     /**
      * Maps a curriculum topic code to the JSON section names whose rules
@@ -53,6 +54,19 @@ public class SandhiRuleService {
                 } else {
                     log.error("No 'rules' array found in sandhi-rules.json");
                 }
+
+                var glossaryNode = root.get("category_glossary");
+                if (glossaryNode != null && glossaryNode.isObject()) {
+                    Map<String, String> glossary = new HashMap<>();
+                    glossaryNode.fieldNames().forEachRemaining(key -> {
+                        var value = glossaryNode.get(key);
+                        if (value != null && value.isTextual()) {
+                            glossary.put(key, value.textValue());
+                        }
+                    });
+                    categoryGlossary = Map.copyOf(glossary);
+                    log.info("Loaded {} category glossary entries", categoryGlossary.size());
+                }
             }
         } catch (IOException e) {
             log.error("Failed to load sandhi rules JSON", e);
@@ -60,7 +74,7 @@ public class SandhiRuleService {
     }
 
     public SandhiRulesResponse getAllRules() {
-        return new SandhiRulesResponse(null, "Все правила сандхи", allRules);
+        return new SandhiRulesResponse(null, "Все правила сандхи", allRules, categoryGlossary);
     }
 
     public SandhiRulesResponse getRulesForTopic(String topicCode) {
@@ -70,7 +84,7 @@ public class SandhiRuleService {
                 .filter(r -> sections.contains(r.section()))
                 .toList();
 
-        return new SandhiRulesResponse(topicCode, resolveTitle(topicCode), filtered);
+        return new SandhiRulesResponse(topicCode, resolveTitle(topicCode), filtered, categoryGlossary);
     }
 
     private String resolveTitle(String topicCode) {

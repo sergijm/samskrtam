@@ -18,6 +18,8 @@ public record SandhiRuleDto(
         String text,
         String example,
         String reference,
-        @JsonAlias("depends_on") List<Integer> dependsOn,
-        @JsonAlias("depends_on_note") String dependsOnNote
+        @JsonAlias("supersedes") List<Integer> supersedes,
+        @JsonAlias("default_for") List<Integer> defaultFor,
+        @JsonAlias("applies_with") List<Integer> appliesWith,
+        List<String> category
 ) {}

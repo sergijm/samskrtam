@@ -13,7 +13,7 @@ class SandhiRuleDtoTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void deserialize_mapsDependsOnSnakeCase_andSerializesCamelCase() throws Exception {
+    void deserialize_mapsNewFieldsSnakeCase_andSerializesCamelCase() throws Exception {
         String json = """
                 {
                   "number": 8,
@@ -22,8 +22,9 @@ class SandhiRuleDtoTest {
                   "text": "text",
                   "example": null,
                   "reference": "W 150b",
-                  "depends_on": [9, 31],
-                  "depends_on_note": "note"
+                  "supersedes": [9, 31],
+                  "default_for": [5],
+                  "applies_with": [42]
                 }
                 """;
 
@@ -31,19 +32,18 @@ class SandhiRuleDtoTest {
         SandhiRuleDto rule = objectMapper.treeToValue(node, SandhiRuleDto.class);
 
         assertThat(rule.number()).isEqualTo(8);
-        assertThat(rule.dependsOn()).containsExactly(9, 31);
-        assertThat(rule.dependsOnNote()).isEqualTo("note");
+        assertThat(rule.supersedes()).containsExactly(9, 31);
+        assertThat(rule.defaultFor()).containsExactly(5);
+        assertThat(rule.appliesWith()).containsExactly(42);
 
         JsonNode serialized = objectMapper.valueToTree(rule);
-        assertThat(serialized.has("dependsOn")).isTrue();
-        assertThat(serialized.has("depends_on")).isFalse();
-        assertThat(serialized.get("dependsOn").isArray()).isTrue();
-        assertThat(serialized.get("dependsOn").get(0).asInt()).isEqualTo(9);
-        assertThat(serialized.get("dependsOn").get(1).asInt()).isEqualTo(31);
+        assertThat(serialized.has("supersedes")).isTrue();
+        assertThat(serialized.get("supersedes").isArray()).isTrue();
+        assertThat(serialized.get("supersedes").get(0).asInt()).isEqualTo(9);
     }
 
     @Test
-    void deserialize_ruleWithoutDependsOn_leavesFieldsNull() throws Exception {
+    void deserialize_ruleWithoutNewFields_leavesFieldsNull() throws Exception {
         String json = """
                 {
                   "number": 1,
@@ -58,7 +58,8 @@ class SandhiRuleDtoTest {
         SandhiRuleDto rule = objectMapper.treeToValue(objectMapper.readTree(json), SandhiRuleDto.class);
 
         assertThat(rule.number()).isEqualTo(1);
-        assertThat(rule.dependsOn()).isNull();
-        assertThat(rule.dependsOnNote()).isNull();
+        assertThat(rule.supersedes()).isNull();
+        assertThat(rule.defaultFor()).isNull();
+        assertThat(rule.appliesWith()).isNull();
     }
 }

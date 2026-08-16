@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface Example {
@@ -13,6 +14,8 @@ interface CaseSection {
   secondaryFunctions: string[];
   examples: Example[];
 }
+
+const STORAGE_KEY = 'case-meanings-show-examples';
 
 const sections: CaseSection[] = [
   {
@@ -153,24 +156,43 @@ const sections: CaseSection[] = [
 const CaseMeaningsLessonContent = () => {
   const { i18n } = useTranslation();
   const isRu = i18n.language === 'ru';
+  const [showExamples, setShowExamples] = useState(() =>
+    localStorage.getItem(STORAGE_KEY) === 'true',
+  );
+
+  const toggleExamples = () => {
+    const next = !showExamples;
+    setShowExamples(next);
+    localStorage.setItem(STORAGE_KEY, String(next));
+  };
 
   return (
     <div className="case-meanings-content">
       {/* Table of contents */}
-      <div className="mb-3 flex flex-wrap gap-2">
-        {sections.map((s) => (
-          <a
-            key={s.id}
-            href={`#${s.id}`}
-            className="text-sm text-primary no-underline hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-{s.title.replace(/\(.*\)$/, '').trim()}
-          </a>
-        ))}
+      <div className="flex align-items-start gap-2 mb-3">
+        <div className="flex flex-wrap gap-2" style={{ flex: 1, minWidth: 0 }}>
+          {sections.map((s) => (
+            <a
+              key={s.id}
+              href={`#${s.id}`}
+              className="text-sm text-primary no-underline hover:underline"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              {s.title.replace(/\(.*\)$/, '').trim()}
+            </a>
+          ))}
+        </div>
+        <button
+          type="button"
+          className={`p-button p-component p-button-sm ${showExamples ? 'p-button-primary' : 'p-button-outlined'}`}
+          style={{ flexShrink: 0, padding: '0.3rem 0.65rem' }}
+          onClick={toggleExamples}
+        >
+          {isRu ? 'Примеры' : 'Examples'}
+        </button>
       </div>
 
       {/* Sections */}
@@ -183,14 +205,14 @@ const CaseMeaningsLessonContent = () => {
           {s.secondaryFunctions.length > 0 && (
             <div className="mb-2">
               <ul className="text-sm m-0 pl-3" style={{ listStyle: 'disc' }}>
-                {s.secondaryFunctions.map((fn, i) => (
-                  <li key={i}>{fn}</li>
+                {s.secondaryFunctions.map((fn) => (
+                  <li key={fn}>{fn}</li>
                 ))}
               </ul>
             </div>
           )}
 
-          {s.examples.map((ex, i) => (
+          {showExamples && s.examples.map((ex, i) => (
             <div key={i} className="flex flex-column mb-2">
               <div className="text-base" style={{ fontFamily: 'serif' }}>{ex.text}</div>
               <div className="text-sm text-color-secondary">{ex.transliteration}</div>

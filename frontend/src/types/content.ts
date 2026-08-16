@@ -5,6 +5,15 @@ export interface SandhiRuleDto {
     text: string;
     example?: string | null;
     reference?: string | null;
-    dependsOn?: number[];
-    dependsOnNote?: string | null;
+    supersedes?: number[];
+    defaultFor?: number[];
+    appliesWith?: number[];
+    category?: string[];
+}
+
+export interface SandhiRulesResponse {
+    topicCode?: string;
+    title: string;
+    rules: SandhiRuleDto[];
+    categoryGlossary?: Record<string, string>;
 }

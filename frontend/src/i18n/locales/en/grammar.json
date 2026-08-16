@@ -98,7 +98,10 @@
     "taskNumber": "Task \u2116",
     "rules": "Rules",
     "noSolutionFound": "No solution found for this task.",
-    "filterRules": "Filter Rules"
+    "filterRules": "Filter Rules",
+    "categoryFilter": "Filter by category",
+    "noCategoriesSelected": "All categories",
+    "clearFilters": "Clear filters"
   },
   "dictionary": {
     "noWordsFound": "No words found."

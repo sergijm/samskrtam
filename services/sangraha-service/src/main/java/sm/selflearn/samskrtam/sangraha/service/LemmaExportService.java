@@ -42,7 +42,7 @@ public class LemmaExportService {
 
     @Transactional(readOnly = true)
     public LemmaExportPageDto export(UUID cursor, int limit) {
-        int pageSize = Math.min(Math.max(limit, 1), 500);
+        int pageSize = Math.min(Math.max(limit, 1), 5000);
 
         List<LemmaStatistics> stats = statisticsRepository.findForExport(
                 cursor, PageRequest.of(0, pageSize + 1));

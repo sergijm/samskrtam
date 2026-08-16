@@ -54,7 +54,8 @@ public class LexiconImportService {
             LemmaExportItem row = rows.get(i);
             LexemeGender gender = parseGender(row.gender());
 
-            Lexeme lexeme = lexemeRepository.findByLemmaSlp1AndGender(row.lemmaSlp1(), gender)
+            Lexeme lexeme = lexemeRepository.findByLemmaSlp1AndGenderOrderByMeaningNumberAsc(row.lemmaSlp1(), gender)
+                    .stream().findFirst()
                     .orElseGet(() -> {
                         Lexeme created = new Lexeme();
                         created.setLemmaSlp1(row.lemmaSlp1());

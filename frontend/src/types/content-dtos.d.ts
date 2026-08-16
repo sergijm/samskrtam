@@ -103,13 +103,16 @@ export interface SandhiRuleSummaryDto {
     text: string;
     example: string | null;
     reference: string;
-    dependsOn?: number[];
-    dependsOnNote?: string | null;
+    supersedes?: number[];
+    defaultFor?: number[];
+    appliesWith?: number[];
+    category?: string[];
 }
 
 export interface SandhiRulesResponse {
     topicCode: string;
     title: string;
     rules: SandhiRuleSummaryDto[];
+    categoryGlossary?: Record<string, string>;
 }
 

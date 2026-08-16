@@ -183818,3 +183818,464 @@ Item 0 (lemma avakṛpti): unexpected lemma
 2026-08-15 21:35:46,117 | INFO |   Total forms generated: 696
 2026-08-15 21:35:46,120 | INFO | No more unprocessed nouns or pronouns.
 2026-08-15 21:35:46,121 | INFO | Finished successfully.
+2026-08-16 13:51:34,999 | INFO | Starting declension form generation
+2026-08-16 13:51:35,000 | INFO | Main log file: C:\MyDev\samskrtam\logs\declension_generator.log
+2026-08-16 13:51:35,000 | INFO | LLM prompts log file: C:\MyDev\samskrtam\logs\llm_prompts_responses.log
+2026-08-16 13:51:35,004 | INFO | Model: gemini-3.7-flash
+2026-08-16 13:51:35,004 | INFO | Batch size: 40
+2026-08-16 13:51:35,004 | INFO | Max completion tokens: 65000
+2026-08-16 13:51:35,258 | INFO | START batch=1 lemmas=2
+2026-08-16 13:51:35,259 | DEBUG | BATCH LEMMAS:
+[
+  "āyā",
+  "yā"
+]
+2026-08-16 13:51:35,259 | DEBUG | ====================================================================================================
+2026-08-16 13:51:35,259 | DEBUG | LLM REQUEST
+2026-08-16 13:51:35,259 | DEBUG | model=gemini-3.7-flash
+2026-08-16 13:51:35,259 | DEBUG | max_completion_tokens=65000
+2026-08-16 13:51:35,259 | DEBUG | lemma_count=2
+2026-08-16 13:51:35,259 | DEBUG | REQUEST MESSAGES:
+[
+  {
+    "role": "system",
+    "content": "\nYou are an expert in Classical Sanskrit morphology and declension.\n\nFor every Sanskrit nominal lemma (noun or pronoun) given in IAST, generate\nall 24 forms (8 cases × 3 numbers) of its declension.\n\nFor each case+number combination, provide:\n- form_iast: the form in IAST transliteration\n- form_devanagari: the form in Devanagari script\n\nALSO determine the correct vowel_type for each lemma.\n\nVOWEL TYPE REFERENCE:\n\nFor NOUNS (based on stem ending):\n- A_STEM: stems ending in -a (e.g., deva, phala, rāma)\n- AA_STEM: stems ending in -ā (e.g., senā, bhāryā, gaṅgā)\n- I_STEM: stems ending in -i (e.g., kavi, giri, agni)\n- II_STEM: stems ending in -ī (e.g., nadī, kṣiti, patnī)\n- U_STEM: stems ending in -u (e.g., guru, śatru, mṛdu)\n- UU_STEM: stems ending in -ū (e.g., vadhu, kāṅkṣū)\n- R_STEM: stems ending in -ṛ (e.g., pitṛ, mātṛ, bhātrṛ)\n- IN_STEM: stems ending in -in (e.g., yogin, mālin, bālin)\n- AN_STEM: stems ending in -an (e.g., rājan, ātman, nāman, brahman)\n- AS_STEM: stems ending in -as (e.g., manas, tapas, tejas)\n- IS_STEM: stems ending in -is (e.g., havis, varcis, etc.)\n- US_STEM: stems ending in -us (e.g., cakṣus)\n- ANT_STEM: present participles ending in -ant/-at (e.g., bhavant, gacchant)\n- VAT_STEM: stems ending in -vat/-mant (e.g., bhagavat, guṇavat)\n- ROOT_STEM: root/consonant-final stems (e.g., vāc, marut, āp, dhi)\n- O_STEM: stems ending in -o (e.g., go)\n- AU_STEM: stems ending in -au (e.g., nau, glāu)\n\nFor PRONOUNS (pronominal declension):\n- PRON_AHAM: first person pronoun (aham = I)\n- PRON_TVAM: second person pronoun (tvam = you)\n- PRON_TAD: demonstrative pronoun (tad = that, he)\n- PRON_ETAD: demonstrative pronoun (etad = this, near)\n- PRON_IDAM: demonstrative pronoun (idam = this)\n- PRON_KIM: interrogative pronoun (kim = who? what?)\n- PRON_YAD: relative pronoun (yad = which)\n- PRON_REFLEXIVE: reflexive pronoun (sva = self)\n- PRON_POSSESSIVE: possessive pronouns (madīya, tvadīya, etc.)\n- PRON_DEMONSTRATIVE: other demonstrative pronouns\n- PRON_DETERMINATIVE: determinative pronouns (sarva, viśva, eka, etc.)\n\nIMPORTANT RULES:\n1. If the lemma is a PRONOUN, use its pronominal declension pattern and choose the appropriate PRON_* vowel_type.\n2. If the lemma is a NOUN, use its nominal declension pattern based on its stem ending.\n3. For dual forms, always use the correct dual endings.\n4. For vocative, use the correct vocative form (may differ from nominative).\n5. If a particular form does not exist (e.g., vocative for some pronouns),\n   still provide the most appropriate form or the nominative as fallback.\n6. For personal pronouns (aham, tvam), use the special irregular declension patterns.\n7. For reflexive pronouns like ātman, use the appropriate stem declension.\n\nCONFIDENCE LEVELS:\n- HIGH: You are absolutely certain about the vowel_type and all forms\n- MIDDLE: You are reasonably confident but there might be some uncertainty\n- LOW: You are unsure or the lemma is unusual/ambiguous\n\nCRITICAL INSTRUCTION:\nReturn ONLY valid JSON. Do not include any explanatory text, comments, or markdown formatting.\nYour entire response must be a single JSON object.\n\nThe JSON response MUST have exactly this structure:\n\n{\n  \"results\": [\n    {\n      \"lemma_iast\": \"deva\",\n      \"vowel_type\": \"A_STEM\",\n      \"confidence\": \"HIGH\",\n      \"forms\": {\n        \"NOMINATIVE\": {\n          \"SINGULAR\": {\"iast\": \"devaḥ\", \"devanagari\": \"देवः\"},\n          \"DUAL\": {\"iast\": \"devau\", \"devanagari\": \"देवौ\"},\n          \"PLURAL\": {\"iast\": \"devāḥ\", \"devanagari\": \"देवाः\"}\n        },\n        \"ACCUSATIVE\": {\n          \"SINGULAR\": {\"iast\": \"devam\", \"devanagari\": \"देवम्\"},\n          \"DUAL\": {\"iast\": \"devau\", \"devanagari\": \"देवौ\"},\n          \"PLURAL\": {\"iast\": \"devān\", \"devanagari\": \"देवान्\"}\n        },\n        ... (all 8 cases × 3 numbers)\n      }\n    }\n  ]\n}\n\nFor each lemma, you MUST provide:\n- lemma_iast (the lemma in IAST)\n- vowel_type (one of the types listed above)\n- confidence (HIGH, MIDDLE, or LOW)\n- ALL 24 forms (8 cases × 3 numbers)\n\nDo not skip any case or number combination.\n"
+  },
+  {
+    "role": "user",
+    "content": "{\"lemmas\": [\"āyā\", \"yā\"], \"include_pronouns\": true}"
+  }
+]
+2026-08-16 13:51:46,538 | DEBUG | LLM RESPONSE received in 11.28s
+2026-08-16 13:51:46,538 | DEBUG | RAW RESPONSE:
+{
+  "id": "gen-1786877495-PtiUxOdTED4g8Z5t8ajRqb-or",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "{\n  \"results\": [\n    {\n      \"lemma_iast\": \"āyā\",\n      \"vowel_type\": \"AA_STEM\",\n      \"confidence\": \"HIGH\",\n      \"forms\": {\n        \"NOMINATIVE\": {\n          \"SINGULAR\": {\"iast\": \"āyā\", \"devanagari\": \"आया\"},\n          \"DUAL\": {\"iast\": \"āye\", \"devanagari\": \"आये\"},\n          \"PLURAL\": {\"iast\": \"āyāḥ\", \"devanagari\": \"आयाः\"}\n        },\n        \"ACCUSATIVE\": {\n          \"SINGULAR\": {\"iast\": \"āyām\", \"devanagari\": \"आयाम्\"},\n          \"DUAL\": {\"iast\": \"āye\", \"devanagari\": \"आये\"},\n          \"PLURAL\": {\"iast\": \"āyāḥ\", \"devanagari\": \"आयाः\"}\n        },\n        \"INSTRUMENTAL\": {\n          \"SINGULAR\": {\"iast\": \"āyayā\", \"devanagari\": \"आयया\"},\n          \"DUAL\": {\"iast\": \"āyābhyām\", \"devanagari\": \"आयाभ्याम्\"},\n          \"PLURAL\": {\"iast\": \"āyābhiḥ\", \"devanagari\": \"आयाभिः\"}\n        },\n        \"DATIVE\": {\n          \"SINGULAR\": {\"iast\": \"āyāyai\", \"devanagari\": \"आयायै\"},\n          \"DUAL\": {\"iast\": \"āyābhyām\", \"devanagari\": \"आयाभ्याम्\"},\n          \"PLURAL\": {\"iast\": \"āyābhyaḥ\", \"devanagari\": \"आयाभ्यः\"}\n        },\n        \"ABLATIVE\": {\n          \"SINGULAR\": {\"iast\": \"āyāyāḥ\", \"devanagari\": \"आयायाः\"},\n          \"DUAL\": {\"iast\": \"āyābhyām\", \"devanagari\": \"आयाभ्याम्\"},\n          \"PLURAL\": {\"iast\": \"āyābhyaḥ\", \"devanagari\": \"आयाभ्यः\"}\n        },\n        \"GENITIVE\": {\n          \"SINGULAR\": {\"iast\": \"āyāyāḥ\", \"devanagari\": \"आयायाः\"},\n          \"DUAL\": {\"iast\": \"āyayoḥ\", \"devanagari\": \"आययोः\"},\n          \"PLURAL\": {\"iast\": \"āyānām\", \"devanagari\": \"आयानाम्\"}\n        },\n        \"LOCATIVE\": {\n          \"SINGULAR\": {\"iast\": \"āyāyām\", \"devanagari\": \"आयायाम्\"},\n          \"DUAL\": {\"iast\": \"āyayoḥ\", \"devanagari\": \"आययोः\"},\n          \"PLURAL\": {\"iast\": \"āyāsu\", \"devanagari\": \"आयासु\"}\n        },\n        \"VOCATIVE\": {\n          \"SINGULAR\": {\"iast\": \"āye\", \"devanagari\": \"आये\"},\n          \"DUAL\": {\"iast\": \"āye\", \"devanagari\": \"आये\"},\n          \"PLURAL\": {\"iast\": \"āyāḥ\", \"devanagari\": \"आयाः\"}\n        }\n      }\n    },\n    {\n      \"lemma_iast\": \"yā\",\n      \"vowel_type\": \"PRON_YAD\",\n      \"confidence\": \"HIGH\",\n      \"forms\": {\n        \"NOMINATIVE\": {\n          \"SINGULAR\": {\"iast\": \"yā\", \"devanagari\": \"या\"},\n          \"DUAL\": {\"iast\": \"ye\", \"devanagari\": \"ये\"},\n          \"PLURAL\": {\"iast\": \"yāḥ\", \"devanagari\": \"याः\"}\n        },\n        \"ACCUSATIVE\": {\n          \"SINGULAR\": {\"iast\": \"yām\", \"devanagari\": \"याम्\"},\n          \"DUAL\": {\"iast\": \"ye\", \"devanagari\": \"ये\"},\n          \"PLURAL\": {\"iast\": \"yāḥ\", \"devanagari\": \"याः\"}\n        },\n        \"INSTRUMENTAL\": {\n          \"SINGULAR\": {\"iast\": \"yayā\", \"devanagari\": \"यया\"},\n          \"DUAL\": {\"iast\": \"yābhyām\", \"devanagari\": \"याभ्याम्\"},\n          \"PLURAL\": {\"iast\": \"yābhiḥ\", \"devanagari\": \"याभिः\"}\n        },\n        \"DATIVE\": {\n          \"SINGULAR\": {\"iast\": \"yasyai\", \"devanagari\": \"यस्यै\"},\n          \"DUAL\": {\"iast\": \"yābhyām\", \"devanagari\": \"याभ्याम्\"},\n          \"PLURAL\": {\"iast\": \"yābhyaḥ\", \"devanagari\": \"याभ्यः\"}\n        },\n        \"ABLATIVE\": {\n          \"SINGULAR\": {\"iast\": \"yasyāḥ\", \"devanagari\": \"यस्याः\"},\n          \"DUAL\": {\"iast\": \"yābhyām\", \"devanagari\": \"याभ्याम्\"},\n          \"PLURAL\": {\"iast\": \"yābhyaḥ\", \"devanagari\": \"याभ्यः\"}\n        },\n        \"GENITIVE\": {\n          \"SINGULAR\": {\"iast\": \"yasyāḥ\", \"devanagari\": \"यस्याः\"},\n          \"DUAL\": {\"iast\": \"yayoḥ\", \"devanagari\": \"ययोः\"},\n          \"PLURAL\": {\"iast\": \"yāsām\", \"devanagari\": \"यासाम्\"}\n        },\n        \"LOCATIVE\": {\n          \"SINGULAR\": {\"iast\": \"yasyām\", \"devanagari\": \"यस्याम्\"},\n          \"DUAL\": {\"iast\": \"yayoḥ\", \"devanagari\": \"ययोः\"},\n          \"PLURAL\": {\"iast\": \"yāsu\", \"devanagari\": \"यासु\"}\n        },\n        \"VOCATIVE\": {\n          \"SINGULAR\": {\"iast\": \"yā\", \"devanagari\": \"या\"},\n          \"DUAL\": {\"iast\": \"ye\", \"devanagari\": \"ये\"},\n          \"PLURAL\": {\"iast\": \"yāḥ\", \"devanagari\": \"याः\"}\n        }\n      }\n    }\n  ]\n}",
+        "refusal": null,
+        "role": "assistant",
+        "annotations": null,
+        "audio": null,
+        "function_call": null,
+        "tool_calls": null,
+        "reasoning": "**Analyzing āyā declension**\n\nI'm currently focused on determining the declension class for \"āyā\" and have identified it as a feminine ā-stem noun, considering potential semantic nuances for its grammatical breakdown.\n\n",
+        "reasoning_details": [
+          {
+            "type": "reasoning.text",
+            "text": "**Analyzing āyā declension**\n\nI'm currently focused on determining the declension class for \"āyā\" and have identified it as a feminine ā-stem noun, considering potential semantic nuances for its grammatical breakdown.\n\n",
+            "format": "google-gemini-v1",
+            "index": 0
+          }
+        ]
+      },
+      "native_finish_reason": "STOP"
+    }
+  ],
+  "created": 1786877495,
+  "model": "gemini-3.7-flash",
+  "object": "chat.completion",
+  "moderation": null,
+  "service_tier": "default",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 1988,
+    "prompt_tokens": 1362,
+    "total_tokens": 3350,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": null,
+      "audio_tokens": 0,
+      "reasoning_tokens": 438,
+      "rejected_prediction_tokens": null,
+      "image_tokens": 0
+    },
+    "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cache_write_tokens": 0,
+      "cached_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_rub": 0.84,
+    "balance": 40.4
+  }
+}
+2026-08-16 13:51:46,538 | DEBUG | USAGE:
+{
+  "completion_tokens": 1988,
+  "prompt_tokens": 1362,
+  "total_tokens": 3350,
+  "completion_tokens_details": {
+    "accepted_prediction_tokens": null,
+    "audio_tokens": 0,
+    "reasoning_tokens": 438,
+    "rejected_prediction_tokens": null,
+    "image_tokens": 0
+  },
+  "prompt_tokens_details": {
+    "audio_tokens": 0,
+    "cache_write_tokens": 0,
+    "cached_tokens": 0,
+    "video_tokens": 0
+  },
+  "cost_rub": 0.84,
+  "balance": 40.4
+}
+2026-08-16 13:51:46,538 | DEBUG | RAW CONTENT:
+{
+  "results": [
+    {
+      "lemma_iast": "āyā",
+      "vowel_type": "AA_STEM",
+      "confidence": "HIGH",
+      "forms": {
+        "NOMINATIVE": {
+          "SINGULAR": {"iast": "āyā", "devanagari": "आया"},
+          "DUAL": {"iast": "āye", "devanagari": "आये"},
+          "PLURAL": {"iast": "āyāḥ", "devanagari": "आयाः"}
+        },
+        "ACCUSATIVE": {
+          "SINGULAR": {"iast": "āyām", "devanagari": "आयाम्"},
+          "DUAL": {"iast": "āye", "devanagari": "आये"},
+          "PLURAL": {"iast": "āyāḥ", "devanagari": "आयाः"}
+        },
+        "INSTRUMENTAL": {
+          "SINGULAR": {"iast": "āyayā", "devanagari": "आयया"},
+          "DUAL": {"iast": "āyābhyām", "devanagari": "आयाभ्याम्"},
+          "PLURAL": {"iast": "āyābhiḥ", "devanagari": "आयाभिः"}
+        },
+        "DATIVE": {
+          "SINGULAR": {"iast": "āyāyai", "devanagari": "आयायै"},
+          "DUAL": {"iast": "āyābhyām", "devanagari": "आयाभ्याम्"},
+          "PLURAL": {"iast": "āyābhyaḥ", "devanagari": "आयाभ्यः"}
+        },
+        "ABLATIVE": {
+          "SINGULAR": {"iast": "āyāyāḥ", "devanagari": "आयायाः"},
+          "DUAL": {"iast": "āyābhyām", "devanagari": "आयाभ्याम्"},
+          "PLURAL": {"iast": "āyābhyaḥ", "devanagari": "आयाभ्यः"}
+        },
+        "GENITIVE": {
+          "SINGULAR": {"iast": "āyāyāḥ", "devanagari": "आयायाः"},
+          "DUAL": {"iast": "āyayoḥ", "devanagari": "आययोः"},
+          "PLURAL": {"iast": "āyānām", "devanagari": "आयानाम्"}
+        },
+        "LOCATIVE": {
+          "SINGULAR": {"iast": "āyāyām", "devanagari": "आयायाम्"},
+          "DUAL": {"iast": "āyayoḥ", "devanagari": "आययोः"},
+          "PLURAL": {"iast": "āyāsu", "devanagari": "आयासु"}
+        },
+        "VOCATIVE": {
+          "SINGULAR": {"iast": "āye", "devanagari": "आये"},
+          "DUAL": {"iast": "āye", "devanagari": "आये"},
+          "PLURAL": {"iast": "āyāḥ", "devanagari": "आयाः"}
+        }
+      }
+    },
+    {
+      "lemma_iast": "yā",
+      "vowel_type": "PRON_YAD",
+      "confidence": "HIGH",
+      "forms": {
+        "NOMINATIVE": {
+          "SINGULAR": {"iast": "yā", "devanagari": "या"},
+          "DUAL": {"iast": "ye", "devanagari": "ये"},
+          "PLURAL": {"iast": "yāḥ", "devanagari": "याः"}
+        },
+        "ACCUSATIVE": {
+          "SINGULAR": {"iast": "yām", "devanagari": "याम्"},
+          "DUAL": {"iast": "ye", "devanagari": "ये"},
+          "PLURAL": {"iast": "yāḥ", "devanagari": "याः"}
+        },
+        "INSTRUMENTAL": {
+          "SINGULAR": {"iast": "yayā", "devanagari": "यया"},
+          "DUAL": {"iast": "yābhyām", "devanagari": "याभ्याम्"},
+          "PLURAL": {"iast": "yābhiḥ", "devanagari": "याभिः"}
+        },
+        "DATIVE": {
+          "SINGULAR": {"iast": "yasyai", "devanagari": "यस्यै"},
+          "DUAL": {"iast": "yābhyām", "devanagari": "याभ्याम्"},
+          "PLURAL": {"iast": "yābhyaḥ", "devanagari": "याभ्यः"}
+        },
+        "ABLATIVE": {
+          "SINGULAR": {"iast": "yasyāḥ", "devanagari": "यस्याः"},
+          "DUAL": {"iast": "yābhyām", "devanagari": "याभ्याम्"},
+          "PLURAL": {"iast": "yābhyaḥ", "devanagari": "याभ्यः"}
+        },
+        "GENITIVE": {
+          "SINGULAR": {"iast": "yasyāḥ", "devanagari": "यस्याः"},
+          "DUAL": {"iast": "yayoḥ", "devanagari": "ययोः"},
+          "PLURAL": {"iast": "yāsām", "devanagari": "यासाम्"}
+        },
+        "LOCATIVE": {
+          "SINGULAR": {"iast": "yasyām", "devanagari": "यस्याम्"},
+          "DUAL": {"iast": "yayoḥ", "devanagari": "ययोः"},
+          "PLURAL": {"iast": "yāsu", "devanagari": "यासु"}
+        },
+        "VOCATIVE": {
+          "SINGULAR": {"iast": "yā", "devanagari": "या"},
+          "DUAL": {"iast": "ye", "devanagari": "ये"},
+          "PLURAL": {"iast": "yāḥ", "devanagari": "याः"}
+        }
+      }
+    }
+  ]
+}
+2026-08-16 13:51:46,539 | DEBUG | PARSED JSON:
+{
+  "results": [
+    {
+      "lemma_iast": "āyā",
+      "vowel_type": "AA_STEM",
+      "confidence": "HIGH",
+      "forms": {
+        "NOMINATIVE": {
+          "SINGULAR": {
+            "iast": "āyā",
+            "devanagari": "आया"
+          },
+          "DUAL": {
+            "iast": "āye",
+            "devanagari": "आये"
+          },
+          "PLURAL": {
+            "iast": "āyāḥ",
+            "devanagari": "आयाः"
+          }
+        },
+        "ACCUSATIVE": {
+          "SINGULAR": {
+            "iast": "āyām",
+            "devanagari": "आयाम्"
+          },
+          "DUAL": {
+            "iast": "āye",
+            "devanagari": "आये"
+          },
+          "PLURAL": {
+            "iast": "āyāḥ",
+            "devanagari": "आयाः"
+          }
+        },
+        "INSTRUMENTAL": {
+          "SINGULAR": {
+            "iast": "āyayā",
+            "devanagari": "आयया"
+          },
+          "DUAL": {
+            "iast": "āyābhyām",
+            "devanagari": "आयाभ्याम्"
+          },
+          "PLURAL": {
+            "iast": "āyābhiḥ",
+            "devanagari": "आयाभिः"
+          }
+        },
+        "DATIVE": {
+          "SINGULAR": {
+            "iast": "āyāyai",
+            "devanagari": "आयायै"
+          },
+          "DUAL": {
+            "iast": "āyābhyām",
+            "devanagari": "आयाभ्याम्"
+          },
+          "PLURAL": {
+            "iast": "āyābhyaḥ",
+            "devanagari": "आयाभ्यः"
+          }
+        },
+        "ABLATIVE": {
+          "SINGULAR": {
+            "iast": "āyāyāḥ",
+            "devanagari": "आयायाः"
+          },
+          "DUAL": {
+            "iast": "āyābhyām",
+            "devanagari": "आयाभ्याम्"
+          },
+          "PLURAL": {
+            "iast": "āyābhyaḥ",
+            "devanagari": "आयाभ्यः"
+          }
+        },
+        "GENITIVE": {
+          "SINGULAR": {
+            "iast": "āyāyāḥ",
+            "devanagari": "आयायाः"
+          },
+          "DUAL": {
+            "iast": "āyayoḥ",
+            "devanagari": "आययोः"
+          },
+          "PLURAL": {
+            "iast": "āyānām",
+            "devanagari": "आयानाम्"
+          }
+        },
+        "LOCATIVE": {
+          "SINGULAR": {
+            "iast": "āyāyām",
+            "devanagari": "आयायाम्"
+          },
+          "DUAL": {
+            "iast": "āyayoḥ",
+            "devanagari": "आययोः"
+          },
+          "PLURAL": {
+            "iast": "āyāsu",
+            "devanagari": "आयासु"
+          }
+        },
+        "VOCATIVE": {
+          "SINGULAR": {
+            "iast": "āye",
+            "devanagari": "आये"
+          },
+          "DUAL": {
+            "iast": "āye",
+            "devanagari": "आये"
+          },
+          "PLURAL": {
+            "iast": "āyāḥ",
+            "devanagari": "आयाः"
+          }
+        }
+      }
+    },
+    {
+      "lemma_iast": "yā",
+      "vowel_type": "PRON_YAD",
+      "confidence": "HIGH",
+      "forms": {
+        "NOMINATIVE": {
+          "SINGULAR": {
+            "iast": "yā",
+            "devanagari": "या"
+          },
+          "DUAL": {
+            "iast": "ye",
+            "devanagari": "ये"
+          },
+          "PLURAL": {
+            "iast": "yāḥ",
+            "devanagari": "याः"
+          }
+        },
+        "ACCUSATIVE": {
+          "SINGULAR": {
+            "iast": "yām",
+            "devanagari": "याम्"
+          },
+          "DUAL": {
+            "iast": "ye",
+            "devanagari": "ये"
+          },
+          "PLURAL": {
+            "iast": "yāḥ",
+            "devanagari": "याः"
+          }
+        },
+        "INSTRUMENTAL": {
+          "SINGULAR": {
+            "iast": "yayā",
+            "devanagari": "यया"
+          },
+          "DUAL": {
+            "iast": "yābhyām",
+            "devanagari": "याभ्याम्"
+          },
+          "PLURAL": {
+            "iast": "yābhiḥ",
+            "devanagari": "याभिः"
+          }
+        },
+        "DATIVE": {
+          "SINGULAR": {
+            "iast": "yasyai",
+            "devanagari": "यस्यै"
+          },
+          "DUAL": {
+            "iast": "yābhyām",
+            "devanagari": "याभ्याम्"
+          },
+          "PLURAL": {
+            "iast": "yābhyaḥ",
+            "devanagari": "याभ्यः"
+          }
+        },
+        "ABLATIVE": {
+          "SINGULAR": {
+            "iast": "yasyāḥ",
+            "devanagari": "यस्याः"
+          },
+          "DUAL": {
+            "iast": "yābhyām",
+            "devanagari": "याभ्याम्"
+          },
+          "PLURAL": {
+            "iast": "yābhyaḥ",
+            "devanagari": "याभ्यः"
+          }
+        },
+        "GENITIVE": {
+          "SINGULAR": {
+            "iast": "yasyāḥ",
+            "devanagari": "यस्याः"
+          },
+          "DUAL": {
+            "iast": "yayoḥ",
+            "devanagari": "ययोः"
+          },
+          "PLURAL": {
+            "iast": "yāsām",
+            "devanagari": "यासाम्"
+          }
+        },
+        "LOCATIVE": {
+          "SINGULAR": {
+            "iast": "yasyām",
+            "devanagari": "यस्याम्"
+          },
+          "DUAL": {
+            "iast": "yayoḥ",
+            "devanagari": "ययोः"
+          },
+          "PLURAL": {
+            "iast": "yāsu",
+            "devanagari": "यासु"
+          }
+        },
+        "VOCATIVE": {
+          "SINGULAR": {
+            "iast": "yā",
+            "devanagari": "या"
+          },
+          "DUAL": {
+            "iast": "ye",
+            "devanagari": "ये"
+          },
+          "PLURAL": {
+            "iast": "yāḥ",
+            "devanagari": "याः"
+          }
+        }
+      }
+    }
+  ]
+}
+2026-08-16 13:51:46,539 | INFO | LLM returned 2 results for 2 requested lemmas
+2026-08-16 13:51:46,539 | DEBUG | ====================================================================================================
+2026-08-16 13:51:46,539 | INFO | Validation successful: 2/2 lemmas (missing: 0)
+2026-08-16 13:51:46,539 | DEBUG | Lemma: āyā, vowel_type: AA_STEM, confidence: HIGH
+2026-08-16 13:51:46,553 | DEBUG | Lemma: yā, vowel_type: PRON_YAD, confidence: HIGH
+2026-08-16 13:51:46,556 | DEBUG | Database commit successful: 48 rows inserted/updated
+2026-08-16 13:51:46,556 | INFO | DONE batch=1 lemmas=2 (missing=0) forms=48 elapsed=11.30s
+2026-08-16 13:51:46,556 | INFO | Declension generation statistics:
+2026-08-16 13:51:46,556 | INFO |   Lemmas processed: 2
+2026-08-16 13:51:46,556 | INFO |   Confidence: HIGH=2, MIDDLE=0, LOW=0, UNKNOWN=0
+2026-08-16 13:51:46,556 | INFO |   Total forms generated: 48
+2026-08-16 13:51:46,559 | INFO | No more unprocessed nouns or pronouns.
+2026-08-16 13:51:46,559 | INFO | Finished successfully.

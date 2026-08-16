@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { contentApi } from '../api/contentApi';
-import { SandhiRuleDto } from '../types/content';
+import type { SandhiRulesResponse } from '../types/content';
 
 export const useSandhiRules = () => {
-  return useQuery<SandhiRuleDto[], Error>({
+  return useQuery<SandhiRulesResponse, Error>({
     queryKey: ['eamenau', 'sandhi-rules'],
     queryFn: async () => {
       const response = await contentApi.getAllSandhiRules();
-      return response.data.rules;
+      return response.data;
     },
   });
 };

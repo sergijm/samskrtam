@@ -48,6 +48,7 @@ public class LearnGraphService {
         Map<UUID, Topic> topicById = topics.stream()
                 .collect(Collectors.toMap(Topic::getId, topic -> topic));
         Map<UUID, List<String>> prerequisiteCodesByTopic = prerequisites.stream()
+                .filter(edge -> topicById.containsKey(edge.getId().getPrerequisiteTopicId()))
                 .collect(Collectors.groupingBy(
                         edge -> edge.getId().getTopicId(),
                         Collectors.mapping(

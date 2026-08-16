@@ -106,7 +106,10 @@
     "taskNumber": "Задание №",
     "rules": "Правила",
     "noSolutionFound": "Решение не найдено.",
-    "filterRules": "Фильтровать правила"
+    "filterRules": "Фильтровать правила",
+    "categoryFilter": "Фильтр по категории",
+    "noCategoriesSelected": "Все категории",
+    "clearFilters": "Сбросить фильтры"
   },
   "dictionary": {
     "noWordsFound": "Слова не найдены."
