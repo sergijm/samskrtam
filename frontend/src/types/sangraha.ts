@@ -175,3 +175,22 @@ export interface WorksClassGroupDto {
   classes: WorksClassTreeNodeDto[];
 }
 
+// ── Batch verse review (sangraha-service/batch-verse-review.md) ──
+
+export interface VerseBatchItemDto {
+  id: string;
+  workSlug: string;
+  workTitleRu: string;
+  workTitleEn: string;
+  chapterSlug: string;
+  chapterTitleRu: string;
+  chapterTitleEn: string;
+  verseOrderIndex: number;
+  textIastPreview?: string | null;
+  status: VerseStatus;
+}
+
+export interface VerseBatchResponseDto {
+  verses: VerseBatchItemDto[];
+}
+
