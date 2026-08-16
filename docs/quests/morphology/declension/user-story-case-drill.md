@@ -1,7 +1,7 @@
 # US-MORPH-01 — Тренировка падежных окончаний (простые задания)
 
 > Домен: Morphology · Типы: `DECLENSION_FORM_CHOICE`, `DECLENSION_FORM` · API v2, curriculum-service
-> Связанные файлы: [quest-catalog.md §2.1](../../../services/quest-catalog.md#21-declension_form-и-семейство--переезжает-в-curriculum-service-v2) ·
+> Связанные файлы: [quest-catalog.md §2.1](../../../services/curriculum-service/quest-catalog.md#21-declension_form-и-семейство--переезжает-в-curriculum-service-v2) ·
 > [curriculum-quest-items.md §2.1–2.2](../../../services/curriculum-quest-items.md#21-declension_form_choice--тип-1-простой-выбор) ·
 > [architecture.md §3.3](../../../architecture.md#33-хранение-окончаний-склонений) ·
 > [US-MORPH-02 — комплексные задания](./user-story-declension-complex.md)
@@ -38,4 +38,4 @@
 ## Вне рамок
 
 - Смешение основ разных типов (i-, u-, r-) в одной сессии — планируется отдельным Quest уровня «повторение», не в этой истории.
-- Соотношение количества `DECLENSION_FORM_CHOICE` к `DECLENSION_FORM` внутри сессии — конфигурируется в `application.yaml` quiz-service (см. [curriculum-quest-items.md §5](../../../services/curriculum-quest-items.md#5-интеграция-с-quiz-service)), не выбирается учеником.
+- Соотношение количества `DECLENSION_FORM_CHOICE` к `DECLENSION_FORM` внутри сессии — конфигурируется в `application.yaml` quiz-service (см. [curriculum-quest-items.md §5](../../../services/curriculum-service/curriculum-quest-items.md#5-интеграция-с-quiz-service)), не выбирается учеником.

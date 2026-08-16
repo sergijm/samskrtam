@@ -1,8 +1,8 @@
 # Curriculum Quiz Session Composition (v2)
 
 > Домен: сессия квиза · Сервис: curriculum-service · API-версия: **v2** (`/api/v2/curriculum/sessions/**`)
-> Связанные файлы: [curriculum-service.md](./curriculum-service.md) · [curriculum-quest-items.md](./curriculum-quest-items.md) ·
-> [quiz-service.md](./quiz-service.md) · [quiz-generator-spec.md](./quiz-service/quiz-generator-spec.md)
+> Связанные файлы: [curriculum-service.md](../curriculum-service.md) · [curriculum-quest-items.md](curriculum-quest-items.md) ·
+> [quiz-service.md](../quiz-service.md) · [quiz-generator-spec.md](../quiz-service/quiz-generator-spec.md)
 
 ---
 

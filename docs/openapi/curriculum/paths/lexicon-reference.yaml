@@ -1,11 +1,11 @@
 # Пути из curriculum-service.yaml → lexicon-reference.yaml
 paths:
-  /lexicon/semantic-topics/tree:
-    $ref: 'paths/lexicon-reference.yaml#/paths/~1~1lexicon~1semantic-topics~1tree'
-  /lexicon/semantic-topics:
-    $ref: 'paths/lexicon-reference.yaml#/paths/~1~1lexicon~1semantic-topics'
-  /lexicon/semantic-topics/{id}:
-    $ref: 'paths/lexicon-reference.yaml#/paths/~1~1lexicon~1semantic-topics~1{id}'
+  /lexicon/semantic-classes/tree:
+    $ref: 'paths/lexicon-reference.yaml#/paths/~1~1lexicon~1semantic-classes~1tree'
+  /lexicon/semantic-classes:
+    $ref: 'paths/lexicon-reference.yaml#/paths/~1~1lexicon~1semantic-classes'
+  /lexicon/semantic-classes/{id}:
+    $ref: 'paths/lexicon-reference.yaml#/paths/~1~1lexicon~1semantic-classes~1{id}'
   /lexicon/pos:
     $ref: 'paths/lexicon-reference.yaml#/paths/~1~1lexicon~1pos'
   /lexicon/pos/{code}:

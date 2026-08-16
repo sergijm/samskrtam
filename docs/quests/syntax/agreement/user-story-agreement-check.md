@@ -1,6 +1,6 @@
 # US-SYNT-02 — Проверка согласования прилагательного с существительным
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `AGREEMENT_CHECK` (план)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `AGREEMENT_CHECK` (план)
 > Связанные файлы: [quest-types-overview.md, тип №14](../../../services/quest-types-overview.md)
 
 ## История

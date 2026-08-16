@@ -22,8 +22,8 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "semantic_topic", schema = "curriculum")
-public class SemanticTopic {
+@Table(name = "semantic_class", schema = "curriculum")
+public class SemanticClass {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -39,8 +39,8 @@ public class SemanticTopic {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
-    private SemanticTopic parent;
+    private SemanticClass parent;
 
     @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
-    private List<SemanticTopic> children = new ArrayList<>();
+    private List<SemanticClass> children = new ArrayList<>();
 }

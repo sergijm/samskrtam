@@ -8,12 +8,12 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyAppliesTo;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PosGroup;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticTopic;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.MorphologyClassRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticTopicRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticClassRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,12 +42,12 @@ class LexiconImportServiceTest {
             LexemeFrequencyRepository freqRepo,
             PartOfSpeechRepository posRepo,
             MorphologyClassRepository morphologyRepo,
-            SemanticTopicRepository semanticTopicRepo) {
-        return new LexiconImportService(client, lexemeRepo, freqRepo, posRepo, morphologyRepo, semanticTopicRepo);
+            SemanticClassRepository semanticClassRepo) {
+        return new LexiconImportService(client, lexemeRepo, freqRepo, posRepo, morphologyRepo, semanticClassRepo);
     }
 
     @Test
-    void importFromSangraha_bindsSemanticTopicsAndMapsGrammar() {
+    void importFromSangraha_bindsSemanticClassesAndMapsGrammar() {
         LemmaExportItem nara = item("nara", "nara", "नर", "MASCULINE", "NOUN", 10,
                 List.of("people-family"), "мужчина", "man", "A_STEM");
         SangrahaExportClient client = mock(SangrahaExportClient.class);
@@ -79,10 +79,10 @@ class LexiconImportServiceTest {
         MorphologyClassRepository morphologyRepo = mock(MorphologyClassRepository.class);
         when(morphologyRepo.findByCode("a-stem-masc")).thenReturn(Optional.of(aStem));
 
-        SemanticTopic family = new SemanticTopic();
+        SemanticClass family = new SemanticClass();
         family.setCode("people-family");
-        SemanticTopicRepository semanticTopicRepo = mock(SemanticTopicRepository.class);
-        when(semanticTopicRepo.findByCode("people-family")).thenReturn(Optional.of(family));
+        SemanticClassRepository semanticClassRepo = mock(SemanticClassRepository.class);
+        when(semanticClassRepo.findByCode("people-family")).thenReturn(Optional.of(family));
 
         LexemeFrequencyRepository freqRepo = mock(LexemeFrequencyRepository.class);
         List<LexemeFrequency> freqs = new ArrayList<>();
@@ -94,7 +94,7 @@ class LexiconImportServiceTest {
         });
 
         LexiconImportService importService =
-                service(client, lexemeRepo, freqRepo, posRepo, morphologyRepo, semanticTopicRepo);
+                service(client, lexemeRepo, freqRepo, posRepo, morphologyRepo, semanticClassRepo);
 
         SangrahaImportResult result = importService.importFromSangraha();
 
@@ -103,7 +103,7 @@ class LexiconImportServiceTest {
         assertThat(result.totalLexemeCount()).isEqualTo(1);
 
         Lexeme savedLexeme = saved.get(0);
-        assertThat(savedLexeme.getSemanticTopics()).extracting(SemanticTopic::getCode)
+        assertThat(savedLexeme.getSemanticClasses()).extracting(SemanticClass::getCode)
                 .containsExactly("people-family");
         assertThat(savedLexeme.getPartsOfSpeech()).extracting(PartOfSpeech::getCode)
                 .containsExactly("noun");
@@ -188,13 +188,13 @@ class LexiconImportServiceTest {
             return Optional.of(mc);
         });
 
-        SemanticTopicRepository semanticTopicRepo = mock(SemanticTopicRepository.class);
-        SemanticTopic family = new SemanticTopic();
+        SemanticClassRepository semanticClassRepo = mock(SemanticClassRepository.class);
+        SemanticClass family = new SemanticClass();
         family.setCode("people-family");
-        when(semanticTopicRepo.findByCode("people-family")).thenReturn(Optional.of(family));
+        when(semanticClassRepo.findByCode("people-family")).thenReturn(Optional.of(family));
 
         LexiconImportService importService =
-                service(client, lexemeRepo, freqRepo, posRepo, morphologyRepo, semanticTopicRepo);
+                service(client, lexemeRepo, freqRepo, posRepo, morphologyRepo, semanticClassRepo);
 
         SangrahaImportResult first = importService.importFromSangraha();
         SangrahaImportResult second = importService.importFromSangraha();
@@ -249,10 +249,10 @@ class LexiconImportServiceTest {
         MorphologyClassRepository morphologyRepo = mock(MorphologyClassRepository.class);
         when(morphologyRepo.findByCode(any())).thenReturn(Optional.empty());
 
-        SemanticTopicRepository semanticTopicRepo = mock(SemanticTopicRepository.class);
+        SemanticClassRepository semanticClassRepo = mock(SemanticClassRepository.class);
 
         LexiconImportService importService =
-                service(client, lexemeRepo, freqRepo, posRepo, morphologyRepo, semanticTopicRepo);
+                service(client, lexemeRepo, freqRepo, posRepo, morphologyRepo, semanticClassRepo);
 
         SangrahaImportResult result = importService.importFromSangraha();
 

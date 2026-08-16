@@ -352,7 +352,7 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
 употребления, с ручным ADMIN-review результата. Результат (категория +
 перевод) отдаётся curriculum-service через export-эндпоинт и используется
 пайплайном наполнения лексикона (`lexicon-content-pipeline.md`) вместо ручной
-разметки `semanticTopicId`/эвристического перевода.
+разметки `semanticClasses`/эвристического перевода.
 
 ### `GET /sangraha/internal/content/verse-words/export`
 

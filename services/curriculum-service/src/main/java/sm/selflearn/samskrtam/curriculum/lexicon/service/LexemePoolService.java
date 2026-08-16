@@ -8,8 +8,11 @@ import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexemeCandidateDto;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.PoolCriteria;
 import sm.selflearn.samskrtam.curriculum.lexicon.imports.LexiconImportService;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeLexicalTopic;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.UserLexemeProgress;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeLexicalTopicRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserCollectionItemRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserLexemeProgressRepository;
@@ -28,8 +31,10 @@ import java.util.UUID;
 
 /**
  * Разрешение пула кандидатов для lexical-сессий (lexical-quizzes.md §3,
- * task-curriculum-15). База пула — все лексемы; тема-фильтр резолвится через
- * {@code topic.semantic_topic_id} в {@code lexeme_semantic_topic}. Переданные
+ * task-curriculum-15). База пула — все лексемы; тема-фильтр резолвится как
+ * объединение семантических классов темы ({@code semantic_class_topic} →
+ * {@code lexeme_semantic_class}) и явных привязок {@code lexeme_lexical_topic}.
+ * Переданные
  * измерения пересекаются (AND), значения внутри измерения объединяются (OR).
  * Балансировка: квота на тему при topicIds.size() &gt; 1 и финальный reshuffle
  * «не более 2 подряд одного posCode».
@@ -46,6 +51,7 @@ public class LexemePoolService {
     private final LexemeFrequencyRepository lexemeFrequencyRepository;
     private final UserCollectionItemRepository userCollectionItemRepository;
     private final UserLexemeProgressRepository userLexemeProgressRepository;
+    private final LexemeLexicalTopicRepository lexemeLexicalTopicRepository;
 
     @Transactional(readOnly = true)
     public List<LexemeCandidateDto> resolve(PoolCriteria criteria) {
@@ -90,18 +96,26 @@ public class LexemePoolService {
     }
 
     /**
-     * topicId → set of lexeme ids, resolved via each topic's {@code semantic_topic_id}
-     * into {@code lexeme_semantic_topic}. Topics without a semantic node (e.g. the
-     * frequency-based evergreen review) contribute nothing.
+     * topicId → set of lexeme ids. A LEXICON topic's lexemes come from BOTH
+     * sources (lexical-curriculum.md §1): classified lexemes via the topic's
+     * semantic classes ({@code semantic_class_topic} → {@code lexeme_semantic_class})
+     * and explicit bindings via {@code lexeme_lexical_topic} (unclassified / VERSE
+     * lessons). Topics with neither contribute nothing.
      */
     private Map<UUID, Set<UUID>> topicLexemeIds(Collection<UUID> topicIds) {
         Map<UUID, Set<UUID>> result = new LinkedHashMap<>();
         for (Topic topic : topicRepository.findAllById(topicIds)) {
-            if (topic.getSemanticTopicId() == null) {
-                continue;
+            Set<UUID> lexemeIds = new HashSet<>();
+            Set<UUID> semanticClassIds = topic.getSemanticClasses().stream()
+                    .map(SemanticClass::getId)
+                    .collect(java.util.stream.Collectors.toSet());
+            if (!semanticClassIds.isEmpty()) {
+                lexemeIds.addAll(lexemeRepository.findLexemeIdsBySemanticClassIds(semanticClassIds));
             }
-            Set<UUID> lexemeIds = new HashSet<>(
-                    lexemeRepository.findLexemeIdsBySemanticTopicIds(List.of(topic.getSemanticTopicId())));
+            lexemeIds.addAll(lexemeLexicalTopicRepository.findByIdLexicalTopicId(topic.getId())
+                    .stream()
+                    .map(binding -> binding.getId().getLexemeId())
+                    .toList());
             result.put(topic.getId(), lexemeIds);
         }
         return result;

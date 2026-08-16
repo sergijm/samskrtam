@@ -6,11 +6,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sm.selflearn.samskrtam.curriculum.lexicon.imports.LexiconImportService;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.FrequencyBand;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticTopic;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeLexicalTopic;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeLexicalTopicId;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticClass;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.FrequencyBandRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexicalTopicBindingRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticTopicRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeLexicalTopicRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticClassRepository;
 import sm.selflearn.samskrtam.curriculum.model.LearningLevel;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
 import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
@@ -34,19 +42,35 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LexicalQuizItemGenerator extends QuizItemGenerator {
 
     public static final String GENERATOR_SOURCE = "LEXICAL_BATCH";
 
+    /** Code prefix of the five frequency-band lessons (lexical-curriculum.md §2). */
+    static final String FREQUENCY_TOPIC_PREFIX = "lex-frequency-";
+
+    /** Code of the cumulative "500 most frequent words" lesson (§2, V31). */
+    static final String TOP500_TOPIC_CODE = "lex-frequency-top500";
+
+    /** Cumulative rank ceiling of the top-500 lesson (CORE + ESSENTIAL + FOUNDATIONAL). */
+    static final int TOP500_MAX_RANK = 500;
+
     static final int DISTRACTOR_COUNT = 3;
+
+    /** Code prefix of the part-of-speech lessons (V32). */
+    static final String POS_TOPIC_PREFIX = "lex-pos-";
 
     private static final Random RANDOM = new Random();
 
     private final TopicRepository topicRepository;
     private final LexemeRepository lexemeRepository;
     private final QuestItemRepository questItemRepository;
-    private final SemanticTopicRepository semanticTopicRepository;
-    private final LexicalTopicBindingRepository lexicalTopicBindingRepository;
+    private final SemanticClassRepository semanticClassRepository;
+    private final LexemeLexicalTopicRepository lexemeLexicalTopicRepository;
+    private final FrequencyBandRepository frequencyBandRepository;
+    private final LexemeFrequencyRepository lexemeFrequencyRepository;
+    private final PartOfSpeechRepository partOfSpeechRepository;
     private final ObjectMapper objectMapper;
 
     static final Map<String, LearningLevel> SEMANTIC_LEVEL = Map.ofEntries(
@@ -91,11 +115,12 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
     }
 
     @Override
+    @Transactional
     public void ensureTopicsExist() {
-        List<SemanticTopic> leaves = semanticTopicRepository.findAll().stream()
+        List<SemanticClass> leaves = semanticClassRepository.findAll().stream()
                 .filter(st -> st.getParent() != null)
                 .toList();
-        for (SemanticTopic leaf : leaves) {
+        for (SemanticClass leaf : leaves) {
             if (topicRepository.findByCode(leaf.getCode()).isPresent()) {
                 continue;
             }
@@ -106,10 +131,111 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
             topic.setLearningLevel(SEMANTIC_LEVEL.getOrDefault(leaf.getCode(), LearningLevel.L0));
             topic.setDomain(TopicDomain.LEXICON);
             topic.setDomainType(TopicDomainType.LEXICON);
-            topic.setSemanticTopicId(leaf.getId());
+            topic.setSemanticClasses(Set.of(leaf));
             topic.setEvergreen(false);
             topicRepository.save(topic);
         }
+        rebindFrequencyLessons();
+        rebindPosLessons();
+    }
+
+    /**
+     * (Re)populates the frequency lessons ({@code lex-frequency-*} codes,
+     * lexical-curriculum.md §2) with the lexemes whose SANGRAHA_CORPUS frequency
+     * rank falls inside each band, plus the cumulative top-500 lesson. Bands
+     * live in {@code frequency_band}, so ranges stay in sync with the dashboard
+     * without code changes.
+     */
+    private void rebindFrequencyLessons() {
+        for (FrequencyBand band : frequencyBandRepository.findAllByOrderBySortOrderAsc()) {
+            String code = FREQUENCY_TOPIC_PREFIX + band.getCode().toLowerCase();
+            Topic topic = topicRepository.findByCode(code)
+                    .orElseGet(() -> createFrequencyTopic(band, code));
+            rebind(topic, band.getMinRank(), band.getMaxRank());
+        }
+        rebindTop500Lesson();
+    }
+
+    /** «500 самых частотных слов» — кумулятивный обзор первой половины словаря. */
+    private void rebindTop500Lesson() {
+        Topic topic = topicRepository.findByCode(TOP500_TOPIC_CODE)
+                .orElseGet(this::createTop500Topic);
+        rebind(topic, 1, TOP500_MAX_RANK);
+    }
+
+    private void rebind(Topic topic, int minRank, int maxRank) {
+        List<UUID> lexemeIds = lexemeFrequencyRepository.findLexemeIdsBySourceAndRankRange(
+                LexiconImportService.FREQUENCY_SOURCE, minRank, maxRank);
+        bindLexemesToTopic(topic, lexemeIds);
+        log.info("Frequency lesson {} bound to {} lexemes (rank {}-{})",
+                topic.getCode(), lexemeIds.size(), minRank, maxRank);
+    }
+
+    /** (Re)populates the {@code lex-pos-*} lesson bindings from {@code lexeme_pos}. */
+    private void rebindPosLessons() {
+        for (PartOfSpeech pos : partOfSpeechRepository.findAll()) {
+            String code = POS_TOPIC_PREFIX + pos.getCode();
+            Topic topic = topicRepository.findByCode(code)
+                    .orElseGet(() -> createPosTopic(pos, code));
+            List<Lexeme> lexemes = lexemeRepository.findByPartsOfSpeech_CodeIn(Set.of(pos.getCode()));
+            List<UUID> lexemeIds = lexemes.stream().map(Lexeme::getId).toList();
+            bindLexemesToTopic(topic, lexemeIds);
+            log.info("POS lesson {} bound to {} lexemes", topic.getCode(), lexemeIds.size());
+        }
+    }
+
+    /** Deletes stale bindings for the topic and inserts fresh ones. */
+    private void bindLexemesToTopic(Topic topic, List<UUID> lexemeIds) {
+        lexemeLexicalTopicRepository.deleteByIdLexicalTopicId(topic.getId());
+        List<LexemeLexicalTopic> bindings = lexemeIds.stream().map(lexemeId -> {
+            LexemeLexicalTopicId key = new LexemeLexicalTopicId();
+            key.setLexicalTopicId(topic.getId());
+            key.setLexemeId(lexemeId);
+            LexemeLexicalTopic binding = new LexemeLexicalTopic();
+            binding.setId(key);
+            return binding;
+        }).toList();
+        lexemeLexicalTopicRepository.saveAll(bindings);
+    }
+
+    /** Fallback for environments where the V30 seed did not run (idempotent with the migration). */
+    private Topic createFrequencyTopic(FrequencyBand band, String code) {
+        Topic topic = new Topic();
+        topic.setCode(code);
+        topic.setTitleRu(band.getLabelRu() + " (" + band.getMinRank() + "–" + band.getMaxRank() + ")");
+        topic.setTitleEn(band.getLabelEn() + " (" + band.getMinRank() + "–" + band.getMaxRank() + ")");
+        topic.setLearningLevel(LearningLevel.values()[Math.max(0, band.getSortOrder() - 1)]);
+        topic.setDomain(TopicDomain.LEXICON);
+        topic.setDomainType(TopicDomainType.LEXICON);
+        topic.setEvergreen(false);
+        topic.setDisplayOrder(band.getSortOrder());
+        return topicRepository.save(topic);
+    }
+
+    /** Fallback for environments where the V31 seed did not run (idempotent with the migration). */
+    private Topic createTop500Topic() {
+        Topic topic = new Topic();
+        topic.setCode(TOP500_TOPIC_CODE);
+        topic.setTitleRu("500 самых частотных слов");
+        topic.setTitleEn("500 most frequent words");
+        topic.setLearningLevel(null);
+        topic.setEvergreen(true);
+        topic.setDomain(TopicDomain.LEXICON);
+        topic.setDomainType(TopicDomainType.LEXICON);
+        return topicRepository.save(topic);
+    }
+
+    /** Fallback for environments where the V32 seed did not run (idempotent with the migration). */
+    private Topic createPosTopic(PartOfSpeech pos, String code) {
+        Topic topic = new Topic();
+        topic.setCode(code);
+        topic.setTitleRu(pos.getNameRu());
+        topic.setTitleEn(pos.getNameEn());
+        topic.setLearningLevel(null);
+        topic.setEvergreen(true);
+        topic.setDomain(TopicDomain.LEXICON);
+        topic.setDomainType(TopicDomainType.LEXICON);
+        return topicRepository.save(topic);
     }
 
     @Override
@@ -145,24 +271,28 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
     }
 
     /**
-     * LEXICON-тема берёт лексемы по {@code semantic_topic_id} (lexeme_semantic_topic),
-     * VERSE-тема — по {@code lexical_topic_binding} (пачка стихов главы, §7).
+     * LEXICON-тема берёт лексемы из обоих источников (lexical-curriculum.md §1):
+     * семантические классы темы ({@code semantic_class_topic} →
+     * {@code lexeme_semantic_class}) плюс явные привязки {@code lexeme_lexical_topic}.
+     * VERSE-тема — только {@code lexeme_lexical_topic} (пачка стихов главы, §7).
      */
     private List<Lexeme> resolveLexemes(Topic topic) {
-        if (topic.getDomain() == TopicDomain.VERSE) {
-            List<UUID> lexemeIds = lexicalTopicBindingRepository.findByIdLexicalTopicId(topic.getId()).stream()
-                    .map(b -> b.getId().getLexemeId())
-                    .toList();
-            if (lexemeIds.isEmpty()) {
-                return List.of();
+        Set<UUID> lexemeIds = new LinkedHashSet<>();
+        lexemeLexicalTopicRepository.findByIdLexicalTopicId(topic.getId()).stream()
+                .map(binding -> binding.getId().getLexemeId())
+                .forEach(lexemeIds::add);
+        if (topic.getDomain() != TopicDomain.VERSE) {
+            Set<UUID> semanticClassIds = topic.getSemanticClasses().stream()
+                    .map(SemanticClass::getId)
+                    .collect(Collectors.toSet());
+            if (!semanticClassIds.isEmpty()) {
+                lexemeIds.addAll(lexemeRepository.findLexemeIdsBySemanticClassIds(semanticClassIds));
             }
-            return lexemeRepository.findWithDetailsByIdIn(lexemeIds);
         }
-        UUID semanticTopicId = topic.getSemanticTopicId();
-        if (semanticTopicId == null) {
+        if (lexemeIds.isEmpty()) {
             return List.of();
         }
-        return lexemeRepository.findBySemanticTopics_Id(semanticTopicId);
+        return lexemeRepository.findWithDetailsByIdIn(lexemeIds);
     }
 
     private static boolean isGlossed(Lexeme lexeme) {

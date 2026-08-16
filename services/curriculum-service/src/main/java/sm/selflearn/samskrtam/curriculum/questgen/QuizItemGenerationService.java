@@ -47,7 +47,7 @@ private final ApplicationContext applicationContext;
         int deleted = questItemRepository.deleteAllQuestItems();
         log.info("Cleared {} quest items, regenerating by topic", deleted);
 
-        // Ensure topics exist (e.g. lexical lessons populated from semantic_topic)
+        // Ensure topics exist (e.g. lexical lessons populated from semantic classes)
         for (QuizItemGenerator g : applicationContext.getBeansOfType(QuizItemGenerator.class).values()) {
             g.ensureTopicsExist();
         }

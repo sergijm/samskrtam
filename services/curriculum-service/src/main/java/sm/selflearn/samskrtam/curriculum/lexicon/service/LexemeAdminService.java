@@ -17,12 +17,12 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticTopic;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.MorphologyClassRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticTopicRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticClassRepository;
 
 import java.util.HashSet;
 import java.util.List;
@@ -40,13 +40,13 @@ public class LexemeAdminService {
     private final LexemeFrequencyRepository frequencyRepository;
     private final PartOfSpeechRepository partOfSpeechRepository;
     private final MorphologyClassRepository morphologyClassRepository;
-    private final SemanticTopicRepository semanticTopicRepository;
+    private final SemanticClassRepository semanticClassRepository;
 
     @Transactional(readOnly = true)
-    public LexemeAdminPage list(String posCode, UUID semanticTopicId,
-                                boolean noSemanticTopic, int page, int size) {
+    public LexemeAdminPage list(String posCode, UUID semanticClassId,
+                                boolean noSemanticClass, int page, int size) {
         Page<Lexeme> result = lexemeRepository.search(
-                posCode, semanticTopicId, noSemanticTopic, PageRequest.of(page, size));
+                posCode, semanticClassId, noSemanticClass, PageRequest.of(page, size));
         List<LexemeAdminDto> items = result.getContent().stream()
                 .map(this::toAdminDto)
                 .toList();
@@ -67,7 +67,7 @@ public class LexemeAdminService {
         apply(lexeme, request);
         lexemeRepository.save(lexeme);
         replaceTaxonomies(lexeme, request.posCodes(), request.morphologyClassCodes(),
-                request.semanticTopicIds());
+                request.semanticClassIds());
         return toDetailDto(lexeme);
     }
 
@@ -77,7 +77,7 @@ public class LexemeAdminService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lexeme not found"));
         apply(lexeme, request);
         replaceTaxonomies(lexeme, request.posCodes(), request.morphologyClassCodes(),
-                request.semanticTopicIds());
+                request.semanticClassIds());
         return toDetailDto(lexeme);
     }
 
@@ -85,17 +85,17 @@ public class LexemeAdminService {
      * Идемпотентная замена набора семантических тем (task-curriculum-16 §5).
      */
     @Transactional
-    public LexemeDetailDto replaceSemanticTopics(UUID id, List<UUID> topicIds) {
+    public LexemeDetailDto replaceSemanticClasses(UUID id, List<UUID> classIds) {
         Lexeme lexeme = lexemeRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lexeme not found"));
-        Set<SemanticTopic> topics = new HashSet<>();
-        if (topicIds != null) {
-            for (UUID topicId : topicIds) {
-                semanticTopicRepository.findById(topicId)
-                        .ifPresent(topics::add);
+        Set<SemanticClass> classes = new HashSet<>();
+        if (classIds != null) {
+            for (UUID classId : classIds) {
+                semanticClassRepository.findById(classId)
+                        .ifPresent(classes::add);
             }
         }
-        lexeme.setSemanticTopics(topics);
+        lexeme.setSemanticClasses(classes);
         lexemeRepository.save(lexeme);
         return toDetailDto(lexeme);
     }
@@ -136,24 +136,24 @@ public class LexemeAdminService {
     }
 
     private void replaceTaxonomies(Lexeme lexeme, List<String> posCodes,
-                                   List<String> morphologyCodes, List<UUID> topicIds) {
+                                   List<String> morphologyCodes, List<UUID> classIds) {
         if (posCodes != null) {
             lexeme.setPartsOfSpeech(resolve(posCodes, partOfSpeechRepository::findByCode));
         }
         if (morphologyCodes != null) {
             lexeme.setMorphologyClasses(resolve(morphologyCodes, morphologyClassRepository::findByCode));
         }
-        if (topicIds != null) {
-            lexeme.setSemanticTopics(SemanticTopicSet(topicIds));
+        if (classIds != null) {
+            lexeme.setSemanticClasses(SemanticClassSet(classIds));
         }
     }
 
-    private Set<SemanticTopic> SemanticTopicSet(List<UUID> topicIds) {
-        Set<SemanticTopic> topics = new HashSet<>();
-        for (UUID id : topicIds) {
-            semanticTopicRepository.findById(id).ifPresent(topics::add);
+    private Set<SemanticClass> SemanticClassSet(List<UUID> classIds) {
+        Set<SemanticClass> classes = new HashSet<>();
+        for (UUID id : classIds) {
+            semanticClassRepository.findById(id).ifPresent(classes::add);
         }
-        return topics;
+        return classes;
     }
 
     private <T> Set<T> resolve(List<String> codes, java.util.function.Function<String, java.util.Optional<T>> resolver) {
@@ -181,7 +181,7 @@ public class LexemeAdminService {
                 lexeme.getGender() == null ? null : lexeme.getGender().name(),
                 rank,
                 lexeme.getWordForms().size(),
-                !lexeme.getSemanticTopics().isEmpty());
+                !lexeme.getSemanticClasses().isEmpty());
     }
 
     private LexemeDetailDto toDetailDto(Lexeme lexeme) {
@@ -201,7 +201,7 @@ public class LexemeAdminService {
                 lexeme.getGender(),
                 lexeme.getPartsOfSpeech().stream().map(PartOfSpeech::getCode).toList(),
                 lexeme.getMorphologyClasses().stream().map(MorphologyClass::getCode).toList(),
-                lexeme.getSemanticTopics().stream().map(SemanticTopic::getId).toList(),
+                lexeme.getSemanticClasses().stream().map(SemanticClass::getId).toList(),
                 wordForms,
                 lexeme.getCreatedAt(),
                 lexeme.getUpdatedAt());

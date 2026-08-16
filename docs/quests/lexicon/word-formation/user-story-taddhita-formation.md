@@ -1,7 +1,7 @@
 # US-LEX-07 — Образование производного слова по суффиксу (taddhita)
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `WORD_FORMATION` (план)
-> Связанные файлы: [quest-catalog.md §5](../../../services/quest-catalog.md)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `WORD_FORMATION` (план)
+> Связанные файлы: [quest-catalog.md §5](../../../services/curriculum-service/quest-catalog.md)
 
 ## История
 

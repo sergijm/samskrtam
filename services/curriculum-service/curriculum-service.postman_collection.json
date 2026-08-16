@@ -1,996 +1,1750 @@
 {
-	"info": {
-		"_postman_id": "c1f3e2a5-d78b-4a9c-b6e1-f890a1b2c3d4",
-		"name": "Curriculum Service",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-	},
-	"variable": [
-		{
-			"key": "curriculumBaseUrl",
-			"value": "http://localhost:8081"
-		}
-	],
-	"item": [
-		{
-			"name": "Topic",
-			"item": [
-				{
-					"name": "List topics",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics?includeEvergreen=true",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "topics"],
-							"query": [
-								{ "key": "includeEvergreen", "value": "true", "description": "Include evergreen topics (default true)" }
-							]
-						}
-					}
-				},
-				{
-					"name": "Get topic by id",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "topics", "{{topicId}}"]
-						}
-					}
-				},
-				{
-					"name": "Create topic",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "topics"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"code\": \"new-topic\",\n  \"titleRu\": \"Новый топик\",\n  \"titleEn\": \"New topic\",\n  \"learningLevel\": \"L0\",\n  \"domain\": \"LEXICON\",\n  \"evergreen\": false\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Update topic",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "topics", "{{topicId}}"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"titleRu\": \"Обновлённый топик\",\n  \"titleEn\": \"Updated topic\",\n  \"learningLevel\": \"L1\",\n  \"evergreen\": false,\n  \"displayOrder\": 1\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Delete topic",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "topics", "{{topicId}}"]
-						}
-					}
-				},
-				{
-					"name": "List prerequisites",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicId}}/prerequisites",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "topics", "{{topicId}}", "prerequisites"]
-						}
-					}
-				},
-				{
-					"name": "Add prerequisite",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicId}}/prerequisites",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "topics", "{{topicId}}", "prerequisites"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"prerequisiteTopicId\": \"00000000-0000-0000-0000-000000000001\"\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Remove prerequisite",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicId}}/prerequisites/{{prerequisiteTopicId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "topics", "{{topicId}}", "prerequisites", "{{prerequisiteTopicId}}"]
-						}
-					}
-				},
-				{
-					"name": "Topic graph",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/graph",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "graph"]
-						}
-					}
-				},
-				{
-					"name": "List levels",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/levels",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "levels"]
-						}
-					}
-				},
-				{
-					"name": "List topics by level",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/levels/L0/topics",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "levels", "L0", "topics"]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Lesson",
-			"item": [
-				{
-					"name": "List lessons",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/lessons",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "lessons"]
-						}
-					}
-				},
-				{
-					"name": "Get lesson by topic code",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicCode}}/lesson",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "topics", "{{topicCode}}", "lesson"]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Quest Items",
-			"item": [
-				{
-					"name": "Select quest items",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/quest-items/select?topicCode=a-stem",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "quest-items", "select"],
-							"query": [
-								{ "key": "topicCode", "value": "a-stem", "description": "Topic code (required)" }
-							]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"userId\": \"00000000-0000-0000-0000-000000000001\",\n  \"sessionId\": \"00000000-0000-0000-0000-000000000002\",\n  \"count\": 10\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "List quest items by type",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/quest-items?topicId={{topicId}}&itemType=VOCABULARY_WORD&limit=20",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "quest-items"],
-							"query": [
-								{ "key": "topicId", "value": "{{topicId}}", "description": "Topic UUID (required)" },
-								{ "key": "itemType", "value": "VOCABULARY_WORD", "description": "Item type (required)" },
-								{ "key": "limit", "value": "20", "description": "Max items, capped at 100 (default 20)" }
-							]
-						}
-					}
-				},
-				{
-					"name": "Regenerate quest items (ADMIN)",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/quest-items/regenerate",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "quest-items", "regenerate"]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Learn Graph",
-			"item": [
-				{
-					"name": "Get learn graph",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/learn-graph",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "learn-graph"]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Complex Quiz",
-			"item": [
-				{
-					"name": "List complex quizzes",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/complex-quizzes?level=L0&type=EXAM",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "complex-quizzes"],
-							"query": [
-								{ "key": "level", "value": "L0", "description": "Learning level filter (optional)", "disabled": true },
-								{ "key": "type", "value": "EXAM", "description": "Quiz type filter (optional)", "disabled": true }
-							]
-						}
-					}
-				},
-				{
-					"name": "Get complex quiz",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/complex-quizzes/{{quizId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "complex-quizzes", "{{quizId}}"]
-						}
-					}
-				},
-				{
-					"name": "Create complex quiz",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/complex-quizzes",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "complex-quizzes"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"titleRu\": \"Экзамен L0\",\n  \"titleEn\": \"Exam L0\",\n  \"type\": \"EXAM\",\n  \"level\": \"L0\",\n  \"topicIds\": []\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Update complex quiz",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/complex-quizzes/{{quizId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "complex-quizzes", "{{quizId}}"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"titleRu\": \"Экзамен L0\",\n  \"titleEn\": \"Exam L0\",\n  \"type\": \"EXAM\",\n  \"level\": \"L0\",\n  \"topicIds\": []\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Delete complex quiz",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/complex-quizzes/{{quizId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "complex-quizzes", "{{quizId}}"]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Declension Paradigm",
-			"item": [
-				{
-					"name": "Get declension paradigm",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/a-stem/declension-paradigms?index=0",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "topics", "a-stem", "declension-paradigms"],
-							"query": [
-								{ "key": "index", "value": "0", "description": "Page index (default 0)" }
-							]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Sandhi Rules",
-			"item": [
-				{
-					"name": "Get sandhi rules",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/sandhi-rules/visarga-sandhi",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "sandhi-rules", "visarga-sandhi"]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Lexicon Dashboard",
-			"item": [
-				{
-					"name": "Get lexicon dashboard",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/curriculum/lexicon",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "curriculum", "lexicon"]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Lexeme",
-			"item": [
-				{
-					"name": "List lexemes (admin)",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/lexemes?posCode=NOUN&semanticTopicId={{semanticTopicId}}&noSemanticTopic=false&page=0&size=50",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "lexemes"],
-							"query": [
-								{ "key": "posCode", "value": "NOUN", "description": "Part of speech filter (optional)", "disabled": true },
-								{ "key": "semanticTopicId", "value": "{{semanticTopicId}}", "description": "Semantic topic filter (optional)", "disabled": true },
-								{ "key": "noSemanticTopic", "value": "false", "description": "Only unclassified lexemes", "disabled": true },
-								{ "key": "page", "value": "0" },
-								{ "key": "size", "value": "50", "description": "Page size (default 50)" }
-							]
-						}
-					}
-				},
-				{
-					"name": "Get lexeme",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/lexemes/{{lexemeId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "lexemes", "{{lexemeId}}"]
-						}
-					}
-				},
-				{
-					"name": "Create lexeme",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/lexemes",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "lexemes"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"lemmaIast\": \"nara\",\n  \"lemmaDevanagari\": \"नर\",\n  \"lemmaSlp1\": \"nara\",\n  \"glossRu\": \"мужчина\",\n  \"glossEn\": \"man\",\n  \"gender\": \"MASCULINE\"\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Update lexeme",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/lexemes/{{lexemeId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "lexemes", "{{lexemeId}}"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"lemmaIast\": \"nara\",\n  \"lemmaDevanagari\": \"नर\",\n  \"lemmaSlp1\": \"nara\",\n  \"glossRu\": \"мужчина\",\n  \"glossEn\": \"man\",\n  \"gender\": \"MASCULINE\"\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Lexeme Taxonomy",
-			"item": [
-				{
-					"name": "Set semantic topics",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/lexemes/{{lexemeId}}/semantic-topics",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "lexemes", "{{lexemeId}}", "semantic-topics"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "[\"00000000-0000-0000-0000-000000000001\"]",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Set POS",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/lexemes/{{lexemeId}}/pos",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "lexemes", "{{lexemeId}}", "pos"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "[\"NOUN\"]",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Set morphology classes",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/lexemes/{{lexemeId}}/morphology",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "lexemes", "{{lexemeId}}", "morphology"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "[\"a-stem-masc\"]",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Lexeme Progress",
-			"item": [
-				{
-					"name": "Get progress",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/progress?lexemeIds={{lexemeId}}&lexemeIds={{lexemeId2}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "users", "{{userId}}", "progress"],
-							"query": [
-								{ "key": "lexemeIds", "value": "{{lexemeId}}" },
-								{ "key": "lexemeIds", "value": "{{lexemeId2}}", "description": "Repeat for multiple IDs" }
-							]
-						}
-					}
-				},
-				{
-					"name": "Record answer",
-					"request": {
-						"method": "PATCH",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/progress/{{lexemeId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "users", "{{userId}}", "progress", "{{lexemeId}}"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"correct\": true\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "User Collections",
-			"item": [
-				{
-					"name": "List collections",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/collections",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "users", "{{userId}}", "collections"]
-						}
-					}
-				},
-				{
-					"name": "Get collection",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/collections/{{collectionId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "users", "{{userId}}", "collections", "{{collectionId}}"]
-						}
-					}
-				},
-				{
-					"name": "Create collection",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/collections",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "users", "{{userId}}", "collections"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"My collection\",\n  \"description\": \"User collection\",\n  \"visibility\": \"PRIVATE\"\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Update collection",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/collections/{{collectionId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "users", "{{userId}}", "collections", "{{collectionId}}"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"Updated collection\",\n  \"description\": \"Updated\",\n  \"visibility\": \"SHARED\"\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Delete collection",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/collections/{{collectionId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "users", "{{userId}}", "collections", "{{collectionId}}"]
-						}
-					}
-				},
-				{
-					"name": "Add lexeme to collection",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/collections/{{collectionId}}/items/{{lexemeId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "users", "{{userId}}", "collections", "{{collectionId}}", "items", "{{lexemeId}}"]
-						}
-					}
-				},
-				{
-					"name": "Remove lexeme from collection",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/collections/{{collectionId}}/items/{{lexemeId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "users", "{{userId}}", "collections", "{{collectionId}}", "items", "{{lexemeId}}"]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Source",
-			"item": [
-				{
-					"name": "List sources",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/sources",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "sources"]
-						}
-					}
-				},
-				{
-					"name": "Get source",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/sources/{{sourceId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "sources", "{{sourceId}}"]
-						}
-					}
-				},
-				{
-					"name": "Create source",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/sources",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "sources"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"code\": \"bhagavad-gita\",\n  \"titleRu\": \"Бхагавад-гита\",\n  \"titleEn\": \"Bhagavad Gita\",\n  \"kind\": \"PHILOSOPHICAL\"\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Update source",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/sources/{{sourceId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "sources", "{{sourceId}}"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"code\": \"bhagavad-gita\",\n  \"titleRu\": \"Бхагавад-гита\",\n  \"titleEn\": \"Bhagavad Gita\",\n  \"kind\": \"PHILOSOPHICAL\"\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Delete source",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/sources/{{sourceId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "sources", "{{sourceId}}"]
-						}
-					}
-				},
-				{
-					"name": "Refresh occurrence cache",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/sources/{{sourceId}}/occurrences/refresh-cache",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "sources", "{{sourceId}}", "occurrences", "refresh-cache"]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Vocabulary Quiz Definitions",
-			"item": [
-				{
-					"name": "List quiz definitions",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/vocabulary-quiz-definitions?kind=TOPIC",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "vocabulary-quiz-definitions"],
-							"query": [
-								{ "key": "kind", "value": "TOPIC", "description": "Quiz kind filter (optional)", "disabled": true }
-							]
-						}
-					}
-				},
-				{
-					"name": "Get quiz definition",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/vocabulary-quiz-definitions/{{vocabQuizId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "vocabulary-quiz-definitions", "{{vocabQuizId}}"]
-						}
-					}
-				},
-				{
-					"name": "Create quiz definition",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/vocabulary-quiz-definitions",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "vocabulary-quiz-definitions"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"kind\": \"TOPIC\",\n  \"titleRu\": \"Викторина\",\n  \"titleEn\": \"Quiz\",\n  \"topicId\": \"00000000-0000-0000-0000-000000000001\"\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Update quiz definition",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/vocabulary-quiz-definitions/{{vocabQuizId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "vocabulary-quiz-definitions", "{{vocabQuizId}}"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"kind\": \"TOPIC\",\n  \"titleRu\": \"Викторина\",\n  \"titleEn\": \"Quiz\",\n  \"topicId\": \"00000000-0000-0000-0000-000000000001\"\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Delete quiz definition",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/vocabulary-quiz-definitions/{{vocabQuizId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "vocabulary-quiz-definitions", "{{vocabQuizId}}"]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Lexicon Import",
-			"item": [
-				{
-					"name": "Import from sangraha (ADMIN)",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/import/from-sangraha",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "import", "from-sangraha"]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Reference Data",
-			"item": [
-				{
-					"name": "Get semantic topics tree",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/semantic-topics/tree",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "semantic-topics", "tree"]
-						}
-					}
-				},
-				{
-					"name": "Create semantic topic",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/semantic-topics",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "semantic-topics"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"code\": \"new-topic\",\n  \"nameRu\": \"Новая тема\",\n  \"nameEn\": \"New topic\",\n  \"parentId\": null\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Update semantic topic",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/semantic-topics/{{semanticTopicId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "semantic-topics", "{{semanticTopicId}}"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"code\": \"new-topic\",\n  \"nameRu\": \"Обновлённая тема\",\n  \"nameEn\": \"Updated topic\",\n  \"parentId\": null\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Delete semantic topic",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/semantic-topics/{{semanticTopicId}}",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "semantic-topics", "{{semanticTopicId}}"]
-						}
-					}
-				},
-				{
-					"name": "List POS",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/pos",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "pos"]
-						}
-					}
-				},
-				{
-					"name": "Upsert POS",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/pos",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "pos"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"code\": \"NOUN\",\n  \"group\": \"NOMINAL\",\n  \"nameRu\": \"Существительное\",\n  \"nameEn\": \"Noun\"\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Delete POS",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/pos/NOUN",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "pos", "NOUN"]
-						}
-					}
-				},
-				{
-					"name": "List morphology classes",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/morphology-classes",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "morphology-classes"]
-						}
-					}
-				},
-				{
-					"name": "Upsert morphology class",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/morphology-classes",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "morphology-classes"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"code\": \"a-stem-masc\",\n  \"appliesTo\": \"NOUN\",\n  \"nameRu\": \"a-основа м.р.\",\n  \"nameEn\": \"a-stem masculine\"\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Delete morphology class",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/morphology-classes/a-stem-masc",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "morphology-classes", "a-stem-masc"]
-						}
-					}
-				},
-				{
-					"name": "List frequency bands",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/frequency-bands",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "frequency-bands"]
-						}
-					}
-				},
-				{
-					"name": "Upsert frequency band",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/frequency-bands",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "frequency-bands"]
-						},
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"code\": \"HIGH\",\n  \"minRank\": 1,\n  \"maxRank\": 100,\n  \"labelRu\": \"Высокая\",\n  \"labelEn\": \"High\",\n  \"sortOrder\": 1\n}",
-							"options": { "raw": { "language": "json" } }
-						}
-					}
-				},
-				{
-					"name": "Delete frequency band",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/frequency-bands/HIGH",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "frequency-bands", "HIGH"]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Lexicon Pool",
-			"item": [
-				{
-					"name": "Resolve pool",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{curriculumBaseUrl}}/api/v2/lexicon/pool/resolve?topicIds={{topicId}}&frequencyRankMin=1&frequencyRankMax=100&poolLimit=50",
-							"host": ["{{curriculumBaseUrl}}"],
-							"path": ["api", "v2", "lexicon", "pool", "resolve"],
-							"query": [
-								{ "key": "topicIds", "value": "{{topicId}}", "description": "Topic UUIDs (optional)", "disabled": true },
-								{ "key": "frequencyRankMin", "value": "1", "description": "Min frequency rank (optional)", "disabled": true },
-								{ "key": "frequencyRankMax", "value": "100", "description": "Max frequency rank (optional)", "disabled": true },
-								{ "key": "posCodes", "value": "NOUN", "description": "POS codes (optional)", "disabled": true },
-								{ "key": "morphologyClassCodes", "value": "a-stem-masc", "description": "Morphology class codes (optional)", "disabled": true },
-								{ "key": "sourceId", "value": "{{sourceId}}", "description": "Source UUID (optional)", "disabled": true },
-								{ "key": "sourceLocationPrefix", "value": "1.1.", "description": "Source location prefix (optional)", "disabled": true },
-								{ "key": "collectionId", "value": "{{collectionId}}", "description": "Collection UUID (optional)", "disabled": true },
-								{ "key": "excludeMasteredForUserId", "value": "{{userId}}", "description": "Exclude mastered for user (optional)", "disabled": true },
-								{ "key": "poolLimit", "value": "50", "description": "Max pool size (optional)", "disabled": true }
-							]
-						}
-					}
-				}
-			]
-		}
-	]
+    "info": {
+        "_postman_id": "c1f3e2a5-d78b-4a9c-b6e1-f890a1b2c3d4",
+        "name": "Curriculum Service",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "curriculumBaseUrl",
+            "value": "http://localhost:8081"
+        }
+    ],
+    "item": [
+        {
+            "name": "Topic",
+            "item": [
+                {
+                    "name": "List topics",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics?includeEvergreen=true",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "topics"
+                            ],
+                            "query": [
+                                {
+                                    "key": "includeEvergreen",
+                                    "value": "true",
+                                    "description": "Include evergreen topics (default true)"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get topic by id",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "topics",
+                                "{{topicId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create topic",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "topics"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"new-topic\",\n  \"titleRu\": \"Новый топик\",\n  \"titleEn\": \"New topic\",\n  \"learningLevel\": \"L0\",\n  \"domain\": \"LEXICON\",\n  \"evergreen\": false\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Update topic",
+                    "request": {
+                        "method": "PUT",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "topics",
+                                "{{topicId}}"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"titleRu\": \"Обновлённый топик\",\n  \"titleEn\": \"Updated topic\",\n  \"learningLevel\": \"L1\",\n  \"evergreen\": false,\n  \"displayOrder\": 1\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete topic",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "topics",
+                                "{{topicId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List prerequisites",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicId}}/prerequisites",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "topics",
+                                "{{topicId}}",
+                                "prerequisites"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add prerequisite",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicId}}/prerequisites",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "topics",
+                                "{{topicId}}",
+                                "prerequisites"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"prerequisiteTopicId\": \"00000000-0000-0000-0000-000000000001\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Remove prerequisite",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicId}}/prerequisites/{{prerequisiteTopicId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "topics",
+                                "{{topicId}}",
+                                "prerequisites",
+                                "{{prerequisiteTopicId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Topic graph",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/graph",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "graph"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List levels",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/levels",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "levels"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List topics by level",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/levels/L0/topics",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "levels",
+                                "L0",
+                                "topics"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Lesson",
+            "item": [
+                {
+                    "name": "List lessons",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/lessons",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "lessons"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get lesson by topic code",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/{{topicCode}}/lesson",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "topics",
+                                "{{topicCode}}",
+                                "lesson"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Quest Items",
+            "item": [
+                {
+                    "name": "Select quest items",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/quest-items/select?topicCode=a-stem",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "quest-items",
+                                "select"
+                            ],
+                            "query": [
+                                {
+                                    "key": "topicCode",
+                                    "value": "a-stem",
+                                    "description": "Topic code (required)"
+                                }
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"userId\": \"00000000-0000-0000-0000-000000000001\",\n  \"sessionId\": \"00000000-0000-0000-0000-000000000002\",\n  \"count\": 10\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "List quest items by type",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/quest-items?topicId={{topicId}}&itemType=VOCABULARY_WORD&limit=20",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "quest-items"
+                            ],
+                            "query": [
+                                {
+                                    "key": "topicId",
+                                    "value": "{{topicId}}",
+                                    "description": "Topic UUID (required)"
+                                },
+                                {
+                                    "key": "itemType",
+                                    "value": "VOCABULARY_WORD",
+                                    "description": "Item type (required)"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20",
+                                    "description": "Max items, capped at 100 (default 20)"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Regenerate quest items (ADMIN)",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/quest-items/regenerate",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "quest-items",
+                                "regenerate"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Learn Graph",
+            "item": [
+                {
+                    "name": "Get learn graph",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/learn-graph",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "learn-graph"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Complex Quiz",
+            "item": [
+                {
+                    "name": "List complex quizzes",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/complex-quizzes?level=L0&type=EXAM",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "complex-quizzes"
+                            ],
+                            "query": [
+                                {
+                                    "key": "level",
+                                    "value": "L0",
+                                    "description": "Learning level filter (optional)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "type",
+                                    "value": "EXAM",
+                                    "description": "Quiz type filter (optional)",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get complex quiz",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/complex-quizzes/{{quizId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "complex-quizzes",
+                                "{{quizId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create complex quiz",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/complex-quizzes",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "complex-quizzes"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"titleRu\": \"Экзамен L0\",\n  \"titleEn\": \"Exam L0\",\n  \"type\": \"EXAM\",\n  \"level\": \"L0\",\n  \"topicIds\": []\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Update complex quiz",
+                    "request": {
+                        "method": "PUT",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/complex-quizzes/{{quizId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "complex-quizzes",
+                                "{{quizId}}"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"titleRu\": \"Экзамен L0\",\n  \"titleEn\": \"Exam L0\",\n  \"type\": \"EXAM\",\n  \"level\": \"L0\",\n  \"topicIds\": []\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete complex quiz",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/complex-quizzes/{{quizId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "complex-quizzes",
+                                "{{quizId}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Declension Paradigm",
+            "item": [
+                {
+                    "name": "Get declension paradigm",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/topics/a-stem/declension-paradigms?index=0",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "topics",
+                                "a-stem",
+                                "declension-paradigms"
+                            ],
+                            "query": [
+                                {
+                                    "key": "index",
+                                    "value": "0",
+                                    "description": "Page index (default 0)"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Sandhi Rules",
+            "item": [
+                {
+                    "name": "Get sandhi rules",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/sandhi-rules/visarga-sandhi",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "sandhi-rules",
+                                "visarga-sandhi"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Lexicon Dashboard",
+            "item": [
+                {
+                    "name": "Get lexicon dashboard",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/curriculum/lexicon",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "curriculum",
+                                "lexicon"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Lexeme",
+            "item": [
+                {
+                    "name": "List lexemes (admin)",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/lexemes?posCode=NOUN&semanticClassId={{semanticClassId}}&noSemanticClass=false&page=0&size=50",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "lexemes"
+                            ],
+                            "query": [
+                                {
+                                    "key": "posCode",
+                                    "value": "NOUN",
+                                    "description": "Part of speech filter (optional)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "semanticClassId",
+                                    "value": "{{semanticClassId}}",
+                                    "description": "Semantic topic filter (optional)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "noSemanticClass",
+                                    "value": "false",
+                                    "description": "Only unclassified lexemes",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "50",
+                                    "description": "Page size (default 50)"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get lexeme",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/lexemes/{{lexemeId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "lexemes",
+                                "{{lexemeId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create lexeme",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/lexemes",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "lexemes"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"lemmaIast\": \"nara\",\n  \"lemmaDevanagari\": \"नर\",\n  \"lemmaSlp1\": \"nara\",\n  \"glossRu\": \"мужчина\",\n  \"glossEn\": \"man\",\n  \"gender\": \"MASCULINE\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Update lexeme",
+                    "request": {
+                        "method": "PUT",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/lexemes/{{lexemeId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "lexemes",
+                                "{{lexemeId}}"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"lemmaIast\": \"nara\",\n  \"lemmaDevanagari\": \"नर\",\n  \"lemmaSlp1\": \"nara\",\n  \"glossRu\": \"мужчина\",\n  \"glossEn\": \"man\",\n  \"gender\": \"MASCULINE\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Lexeme Taxonomy",
+            "item": [
+                {
+                    "name": "Set semantic topics",
+                    "request": {
+                        "method": "PUT",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/lexemes/{{lexemeId}}/semantic-classes",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "lexemes",
+                                "{{lexemeId}}",
+                                "semantic-classes"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "[\"00000000-0000-0000-0000-000000000001\"]",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Set POS",
+                    "request": {
+                        "method": "PUT",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/lexemes/{{lexemeId}}/pos",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "lexemes",
+                                "{{lexemeId}}",
+                                "pos"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "[\"NOUN\"]",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Set morphology classes",
+                    "request": {
+                        "method": "PUT",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/lexemes/{{lexemeId}}/morphology",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "lexemes",
+                                "{{lexemeId}}",
+                                "morphology"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "[\"a-stem-masc\"]",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Lexeme Progress",
+            "item": [
+                {
+                    "name": "Get progress",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/progress?lexemeIds={{lexemeId}}&lexemeIds={{lexemeId2}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "users",
+                                "{{userId}}",
+                                "progress"
+                            ],
+                            "query": [
+                                {
+                                    "key": "lexemeIds",
+                                    "value": "{{lexemeId}}"
+                                },
+                                {
+                                    "key": "lexemeIds",
+                                    "value": "{{lexemeId2}}",
+                                    "description": "Repeat for multiple IDs"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Record answer",
+                    "request": {
+                        "method": "PATCH",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/progress/{{lexemeId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "users",
+                                "{{userId}}",
+                                "progress",
+                                "{{lexemeId}}"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"correct\": true\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "User Collections",
+            "item": [
+                {
+                    "name": "List collections",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/collections",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "users",
+                                "{{userId}}",
+                                "collections"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get collection",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/collections/{{collectionId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "users",
+                                "{{userId}}",
+                                "collections",
+                                "{{collectionId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create collection",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/collections",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "users",
+                                "{{userId}}",
+                                "collections"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"My collection\",\n  \"description\": \"User collection\",\n  \"visibility\": \"PRIVATE\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Update collection",
+                    "request": {
+                        "method": "PUT",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/collections/{{collectionId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "users",
+                                "{{userId}}",
+                                "collections",
+                                "{{collectionId}}"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Updated collection\",\n  \"description\": \"Updated\",\n  \"visibility\": \"SHARED\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete collection",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/collections/{{collectionId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "users",
+                                "{{userId}}",
+                                "collections",
+                                "{{collectionId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add lexeme to collection",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/collections/{{collectionId}}/items/{{lexemeId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "users",
+                                "{{userId}}",
+                                "collections",
+                                "{{collectionId}}",
+                                "items",
+                                "{{lexemeId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Remove lexeme from collection",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/users/{{userId}}/collections/{{collectionId}}/items/{{lexemeId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "users",
+                                "{{userId}}",
+                                "collections",
+                                "{{collectionId}}",
+                                "items",
+                                "{{lexemeId}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Source",
+            "item": [
+                {
+                    "name": "List sources",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/sources",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "sources"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get source",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/sources/{{sourceId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "sources",
+                                "{{sourceId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create source",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/sources",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "sources"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"bhagavad-gita\",\n  \"titleRu\": \"Бхагавад-гита\",\n  \"titleEn\": \"Bhagavad Gita\",\n  \"kind\": \"PHILOSOPHICAL\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Update source",
+                    "request": {
+                        "method": "PUT",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/sources/{{sourceId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "sources",
+                                "{{sourceId}}"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"bhagavad-gita\",\n  \"titleRu\": \"Бхагавад-гита\",\n  \"titleEn\": \"Bhagavad Gita\",\n  \"kind\": \"PHILOSOPHICAL\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete source",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/sources/{{sourceId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "sources",
+                                "{{sourceId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Refresh occurrence cache",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/sources/{{sourceId}}/occurrences/refresh-cache",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "sources",
+                                "{{sourceId}}",
+                                "occurrences",
+                                "refresh-cache"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Vocabulary Quiz Definitions",
+            "item": [
+                {
+                    "name": "List quiz definitions",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/vocabulary-quiz-definitions?kind=TOPIC",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "vocabulary-quiz-definitions"
+                            ],
+                            "query": [
+                                {
+                                    "key": "kind",
+                                    "value": "TOPIC",
+                                    "description": "Quiz kind filter (optional)",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get quiz definition",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/vocabulary-quiz-definitions/{{vocabQuizId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "vocabulary-quiz-definitions",
+                                "{{vocabQuizId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create quiz definition",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/vocabulary-quiz-definitions",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "vocabulary-quiz-definitions"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"kind\": \"TOPIC\",\n  \"titleRu\": \"Викторина\",\n  \"titleEn\": \"Quiz\",\n  \"topicId\": \"00000000-0000-0000-0000-000000000001\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Update quiz definition",
+                    "request": {
+                        "method": "PUT",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/vocabulary-quiz-definitions/{{vocabQuizId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "vocabulary-quiz-definitions",
+                                "{{vocabQuizId}}"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"kind\": \"TOPIC\",\n  \"titleRu\": \"Викторина\",\n  \"titleEn\": \"Quiz\",\n  \"topicId\": \"00000000-0000-0000-0000-000000000001\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete quiz definition",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/vocabulary-quiz-definitions/{{vocabQuizId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "vocabulary-quiz-definitions",
+                                "{{vocabQuizId}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Lexicon Import",
+            "item": [
+                {
+                    "name": "Import from sangraha (ADMIN)",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/import/from-sangraha",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "import",
+                                "from-sangraha"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Reference Data",
+            "item": [
+                {
+                    "name": "Get semantic topics tree",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/semantic-classes/tree",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "semantic-classes",
+                                "tree"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create semantic topic",
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/semantic-classes",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "semantic-classes"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"new-topic\",\n  \"nameRu\": \"Новая тема\",\n  \"nameEn\": \"New topic\",\n  \"parentId\": null\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Update semantic topic",
+                    "request": {
+                        "method": "PUT",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/semantic-classes/{{semanticClassId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "semantic-classes",
+                                "{{semanticClassId}}"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"new-topic\",\n  \"nameRu\": \"Обновлённая тема\",\n  \"nameEn\": \"Updated topic\",\n  \"parentId\": null\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete semantic topic",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/semantic-classes/{{semanticClassId}}",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "semantic-classes",
+                                "{{semanticClassId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List POS",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/pos",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "pos"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Upsert POS",
+                    "request": {
+                        "method": "PUT",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/pos",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "pos"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"NOUN\",\n  \"group\": \"NOMINAL\",\n  \"nameRu\": \"Существительное\",\n  \"nameEn\": \"Noun\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete POS",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/pos/NOUN",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "pos",
+                                "NOUN"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List morphology classes",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/morphology-classes",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "morphology-classes"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Upsert morphology class",
+                    "request": {
+                        "method": "PUT",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/morphology-classes",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "morphology-classes"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"a-stem-masc\",\n  \"appliesTo\": \"NOUN\",\n  \"nameRu\": \"a-основа м.р.\",\n  \"nameEn\": \"a-stem masculine\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete morphology class",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/morphology-classes/a-stem-masc",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "morphology-classes",
+                                "a-stem-masc"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List frequency bands",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/frequency-bands",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "frequency-bands"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Upsert frequency band",
+                    "request": {
+                        "method": "PUT",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/frequency-bands",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "frequency-bands"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"HIGH\",\n  \"minRank\": 1,\n  \"maxRank\": 100,\n  \"labelRu\": \"Высокая\",\n  \"labelEn\": \"High\",\n  \"sortOrder\": 1\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete frequency band",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/frequency-bands/HIGH",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "frequency-bands",
+                                "HIGH"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Lexicon Pool",
+            "item": [
+                {
+                    "name": "Resolve pool",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{curriculumBaseUrl}}/api/v2/lexicon/pool/resolve?topicIds={{topicId}}&frequencyRankMin=1&frequencyRankMax=100&poolLimit=50",
+                            "host": [
+                                "{{curriculumBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v2",
+                                "lexicon",
+                                "pool",
+                                "resolve"
+                            ],
+                            "query": [
+                                {
+                                    "key": "topicIds",
+                                    "value": "{{topicId}}",
+                                    "description": "Topic UUIDs (optional)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "frequencyRankMin",
+                                    "value": "1",
+                                    "description": "Min frequency rank (optional)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "frequencyRankMax",
+                                    "value": "100",
+                                    "description": "Max frequency rank (optional)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "posCodes",
+                                    "value": "NOUN",
+                                    "description": "POS codes (optional)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "morphologyClassCodes",
+                                    "value": "a-stem-masc",
+                                    "description": "Morphology class codes (optional)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "sourceId",
+                                    "value": "{{sourceId}}",
+                                    "description": "Source UUID (optional)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "sourceLocationPrefix",
+                                    "value": "1.1.",
+                                    "description": "Source location prefix (optional)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "collectionId",
+                                    "value": "{{collectionId}}",
+                                    "description": "Collection UUID (optional)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "excludeMasteredForUserId",
+                                    "value": "{{userId}}",
+                                    "description": "Exclude mastered for user (optional)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "poolLimit",
+                                    "value": "50",
+                                    "description": "Max pool size (optional)",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
 }

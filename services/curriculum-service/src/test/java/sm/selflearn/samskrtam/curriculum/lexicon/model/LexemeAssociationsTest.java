@@ -9,8 +9,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class LexemeAssociationsTest {
 
-    private SemanticTopic topic(String code) {
-        SemanticTopic t = new SemanticTopic();
+    private SemanticClass topic(String code) {
+        SemanticClass t = new SemanticClass();
         t.setId(UUID.randomUUID());
         t.setCode(code);
         t.setNameRu(code);
@@ -46,12 +46,12 @@ class LexemeAssociationsTest {
         lexeme.setGlossEn("man");
         lexeme.setGender(LexemeGender.MASCULINE);
 
-        lexeme.setSemanticTopics(Set.of(topic("nature"), topic("people")));
+        lexeme.setSemanticClasses(Set.of(topic("nature"), topic("people")));
         lexeme.setPartsOfSpeech(Set.of(pos("noun")));
         lexeme.setMorphologyClasses(Set.of(morphology("a-stem-masc")));
 
-        assertThat(lexeme.getSemanticTopics())
-                .extracting(SemanticTopic::getCode)
+        assertThat(lexeme.getSemanticClasses())
+                .extracting(SemanticClass::getCode)
                 .containsExactlyInAnyOrder("nature", "people");
         assertThat(lexeme.getPartsOfSpeech()).extracting(PartOfSpeech::getCode).containsExactly("noun");
         assertThat(lexeme.getMorphologyClasses())

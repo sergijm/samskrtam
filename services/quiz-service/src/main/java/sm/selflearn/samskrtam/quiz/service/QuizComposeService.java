@@ -244,6 +244,9 @@ List<SessionQuestion> questions = new ArrayList<>();
                 }
             }
         }
+        // Also add the bare case tag so it matches items with progress_tag = case
+        // (e.g. CASE_MEANING items where tag is just "NOMINATIVE").
+        result.addAll(cases);
         return result;
     }
 }

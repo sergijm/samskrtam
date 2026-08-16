@@ -21,7 +21,7 @@ public record LexemeDetailDto(
         LexemeGender gender,
         List<String> posCodes,
         List<String> morphologyClassCodes,
-        List<UUID> semanticTopicIds,
+        List<UUID> semanticClassIds,
         List<LexemeCandidateDto.WordFormDto> wordForms,
         Instant createdAt,
         Instant updatedAt

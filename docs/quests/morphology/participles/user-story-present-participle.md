@@ -1,7 +1,7 @@
 # US-MORPH-03 — Образование и склонение причастий настоящего времени
 
 > Домен: Morphology · Тип: `PARTICIPLE_FORM` (план)
-> Связанные файлы: [quest-catalog.md §2.4](../../../services/quest-catalog.md#24-participle_form--план) · [architecture.md §3.4](../../../architecture.md#34-местоимения--через-существующий-itemtype-declension_form)
+> Связанные файлы: [quest-catalog.md §2.4](../../../services/curriculum-service/quest-catalog.md#24-participle_form--план) · [architecture.md §3.4](../../../architecture.md#34-местоимения--через-существующий-itemtype-declension_form)
 
 ## История
 

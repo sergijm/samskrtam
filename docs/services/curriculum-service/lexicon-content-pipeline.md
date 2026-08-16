@@ -1,7 +1,7 @@
 # Lexicon Content Pipeline — наполнение ~2000 базовых лемм
 
-> Связанные файлы: [lexicon.md](./lexicon.md), [lexical-curriculum.md](./lexical-curriculum.md),
-> [sangraha-service.md](./sangraha-service.md) (единственный источник сырья, см. §1).
+> Связанные файлы: [lexicon.md](./lexicon.md), [lexical-curriculum.md](lexical-curriculum.md),
+> [sangraha-service.md](../sangraha-service.md) (единственный источник сырья, см. §1).
 
 > **Решение по задаче (зафиксировано):** источник 2000 лемм — только корпус
 > sangraha-service (уже проанализированные, `status=ANALYZED`, стихи и их
@@ -71,7 +71,7 @@ batch-job (ADMIN-инициируемый, синхронный или асин�
    - `morphologyClassCode` из `VerseWordMorphology.vowelType`/verb-класса —
      маппинг 1:1 по совпадающим кодам (`lexical-curriculum.md` §5), fallback —
      по последней букве `stem`, если `vowelType` не заполнен;
-   - `semanticTopicId` — **не проставляется автоматически** (нет источника
+   - `semanticClasses` — **не проставляется автоматически** (нет источника
      значения без LLM/словаря) — остаётся пустым при импорте, заполняется
 вручную ADMIN через `LexemeTaxonomyController` (`lexicon.md` §3.2,
       отдельным шагом) после импорта, батчами по теме
@@ -121,7 +121,7 @@ batch-job (ADMIN-инициируемый, синхронный или асин�
 4. **После каждого импорта:** отчёт "Topics below threshold" (лексическая
    категория, чьё итоговое наполнение < 10 лексем, подлежит объединению с
    близкой по смыслу, `lexical-curriculum.md` §3), приоритетная разметка
-   импортированных лексем без `semanticTopicId`, пересчёт `SourceOccurrence`-кэшей
+   импортированных лексем без `semanticClasses`, пересчёт `SourceOccurrence`-кэшей
    (`lexicon.md` §4).
 
 ---
@@ -134,7 +134,7 @@ batch-job (ADMIN-инициируемый, синхронный или асин�
   меньшим числом лемм — решение принимается по факту (расширить корпус
   дополнительными произведениями в sangraha-service, либо принять меньший
   словарь), не в этом документе.
-- **Ручная разметка `semanticTopicId`** — самое трудоёмкое место pipeline
+- **Ручная разметка `semanticClasses`** — самое трудоёмкое место pipeline
   теперь (единственное поле без эвристики); возможное будущее облегчение —
   словарь ключевых слов/сопоставление по корню для грубой авто-подсказки перед
   ручным подтверждением, вне периметра текущей итерации.
@@ -164,9 +164,9 @@ per-verse квиз — как `Topic domain=VERSE` (§7). Таблица `conten
 
 ---
 
-## 6. Источник `semanticTopicId`/перевода (см. `sangraha-service/lemma-classification.md`)
+## 6. Источник `semanticClasses`/перевода (см. `sangraha-service/lemma-classification.md`)
 
-Пункт §2 шаг 3 («`semanticTopicId` не проставляется автоматически») и выбор
+Пункт §2 шаг 3 («`semanticClasses` не проставляется автоматически») и выбор
 глоссов (§1, от представителя с наибольшим числом вхождений)
 **заменяются** отдельным модулем классификации на стороне sangraha-service
 (`sangraha-service/lemma-classification.md`, схема `CURRICULUM`) — LLM
@@ -179,10 +179,10 @@ ADMIN-review на стороне sangraha-service.
    `GET /sangraha/internal/lexicon/lemma-classifications/export?schemeCode=CURRICULUM&status=APPROVED`
    (постранично, `sangraha-service/lemma-classification.md` §5).
 2. Если для группы `(lemmaSlp1, gender)` есть `APPROVED`-классификация —
-   `semanticTopicId` (по `categoryCode`) и `glossRu`/`glossEn` берутся из неё
+   `semanticClasses` (по `categoryCode`) и `glossRu`/`glossEn` берутся из неё
    напрямую, шаг 3 старого §2 для этой группы не выполняется.
 3. Если классификации нет (ещё не прогнан run в sangraha-service) — поведение
-   как раньше: `semanticTopicId` пустой, `glossRu`/`glossEn` — от представителя
+   как раньше: `semanticClasses` пустой, `glossRu`/`glossEn` — от представителя
    с наибольшим числом вхождений (fallback, не удалён, см. §1 текущего
    документа) — импорт не блокируется отсутствием классификации.
 
@@ -222,7 +222,7 @@ sangraha постит пачку, curriculum-service принимает (ран�
    первичного импорта, от маленькой пачки они только исказят полосы частотности.
 3. После упсерта пачки curriculum-service создаёт лексический урок этой пачки:
    `Topic` с `domain = VERSE` и `code = "{slp1_work}_{chapter_number}"` (slug
-   произведения в SLP1 + номер главы), связь `lexical_topic_binding` →
+   произведения в SLP1 + номер главы), связь `lexeme_lexical_topic` →
    `lexemeId` слов пачки. Повторная отправка той же пачки (переанализ стиха)
    идемпотентна: урок обновляется, дубли не создаются. Связь **накапливается** по
    стихам главы (пачка каждого следующего стиха добавляет свои лексемы, урок

@@ -10,10 +10,10 @@
 > Пакет: `sm.selflearn.samskrtam.curriculum`
 > Status: **DRAFT**
 
-> Источник требований: [curriculum.md](./curriculum.md) §1–§2 + пересмотр модели
+> Источник требований: [curriculum.md](curriculum-service/curriculum.md) §1–§2 + пересмотр модели
 > (70 атомарных Topic, L0–L6, ComplexQuiz — см. историю обсуждения ниже, §8).
-> Связанные файлы: [quest-catalog.md](./quest-catalog.md), [learning-materials.md](./learning-materials.md),
-> [curriculum-session-composition.md](./curriculum-session-composition.md), [conventions.md](../conventions.md).
+> Связанные файлы: [quest-catalog.md](curriculum-service/quest-catalog.md), [learning-materials.md](learning-materials.md),
+> [curriculum-session-composition.md](curriculum-service/curriculum-session-composition.md), [conventions.md](../conventions.md).
 
 ---
 
@@ -36,7 +36,7 @@
 **Начиная с API v2 — исключение из правила «без квестов»:** генерация и хранение готовых
 `QuestItem` для семейства `DECLENSION_FORM` (4 подтипа — выбор, ввод, определение падежа,
 сопоставление) переехали именно сюда, под `/api/v2/curriculum/quest-items`, см.
-[curriculum-quest-items.md](./curriculum-quest-items.md). Решение версионное: `curriculum-service`
+[curriculum-quest-items.md](curriculum-service/curriculum-quest-items.md). Решение версионное: `curriculum-service`
 (API v1) не меняется и не удаляется, новый функционал живёт только в curriculum-service —
 см. `curriculum-quest-items.md` §0.
 
@@ -125,7 +125,7 @@ PRIMARY KEY (complexQuizId, topicId)
 Как и в первой версии: `LearningMaterial` — 1:N от материала к теме
 (`LearningMaterial.topicId → Topic.id` по значению, без физического FK между
 БД разных сервисов), физически живёт в curriculum-service, см.
-[learning-materials.md](./learning-materials.md) §1. curriculum-service не
+[learning-materials.md](learning-materials.md) §1. curriculum-service не
 хранит и не валидирует эту связь.
 
 ---
@@ -175,7 +175,7 @@ DELETE /api/v2/curriculum/complex-quizzes/{id} — удалить (ADMIN)
 (проверка на Gateway по JWT, как у curriculum-service).
 
 Quest Items (v2, DECLENSION_FORM family) — отдельный раздел API, см.
-[curriculum-quest-items.md §6](./curriculum-quest-items.md#6-api-v2-новые-эндпоинты-curriculum-service).
+[curriculum-quest-items.md §6](curriculum-quest-items.md-api-v2-новые-эндпоинты-curriculum-service).
 
 ---
 
@@ -198,10 +198,10 @@ Quest Items (v2, DECLENSION_FORM family) — отдельный раздел API
 по данным, но переиспользует `Topic.domain=LEXICON` для `LexicalTopic` и
 `ComplexQuiz` для интегрированной лексической практики.
 
-Полная спецификация — [lexicon.md](./lexicon.md) (доменная модель),
-[lexical-curriculum.md](./lexical-curriculum.md) (таксономии, 68 Lexical Topics),
-[lexical-quizzes.md](./lexical-quizzes.md) (типы квизов, adaptive selection),
-[lexicon-content-pipeline.md](./lexicon-content-pipeline.md) (импорт лемм из
+Полная спецификация — [lexicon.md](lexicon.md) (доменная модель),
+[lexical-curriculum.md](curriculum-service/lexical-curriculum.md) (таксономии, 68 Lexical Topics),
+[lexical-quizzes.md](lexical-quizzes.md) (типы квизов, adaptive selection),
+[lexicon-content-pipeline.md](curriculum-service/lexicon-content-pipeline.md) (импорт лемм из
 корпуса sangraha-service, без AI-enrichment — только эвристики и ручной
 ADMIN-review; точечная догрузка экзотических лемм из внешнего словаря — будущая
 задача).

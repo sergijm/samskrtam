@@ -17,13 +17,13 @@ import lombok.Setter;
  * корни имеют parent == null, листья ссылаются на корень.
  */
 @Entity
-@Table(name = "curriculum_semantic_topic", schema = "sangraha")
+@Table(name = "curriculum_semantic_class", schema = "sangraha")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CurriculumSemanticTopic {
+public class CurriculumSemanticClass {
 
     @Id
     @Column(name = "code")
@@ -40,5 +40,5 @@ public class CurriculumSemanticTopic {
 
     @ManyToOne
     @JoinColumn(name = "parent_code", referencedColumnName = "code")
-    private CurriculumSemanticTopic parent;
+    private CurriculumSemanticClass parent;
 }

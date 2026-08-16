@@ -17,7 +17,7 @@ import sm.selflearn.samskrtam.sanggraha.model.LemmaClassification;
 import sm.selflearn.samskrtam.sangraha.repository.ClassificationBatchRepository;
 import sm.selflearn.samskrtam.sangraha.repository.ClassificationRunRepository;
 import sm.selflearn.samskrtam.sangraha.repository.ClassificationSchemeRepository;
-import sm.selflearn.samskrtam.sangraha.repository.CurriculumSemanticTopicRepository;
+import sm.selflearn.samskrtam.sangraha.repository.CurriculumSemanticClassRepository;
 import sm.selflearn.samskrtam.sangraha.repository.LemmaClassificationRepository;
 import sm.selflearn.samskrtam.sangraha.repository.LemmaRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
@@ -47,7 +47,7 @@ public class LemmaClassificationRunService {
     private final ClassificationBatchRepository batchRepository;
     private final ClassificationSchemeRepository schemeRepository;
     private final LemmaClassificationRepository classificationRepository;
-    private final CurriculumSemanticTopicRepository topicRepository;
+    private final CurriculumSemanticClassRepository topicRepository;
     private final VerseWordRepository verseWordRepository;
     private final LemmaClassificationLlmClient llmClient;
     private final LemmaClassificationValidator validator;

@@ -3,9 +3,9 @@ package sm.selflearn.samskrtam.curriculum.lexicon.dto;
 import java.util.UUID;
 
 /**
- * Создание/обновление семантической темы (task-curriculum-16 §6).
+ * Создание/обновление семантического класса (task-curriculum-16 §6).
  */
-public record SemanticTopicUpsertRequest(
+public record SemanticClassUpsertRequest(
         String code,
         String nameRu,
         String nameEn,

@@ -3,10 +3,10 @@ package sm.selflearn.samskrtam.curriculum.lexicon.imports;
 import org.junit.jupiter.api.Test;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexicalTopicBinding;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexicalTopicBindingId;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeLexicalTopic;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeLexicalTopicId;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexicalTopicBindingRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeLexicalTopicRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.MorphologyClassRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
 import sm.selflearn.samskrtam.curriculum.model.LearningLevel;
@@ -41,8 +41,8 @@ class VerseLexemeImportServiceTest {
     private final Map<String, List<Lexeme>> byKey = new HashMap<>();
     private final Map<String, Integer> maxMeaning = new HashMap<>();
     private Topic createdTopic;
-    private final List<LexicalTopicBinding> savedBindings = new ArrayList<>();
-    private final List<LexicalTopicBindingId> existingBindings = new ArrayList<>();
+    private final List<LexemeLexicalTopic> savedBindings = new ArrayList<>();
+    private final List<LexemeLexicalTopicId> existingBindings = new ArrayList<>();
 
     private VerseLexemeImportService service() {
         LexemeRepository lexemeRepo = mock(LexemeRepository.class);
@@ -71,10 +71,10 @@ class VerseLexemeImportServiceTest {
             return createdTopic;
         });
 
-        LexicalTopicBindingRepository bindingRepo = mock(LexicalTopicBindingRepository.class);
+        LexemeLexicalTopicRepository bindingRepo = mock(LexemeLexicalTopicRepository.class);
         when(bindingRepo.existsById(any())).thenAnswer(inv -> existingBindings.contains(inv.getArgument(0)));
         when(bindingRepo.saveAll(any())).thenAnswer(inv -> {
-            List<LexicalTopicBinding> list = inv.getArgument(0);
+            List<LexemeLexicalTopic> list = inv.getArgument(0);
             savedBindings.addAll(list);
             list.forEach(b -> existingBindings.add(b.getId()));
             return list;

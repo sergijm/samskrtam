@@ -1,11 +1,11 @@
 # Quest Catalog — типы квестов по грамматике и лексике
 
-> Связанные файлы: [quest-engine.md](./quest-engine.md) · [quest-item-model.md](./quest-item-model.md) · [curriculum-service.md](./curriculum-service.md) · [curriculum-service/eamenau.md](./curriculum-service/eamenau.md)
+> Связанные файлы: [quest-engine.md](../quest-engine.md) · [quest-item-model.md](../quest-item-model.md) · [curriculum-service.md](../curriculum-service.md) · [curriculum-service/eamenau.md](eamenau.md)
 
-Каталог фиксирует, какие типы `QuestItem` система умеет и планирует поддерживать. Каждый тип — это пара «данные + способ ответа», реализуемая одним генератором в curriculum-service (см. [quest-item-model.md §2](./quest-item-model.md)) и не требующая изменений в quiz-service (алгоритм повторения и сессии одинаковы для любого типа, см. [quest-engine.md §3](./quest-engine.md#3-алгоритм-повторения-sm-2-упрощённый)).
+Каталог фиксирует, какие типы `QuestItem` система умеет и планирует поддерживать. Каждый тип — это пара «данные + способ ответа», реализуемая одним генератором в curriculum-service (см. [quest-item-model.md §2](../quest-item-model.md)) и не требующая изменений в quiz-service (алгоритм повторения и сессии одинаковы для любого типа, см. [quest-engine.md §3](../quest-engine.md#3-алгоритм-повторения-sm-2-упрощённый)).
 
-> Юзер-стори по каждому типу — в [`docs/quests/`](../quests/README.md), в подпапке своего домена.
-> Полная инвентаризация типов с оценкой объёма и приоритетом — [quest-types-overview.md](./quest-types-overview.md).
+> Юзер-стори по каждому типу — в [`docs/quests/`](../../quests/README.md), в подпапке своего домена.
+> Полная инвентаризация типов с оценкой объёма и приоритетом — [quest-types-overview.md](../quest-types-overview.md).
 
 ---
 
@@ -34,7 +34,7 @@
 - `CASE_RECOGNITION` — словоформа → определить падеж[, число, [род]] (SINGLE_CHOICE, единый составной вариант).
 - `DECLENSION_MATCH` — список словоформ ↔ список падеж+число (MATCHING).
 
-См. [quest-engine.md](./quest-engine.md), [architecture.md §3.3–3.4](../architecture.md#33-хранение-окончаний-склонений).
+См. [quest-engine.md](../quest-engine.md), [architecture.md §3.3–3.4](../../architecture.md#33-хранение-окончаний-склонений).
 
 ### 2.2 NUMERAL_FORM — план
 Склонение числительных (eka…daśa и далее — есть особенности: 1–4 склоняются по родам почти как местоимения, 5–19 не различают род, сотни/тысячи — как a-основы среднего рода). Отдельный тип, а не расширение DECLENSION_FORM: у числительных нет единой парадигмы vowel_type, состав падежей и родовых различий не совпадает с обычными основами.
@@ -47,7 +47,7 @@
 **Payload:** dhatu (IAST + номер класса), lakara, purusha (1/2/3), vacana (sg/du/pl), pada. **Ответ:** личная форма.
 
 ### 2.4 PARTICIPLE_FORM — план
-Причастия (kṛdanta) — образуются от глагольной основы, но склоняются как прилагательные (a-/i-/u-основы в зависимости от типа причастия и рода). Не новый механизм склонения — переиспользует движок DECLENSION_FORM (см. [architecture.md §3.4](../architecture.md#34-местоимения--через-существующий-itemtype-declension_form), тот же паттерн, что и с местоимениями), только базовая словоформа берётся не из готовой парадигмы, а строится от глагольной основы конкретного причастия (present active `-ant/-at`, present middle `-māna`, past passive `-ta/-na`, past active `-tavant`, future `-syant`). Тип отвечает только за подбор причастной основы + связь с исходным dhātu; сам вопрос — обычный DECLENSION_FORM с `external_ref_id`, указывающим на конкретную причастную парадигму.
+Причастия (kṛdanta) — образуются от глагольной основы, но склоняются как прилагательные (a-/i-/u-основы в зависимости от типа причастия и рода). Не новый механизм склонения — переиспользует движок DECLENSION_FORM (см. [architecture.md §3.4](../../architecture.md#34-местоимения--через-существующий-itemtype-declension_form), тот же паттерн, что и с местоимениями), только базовая словоформа берётся не из готовой парадигмы, а строится от глагольной основы конкретного причастия (present active `-ant/-at`, present middle `-māna`, past passive `-ta/-na`, past active `-tavant`, future `-syant`). Тип отвечает только за подбор причастной основы + связь с исходным dhātu; сам вопрос — обычный DECLENSION_FORM с `external_ref_id`, указывающим на конкретную причастную парадигму.
 
 ### 2.5 ABSOLUTIVE_FORM (деепричастие) — план
 Ktvā-форма (переходные, без preverb) и lyap-форма (с preverb) — несклоняемые, единственная форма на глагол. Простой тип: узнавание/перевод, без падежного измерения. **Payload:** dhatu, preverb (nullable), form (IAST). **Ответ:** перевод или обратная генерация формы от значения.
@@ -66,7 +66,7 @@ Ktvā-форма (переходные, без preverb) и lyap-форма (с p
 ### 4.1 KARAKA_CASE_CHOICE — план
 Выбор падежа по семантической роли (kāraka) в предложении с заданным глаголом: kartā (агенс) → nominative/instrumental (для пассива), karma (пациенс) → accusative, karaṇa (инструмент) → instrumental, sampradāna (адресат) → dative, apādāna (источник) → ablative, adhikaraṇa (место) → locative. Задание: дано предложение с пропуском/выделенным словом в неверном/базовом падеже — выбрать/ввести правильный падеж и объяснить роль. **Payload:** sentenceIast, targetWordIndex, verbDhatu, correctCase, karakaRole, distractorCases[].
 
-Это первый тип, где QuestItem работает не с изолированной словоформой, а с целым предложением — контракт `prompt` уже это допускает (см. [quest-item-model.md §1](./quest-item-model.md)), реализация не требует изменений модели.
+Это первый тип, где QuestItem работает не с изолированной словоформой, а с целым предложением — контракт `prompt` уже это допускает (см. [quest-item-model.md §1](../quest-item-model.md)), реализация не требует изменений модели.
 
 ---
 
@@ -92,7 +92,7 @@ Ktvā-форма (переходные, без preverb) и lyap-форма (с p
 ### 6.1 CHANDAS_IDENTIFICATION — план
 По заданной строке стиха (обычно четверть шлоки, pāda) определить стихотворный размер (anuṣṭubh/śloka, triṣṭubh, indravajrā и т.д.) по числу слогов и схеме долгот (laghu/guru). Первая итерация — только различение śloka/не-śloka (самый частый размер, 8 слогов на pāda), дальше — полный набор классических размеров.
 
-**Payload:** paIast (текст четверти), syllablePattern (LG-последовательность, вычисляется backend'ом по правилам долготы слога, не хранится вручную), correctMeter, distractorMeters[]. Уникальность типа: единственный, где сам `prompt` строится алгоритмически из текста (сегментация на слоги + классификация долготы), а не берётся из готовых полей БД — генератор для этого типа сложнее остальных, но контракт `QuestItemGenerator` (см. [quest-item-model.md §2](./quest-item-model.md)) для этого не меняется.
+**Payload:** paIast (текст четверти), syllablePattern (LG-последовательность, вычисляется backend'ом по правилам долготы слога, не хранится вручную), correctMeter, distractorMeters[]. Уникальность типа: единственный, где сам `prompt` строится алгоритмически из текста (сегментация на слоги + классификация долготы), а не берётся из готовых полей БД — генератор для этого типа сложнее остальных, но контракт `QuestItemGenerator` (см. [quest-item-model.md §2](../quest-item-model.md)) для этого не меняется.
 
 ---
 
@@ -104,7 +104,7 @@ Ktvā-форма (переходные, без preverb) и lyap-форма (с p
 - **COMPOUND_SPLIT** — разбить на члены (FREE_TEXT или SINGLE_CHOICE из дистракторов-разборов).
 - **COMPOUND_TYPE** — определить тип самасы по уже разобранному слову (SINGLE_CHOICE из 5 типов).
 
-**Payload:** compoundIast, members[] (каждый — wordIast + исходный падеж/форма при необходимости), samasaType. Разделение на два типа вместо одного комбинированного — по тому же принципу, что и раньше в системе (см. [architecture.md §3.4](../architecture.md#34-местоимения--через-существующий-itemtype-declension_form)): каждый тип тренирует один навык, дистракторы и веса не размываются между двумя разными задачами.
+**Payload:** compoundIast, members[] (каждый — wordIast + исходный падеж/форма при необходимости), samasaType. Разделение на два типа вместо одного комбинированного — по тому же принципу, что и раньше в системе (см. [architecture.md §3.4](../../architecture.md#34-местоимения--через-существующий-itemtype-declension_form)): каждый тип тренирует один навык, дистракторы и веса не размываются между двумя разными задачами.
 
 ---
 
@@ -113,6 +113,6 @@ Ktvā-форма (переходные, без preverb) и lyap-форма (с p
 Чтобы добавить новый тип квеста, не трогая quiz-service:
 
 1. Определить домен (§1) и payload — набор полей, специфичных для типа.
-2. Реализовать `QuestItemGenerator<P>` в curriculum-service (один класс на тип, см. [quest-item-model.md §2](./quest-item-model.md)).
+2. Реализовать `QuestItemGenerator<P>` в curriculum-service (один класс на тип, см. [quest-item-model.md §2](../quest-item-model.md)).
 3. Зарегистрировать тип в реестре типов (не enum — открытый список, см. §1 `quest-item-model.md`).
 4. Ничего не менять в quiz-service: прогресс, сессии, алгоритм повторения работают с любым типом одинаково, так как оперируют только `itemId` и результатом ответа (`correct: boolean`), не заглядывая в payload.

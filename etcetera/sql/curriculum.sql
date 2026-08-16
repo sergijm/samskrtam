@@ -144,20 +144,34 @@ CREATE TABLE "curriculum"."lexeme_pos" (
 ;
 
 -- ----------------------------
--- Table structure for lexeme_semantic_topic
+-- Table structure for lexeme_semantic_class
 -- ----------------------------
-DROP TABLE IF EXISTS "curriculum"."lexeme_semantic_topic";
-CREATE TABLE "curriculum"."lexeme_semantic_topic" (
+DROP TABLE IF EXISTS "curriculum"."lexeme_semantic_class";
+CREATE TABLE "curriculum"."lexeme_semantic_class" (
   "lexeme_id" uuid NOT NULL,
-  "semantic_topic_id" uuid NOT NULL
+  "semantic_class_id" uuid NOT NULL
 )
 ;
 
 -- ----------------------------
--- Table structure for lexical_topic_binding
+-- Table structure for semantic_class_topic
 -- ----------------------------
-DROP TABLE IF EXISTS "curriculum"."lexical_topic_binding";
-CREATE TABLE "curriculum"."lexical_topic_binding" (
+DROP TABLE IF EXISTS "curriculum"."semantic_class_topic";
+CREATE TABLE "curriculum"."semantic_class_topic" (
+  "topic_id" uuid NOT NULL,
+  "semantic_class_id" uuid NOT NULL,
+  CONSTRAINT "semantic_class_topic_pkey" PRIMARY KEY ("topic_id", "semantic_class_id")
+)
+;
+CREATE INDEX "idx_semantic_class_topic_class" ON "curriculum"."semantic_class_topic" USING btree (
+  "semantic_class_id" "pg_catalog"."uuid_ops" ASC NULLS LAST
+);
+
+-- ----------------------------
+-- Table structure for lexeme_lexical_topic
+-- ----------------------------
+DROP TABLE IF EXISTS "curriculum"."lexeme_lexical_topic";
+CREATE TABLE "curriculum"."lexeme_lexical_topic" (
   "lexical_topic_id" uuid NOT NULL,
   "lexeme_id" uuid NOT NULL
 )
@@ -215,10 +229,10 @@ COMMENT ON COLUMN "curriculum"."quest_item"."distractors_ru" IS 'Russian distrac
 COMMENT ON TABLE "curriculum"."quest_item" IS 'Materialized quest items for all quest types (grammar+lexicon), see curriculum-quest-items.md §1.';
 
 -- ----------------------------
--- Table structure for semantic_topic
+-- Table structure for semantic_class
 -- ----------------------------
-DROP TABLE IF EXISTS "curriculum"."semantic_topic";
-CREATE TABLE "curriculum"."semantic_topic" (
+DROP TABLE IF EXISTS "curriculum"."semantic_class";
+CREATE TABLE "curriculum"."semantic_class" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid(),
   "code" varchar(60) COLLATE "pg_catalog"."default" NOT NULL,
   "name_ru" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
@@ -244,13 +258,12 @@ CREATE TABLE "curriculum"."topic" (
   "domain" varchar(25) COLLATE "pg_catalog"."default" NOT NULL DEFAULT 'GRAMMAR'::character varying,
   "target_item_count" int4 NOT NULL DEFAULT 0,
   "hidden" bool NOT NULL DEFAULT false,
-  "semantic_topic_id" uuid,
   "domain_type" varchar(16) COLLATE "pg_catalog"."default" NOT NULL
 )
 ;
 COMMENT ON COLUMN "curriculum"."topic"."learning_level" IS 'Authored first-introduction level L0..L6. Independent from the prerequisite DAG (see curriculum-service.md §2/§6) — not derived, not a computed graph layer.';
 COMMENT ON COLUMN "curriculum"."topic"."is_evergreen" IS 'True for topics outside the layered graph (Mixed review, Error correction) — always available.';
-COMMENT ON COLUMN "curriculum"."topic"."domain" IS 'GRAMMAR = original curriculum.md topics, LEXICON = lexical topics backed by curriculum.lexical_topic_binding (see lexical-curriculum.md §1).';
+COMMENT ON COLUMN "curriculum"."topic"."domain" IS 'GRAMMAR = original curriculum.md topics, LEXICON = lexical topics backed by curriculum.lexeme_lexical_topic (see lexical-curriculum.md §1).';
 COMMENT ON COLUMN "curriculum"."topic"."target_item_count" IS 'Target noun/lexeme count for this declension topic, filled by the declension bootstrapper from sangraha; 0 = not a bootstrap target.';
 COMMENT ON TABLE "curriculum"."topic" IS 'Curriculum topic ("урок") — structure only, no content/quizzes. See curriculum-service.md.';
 
@@ -344,28 +357,28 @@ CREATE TABLE "curriculum"."word_form" (
 ;
 
 -- ----------------------------
--- View structure for semantic_topic_lexeme_counts
+-- View structure for semantic_class_lexeme_counts
 -- ----------------------------
-DROP VIEW IF EXISTS "curriculum"."semantic_topic_lexeme_counts";
-CREATE VIEW "curriculum"."semantic_topic_lexeme_counts" AS  WITH RECURSIVE tree AS (
+DROP VIEW IF EXISTS "curriculum"."semantic_class_lexeme_counts";
+CREATE VIEW "curriculum"."semantic_class_lexeme_counts" AS  WITH RECURSIVE tree AS (
          SELECT st_1.id AS root_id,
             st_1.id AS node_id,
             COALESCE(dc.c, 0::bigint) AS direct_count
-           FROM curriculum.semantic_topic st_1
-             LEFT JOIN ( SELECT lexeme_semantic_topic.semantic_topic_id,
+           FROM curriculum.semantic_class st_1
+             LEFT JOIN ( SELECT lexeme_semantic_class.semantic_class_id,
                     count(*) AS c
-                   FROM curriculum.lexeme_semantic_topic
-                  GROUP BY lexeme_semantic_topic.semantic_topic_id) dc ON dc.semantic_topic_id = st_1.id
+                   FROM curriculum.lexeme_semantic_class
+                  GROUP BY lexeme_semantic_class.semantic_class_id) dc ON dc.semantic_class_id = st_1.id
         UNION ALL
          SELECT t_1.root_id,
             child.id,
             COALESCE(dc2.c, 0::bigint) AS "coalesce"
            FROM tree t_1
-             JOIN curriculum.semantic_topic child ON child.parent_id = t_1.node_id
-             LEFT JOIN ( SELECT lexeme_semantic_topic.semantic_topic_id,
+             JOIN curriculum.semantic_class child ON child.parent_id = t_1.node_id
+             LEFT JOIN ( SELECT lexeme_semantic_class.semantic_class_id,
                     count(*) AS c
-                   FROM curriculum.lexeme_semantic_topic
-                  GROUP BY lexeme_semantic_topic.semantic_topic_id) dc2 ON dc2.semantic_topic_id = child.id
+                   FROM curriculum.lexeme_semantic_class
+                  GROUP BY lexeme_semantic_class.semantic_class_id) dc2 ON dc2.semantic_class_id = child.id
         )
  SELECT st.code,
     st.name_ru,
@@ -373,7 +386,7 @@ CREATE VIEW "curriculum"."semantic_topic_lexeme_counts" AS  WITH RECURSIVE tree 
     st.parent_id,
     sum(t.direct_count) AS lexeme_count
    FROM tree t
-     JOIN curriculum.semantic_topic st ON st.id = t.root_id
+     JOIN curriculum.semantic_class st ON st.id = t.root_id
   GROUP BY st.id, st.code, st.name_ru, st.name_en, st.parent_id
   ORDER BY st.code;
 
@@ -490,28 +503,28 @@ CREATE INDEX "idx_lexeme_pos_code" ON "curriculum"."lexeme_pos" USING btree (
 ALTER TABLE "curriculum"."lexeme_pos" ADD CONSTRAINT "lexeme_pos_pkey" PRIMARY KEY ("lexeme_id", "pos_code");
 
 -- ----------------------------
--- Indexes structure for table lexeme_semantic_topic
+-- Indexes structure for table lexeme_semantic_class
 -- ----------------------------
-CREATE INDEX "idx_lexeme_semantic_topic_topic" ON "curriculum"."lexeme_semantic_topic" USING btree (
-  "semantic_topic_id" "pg_catalog"."uuid_ops" ASC NULLS LAST
+CREATE INDEX "idx_lexeme_semantic_class_class" ON "curriculum"."lexeme_semantic_class" USING btree (
+  "semantic_class_id" "pg_catalog"."uuid_ops" ASC NULLS LAST
 );
 
 -- ----------------------------
--- Primary Key structure for table lexeme_semantic_topic
+-- Primary Key structure for table lexeme_semantic_class
 -- ----------------------------
-ALTER TABLE "curriculum"."lexeme_semantic_topic" ADD CONSTRAINT "lexeme_semantic_topic_pkey" PRIMARY KEY ("lexeme_id", "semantic_topic_id");
+ALTER TABLE "curriculum"."lexeme_semantic_class" ADD CONSTRAINT "lexeme_semantic_class_pkey" PRIMARY KEY ("lexeme_id", "semantic_class_id");
 
 -- ----------------------------
--- Indexes structure for table lexical_topic_binding
+-- Indexes structure for table lexeme_lexical_topic
 -- ----------------------------
-CREATE INDEX "idx_lexical_topic_binding_lexeme_id" ON "curriculum"."lexical_topic_binding" USING btree (
+CREATE INDEX "idx_lexeme_lexical_topic_lexeme_id" ON "curriculum"."lexeme_lexical_topic" USING btree (
   "lexeme_id" "pg_catalog"."uuid_ops" ASC NULLS LAST
 );
 
 -- ----------------------------
--- Primary Key structure for table lexical_topic_binding
+-- Primary Key structure for table lexeme_lexical_topic
 -- ----------------------------
-ALTER TABLE "curriculum"."lexical_topic_binding" ADD CONSTRAINT "lexical_topic_binding_pkey" PRIMARY KEY ("lexical_topic_id", "lexeme_id");
+ALTER TABLE "curriculum"."lexeme_lexical_topic" ADD CONSTRAINT "lexeme_lexical_topic_pkey" PRIMARY KEY ("lexical_topic_id", "lexeme_id");
 
 -- ----------------------------
 -- Checks structure for table morphology_class
@@ -555,21 +568,21 @@ ALTER TABLE "curriculum"."quest_item" ADD CONSTRAINT "chk_quest_item_answer_mode
 ALTER TABLE "curriculum"."quest_item" ADD CONSTRAINT "quest_item_pkey" PRIMARY KEY ("id");
 
 -- ----------------------------
--- Indexes structure for table semantic_topic
+-- Indexes structure for table semantic_class
 -- ----------------------------
-CREATE INDEX "semantic_topic_code_idx" ON "curriculum"."semantic_topic" USING btree (
+CREATE INDEX "semantic_class_code_idx" ON "curriculum"."semantic_class" USING btree (
   "code" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
 );
 
 -- ----------------------------
--- Uniques structure for table semantic_topic
+-- Uniques structure for table semantic_class
 -- ----------------------------
-ALTER TABLE "curriculum"."semantic_topic" ADD CONSTRAINT "semantic_topic_code_key" UNIQUE ("code");
+ALTER TABLE "curriculum"."semantic_class" ADD CONSTRAINT "semantic_class_code_key" UNIQUE ("code");
 
 -- ----------------------------
--- Primary Key structure for table semantic_topic
+-- Primary Key structure for table semantic_class
 -- ----------------------------
-ALTER TABLE "curriculum"."semantic_topic" ADD CONSTRAINT "semantic_topic_pkey" PRIMARY KEY ("id");
+ALTER TABLE "curriculum"."semantic_class" ADD CONSTRAINT "semantic_class_pkey" PRIMARY KEY ("id");
 
 -- ----------------------------
 -- Indexes structure for table topic
@@ -705,16 +718,22 @@ ALTER TABLE "curriculum"."lexeme_pos" ADD CONSTRAINT "lexeme_pos_lexeme_id_fkey"
 ALTER TABLE "curriculum"."lexeme_pos" ADD CONSTRAINT "lexeme_pos_pos_code_fkey" FOREIGN KEY ("pos_code") REFERENCES "curriculum"."part_of_speech" ("code") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- ----------------------------
--- Foreign Keys structure for table lexeme_semantic_topic
+-- Foreign Keys structure for table lexeme_semantic_class
 -- ----------------------------
-ALTER TABLE "curriculum"."lexeme_semantic_topic" ADD CONSTRAINT "lexeme_semantic_topic_lexeme_id_fkey" FOREIGN KEY ("lexeme_id") REFERENCES "curriculum"."lexeme" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-ALTER TABLE "curriculum"."lexeme_semantic_topic" ADD CONSTRAINT "lexeme_semantic_topic_semantic_topic_id_fkey" FOREIGN KEY ("semantic_topic_id") REFERENCES "curriculum"."semantic_topic" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE "curriculum"."lexeme_semantic_class" ADD CONSTRAINT "lexeme_semantic_class_lexeme_id_fkey" FOREIGN KEY ("lexeme_id") REFERENCES "curriculum"."lexeme" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE "curriculum"."lexeme_semantic_class" ADD CONSTRAINT "lexeme_semantic_class_semantic_class_id_fkey" FOREIGN KEY ("semantic_class_id") REFERENCES "curriculum"."semantic_class" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- ----------------------------
--- Foreign Keys structure for table lexical_topic_binding
+-- Foreign Keys structure for table lexeme_lexical_topic
 -- ----------------------------
-ALTER TABLE "curriculum"."lexical_topic_binding" ADD CONSTRAINT "lexical_topic_binding_lexeme_id_fkey" FOREIGN KEY ("lexeme_id") REFERENCES "curriculum"."lexeme" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-ALTER TABLE "curriculum"."lexical_topic_binding" ADD CONSTRAINT "lexical_topic_binding_lexical_topic_id_fkey" FOREIGN KEY ("lexical_topic_id") REFERENCES "curriculum"."topic" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE "curriculum"."lexeme_lexical_topic" ADD CONSTRAINT "lexeme_lexical_topic_lexeme_id_fkey" FOREIGN KEY ("lexeme_id") REFERENCES "curriculum"."lexeme" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE "curriculum"."lexeme_lexical_topic" ADD CONSTRAINT "lexeme_lexical_topic_lexical_topic_id_fkey" FOREIGN KEY ("lexical_topic_id") REFERENCES "curriculum"."topic" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+
+-- ----------------------------
+-- Foreign Keys structure for table semantic_class_topic
+-- ----------------------------
+ALTER TABLE "curriculum"."semantic_class_topic" ADD CONSTRAINT "semantic_class_topic_topic_id_fkey" FOREIGN KEY ("topic_id") REFERENCES "curriculum"."topic" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE "curriculum"."semantic_class_topic" ADD CONSTRAINT "semantic_class_topic_semantic_class_id_fkey" FOREIGN KEY ("semantic_class_id") REFERENCES "curriculum"."semantic_class" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- ----------------------------
 -- Foreign Keys structure for table quest_item
@@ -722,15 +741,14 @@ ALTER TABLE "curriculum"."lexical_topic_binding" ADD CONSTRAINT "lexical_topic_b
 ALTER TABLE "curriculum"."quest_item" ADD CONSTRAINT "quest_item_topic_id_fkey" FOREIGN KEY ("topic_id") REFERENCES "curriculum"."topic" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- ----------------------------
--- Foreign Keys structure for table semantic_topic
+-- Foreign Keys structure for table semantic_class
 -- ----------------------------
-ALTER TABLE "curriculum"."semantic_topic" ADD CONSTRAINT "semantic_topic_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "curriculum"."semantic_topic" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE "curriculum"."semantic_class" ADD CONSTRAINT "semantic_class_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "curriculum"."semantic_class" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- ----------------------------
 -- Foreign Keys structure for table topic
 -- ----------------------------
-ALTER TABLE "curriculum"."topic" ADD CONSTRAINT "topic_semantic_topic_id_fkey" FOREIGN KEY ("semantic_topic_id") REFERENCES "curriculum"."semantic_topic" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-
+ALTER TABLE "curriculum"."topic" 
 -- ----------------------------
 -- Foreign Keys structure for table topic_prerequisite
 -- ----------------------------

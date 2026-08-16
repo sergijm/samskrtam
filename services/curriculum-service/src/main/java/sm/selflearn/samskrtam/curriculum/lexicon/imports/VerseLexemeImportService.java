@@ -6,12 +6,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexicalTopicBinding;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexicalTopicBindingId;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeLexicalTopic;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeLexicalTopicId;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexicalTopicBindingRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeLexicalTopicRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.MorphologyClassRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
 import sm.selflearn.samskrtam.curriculum.model.LearningLevel;
@@ -35,7 +35,7 @@ import java.util.UUID;
  * идентичности значения (lemmaSlp1, gender, нормализованный gloss) с
  * {@code meaningNumber = max+1} для новых значений. Затем создаётся/обновляется
  * лексический урок (Topic.domain = VERSE, code = "{workSlp1}_{chapterNumber}") и
- * привязываются лексемы пачки (lexical_topic_binding). Частотность пачками не
+ * привязываются лексемы пачки (lexeme_lexical_topic). Частотность пачками не
  * ведётся (§7 шаг 2).
  */
 @Slf4j
@@ -47,7 +47,7 @@ public class VerseLexemeImportService {
     private final PartOfSpeechRepository partOfSpeechRepository;
     private final MorphologyClassRepository morphologyClassRepository;
     private final TopicRepository topicRepository;
-    private final LexicalTopicBindingRepository bindingRepository;
+    private final LexemeLexicalTopicRepository bindingRepository;
     private final QuestItemRepository questItemRepository;
     private final LexicalQuizItemGenerator lexicalQuizItemGenerator;
 
@@ -225,15 +225,15 @@ public class VerseLexemeImportService {
      * поэтому связь не перезаписывается целиком (§7 шаг 3).
      */
     private void attachBindings(UUID topicId, List<UUID> lexemeIds) {
-        List<LexicalTopicBinding> bindings = new ArrayList<>();
+        List<LexemeLexicalTopic> bindings = new ArrayList<>();
         for (UUID lexemeId : lexemeIds) {
-            LexicalTopicBindingId key = new LexicalTopicBindingId();
+            LexemeLexicalTopicId key = new LexemeLexicalTopicId();
             key.setLexicalTopicId(topicId);
             key.setLexemeId(lexemeId);
             if (bindingRepository.existsById(key)) {
                 continue;
             }
-            LexicalTopicBinding binding = new LexicalTopicBinding();
+            LexemeLexicalTopic binding = new LexemeLexicalTopic();
             binding.setId(key);
             bindings.add(binding);
         }

@@ -19,6 +19,6 @@ public record LexemeUpsertRequest(
         LexemeGender gender,
         List<String> posCodes,
         List<String> morphologyClassCodes,
-        List<UUID> semanticTopicIds
+        List<UUID> semanticClassIds
 ) {
 }

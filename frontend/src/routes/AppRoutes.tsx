@@ -36,7 +36,7 @@ import DictionaryPage from '../pages/dictionary/DictionaryPage';
 import AlphabetPage from '../pages/writing/AlphabetPage';
 import TransliterationPracticePage from '../pages/tools/TransliterationPracticePage';
 import VocabularyLessonPage from '../pages/lessons/VocabularyLessonPage';
-import GrammarLessonPage from '../pages/lessons/GrammarLessonPage';
+import GrammarRouteResolver from '../pages/lessons/GrammarRouteResolver';
 import SandhiLessonPage from '../pages/lessons/SandhiLessonPage';
 import GrammarAllStemsPage from '../pages/lessons/GrammarAllStemsPage';
 import WorksPage from '../pages/sangraha/WorksPage';
@@ -123,7 +123,7 @@ export default function AppRoutes() {
       <Route path="/lessons/grammar/sandhi-vowels-external" element={<ProtectedLayoutRoute><SandhiLessonPage /></ProtectedLayoutRoute>} />
       <Route path="/lessons/grammar/sandhi-consonants" element={<ProtectedLayoutRoute><SandhiLessonPage /></ProtectedLayoutRoute>} />
       <Route path="/lessons/grammar/sandhi-visarga" element={<ProtectedLayoutRoute><SandhiLessonPage /></ProtectedLayoutRoute>} />
-      <Route path="/lessons/grammar/:slug" element={<ProtectedLayoutRoute><GrammarLessonPage /></ProtectedLayoutRoute>} />
+      <Route path="/lessons/grammar/:slug" element={<ProtectedLayoutRoute><GrammarRouteResolver /></ProtectedLayoutRoute>} />
       <Route path="/lessons/vocabulary/:slug" element={<ProtectedLayoutRoute><VocabularyLessonPage /></ProtectedLayoutRoute>} />
 
       {/* Quiz page */}

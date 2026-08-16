@@ -26,7 +26,6 @@ const LexiconHero: React.FC<LexiconHeroProps> = ({ summary }) => {
         <div className="flex flex-column md:flex-row md:align-items-end md:justify-content-between gap-3">
           <div>
             <h1 className="m-0 text-3xl">{t('lexicon.title')}</h1>
-            <p className="m-0 text-500 mt-1">{t('lexicon.subtitle')}</p>
           </div>
           <button type="button" className="lexicon-hero-cta" onClick={() => showComingSoon()}>
             {hasStarted ? t('lexicon.continueCta') : t('lexicon.startCta')}

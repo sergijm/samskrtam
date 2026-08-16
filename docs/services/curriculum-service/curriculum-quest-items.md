@@ -1,8 +1,8 @@
 # Curriculum Quest Items (v2) — DECLENSION_FORM family
 
 > Домен: MORPHOLOGY · Сервис: curriculum-service · API-версия: **v2** (`/api/v2/curriculum/**`)
-> Связанные файлы: [quest-item-model.md](./quest-item-model.md) · [quest-catalog.md](./quest-catalog.md) ·
-> [quest-engine.md](./quest-engine.md) · [curriculum-service.md](./curriculum-service.md) ·
+> Связанные файлы: [quest-item-model.md](../quest-item-model.md) · [quest-catalog.md](quest-catalog.md) ·
+> [quest-engine.md](../quest-engine.md) · [curriculum-service.md](../curriculum-service.md) ·
 > [quests/morphology/declension/](../quests/morphology/declension/)
 
 ---

@@ -161,6 +161,13 @@ public class GrammarLessonV2Service {
                                 null, first.caseType(), first.numberType(), null));
                     }
                 }
+                case "CASE_MEANING" -> {
+                    var p = parse(json, CaseMeanPayload.class);
+                    if (p.caseType() != null) {
+                        metadata.putIfAbsent(qi.progressTag(), new TagInfo(itemType,
+                                null, p.caseType().toUpperCase(), null, null));
+                    }
+                }
             }
         }
         return metadata;
@@ -193,4 +200,5 @@ public class GrammarLessonV2Service {
     private record DeclMatchPayload(List<MatchPair> pairs) {
         record MatchPair(String caseType, String numberType) {}
     }
+    private record CaseMeanPayload(String caseType) {}
 }

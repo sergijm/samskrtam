@@ -1,7 +1,7 @@
 # Lexical Quizzes — типы заданий, генерация сессий, adaptive selection
 
-> Связанные файлы: [lexicon.md](./lexicon.md), [lexical-curriculum.md](./lexical-curriculum.md),
-> [quest-catalog.md](./quest-catalog.md) (уже существующие `VOCABULARY_*` типы — расширяются
+> Связанные файлы: [lexicon.md](./lexicon.md), [lexical-curriculum.md](curriculum-service/lexical-curriculum.md),
+> [quest-catalog.md](curriculum-service/quest-catalog.md) (уже существующие `VOCABULARY_*` типы — расширяются
 > здесь, не заменяются), [quest-engine.md](./quest-engine.md) (quiz-service, генерация сессий).
 
 ---

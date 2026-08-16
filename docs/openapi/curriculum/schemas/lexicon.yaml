@@ -58,7 +58,7 @@ LexiconFrequencyDto:
     masteredCount:
       type: integer
 
-LexiconSemanticTopicDto:
+LexiconSemanticClassDto:
   type: object
   required: [id, nameRu, nameEn, wordCount, masteredCount]
   properties:
@@ -150,7 +150,7 @@ LexiconDashboardResponse:
     topics:
       type: array
       items:
-        $ref: '#/LexiconSemanticTopicDto'
+        $ref: '#/LexiconSemanticClassDto'
     pos:
       type: array
       items:
@@ -184,7 +184,7 @@ WordFormDto:
 
 LexemeAdminDto:
   type: object
-  required: [id, lemmaIast, lemmaDevanagari, lemmaSlp1, glossRu, glossEn, status, hasSemanticTopic]
+  required: [id, lemmaIast, lemmaDevanagari, lemmaSlp1, glossRu, glossEn, status, hasSemanticClass]
   properties:
     id:
       type: string
@@ -209,7 +209,7 @@ LexemeAdminDto:
         - 'null'
     wordFormCount:
       type: integer
-    hasSemanticTopic:
+    hasSemanticClass:
       type: boolean
 
 LexemeAdminPage:
@@ -259,7 +259,7 @@ LexemeUpsertRequest:
       type: array
       items:
         type: string
-    semanticTopicIds:
+    semanticClassIds:
       type: array
       items:
         type: string
@@ -305,7 +305,7 @@ LexemeDetailDto:
       type: array
       items:
         type: string
-    semanticTopicIds:
+    semanticClassIds:
       type: array
       items:
         type: string
@@ -399,7 +399,7 @@ SangrahaImportResult:
 
 # ---------- Reference ----------
 
-SemanticTopicNodeDto:
+SemanticClassNodeDto:
   type: object
   required: [id, code, nameRu, nameEn]
   properties:
@@ -420,9 +420,9 @@ SemanticTopicNodeDto:
     children:
       type: array
       items:
-        $ref: '#/SemanticTopicNodeDto'
+        $ref: '#/SemanticClassNodeDto'
 
-SemanticTopicUpsertRequest:
+SemanticClassUpsertRequest:
   type: object
   required: [code, nameRu, nameEn]
   properties:

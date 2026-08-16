@@ -34,19 +34,11 @@ public interface LexemeRepository extends JpaRepository<Lexeme, UUID> {
     int findMaxMeaningNumber(@Param("lemmaSlp1") String lemmaSlp1);
 
     /**
-     * Lexemes tagged with a semantic classifier node. Used by the lexical quiz
-     * generator: a LEXICON lesson carries {@code semantic_topic_id}, and its
-     * composition is the set of lexemes with that semantic topic
-     * ({@code curriculum.lexeme_semantic_topic}).
-     */
-    List<Lexeme> findBySemanticTopics_Id(UUID semanticTopicId);
-
-    /**
-     * Lexeme ids tagged with any of the given semantic nodes. Used by the pool
+     * Lexeme ids tagged with any of the given semantic classes. Used by the pool
      * resolver to translate topic ids into a lexeme pool in one query.
      */
-    @Query("select distinct l.id from Lexeme l join l.semanticTopics s where s.id in :semanticTopicIds")
-    List<UUID> findLexemeIdsBySemanticTopicIds(@Param("semanticTopicIds") Collection<UUID> semanticTopicIds);
+    @Query("select distinct l.id from Lexeme l join l.semanticClasses s where s.id in :semanticClassIds")
+    List<UUID> findLexemeIdsBySemanticClassIds(@Param("semanticClassIds") Collection<UUID> semanticClassIds);
 
     List<Lexeme> findByLemmaIastStartingWith(String prefix);
 
@@ -79,18 +71,37 @@ public interface LexemeRepository extends JpaRepository<Lexeme, UUID> {
          + "where mc.code in :codes and pos.code = 'noun'")
     List<Lexeme> findNounsWithMorphologyByCodeIn(@Param("codes") Collection<String> codes);
 
+    /**
+     * Semantic class ids any of the given lexemes are bound to (one row per
+     * binding). Used by the dashboard to aggregate per-user mastered counts per
+     * semantic class, mirroring the {@code semantic_class_lexeme_counts} view.
+     */
+    @Query("select lcs.id from Lexeme l join l.semanticClasses lcs where l.id in :lexemeIds")
+    List<UUID> findSemanticClassIdsByLexemeIds(@Param("lexemeIds") Collection<UUID> lexemeIds);
+
+    /** Projection: part-of-speech code -> distinct lexeme count. */
+    interface PosCount {
+        String getCode();
+
+        long getCnt();
+    }
+
+    @Query("select pos.code as code, count(distinct l.id) as cnt "
+            + "from Lexeme l join l.partsOfSpeech pos group by pos.code")
+    List<PosCount> countLexemesByPartOfSpeech();
+
     @EntityGraph(attributePaths = {"partsOfSpeech", "morphologyClasses", "wordForms"})
     List<Lexeme> findWithDetailsByIdIn(Collection<UUID> ids);
 
     @Query("select distinct l from Lexeme l "
-            + "left join l.semanticTopics st "
+            + "left join l.semanticClasses sc "
             + "where (:posCode is null or :posCode = '' or exists (select p from l.partsOfSpeech p where p.code = :posCode)) "
-            + "and (:noSemanticTopic = false or st is null) "
-            + "and (:semanticTopicId is null or exists (select t from l.semanticTopics t where t.id = :semanticTopicId)) "
+            + "and (:noSemanticClass = false or sc is null) "
+            + "and (:semanticClassId is null or exists (select c from l.semanticClasses c where c.id = :semanticClassId)) "
             + "order by l.lemmaSlp1")
     Page<Lexeme> search(
             @Param("posCode") String posCode,
-            @Param("semanticTopicId") UUID semanticTopicId,
-            @Param("noSemanticTopic") boolean noSemantic,
+            @Param("semanticClassId") UUID semanticClassId,
+            @Param("noSemanticClass") boolean noSemantic,
             Pageable pageable);
 }

@@ -43,14 +43,23 @@ class QuizItemGenerationServiceTest {
         when(unusedGenerator.isDomainSupported(TopicDomain.NOMINAL_MORPHOLOGY)).thenReturn(true); // collides, first wins
 
         when(applicationContext.getBeansOfType(QuizItemGenerator.class))
-                .thenReturn(new java.util.LinkedHashMap<>(
-                        java.util.Map.of(
-                                "declensionQuizItemGenerator", declensionGenerator,
-                                "unusedGenerator", unusedGenerator)));
+                .thenReturn(orderedGenerators());
 
         aStem = topic("a-stem");
         classOne = topic("class-1");
         iUStems = topic("i-u-stems");
+    }
+
+    /**
+     * Deterministic bean order: Map.of iteration order is unspecified, which made
+     * findFirst() (QuizItemGenerationService.regenerate) flaky about which
+     * generator handled NOMINAL_MORPHOLOGY topics first.
+     */
+    private java.util.LinkedHashMap<String, QuizItemGenerator> orderedGenerators() {
+        java.util.LinkedHashMap<String, QuizItemGenerator> map = new java.util.LinkedHashMap<>();
+        map.put("declensionQuizItemGenerator", declensionGenerator);
+        map.put("unusedGenerator", unusedGenerator);
+        return map;
     }
 
     private Topic topic(String code) {

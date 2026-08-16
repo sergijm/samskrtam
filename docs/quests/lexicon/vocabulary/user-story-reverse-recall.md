@@ -1,7 +1,7 @@
 # US-LEX-02 — Активное вспоминание слова по переводу (обратное направление)
 
 > Домен: Lexicon · Тип: `VOCABULARY_WORD`, направление «перевод → слово» (план; прямое направление «слово → перевод» уже реализовано)
-> Связанные файлы: [quest-catalog.md §5](../../../services/quest-catalog.md#5-лексика) · [quest-types-overview.md, тип №18](../../../services/quest-types-overview.md#лексика)
+> Связанные файлы: [quest-catalog.md §5](../../../services/curriculum-service/quest-catalog.md#5-лексика) · [quest-types-overview.md, тип №18](../../../services/quest-types-overview.md#лексика)
 
 ## История
 

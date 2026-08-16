@@ -5,9 +5,11 @@ import sm.selflearn.samskrtam.curriculum.lexicon.dto.PoolCriteria;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.UserLexemeProgress;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.UserLexemeProgressId;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeLexicalTopicRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserCollectionItemRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserLexemeProgressRepository;
@@ -50,7 +52,8 @@ class LexemePoolServiceTest {
 
         LexemePoolService service = poolService(lexemeRepo, mock(TopicRepository.class),
                 mock(LexemeFrequencyRepository.class),
-                mock(UserCollectionItemRepository.class), mock(UserLexemeProgressRepository.class));
+                mock(UserCollectionItemRepository.class), mock(UserLexemeProgressRepository.class),
+                mock(LexemeLexicalTopicRepository.class));
 
         assertThat(service.resolve(null)).hasSize(1);
     }
@@ -81,7 +84,8 @@ class LexemePoolServiceTest {
 
 LexemePoolService service = poolService(lexemeRepo, mock(TopicRepository.class),
                 mock(LexemeFrequencyRepository.class),
-                mock(UserCollectionItemRepository.class), progressRepo);
+                mock(UserCollectionItemRepository.class), progressRepo,
+                mock(LexemeLexicalTopicRepository.class));
 
         PoolCriteria criteria = new PoolCriteria(List.of(), null, null, List.of(), List.of(),
                 null, userId, 100);
@@ -124,13 +128,14 @@ LexemePoolService service = poolService(lexemeRepo, mock(TopicRepository.class),
         UUID semanticB = UUID.randomUUID();
         TopicRepository topicRepo = mock(TopicRepository.class);
         when(topicRepo.findAllById(any())).thenReturn(List.of(topic(topicA, semanticA), topic(topicB, semanticB)));
-        when(lexemeRepo.findLexemeIdsBySemanticTopicIds(List.of(semanticA)))
+        when(lexemeRepo.findLexemeIdsBySemanticClassIds(Set.of(semanticA)))
                 .thenReturn(List.of(a1.getId(), a2.getId(), a3.getId()));
-        when(lexemeRepo.findLexemeIdsBySemanticTopicIds(List.of(semanticB)))
+        when(lexemeRepo.findLexemeIdsBySemanticClassIds(Set.of(semanticB)))
                 .thenReturn(List.of(b1.getId(), b2.getId()));
 
         LexemePoolService service = poolService(lexemeRepo, topicRepo, mock(LexemeFrequencyRepository.class),
-                mock(UserCollectionItemRepository.class), mock(UserLexemeProgressRepository.class));
+                mock(UserCollectionItemRepository.class), mock(UserLexemeProgressRepository.class),
+                mock(LexemeLexicalTopicRepository.class));
 
         // poolLimit=6, 2 темы → квота = ceil(6/2)+2 = 5 (не лимитирует в этом случае).
         // Проверяем, что обе темы представлены и квота уважается при лимите 3.
@@ -145,10 +150,12 @@ LexemePoolService service = poolService(lexemeRepo, mock(TopicRepository.class),
         assertThat(result).isNotEmpty();
     }
 
-    private Topic topic(UUID id, UUID semanticTopicId) {
+    private Topic topic(UUID id, UUID semanticClassId) {
         Topic topic = new Topic();
         topic.setId(id);
-        topic.setSemanticTopicId(semanticTopicId);
+        SemanticClass sc = new SemanticClass();
+        sc.setId(semanticClassId);
+        topic.setSemanticClasses(Set.of(sc));
         return topic;
     }
 
@@ -174,8 +181,9 @@ LexemePoolService service = poolService(lexemeRepo, mock(TopicRepository.class),
             TopicRepository topicRepository,
             LexemeFrequencyRepository freqRepo,
             UserCollectionItemRepository collectionRepo,
-            UserLexemeProgressRepository progressRepo) {
+            UserLexemeProgressRepository progressRepo,
+            LexemeLexicalTopicRepository lexicalTopicRepo) {
         return new LexemePoolService(lexemeRepo, topicRepository, freqRepo,
-                collectionRepo, progressRepo);
+                collectionRepo, progressRepo, lexicalTopicRepo);
     }
 }

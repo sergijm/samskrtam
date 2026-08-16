@@ -15,6 +15,6 @@ public record LexemeAdminDto(
         String gender,
         Integer frequencyRank,
         int wordFormCount,
-        boolean hasSemanticTopic
+        boolean hasSemanticClass
 ) {
 }

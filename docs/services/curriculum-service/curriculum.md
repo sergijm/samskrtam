@@ -1,6 +1,6 @@
 # Curriculum — учебный план и граф зависимостей тем
 
-> Связанные файлы: [quest-catalog.md](./quest-catalog.md) · [quest-types-overview.md](./quest-types-overview.md) · [learning-materials.md](./learning-materials.md) · [../quests/](../quests/README.md)
+> Связанные файлы: [quest-catalog.md](quest-catalog.md) · [quest-types-overview.md](../quest-types-overview.md) · [learning-materials.md](../learning-materials.md) · [../quests/](../../quests/README.md)
 
 Учебный план задаёт рекомендуемый, но не блокирующий порядок прохождения тем. Тема
 (`Topic`) — группировка выше `Quest`: объединяет теорию (`LearningMaterial`, см.

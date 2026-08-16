@@ -29,11 +29,11 @@ public class LexemeController {
     @GetMapping
     public LexemeAdminPage list(
             @RequestParam(required = false) String posCode,
-            @RequestParam(required = false) UUID semanticTopicId,
-            @RequestParam(defaultValue = "false") boolean noSemanticTopic,
+            @RequestParam(required = false) UUID semanticClassId,
+            @RequestParam(defaultValue = "false") boolean noSemanticClass,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        return adminService.list(posCode, semanticTopicId, noSemanticTopic, page, size);
+        return adminService.list(posCode, semanticClassId, noSemanticClass, page, size);
     }
 
     @GetMapping("/{id}")

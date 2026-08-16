@@ -7,7 +7,7 @@ import java.util.UUID;
  * Пачка лемм одного стиха, которую sangraha-service присылает по мере анализа
  * (lexicon-content-pipeline.md §7). Один урок (Topic.domain = VERSE) на пару
  * (произведение, глава): code = "{workSlp1}_{chapterNumber}", лексемы пачки
- * привязываются через lexical_topic_binding.
+ * привязываются через lexeme_lexical_topic.
  */
 public record VerseLemmaBatchRequest(
         UUID verseId,

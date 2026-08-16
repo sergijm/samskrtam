@@ -10,12 +10,12 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeFrequencyId;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticTopic;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.MorphologyClassRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticTopicRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticClassRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +41,7 @@ public class LexiconImportService {
     private final LexemeFrequencyRepository lexemeFrequencyRepository;
     private final PartOfSpeechRepository partOfSpeechRepository;
     private final MorphologyClassRepository morphologyClassRepository;
-    private final SemanticTopicRepository semanticTopicRepository;
+    private final SemanticClassRepository semanticClassRepository;
 
     @Transactional
     public SangrahaImportResult importFromSangraha() {
@@ -85,7 +85,7 @@ public class LexiconImportService {
             attachFrequency(lexeme, i + 1);
             attachPartOfSpeech(lexeme, mapPos(row.dominantPosCode()));
             attachMorphology(lexeme, mapMorphologyCode(row.gender(), row.vowelType()));
-            attachSemanticTopics(lexeme, row.categoryCodes());
+            attachSemanticClasses(lexeme, row.categoryCodes());
         }
 
         int total = (int) lexemeRepository.count();
@@ -156,7 +156,7 @@ public class LexiconImportService {
         lexeme.getMorphologyClasses().add(mc);
     }
 
-    private void attachSemanticTopics(Lexeme lexeme, List<String> categoryCodes) {
+    private void attachSemanticClasses(Lexeme lexeme, List<String> categoryCodes) {
         if (categoryCodes == null || categoryCodes.isEmpty()) {
             return;
         }
@@ -164,14 +164,14 @@ public class LexiconImportService {
             if (isBlank(code)) {
                 continue;
             }
-            SemanticTopic topic = semanticTopicRepository.findByCode(code).orElse(null);
+            SemanticClass topic = semanticClassRepository.findByCode(code).orElse(null);
             if (topic == null) {
                 continue;
             }
-            if (lexeme.getSemanticTopics().stream().anyMatch(t -> t.getCode().equals(code))) {
+            if (lexeme.getSemanticClasses().stream().anyMatch(t -> t.getCode().equals(code))) {
                 continue;
             }
-            lexeme.getSemanticTopics().add(topic);
+            lexeme.getSemanticClasses().add(topic);
         }
     }
 

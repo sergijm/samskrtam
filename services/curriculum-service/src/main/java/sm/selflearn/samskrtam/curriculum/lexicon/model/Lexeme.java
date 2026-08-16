@@ -80,12 +80,12 @@ public class Lexeme {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-        name = "lexeme_semantic_topic",
+        name = "lexeme_semantic_class",
         schema = "curriculum",
         joinColumns = @JoinColumn(name = "lexeme_id"),
-        inverseJoinColumns = @JoinColumn(name = "semantic_topic_id")
+        inverseJoinColumns = @JoinColumn(name = "semantic_class_id")
     )
-    private Set<SemanticTopic> semanticTopics = new HashSet<>();
+    private Set<SemanticClass> semanticClasses = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

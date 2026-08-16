@@ -16,9 +16,9 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "lexical_topic_binding", schema = "curriculum")
-public class LexicalTopicBinding {
+@Table(name = "lexeme_lexical_topic", schema = "curriculum")
+public class LexemeLexicalTopic {
 
     @EmbeddedId
-    private LexicalTopicBindingId id = new LexicalTopicBindingId();
+    private LexemeLexicalTopicId id = new LexemeLexicalTopicId();
 }

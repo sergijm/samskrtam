@@ -8,11 +8,11 @@ import java.io.Serializable;
 import java.util.UUID;
 
 /**
- * Композитный ключ {@link LexicalTopicBinding}: пара (лексический урок, лексема).
+ * Композитный ключ {@link LexemeLexicalTopic}: пара (лексический урок, лексема).
  */
 @Data
 @Embeddable
-public class LexicalTopicBindingId implements Serializable {
+public class LexemeLexicalTopicId implements Serializable {
     @Column(name = "lexical_topic_id", nullable = false)
     private UUID lexicalTopicId;
 

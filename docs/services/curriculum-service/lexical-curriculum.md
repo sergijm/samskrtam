@@ -1,7 +1,7 @@
 # Lexical Curriculum — таксономии наполнения и учебные Lexical Topics
 
-> Связанные файлы: [lexicon.md](./lexicon.md) (домен), [lexical-quizzes.md](./lexical-quizzes.md)
-> (типы квизов), [curriculum-service.md](./curriculum-service.md) (Topic/LearningLevel/ComplexQuiz —
+> Связанные файлы: [lexicon.md](../lexicon.md) (домен), [lexical-quizzes.md](../lexical-quizzes.md)
+> (типы квизов), [curriculum-service.md](../curriculum-service.md) (Topic/LearningLevel/ComplexQuiz —
 > переиспользуются, не дублируются), [curriculum.md](./curriculum.md) (grammar-curriculum).
 
 ---
@@ -33,25 +33,39 @@
   явными, узкими связями, а не одной моделью.
 
 **Что не смешивается с механикой Topic/ComplexQuiz:** сама композиция «какие
-Lexeme входят в эту Topic» — это `curriculum.lexical_topic_binding`:
+Lexeme входят в эту Topic» — это `curriculum.lexeme_lexical_topic`:
 
 lexicalTopicId (UUID, FK → curriculum.topic.id, ON DELETE CASCADE — теперь
 обычный внутрибазовый FK, т.к. `Topic` и `Lexeme` живут в одной схеме),
 lexemeId (UUID, FK → curriculum.lexeme.id, ON DELETE CASCADE), PRIMARY KEY (lexicalTopicId, lexemeId)
 
+**Два механизма привязки лексем к учебной теме** (рефакторинг V29, см. §3.2
+`lexicon.md`):
+1. **Классифицированные лексемы** — теме привязаны один или несколько
+   семантических классов через `curriculum.semantic_class_topic`
+   (M:N topic ↔ semantic_class); состав темы резолвится как объединение лексем
+   этих классов (`curriculum.lexeme_semantic_class`). Заменяет прежний
+   одиночный `topic.semantic_topic_id`.
+2. **Неклассифицированные / VERSE-уроки** — явные привязки через
+   `curriculum.lexeme_lexical_topic` (пачки стихов глав, `lexicon-content-pipeline.md` §7).
+
+Резолверы (LexemePoolService, LexicalQuizItemGenerator) берут **объединение**
+обоих источников, так что вручную откорректированный состав темы всегда
+учитывается.
+
 **Материализовано, не вычисляется на лету:** привязка курируется (обычно
-изначально заполняется массово — «взять все Lexeme с `semanticTopicId = Animals`
-и `posCode = noun`», см. `lexicon-content-pipeline.md` §2 — а затем можно вручную
-скорректировать), а не пересчитывается каждый раз по фильтру. Причина: состав
-учебной темы должен быть стабилен для педагогической прогрессии (нельзя, чтобы
-тема «Animals» тихо потеряла слово из-за правки семантической таксономии) — в
-отличие от `frequency`/`semanticTopic`/`source`-фильтров, которые остаются живыми
-запросами (см. `lexical-quizzes.md` §3, `MIXED_TOPIC`/`FREQUENCY_BAND` виды
-квизов).
+изначально заполняется массово — «взять все Lexeme с нужным семантическим
+классом и `posCode = noun`», см. `lexicon-content-pipeline.md` §2 — а затем можно
+вручную скорректировать), а не пересчитывается каждый раз по фильтру. Причина:
+состав учебной темы должен быть стабилен для педагогической прогрессии (нельзя,
+чтобы тема «Animals» тихо потеряла слово из-за правки семантической таксономии) —
+в отличие от `frequency`/`semanticClass`/`source`-фильтров, которые остаются
+живыми запросами (см. `lexical-quizzes.md` §3, `MIXED_TOPIC`/`FREQUENCY_BAND`
+виды квизов).
 
 Таким образом ответ на пример из задачи («Animals» / «Animals × Top 500» /
 «Animals × Nouns») получается без копий: `Animals` — фиксированный набор через
-`lexical_topic_binding`; `Animals × Top 500` и `Animals × Nouns` — тот же набор,
+`lexeme_lexical_topic`; `Animals × Top 500` и `Animals × Nouns` — тот же набор,
 дополнительно отфильтрованный `curriculum.lexeme_frequency`/`curriculum.lexeme_pos`
 на чтение, тем же модулем внутри curriculum-service (`lexical-quizzes.md` §3).
 
@@ -91,6 +105,19 @@ Frequency quiz'ы (`Core Vocabulary 1/2/…`, задача §14) строятс�
 а на уровне алгоритма отбора сессии в `lexical-quizzes.md` §4 (сортировка pool'а
 случайно с последующим contiguous-запретом на 2 подряд одного `posCode`).
 
+**Уроки по полосам (V30–V31):** помимо кумулятивных quiz'ов, каждая полоса
+представлена отдельным материализованным уроком — пять `curriculum.topic`
+с кодами `lex-frequency-core/essential/foundational/intermediate/extended`
+(домен LEXICON, уровень L0–L4) плюс кумулятивный урок «500 самых частотных
+слов» (`lex-frequency-top500`, всегда доступен, уровень не привязан). Состав не
+сидится статически: при пакетной регенерации уроков
+(`LexicalQuizItemGenerator.ensureTopicsExist`) привязки
+`curriculum.lexeme_lexical_topic` для этих тем очищаются и перезаполняются
+лексемами, чей `SANGRAHA_CORPUS`-ранг попадает в `min_rank..max_rank`
+соответствующей строки `frequency_band`. Для top500-урока используется
+кумулятивный диапазон `1..500`. Диапазоны полос остаются единственным
+источником истины в справочнике, расширение набора тем не требует кода.
+
 ---
 
 ## 3. Semantic taxonomy — 9 корневых категорий, ~42 листовых узла
@@ -118,10 +145,11 @@ Ritual» и «Speech & Communication» как отдельные корни — 
 наполнением < 10 слов подлежит объединению с соседней, чтобы не плодить мелкие
 категории).
 
-**M:N подтверждается на уровне схемы** (`curriculum.lexeme_semantic_topic`, §3.2
-`lexicon.md`) — `गजः` может быть одновременно в `Animals`, `Nature` (родитель,
-если решено размечать и на уровне родителя — решение принимается при наполнении,
-не запрещено схемой) и `Agriculture` (рабочее животное).
+**M:N подтверждается на уровне схемы** (`curriculum.lexeme_semantic_class` + связь
+тема↔класс через `curriculum.semantic_class_topic`, §3.2 `lexicon.md`) — `गजः`
+может быть одновременно в `Animals`, `Nature` (родитель, если решено размечать и
+на уровне родителя — решение принимается при наполнении, не запрещено схемой) и
+`Agriculture` (рабочее животное).
 
 ---
 
@@ -222,7 +250,7 @@ verb-noun collocations») — на нижней; конкретные числа
    объединяет);
 2. **TEXT** — сам vocabulary list темы: лемма (IAST + Devanāgarī) + перевод +
    POS + (если применимо) морфологический класс — рендерится из
-   `lexical_topic_binding` join `curriculum.lexeme`, не хранится отдельно как
+   `lexeme_lexical_topic` join `curriculum.lexeme`, не хранится отдельно как
    застывший текст (иначе дублирование данных, живущих в таблицах §1–§5 `lexicon.md`);
 3. **TEXT** — 3–5 примеров употребления в контексте (по возможности —
    реальные атрестованные `WordForm`/`SourceOccurrence` из §4 `lexicon.md`,
