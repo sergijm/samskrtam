@@ -1,6 +1,9 @@
 package sm.selflearn.samskrtam.quest.syntax;
 
+import sm.selflearn.samskrtam.quest.HighlightToken;
 import sm.selflearn.samskrtam.quest.QuestItemPayload;
+
+import java.util.List;
 
 /**
  * Payload of a CASE_MEANING item. Carries the Sanskrit example and explanation
@@ -13,6 +16,7 @@ public record CaseMeaningPayload(
         String sanskritExample,
         String transliteration,
         String translation,
-        String explanation
+        String explanation,
+        List<HighlightToken> highlights
 ) implements QuestItemPayload {
 }

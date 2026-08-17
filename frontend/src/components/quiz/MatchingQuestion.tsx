@@ -3,13 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { Button } from 'primereact/button';
 import type { MatchingAnswerPayload, SessionQuestion } from '../../types/quiz';
 import {
-  promptText,
   lookup,
   FULL_CASE,
   FULL_CASE_RU,
   FULL_NUMBER,
   FULL_NUMBER_RU,
 } from '../../utils/grammarTerms';
+import HighlightedPrompt from './HighlightedPrompt';
 
 interface RightItem {
   id: string;
@@ -105,7 +105,9 @@ export default function MatchingQuestion({
 
   return (
     <>
-      <h3 className="text-center mb-3">{promptText(question, i18n.language)}</h3>
+      <h3 className="text-center mb-3">
+        <HighlightedPrompt question={question} lang={i18n.language} />
+      </h3>
       <p className="text-center text-sm text-color-secondary mb-2">
         {t('quiz.matching.reorderHint')}
       </p>

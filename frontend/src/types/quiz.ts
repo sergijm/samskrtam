@@ -28,6 +28,15 @@ export interface QuizListItem {
 export type AnswerMode = 'FREE_TEXT' | 'SINGLE_CHOICE' | 'MULTI_SELECT' | 'SPAN_SELECT' | 'MATCHING';
 
 /**
+ * Слово для подсветки внутри промпта вопроса (двуязычное: английский/русский
+ * вариант). Фронт сплитит промпт по токену и делает совпадения жирными.
+ */
+export interface HighlightToken {
+    text: string;
+    textRu?: string;
+}
+
+/**
  * Расширение SessionQuestion под 4 типа declension-квестов (frontend-state §5а).
  * `answerMode` приходит от quiz-service как есть из QuestItem.answerMode.
  */
@@ -57,6 +66,8 @@ export interface SessionQuestion {
     answerMode?: AnswerMode;
     /** Непусто только при answerMode === 'MATCHING'. */
     matching?: MatchingPayload;
+    /** Слова промпта для подсветки (жирным) — из curriculum payload. */
+    highlights?: HighlightToken[];
 }
 
 export interface QuestionMatchRow {

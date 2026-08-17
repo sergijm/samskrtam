@@ -27,7 +27,9 @@ import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
 import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemRepository;
 import sm.selflearn.samskrtam.curriculum.repository.TopicRepository;
 import sm.selflearn.samskrtam.quest.QuestItemType;
+import sm.selflearn.samskrtam.quest.QuestPatterns;
 import sm.selflearn.samskrtam.quest.VocabularyQuestItemTypes;
+import sm.selflearn.samskrtam.quest.HighlightToken;
 import sm.selflearn.samskrtam.quest.lexicon.VocabularyWordPayload;
 
 import java.util.ArrayList;
@@ -39,6 +41,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -331,32 +334,41 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
 
     private QuestItem buildItem(Topic topic, Lexeme lexeme,
                                 List<String> distractorsEn, List<String> distractorsRu) {
+        String lemmaSlp1 = lexeme.getLemmaSlp1();
+        String lemmaIast = lexeme.getLemmaIast();
         String lemmaDevanagari = lexeme.getLemmaDevanagari();
+        List<HighlightToken> highlights = List.of(new HighlightToken(lemmaIast, lemmaIast));
+
         VocabularyWordPayload payload = new VocabularyWordPayload(
-                lexeme.getLemmaSlp1(),
-                lexeme.getLemmaIast(),
+                lemmaSlp1,
+                lemmaIast,
                 lemmaDevanagari,
                 lexeme.getGlossEn(),
-                lexeme.getGlossRu());
+                lexeme.getGlossRu(),
+                highlights);
 
         QuestItem item = new QuestItem();
         item.setTopicId(topic.getId());
         item.setItemType(VocabularyQuestItemTypes.VOCABULARY_WORD.code());
         item.setAnswerMode(VocabularyQuestItemTypes.VOCABULARY_WORD.defaultAnswerMode());
-        item.setPrompt("What does '" + lemmaDevanagari + "' mean?");
-        item.setPromptRu("Что значит " + quoteRu(lemmaDevanagari) + "?");
+        item.setPrompt("What does " + sanskritWord(lemmaIast, lemmaDevanagari) + " mean?");
+        item.setPromptRu("Что значит " + sanskritWord(lemmaIast, lemmaDevanagari) + "?");
         item.setCorrectAnswer(lexeme.getGlossEn());
         item.setCorrectAnswerRu(lexeme.getGlossRu());
         item.setDistractors(toJson(distractorsEn));
         item.setDistractorsRu(toJson(distractorsRu));
         item.setPayload(toJson(payload));
         item.setProgressTag(lexeme.getLemmaSlp1());
+        item.setQuestPattern(QuestPatterns.LEX_TRAN);
         item.setGeneratorSource(GENERATOR_SOURCE);
         return item;
     }
 
-    private static String quoteRu(String value) {
-        return "«" + value + "»";
+    private static String sanskritWord(String iast, String devanagari) {
+        if (devanagari == null || devanagari.isBlank()) {
+            return iast;
+        }
+        return iast + " (" + devanagari + ")";
     }
 
     private int persist(List<QuestItem> items) {

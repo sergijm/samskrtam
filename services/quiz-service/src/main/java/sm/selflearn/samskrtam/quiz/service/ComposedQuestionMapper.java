@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.quiz.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -7,6 +8,7 @@ import io.r2dbc.postgresql.codec.Json;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import sm.selflearn.samskrtam.quest.AnswerMode;
+import sm.selflearn.samskrtam.quest.HighlightToken;
 import sm.selflearn.samskrtam.quest.declension.DeclensionMatchPayload;
 import sm.selflearn.samskrtam.quiz.dto.ComposedQuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.QuestionDto;
@@ -199,11 +201,38 @@ public class ComposedQuestionMapper {
                 .questionType(q.getQuestionType())
                 .answerMode(q.getAnswerMode())
                 .multiSelect(false)
+                .highlights(parseHighlights(q.getPayload()))
                 .options(parseOptions(q.getOptions()));
         if (q.getAnswerMode() == AnswerMode.MATCHING) {
             builder.matchRows(parseMatchRows(q));
         }
         return builder.build();
+    }
+
+    /**
+     * Highlight tokens embedded in the curriculum payload (bilingual prompt words).
+     * Empty when the payload is missing/illegal.
+     */
+    private List<HighlightToken> parseHighlights(Json payload) {
+        if (payload == null || payload.asString() == null) {
+            return List.of();
+        }
+        try {
+            var node = objectMapper.readTree(payload.asString());
+            JsonNode highlights = node.get("highlights");
+            if (highlights == null || !highlights.isArray()) {
+                return List.of();
+            }
+            List<HighlightToken> tokens = new ArrayList<>();
+            for (JsonNode token : highlights) {
+                tokens.add(new HighlightToken(
+                        token.hasNonNull("text") ? token.get("text").asText() : null,
+                        token.hasNonNull("textRu") ? token.get("textRu").asText() : null));
+            }
+            return tokens;
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     private List<QuestionMatchRowDto> parseMatchRows(SessionQuestion q) {

@@ -86,6 +86,27 @@ class QuestItemMapperTest {
         assertThat(json).doesNotContain("progressTag");
     }
 
+    @Test
+    void toDto_mapsQuestPattern() throws Exception {
+        QuestItem item = item(AnswerMode.FREE_TEXT, "naraḥ", "[]", "{\"a\":1}");
+        item.setQuestPattern("nom-form");
+
+        QuestItemDto dto = mapper.toDto(item);
+        String json = objectMapper.writeValueAsString(dto);
+
+        assertThat(dto.questPattern()).isEqualTo("nom-form");
+        assertThat(json).contains("\"questPattern\":\"nom-form\"");
+    }
+
+    @Test
+    void toDto_nullQuestPattern_isOmittedFromJson() throws Exception {
+        QuestItem item = item(AnswerMode.FREE_TEXT, "naraḥ", "[]", "{\"a\":1}");
+
+        String json = objectMapper.writeValueAsString(mapper.toDto(item));
+
+        assertThat(json).doesNotContain("questPattern");
+    }
+
     private static QuestItem item(AnswerMode answerMode, String correctAnswer,
                                   String distractorsJson, String payloadJson) {
         QuestItem item = new QuestItem();

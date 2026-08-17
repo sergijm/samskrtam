@@ -8,9 +8,9 @@ import {
   FULL_CASE_RU,
   FULL_NUMBER,
   FULL_NUMBER_RU,
-  promptText,
   optionText as localizedOptionText,
 } from '../../utils/grammarTerms';
+import HighlightedPrompt from './HighlightedPrompt';
 
 interface QuizQuestionPanelProps {
   question: SessionQuestion;
@@ -39,7 +39,6 @@ export default function QuizQuestionPanel({
   const stemTranslation = i18n.language === 'ru' ? question.stemTranslationRu : question.stemTranslationEn;
 
   const isRu = i18n.language === 'ru';
-  const promptTextLocal = promptText(question, i18n.language);
 
   const caseFull = lookup(question.caseType, isRu ? FULL_CASE_RU : FULL_CASE);
   const numberFull = lookup(question.numberType, isRu ? FULL_NUMBER_RU : FULL_NUMBER);
@@ -55,12 +54,12 @@ export default function QuizQuestionPanel({
           <div className="text-2xl font-bold text-center mb-5">
             {lessonType === LessonType.VOCABULARY ? (
               <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>
-                {promptTextLocal}
+                <HighlightedPrompt question={question} lang={i18n.language} />
               </span>
             ) : (
               <>
                 <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>
-                  {promptTextLocal}
+                  <HighlightedPrompt question={question} lang={i18n.language} />
                 </span>
                 <br style={{ lineHeight: '1.5' }} />
                 {(caseFull || numberFull) && (

@@ -51,7 +51,7 @@ class QuestItemControllerTest {
         when(questItemRepository.findRandomByTopicIdAndItemType(TOPIC_ID, "DECLENSION_FORM", 5))
                 .thenReturn(List.of(item));
         QuestItemDto dto = new QuestItemDto(UUID.randomUUID(), "DECLENSION_FORM", AnswerMode.FREE_TEXT,
-                "p", null, "a", null, List.of(), null, null, "NOMINATIVE|SINGULAR|FEMININE");
+                "p", null, "a", null, List.of(), null, null, "NOMINATIVE|SINGULAR|FEMININE", null);
         when(mapper.toDto(item)).thenReturn(dto);
 
         List<QuestItemDto> result = controller.getQuestItems(TOPIC_ID, "DECLENSION_FORM", 5);

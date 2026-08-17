@@ -147,7 +147,8 @@ public class CaseMeaningQuizItemGenerator extends QuizItemGenerator {
 
         CaseMeaningPayload payload = new CaseMeaningPayload(
                 cardId, caseType, cardType,
-                sanskritExample, transliteration, translation, explanation);
+                sanskritExample, transliteration, translation, explanation,
+                List.of());
 
         QuestItem item = new QuestItem();
         item.setTopicId(topic.getId());

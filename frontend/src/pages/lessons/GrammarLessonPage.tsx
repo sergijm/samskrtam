@@ -22,13 +22,14 @@ import {
 } from '../../data/aStemEndingsTable';
 
 const GRAMMAR_TAB_STORAGE_KEY = 'grammar-lesson-active-tab';
+const GRAMMAR_SUBTAB_STORAGE_KEY = 'grammar-lesson-active-subtab';
 
 function readSavedTab(): number {
   try {
     const raw = localStorage.getItem(GRAMMAR_TAB_STORAGE_KEY);
     if (raw !== null) {
       const parsed = parseInt(raw, 10);
-      if (!isNaN(parsed) && parsed >= 0) return parsed;
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) return parsed;
     }
   } catch { /* ignore */ }
   return 0;
@@ -40,6 +41,23 @@ function saveTab(index: number) {
   } catch { /* ignore */ }
 }
 
+function readSavedSubTab(): number {
+  try {
+    const raw = localStorage.getItem(GRAMMAR_SUBTAB_STORAGE_KEY);
+    if (raw !== null) {
+      const parsed = parseInt(raw, 10);
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) return parsed;
+    }
+  } catch { /* ignore */ }
+  return 0;
+}
+
+function saveSubTab(index: number) {
+  try {
+    localStorage.setItem(GRAMMAR_SUBTAB_STORAGE_KEY, String(index));
+  } catch { /* ignore */ }
+}
+
 const GrammarLessonPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { t, i18n } = useTranslation();
@@ -48,11 +66,11 @@ const GrammarLessonPage = () => {
   const { data: lesson, isLoading, isError } = useGrammarLesson(slug || '');
 
   const [activeTab, setActiveTab] = useState<number>(readSavedTab);
+  const [activeSubTab, setActiveSubTab] = useState<number>(readSavedSubTab);
 
-  // Tab 0 (Paradigms) is the default active tab — fetch immediately if it's the saved tab
-  const [paradigmsTabOpened, setParadigmsTabOpened] = useState(readSavedTab() === 0);
-  // Tab 1 (Examples) — lazy, only when clicked
-  const [examplesTabOpened, setExamplesTabOpened] = useState(readSavedTab() === 1);
+  const lessonTabVisible = activeTab === 0;
+  const paradigmsSubTabVisible = activeTab === 0 && activeSubTab === 0;
+  const examplesSubTabVisible = activeTab === 0 && activeSubTab === 1;
 
   const [selectedEndingCell, setSelectedEndingCell] = useState<{
     caseType: string;
@@ -67,14 +85,14 @@ const GrammarLessonPage = () => {
 
   // Fetch first paradigm page to determine stem type for the endings reference table.
   // React Query deduplicates this with the carousel's own fetch for index 0.
-  const { data: firstParadigmPage } = useDeclensionParadigm(slug || '', 0, paradigmsTabOpened);
+  const { data: firstParadigmPage } = useDeclensionParadigm(slug || '', 0, lessonTabVisible);
   const endingsTableData = firstParadigmPage?.paradigm?.vowelType
     ? vowelTypeToEndingsTable[firstParadigmPage.paradigm.vowelType]
     : undefined;
 
   // Examples data is fetched lazily in DeclensionExamplesPanel; React Query
   // deduplicates the key, so fetching here for the tab-header icon is free.
-  const { data: examplesData } = useDeclensionExamples(slug || '', examplesTabOpened);
+  const { data: examplesData } = useDeclensionExamples(slug || '', examplesSubTabVisible);
 
   // Все verseId примеров урока — для иконки в заголовке таба «Примеры».
   const allExampleVerseIds = useMemo(
@@ -105,12 +123,11 @@ const GrammarLessonPage = () => {
   const handleTabChange = (e: { index: number }) => {
     setActiveTab(e.index);
     saveTab(e.index);
-    if (e.index === 0) {
-      setParadigmsTabOpened(true);
-    }
-    if (e.index === 1) {
-      setExamplesTabOpened(true);
-    }
+  };
+
+  const handleSubTabChange = (e: { index: number }) => {
+    setActiveSubTab(e.index);
+    saveSubTab(e.index);
   };
 
   if (isError) {
@@ -155,7 +172,7 @@ const GrammarLessonPage = () => {
 
           <div className="mt-4">
             <TabView activeIndex={activeTab} onTabChange={handleTabChange} className="grammar-lesson-tabs">
-              <TabPanel header={i18n.language === 'ru' ? 'Парадигмы' : 'Paradigms'}>
+              <TabPanel header={i18n.language === 'ru' ? 'Урок' : 'Lesson'}>
                 {/* Static reference table of case endings — shown only when stem type is recognized */}
                 {endingsTableData && (
                   <DeclensionEndingsReferenceTable
@@ -175,25 +192,33 @@ const GrammarLessonPage = () => {
                     }}
                   />
                 ) : (
-                  <GrammarParadigmCarousel slug={slug || ''} enabled={paradigmsTabOpened} />
+                  <TabView
+                    activeIndex={activeSubTab}
+                    onTabChange={handleSubTabChange}
+                    className="grammar-lesson-subtabs"
+                  >
+                    <TabPanel header={i18n.language === 'ru' ? 'Парадигмы' : 'Paradigms'}>
+                      <GrammarParadigmCarousel slug={slug || ''} enabled={paradigmsSubTabVisible} />
+                    </TabPanel>
+                    <TabPanel
+                      header={
+                        <span className="flex align-items-center gap-1">
+                          {i18n.language === 'ru' ? 'Примеры' : 'Examples'}
+                          {isAdmin && allExampleVerseIds.length > 0 && (
+                            <i
+                              className="pi pi-external-link cursor-pointer"
+                              title={t('examples.openAll', { count: allExampleVerseIds.length })}
+                              onClick={openAllExamples}
+                            />
+                          )}
+                        </span>
+                      }
+                      className="declension-examples-tab-panel"
+                    >
+                      <DeclensionExamplesPanel slug={slug || ''} enabled={examplesSubTabVisible} />
+                    </TabPanel>
+                  </TabView>
                 )}
-              </TabPanel>
-              <TabPanel
-                header={
-                  <span className="flex align-items-center gap-1">
-                    {i18n.language === 'ru' ? 'Примеры' : 'Examples'}
-                    {isAdmin && allExampleVerseIds.length > 0 && (
-                      <i
-                        className="pi pi-external-link cursor-pointer"
-                        title={t('examples.openAll', { count: allExampleVerseIds.length })}
-                        onClick={openAllExamples}
-                      />
-                    )}
-                  </span>
-                }
-                className="declension-examples-tab-panel"
-              >
-                <DeclensionExamplesPanel slug={slug || ''} enabled={examplesTabOpened} />
               </TabPanel>
               <TabPanel header={i18n.language === 'ru' ? 'Прогресс' : 'Progress'}>
                 <GrammarProgressGrid

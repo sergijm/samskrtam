@@ -75,6 +75,9 @@ public class QuestItem {
     @Column(name = "progress_tag", length = 255)
     private String progressTag;
 
+    @Column(name = "quest_pattern", length = 16)
+    private String questPattern;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

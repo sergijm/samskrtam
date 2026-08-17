@@ -135,7 +135,8 @@ class ComposedQuestionMapperTest {
                 "nara", "a-stem",
                 List.of(
                         new DeclensionMatchPayload.DeclensionMatchPair(pair1, "naram", "नरम्", "ACCUSATIVE", "SINGULAR"),
-                        new DeclensionMatchPayload.DeclensionMatchPair(pair2, "nare", "नरे", "LOCATIVE", "SINGULAR")));
+                        new DeclensionMatchPayload.DeclensionMatchPair(pair2, "nare", "नरे", "LOCATIVE", "SINGULAR")),
+                List.of());
         QuestItemDto item = new QuestItemDto(
                 qid, "DECLENSION_MATCH", AnswerMode.MATCHING, "Match", null, null, null, List.of(), null,
                 objectMapper.valueToTree(payload), null);

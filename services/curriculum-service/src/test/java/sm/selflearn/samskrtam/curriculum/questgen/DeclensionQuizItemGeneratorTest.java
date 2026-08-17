@@ -189,6 +189,15 @@ class DeclensionQuizItemGeneratorTest {
         assertThat(payloadsByCell.get("VOCATIVE:SINGULAR").correctFormIast()).isEqualTo("nara");
 
         assertThat(payloadsByCell.get("NOMINATIVE:SINGULAR").correctFormDevanagari()).isEqualTo("नर");
+        assertThat(payloadsByCell.get("NOMINATIVE:SINGULAR").highlights())
+                .extracting(h -> h.text()).containsExactly("nara");
+
+        QuestItem form = saved.stream()
+                .filter(item -> item.getItemType().equals("DECLENSION_FORM"))
+                .findFirst().orElseThrow();
+        assertThat(form.getPrompt()).isEqualTo("Enter the correct nominative singular form of nara (नर).");
+        assertThat(form.getPromptRu()).isEqualTo(
+                "Введите правильную форму именительного падежа, единственного числа слова nara (नर).");
     }
 
     @Test

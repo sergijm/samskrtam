@@ -3,6 +3,7 @@ package sm.selflearn.samskrtam.quiz.dto;
 import lombok.Builder;
 import lombok.Value;
 import sm.selflearn.samskrtam.quest.AnswerMode;
+import sm.selflearn.samskrtam.quest.HighlightToken;
 
 import java.util.List;
 import java.util.UUID;
@@ -61,5 +62,11 @@ public class QuestionDto {
      * for non-matching questions.
      */
     List<QuestionMatchRowDto> matchRows;
+
+    /**
+     * Words of the prompt to highlight (bilingual: English/Russian variants).
+     * Populated by the curriculum compose flow; null for legacy questions.
+     */
+    List<HighlightToken> highlights;
 }
 

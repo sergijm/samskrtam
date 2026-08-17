@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.quest.declension;
 
+import sm.selflearn.samskrtam.quest.HighlightToken;
 import sm.selflearn.samskrtam.quest.QuestItemPayload;
 
 import java.util.List;
@@ -17,6 +18,7 @@ public record CaseRecognitionPayload(
         String correctNumberType,
         String correctGender,
         boolean genderRequired,
-        List<String> distractorCombinations
+        List<String> distractorCombinations,
+        List<HighlightToken> highlights
 ) implements QuestItemPayload {
 }

@@ -28,12 +28,12 @@ public interface QuestItemRepository extends JpaRepository<QuestItem, UUID> {
                 row_number() OVER (PARTITION BY progress_tag, item_type, answer_mode ORDER BY random()) AS rn
               FROM curriculum.quest_item
               WHERE topic_id = :topicId
-                AND (:itemType IS NULL OR item_type = :itemType)
-                AND (:answerMode IS NULL OR answer_mode = :answerMode)
+                AND (CAST(:itemType AS varchar) IS NULL OR item_type = CAST(:itemType AS varchar))
+                AND (CAST(:answerMode AS varchar) IS NULL OR answer_mode = CAST(:answerMode AS varchar))
                 AND progress_tag IS NOT NULL
             ) sub WHERE sub.rn = 1
             ORDER BY random()
-            LIMIT NULLIF(:limit, 0)
+            LIMIT NULLIF(cast(:limit as int), 0)
             """, nativeQuery = true)
     List<QuestItem> selectByTopic(
             @Param("topicId") UUID topicId,
@@ -52,8 +52,8 @@ public interface QuestItemRepository extends JpaRepository<QuestItem, UUID> {
               FROM curriculum.quest_item
               WHERE topic_id = :topicId
                 AND progress_tag = ANY(:progressTags)
-                AND (:itemType IS NULL OR item_type = :itemType)
-                AND (:answerMode IS NULL OR answer_mode = :answerMode)
+                AND (:itemType IS NULL OR item_type = CAST(:itemType AS varchar))
+                AND (:answerMode IS NULL OR answer_mode = CAST(:answerMode AS varchar))
                 AND progress_tag IS NOT NULL
             ) sub WHERE sub.rn = 1
             ORDER BY random()

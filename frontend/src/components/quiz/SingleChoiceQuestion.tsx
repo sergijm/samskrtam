@@ -1,7 +1,8 @@
 import { Button } from 'primereact/button';
 import { useTranslation } from 'react-i18next';
 import type { SessionQuestion, AnswerResult } from '../../types/quiz';
-import { promptText, optionText } from '../../utils/grammarTerms';
+import { optionText } from '../../utils/grammarTerms';
+import HighlightedPrompt from './HighlightedPrompt';
 
 interface SingleChoiceQuestionProps {
   question: SessionQuestion;
@@ -27,7 +28,9 @@ export default function SingleChoiceQuestion({
 
   return (
     <>
-      <h3 className="text-center mb-3">{promptText(question, i18n.language)}</h3>
+      <h3 className="text-center mb-3">
+        <HighlightedPrompt question={question} lang={i18n.language} />
+      </h3>
       <div className="grid">
         {question.options.map((option) => {
           const isSelected = selectedOptionId === option.id;

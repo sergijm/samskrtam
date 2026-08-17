@@ -124,6 +124,12 @@ lemmaIast, morphologyClassCode, pairs: список { pairId, wordFormIast, word
 - `CaseRecognitionPayload` — для CASE_RECOGNITION (§2.3)
 - `DeclensionMatchPayload` — для DECLENSION_MATCH (§2.4)
 
+Каждый payload несёт общий список `highlights` — `List<HighlightToken(text, textRu)>`:
+слова промпта, которые фронтенд выделяет жирным (для вопросов со санскритским словом —
+IAST-часть леммы/словоформы). quiz-service прокидывает `highlights` из payload в
+`QuestionDto` без типизированного разбора (`ComposedQuestionMapper.parseHighlights`);
+фронт сплитит текст промпта по токенам и оборачивает совпадения в `strong`.
+
 `AnswerChecker` — три реализации (по одной на уникальный контракт проверки: точное
 совпадение строки для FREE_TEXT/SINGLE_CHOICE, полное совпадение всех пар для MATCHING),
 каждая — Spring-бин, ключ реестра — `QuestItemType.code()` (см. `quest-item-model.md` §2).

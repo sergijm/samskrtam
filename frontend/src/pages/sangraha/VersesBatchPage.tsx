@@ -47,7 +47,6 @@ const VersesBatchPage = () => {
         data-pr-tooltip={t(`sangraha.status.${row.status}`)}
         data-pr-position="top"
       />
-      <span className="ml-2">{t(`sangraha.status.${row.status}`)}</span>
     </>
   );
 
@@ -113,7 +112,7 @@ const VersesBatchPage = () => {
             style={{ width: '6rem' }}
           />
           <Column field="textIastPreview" header={t('sangraha.fields.versePreview')} />
-          <Column header={t('sangraha.fields.status')} body={statusBody} style={{ width: '12rem' }} />
+          <Column header="" body={statusBody} style={{ width: '2.5rem' }} />
         </DataTable>
       )}
     </div>

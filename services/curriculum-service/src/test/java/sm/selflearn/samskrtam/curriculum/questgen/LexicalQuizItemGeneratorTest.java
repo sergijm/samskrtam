@@ -301,7 +301,7 @@ class LexicalQuizItemGeneratorTest {
         assertThat(saved).allMatch(item -> item.getItemType().equals("VOCABULARY_WORD"));
         assertThat(saved).allMatch(item -> item.getAnswerMode() == AnswerMode.SINGLE_CHOICE);
         assertThat(saved).allMatch(item -> item.getGeneratorSource().equals("LEXICAL_BATCH"));
-        assertThat(saved).allMatch(item -> item.getPrompt().startsWith("What does '"));
+        assertThat(saved).allMatch(item -> item.getPrompt().startsWith("What does "));
 
         QuestItem man = saved.stream()
                 .filter(item -> item.getProgressTag().equals("nara"))
@@ -316,6 +316,9 @@ class LexicalQuizItemGeneratorTest {
         assertThat(payload.lemmaDevanagari()).isEqualTo("नर");
         assertThat(payload.glossEn()).isEqualTo("man");
         assertThat(payload.glossRu()).isEqualTo("мужчина");
+        assertThat(man.getPrompt()).isEqualTo("What does nara (नर) mean?");
+        assertThat(man.getPromptRu()).isEqualTo("Что значит nara (नर)?");
+        assertThat(payload.highlights()).extracting(h -> h.text()).containsExactly("nara");
     }
 
     @Test

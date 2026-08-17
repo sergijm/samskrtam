@@ -24,6 +24,7 @@ public record QuestItemDto(
         List<String> distractors,
         List<String> distractorsRu,
         Object payload,
-        String progressTag
+        String progressTag,
+        String questPattern
 ) {
 }
