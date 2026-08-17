@@ -79,7 +79,9 @@
     "titleIIUuStem": "Case Endings of -ī / -ū Stems",
     "sectionTitle": "Endings Table",
     "toggleShow": "Show endings table",
-    "toggleHide": "Hide endings table"
+    "toggleHide": "Hide endings table",
+    "examplesFromSangraha": "Examples from Sangraha",
+    "openAllSangrahaVerses": "Open all Sangraha verses"
   },
   "vocabulary": {
     "basicVocabularyTitle": "Basic Vocabulary (Frisch)",

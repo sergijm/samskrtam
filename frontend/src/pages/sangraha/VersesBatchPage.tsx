@@ -33,6 +33,12 @@ const VersesBatchPage = () => {
 
   const verses = data?.verses ?? [];
 
+  // «Анализировать всё» — только стихи в состоянии черновика (DRAFT).
+  const draftIds = verses
+    .filter((v) => v.status === 'DRAFT')
+    .map((v) => v.id);
+  const draftCount = draftIds.length;
+
   const statusBody = (row: VerseBatchItemDto) => (
     <>
       <i
@@ -58,14 +64,14 @@ const VersesBatchPage = () => {
         <div style={{ flex: 1 }}>
           <h2 className="m-0">{t('sangraha.batchReviewTitle')}</h2>
         </div>
-        {/* Кнопка активна всегда — повторный анализ ANALYZED осмыслен (batch-verse-review.md). */}
+        {/* Кнопка активна только при наличии черновиков. */}
         <PageButton
           variant="cta-primary"
           iconName="pi-sync"
           labelKey="sangraha.action.analyzeAll"
           loading={analyze.isPending}
-          disabled={ids.length === 0 || analyze.isPending}
-          onClick={() => analyze.mutate(ids)}
+          disabled={draftCount === 0 || analyze.isPending}
+          onClick={() => analyze.mutate(draftIds)}
         />
       </div>
 

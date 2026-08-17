@@ -4,8 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from 'primereact/button';
 import { Skeleton } from 'primereact/skeleton';
 import { useDeclensionExamples } from '../../hooks/useLessons';
-import { useAuthStore } from '../../store/authStore';
-import { saveVerseBatchIds } from '../../utils/verseBatchIds';
 import { CASE_TYPES, NUMBER_TYPES } from '../../utils/grammarAggregation';
 import { FULL_CASE, FULL_CASE_RU, FULL_NUMBER, FULL_NUMBER_RU } from '../../utils/grammarTerms';
 import type { DeclensionExamplesResponseDto } from '../../types/content-dtos';
@@ -18,7 +16,6 @@ interface DeclensionExamplesPanelProps {
 const DeclensionExamplesPanel: React.FC<DeclensionExamplesPanelProps> = ({ slug, enabled }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const isAdmin = useAuthStore((s) => s.user?.roles?.includes('ADMIN') ?? false);
   const { data, isLoading, isError } = useDeclensionExamples(slug, enabled);
 
   // -- Not yet enabled (lazy — first click hasn't happened) --
@@ -47,25 +44,6 @@ const DeclensionExamplesPanel: React.FC<DeclensionExamplesPanelProps> = ({ slug,
   const groups = data?.groups ?? [];
   const missingVerseIds = data?.missingVerseIds ?? [];
 
-  // Все уникальные verseId из примеров (вкладка «Примеры» доступна всем,
-  // но страница /sangraha/verses — только ADMIN).
-  const allVerseIds = [...new Set(groups.flatMap((g) => g.examples.map((e) => e.verseId)))];
-
-  // Кнопка «Открыть все стихи» — только для ADMIN (целевая страница ADMIN-only).
-  // Список verseId кладём в localStorage и переходим на /sangraha/verses без
-  // query-параметров — страница сама прочитает их оттуда.
-  const openAllVersesButton = isAdmin && allVerseIds.length > 0 && (
-    <Button
-      className="p-button-sm p-button-outlined"
-      icon="pi pi-external-link"
-      label={t('grammar.examples.openAll', { count: allVerseIds.length })}
-      onClick={() => {
-        saveVerseBatchIds(allVerseIds);
-        navigate('/sangraha/verses');
-      }}
-    />
-  );
-
   // Кнопка «Проанализировать недостающие примеры» — только для ADMIN
   // (поле missingVerseIds приходит только ADMIN-роли) и только при непустом списке.
   const analyzeMissingButton = missingVerseIds.length > 0 && (
@@ -79,9 +57,8 @@ const DeclensionExamplesPanel: React.FC<DeclensionExamplesPanelProps> = ({ slug,
     />
   );
 
-  const examplesToolbar = (analyzeMissingButton || openAllVersesButton) && (
+  const examplesToolbar = analyzeMissingButton && (
     <div className="flex flex-wrap gap-2 mb-3">
-      {openAllVersesButton}
       {analyzeMissingButton}
     </div>
   );

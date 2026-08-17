@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 import sm.selflearn.samskrtam.sangraha.dto.ChapterVersesDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseBatchResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
+import sm.selflearn.samskrtam.sangraha.dto.VerseWordExamplesRequestDto;
+import sm.selflearn.samskrtam.sangraha.dto.VerseWordExamplesResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.VersesBatchRequestDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorksClassGroupDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorkTreeDto;
@@ -21,6 +23,7 @@ import sm.selflearn.samskrtam.sangraha.model.Work;
 import sm.selflearn.samskrtam.sangraha.service.ChapterService;
 import sm.selflearn.samskrtam.sangraha.service.VerseBatchService;
 import sm.selflearn.samskrtam.sangraha.service.VerseService;
+import sm.selflearn.samskrtam.sangraha.service.VerseWordExamplesService;
 import sm.selflearn.samskrtam.sangraha.service.WorkService;
 import sm.selflearn.samskrtam.sangraha.service.WorkTreeService;
 import sm.selflearn.samskrtam.sangraha.service.WorksClassService;
@@ -39,6 +42,7 @@ public class SangrahaController {
     private final ChapterService chapterService;
     private final VerseBatchService verseBatchService;
     private final WorksClassService worksClassService;
+    private final VerseWordExamplesService verseWordExamplesService;
 
     // ── Works (read-only) ───────────────────────────────────────────
 
@@ -97,6 +101,13 @@ public class SangrahaController {
     @GetMapping("/verses/{verseId}/words")
     public ResponseEntity<List<VerseWord>> getVerseWords(@PathVariable UUID verseId) {
         return ResponseEntity.ok(verseService.getVerseWords(verseId));
+    }
+
+    // ── Словоформы: примеры стихов по точной surfaceIast (урок склонений) ──
+    @PostMapping("/words/examples")
+    public ResponseEntity<VerseWordExamplesResponseDto> getWordExamples(
+            @RequestBody VerseWordExamplesRequestDto request) {
+        return ResponseEntity.ok(verseWordExamplesService.findExamples(request));
     }
 }
 

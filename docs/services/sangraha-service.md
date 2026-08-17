@@ -107,6 +107,10 @@ POST   /api/v1/sangraha/analysis                                 → стран�
 GET    /api/v1/sangraha/analysis                                 → список standalone-стихов текущего пользователя (новые сверху,
                                                                       только превью/статус/createdAt — без контекста произведения/главы)
 DELETE /api/v1/sangraha/analysis/{verseId}                       → мягкое удаление standalone-стиха (только владелец)
+POST   /api/v1/sangraha/words/examples                           → примеры стихов по точной словоформе (тело — { surfaceIasts,
+                                                                      limitPerForm? }); до limitPerForm стихов на форму, перевод
+                                                                      (translationRu/En) может отсутствовать, форма без совпадений —
+                                                                      пустой verses (колонка «примеры из санграхи» урока склонений)
 ```
 
 Ответ `GET /works/{workSlug}` (и `GET /works?id={workId}`) — двухуровневое дерево для TreeGrid:

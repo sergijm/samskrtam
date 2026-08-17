@@ -175,22 +175,28 @@ export interface WorksClassGroupDto {
   classes: WorksClassTreeNodeDto[];
 }
 
-// ── Batch verse review (sangraha-service/batch-verse-review.md) ──
+// ── Поиск примеров стихов по точной словоформе (урок склонений) ──
 
-export interface VerseBatchItemDto {
-  id: string;
+export interface VerseWordExamplesResponseDto {
+  results: VerseWordExamplesResultDto[];
+}
+
+export interface VerseWordExamplesResultDto {
+  surfaceIast: string;
+  verses: VerseWordExampleItemDto[];
+}
+
+export interface VerseWordExampleItemDto {
+  verseId: string;
   workSlug: string;
+  textIast: string;
+  textDevanagari: string;
+  translationRu: string | null;
+  translationEn: string | null;
   workTitleRu: string;
   workTitleEn: string;
-  chapterSlug: string;
   chapterTitleRu: string;
   chapterTitleEn: string;
   verseOrderIndex: number;
-  textIastPreview?: string | null;
-  status: VerseStatus;
-}
-
-export interface VerseBatchResponseDto {
-  verses: VerseBatchItemDto[];
 }
 

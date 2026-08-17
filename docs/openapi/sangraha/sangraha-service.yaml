@@ -217,6 +217,32 @@ paths:
               schema:
                 $ref: 'sangraha-schemas.yaml#/AnalyzeVersesResponse'
 
+  /words/examples:
+    post:
+      operationId: getWordExamples
+      summary: Пример стиха по точной словоформе (колонка урока склонений)
+      description: |
+        Для каждой запрошенной surfaceIast возвращает ровно один стих — самый
+        короткий (3–7 слов), содержащий глагол. Перевод (translationRu/En) может
+        отсутствовать — стих тогда отдаётся без перевода. Форма без подходящего
+        стиха получает пустой verses.
+      tags: [Verses]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'sangraha-schemas.yaml#/VerseWordExamplesRequest'
+      responses:
+        '200':
+          description: Стихи-примеры по каждой форме
+          content:
+            application/json:
+              schema:
+                $ref: 'sangraha-schemas.yaml#/VerseWordExamplesResponse'
+
   /verses/{verseId}:
     get:
       operationId: getVerse

@@ -7,6 +7,7 @@ import type {
   VerseBatchResponseDto,
   WorksClassGroupDto,
   StandaloneVerseItemDto,
+  VerseWordExamplesResponseDto,
 } from '../types/sangraha';
 
 const BASE = '/api/v1/sangraha';
@@ -47,6 +48,12 @@ export const sangrahaApi = {
   // Batch verse review (sangraha-service/batch-verse-review.md)
   getVersesBatch: (ids: string[]) =>
     api.post<VerseBatchResponseDto>(`${BASE}/verse`, { verseIds: ids }),
+
+  // Примеры стихов по точным словоформам (урок склонений)
+  getWordExamples: (surfaceIasts: string[]) =>
+    api.post<VerseWordExamplesResponseDto>(`${BASE}/words/examples`, {
+      surfaceIasts,
+    }),
 
   analyzeVerses: (verseIds: string[]) =>
     api.post<{ verseIds: string[] }>(`${BASE}/verse/analysis`, { verseIds }),

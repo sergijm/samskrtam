@@ -87,7 +87,9 @@
     "titleIIUuStem": "Окончания основ на -ī / -ū",
     "sectionTitle": "Таблица окончаний",
     "toggleShow": "Показать таблицу окончаний",
-    "toggleHide": "Скрыть таблицу окончаний"
+    "toggleHide": "Скрыть таблицу окончаний",
+    "examplesFromSangraha": "Примеры из санграхи",
+    "openAllSangrahaVerses": "Открыть все стихи санграхи"
   },
   "vocabulary": {
     "basicVocabularyTitle": "Базовая лексика (Фриш)",

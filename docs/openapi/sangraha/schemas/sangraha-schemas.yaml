@@ -477,6 +477,74 @@ AnalyzeVersesResponse:
         Id реально загруженных стихов, принятых к анализу (не найденные/удалённые
         исключены молча).
 
+# --- Поиск примеров стихов по точной словоформе (урок склонений) ---
+VerseWordExamplesRequest:
+  type: object
+  required: [surfaceIasts]
+  properties:
+    surfaceIasts:
+      type: array
+      minItems: 1
+      description: Точные поверхностные формы (IAST), например ["devaḥ", "devam"].
+      items:
+        type: string
+
+VerseWordExamplesResponse:
+  type: object
+  required: [results]
+  properties:
+    results:
+      type: array
+      description: >-
+        Ровно один элемент на каждую форму запроса (даже с пустым verses — форма
+        не найдена в корпусе). Порядок повторяет порядок surfaceIasts в запросе.
+        Для каждой формы возвращается ровно один самый короткий стих (3–7 слов,
+        с глаголом).
+      items:
+        type: object
+        required: [surfaceIast, verses]
+        properties:
+          surfaceIast:
+            type: string
+          verses:
+            type: array
+            maxItems: 1
+            items:
+              $ref: '#/VerseWordExampleItem'
+
+VerseWordExampleItem:
+  type: object
+  required: [verseId, workSlug, textIast, textDevanagari, translationRu, translationEn, workTitleRu, workTitleEn, chapterTitleRu, chapterTitleEn, verseOrderIndex]
+  description: >-
+    Один стих-пример. Перевод (translationRu/En) может отсутствовать — стих
+    тогда отдаётся без перевода.
+  properties:
+    verseId:
+      type: string
+      format: uuid
+    workSlug:
+      type: string
+    textIast:
+      type: string
+    textDevanagari:
+      type: string
+    translationRu:
+      type: string
+      nullable: true
+    translationEn:
+      type: string
+      nullable: true
+    workTitleRu:
+      type: string
+    workTitleEn:
+      type: string
+    chapterTitleRu:
+      type: string
+    chapterTitleEn:
+      type: string
+    verseOrderIndex:
+      type: integer
+
 # --- Классификатор произведений (works_class) ---
 WorksClassTreeNode:
   type: object

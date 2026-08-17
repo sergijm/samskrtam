@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useGrammarLesson } from '../../hooks/useLessons';
+import { useGrammarLesson, useDeclensionParadigm, useDeclensionExamples } from '../../hooks/useLessons';
 
 import { LessonHeader } from '../../components/lesson/LessonHeader';
 import { LessonStatsTab } from '../../components/lesson/LessonStatsTab';
@@ -13,7 +13,8 @@ import DeclensionEndingsReferenceTable from '../../components/lesson/DeclensionE
 import DeclensionEndingWordsTable from '../../components/lesson/DeclensionEndingWordsTable';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { Skeleton } from 'primereact/skeleton';
-import { useDeclensionParadigm } from '../../hooks/useLessons';
+import { saveVerseBatchIds } from '../../utils/verseBatchIds';
+import { useAuthStore } from '../../store/authStore';
 import {
   vowelTypeToEndingsTable,
   ENDINGS_COLUMN_TO_NUMBER_GENDER,
@@ -42,6 +43,8 @@ function saveTab(index: number) {
 const GrammarLessonPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const isAdmin = useAuthStore((s) => s.user?.roles?.includes('ADMIN') ?? false);
   const { data: lesson, isLoading, isError } = useGrammarLesson(slug || '');
 
   const [activeTab, setActiveTab] = useState<number>(readSavedTab);
@@ -68,6 +71,21 @@ const GrammarLessonPage = () => {
   const endingsTableData = firstParadigmPage?.paradigm?.vowelType
     ? vowelTypeToEndingsTable[firstParadigmPage.paradigm.vowelType]
     : undefined;
+
+  // Examples data is fetched lazily in DeclensionExamplesPanel; React Query
+  // deduplicates the key, so fetching here for the tab-header icon is free.
+  const { data: examplesData } = useDeclensionExamples(slug || '', examplesTabOpened);
+
+  // Все verseId примеров урока — для иконки в заголовке таба «Примеры».
+  const allExampleVerseIds = useMemo(
+    () => [...new Set((examplesData?.groups ?? []).flatMap((g) => g.examples.map((e) => e.verseId)))],
+    [examplesData],
+  );
+
+  const openAllExamples = () => {
+    saveVerseBatchIds(allExampleVerseIds);
+    navigate('/sangraha/verses');
+  };
 
   const handleEndingCellClick = (caseKey: string, columnKey: string) => {
     const numGender = ENDINGS_COLUMN_TO_NUMBER_GENDER[columnKey];
@@ -160,7 +178,21 @@ const GrammarLessonPage = () => {
                   <GrammarParadigmCarousel slug={slug || ''} enabled={paradigmsTabOpened} />
                 )}
               </TabPanel>
-              <TabPanel header={i18n.language === 'ru' ? 'Примеры' : 'Examples'} className="declension-examples-tab-panel">
+              <TabPanel
+                header={
+                  <span className="flex align-items-center gap-1">
+                    {i18n.language === 'ru' ? 'Примеры' : 'Examples'}
+                    {isAdmin && allExampleVerseIds.length > 0 && (
+                      <i
+                        className="pi pi-external-link cursor-pointer"
+                        title={t('examples.openAll', { count: allExampleVerseIds.length })}
+                        onClick={openAllExamples}
+                      />
+                    )}
+                  </span>
+                }
+                className="declension-examples-tab-panel"
+              >
                 <DeclensionExamplesPanel slug={slug || ''} enabled={examplesTabOpened} />
               </TabPanel>
               <TabPanel header={i18n.language === 'ru' ? 'Прогресс' : 'Progress'}>
