@@ -162,7 +162,7 @@ paths:
   # ── Verses (read-only + analyze + vocabulary-quiz) ──
 
   /verse:
-    get:
+    post:
       operationId: getVersesByIds
       summary: Стихи по произвольному списку id (для массового просмотра/ревью)
       description: |
@@ -174,16 +174,12 @@ paths:
       tags: [Verses]
       security:
         - bearerAuth: []
-      parameters:
-        - name: id
-          in: query
-          required: false
-          description: Повторяющийся параметр — список verseId
-          schema:
-            type: array
-            items:
-              type: string
-              format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'sangraha-schemas.yaml#/VersesBatchRequest'
       responses:
         '200':
           description: Стихи по порядку id в запросе

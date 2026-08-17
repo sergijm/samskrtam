@@ -45,10 +45,8 @@ export const sangrahaApi = {
     api.post<{ verseTopicCode: string }>(`${BASE}/verses/${verseId}/study`),
 
   // Batch verse review (sangraha-service/batch-verse-review.md)
-  // Axios сериализует массивы как `id[]=...`, а бэкенд ждёт повторяющийся `id=...` —
-  // query-строку собираем вручную.
   getVersesBatch: (ids: string[]) =>
-    api.get<VerseBatchResponseDto>(`${BASE}/verse?${ids.map((id) => `id=${encodeURIComponent(id)}`).join('&')}`),
+    api.post<VerseBatchResponseDto>(`${BASE}/verse`, { verseIds: ids }),
 
   analyzeVerses: (verseIds: string[]) =>
     api.post<{ verseIds: string[] }>(`${BASE}/verse/analysis`, { verseIds }),

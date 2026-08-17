@@ -20,7 +20,7 @@ class VerseWordSearchServiceTest {
         return UUID.fromString("00000000-0000-0000-0000-" + s);
     }
 
-    private static NominalLemma lemma(String stemClass) {
+    private static NominalLemma lemma(VowelType stemClass) {
         return NominalLemma.builder().stemClass(stemClass).build();
     }
 
@@ -108,11 +108,6 @@ class VerseWordSearchServiceTest {
 
     @Test
     void resolveVowelType_lemmaPresent_nominalLemmasWinOverHeuristic() {
-        assertThat(VerseWordSearchService.resolveVowelType(lemma("U_STEM"), "deva")).isEqualTo(VowelType.U_STEM);
-    }
-
-    @Test
-    void resolveVowelType_unrecognizedStemClass_fallsBackToStemHeuristic() {
-        assertThat(VerseWordSearchService.resolveVowelType(lemma("FUTURE_CLASS"), "deva")).isEqualTo(VowelType.A_STEM);
+        assertThat(VerseWordSearchService.resolveVowelType(lemma(VowelType.U_STEM), "deva")).isEqualTo(VowelType.U_STEM);
     }
 }

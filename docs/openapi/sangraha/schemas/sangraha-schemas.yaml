@@ -401,7 +401,7 @@ VerseBatchItem:
   type: object
   required: [id, workSlug, workTitleRu, workTitleEn, chapterSlug, chapterTitleRu, chapterTitleEn, verseOrderIndex, textIastPreview, status]
   description: >-
-    Один стих в ответе GET /verse (sangraha-service/batch-verse-review.md).
+    Один стих в ответе POST /verse (sangraha-service/batch-verse-review.md).
     В отличие от внутреннего /sangraha/internal/content/verses/batch — отдаёт
     слаги, превью текста и status любого стиха (без фильтра по ANALYZED).
   properties:
@@ -428,6 +428,19 @@ VerseBatchItem:
       nullable: true
     status:
       $ref: '#/VerseStatus'
+
+VersesBatchRequest:
+  type: object
+  required: [verseIds]
+  properties:
+    verseIds:
+      type: array
+      items:
+        type: string
+        format: uuid
+      description: >-
+        Произвольный список verseId, стихи по порядку следования в массиве.
+        Не найденные/удалённые id отсутствуют в ответе без ошибки.
 
 VersesBatchResponse:
   type: object

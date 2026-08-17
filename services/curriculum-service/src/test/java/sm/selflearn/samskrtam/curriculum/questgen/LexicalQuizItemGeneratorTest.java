@@ -21,6 +21,7 @@ import sm.selflearn.samskrtam.curriculum.model.TopicDomainType;
 import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
 import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemRepository;
 import sm.selflearn.samskrtam.curriculum.repository.TopicRepository;
+import sm.selflearn.samskrtam.quest.AnswerMode;
 import sm.selflearn.samskrtam.quest.lexicon.VocabularyWordPayload;
 
 import java.util.List;
@@ -298,7 +299,7 @@ class LexicalQuizItemGeneratorTest {
         List<QuestItem> saved = lastSavedItems();
         assertThat(saved).hasSize(5);
         assertThat(saved).allMatch(item -> item.getItemType().equals("VOCABULARY_WORD"));
-        assertThat(saved).allMatch(item -> item.getAnswerMode().equals("SINGLE_CHOICE"));
+        assertThat(saved).allMatch(item -> item.getAnswerMode() == AnswerMode.SINGLE_CHOICE);
         assertThat(saved).allMatch(item -> item.getGeneratorSource().equals("LEXICAL_BATCH"));
         assertThat(saved).allMatch(item -> item.getPrompt().startsWith("What does '"));
 

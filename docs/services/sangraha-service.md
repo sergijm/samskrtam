@@ -96,8 +96,8 @@ POST   /api/v1/sangraha/verses/{verseId}/analyze                 → сохра�
                                                                      письменность и заполняет textDevanagari/textIast
 POST   /api/v1/sangraha/chapters/{chapterId}/verses/analyze-all  → батч-анализ всех DRAFT/FAILED стихов главы (ADMIN, реализовано,
                                                                      )
-GET    /api/v1/sangraha/verse?id={uuid}&id={uuid}...             → произвольный список стихов + status каждого
-                                                                      (не только ANALYZED), см. sangraha-service/batch-verse-review.md
+POST   /api/v1/sangraha/verse                                 → произвольный список стихов + status каждого
+                                                                      (тело — { verseIds: UUID[] }), см. sangraha-service/batch-verse-review.md
 POST   /api/v1/sangraha/verse/analysis                           → батч-анализ произвольного списка verseId (ADMIN,
                                                                       безусловный повтор), см. sangraha-service/batch-verse-review.md
 POST   /api/v1/sangraha/analysis                                 → страница /analysis: создать standalone-стих (chapter_id = null,
@@ -206,7 +206,7 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
 
 - **Страница произведений** (`/sangraha`) — плитки (`WorkCard`) со списком работ.
 - **Страница произведения** (`/sangraha/{workSlug}`) — дерево глав/стихов. Read-only: без кнопок добавления/удаления.
-- **Страница массового просмотра/анализа** (`/sangraha/verses`, ADMIN-only, `id` из query-параметров) — см. `sangraha-service/batch-verse-review.md`.
+- **Страница массового просмотра/анализа** (`/sangraha/verses`, ADMIN-only, `id` из query-параметров либо из localStorage `sangraha.verseBatchIds`) — см. `sangraha-service/batch-verse-review.md`.
 - **Страница стиха** (`/sangraha/{workSlug}/verses/{verseId}`):
   - Поле ввода текста — **одно** (не два раздельных для devanagari/iast). Пользователь
     может печатать в нём как деванагари, так и IAST — оба варианта допустимы в одном
@@ -300,7 +300,7 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
 
 `gender`/`caseType`/`numberType` — значения тех же enum'ов, что в `VerseWordMorphology` (`Gender`, `GrammaticalCase`, `NumberType`, см. `verse-word-grammar.md` §1); имена значений совпадают с одноимёнными enum'ами curriculum-service (`content.Gender/CaseType/NumberType`) один в один, поэтому маппинг на стороне curriculum-service — только сериализация имени enum, без таблицы соответствий. `vowelType` — значения = `declension_stems.vowel_type` curriculum-service (`ck_vowel_type`, см. `curriculum-service` V13-миграцию): 7 регулярных классов основы (`A_STEM`, `AA_STEM`, `I_STEM`, `II_STEM`, `U_STEM`, `UU_STEM`, `R_STEM`) + 8 местоимённых (`PRON_AHAM`, `PRON_TVAM`, `PRON_TAD`, `PRON_ETAD`, `PRON_IDAM`, `PRON_KIM`, `PRON_YAD`, `PRON_REFLEXIVE`). Для `PRON_*` классов сопоставление по основе в принципе не работает (местоимённые парадигмы супплетивны — например, `aham` → `mayā` в творительном, разные корни) — поиск для `PRON_*` идёт по фиксированному соответствию `vowelType → lemmaIast` (`PRON_AHAM` → `asmad`, `PRON_TVAM` → `yuṣmad`, `PRON_TAD` → `tad`, и т.д.) — таблица соответствий не в этом документе, фиксирует Агент 2 при реализации по словарю местоимений.
 
-Для 7 регулярных классов основной источник `vowelType` слова — таблица `NominalLemma` (`nominal_lemmas`, одна строка на лемму, см. `verse-word-grammar.md` §1б): у слова-кандидата берётся `VerseWord.lemmaIast`, по нему batch-лукап `NominalLemma` (`findByLemmaIastIn`, без физической FK-связи — join по тексту леммы), `stemClass` найденной строки трактуется как `vowelType`. Если для леммы нет строки в `nominal_lemmas` (или `stemClass` в ней `null`) — fallback на прежнюю эвристику: `vowelType` определяется на лету по последней букве `VerseWord.stem` (`A_STEM` → `stem` оканчивается на краткое `a`, `AA_STEM` → на `ā`, и т.д. по остальным пяти регулярным классам). `noun_stems` (см. `verse-word-grammar.md` §1а, deprecated) поиском больше не используется. Приоритет `nominal_lemmas` над эвристикой — по умолчанию; полная замена эвристики (её удаление из кода) — отдельное решение после того, как `nominal_lemmas` будет заполнена для большей части корпуса.
+Для 7 регулярных классов основной источник `vowelType` слова — таблица `NominalLemma` (`nominal_lemmas`, одна строка на лемму, см. `verse-word-grammar.md` §1б): у слова-кандидата берётся `VerseWord.lemmaIast`, по нему batch-лукап `NominalLemma` (`findByLemmaIastIn`, без физической FK-связи — join по тексту леммы), `stemClass` найденной строки трактуется как `vowelType`. Классификация лемм считается заполненной для корпуса — fallback-эвристики по последней букве `stem` больше нет (удалено из кода; поисковый запрос `findVerseWordCountsByVowelType` фильтрует `nl.stemClass = :vowelType` напрямую). Таблица `noun_stems` была deprecated (см. `verse-word-grammar.md` §1а) и удалена (миграция V17).
 
 Ответ:
 
@@ -338,6 +338,19 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
 ```
 
 Только стихи со `status = ANALYZED` (только тогда есть перевод и оба варианта письменности, см. §5.1). `verseId` из запроса, для которого стиха нет, стих не `ANALYZED`, или он мягко удалён (`deletedAt != null`) — просто отсутствует в `verses[]` ответа, без ошибки и без указания причины (curriculum-service не обязан и не должен различать «не найден»/«не проанализирован»/«удалён» — во всех случаях цитата для вкладки «Примеры» одинаково недоступна, см. `curriculum-service.md` §12, шаг 4).
+
+### Предвычисленная статистика стихов (`verse_statistics`)
+
+Два вкладчика семантики стиха, пересчитываемые на `POST /sangraha/internal/lexicon/lemmas/refresh-statistics` (upsert по PK `verse_id`, см. `lemma-classification.md` §1.4):
+
+- `word_count` — число слов стиха (COUNT `verse_words`), без COUNT при каждом поиске (§9, фильтр `< maxPhraseWords`);
+- `grammar_info` — JSON со distinct-массивами грамматического набора стиха, по одному полю на массив:
+  ```json
+  { "pos": ["NOUN", "VERB"], "formType": ["FINITE", "PARTICIPLE"],
+    "numberType": ["SINGULAR", "PLURAL"], "caseType": ["NOMINATIVE", "ACCUSATIVE"],
+    "gender": ["MASCULINE", "NEUTER"] }
+  ```
+  Источник — `verse_words` (`pos`, `form_type`) и `verse_word_morphology` (`number_type`, `case_type`, `gender`); `NULL`-значения не попадают в массивы. GIN-индекс `idx_verse_statistics_grammar_info`: поиск «стихи, где встречается признак» — `grammar_info @> '{"caseType": ["ACCUSATIVE"]}'` (и аналогично по любому из пяти полей).
 
 ---
 

@@ -152,7 +152,7 @@ public class CaseMeaningQuizItemGenerator extends QuizItemGenerator {
         QuestItem item = new QuestItem();
         item.setTopicId(topic.getId());
         item.setItemType(SyntaxQuestItemTypes.CASE_MEANING.code());
-        item.setAnswerMode(SyntaxQuestItemTypes.CASE_MEANING.defaultAnswerMode().name());
+        item.setAnswerMode(SyntaxQuestItemTypes.CASE_MEANING.defaultAnswerMode());
         item.setPrompt(question);
         item.setPromptRu(question);
         item.setCorrectAnswer(correctAnswer);

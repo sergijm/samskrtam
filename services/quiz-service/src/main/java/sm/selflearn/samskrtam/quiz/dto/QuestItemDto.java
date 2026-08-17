@@ -1,6 +1,7 @@
 package sm.selflearn.samskrtam.quiz.dto;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import sm.selflearn.samskrtam.quest.AnswerMode;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,7 +27,7 @@ import java.util.UUID;
 public record QuestItemDto(
         UUID id,
         String itemType,
-        String answerMode,
+        AnswerMode answerMode,
         String prompt,
         String promptRu,
         String correctAnswer,

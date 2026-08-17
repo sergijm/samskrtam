@@ -126,12 +126,9 @@ public class LemmaExportService {
         List<NominalLemma> all = nominalLemmaRepository.findByLemmaIastIn(lemmaIasts);
         Map<String, String> result = new HashMap<>();
         for (NominalLemma nl : all) {
-            if (nl.getStemClass() != null) {
-                try {
-                    VowelType.valueOf(nl.getStemClass());
-                    result.put(nl.getLemmaIast(), nl.getStemClass());
-                } catch (IllegalArgumentException ignored) {
-                }
+            VowelType value = nl.getStemClass();
+            if (value != null) {
+                result.put(nl.getLemmaIast(), value.name());
             }
         }
         return result;

@@ -10,11 +10,8 @@ import sm.selflearn.samskrtam.quiz.dto.AnswerRequest;
 import sm.selflearn.samskrtam.quiz.dto.AnswerResponse;
 import sm.selflearn.samskrtam.quiz.dto.CompleteSessionResponse;
 import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse;
-import sm.selflearn.samskrtam.quiz.model.FilterScope;
 import sm.selflearn.samskrtam.quiz.model.ProgressTagSetId;
-import sm.selflearn.samskrtam.quiz.model.StatusFilter;
 import sm.selflearn.samskrtam.quiz.service.QuizSessionService;
-
 
 import java.util.UUID;
 
@@ -26,65 +23,47 @@ public class QuizSessionController {
 
     private final QuizSessionService quizSessionService;
 
-        @PostMapping("/start")
-        @Operation(summary = "Start a new quiz session (or resume if in progress)")
-        @ApiResponse(responseCode = "200", description = "Session started or resumed successfully")
-        @ApiResponse(responseCode = "404", description = "Quiz not found")
-                public Mono<StartOrResumeResponse> startSession(
-                @PathVariable String slug,
-                @RequestParam(required = false) UUID lessonId,
-                @RequestParam(required = false) String topicCode,
-                @RequestParam(defaultValue = "10") int count,
-                @RequestHeader("X-User-Id") UUID userId,
-                @RequestHeader("X-User-Locale") String userLocale,
-                @RequestParam(required = false) FilterScope filterScope,
-                @RequestParam(required = false) String filterCaseTypes,
-                @RequestParam(required = false) String filterNumberTypes,
-                @RequestParam(required = false) String filterCombinations,
-                @RequestParam(required = false) StatusFilter statusFilter,
-                @RequestParam(required = false) String filterVowelTypes,
-                @RequestParam(required = false) String filterGenders,
-                @RequestParam(required = false) ProgressTagSetId progressTagSetId,
-                @RequestParam(required = false) String itemType,
-                @RequestParam(required = false) String answerMode) {
-            if (topicCode != null && !topicCode.isBlank()) {
-                return quizSessionService.startOrResumeSessionByTopic(
-                        topicCode, count, userId, userLocale, progressTagSetId, itemType, answerMode);
-            }
-            return quizSessionService.startOrResumeSession(lessonId, userId, userLocale,
-                    filterScope, filterCaseTypes, filterNumberTypes, filterCombinations,
-                    statusFilter, filterVowelTypes, filterGenders);
+    @PostMapping("/start")
+    @Operation(summary = "Start a new quiz session (or resume if in progress)")
+    @ApiResponse(responseCode = "200", description = "Session started or resumed successfully")
+    @ApiResponse(responseCode = "404", description = "Quiz not found")
+    public Mono<StartOrResumeResponse> startSession(
+            @PathVariable String slug,
+            @RequestParam(required = false) UUID lessonId,
+            @RequestParam(required = false) String topicCode,
+            @RequestParam(defaultValue = "10") int count,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-User-Locale") String userLocale,
+            @RequestParam(required = false) ProgressTagSetId progressTagSetId,
+            @RequestParam(required = false) String itemType,
+            @RequestParam(required = false) String answerMode) {
+        if (topicCode != null && !topicCode.isBlank()) {
+            return quizSessionService.startOrResumeSessionByTopic(
+                    topicCode, count, userId, userLocale, progressTagSetId, itemType, answerMode);
         }
+        return quizSessionService.startOrResumeSession(lessonId, userId, userLocale);
+    }
 
-        @PostMapping("/start-or-resume")
-        @Operation(summary = "Start a new quiz session or resume the latest in-progress session for a given quiz")
-        @ApiResponse(responseCode = "200", description = "Session started or resumed successfully")
-        @ApiResponse(responseCode = "404", description = "Quiz not found")
-        public Mono<StartOrResumeResponse> startOrResumeSession(
-                @PathVariable String slug,
-                @RequestParam(required = false) UUID lessonId,
-                @RequestParam(required = false) String topicCode,
-                @RequestParam(defaultValue = "10") int count,
-                @RequestHeader("X-User-Id") UUID userId,
-                @RequestHeader("X-User-Locale") String userLocale,
-                @RequestParam(required = false) FilterScope filterScope,
-                @RequestParam(required = false) String filterCaseTypes,
-                @RequestParam(required = false) String filterNumberTypes,
-                @RequestParam(required = false) String filterCombinations,
-                @RequestParam(required = false) StatusFilter statusFilter,
-                @RequestParam(required = false) String filterVowelTypes,
-                @RequestParam(required = false) String filterGenders,
-                @RequestParam(required = false) ProgressTagSetId progressTagSetId,
-                @RequestParam(required = false) String itemType,
-                @RequestParam(required = false) String answerMode) {
-            if (topicCode != null && !topicCode.isBlank()) {
-                return quizSessionService.startOrResumeSessionByTopic(
-                        topicCode, count, userId, userLocale, progressTagSetId, itemType, answerMode);
-            }
-            return quizSessionService.startOrResumeSession(lessonId, userId, userLocale,
-                    filterScope, filterCaseTypes, filterNumberTypes, filterCombinations,
-                    statusFilter, filterVowelTypes, filterGenders);
+    @PostMapping("/start-or-resume")
+    @Operation(summary = "Start a new quiz session or resume the latest in-progress session for a given quiz")
+    @ApiResponse(responseCode = "200", description = "Session started or resumed successfully")
+    @ApiResponse(responseCode = "404", description = "Quiz not found")
+    public Mono<StartOrResumeResponse> startOrResumeSession(
+            @PathVariable String slug,
+            @RequestParam(required = false) UUID lessonId,
+            @RequestParam(required = false) String topicCode,
+            @RequestParam(defaultValue = "10") int count,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-User-Locale") String userLocale,
+            @RequestParam(required = false) ProgressTagSetId progressTagSetId,
+            @RequestParam(required = false) String itemType,
+            @RequestParam(required = false) String answerMode) {
+        if (topicCode != null && !topicCode.isBlank()) {
+            return quizSessionService.startOrResumeSessionByTopic(
+                    topicCode, count, userId, userLocale, progressTagSetId, itemType, answerMode);
         }
+        return quizSessionService.startOrResumeSession(lessonId, userId, userLocale);
+    }
 
     @GetMapping("/{sessionId}/resume")
     @Operation(summary = "Resume an existing quiz session")
@@ -147,4 +126,3 @@ public class QuizSessionController {
         return quizSessionService.startNewQuizFromExistingSession(sessionId, userId, userLocale);
     }
 }
-

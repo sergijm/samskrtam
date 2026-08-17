@@ -342,7 +342,7 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
         QuestItem item = new QuestItem();
         item.setTopicId(topic.getId());
         item.setItemType(VocabularyQuestItemTypes.VOCABULARY_WORD.code());
-        item.setAnswerMode(VocabularyQuestItemTypes.VOCABULARY_WORD.defaultAnswerMode().name());
+        item.setAnswerMode(VocabularyQuestItemTypes.VOCABULARY_WORD.defaultAnswerMode());
         item.setPrompt("What does '" + lemmaDevanagari + "' mean?");
         item.setPromptRu("Что значит " + quoteRu(lemmaDevanagari) + "?");
         item.setCorrectAnswer(lexeme.getGlossEn());

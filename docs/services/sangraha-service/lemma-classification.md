@@ -89,10 +89,15 @@ ADMIN-триггер, `POST /sangraha/internal/lexicon/lemmas/refresh-statistics
    (`occurrenceCount`, `dominantPosCode` = мода по группе, §1.2). Устаревшие
    строки статистики (рода, которых больше нет в корпусе) удаляются.
 3. Проставить `VerseWord.lemmaId` для всех строк группы.
-4. Идемпотентно, безопасно перезапускать по мере роста корпуса.
+4. Пересчёт `verse_statistics` (sangraha-service.md §9): длина стиха в словах
+   (COUNT `verse_words` по не удалённым стихам) → upsert по PK `verse_id`.
+   Заодно пересчитывается `grammar_info` — distinct-массивы грамматического
+   состава стиха (pos/formType/numberType/caseType/gender), на которых стоит
+   GIN-индекс (поиск «стихи, где есть признак», см. sangraha-service.md §9).
+5. Идемпотентно, безопасно перезапускать по мере роста корпуса.
 
 Ответ: `{ lemmaCount, newLemmaCount, updatedLemmaCount, statisticsCount,
-newStatisticsCount, updatedStatisticsCount }`.
+newStatisticsCount, updatedStatisticsCount, verseStatisticsCount }`.
 
 Именно `LemmaStatistics`/частотность (не сырой `VerseWord`) — ресурс для
 классификации (§2) и отбора батчей (§3).

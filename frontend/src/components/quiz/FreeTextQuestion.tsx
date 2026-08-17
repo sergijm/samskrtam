@@ -4,6 +4,7 @@ import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import type { SessionQuestion } from '../../types/quiz';
 import { promptText } from '../../utils/grammarTerms';
+import { asciiToDevanagari, asciiToIast } from '../../utils/transliteration';
 
 interface FreeTextQuestionProps {
   question: SessionQuestion;
@@ -15,8 +16,9 @@ interface FreeTextQuestionProps {
 }
 
 /**
- * FREE_TEXT (DECLENSION_FORM): ввод словоформы + отправка. Сравнение ответа —
- * только на бэкенде, фронт лишь не даёт отправить пустую строку.
+ * FREE_TEXT (DECLENSION_FORM): ввод словоформы в SLP1 с live-превью в IAST и
+ * деванагари (алгоритм — utils/transliteration, тот же, что на
+ * /writing/transliteration). На бэкенд уходит IAST-конверсия ввода.
  */
 export default function FreeTextQuestion({
   question,
@@ -31,9 +33,12 @@ export default function FreeTextQuestion({
   const trimmed = value.trim();
   const canSubmit = trimmed.length > 0 && !disabled;
 
+  const devanagariPreview = asciiToDevanagari(value, 'slp1');
+  const iastPreview = asciiToIast(value, 'slp1');
+
   const submit = () => {
     if (!canSubmit) return;
-    onSubmit(trimmed);
+    onSubmit(asciiToIast(trimmed, 'slp1'));
   };
 
   return (
@@ -59,6 +64,18 @@ export default function FreeTextQuestion({
           onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
           disabled={disabled}
         />
+        {devanagariPreview && (
+          <div
+            className="text-center w-full md:w-8"
+            style={{ fontFamily: '"Noto Sans Devanagari", sans-serif', fontSize: '1.75rem' }}
+          >
+            {devanagariPreview}
+          </div>
+        )}
+        {iastPreview && (
+          <div className="text-center w-full md:w-8 text-color-secondary">{iastPreview}</div>
+        )}
+        <p className="m-0 text-sm text-color-secondary">{t('quiz.freeText.slp1Hint')}</p>
         <Button
           label={t('quiz.submit')}
           icon="pi pi-check"

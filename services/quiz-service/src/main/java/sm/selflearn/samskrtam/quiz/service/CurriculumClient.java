@@ -68,6 +68,19 @@ public class CurriculumClient {
     }
 
     /**
+     * Fetch a single topic by its code (v2).
+     */
+    public Mono<TopicDto> fetchTopicByCode(String topicCode) {
+        return webClient.get()
+                .uri("/api/v2/curriculum/topics/by-code/{code}", topicCode)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("TOPIC_NOT_FOUND",
+                                "Topic not found in curriculum-service for code=" + topicCode)))
+                .bodyToMono(TopicDto.class);
+    }
+
+    /**
      * Fetch topics from curriculum-service (v2), optionally filtered by
      * fine-grained domain and coarse domainType.
      */

@@ -43,6 +43,7 @@ class VerseAnalysisServiceTest {
     private WorkRepository workRepository;
     private VerseWordRepository verseWordRepository;
     private LlmClient llmClient;
+    private LlmProperties llmProperties;
     private VerseAnalysisSaver analysisSaver;
     private VerseAnalysisResponseNormalizer responseNormalizer;
     private VerseAnalysisService service;
@@ -63,12 +64,16 @@ class VerseAnalysisServiceTest {
         when(verseWordRepository.findAllByVerse_IdOrderByPositionAsc(any(UUID.class)))
                 .thenReturn(List.of());
         llmClient = mock(LlmClient.class);
+        llmProperties = mock(LlmProperties.class);
+        // 60000/3000 = 20 — максимально допустимый размер батча.
+        when(llmProperties.getMaxCompletionTokens()).thenReturn(60000);
         analysisSaver = mock(VerseAnalysisSaver.class);
         responseNormalizer = mock(VerseAnalysisResponseNormalizer.class);
         ToolCallValidator toolCallValidator = mock(ToolCallValidator.class);
         JsonSchemas jsonSchemas = mock(JsonSchemas.class);
         service = new VerseAnalysisService(
                 verseRepository, chapterRepository, workRepository, verseWordRepository, llmClient,
+                llmProperties,
                 analysisSaver, responseNormalizer, toolCallValidator, jsonSchemas,
                 mock(VerseBatchPushService.class));
     }
@@ -105,6 +110,90 @@ class VerseAnalysisServiceTest {
                 .containsExactlyInAnyOrder(ids.toArray(UUID[]::new));
 
         assertThat(accepted).containsExactlyInAnyOrder(ids.toArray(UUID[]::new));
+    }
+
+    @Test
+    void analyzeVerses_chunkSizeComputedFromMaxCompletionTokens() {
+        when(llmProperties.getMaxCompletionTokens()).thenReturn(6000); // 6000/3000 = 2
+
+        List<UUID> ids = IntStream.range(0, 5)
+                .mapToObj(i -> uuid(String.format("%012d", i)))
+                .toList();
+        List<Verse> verses = ids.stream()
+                .map(id -> Verse.builder().id(id).build())
+                .toList();
+        when(verseRepository.findAllByIdInAndDeletedAtIsNull(anyCollection()))
+                .thenReturn(verses);
+        when(llmClient.callWithResult(anyList()))
+                .thenReturn(new LlmCallResult(objectMapper.createObjectNode(), "{}"));
+        when(responseNormalizer.normalizeToVersesArray(any(JsonNode.class)))
+                .thenReturn(objectMapper.createArrayNode());
+        when(llmClient.extractModelName(any(JsonNode.class))).thenReturn("test-model");
+
+        service.analyzeVerses(ids);
+
+        @SuppressWarnings("unchecked")
+        org.mockito.ArgumentCaptor<List<Verse>> captor =
+                org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(llmClient, times(3)).callWithResult(captor.capture());
+        assertThat(captor.getAllValues().stream().map(List::size))
+                .containsExactly(2, 2, 1);
+    }
+
+    @Test
+    void analyzeVerses_chunkSizeCappedAtMax() {
+        when(llmProperties.getMaxCompletionTokens()).thenReturn(128000); // 128000/3000 ≈ 42 → 20
+
+        List<UUID> ids = IntStream.range(0, 45)
+                .mapToObj(i -> uuid(String.format("%012d", i)))
+                .toList();
+        List<Verse> verses = ids.stream()
+                .map(id -> Verse.builder().id(id).build())
+                .toList();
+        when(verseRepository.findAllByIdInAndDeletedAtIsNull(anyCollection()))
+                .thenReturn(verses);
+        when(llmClient.callWithResult(anyList()))
+                .thenReturn(new LlmCallResult(objectMapper.createObjectNode(), "{}"));
+        when(responseNormalizer.normalizeToVersesArray(any(JsonNode.class)))
+                .thenReturn(objectMapper.createArrayNode());
+        when(llmClient.extractModelName(any(JsonNode.class))).thenReturn("test-model");
+
+        service.analyzeVerses(ids);
+
+        @SuppressWarnings("unchecked")
+        org.mockito.ArgumentCaptor<List<Verse>> captor =
+                org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(llmClient, times(3)).callWithResult(captor.capture());
+        assertThat(captor.getAllValues().stream().map(List::size))
+                .containsExactly(20, 20, 5);
+    }
+
+    @Test
+    void analyzeVerses_chunkSizeDefaultsWhenTokensNotConfigured() {
+        when(llmProperties.getMaxCompletionTokens()).thenReturn(null);
+
+        List<UUID> ids = IntStream.range(0, 45)
+                .mapToObj(i -> uuid(String.format("%012d", i)))
+                .toList();
+        List<Verse> verses = ids.stream()
+                .map(id -> Verse.builder().id(id).build())
+                .toList();
+        when(verseRepository.findAllByIdInAndDeletedAtIsNull(anyCollection()))
+                .thenReturn(verses);
+        when(llmClient.callWithResult(anyList()))
+                .thenReturn(new LlmCallResult(objectMapper.createObjectNode(), "{}"));
+        when(responseNormalizer.normalizeToVersesArray(any(JsonNode.class)))
+                .thenReturn(objectMapper.createArrayNode());
+        when(llmClient.extractModelName(any(JsonNode.class))).thenReturn("test-model");
+
+        service.analyzeVerses(ids);
+
+        @SuppressWarnings("unchecked")
+        org.mockito.ArgumentCaptor<List<Verse>> captor =
+                org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(llmClient, times(3)).callWithResult(captor.capture());
+        assertThat(captor.getAllValues().stream().map(List::size))
+                .containsExactly(20, 20, 5);
     }
 
     @Test

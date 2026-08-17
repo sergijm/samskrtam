@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.r2dbc.postgresql.codec.Json;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import sm.selflearn.samskrtam.quest.AnswerMode;
 import sm.selflearn.samskrtam.quest.declension.DeclensionMatchPayload;
 import sm.selflearn.samskrtam.quiz.dto.ComposedQuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.QuestionDto;
@@ -40,9 +41,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ComposedQuestionMapper {
 
-    private static final String ANSWER_MODE_MATCHING = "MATCHING";
-    private static final String ANSWER_MODE_FREE_TEXT = "FREE_TEXT";
-
     private final ObjectMapper objectMapper;
 
     /**
@@ -51,10 +49,10 @@ public class ComposedQuestionMapper {
      * session_questions.options; the frontend submits {@code selectedOptionId}.
      */
     String buildOptionsJson(QuestItemDto item) {
-        if (ANSWER_MODE_MATCHING.equals(item.answerMode())) {
+        if (item.answerMode() == AnswerMode.MATCHING) {
             return buildMatchOptionsJson(item);
         }
-        if (ANSWER_MODE_FREE_TEXT.equals(item.answerMode())) {
+        if (item.answerMode() == AnswerMode.FREE_TEXT) {
             // Free-text questions intentionally carry no options: the expected answer is
             // entered as text, not picked from a list. The correctAnswer must not leak
             // into the rendered options (otherwise the user would just click it).
@@ -161,14 +159,14 @@ public class ComposedQuestionMapper {
     }
 
     /** Maps curriculum answerMode to the frontend questionType contract. */
-    String questionType(String answerMode) {
+    String questionType(AnswerMode answerMode) {
         if (answerMode == null) {
             return null;
         }
         return switch (answerMode) {
-            case "SINGLE_CHOICE", "MULTIPLE_CHOICE" -> "MULTIPLE_CHOICE";
-            case ANSWER_MODE_MATCHING -> "MATCHING";
-            default -> "FREE_TEXT"; // FREE_TEXT (and any other input mode)
+            case SINGLE_CHOICE -> "MULTIPLE_CHOICE";
+            case MATCHING -> "MATCHING";
+            case FREE_TEXT, MULTI_SELECT, SPAN_SELECT -> "FREE_TEXT";
         };
     }
 
@@ -202,7 +200,7 @@ public class ComposedQuestionMapper {
                 .answerMode(q.getAnswerMode())
                 .multiSelect(false)
                 .options(parseOptions(q.getOptions()));
-        if ("MATCHING".equals(q.getQuestionType())) {
+        if (q.getAnswerMode() == AnswerMode.MATCHING) {
             builder.matchRows(parseMatchRows(q));
         }
         return builder.build();

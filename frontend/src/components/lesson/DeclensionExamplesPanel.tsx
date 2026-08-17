@@ -5,6 +5,7 @@ import { Button } from 'primereact/button';
 import { Skeleton } from 'primereact/skeleton';
 import { useDeclensionExamples } from '../../hooks/useLessons';
 import { useAuthStore } from '../../store/authStore';
+import { saveVerseBatchIds } from '../../utils/verseBatchIds';
 import { CASE_TYPES, NUMBER_TYPES } from '../../utils/grammarAggregation';
 import { FULL_CASE, FULL_CASE_RU, FULL_NUMBER, FULL_NUMBER_RU } from '../../utils/grammarTerms';
 import type { DeclensionExamplesResponseDto } from '../../types/content-dtos';
@@ -51,14 +52,17 @@ const DeclensionExamplesPanel: React.FC<DeclensionExamplesPanelProps> = ({ slug,
   const allVerseIds = [...new Set(groups.flatMap((g) => g.examples.map((e) => e.verseId)))];
 
   // Кнопка «Открыть все стихи» — только для ADMIN (целевая страница ADMIN-only).
+  // Список verseId кладём в localStorage и переходим на /sangraha/verses без
+  // query-параметров — страница сама прочитает их оттуда.
   const openAllVersesButton = isAdmin && allVerseIds.length > 0 && (
     <Button
       className="p-button-sm p-button-outlined"
       icon="pi pi-external-link"
       label={t('grammar.examples.openAll', { count: allVerseIds.length })}
-      onClick={() =>
-        navigate(`/sangraha/verses?${allVerseIds.map((id) => `id=${id}`).join('&')}`)
-      }
+      onClick={() => {
+        saveVerseBatchIds(allVerseIds);
+        navigate('/sangraha/verses');
+      }}
     />
   );
 

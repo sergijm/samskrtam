@@ -19,13 +19,10 @@ import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository.VerseWordCount;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Поиск примеров словоформ по словоизменительному классу (sangraha-service.md §9) для
@@ -57,30 +54,6 @@ public class VerseWordSearchService {
     );
 
     /**
-     * Возможные последние буквы stem для каждого регулярного класса (fallback в HQL,
-     * sangraha-service.md §9): a→A_STEM, ā→AA_STEM, i→I_STEM, ī→II_STEM, u→U_STEM,
-     * ū→UU_STEM, ṛ/r→R_STEM.
-     */
-    private static final Map<VowelType, Set<String>> REGULAR_LAST_LETTERS = Map.of(
-            VowelType.A_STEM, Set.of("a"),
-            VowelType.AA_STEM, Set.of("ā"),
-            VowelType.I_STEM, Set.of("i"),
-            VowelType.II_STEM, Set.of("ī"),
-            VowelType.U_STEM, Set.of("u"),
-            VowelType.UU_STEM, Set.of("ū"),
-            VowelType.R_STEM, Set.of("ṛ", "r")
-    );
-
-    /**
-     * Все допустимые имена значений VowelType (7 регулярных + 8 местоимённых). В HQL
-     * используется для отделения распознанного stemClass (трактуется как vowelType слова)
-     * от нераспознанного значения (fallback по последней букве stem), см. findVerseWordCountsByVowelType.
-     */
-    private static final Set<String> VOWEL_TYPE_NAMES = Arrays.stream(VowelType.values())
-            .map(Enum::name)
-            .collect(Collectors.toUnmodifiableSet());
-
-    /**
      * Кандидат на попадание в группу: стих + длина стиха в словах.
      */
     public record Candidate(UUID verseId, long wordCount) {}
@@ -110,18 +83,12 @@ public class VerseWordSearchService {
     /**
      * vowelType слова (sangraha-service.md §9): приоритет nominal_lemmas — stemClass строки
      * на лемму слова (одна строка на lemma_iast, выбирать не из чего); если леммы нет в
-     * таблице (или stemClass в ней null/не является регулярным классом) — прежняя эвристика
-     * по последней букве stem. stem_class в БД без CHECK — открытый набор значений, поэтому
-     * нераспознанное значение трактуется как отсутствие классификации (fallback).
+     * таблице (или stemClass в ней null) — прежняя эвристика по последней букве stem.
      * Чистая функция.
      */
     static VowelType resolveVowelType(NominalLemma lemma, String stem) {
         if (lemma != null && lemma.getStemClass() != null) {
-            try {
-                return VowelType.valueOf(lemma.getStemClass());
-            } catch (IllegalArgumentException e) {
-                return classifyVowelType(stem);
-            }
+            return lemma.getStemClass();
         }
         return classifyVowelType(stem);
     }
@@ -158,8 +125,7 @@ public class VerseWordSearchService {
         List<VerseWordCount> counts;
         if (isRegular(vowelType)) {
             counts = verseWordRepository.findVerseWordCountsByVowelType(
-                    gender, caseType, numberType, vowelType.name(), VOWEL_TYPE_NAMES,
-                    REGULAR_LAST_LETTERS.get(vowelType), maxPhraseWords);
+                    gender, caseType, numberType, vowelType, maxPhraseWords);
         } else {
             String lemmaIast = PRON_LEMMA_IAST.get(vowelType);
             if (lemmaIast == null) {

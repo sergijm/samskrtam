@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import sm.selflearn.samskrtam.content.model.VowelType;
 
 import java.time.Instant;
 
@@ -37,8 +38,9 @@ public class NominalLemma {
     @Column(name = "stem_iast")
     private String stemIast;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "stem_class")
-    private String stemClass;
+    private VowelType stemClass;
 
     @Enumerated(EnumType.STRING)
     @Column

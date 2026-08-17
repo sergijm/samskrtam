@@ -65,7 +65,7 @@ public class SessionOperationsService {
                     if (alreadyAnswered) {
                         return Mono.error(new SamskrtamException("ALREADY_ANSWERED", "Question already answered: " + request.getQuestionId()));
                     }
-                    return sessionQuestionRepository.findByQuestionId(request.getQuestionId())
+                    return sessionQuestionRepository.findBySessionIdAndQuestionId(session.getId(), request.getQuestionId())
                             .map(sessionQuestionToDtoMapper::toDto)
                             .flatMap(generatedQuestion -> processAndSaveAnswer(session, userId, request, generatedQuestion, userLocale));
                 });

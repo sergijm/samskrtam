@@ -64,10 +64,10 @@ quiz:
   # Количество вопросов каждого типа declension-семейства за сессию,
   # источник пула кандидатов — curriculum-service (API v2), см. curriculum-quest-items.md §5.
   declension-session:
-    single-choice-count: 10
-    free-text-count: 4
-    case-recognition-count: 2
-    match-count: 4
+    single-choice-count: 4
+    free-text-count: 1
+    case-recognition-count: 4
+    match-count: 1
 
 logging:
   level:

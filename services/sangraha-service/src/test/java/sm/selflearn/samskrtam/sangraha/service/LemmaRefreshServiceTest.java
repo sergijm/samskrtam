@@ -6,6 +6,7 @@ import sm.selflearn.samskrtam.sangraha.dto.LemmaRefreshResponse;
 import sm.selflearn.samskrtam.sangraha.model.Lemma;
 import sm.selflearn.samskrtam.sangraha.repository.LemmaRepository;
 import sm.selflearn.samskrtam.sangraha.repository.LemmaStatisticsRepository;
+import sm.selflearn.samskrtam.sangraha.repository.VerseStatisticsRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
 
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ public class LemmaRefreshServiceTest {
     private final Map<String, Lemma> lemmaStore = new HashMap<>();
     private LemmaRepository lemmaRepo;
     private LemmaStatisticsRepository statsRepo;
+    private VerseStatisticsRepository verseStatsRepo;
     private VerseWordRepository verseWordRepo;
 
     @BeforeEach
@@ -32,6 +34,9 @@ public class LemmaRefreshServiceTest {
 
         statsRepo = mock(LemmaStatisticsRepository.class);
         when(statsRepo.refreshStatistics(org.mockito.ArgumentMatchers.<UUID[]>any())).thenReturn(7);
+
+        verseStatsRepo = mock(VerseStatisticsRepository.class);
+        when(verseStatsRepo.refreshStatistics()).thenReturn(42);
 
         lemmaRepo = mock(LemmaRepository.class);
         when(lemmaRepo.saveAll(any())).thenAnswer(inv -> {
@@ -54,7 +59,7 @@ public class LemmaRefreshServiceTest {
                 .stream(distinctIast)
                 .filter(iast -> lemmaStore.values().stream().noneMatch(l -> l.getLemmaIast().equals(iast)))
                 .toList());
-        return new LemmaRefreshService(verseWordRepo, lemmaRepo, statsRepo, new TransliterationService());
+        return new LemmaRefreshService(verseWordRepo, lemmaRepo, statsRepo, verseStatsRepo, new TransliterationService());
     }
 
     @Test
@@ -63,6 +68,8 @@ public class LemmaRefreshServiceTest {
 
         assertThat(response.lemmaCount()).isEqualTo(2);
         assertThat(response.newLemmaCount()).isEqualTo(2);
+        assertThat(response.statisticsCount()).isEqualTo(7);
+        assertThat(response.verseStatisticsCount()).isEqualTo(42);
 
         Lemma gaja = lemmaStore.get("gaja");
         assertThat(gaja).isNotNull();

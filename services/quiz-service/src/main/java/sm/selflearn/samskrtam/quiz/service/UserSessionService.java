@@ -56,8 +56,7 @@ public class UserSessionService {
                         resolveLessonItem(session.getLessonId()),
                         quizAnswerRepository.countCorrectAnswersBySessionId(sessionId)
                 ).map(tuple -> quizSummaryAssembler.assemble(
-                        session, tuple.getT1(), tuple.getT2(),
-                        countFilterCombinations(session))));
+                        session, tuple.getT1(), tuple.getT2(), 0)));
     }
 
     public Mono<List<AnswerHistoryDto>> getSessionAnswerHistory(
@@ -97,37 +96,5 @@ public class UserSessionService {
             return Mono.empty();
         }
         return contentClient.getLessonItem(lessonId);
-    }
-
-    private int countFilterCombinations(QuizSession session) {
-        if (session.getFilterScope() == null) return 0;
-        try {
-                        return switch (session.getFilterScope()) {
-                case CASE_ONLY -> parseJsonArrayLength(session.getFilterCaseTypes());
-                case NUMBER_ONLY -> parseJsonArrayLength(session.getFilterNumberTypes());
-                case CASE_NUMBER_GENDER -> parseJsonArrayLength(session.getFilterCombinations());
-                case ALL_STEMS -> parseJsonArrayLength(session.getFilterVowelTypes());
-            };
-        } catch (Exception e) {
-            log.warn("Failed to parse filter combinations for session {}", session.getId(), e);
-            return 0;
-        }
-    }
-
-    private int parseJsonArrayLength(io.r2dbc.postgresql.codec.Json json) {
-        if (json == null) return 0;
-        return parseJsonStringLength(json.asString());
-    }
-
-    private int parseJsonStringLength(String jsonArray) {
-        if (jsonArray == null || jsonArray.isBlank()) return 0;
-        int openBraces = 0;
-        for (char c : jsonArray.toCharArray()) {
-            if (c == '{') openBraces++;
-        }
-        if (openBraces > 0) return openBraces;
-        String stripped = jsonArray.replaceAll("[\\[\\]\"]", "").trim();
-        if (stripped.isEmpty()) return 0;
-        return (int) stripped.chars().filter(c -> c == ',').count() + 1;
     }
 }

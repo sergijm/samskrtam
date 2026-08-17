@@ -2,6 +2,8 @@ package sm.selflearn.samskrtam.curriculum.questitem;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -12,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import sm.selflearn.samskrtam.quest.AnswerMode;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -38,8 +41,9 @@ public class QuestItem {
     @Column(name = "item_type", nullable = false, length = 40)
     private String itemType;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "answer_mode", nullable = false, length = 20)
-    private String answerMode;
+    private AnswerMode answerMode;
 
     @Column(name = "prompt", nullable = false)
     private String prompt;

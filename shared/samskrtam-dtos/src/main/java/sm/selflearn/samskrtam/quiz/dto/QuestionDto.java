@@ -2,6 +2,7 @@ package sm.selflearn.samskrtam.quiz.dto;
 
 import lombok.Builder;
 import lombok.Value;
+import sm.selflearn.samskrtam.quest.AnswerMode;
 
 import java.util.List;
 import java.util.UUID;
@@ -40,7 +41,7 @@ public class QuestionDto {
      * Null for legacy content-based sessions — the frontend dispatches on
      * {@link #questionType} in that case.
      */
-    String answerMode;
+    AnswerMode answerMode;
 
     /** Whether this question supports multi-select (e.g. CASE_BY_FORM). Default false. */
     boolean multiSelect;

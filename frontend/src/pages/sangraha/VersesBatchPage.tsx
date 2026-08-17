@@ -5,6 +5,7 @@ import { Column } from 'primereact/column';
 import { Skeleton } from 'primereact/skeleton';
 import { Tooltip } from 'primereact/tooltip';
 import { useVersesBatch, useAnalyzeVerses } from '../../hooks/useSangraha';
+import { loadVerseBatchIds } from '../../utils/verseBatchIds';
 import { verseStatusIcon } from '../../utils/verseStatus';
 import { IconButton, PageButton } from '../../components/common/buttons';
 import type { VerseBatchItemDto } from '../../types/sangraha';
@@ -17,7 +18,10 @@ const VersesBatchPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const ids = searchParams.getAll('id');
+  const paramIds = searchParams.getAll('id');
+  // Без query-параметров (переход из кнопки «Открыть все стихи») —
+  // читаем список verseId из localStorage.
+  const ids = paramIds.length > 0 ? paramIds : loadVerseBatchIds();
   const { data, isLoading, isError } = useVersesBatch(ids);
   const analyze = useAnalyzeVerses();
 

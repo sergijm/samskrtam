@@ -22,6 +22,7 @@ import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
 import sm.selflearn.samskrtam.quiz.repository.SessionQuestionRepository;
+import sm.selflearn.samskrtam.quest.AnswerMode;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -71,7 +72,7 @@ public class ComposedSessionService {
                         return Mono.error(new SamskrtamException("ALREADY_ANSWERED",
                                 "Question already answered: " + request.getQuestionId()));
                     }
-                    return sessionQuestionRepository.findByQuestionId(request.getQuestionId())
+                    return sessionQuestionRepository.findBySessionIdAndQuestionId(session.getId(), request.getQuestionId())
                             .switchIfEmpty(Mono.error(new SamskrtamException("QUESTION_NOT_FOUND",
                                     "Question not found: " + request.getQuestionId())))
                             .flatMap(stored -> processAnswer(session, userId, request, stored));
@@ -117,7 +118,7 @@ public class ComposedSessionService {
 
     private Mono<AnswerResponse> processAnswer(QuizSession session, UUID userId, AnswerRequest request,
                                                SessionQuestion stored) {
-        if ("MATCHING".equals(stored.getQuestionType())) {
+        if (stored.getAnswerMode() == AnswerMode.MATCHING) {
             return processMatchingAnswer(session, userId, request, stored);
         }
         String correctAnswer = stored.getCorrectAnswer();

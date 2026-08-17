@@ -30,23 +30,43 @@ import static sm.selflearn.samskrtam.sangraha.service.VerseAnalysisSaver.getStri
 public class VerseAnalysisService {
 
     /**
-     * Размер чанка для analyzeVerses (batch-verse-review.md): не больше самой крупной
-     * существующей главы, чтобы не увеличивать LLM-промпт сверх проверенного на практике.
-     * TODO: прикинуть реальный максимум по корпусу (MAX(COUNT(*)) по chapter_id) и
-     * выровнять константу, если он заметно больше/меньше.
+     * Максимальный размер чанка для analyzeVerses (batch-verse-review.md):
+     * {@code max-completion-tokens / 3000} (3000 токенов — ориентир на один стих
+     * с полным разбором), но не больше {@link #ANALYSIS_CHUNK_SIZE_MAX}.
+     * Чтобы не увеличивать LLM-промпт сверх проверенного на практике.
      */
-    private static final int ANALYSIS_CHUNK_SIZE = 20;
+    private static final int ANALYSIS_CHUNK_SIZE_MAX = 20;
+    private static final int ANALYSIS_CHUNK_SIZE_DEFAULT = 20;
+    private static final int ANALYSIS_TOKENS_PER_VERSE = 3000;
 
     private final VerseRepository verseRepository;
     private final ChapterRepository chapterRepository;
     private final WorkRepository workRepository;
     private final VerseWordRepository verseWordRepository;
     private final LlmClient llmClient;
+    private final LlmProperties llmProperties;
     private final VerseAnalysisSaver analysisSaver;
     private final VerseAnalysisResponseNormalizer responseNormalizer;
     private final ToolCallValidator toolCallValidator;
     private final JsonSchemas jsonSchemas;
     private final VerseBatchPushService verseBatchPushService;
+
+    /**
+     * Размер батча для анализа стихов: {@code max-completion-tokens / 3000},
+     * но не больше {@link #ANALYSIS_CHUNK_SIZE_MAX}. Если max-completion-tokens
+     * не задан — {@link #ANALYSIS_CHUNK_SIZE_DEFAULT}.
+     */
+    private int analysisChunkSize() {
+        Integer maxTokens = llmProperties.getMaxCompletionTokens();
+        if (maxTokens == null || maxTokens <= 0) {
+            return ANALYSIS_CHUNK_SIZE_DEFAULT;
+        }
+        int computed = maxTokens / ANALYSIS_TOKENS_PER_VERSE;
+        if (computed < 1) {
+            computed = 1;
+        }
+        return Math.min(computed, ANALYSIS_CHUNK_SIZE_MAX);
+    }
 
     /**
      * Запускает анализ одного стиха LLM.
@@ -118,8 +138,9 @@ public class VerseAnalysisService {
             }
         }
 
-        for (int i = 0; i < ordered.size(); i += ANALYSIS_CHUNK_SIZE) {
-            int end = Math.min(i + ANALYSIS_CHUNK_SIZE, ordered.size());
+        int chunkSize = analysisChunkSize();
+        for (int i = 0; i < ordered.size(); i += chunkSize) {
+            int end = Math.min(i + chunkSize, ordered.size());
             runAnalysis(ordered.subList(i, end));
         }
 

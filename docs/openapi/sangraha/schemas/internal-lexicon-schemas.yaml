@@ -136,7 +136,7 @@ LemmaClassificationReviewRequest:
 
 LemmaRefreshResponse:
   type: object
-  required: [lemmaCount, newLemmaCount, updatedLemmaCount, statisticsCount, newStatisticsCount, updatedStatisticsCount]
+  required: [lemmaCount, newLemmaCount, updatedLemmaCount, statisticsCount, newStatisticsCount, updatedStatisticsCount, verseStatisticsCount]
   properties:
     lemmaCount:
       type: integer
@@ -150,6 +150,9 @@ LemmaRefreshResponse:
       type: integer
     updatedStatisticsCount:
       type: integer
+    verseStatisticsCount:
+      type: integer
+      description: Число строк verse_statistics (длина стихов в словах), пересчитанных при refresh.
 
 LemmaExportItemDto:
   type: object

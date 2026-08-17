@@ -238,7 +238,7 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
         QuestItem item = new QuestItem();
         item.setTopicId(topic.getId());
         item.setItemType(itemType.code());
-        item.setAnswerMode(itemType.defaultAnswerMode().name());
+        item.setAnswerMode(itemType.defaultAnswerMode());
         item.setPrompt(prompt);
         item.setPromptRu(promptRu);
         item.setCorrectAnswer(correctAnswer);

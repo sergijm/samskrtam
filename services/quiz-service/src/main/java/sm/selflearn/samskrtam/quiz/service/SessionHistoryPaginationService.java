@@ -1,6 +1,5 @@
 package sm.selflearn.samskrtam.quiz.service;
 
-import io.r2dbc.postgresql.codec.Json;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -96,49 +95,13 @@ public class SessionHistoryPaginationService {
                                 .map(session -> {
                                     LessonItemResponse summary = lessonSummariesMap.get(session.getLessonId());
                                     long correctAnswers = correctAnswersMap.getOrDefault(session.getId(), 0L);
-                                    int combinationsCount = countFilterCombinations(session);
                                     return quizSummaryAssembler.assemble(
-                                            session, summary, correctAnswers, combinationsCount);
+                                            session, summary, correctAnswers, 0);
                                 })
                                 .collect(Collectors.toList());
 
                         return new PageImpl<>(dtoList, pageable, totalElements);
                     });
                 });
-    }
-
-    /**
-     * Counts the number of filter combinations stored in the session's JSONB fields.
-     */
-    private int countFilterCombinations(QuizSession session) {
-        if (session.getFilterScope() == null) return 0;
-        try {
-                        return switch (session.getFilterScope()) {
-                case CASE_ONLY -> parseJsonArrayLength(session.getFilterCaseTypes());
-                case NUMBER_ONLY -> parseJsonArrayLength(session.getFilterNumberTypes());
-                case CASE_NUMBER_GENDER -> parseJsonArrayLength(session.getFilterCombinations());
-                case ALL_STEMS -> parseJsonArrayLength(session.getFilterVowelTypes());
-            };
-        } catch (Exception e) {
-            log.warn("Failed to parse filter combinations for session {}", session.getId(), e);
-            return 0;
-        }
-    }
-
-    private int parseJsonArrayLength(Json json) {
-        if (json == null) return 0;
-        return parseJsonStringLength(json.asString());
-    }
-
-    private int parseJsonStringLength(String jsonArray) {
-        if (jsonArray == null || jsonArray.isBlank()) return 0;
-        int openBraces = 0;
-        for (char c : jsonArray.toCharArray()) {
-            if (c == '{') openBraces++;
-        }
-        if (openBraces > 0) return openBraces;
-        String stripped = jsonArray.replaceAll("[\\[\\]\"]", "").trim();
-        if (stripped.isEmpty()) return 0;
-        return (int) stripped.chars().filter(c -> c == ',').count() + 1;
     }
 }

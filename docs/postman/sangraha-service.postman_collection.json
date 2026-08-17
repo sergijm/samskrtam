@@ -1,0 +1,641 @@
+{
+  "info": {
+    "name": "Sangraha Service API",
+    "description": "API для чтения санскритских произведений (Work → Chapter → Verse) и LLM-анализа стихов.\n\n- **Public API** (через API Gateway): `{{baseUrl}}/api/v1/sangraha`\n- **Internal Lexicon API** (service-to-service): `{{internalUrl}}/sangraha/internal/lexicon`\n- **Internal Content API** (service-to-service): `{{internalUrl}}/sangraha/internal/content`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "sangrahaBaseUrl",
+      "value": "http://localhost:8089",
+      "type": "string"
+    },
+    {
+      "key": "internalUrl",
+      "value": "http://sangraha-service:8082",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "workSlug",
+      "value": "bhagavad-gita",
+      "type": "string"
+    },
+    {
+      "key": "chapterId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "verseId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "classificationId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Public API",
+      "description": "Публичные эндпоинты, доступные через API Gateway (prefix `/api/v1/sangraha`).",
+      "item": [
+        {
+          "name": "Works",
+          "description": "Эндпоинты для получения списка произведений и дерева классификатора.",
+          "item": [
+            {
+              "name": "List Works",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/works?classId={{classId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "works"],
+                  "query": [
+                    {
+                      "key": "classId",
+                      "value": "{{classId}}",
+                      "description": "Повторяющийся параметр — фильтрация по категориям классификатора (опционально, UUID)",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Плитки произведений с опциональным фильтром по классификатору."
+              },
+              "response": []
+            },
+            {
+              "name": "List Works Classes",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/works/classes",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "works", "classes"]
+                },
+                "description": "Дерево классификатора произведений (для дропдаунов с множественным выбором)."
+              },
+              "response": []
+            },
+            {
+              "name": "Get Work Tree By Slug",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/works/{{workSlug}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "works", "{{workSlug}}"]
+                },
+                "description": "Произведение + список глав (без стихов) по slug."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Chapters",
+          "description": "Эндпоинты для получения глав и их стихов.",
+          "item": [
+            {
+              "name": "Get Chapter Verses",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/chapters/{{chapterId}}/verses",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "chapters", "{{chapterId}}", "verses"]
+                },
+                "description": "Одна глава со списком стихов (VersePreview[])."
+              },
+              "response": []
+            },
+            {
+              "name": "Analyze All Verses In Chapter",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/chapters/{{chapterId}}/verses/analyze-all",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "chapters", "{{chapterId}}", "verses", "analyze-all"]
+                },
+                "description": "Запустить пакетный LLM-анализ всех стихов главы (требует роль ADMIN)."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Verses",
+          "description": "Эндпоинты для получения и анализа стихов.",
+          "item": [
+            {
+              "name": "Get Verse Detail",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/{{verseId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "verses", "{{verseId}}"]
+                },
+                "description": "Получить стих (текст + анализ, если ANALYZED)."
+              },
+              "response": []
+            },
+            {
+              "name": "Analyze Verse (Set Text)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"text\": \"कर्मण्येवाधिकारस्ते मा फलेषु कदाचन\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/{{verseId}}/analyze",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "verses", "{{verseId}}", "analyze"]
+                },
+                "description": "Сохранить текст и запустить LLM-анализ стиха (требует роль ADMIN)."
+              },
+              "response": []
+            },
+            {
+              "name": "Get Verse Analysis",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/{{verseId}}/analysis",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "verses", "{{verseId}}", "analysis"]
+                },
+                "description": "Получить анализ стиха."
+              },
+              "response": []
+            },
+            {
+              "name": "Get Verse Words",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/{{verseId}}/words",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "verses", "{{verseId}}", "words"]
+                },
+                "description": "Получить слова стиха (VerseWord[])."
+              },
+              "response": []
+            },
+            {
+              "name": "Study Verse (Vocabulary Quiz)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/{{verseId}}/study",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "verses", "{{verseId}}", "study"]
+                },
+                "description": "Экспорт лемм стиха в curriculum-service для создания лексического квиза. В спецификации OpenAPI также описан как POST /verses/{verseId}/vocabulary-quiz."
+              },
+              "response": []
+            },
+            {
+              "name": "Get Verses By Ids (Batch)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verse?id={{verseId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "verse"],
+                  "query": [
+                    {
+                      "key": "id",
+                      "value": "{{verseId}}",
+                      "description": "Повторяющийся параметр — список verseId для массового просмотра"
+                    }
+                  ]
+                },
+                "description": "Стихи по произвольному списку id (для массового просмотра/ревью)."
+              },
+              "response": []
+            },
+            {
+              "name": "Batch Analyze Verses",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"verseIds\": [\n    \"{{verseId}}\"\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verse/analysis",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "verse", "analysis"]
+                },
+                "description": "Батч-анализ произвольного списка стихов (безусловный повтор, требует ADMIN)."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Standalone Analysis",
+          "description": "Эндпоинты для standalone-стихов (без привязки к произведению/главе). Требуют заголовок X-User-Id.",
+          "item": [
+            {
+              "name": "Create Standalone Analysis",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{userId}}",
+                    "description": "UUID текущего пользователя (owner)"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"text\": \"ॐ भूर्भुवः स्वः\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/analysis",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "analysis"]
+                },
+                "description": "Создать standalone-стих и запустить LLM-анализ."
+              },
+              "response": []
+            },
+            {
+              "name": "List Standalone Analyses",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{userId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/analysis",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "analysis"]
+                },
+                "description": "Список standalone-стихов текущего пользователя (новые сверху)."
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Standalone Analysis",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{userId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/sangraha/analysis/{{verseId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "sangraha", "analysis", "{{verseId}}"]
+                },
+                "description": "Мягко удалить standalone-стих (только владелец)."
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Internal Lexicon API",
+      "description": "Service-to-service эндпоинты для словаря лемм и классификации. Вызываются минуя API Gateway.",
+      "item": [
+        {
+          "name": "Refresh Lemma Statistics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{internalUrl}}/sangraha/internal/lexicon/lemmas/refresh-statistics",
+              "host": ["{{internalUrl}}"],
+              "path": ["sangraha", "internal", "lexicon", "lemmas", "refresh-statistics"]
+            },
+            "description": "Пересчитать словарь лемм и lemma_statistics из корпуса VerseWord."
+          },
+          "response": []
+        },
+        {
+          "name": "Export Lemmas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{internalUrl}}/sangraha/internal/lexicon/lemmas/export?cursor={{cursor}}&limit=500",
+              "host": ["{{internalUrl}}"],
+              "path": ["sangraha", "internal", "lexicon", "lemmas", "export"],
+              "query": [
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "Последний lemmaStatistics.id; null — первая страница",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "500",
+                  "description": "Размер страницы (clamp 1..500, default 500)"
+                }
+              ]
+            },
+            "description": "Экспорт агрегированных лемм в curriculum-service (курсорная пагинация)."
+          },
+          "response": []
+        },
+        {
+          "name": "Start Classification Run",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schemeCode\": \"CURRICULUM\",\n  \"batchSize\": 50,\n  \"batchCount\": 2,\n  \"llmModel\": null\n}"
+            },
+            "url": {
+              "raw": "{{internalUrl}}/sangraha/internal/lexicon/classification/runs",
+              "host": ["{{internalUrl}}"],
+              "path": ["sangraha", "internal", "lexicon", "classification", "runs"]
+            },
+            "description": "Запустить batch-прогон классификации лемм."
+          },
+          "response": []
+        },
+        {
+          "name": "List Classifications For Review",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{internalUrl}}/sangraha/internal/lexicon/classifications?schemeCode=CURRICULUM&status=CANDIDATE&cursor=&limit=100",
+              "host": ["{{internalUrl}}"],
+              "path": ["sangraha", "internal", "lexicon", "classifications"],
+              "query": [
+                {
+                  "key": "schemeCode",
+                  "value": "CURRICULUM",
+                  "description": "Код схемы (default CURRICULUM)"
+                },
+                {
+                  "key": "status",
+                  "value": "CANDIDATE",
+                  "description": "Статус (default CANDIDATE)"
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "Курсор по lemmaId",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "100",
+                  "description": "Размер страницы (clamp 1..500, default 100)"
+                }
+              ]
+            },
+            "description": "Список классификаций на ревью (курсорная пагинация)."
+          },
+          "response": []
+        },
+        {
+          "name": "Review Classification",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{userId}}",
+                "description": "Кто провёл ревью (сохраняется в reviewedBy)",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\",\n  \"categoryCode\": \"philosophy\",\n  \"glossRu\": \"действие\",\n  \"glossEn\": \"action\",\n  \"confidence\": 85\n}"
+            },
+            "url": {
+              "raw": "{{internalUrl}}/sangraha/internal/lexicon/classifications/{{classificationId}}",
+              "host": ["{{internalUrl}}"],
+              "path": ["sangraha", "internal", "lexicon", "classifications", "{{classificationId}}"]
+            },
+            "description": "Ревью одной классификации (исправление полей и/или смена статуса)."
+          },
+          "response": []
+        },
+        {
+          "name": "Export Approved Classifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{internalUrl}}/sangraha/internal/lexicon/lemma-classifications/export?schemeCode=CURRICULUM&cursor=&limit=500",
+              "host": ["{{internalUrl}}"],
+              "path": ["sangraha", "internal", "lexicon", "lemma-classifications", "export"],
+              "query": [
+                {
+                  "key": "schemeCode",
+                  "value": "CURRICULUM",
+                  "description": "Код схемы (default CURRICULUM)"
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "500",
+                  "description": "Размер страницы (clamp 1..500, default 500)"
+                }
+              ]
+            },
+            "description": "Экспорт APPROVED-классификаций (для отладки)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Internal Content API",
+      "description": "Service-to-service эндпоинты, вызываемые content-service. Минуют API Gateway.",
+      "item": [
+        {
+          "name": "Search Declension Examples",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vowelType\": \"A_STEM\",\n  \"gender\": \"MASCULINE\",\n  \"limitPerGroup\": 3,\n  \"cells\": [\n    {\n      \"caseType\": \"NOMINATIVE\",\n      \"numberType\": \"SINGULAR\"\n    },\n    {\n      \"caseType\": \"ACCUSATIVE\",\n      \"numberType\": \"SINGULAR\"\n    },\n    {\n      \"caseType\": \"NOMINATIVE\",\n      \"numberType\": \"PLURAL\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{internalUrl}}/sangraha/internal/content/declension-examples",
+              "host": ["{{internalUrl}}"],
+              "path": ["sangraha", "internal", "content", "declension-examples"]
+            },
+            "description": "Поиск примеров стихов для ячеек склонения, сгруппированных по (caseType, numberType)."
+          },
+          "response": []
+        },
+        {
+          "name": "Batch Fetch Verses",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"verseIds\": [\n    \"{{verseId}}\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{internalUrl}}/sangraha/internal/content/verses/batch",
+              "host": ["{{internalUrl}}"],
+              "path": ["sangraha", "internal", "content", "verses", "batch"]
+            },
+            "description": "Batch-fetch verse text/translation/attribution by verseId list (только ANALYZED)."
+          },
+          "response": []
+        },
+        {
+          "name": "Export Verse Words",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{internalUrl}}/sangraha/internal/content/verse-words/export?cursor=&limit=500",
+              "host": ["{{internalUrl}}"],
+              "path": ["sangraha", "internal", "content", "verse-words", "export"],
+              "query": [
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "500",
+                  "description": "Размер страницы (clamp 1..500, default 500)"
+                }
+              ]
+            },
+            "description": "Курсорная пагинация всех VerseWord из ANALYZED стихов."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Nominal Lemma Candidates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{internalUrl}}/sangraha/internal/content/nominal-lemmas?stemClass={{stemClass}}&limit=100",
+              "host": ["{{internalUrl}}"],
+              "path": ["sangraha", "internal", "content", "nominal-lemmas"],
+              "query": [
+                {
+                  "key": "stemClass",
+                  "value": "",
+                  "description": "Класс основы (опционально)",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "100",
+                  "description": "Максимум записей"
+                }
+              ]
+            },
+            "description": "Поиск кандидатов nominal-lemmas для импорта."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

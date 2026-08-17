@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
+import sm.selflearn.samskrtam.quest.AnswerMode;
 
 import java.util.List;
 import java.util.UUID;
@@ -37,7 +38,7 @@ public interface QuestItemRepository extends JpaRepository<QuestItem, UUID> {
     List<QuestItem> selectByTopic(
             @Param("topicId") UUID topicId,
             @Param("itemType") String itemType,
-            @Param("answerMode") String answerMode,
+            @Param("answerMode") AnswerMode answerMode,
             @Param("limit") int limit);
 
     /**
@@ -62,7 +63,7 @@ public interface QuestItemRepository extends JpaRepository<QuestItem, UUID> {
             @Param("topicId") UUID topicId,
             @Param("progressTags") String[] progressTags,
             @Param("itemType") String itemType,
-            @Param("answerMode") String answerMode,
+            @Param("answerMode") AnswerMode answerMode,
             @Param("limit") int limit);
 
     /**

@@ -163,6 +163,12 @@ public class TopicService {
                 .toList();
     }
 
+    public TopicDto getTopicByCode(String code) {
+        Topic topic = topicRepository.findByCode(code)
+                .orElseThrow(() -> new EntityNotFoundException("Topic not found with code: " + code));
+        return topicMapper.toDto(topic);
+    }
+
     public List<TopicDto> listTopicsByLevel(LearningLevel level) {
         Sort sort = Sort.by(Sort.Order.asc("displayOrder").nullsLast(), Sort.Order.asc("titleRu"));
         return topicRepository.findByLearningLevel(level, sort).stream()

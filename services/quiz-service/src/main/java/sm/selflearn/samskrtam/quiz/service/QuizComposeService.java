@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
+import sm.selflearn.samskrtam.quiz.config.DeclensionSessionProperties;
 import sm.selflearn.samskrtam.quiz.config.QuizGeneratorConfig;
 import sm.selflearn.samskrtam.quiz.dto.ComposedQuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.ComposeQuizResponse;
@@ -20,6 +21,7 @@ import sm.selflearn.samskrtam.quiz.model.SessionQuestion;
 import sm.selflearn.samskrtam.quiz.repository.QuizItemScoreRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
 import sm.selflearn.samskrtam.quiz.repository.SessionQuestionRepository;
+import sm.selflearn.samskrtam.quest.AnswerMode;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,6 +50,7 @@ public class QuizComposeService {
     private final ComposedQuestionMapper composedQuestionMapper;
     private final QuizItemScoreRepository quizItemScoreRepository;
     private final QuizGeneratorConfig config;
+    private final DeclensionSessionProperties declensionSessionProperties;
 
     @Transactional
     public Mono<ComposeQuizResponse> compose(
@@ -103,9 +106,7 @@ List<SessionQuestion> questions = new ArrayList<>();
         int sessionSize = limit > 0 ? limit : config.getSessionSize().getSessionSize();
 
         if (setId == null) {
-            // full lesson — random one per tag/type/mode
-            return curriculumClient.selectQuestItems(topicCode, null, itemType, answerMode, 0)
-                    .map(list -> cap(list, sessionSize));
+            return selectFullLesson(topicCode, itemType, answerMode, sessionSize);
         }
 
         return switch (setId) {
@@ -118,6 +119,58 @@ List<SessionQuestion> questions = new ArrayList<>();
                     INS_LOC, DAT_GEN, ABL_LOC ->
                     selectGrammarItems(topicCode, setId, itemType, answerMode, sessionSize);
         };
+    }
+
+    /**
+     * Full-lesson selection. Declension topics (curriculum domain
+     * {@code NOMINAL_MORPHOLOGY}) get a fixed {@code answer_mode} mix
+     * (SINGLE_CHOICE → MATCHING → FREE_TEXT); everything else keeps the
+     * generic one-per-tag/type/mode window selection.
+     */
+    private Mono<List<QuestItemDto>> selectFullLesson(
+            String topicCode, String itemType, String answerMode, int sessionSize) {
+        return curriculumClient.fetchTopicByCode(topicCode)
+                .flatMap(topic -> isDeclensionTopic(topic.domain())
+                        ? selectDeclensionMix(topicCode, null)
+                        : selectGeneric(topicCode, null, itemType, answerMode, sessionSize))
+                .switchIfEmpty(Mono.defer(() -> selectGeneric(topicCode, null, itemType, answerMode, sessionSize)));
+    }
+
+    private Mono<List<QuestItemDto>> selectDeclensionMix(String topicCode, List<String> progressTags) {
+        return curriculumClient.selectQuestItems(topicCode, progressTags, null, null, 0)
+                .map(all -> {
+                    DeclensionSessionProperties props = declensionSessionProperties;
+                    int singleChoiceTotal = props.getSingleChoiceCount() + props.getCaseRecognitionCount();
+                    List<QuestItemDto> singleChoice = filterByAnswerMode(all, AnswerMode.SINGLE_CHOICE,
+                            singleChoiceTotal);
+                    List<QuestItemDto> matching = filterByAnswerMode(all, AnswerMode.MATCHING,
+                            props.getMatchCount());
+                    List<QuestItemDto> freeText = filterByAnswerMode(all, AnswerMode.FREE_TEXT,
+                            props.getFreeTextCount());
+                    List<QuestItemDto> ordered = new ArrayList<>();
+                    ordered.addAll(singleChoice); // SINGLE_CHOICE first
+                    ordered.addAll(matching);     // MATCHING
+                    ordered.addAll(freeText);     // FREE_TEXT last
+                    return ordered;
+                });
+    }
+
+    private static List<QuestItemDto> filterByAnswerMode(List<QuestItemDto> items,
+                                                         AnswerMode answerMode, int count) {
+        return items.stream()
+                .filter(i -> answerMode == i.answerMode())
+                .limit(count)
+                .toList();
+    }
+
+    private Mono<List<QuestItemDto>> selectGeneric(
+            String topicCode, List<String> progressTags, String itemType, String answerMode, int sessionSize) {
+        return curriculumClient.selectQuestItems(topicCode, progressTags, itemType, answerMode, 0)
+                .map(list -> cap(list, sessionSize));
+    }
+
+    private static boolean isDeclensionTopic(String domain) {
+        return "NOMINAL_MORPHOLOGY".equals(domain);
     }
 
     /** NEW: fetch full lesson, then remove items whose progress_tag already has a score. */

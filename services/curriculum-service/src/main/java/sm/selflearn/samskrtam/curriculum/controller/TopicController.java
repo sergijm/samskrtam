@@ -49,6 +49,11 @@ public class TopicController {
         return topicService.getTopic(id);
     }
 
+    @GetMapping("/topics/by-code/{code}")
+    public TopicDto getTopicByCode(@PathVariable String code) {
+        return topicService.getTopicByCode(code);
+    }
+
     @PostMapping("/topics")
     @ResponseStatus(HttpStatus.CREATED)
     public TopicDto createTopic(@Valid @RequestBody CreateTopicRequest request) {

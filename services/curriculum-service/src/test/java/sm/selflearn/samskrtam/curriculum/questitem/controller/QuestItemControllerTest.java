@@ -11,6 +11,7 @@ import sm.selflearn.samskrtam.curriculum.questitem.dto.QuestItemDto;
 import sm.selflearn.samskrtam.curriculum.questitem.mapper.QuestItemMapper;
 import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemRepository;
 import sm.selflearn.samskrtam.curriculum.repository.TopicRepository;
+import sm.selflearn.samskrtam.quest.AnswerMode;
 
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,7 @@ class QuestItemControllerTest {
         when(topicRepository.existsById(TOPIC_ID)).thenReturn(true);
         when(questItemRepository.findRandomByTopicIdAndItemType(TOPIC_ID, "DECLENSION_FORM", 5))
                 .thenReturn(List.of(item));
-        QuestItemDto dto = new QuestItemDto(UUID.randomUUID(), "DECLENSION_FORM", "FREE_TEXT",
+        QuestItemDto dto = new QuestItemDto(UUID.randomUUID(), "DECLENSION_FORM", AnswerMode.FREE_TEXT,
                 "p", null, "a", null, List.of(), null, null, "NOMINATIVE|SINGULAR|FEMININE");
         when(mapper.toDto(item)).thenReturn(dto);
 

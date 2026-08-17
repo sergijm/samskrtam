@@ -5,12 +5,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import sm.selflearn.samskrtam.sangraha.dto.ChapterVersesDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseBatchResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
+import sm.selflearn.samskrtam.sangraha.dto.VersesBatchRequestDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorksClassGroupDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorkTreeDto;
 import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
@@ -65,10 +67,10 @@ public class SangrahaController {
 
     // ── Verses: произвольный список id (batch-verse-review.md) ─────
 
-    @GetMapping("/verse")
+    @PostMapping("/verse")
     public ResponseEntity<VerseBatchResponseDto> getVersesByIds(
-            @RequestParam(value = "id", required = false) List<UUID> id) {
-        return ResponseEntity.ok(verseBatchService.fetchBatchReview(id));
+            @RequestBody VersesBatchRequestDto request) {
+        return ResponseEntity.ok(verseBatchService.fetchBatchReview(request.verseIds()));
     }
 
     // ── Verses (read-only) ──────────────────────────────────────────
