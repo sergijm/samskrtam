@@ -1,0 +1,696 @@
+{
+  "parasmaipada": [
+    {
+      "verb_root": "भू (bhū)",
+      "meaning": "быть, становиться",
+      "forms": [
+        {
+          "person": 1,
+          "number": "singular",
+          "sanskrit": "अहम् भवानि।",
+          "transliteration": "Ahaṁ bhavāni.",
+          "translation": "Да буду я! (Дай мне стать)."
+        },
+        {
+          "person": 1,
+          "number": "dual",
+          "sanskrit": "आवाम् भवाव।",
+          "transliteration": "Āvām bhavāva.",
+          "translation": "Да будем мы вдвоем!"
+        },
+        {
+          "person": 1,
+          "number": "plural",
+          "sanskrit": "वयम् भवाम।",
+          "transliteration": "Vayam bhavāma.",
+          "translation": "Да будем мы!"
+        },
+        {
+          "person": 2,
+          "number": "singular",
+          "sanskrit": "त्वम् भव।",
+          "transliteration": "Tvam bhava.",
+          "translation": "Будь!"
+        },
+        {
+          "person": 2,
+          "number": "dual",
+          "sanskrit": "युवाम् भवतम्।",
+          "transliteration": "Yuvām bhavatam.",
+          "translation": "Будьте вдвоем!"
+        },
+        {
+          "person": 2,
+          "number": "plural",
+          "sanskrit": "यूयम् भवत।",
+          "transliteration": "Yūyam bhavata.",
+          "translation": "Будьте!"
+        },
+        {
+          "person": 3,
+          "number": "singular",
+          "sanskrit": "सः भवतु।",
+          "transliteration": "Saḥ bhavatu.",
+          "translation": "Пусть он будет!"
+        },
+        {
+          "person": 3,
+          "number": "dual",
+          "sanskrit": "तौ भवताम्।",
+          "transliteration": "Tau bhavatām.",
+          "translation": "Пусть они вдвоем будут!"
+        },
+        {
+          "person": 3,
+          "number": "plural",
+          "sanskrit": "ते भवन्तु।",
+          "transliteration": "Te bhavantu.",
+          "translation": "Пусть они будут!"
+        }
+      ]
+    },
+    {
+      "verb_root": "पठ् (paṭh)",
+      "meaning": "читать",
+      "forms": [
+        {
+          "person": 1,
+          "number": "singular",
+          "sanskrit": "अहम् पठानि।",
+          "transliteration": "Ahaṁ paṭhāni.",
+          "translation": "Дай-ка я почитаю."
+        },
+        {
+          "person": 1,
+          "number": "dual",
+          "sanskrit": "आवाम् पठाव।",
+          "transliteration": "Āvām paṭhāva.",
+          "translation": "Давай почитаем вдвоем."
+        },
+        {
+          "person": 1,
+          "number": "plural",
+          "sanskrit": "वयम् पठाम।",
+          "transliteration": "Vayam paṭhāma.",
+          "translation": "Давайте почитаем."
+        },
+        {
+          "person": 2,
+          "number": "singular",
+          "sanskrit": "त्वम् पठ।",
+          "transliteration": "Tvam paṭha.",
+          "translation": "Читай!"
+        },
+        {
+          "person": 2,
+          "number": "dual",
+          "sanskrit": "युवाम् पठतम्।",
+          "transliteration": "Yuvām paṭhatam.",
+          "translation": "Читайте вдвоем!"
+        },
+        {
+          "person": 2,
+          "number": "plural",
+          "sanskrit": "यूयम् पठत।",
+          "transliteration": "Yūyam paṭhata.",
+          "translation": "Читайте!"
+        },
+        {
+          "person": 3,
+          "number": "singular",
+          "sanskrit": "छात्रः पठतु।",
+          "transliteration": "Chātraḥ paṭhatu.",
+          "translation": "Пусть ученик читает."
+        },
+        {
+          "person": 3,
+          "number": "dual",
+          "sanskrit": "छात्रौ पठताम्।",
+          "transliteration": "Chātrau paṭhatām.",
+          "translation": "Пусть двое учеников читают."
+        },
+        {
+          "person": 3,
+          "number": "plural",
+          "sanskrit": "छात्राः पठन्तु।",
+          "transliteration": "Chātrāḥ paṭhantu.",
+          "translation": "Пусть ученики читают."
+        }
+      ]
+    },
+    {
+      "verb_root": "गम् (gam)",
+      "meaning": "идти",
+      "forms": [
+        {
+          "person": 1,
+          "number": "singular",
+          "sanskrit": "अहम् गच्छानि।",
+          "transliteration": "Ahaṁ gacchāni.",
+          "translation": "Дай я пойду."
+        },
+        {
+          "person": 1,
+          "number": "dual",
+          "sanskrit": "आवाम् गच्छाव।",
+          "transliteration": "Āvām gacchāva.",
+          "translation": "Пойдем вдвоем."
+        },
+        {
+          "person": 1,
+          "number": "plural",
+          "sanskrit": "वयम् गच्छाम।",
+          "transliteration": "Vayam gacchāma.",
+          "translation": "Пойдемте."
+        },
+        {
+          "person": 2,
+          "number": "singular",
+          "sanskrit": "त्वम् गच्छ।",
+          "transliteration": "Tvam gaccha.",
+          "translation": "Иди!"
+        },
+        {
+          "person": 2,
+          "number": "dual",
+          "sanskrit": "युवाम् गच्छतम्।",
+          "transliteration": "Yuvām gacchatam.",
+          "translation": "Идите вдвоем!"
+        },
+        {
+          "person": 2,
+          "number": "plural",
+          "sanskrit": "यूयम् गच्छत।",
+          "transliteration": "Yūyam gacchata.",
+          "translation": "Идите!"
+        },
+        {
+          "person": 3,
+          "number": "singular",
+          "sanskrit": "बालः गच्छतु।",
+          "transliteration": "Bālaḥ gacchatu.",
+          "translation": "Пусть мальчик идет."
+        },
+        {
+          "person": 3,
+          "number": "dual",
+          "sanskrit": "बालौ गच्छताम्।",
+          "transliteration": "Bālau gacchatām.",
+          "translation": "Пусть двое мальчиков идут."
+        },
+        {
+          "person": 3,
+          "number": "plural",
+          "sanskrit": "बालाः गच्छन्तु।",
+          "transliteration": "Bālāḥ gacchantu.",
+          "translation": "Пусть мальчики идут."
+        }
+      ]
+    },
+    {
+      "verb_root": "दृश् (dṛś)",
+      "meaning": "видеть, смотреть",
+      "forms": [
+        {
+          "person": 1,
+          "number": "singular",
+          "sanskrit": "अहम् पश्यानि।",
+          "transliteration": "Ahaṁ paśyāni.",
+          "translation": "Дай-ка я посмотрю."
+        },
+        {
+          "person": 1,
+          "number": "dual",
+          "sanskrit": "आवाम् पश्याव।",
+          "transliteration": "Āvām paśyāva.",
+          "translation": "Давай посмотрим вдвоем."
+        },
+        {
+          "person": 1,
+          "number": "plural",
+          "sanskrit": "वयम् पश्याम।",
+          "transliteration": "Vayam paśyāma.",
+          "translation": "Давайте посмотрим."
+        },
+        {
+          "person": 2,
+          "number": "singular",
+          "sanskrit": "त्वम् पश्य।",
+          "transliteration": "Tvam paśya.",
+          "translation": "Смотри!"
+        },
+        {
+          "person": 2,
+          "number": "dual",
+          "sanskrit": "युवाम् पश्यतम्।",
+          "transliteration": "Yuvām paśyatam.",
+          "translation": "Смотрите вдвоем!"
+        },
+        {
+          "person": 2,
+          "number": "plural",
+          "sanskrit": "यूयम् पश्यत।",
+          "transliteration": "Yūyam paśyata.",
+          "translation": "Смотрите!"
+        },
+        {
+          "person": 3,
+          "number": "singular",
+          "sanskrit": "जनः पश्यतु।",
+          "transliteration": "Janaḥ paśyatu.",
+          "translation": "Пусть человек смотрит."
+        },
+        {
+          "person": 3,
+          "number": "dual",
+          "sanskrit": "जनौ पश्यताम्।",
+          "transliteration": "Janau paśyatām.",
+          "translation": "Пусть двое людей смотрят."
+        },
+        {
+          "person": 3,
+          "number": "plural",
+          "sanskrit": "जनाः पश्यन्तु।",
+          "transliteration": "Janāḥ paśyantu.",
+          "translation": "Пусть люди смотрят."
+        }
+      ]
+    },
+    {
+      "verb_root": "लिख् (likh)",
+      "meaning": "писать",
+      "forms": [
+        {
+          "person": 1,
+          "number": "singular",
+          "sanskrit": "अहम् लिखानि।",
+          "transliteration": "Ahaṁ likhāni.",
+          "translation": "Дай-ка я напишу."
+        },
+        {
+          "person": 1,
+          "number": "dual",
+          "sanskrit": "आवाम् लिखाव।",
+          "transliteration": "Āvām likhāva.",
+          "translation": "Давай напишем вдвоем."
+        },
+        {
+          "person": 1,
+          "number": "plural",
+          "sanskrit": "वयम् लिखाम।",
+          "transliteration": "Vayam likhāma.",
+          "translation": "Давайте напишем."
+        },
+        {
+          "person": 2,
+          "number": "singular",
+          "sanskrit": "त्वम् लिख।",
+          "transliteration": "Tvam likha.",
+          "translation": "Пиши!"
+        },
+        {
+          "person": 2,
+          "number": "dual",
+          "sanskrit": "युवाम् लिखतम्।",
+          "transliteration": "Yuvām likhatam.",
+          "translation": "Пишите вдвоем!"
+        },
+        {
+          "person": 2,
+          "number": "plural",
+          "sanskrit": "यूयम् लिखत।",
+          "transliteration": "Yūyam likhata.",
+          "translation": "Пишите!"
+        },
+        {
+          "person": 3,
+          "number": "singular",
+          "sanskrit": "बालिका लिखतु।",
+          "transliteration": "Bālikā likhatu.",
+          "translation": "Пусть девочка пишет."
+        },
+        {
+          "person": 3,
+          "number": "dual",
+          "sanskrit": "बालिके लिखताम्।",
+          "transliteration": "Bālike likhatām.",
+          "translation": "Пусть две девочки пишут."
+        },
+        {
+          "person": 3,
+          "number": "plural",
+          "sanskrit": "बालिकाः लिखन्तु।",
+          "transliteration": "Bālikāḥ likhantu.",
+          "translation": "Пусть девочки пишут."
+        }
+      ]
+    }
+  ],
+  "atmanepada": [
+    {
+      "verb_root": "लभ् (labh)",
+      "meaning": "получать",
+      "forms": [
+        {
+          "person": 1,
+          "number": "singular",
+          "sanskrit": "अहम् लभै।",
+          "transliteration": "Ahaṁ labhai.",
+          "translation": "Дай-ка я получу."
+        },
+        {
+          "person": 1,
+          "number": "dual",
+          "sanskrit": "आवाम् लभावहै।",
+          "transliteration": "Āvām labhāvahai.",
+          "translation": "Давай получим вдвоем."
+        },
+        {
+          "person": 1,
+          "number": "plural",
+          "sanskrit": "वयम् लभामहै।",
+          "transliteration": "Vayam labhāmahai.",
+          "translation": "Давайте получим."
+        },
+        {
+          "person": 2,
+          "number": "singular",
+          "sanskrit": "त्वम् लभस्व।",
+          "transliteration": "Tvam labhasva.",
+          "translation": "Получай!"
+        },
+        {
+          "person": 2,
+          "number": "dual",
+          "sanskrit": "युवाम् लभेथाम्।",
+          "transliteration": "Yuvām labhethām.",
+          "translation": "Получайте вдвоем!"
+        },
+        {
+          "person": 2,
+          "number": "plural",
+          "sanskrit": "यूयम् लभध्वम्।",
+          "transliteration": "Yūyam labhadhvam.",
+          "translation": "Получайте!"
+        },
+        {
+          "person": 3,
+          "number": "singular",
+          "sanskrit": "सः लभताम्।",
+          "transliteration": "Saḥ labhatām.",
+          "translation": "Пусть он получит."
+        },
+        {
+          "person": 3,
+          "number": "dual",
+          "sanskrit": "तौ लभेताम्।",
+          "transliteration": "Tau labhetām.",
+          "translation": "Пусть они вдвоем получат."
+        },
+        {
+          "person": 3,
+          "number": "plural",
+          "sanskrit": "ते लभन्ताम्।",
+          "transliteration": "Te labhantām.",
+          "translation": "Пусть они получат."
+        }
+      ]
+    },
+    {
+      "verb_root": "भाष् (bhāṣ)",
+      "meaning": "говорить",
+      "forms": [
+        {
+          "person": 1,
+          "number": "singular",
+          "sanskrit": "अहम् भाषै।",
+          "transliteration": "Ahaṁ bhāṣai.",
+          "translation": "Дай-ка я скажу."
+        },
+        {
+          "person": 1,
+          "number": "dual",
+          "sanskrit": "आवाम् भाषावहै।",
+          "transliteration": "Āvām bhāṣāvahai.",
+          "translation": "Давай поговорим вдвоем."
+        },
+        {
+          "person": 1,
+          "number": "plural",
+          "sanskrit": "वयम् भाषामहै।",
+          "transliteration": "Vayam bhāṣāmahai.",
+          "translation": "Давайте поговорим."
+        },
+        {
+          "person": 2,
+          "number": "singular",
+          "sanskrit": "त्वम् भाषस्व।",
+          "transliteration": "Tvam bhāṣasva.",
+          "translation": "Говори!"
+        },
+        {
+          "person": 2,
+          "number": "dual",
+          "sanskrit": "युवाम् भाषेथाम्।",
+          "transliteration": "Yuvām bhāṣethām.",
+          "translation": "Говорите вдвоем!"
+        },
+        {
+          "person": 2,
+          "number": "plural",
+          "sanskrit": "यूयम् भाषध्वम्।",
+          "transliteration": "Yūyam bhāṣadhvam.",
+          "translation": "Говорите!"
+        },
+        {
+          "person": 3,
+          "number": "singular",
+          "sanskrit": "वक्ता भाषताम्।",
+          "transliteration": "Vaktā bhāṣatām.",
+          "translation": "Пусть оратор говорит."
+        },
+        {
+          "person": 3,
+          "number": "dual",
+          "sanskrit": "वक्तारौ भाषेताम्।",
+          "transliteration": "Vaktārau bhāṣetām.",
+          "translation": "Пусть двое ораторов говорят."
+        },
+        {
+          "person": 3,
+          "number": "plural",
+          "sanskrit": "वक्तारः भाषन्ताम्।",
+          "transliteration": "Vaktāraḥ bhāṣantām.",
+          "translation": "Пусть ораторы говорят."
+        }
+      ]
+    },
+    {
+      "verb_root": "सेव् (sev)",
+      "meaning": "служить",
+      "forms": [
+        {
+          "person": 1,
+          "number": "singular",
+          "sanskrit": "अहम् सेवै।",
+          "transliteration": "Ahaṁ sevai.",
+          "translation": "Дай-ка я послужу."
+        },
+        {
+          "person": 1,
+          "number": "dual",
+          "sanskrit": "आवाम् सेवावहै।",
+          "transliteration": "Āvām sevāvahai.",
+          "translation": "Давай послужим вдвоем."
+        },
+        {
+          "person": 1,
+          "number": "plural",
+          "sanskrit": "वयम् सेवामहै।",
+          "transliteration": "Vayam sevāmahai.",
+          "translation": "Давайте послужим."
+        },
+        {
+          "person": 2,
+          "number": "singular",
+          "sanskrit": "त्वम् सेवस्व।",
+          "transliteration": "Tvam sevasva.",
+          "translation": "Служи!"
+        },
+        {
+          "person": 2,
+          "number": "dual",
+          "sanskrit": "युवाम् सेवेथाम्।",
+          "transliteration": "Yuvām sevethām.",
+          "translation": "Служите вдвоем!"
+        },
+        {
+          "person": 2,
+          "number": "plural",
+          "sanskrit": "यूयम् सेवध्वम्।",
+          "transliteration": "Yūyam sevadhvam.",
+          "translation": "Служите!"
+        },
+        {
+          "person": 3,
+          "number": "singular",
+          "sanskrit": "भक्तः सेवताम्।",
+          "transliteration": "Bhaktaḥ mevatām.",
+          "translation": "Пусть преданный служит."
+        },
+        {
+          "person": 3,
+          "number": "dual",
+          "sanskrit": "भक्तौ सेवेताम्।",
+          "transliteration": "Bhaktu sevethām.",
+          "translation": "Пусть двое преданных служат."
+        },
+        {
+          "person": 3,
+          "number": "plural",
+          "sanskrit": "भक्ताः सेवन्ताम्।",
+          "transliteration": "Bhaktāḥ mevantām.",
+          "translation": "Пусть преданные служат."
+        }
+      ]
+    },
+    {
+      "verb_root": "वृत् (vṛt)",
+      "meaning": "находиться, действовать",
+      "forms": [
+        {
+          "person": 1,
+          "number": "singular",
+          "sanskrit": "अहम् वर्तै।",
+          "transliteration": "Ahaṁ vartai.",
+          "translation": "Дай-ка я побуду / начну действовать."
+        },
+        {
+          "person": 1,
+          "number": "dual",
+          "sanskrit": "आवाम् वर्तावहै।",
+          "transliteration": "Āvām vartāvahai.",
+          "translation": "Давай побудем вдвоем."
+        },
+        {
+          "person": 1,
+          "number": "plural",
+          "sanskrit": "वयम् वर्तामहै।",
+          "transliteration": "Vayam vartāmahai.",
+          "translation": "Давайте побудем."
+        },
+        {
+          "person": 2,
+          "number": "singular",
+          "sanskrit": "त्वम् वर्तस्व।",
+          "transliteration": "Tvam vartasva.",
+          "translation": "Будь! Действуй!"
+        },
+        {
+          "person": 2,
+          "number": "dual",
+          "sanskrit": "युवाम् वर्तेथाम्।",
+          "transliteration": "Yuvām vartethām.",
+          "translation": "Будьте / действуйте вдвоем!"
+        },
+        {
+          "person": 2,
+          "number": "plural",
+          "sanskrit": "यूयम् वर्तध्वम्।",
+          "transliteration": "Yūyam vartadhvam.",
+          "translation": "Будьте! Действуйте!"
+        },
+        {
+          "person": 3,
+          "number": "singular",
+          "sanskrit": "सः वर्तताम्।",
+          "transliteration": "Saḥ vartatām.",
+          "translation": "Пусть он пребывает."
+        },
+        {
+          "person": 3,
+          "number": "dual",
+          "sanskrit": "तौ वर्तेताम्।",
+          "transliteration": "Tau vartetām.",
+          "translation": "Пусть они вдвоем пребывают."
+        },
+        {
+          "person": 3,
+          "number": "plural",
+          "sanskrit": "ते वर्तन्ताम्।",
+          "transliteration": "Te vartantām.",
+          "translation": "Пусть они пребывают."
+        }
+      ]
+    },
+    {
+      "verb_root": "मन् (man)",
+      "meaning": "думать, считать",
+      "forms": [
+        {
+          "person": 1,
+          "number": "singular",
+          "sanskrit": "अहम् मन्यै।",
+          "transliteration": "Ahaṁ manyai.",
+          "translation": "Дай-ка я подумаю."
+        },
+        {
+          "person": 1,
+          "number": "dual",
+          "sanskrit": "आवाम् मन्यावहै।",
+          "transliteration": "Āvām manyāvahai.",
+          "translation": "Давай подумаем вдвоем."
+        },
+        {
+          "person": 1,
+          "number": "plural",
+          "sanskrit": "वयम् मन्यामहै।",
+          "transliteration": "Vayam manyāmahai.",
+          "translation": "Давайте подумаем."
+        },
+        {
+          "person": 2,
+          "number": "singular",
+          "sanskrit": "त्वम् मन्यस्व।",
+          "transliteration": "Tvam manyasva.",
+          "translation": "Думай! Считай!"
+        },
+        {
+          "person": 2,
+          "number": "dual",
+          "sanskrit": "युवाम् मन्येथाम्।",
+          "transliteration": "Yuvām manyethām.",
+          "translation": "Думайте вдвоем!"
+        },
+        {
+          "person": 2,
+          "number": "plural",
+          "sanskrit": "यूयम् मन्यध्वम्।",
+          "transliteration": "Yūyam manyadhvam.",
+          "translation": "Думайте!"
+        },
+        {
+          "person": 3,
+          "number": "singular",
+          "sanskrit": "मुनिः मन्यताम्।",
+          "transliteration": "Muniḥ manyatām.",
+          "translation": "Пусть мудрец размышляет."
+        },
+        {
+          "person": 3,
+          "number": "dual",
+          "sanskrit": "मुनी मन्येताम्।",
+          "transliteration": "Munī manyetām.",
+          "translation": "Пусть двое мудрецов размышляют."
+        },
+        {
+          "person": 3,
+          "number": "plural",
+          "sanskrit": "मुनयः मन्यन्ताम्।",
+          "transliteration": "Munayaḥ manyantām.",
+          "translation": "Пусть мудрецы размышляют."
+        }
+      ]
+    }
+  ]
+}

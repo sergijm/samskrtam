@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
+import sm.selflearn.samskrtam.content.dto.ConjugationParadigmPageDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionParadigmPageDto;
 import sm.selflearn.samskrtam.quiz.dto.QuestItemDto;
 import sm.selflearn.samskrtam.quiz.dto.TopicDto;
@@ -154,5 +155,28 @@ public class CurriculumClient {
                         r -> Mono.error(new SamskrtamException("TOPIC_NOT_FOUND",
                                 "Paradigm page not found in curriculum-service for topic=" + topicCode)))
                 .bodyToMono(DeclensionParadigmPageDto.class);
+    }
+
+    /**
+     * Fetch one conjugation paradigm page for a topic from curriculum-service (v2).
+     *
+     * @param voice  optional voice filter (PARASMAIPADA | ATMANEPADA)
+     */
+    public Mono<ConjugationParadigmPageDto> fetchConjugationParadigmPage(
+            String topicCode, int index, String voice) {
+        return webClient.get()
+                .uri(uriBuilder -> {
+                    uriBuilder.path("/api/v2/curriculum/topics/{topicCode}/conjugation-paradigms")
+                            .queryParam("index", index);
+                    if (voice != null) {
+                        uriBuilder.queryParam("voice", voice);
+                    }
+                    return uriBuilder.build(topicCode);
+                })
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("TOPIC_NOT_FOUND",
+                                "Conjugation paradigm page not found in curriculum-service for topic=" + topicCode)))
+                .bodyToMono(ConjugationParadigmPageDto.class);
     }
 }

@@ -88,7 +88,7 @@ html {
     text-decoration: none;
 }
 
-/* ─── Sidebar / Curriculum Tree Styles ─── */
+/* ─── Sidebar Styles ─── */
 /* layout-wrapper — занимает всю высоту viewport */
 .layout-wrapper {
     display: flex;
@@ -167,68 +167,27 @@ html {
     height: 2.5rem;
 }
 
-/* ─── Curriculum Tree Styles ─── */
-.curriculum-tree {
+/* ─── Sidebar Tree Styles ─── */
+.sidebar-tree {
   border: none;
   background: transparent;
   padding: 0;
 }
 
-.curriculum-tree .p-treenode-content {
+.sidebar-tree .p-treenode-content {
   padding: 0.1rem 0.1rem;
   border-radius: 6px;
   cursor: pointer;
 }
 
-.curriculum-tree .p-treenode-content:hover {
+.sidebar-tree .p-treenode-content:hover {
   background: var(--surface-hover, rgba(0,0,0,0.04));
 }
 
-/* Ветки (родительские узлы) — жирный шрифт, subtle accent, pointer */
-.curriculum-tree-branch > .p-treenode-content {
-  cursor: pointer;
-}
-
-.curriculum-tree-branch > .p-treenode-content .p-treenode-label {
+/* Выделенный пункт (Главная) — жирный акцентный лейбл */
+.sidebar-tree-item-highlighted > .p-treenode-content .p-treenode-label {
   font-weight: 600;
   color: var(--primary-color, #6366f1);
-}
-
-/* Кликабельные листья — pointer, без выделения цветом/жирностью */
-.curriculum-tree-leaf > .p-treenode-content {
-  cursor: pointer;
-}
-
-/* Выделенный лист (Главная) — жирный акцентный лейбл как у веток */
-.curriculum-tree-leaf-highlighted > .p-treenode-content {
-  cursor: pointer;
-}
-
-.curriculum-tree-leaf-highlighted > .p-treenode-content .p-treenode-label {
-  font-weight: 600;
-  color: var(--primary-color, #6366f1);
-}
-
-/* Planned (недоступные) узлы — визуально приглушены, некликабельны */
-.curriculum-tree-node-planned {
-  opacity: 0.5;
-  font-style: italic;
-}
-
-.curriculum-tree-node-planned > .p-treenode-content {
-  cursor: default;
-}
-
-/* Иконки в узлах */
-.curriculum-tree .p-treenode-content .p-tree-toggler {
-  margin-right: 0.25rem;
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-/* Отступы дочерних узлов */
-.curriculum-tree .p-treenode-children {
-  padding-left: 0.75rem;
 }
 
 .layout-topbar {

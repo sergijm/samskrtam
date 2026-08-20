@@ -5,7 +5,10 @@ import type { EndingsTableData, EndingsCell } from "../../data/aStemEndingsTable
 interface DeclensionEndingsReferenceTableProps {
   data: EndingsTableData;
   onCellClick?: (caseKey: string, columnKey: string) => void;
+  onCaseClick?: (caseKey: string) => void;
+  onNumberClick?: (columnKey: string) => void;
   selectedCell?: { caseKey: string; columnKey: string } | null;
+  activeFilter?: { caseKeyFilter?: string; columnKeyFilter?: string } | null;
 }
 
 const GRADE_STYLES: Record<string, string> = {
@@ -13,7 +16,7 @@ const GRADE_STYLES: Record<string, string> = {
   zero: "bg-gray-100",
 };
 
-const DeclensionEndingsReferenceTable: React.FC<DeclensionEndingsReferenceTableProps> = ({ data, onCellClick, selectedCell }) => {
+const DeclensionEndingsReferenceTable: React.FC<DeclensionEndingsReferenceTableProps> = ({ data, onCellClick, onCaseClick, onNumberClick, selectedCell, activeFilter }) => {
   const { i18n } = useTranslation();
 
   const caseLabel = (caseKey: string): string => {
@@ -42,7 +45,11 @@ const DeclensionEndingsReferenceTable: React.FC<DeclensionEndingsReferenceTableP
               {i18n.language === "ru" ? "\u041f\u0430\u0434\u0435\u0436" : "Case"}
             </th>
             {data.columns.map((col) => (
-              <th key={col.key} className="text-center p-2 border-1 border-200 font-semibold">
+              <th
+                key={col.key}
+                className={`text-center p-2 border-1 border-200 font-semibold cursor-pointer hover:surface-100 transition-colors${activeFilter?.columnKeyFilter === col.key ? ' bg-primary-100 text-primary' : ''}`}
+                onClick={() => onNumberClick?.(col.key)}
+              >
                 {col.label}
               </th>
             ))}
@@ -54,7 +61,10 @@ const DeclensionEndingsReferenceTable: React.FC<DeclensionEndingsReferenceTableP
             let colSkip = 0;
             return (
               <tr key={row.caseKey}>
-                <td className="p-2 border-1 border-200 text-color-secondary font-medium">
+                <td
+                  className={`p-2 border-1 border-200 text-color-secondary font-medium cursor-pointer hover:surface-100 transition-colors${activeFilter?.caseKeyFilter === row.caseKey ? ' bg-primary-100 text-primary' : ''}`}
+                  onClick={() => onCaseClick?.(row.caseKey)}
+                >
                   {caseLabel(row.caseKey)}
                 </td>
                 {data.columns.map((col) => {

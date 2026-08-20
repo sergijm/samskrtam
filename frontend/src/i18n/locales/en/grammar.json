@@ -1,4 +1,4 @@
-﻿{
+{
   "grammar": {
     "subtitle": "Study declensions, conjugations and sandhi rules",
     "sandhiExercisesTitle": "Sandhi - Emeneau (Exercises)",
@@ -16,7 +16,30 @@
     "conjugationsTitle": "Conjugations",
     "conjugationsDescription": "Learn and practice verb conjugations.",
     "paradigmsLoading": "Loading paradigms...",
-    "paradigmsEmpty": "No paradigm data for this lesson."
+    "paradigmsEmpty": "No paradigm data for this lesson.",
+    "numberShort": {
+      "singular": "Sg.",
+      "dual": "Du.",
+      "plural": "Pl."
+    },
+    "personHeader": "Person",
+    "person": {
+      "PRATHAMA": "Prathama · 3rd person",
+      "MADHYAMA": "Madhyama · 2nd person",
+      "UTTAMA": "Uttama · 1st person"
+    },
+    "voice": {
+      "PARASMAIPADA": "Parasmaipada (active voice)",
+      "ATMANEPADA": "Ātmanepada (middle voice)"
+    },
+    "presentEndingsTitle": "Present-tense endings",
+    "imperfectEndingsTitle": "Imperfect-tense endings",
+    "optativeEndingsTitle": "Optative endings",
+    "imperativeEndingsTitle": "Imperative endings",
+    "paradigmSectionTitle": "Paradigms",
+    "paradigmCount": "{{count}} forms · example sentences",
+    "prevVerb": "Previous verb",
+    "nextVerb": "Next verb"
   },
   "examples": {
     "analyzeMissing": "Analyze missing examples ({{count}})",
@@ -29,7 +52,7 @@
     "UNKNOWN": "unknown gender",
     "UNSPECIFIED": "unspecified gender"
   },
-                "allStems": {
+  "allStems": {
     "title": "All stems",
     "subtitle": "All stems",
     "startQuiz": "Start quiz",
@@ -57,7 +80,7 @@
     "PRON_YAD": "yad (which)",
     "PRON_REFLEXIVE": "reflex."
   },
-    "number": {
+  "number": {
     "SINGULAR": "Singular",
     "DUAL": "Dual",
     "PLURAL": "Plural"
@@ -94,10 +117,10 @@
     "hitopadeshaDescription": "Learn Sanskrit words from the Hitopadesha stories."
   },
   "eamenau": {
-    "exerciseNumber": "Exercise \u2116",
+    "exerciseNumber": "Exercise №",
     "exerciseLetter": "Letter",
     "instructionText": "Instructions",
-    "taskNumber": "Task \u2116",
+    "taskNumber": "Task №",
     "rules": "Rules",
     "noSolutionFound": "No solution found for this task.",
     "filterRules": "Filter Rules",
@@ -109,4 +132,3 @@
     "noWordsFound": "No words found."
   }
 }
-

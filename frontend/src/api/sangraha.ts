@@ -8,6 +8,7 @@ import type {
   WorksClassGroupDto,
   StandaloneVerseItemDto,
   VerseWordExamplesResponseDto,
+  DeclensionExamplesResponseDto,
 } from '../types/sangraha';
 
 const BASE = '/api/v1/sangraha';
@@ -53,6 +54,15 @@ export const sangrahaApi = {
   getWordExamples: (surfaceIasts: string[]) =>
     api.post<VerseWordExamplesResponseDto>(`${BASE}/words/examples`, {
       surfaceIasts,
+    }),
+
+  // Примеры склонений по словоизменительному классу — вкладка «Примеры» урока
+  // (один запрос на весь урок; caseType/numberType в теле не передаются)
+  getDeclensionExamples: (vowelType: string, gender: string, limitPerGroup = 5) =>
+    api.post<DeclensionExamplesResponseDto>(`${BASE}/verses/examples`, {
+      vowelType,
+      gender,
+      limitPerGroup,
     }),
 
   analyzeVerses: (verseIds: string[]) =>

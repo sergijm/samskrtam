@@ -1,8 +1,8 @@
 # Массовый просмотр и анализ стихов по произвольному списку id
 
 > Дополняет `sangraha-service.md` §4 (API) и §7 (Frontend). Повод: часть корпуса
-> загружается внешним скриптом в обход UI (см. `verse-word-grammar.md` §1а/§1б,
-> `curriculum-service/declension-examples.md`) — нужна возможность посмотреть и
+> загружается внешним скриптом в обход UI (см. `verse-word-grammar.md` §1а/§1б) —
+> нужна возможность посмотреть и
 > прогнать LLM-анализ по произвольному набору `verseId`, не привязанному к
 > одной главе (в отличие от уже существующей `POST /chapters/{chapterId}/
 > verses/analyze-all`).
@@ -97,18 +97,14 @@ query-параметров или localStorage — тот же `ids`, что у 
 `['sangraha', 'verse-batch', verseIds]` (ключ этой страницы), чтобы список
 обновил `status` после ответа `202`.
 
-**Точки входа.**
-1. Кнопка «Открыть все стихи» на вкладке «Примеры» урока склонений
-   (curriculum-service, фронтенд) — для `ADMIN`. По клику кладёт все
-   `verseId` из `examples[]` в localStorage (`sangraha.verseBatchIds`) и
-   переходит на `/sangraha/verses` **без query-параметров** — страница
-   читает список из localStorage (см. выше). Детали —
-   `docs/frontend/pages/grammar-lesson-page.md` §2.2а.
-2. Кнопка «Проанализировать недостающие примеры» на той же вкладке — для
-   `ADMIN`, при непустом `missingVerseIds` (см. `docs/frontend/pages/
-   grammar-lesson-page.md` §2.2а, `curriculum-service/declension-examples.md`).
-   По клику переходит на `/sangraha/verses?id={id1}&id={id2}&...` — список
-   передаётся в query-параметрах (страница отдаёт им приоритет).
+**Точки входа.** Кнопка «Открыть все стихи» на вкладке «Примеры» урока склонений
+(sangraha-service, фронтенд ходит напрямую, см. `sangraha-service.md` §9) — для
+`ADMIN`. По клику кладёт все
+`verseId` из `examples[]` в localStorage (`sangraha.verseBatchIds`) и
+переходит на `/sangraha/verses` **без query-параметров** — страница
+читает список из localStorage (см. выше). Детали —
+`docs/frontend/pages/grammar-lesson-page.md` §2.2а. (Кнопка «Проанализировать
+недостающие примеры» с `missingVerseIds` удалена вместе с quiz-service агрегацией.)
 
 Прямого входа внутри самого раздела `/sangraha/*` в этой версии нет (не
 блокирует — можно добавить отдельным тикетом, например ссылку со страницы

@@ -16,7 +16,30 @@
     "conjugationsTitle": "Спряжения",
     "conjugationsDescription": "Изучите спряжения глаголов.",
     "paradigmsLoading": "Загрузка парадигм...",
-    "paradigmsEmpty": "Нет данных парадигм для этого урока."
+    "paradigmsEmpty": "Нет данных парадигм для этого урока.",
+    "numberShort": {
+      "singular": "Ед.ч.",
+      "dual": "Дв.ч.",
+      "plural": "Мн.ч."
+    },
+    "personHeader": "Лицо",
+    "person": {
+      "PRATHAMA": "Prathama · 3-е лицо",
+      "MADHYAMA": "Madhyama · 2-е лицо",
+      "UTTAMA": "Uttama · 1-е лицо"
+    },
+    "voice": {
+      "PARASMAIPADA": "Parasmaipada (активный залог)",
+      "ATMANEPADA": "Ātmanepada (средний залог)"
+    },
+    "presentEndingsTitle": "Окончания настоящего времени",
+    "imperfectEndingsTitle": "Окончания прошедшего незавершенного времени",
+    "optativeEndingsTitle": "Окончания желательного наклонения",
+    "imperativeEndingsTitle": "Окончания повелительного наклонения",
+    "paradigmSectionTitle": "Парадигмы",
+    "paradigmCount": "{{count}} форм · предложения-примеры",
+    "prevVerb": "Предыдущий глагол",
+    "nextVerb": "Следующий глагол"
   },
   "examples": {
     "analyzeMissing": "Проанализировать недостающие примеры ({{count}})",

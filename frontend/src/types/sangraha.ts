@@ -200,3 +200,16 @@ export interface VerseWordExampleItemDto {
   verseOrderIndex: number;
 }
 
+// ── Примеры склонений по словоизменительному классу (вкладка «Примеры» урока) ──
+// POST /api/v1/sangraha/verses/examples — один запрос на урок, на вход
+// (vowelType, gender, limitPerGroup); caseType/numberType опциональны
+// (фильтр по падежу/числу), фронтендом не передаются.
+
+export interface DeclensionExamplesResponseDto {
+  groups: Array<{
+    caseType: string;
+    numberType: string;
+    examples: VerseWordExampleItemDto[];
+  }>;
+}
+

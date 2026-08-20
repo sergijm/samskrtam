@@ -4,10 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import sm.selflearn.samskrtam.content.model.VowelType;
-import sm.selflearn.samskrtam.sangraha.model.Gender;
-import sm.selflearn.samskrtam.sangraha.model.GrammaticalCase;
-import sm.selflearn.samskrtam.sangraha.model.NumberType;
 import sm.selflearn.samskrtam.sangraha.model.VerseWord;
 
 import java.util.Collection;
@@ -17,7 +13,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 
 @Repository
-public interface VerseWordRepository extends JpaRepository<VerseWord, UUID> {
+public interface VerseWordRepository extends JpaRepository<VerseWord, UUID>, VerseWordRepositoryCustom {
 
     List<VerseWord> findAllByVerse_IdOrderByPositionAsc(UUID verseId);
 
@@ -80,82 +76,15 @@ public interface VerseWordRepository extends JpaRepository<VerseWord, UUID> {
     void deleteAllByVerse_Id(UUID verseId);
 
     /**
-     * Кандидаты на попадание в группу для регулярного класса: стихи, у которых есть
-     * словоформа с verse_word_morphology (gender/caseType/numberType), класс основы
-     * которой (vowelType) совпадает с :vowelType. Класс основы берётся из
-     * nominal_lemmas (stemClass строки на лемму слова, join по тексту lemmaIast — без
-     * физической FK-связи). Классификация лемм считается полной — fallback-эвристики
-     * нет.
-     *
-     * <p>Длина стиха в словах берётся из предвычисленной {@code verse_statistics}
-     * (пересчитывается на refresh-statistics), поэтому COUNT по verse_words не
-     * выполняется. Сначала по verse_statistics сужается множество стихов фильтром
-     * <code>wordCount &lt;= :maxPhraseWords</code> (индекс по word_count), затем на нём
-     * выполняется дорогой EXISTS — проверка наличия подходящей verse_word_morphology
-     * с join'ом на nominal_lemmas. Поиск идёт напрямую по наличию подходящей
-     * verse_word_morphology без условия на verses.status (часть корпуса загружена
-     * внешним скриптом в обход штатного флоу анализа, у таких стихов морфология уже
-     * создана, а status не обязательно ANALYZED).
+     * Одна строка = одно совпадение кортежа {@code [stemClass, gender, caseType, numberType]}
+     * в {@code verse_statistics.grammar_info.tuples}: verseId + ячейка падежа/числа, в которую
+     * он попадает. Один стих может дать несколько строк (несколько подходящих ячеек).
      */
-    @Query("""
-            SELECT vs.verseId AS verseId, vs.wordCount AS wordCount
-            FROM VerseStatistics vs
-            JOIN Verse v ON v.id = vs.verseId
-            WHERE v.deletedAt IS NULL
-              AND vs.wordCount <= :maxPhraseWords
-              AND EXISTS (
-                    SELECT 1
-                    FROM VerseWord vw
-                    JOIN vw.morphology m
-                    JOIN NominalLemma nl ON nl.lemmaIast = vw.lemmaIast
-                    WHERE vw.verse.id = vs.verseId
-                      AND m.gender = :gender
-                      AND m.caseType = :caseType
-                      AND m.numberType = :numberType
-                      AND nl.stemClass = :vowelType
-              )
-            """)
-    List<VerseWordCount> findVerseWordCountsByVowelType(
-            @Param("gender") Gender gender,
-            @Param("caseType") GrammaticalCase caseType,
-            @Param("numberType") NumberType numberType,
-            @Param("vowelType") VowelType vowelType,
-            @Param("maxPhraseWords") int maxPhraseWords);
-
-    /**
-     * Кандидаты на попадание в группу для местоимённого класса: стихи, у которых есть
-     * словоформа с verse_word_morphology (gender/caseType/numberType) и фиксированной
-     * леммой (PRON_* → lemmaIast, sangraha-service.md §9). Тот же принцип: рейтинг по
-     * полной длине стиха, фильтрация через EXISTS, без условия на verses.status.
-     */
-    @Query("""
-            SELECT v.id AS verseId, COUNT(w.id) AS wordCount
-            FROM Verse v
-            LEFT JOIN v.verseWords w
-            WHERE v.deletedAt IS NULL
-              AND EXISTS (
-                    SELECT 1
-                    FROM VerseWord vw
-                    JOIN vw.morphology m
-                    WHERE vw.verse.id = v.id
-                      AND m.gender = :gender
-                      AND m.caseType = :caseType
-                      AND m.numberType = :numberType
-                      AND vw.lemmaIast = :lemmaIast
-              )
-            GROUP BY v.id
-            HAVING COUNT(w.id) <= :maxPhraseWords
-            """)
-    List<VerseWordCount> findVerseWordCountsByLemmaIast(
-            @Param("gender") Gender gender,
-            @Param("caseType") GrammaticalCase caseType,
-            @Param("numberType") NumberType numberType,
-            @Param("lemmaIast") String lemmaIast,
-            @Param("maxPhraseWords") int maxPhraseWords);
-
-    interface VerseWordCount {
+    interface VerseCellCount {
         UUID getVerseId();
 
-        long getWordCount();
+        String getCaseType();
+
+        String getNumberType();
     }
 }

@@ -1,6 +1,0 @@
-# Пути из sangraha-service.yaml → chapters.yaml
-paths:
-  /chapters/{chapterId}/verses:
-    $ref: 'paths/chapters.yaml#/paths/~1~1chapters~1{chapterId}~1verses'
-  /chapters/{chapterId}/verses/analyze-all:
-    $ref: 'paths/chapters.yaml#/paths/~1~1chapters~1{chapterId}~1verses~1analyze-all'

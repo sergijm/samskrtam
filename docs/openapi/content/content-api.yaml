@@ -153,35 +153,6 @@ paths:
               schema:
                 $ref: '../common/schemas/common.yaml#/ErrorResponse'
 
-  /content/public/lessons/{slug}/examples:
-    get:
-      tags: [grammar]
-      summary: Real-verse examples for every cell of one declension paradigm (the "Examples" tab)
-      description: >
-        Публичный (STUDENT) эндпоинт для вкладки «Примеры» на странице шага карусели
-        склонений — адресация только по `slug` урока, без `index`.
-        Источник данных — sangraha-service (internal-эндпоинты, см.
-        docs/services/sangraha-service.md §9), content-service кэширует у себя только
-        verseId по группам (vowelType, gender, caseType, numberType) в
-        content.declension_example_groups; сами цитаты не кэшируются, забираются заново
-        при каждом вызове. Подробности — docs/services/content-service/declension-examples.md.
-      operationId: getDeclensionExamplesForLesson
-      parameters:
-        - $ref: 'parameters.yaml#/SlugPathParam'
-      responses:
-        '200':
-          description: Группы по каждой ячейке (caseType, numberType) парадигмы с примерами (может быть пустой список examples в группе)
-          content:
-            application/json:
-              schema:
-                $ref: 'schemas/content.yaml#/DeclensionExamplesResponseDto'
-        '404':
-          description: Lesson not found or lessonType != DECLENSIONS
-          content:
-            application/json:
-              schema:
-                $ref: '../common/schemas/common.yaml#/ErrorResponse'
-
   /content/lessons/{slug}/case-endings:
     get:
       tags: [grammar]

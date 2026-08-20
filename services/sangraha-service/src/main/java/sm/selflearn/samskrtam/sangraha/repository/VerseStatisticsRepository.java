@@ -33,12 +33,16 @@ public interface VerseStatisticsRepository extends JpaRepository<VerseStatistics
                     'formType',   COALESCE(jsonb_agg(DISTINCT w.form_type) FILTER (WHERE w.form_type IS NOT NULL), '[]'::jsonb),
                     'numberType', COALESCE(jsonb_agg(DISTINCT m.number_type) FILTER (WHERE m.number_type IS NOT NULL), '[]'::jsonb),
                     'caseType',   COALESCE(jsonb_agg(DISTINCT m.case_type) FILTER (WHERE m.case_type IS NOT NULL), '[]'::jsonb),
-                    'gender',     COALESCE(jsonb_agg(DISTINCT m.gender) FILTER (WHERE m.gender IS NOT NULL), '[]'::jsonb)
+                    'gender',     COALESCE(jsonb_agg(DISTINCT m.gender) FILTER (WHERE m.gender IS NOT NULL), '[]'::jsonb),
+                    'tuples',     COALESCE(jsonb_agg(DISTINCT
+                        jsonb_build_array(nl.stem_class, m.gender, m.case_type, m.number_type)
+                    ) FILTER (WHERE nl.stem_class IS NOT NULL AND m.gender IS NOT NULL AND m.case_type IS NOT NULL AND m.number_type IS NOT NULL), '[]'::jsonb)
                 ),
                 now()
             FROM sangraha.verses v
             LEFT JOIN sangraha.verse_words w ON w.verse_id = v.id
             LEFT JOIN sangraha.verse_word_morphology m ON m.verse_word_id = w.id
+            LEFT JOIN sangraha.nominal_lemmas nl ON nl.lemma_iast = w.lemma_iast
             WHERE v.deleted_at IS NULL
             GROUP BY v.id
             ON CONFLICT (verse_id) DO UPDATE SET

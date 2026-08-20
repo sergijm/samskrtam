@@ -6,7 +6,7 @@
   },
   "variable": [
     {
-      "key": "sangrahaBaseUrl",
+      "key": "baseUrl",
       "value": "http://localhost:8089",
       "type": "string"
     },
@@ -32,6 +32,11 @@
     },
     {
       "key": "verseId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "classId",
       "value": "00000000-0000-0000-0000-000000000000",
       "type": "string"
     },
@@ -62,578 +67,3587 @@
       "description": "Публичные эндпоинты, доступные через API Gateway (prefix `/api/v1/sangraha`).",
       "item": [
         {
+          "id": "299e5b3f-e8ed-4cd9-96d1-9873271bdf50",
           "name": "Works",
-          "description": "Эндпоинты для получения списка произведений и дерева классификатора.",
+          "description": {
+            "content": "",
+            "type": "text/plain"
+          },
           "item": [
             {
-              "name": "List Works",
+              "id": "41d1b1de-ce37-405c-b260-0eb75b17f431",
+              "name": "Плитки произведений с опциональным фильтром по классификатору",
               "request": {
-                "method": "GET",
-                "header": [],
+                "name": "Плитки произведений с опциональным фильтром по классификатору",
+                "description": {},
                 "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/works?classId={{classId}}",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "works"],
+                  "path": [
+                    "works"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
                   "query": [
                     {
+                      "disabled": false,
                       "key": "classId",
-                      "value": "{{classId}}",
-                      "description": "Повторяющийся параметр — фильтрация по категориям классификатора (опционально, UUID)",
-                      "disabled": true
-                    }
-                  ]
-                },
-                "description": "Плитки произведений с опциональным фильтром по классификатору."
-              },
-              "response": []
-            },
-            {
-              "name": "List Works Classes",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/works/classes",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "works", "classes"]
-                },
-                "description": "Дерево классификатора произведений (для дропдаунов с множественным выбором)."
-              },
-              "response": []
-            },
-            {
-              "name": "Get Work Tree By Slug",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/works/{{workSlug}}",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "works", "{{workSlug}}"]
-                },
-                "description": "Произведение + список глав (без стихов) по slug."
-              },
-              "response": []
-            }
-          ]
-        },
-        {
-          "name": "Chapters",
-          "description": "Эндпоинты для получения глав и их стихов.",
-          "item": [
-            {
-              "name": "Get Chapter Verses",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/chapters/{{chapterId}}/verses",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "chapters", "{{chapterId}}", "verses"]
-                },
-                "description": "Одна глава со списком стихов (VersePreview[])."
-              },
-              "response": []
-            },
-            {
-              "name": "Analyze All Verses In Chapter",
-              "request": {
-                "method": "POST",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/chapters/{{chapterId}}/verses/analyze-all",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "chapters", "{{chapterId}}", "verses", "analyze-all"]
-                },
-                "description": "Запустить пакетный LLM-анализ всех стихов главы (требует роль ADMIN)."
-              },
-              "response": []
-            }
-          ]
-        },
-        {
-          "name": "Verses",
-          "description": "Эндпоинты для получения и анализа стихов.",
-          "item": [
-            {
-              "name": "Get Verse Detail",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/{{verseId}}",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "verses", "{{verseId}}"]
-                },
-                "description": "Получить стих (текст + анализ, если ANALYZED)."
-              },
-              "response": []
-            },
-            {
-              "name": "Analyze Verse (Set Text)",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"text\": \"कर्मण्येवाधिकारस्ते मा फलेषु कदाचन\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/{{verseId}}/analyze",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "verses", "{{verseId}}", "analyze"]
-                },
-                "description": "Сохранить текст и запустить LLM-анализ стиха (требует роль ADMIN)."
-              },
-              "response": []
-            },
-            {
-              "name": "Get Verse Analysis",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/{{verseId}}/analysis",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "verses", "{{verseId}}", "analysis"]
-                },
-                "description": "Получить анализ стиха."
-              },
-              "response": []
-            },
-            {
-              "name": "Get Verse Words",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/{{verseId}}/words",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "verses", "{{verseId}}", "words"]
-                },
-                "description": "Получить слова стиха (VerseWord[])."
-              },
-              "response": []
-            },
-            {
-              "name": "Study Verse (Vocabulary Quiz)",
-              "request": {
-                "method": "POST",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/{{verseId}}/study",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "verses", "{{verseId}}", "study"]
-                },
-                "description": "Экспорт лемм стиха в curriculum-service для создания лексического квиза. В спецификации OpenAPI также описан как POST /verses/{verseId}/vocabulary-quiz."
-              },
-              "response": []
-            },
-            {
-              "name": "Get Verses By Ids (Batch)",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/verse?id={{verseId}}",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "verse"],
-                  "query": [
+                      "value": "<uuid>",
+                      "description": "Повторяющийся параметр — фильтрация по категориям классификатора\n(множественный выбор). Произведение подходит, если связано хотя бы\nс одной категорией из запроса, включая все её подкатегории\n(рекурсивно). Без параметра — все произведения.\n"
+                    },
                     {
-                      "key": "id",
-                      "value": "{{verseId}}",
-                      "description": "Повторяющийся параметр — список verseId для массового просмотра"
+                      "disabled": false,
+                      "key": "classId",
+                      "value": "<uuid>",
+                      "description": "Повторяющийся параметр — фильтрация по категориям классификатора\n(множественный выбор). Произведение подходит, если связано хотя бы\nс одной категорией из запроса, включая все её подкатегории\n(рекурсивно). Без параметра — все произведения.\n"
                     }
-                  ]
+                  ],
+                  "variable": [],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/works?classId=<uuid>&classId=<uuid>"
                 },
-                "description": "Стихи по произвольному списку id (для массового просмотра/ревью)."
-              },
-              "response": []
-            },
-            {
-              "name": "Batch Analyze Verses",
-              "request": {
-                "method": "POST",
                 "header": [
                   {
-                    "key": "Content-Type",
+                    "key": "Accept",
                     "value": "application/json"
                   }
                 ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"verseIds\": [\n    \"{{verseId}}\"\n  ]\n}"
+                "method": "GET",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "f34bc902-c3cf-4e0c-8844-7145bb0b70b0",
+                  "name": "Список произведений",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "works"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [
+                        {
+                          "key": "classId",
+                          "value": "<uuid>"
+                        },
+                        {
+                          "key": "classId",
+                          "value": "<uuid>"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "[\n  {\n    \"id\": \"<uuid>\",\n    \"slug\": \"<string>\",\n    \"titleRu\": \"<string>\",\n    \"titleEn\": \"<string>\",\n    \"titleSaIast\": \"<string>\",\n    \"titleSaDevanagari\": \"<string>\",\n    \"descriptionRu\": \"<string>\",\n    \"descriptionEn\": \"<string>\",\n    \"author\": \"<string>\"\n  },\n  {\n    \"id\": \"<uuid>\",\n    \"slug\": \"<string>\",\n    \"titleRu\": \"<string>\",\n    \"titleEn\": \"<string>\",\n    \"titleSaIast\": \"<string>\",\n    \"titleSaDevanagari\": \"<string>\",\n    \"descriptionRu\": \"<string>\",\n    \"descriptionEn\": \"<string>\",\n    \"author\": \"<string>\"\n  }\n]",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "id": "c4b49dff-ac73-4db6-b598-5c6a29d79124",
+              "name": "Дерево классификатора произведений (для дропдаунов с множественным выбором)",
+              "request": {
+                "name": "Дерево классификатора произведений (для дропдаунов с множественным выбором)",
+                "description": {
+                  "content": "Категории сгруппированы по значению classification (GENRE, ERA, …) —\nодна группа = один TreeSelect на фронтенде.\n",
+                  "type": "text/plain"
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/verse/analysis",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "verse", "analysis"]
+                  "path": [
+                    "works",
+                    "classes"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/works/classes"
                 },
-                "description": "Батч-анализ произвольного списка стихов (безусловный повтор, требует ADMIN)."
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                }
               },
-              "response": []
+              "response": [
+                {
+                  "id": "b3c04bfc-927a-496b-93de-48f831628caa",
+                  "name": "Дерево классификатора",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "works",
+                        "classes"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "[\n  {\n    \"classification\": \"<string>\",\n    \"classes\": [\n      {\n        \"id\": \"<uuid>\",\n        \"parentId\": \"<uuid>\",\n        \"code\": \"<string>\",\n        \"titleRu\": \"<string>\",\n        \"titleEn\": \"<string>\",\n        \"titleSaIast\": \"<string>\",\n        \"titleSaDeva\": \"<string>\",\n        \"sortOrder\": \"<integer>\",\n        \"children\": [\n          {\n            \"id\": \"<uuid>\",\n            \"parentId\": \"<uuid>\",\n            \"code\": \"<string>\",\n            \"titleRu\": \"<string>\",\n            \"titleEn\": \"<string>\",\n            \"titleSaIast\": \"<string>\",\n            \"titleSaDeva\": \"<string>\",\n            \"sortOrder\": \"<integer>\",\n            \"children\": [\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              },\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              }\n            ]\n          },\n          {\n            \"id\": \"<uuid>\",\n            \"parentId\": \"<uuid>\",\n            \"code\": \"<string>\",\n            \"titleRu\": \"<string>\",\n            \"titleEn\": \"<string>\",\n            \"titleSaIast\": \"<string>\",\n            \"titleSaDeva\": \"<string>\",\n            \"sortOrder\": \"<integer>\",\n            \"children\": [\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              },\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"id\": \"<uuid>\",\n        \"parentId\": \"<uuid>\",\n        \"code\": \"<string>\",\n        \"titleRu\": \"<string>\",\n        \"titleEn\": \"<string>\",\n        \"titleSaIast\": \"<string>\",\n        \"titleSaDeva\": \"<string>\",\n        \"sortOrder\": \"<integer>\",\n        \"children\": [\n          {\n            \"id\": \"<uuid>\",\n            \"parentId\": \"<uuid>\",\n            \"code\": \"<string>\",\n            \"titleRu\": \"<string>\",\n            \"titleEn\": \"<string>\",\n            \"titleSaIast\": \"<string>\",\n            \"titleSaDeva\": \"<string>\",\n            \"sortOrder\": \"<integer>\",\n            \"children\": [\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              },\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              }\n            ]\n          },\n          {\n            \"id\": \"<uuid>\",\n            \"parentId\": \"<uuid>\",\n            \"code\": \"<string>\",\n            \"titleRu\": \"<string>\",\n            \"titleEn\": \"<string>\",\n            \"titleSaIast\": \"<string>\",\n            \"titleSaDeva\": \"<string>\",\n            \"sortOrder\": \"<integer>\",\n            \"children\": [\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              },\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              }\n            ]\n          }\n        ]\n      }\n    ]\n  },\n  {\n    \"classification\": \"<string>\",\n    \"classes\": [\n      {\n        \"id\": \"<uuid>\",\n        \"parentId\": \"<uuid>\",\n        \"code\": \"<string>\",\n        \"titleRu\": \"<string>\",\n        \"titleEn\": \"<string>\",\n        \"titleSaIast\": \"<string>\",\n        \"titleSaDeva\": \"<string>\",\n        \"sortOrder\": \"<integer>\",\n        \"children\": [\n          {\n            \"id\": \"<uuid>\",\n            \"parentId\": \"<uuid>\",\n            \"code\": \"<string>\",\n            \"titleRu\": \"<string>\",\n            \"titleEn\": \"<string>\",\n            \"titleSaIast\": \"<string>\",\n            \"titleSaDeva\": \"<string>\",\n            \"sortOrder\": \"<integer>\",\n            \"children\": [\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              },\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              }\n            ]\n          },\n          {\n            \"id\": \"<uuid>\",\n            \"parentId\": \"<uuid>\",\n            \"code\": \"<string>\",\n            \"titleRu\": \"<string>\",\n            \"titleEn\": \"<string>\",\n            \"titleSaIast\": \"<string>\",\n            \"titleSaDeva\": \"<string>\",\n            \"sortOrder\": \"<integer>\",\n            \"children\": [\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              },\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"id\": \"<uuid>\",\n        \"parentId\": \"<uuid>\",\n        \"code\": \"<string>\",\n        \"titleRu\": \"<string>\",\n        \"titleEn\": \"<string>\",\n        \"titleSaIast\": \"<string>\",\n        \"titleSaDeva\": \"<string>\",\n        \"sortOrder\": \"<integer>\",\n        \"children\": [\n          {\n            \"id\": \"<uuid>\",\n            \"parentId\": \"<uuid>\",\n            \"code\": \"<string>\",\n            \"titleRu\": \"<string>\",\n            \"titleEn\": \"<string>\",\n            \"titleSaIast\": \"<string>\",\n            \"titleSaDeva\": \"<string>\",\n            \"sortOrder\": \"<integer>\",\n            \"children\": [\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              },\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              }\n            ]\n          },\n          {\n            \"id\": \"<uuid>\",\n            \"parentId\": \"<uuid>\",\n            \"code\": \"<string>\",\n            \"titleRu\": \"<string>\",\n            \"titleEn\": \"<string>\",\n            \"titleSaIast\": \"<string>\",\n            \"titleSaDeva\": \"<string>\",\n            \"sortOrder\": \"<integer>\",\n            \"children\": [\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              },\n              {\n                \"value\": \"<Circular reference to #/paths/~1works~1classes/get/responses/200/content/application~1json/schema/items/properties/classes/items detected>\"\n              }\n            ]\n          }\n        ]\n      }\n    ]\n  }\n]",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "id": "6ff2c803-3d1c-4934-a078-6ce199a968b4",
+              "name": "Произведение + список глав (без стихов) по slug",
+              "request": {
+                "name": "Произведение + список глав (без стихов) по slug",
+                "description": {
+                  "content": "Основной эндпоинт для страницы произведения (фронтенд: /sangraha/{workSlug}).\nВозвращает id, slug, titleRu/En и chapters[] с краткой информацией о главах\n(ChapterSummary — без verses, только verseCount). Стихи загружаются отдельно\nчерез GET /chapters/{chapterId}/verses.\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "works",
+                    ":workSlug"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "workSlug",
+                      "description": "(Required) "
+                    }
+                  ],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/works/:workSlug"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "0ebfd5a8-3d9f-424d-b2ec-b223cf6fb371",
+                  "name": "Произведение со списком глав (без стихов)",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "works",
+                        ":workSlug"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "workSlug",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"id\": \"<uuid>\",\n  \"slug\": \"<string>\",\n  \"titleRu\": \"<string>\",\n  \"titleEn\": \"<string>\",\n  \"titleSaIast\": \"<string>\",\n  \"titleSaDevanagari\": \"<string>\",\n  \"descriptionRu\": \"<string>\",\n  \"descriptionEn\": \"<string>\",\n  \"author\": \"<string>\",\n  \"chapters\": [\n    {\n      \"id\": \"<uuid>\",\n      \"slug\": \"<string>\",\n      \"orderIndex\": \"<integer>\",\n      \"titleRu\": \"<string>\",\n      \"titleEn\": \"<string>\",\n      \"titleSaIast\": \"<string>\",\n      \"titleSaDevanagari\": \"<string>\",\n      \"categoryCode\": \"<string>\",\n      \"verseCount\": \"<integer>\"\n    },\n    {\n      \"id\": \"<uuid>\",\n      \"slug\": \"<string>\",\n      \"orderIndex\": \"<integer>\",\n      \"titleRu\": \"<string>\",\n      \"titleEn\": \"<string>\",\n      \"titleSaIast\": \"<string>\",\n      \"titleSaDevanagari\": \"<string>\",\n      \"categoryCode\": \"<string>\",\n      \"verseCount\": \"<integer>\"\n    }\n  ]\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "id": "9261e6a2-b6ba-49c7-8bcd-efadb5b61971",
+                  "name": "Произведение не найдено",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "works",
+                        ":workSlug"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "workSlug",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
             }
-          ]
+          ],
+          "event": []
         },
         {
-          "name": "Standalone Analysis",
-          "description": "Эндпоинты для standalone-стихов (без привязки к произведению/главе). Требуют заголовок X-User-Id.",
+          "id": "1095ef8e-35df-4113-b7b0-43ee23afbf87",
+          "name": "Chapters",
+          "description": {
+            "content": "",
+            "type": "text/plain"
+          },
           "item": [
             {
-              "name": "Create Standalone Analysis",
+              "id": "7f473f7c-3a32-435e-87e7-af000574489f",
+              "name": "Одна глава со списком стихов",
               "request": {
+                "name": "Одна глава со списком стихов",
+                "description": {
+                  "content": "Возвращает главу и полный список её стихов (VersePreview[]).\nФронтенд: страница /sangraha/{workSlug}/chapters/{chapterId}.\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "chapters",
+                    ":chapterId",
+                    "verses"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "chapterId",
+                      "description": "(Required) "
+                    }
+                  ],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/chapters/:chapterId/verses"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "edc9aa63-f000-4b19-a82e-af8670f8f086",
+                  "name": "Глава со списком стихов",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "chapters",
+                        ":chapterId",
+                        "verses"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "chapterId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"id\": \"<uuid>\",\n  \"slug\": \"<string>\",\n  \"orderIndex\": \"<integer>\",\n  \"titleRu\": \"<string>\",\n  \"titleEn\": \"<string>\",\n  \"titleSaIast\": \"<string>\",\n  \"titleSaDevanagari\": \"<string>\",\n  \"categoryCode\": \"<string>\",\n  \"verses\": [\n    {\n      \"id\": \"<uuid>\",\n      \"orderIndex\": \"<integer>\",\n      \"textIastPreview\": \"<string>\",\n      \"textIast\": \"<string>\",\n      \"textDevanagari\": \"<string>\",\n      \"translationRu\": \"<string>\",\n      \"translationEn\": \"<string>\",\n      \"status\": \"<string>\"\n    },\n    {\n      \"id\": \"<uuid>\",\n      \"orderIndex\": \"<integer>\",\n      \"textIastPreview\": \"<string>\",\n      \"textIast\": \"<string>\",\n      \"textDevanagari\": \"<string>\",\n      \"translationRu\": \"<string>\",\n      \"translationEn\": \"<string>\",\n      \"status\": \"<string>\"\n    }\n  ]\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "id": "db09f654-bc0c-49c8-a03a-6b3fe4e96502",
+                  "name": "Глава не найдена",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "chapters",
+                        ":chapterId",
+                        "verses"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "chapterId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "id": "0918b7a2-ab6c-48c8-a763-cd78ed7a810e",
+              "name": "Запустить пакетный LLM-анализ всех стихов главы — кнопка «Анализировать всё»",
+              "request": {
+                "name": "Запустить пакетный LLM-анализ всех стихов главы — кнопка «Анализировать всё»",
+                "description": {
+                  "content": "Переводит все стихи главы со статусом DRAFT/FAILED в ANALYZING и запускает\nодин batch-вызов LLM (`submit_verse_analyses`, см.\nsangraha-prompts/verse-analysis.md) на все эти стихи сразу. Результаты\nсопоставляются со стихами по verseIndex и сохраняются по одному, той же\nтранзакцией на стих, что и одиночный анализ (см. sangraha-service.md §5.4).\nСтихи уже в статусе ANALYZING/ANALYZED пропускаются.\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "chapters",
+                    ":chapterId",
+                    "verses",
+                    "analyze-all"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "chapterId",
+                      "description": "(Required) "
+                    }
+                  ],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/chapters/:chapterId/verses/analyze-all"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
                 "method": "POST",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "12651ba8-eab1-4f61-a6d7-c6766db32e37",
+                  "name": "Пакетный анализ запущен",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "chapters",
+                        ":chapterId",
+                        "verses",
+                        "analyze-all"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "chapterId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {}
+                  },
+                  "status": "Accepted",
+                  "code": 202,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"chapterId\": \"<uuid>\",\n  \"verseIds\": [\n    \"<uuid>\",\n    \"<uuid>\"\n  ]\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "id": "afe1036f-60c4-47f5-8ef2-687ca0d1cc57",
+                  "name": "Глава не найдена",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "chapters",
+                        ":chapterId",
+                        "verses",
+                        "analyze-all"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "chapterId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {}
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                },
+                {
+                  "id": "e9bce73d-e310-4693-8767-f340ca8f4ae4",
+                  "name": "В главе нет стихов, доступных для анализа",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "chapters",
+                        ":chapterId",
+                        "verses",
+                        "analyze-all"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "chapterId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {}
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ],
+          "event": []
+        },
+        {
+          "id": "039c705c-e466-4010-9ebe-3b57f35c7e69",
+          "name": "Verses",
+          "description": {
+            "content": "",
+            "type": "text/plain"
+          },
+          "item": [
+            {
+              "id": "5766a9ae-fe5b-418f-a498-17c17ed904c3",
+              "name": "Стихи по произвольному списку id (для массового просмотра/ревью)",
+              "request": {
+                "name": "Стихи по произвольному списку id (для массового просмотра/ревью)",
+                "description": {
+                  "content": "Чтение без ограничения размера списка id (в отличие от анализа — размер\nна этой ручке не важен). Не найденные/удалённые id просто отсутствуют\nв verses[] — без ошибки. В отличие от внутреннего /sangraha/internal/content/\nverses/batch отдаёт status (DRAFT|ANALYZING|ANALYZED|FAILED) каждого стиха.\nФронтенд: страница /sangraha/verses, см. sangraha-service/batch-verse-review.md.\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "verse"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verse"
+                },
                 "header": [
                   {
                     "key": "Content-Type",
                     "value": "application/json"
                   },
                   {
-                    "key": "X-User-Id",
-                    "value": "{{userId}}",
-                    "description": "UUID текущего пользователя (owner)"
+                    "key": "Accept",
+                    "value": "application/json"
                   }
                 ],
+                "method": "POST",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"text\": \"ॐ भूर्भुवः स्वः\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/analysis",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "analysis"]
-                },
-                "description": "Создать standalone-стих и запустить LLM-анализ."
+                  "raw": "{\n  \"verseIds\": [\n    \"<uuid>\",\n    \"<uuid>\"\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
               },
-              "response": []
+              "response": [
+                {
+                  "id": "7630252f-f35f-4b6d-8f7f-1a077d7bb68b",
+                  "name": "Стихи по порядку id в запросе",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verse"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"verseIds\": [\n    \"<uuid>\",\n    \"<uuid>\"\n  ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"verses\": [\n    {\n      \"id\": \"<uuid>\",\n      \"workSlug\": \"<string>\",\n      \"workTitleRu\": \"<string>\",\n      \"workTitleEn\": \"<string>\",\n      \"chapterSlug\": \"<string>\",\n      \"chapterTitleRu\": \"<string>\",\n      \"chapterTitleEn\": \"<string>\",\n      \"verseOrderIndex\": \"<integer>\",\n      \"textIastPreview\": \"<string>\",\n      \"status\": \"<string>\"\n    },\n    {\n      \"id\": \"<uuid>\",\n      \"workSlug\": \"<string>\",\n      \"workTitleRu\": \"<string>\",\n      \"workTitleEn\": \"<string>\",\n      \"chapterSlug\": \"<string>\",\n      \"chapterTitleRu\": \"<string>\",\n      \"chapterTitleEn\": \"<string>\",\n      \"verseOrderIndex\": \"<integer>\",\n      \"textIastPreview\": \"<string>\",\n      \"status\": \"<string>\"\n    }\n  ]\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
             },
             {
-              "name": "List Standalone Analyses",
+              "id": "26179327-2ab0-4911-9dd4-a98873119688",
+              "name": "Батч-анализ произвольного списка стихов (безусловный повтор)",
               "request": {
+                "name": "Батч-анализ произвольного списка стихов (безусловный повтор)",
+                "description": {
+                  "content": "Анализирует все переданные verseId независимо от текущего status — включая\nуже ANALYZED (полная перезапись существующего VerseAnalysis/VerseWord[]).\nВ отличие от analyze-all — фильтрации по DRAFT/FAILED нет. Входной список\nразбивается на чанки, обрабатываются последовательно синхронно.\nНе найденные/удалённые id исключаются молча. См.\nsangraha-service/batch-verse-review.md.\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "verse",
+                    "analysis"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verse/analysis"
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"verseIds\": [\n    \"<uuid>\",\n    \"<uuid>\"\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "e5dbee4e-0b3e-493f-a48f-28c2923e574d",
+                  "name": "Анализ запущен",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verse",
+                        "analysis"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"verseIds\": [\n    \"<uuid>\",\n    \"<uuid>\"\n  ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Accepted",
+                  "code": 202,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"verseIds\": [\n    \"<uuid>\",\n    \"<uuid>\"\n  ]\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "id": "48de03ac-55e0-4ccb-ac59-738f5a8daaa7",
+              "name": "Пример стиха по точной словоформе (колонка урока склонений)",
+              "request": {
+                "name": "Пример стиха по точной словоформе (колонка урока склонений)",
+                "description": {
+                  "content": "Для каждой запрошенной surfaceIast возвращает ровно один стих — самый\nкороткий (3–7 слов), содержащий глагол. Перевод (translationRu/En) может\nотсутствовать — стих тогда отдаётся без перевода. Форма без подходящего\nстиха получает пустой verses.\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "words",
+                    "examples"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/words/examples"
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"surfaceIasts\": [\n    \"<string>\"\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "ca613341-dddd-4312-bf95-78df5a6710cc",
+                  "name": "Стихи-примеры по каждой форме",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "words",
+                        "examples"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"surfaceIasts\": [\n    \"<string>\"\n  ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"results\": [\n    {\n      \"surfaceIast\": \"<string>\",\n      \"verses\": [\n        {\n          \"verseId\": \"<uuid>\",\n          \"workSlug\": \"<string>\",\n          \"textIast\": \"<string>\",\n          \"textDevanagari\": \"<string>\",\n          \"translationRu\": \"<string>\",\n          \"translationEn\": \"<string>\",\n          \"workTitleRu\": \"<string>\",\n          \"workTitleEn\": \"<string>\",\n          \"chapterTitleRu\": \"<string>\",\n          \"chapterTitleEn\": \"<string>\",\n          \"verseOrderIndex\": \"<integer>\"\n        }\n      ]\n    },\n    {\n      \"surfaceIast\": \"<string>\",\n      \"verses\": [\n        {\n          \"verseId\": \"<uuid>\",\n          \"workSlug\": \"<string>\",\n          \"textIast\": \"<string>\",\n          \"textDevanagari\": \"<string>\",\n          \"translationRu\": \"<string>\",\n          \"translationEn\": \"<string>\",\n          \"workTitleRu\": \"<string>\",\n          \"workTitleEn\": \"<string>\",\n          \"chapterTitleRu\": \"<string>\",\n          \"chapterTitleEn\": \"<string>\",\n          \"verseOrderIndex\": \"<integer>\"\n        }\n      ]\n    }\n  ]\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "id": "041f89dc-b366-4d1b-91ba-7e92f0b46d70",
+              "name": "Примеры склонений по словоизменительному классу (вкладка урока склонений)",
+              "request": {
+                "name": "Примеры склонений по словоизменительному классу (вкладка урока склонений)",
+                "description": {
+                  "content": "Один запрос на всю парадигму склонения: для каждой ячейки\n(caseType, numberType) ищутся реальные цитаты из проанализированных стихов,\nрезультат группируется по (caseType, numberType) с текстом/переводом стихов.\ngender/caseType/numberType в запросе опциональны: не заполнены — фильтр\nпо соответствующей оси не применяется (стихи с любым родом/падежом/числом). Фронтенд делает один такой\nзапрос на урок и рендерит вкладку «Примеры».\nСм. docs/services/sangraha-service.md §9.\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "verses",
+                    "examples"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/examples"
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vowelType\": \"<string>\",\n  \"limitPerGroup\": \"<integer>\",\n  \"gender\": \"<string>\",\n  \"caseType\": \"<string>\",\n  \"numberType\": \"<string>\",\n  \"maxPhraseWords\": \"<integer>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "31793acd-4c64-4583-bcb2-14562ecf83b6",
+                  "name": "Сгруппированные по ячейке парадигмы примеры с текстом стихов",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verses",
+                        "examples"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"vowelType\": \"<string>\",\n  \"limitPerGroup\": \"<integer>\",\n  \"gender\": \"<string>\",\n  \"caseType\": \"<string>\",\n  \"numberType\": \"<string>\",\n  \"maxPhraseWords\": \"<integer>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"groups\": [\n    {\n      \"caseType\": \"<string>\",\n      \"numberType\": \"<string>\",\n      \"examples\": [\n        {\n          \"verseId\": \"<uuid>\",\n          \"workSlug\": \"<string>\",\n          \"textIast\": \"<string>\",\n          \"textDevanagari\": \"<string>\",\n          \"translationRu\": \"<string>\",\n          \"translationEn\": \"<string>\",\n          \"workTitleRu\": \"<string>\",\n          \"workTitleEn\": \"<string>\",\n          \"chapterTitleRu\": \"<string>\",\n          \"chapterTitleEn\": \"<string>\",\n          \"verseOrderIndex\": \"<integer>\"\n        },\n        {\n          \"verseId\": \"<uuid>\",\n          \"workSlug\": \"<string>\",\n          \"textIast\": \"<string>\",\n          \"textDevanagari\": \"<string>\",\n          \"translationRu\": \"<string>\",\n          \"translationEn\": \"<string>\",\n          \"workTitleRu\": \"<string>\",\n          \"workTitleEn\": \"<string>\",\n          \"chapterTitleRu\": \"<string>\",\n          \"chapterTitleEn\": \"<string>\",\n          \"verseOrderIndex\": \"<integer>\"\n        }\n      ]\n    },\n    {\n      \"caseType\": \"<string>\",\n      \"numberType\": \"<string>\",\n      \"examples\": [\n        {\n          \"verseId\": \"<uuid>\",\n          \"workSlug\": \"<string>\",\n          \"textIast\": \"<string>\",\n          \"textDevanagari\": \"<string>\",\n          \"translationRu\": \"<string>\",\n          \"translationEn\": \"<string>\",\n          \"workTitleRu\": \"<string>\",\n          \"workTitleEn\": \"<string>\",\n          \"chapterTitleRu\": \"<string>\",\n          \"chapterTitleEn\": \"<string>\",\n          \"verseOrderIndex\": \"<integer>\"\n        },\n        {\n          \"verseId\": \"<uuid>\",\n          \"workSlug\": \"<string>\",\n          \"textIast\": \"<string>\",\n          \"textDevanagari\": \"<string>\",\n          \"translationRu\": \"<string>\",\n          \"translationEn\": \"<string>\",\n          \"workTitleRu\": \"<string>\",\n          \"workTitleEn\": \"<string>\",\n          \"chapterTitleRu\": \"<string>\",\n          \"chapterTitleEn\": \"<string>\",\n          \"verseOrderIndex\": \"<integer>\"\n        }\n      ]\n    }\n  ]\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "id": "4f91eea8-dcc3-4185-b831-b9678236b8e8",
+                  "name": "vowelType не передан или limitPerGroup < 1",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verses",
+                        "examples"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"vowelType\": \"<string>\",\n  \"limitPerGroup\": \"<integer>\",\n  \"gender\": \"<string>\",\n  \"caseType\": \"<string>\",\n  \"numberType\": \"<string>\",\n  \"maxPhraseWords\": \"<integer>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "id": "60b946e2-dda6-4271-943e-405d0efa645a",
+              "name": "Получить стих (текст + анализ, если ANALYZED)",
+              "request": {
+                "name": "Получить стих (текст + анализ, если ANALYZED)",
+                "description": {},
+                "url": {
+                  "path": [
+                    "verses",
+                    ":verseId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "verseId",
+                      "description": "(Required) "
+                    }
+                  ],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/:verseId"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "X-User-Id",
-                    "value": "{{userId}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/analysis",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "analysis"]
-                },
-                "description": "Список standalone-стихов текущего пользователя (новые сверху)."
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                }
               },
-              "response": []
+              "response": [
+                {
+                  "id": "3f4e81d3-29eb-4d3b-b4b7-1a210ca30753",
+                  "name": "Детали стиха",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verses",
+                        ":verseId"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "verseId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"id\": \"<uuid>\",\n  \"chapterId\": \"<uuid>\",\n  \"orderIndex\": \"<integer>\",\n  \"rawText\": \"<string>\",\n  \"textDevanagari\": \"<string>\",\n  \"textIast\": \"<string>\",\n  \"status\": \"<string>\",\n  \"analysis\": {\n    \"translationRu\": \"<string>\",\n    \"translationEn\": \"<string>\",\n    \"sandhiSplits\": [\n      {\n        \"surface\": \"<string>\",\n        \"components\": [\n          \"<string>\",\n          \"<string>\"\n        ],\n        \"ruleNumbers\": [\n          \"<integer>\",\n          \"<integer>\"\n        ]\n      },\n      {\n        \"surface\": \"<string>\",\n        \"components\": [\n          \"<string>\",\n          \"<string>\"\n        ],\n        \"ruleNumbers\": [\n          \"<integer>\",\n          \"<integer>\"\n        ]\n      }\n    ],\n    \"modelName\": \"<string>\",\n    \"analyzerName\": \"<string>\",\n    \"analyzedAt\": \"<dateTime>\"\n  },\n  \"words\": [\n    {\n      \"id\": \"<uuid>\",\n      \"position\": \"<integer>\",\n      \"surfaceIast\": \"<string>\",\n      \"surfaceDevanagari\": \"<string>\",\n      \"lemmaIast\": \"<string>\",\n      \"stem\": \"<string>\",\n      \"root\": \"<string>\",\n      \"pos\": \"<string>\",\n      \"formType\": \"<string>\",\n      \"isFinite\": \"<boolean>\",\n      \"morphology\": {\n        \"caseType\": \"<string>\",\n        \"gender\": \"<string>\",\n        \"numberType\": \"<string>\",\n        \"person\": \"<string>\",\n        \"tense\": \"<string>\",\n        \"mood\": \"<string>\",\n        \"voice\": \"<string>\"\n      },\n      \"derivation\": {\n        \"derivationType\": \"<string>\",\n        \"derivationalSuffix\": \"<string>\",\n        \"derivationalBase\": \"<string>\",\n        \"description\": \"<string>\"\n      },\n      \"lemmaGlossRu\": \"<string>\",\n      \"lemmaGlossEn\": \"<string>\",\n      \"contextGlossRu\": \"<string>\",\n      \"contextGlossEn\": \"<string>\",\n      \"formationRuleNumbers\": [\n        \"<integer>\",\n        \"<integer>\"\n      ],\n      \"analysisConfidence\": \"<string>\",\n      \"ambiguityNotes\": \"<string>\",\n      \"vocabularyWordId\": \"<uuid>\"\n    },\n    {\n      \"id\": \"<uuid>\",\n      \"position\": \"<integer>\",\n      \"surfaceIast\": \"<string>\",\n      \"surfaceDevanagari\": \"<string>\",\n      \"lemmaIast\": \"<string>\",\n      \"stem\": \"<string>\",\n      \"root\": \"<string>\",\n      \"pos\": \"<string>\",\n      \"formType\": \"<string>\",\n      \"isFinite\": \"<boolean>\",\n      \"morphology\": {\n        \"caseType\": \"<string>\",\n        \"gender\": \"<string>\",\n        \"numberType\": \"<string>\",\n        \"person\": \"<string>\",\n        \"tense\": \"<string>\",\n        \"mood\": \"<string>\",\n        \"voice\": \"<string>\"\n      },\n      \"derivation\": {\n        \"derivationType\": \"<string>\",\n        \"derivationalSuffix\": \"<string>\",\n        \"derivationalBase\": \"<string>\",\n        \"description\": \"<string>\"\n      },\n      \"lemmaGlossRu\": \"<string>\",\n      \"lemmaGlossEn\": \"<string>\",\n      \"contextGlossRu\": \"<string>\",\n      \"contextGlossEn\": \"<string>\",\n      \"formationRuleNumbers\": [\n        \"<integer>\",\n        \"<integer>\"\n      ],\n      \"analysisConfidence\": \"<string>\",\n      \"ambiguityNotes\": \"<string>\",\n      \"vocabularyWordId\": \"<uuid>\"\n    }\n  ],\n  \"verseTopicCode\": \"<string>\"\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "id": "4e52afcf-606e-42ab-aaa2-4ad4b2263094",
+                  "name": "Стих не найден",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verses",
+                        ":verseId"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "verseId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
             },
             {
-              "name": "Delete Standalone Analysis",
+              "id": "d2be23b8-756b-4ee2-850b-780862fba24e",
+              "name": "Кнопка «Изучить» — экспорт лемм стиха и возврат кода VERSE-урока",
               "request": {
-                "method": "DELETE",
+                "name": "Кнопка «Изучить» — экспорт лемм стиха и возврат кода VERSE-урока",
+                "description": {
+                  "content": "On-demand экспорт пачки лемм стиха в curriculum-service (см.\nVerseBatchPushService / lexicon-content-pipeline.md §7) и возврат кода\nVERSE-урока, на который ведёт кнопка «Изучить». Идемпотентен — повторный\nвызов не создаёт дублей при импорте.\nКод урока: для стиха в главе — «{workSlp1}_{chapterNumber}», для\nstandalone-стиха (без главы) — персональный «user-{ownerId}».\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "verses",
+                    ":verseId",
+                    "study"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "verseId",
+                      "description": "(Required) "
+                    }
+                  ],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/:verseId/study"
+                },
                 "header": [
                   {
-                    "key": "X-User-Id",
-                    "value": "{{userId}}"
+                    "key": "Accept",
+                    "value": "application/json"
                   }
                 ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/sangraha/analysis/{{verseId}}",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "sangraha", "analysis", "{{verseId}}"]
-                },
-                "description": "Мягко удалить standalone-стих (только владелец)."
+                "method": "POST",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                }
               },
-              "response": []
+              "response": [
+                {
+                  "id": "9b5eb67c-f3d4-49cf-b2ea-b34cfa241b3f",
+                  "name": "Код VERSE-урока, на который ведёт кнопка «Изучить»",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verses",
+                        ":verseId",
+                        "study"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "verseId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"verseTopicCode\": \"<string>\"\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "id": "61fe50a7-de1e-4300-8835-841026020cfd",
+                  "name": "Стих не найден",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verses",
+                        ":verseId",
+                        "study"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "verseId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {}
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                },
+                {
+                  "id": "b8d1b515-85df-48b3-a28e-6620c9aa2f3b",
+                  "name": "Стих ещё не проанализирован (status != ANALYZED) либо код урока не резолвится",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verses",
+                        ":verseId",
+                        "study"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "verseId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {}
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "id": "85969aa4-1cf2-480e-bda3-118b08d352c7",
+              "name": "Сырой VerseAnalysis стиха (сущность, без маппинга в DTO)",
+              "request": {
+                "name": "Сырой VerseAnalysis стиха (сущность, без маппинга в DTO)",
+                "description": {
+                  "content": "Возвращает запись verse_analyses напрямую (без VerseAnalysisDto).\nsandhiSplits/rawModelResponse/rawPrompt хранятся текстом и отдаются\nкак есть (сырой JSON/промпт). Основной читающий путь фронтенда —\nGET /verses/{verseId} (вложенный analysis в VerseDetail), этот эндпоинт\nслужит для отладки/выгрузки.\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "verses",
+                    ":verseId",
+                    "analysis"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "verseId",
+                      "description": "(Required) "
+                    }
+                  ],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/:verseId/analysis"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "a3a1a460-54ac-4c5d-9d37-81ed94461e9b",
+                  "name": "Сырой анализ стиха",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verses",
+                        ":verseId",
+                        "analysis"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "verseId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"verseId\": \"<uuid>\",\n  \"translationRu\": \"<string>\",\n  \"translationEn\": \"<string>\",\n  \"sandhiSplits\": \"<string>\",\n  \"rawModelResponse\": \"<string>\",\n  \"rawPrompt\": \"<string>\",\n  \"modelName\": \"<string>\",\n  \"analyzerName\": \"<string>\",\n  \"analyzedAt\": \"<dateTime>\"\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "id": "d6bde8e3-2666-48e4-a887-b9ae0eb14f13",
+                  "name": "Анализ стиха не найден",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verses",
+                        ":verseId",
+                        "analysis"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "verseId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "id": "cb7e78aa-849e-42bd-8e55-cb5789b5cd30",
+              "name": "VerseWord[] стиха (сущности, без маппинга в DTO)",
+              "request": {
+                "name": "VerseWord[] стиха (сущности, без маппинга в DTO)",
+                "description": {
+                  "content": "Возвращает словоформы стиха (verse_words) напрямую как сущности.\nОсновной читающий путь фронтенда — GET /verses/{verseId} (вложенные\nwords в VerseDetail), этот эндпоинт служит для отладки/выгрузки.\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "verses",
+                    ":verseId",
+                    "words"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "verseId",
+                      "description": "(Required) "
+                    }
+                  ],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/:verseId/words"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "51724e9f-452c-4689-851c-6abd7c7d0d80",
+                  "name": "Словоформы стиха по порядку позиции",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verses",
+                        ":verseId",
+                        "words"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "verseId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "[\n  {\n    \"id\": \"<uuid>\",\n    \"position\": \"<integer>\",\n    \"surfaceIast\": \"<string>\",\n    \"surfaceDevanagari\": \"<string>\",\n    \"lemmaIast\": \"<string>\",\n    \"stem\": \"<string>\",\n    \"root\": \"<string>\",\n    \"pos\": \"<string>\",\n    \"formType\": \"<string>\",\n    \"isFinite\": \"<boolean>\",\n    \"lemmaGlossRu\": \"<string>\",\n    \"lemmaGlossEn\": \"<string>\",\n    \"contextGlossRu\": \"<string>\",\n    \"contextGlossEn\": \"<string>\",\n    \"formationRuleNumbers\": \"<string>\",\n    \"analysisConfidence\": \"<string>\",\n    \"ambiguityNotes\": \"<string>\",\n    \"vocabularyWordId\": \"<uuid>\",\n    \"verse\": \"<object>\",\n    \"morphology\": \"<object>\",\n    \"derivation\": \"<object>\"\n  },\n  {\n    \"id\": \"<uuid>\",\n    \"position\": \"<integer>\",\n    \"surfaceIast\": \"<string>\",\n    \"surfaceDevanagari\": \"<string>\",\n    \"lemmaIast\": \"<string>\",\n    \"stem\": \"<string>\",\n    \"root\": \"<string>\",\n    \"pos\": \"<string>\",\n    \"formType\": \"<string>\",\n    \"isFinite\": \"<boolean>\",\n    \"lemmaGlossRu\": \"<string>\",\n    \"lemmaGlossEn\": \"<string>\",\n    \"contextGlossRu\": \"<string>\",\n    \"contextGlossEn\": \"<string>\",\n    \"formationRuleNumbers\": \"<string>\",\n    \"analysisConfidence\": \"<string>\",\n    \"ambiguityNotes\": \"<string>\",\n    \"vocabularyWordId\": \"<uuid>\",\n    \"verse\": \"<object>\",\n    \"morphology\": \"<object>\",\n    \"derivation\": \"<object>\"\n  }\n]",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "id": "ae4b5faa-7b88-4d5e-a4e9-1f41353c5016",
+              "name": "Сохранить текст и запустить LLM-анализ стиха",
+              "request": {
+                "name": "Сохранить текст и запустить LLM-анализ стиха",
+                "description": {
+                  "content": "Единственная точка сохранения текста стиха (Verse CRUD удалён).\nТело `VerseTextRequest` опционально: пустое тело — анализ по уже\nсохранённому raw_text (повторный запуск). Ответ всегда 202 без тела.\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "verses",
+                    ":verseId",
+                    "analyze"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "verseId",
+                      "description": "(Required) "
+                    }
+                  ],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/verses/:verseId/analyze"
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"text\": \"<string>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "711d02ce-526c-4554-93c9-a9e40fd9afe5",
+                  "name": "raw_text сохранён (если передан), анализ запущен; без тела",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verses",
+                        ":verseId",
+                        "analyze"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "verseId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"text\": \"<string>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Accepted",
+                  "code": 202,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                },
+                {
+                  "id": "d183176e-3407-49af-ab95-a86701624318",
+                  "name": "Стих не найден",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verses",
+                        ":verseId",
+                        "analyze"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "verseId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"text\": \"<string>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                },
+                {
+                  "id": "7c2f416b-57ab-4f49-9a8c-2ccb49d42cb0",
+                  "name": "Стих уже анализируется (status = ANALYZING)",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "verses",
+                        ":verseId",
+                        "analyze"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "verseId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"text\": \"<string>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
             }
-          ]
+          ],
+          "event": []
+        },
+        {
+          "id": "69759af9-8a88-4e90-8dee-48afa42673f6",
+          "name": "Analysis",
+          "description": {
+            "content": "",
+            "type": "text/plain"
+          },
+          "item": [
+            {
+              "id": "e33f3cae-9845-4342-a804-9d2f20440111",
+              "name": "Создать standalone-стих и запустить LLM-анализ (страница /analysis)",
+              "request": {
+                "name": "Создать standalone-стих и запустить LLM-анализ (страница /analysis)",
+                "description": {
+                  "content": "Создаёт новую запись в `verses` с `chapter_id = null` и `owner_id` текущего\nпользователя (стих не привязан к произведению/главе) и сразу запускает\nанализ. Каждое нажатие «Анализировать» на странице /analysis создаёт новую\nзапись. Доступ — любой авторизованный, стихи персональные. Тело\n`VerseTextRequest` опционально (пустое тело — создаётся пустой стих).\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "analysis"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/analysis"
+                },
+                "header": [
+                  {
+                    "disabled": false,
+                    "description": "(Required) Владелец standalone-стиха (ставится api-gateway из JWT)",
+                    "key": "X-User-Id",
+                    "value": "<uuid>"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"text\": \"<string>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "7096c78b-3f97-496a-a982-951833d46705",
+                  "name": "Созданный стих (детали, статус ANALYZING сразу после запуска анализа)",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "analysis"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "disabled": false,
+                        "description": "(Required) Владелец standalone-стиха (ставится api-gateway из JWT)",
+                        "key": "X-User-Id",
+                        "value": "<uuid>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"text\": \"<string>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"id\": \"<uuid>\",\n  \"chapterId\": \"<uuid>\",\n  \"orderIndex\": \"<integer>\",\n  \"rawText\": \"<string>\",\n  \"textDevanagari\": \"<string>\",\n  \"textIast\": \"<string>\",\n  \"status\": \"<string>\",\n  \"analysis\": {\n    \"translationRu\": \"<string>\",\n    \"translationEn\": \"<string>\",\n    \"sandhiSplits\": [\n      {\n        \"surface\": \"<string>\",\n        \"components\": [\n          \"<string>\",\n          \"<string>\"\n        ],\n        \"ruleNumbers\": [\n          \"<integer>\",\n          \"<integer>\"\n        ]\n      },\n      {\n        \"surface\": \"<string>\",\n        \"components\": [\n          \"<string>\",\n          \"<string>\"\n        ],\n        \"ruleNumbers\": [\n          \"<integer>\",\n          \"<integer>\"\n        ]\n      }\n    ],\n    \"modelName\": \"<string>\",\n    \"analyzerName\": \"<string>\",\n    \"analyzedAt\": \"<dateTime>\"\n  },\n  \"words\": [\n    {\n      \"id\": \"<uuid>\",\n      \"position\": \"<integer>\",\n      \"surfaceIast\": \"<string>\",\n      \"surfaceDevanagari\": \"<string>\",\n      \"lemmaIast\": \"<string>\",\n      \"stem\": \"<string>\",\n      \"root\": \"<string>\",\n      \"pos\": \"<string>\",\n      \"formType\": \"<string>\",\n      \"isFinite\": \"<boolean>\",\n      \"morphology\": {\n        \"caseType\": \"<string>\",\n        \"gender\": \"<string>\",\n        \"numberType\": \"<string>\",\n        \"person\": \"<string>\",\n        \"tense\": \"<string>\",\n        \"mood\": \"<string>\",\n        \"voice\": \"<string>\"\n      },\n      \"derivation\": {\n        \"derivationType\": \"<string>\",\n        \"derivationalSuffix\": \"<string>\",\n        \"derivationalBase\": \"<string>\",\n        \"description\": \"<string>\"\n      },\n      \"lemmaGlossRu\": \"<string>\",\n      \"lemmaGlossEn\": \"<string>\",\n      \"contextGlossRu\": \"<string>\",\n      \"contextGlossEn\": \"<string>\",\n      \"formationRuleNumbers\": [\n        \"<integer>\",\n        \"<integer>\"\n      ],\n      \"analysisConfidence\": \"<string>\",\n      \"ambiguityNotes\": \"<string>\",\n      \"vocabularyWordId\": \"<uuid>\"\n    },\n    {\n      \"id\": \"<uuid>\",\n      \"position\": \"<integer>\",\n      \"surfaceIast\": \"<string>\",\n      \"surfaceDevanagari\": \"<string>\",\n      \"lemmaIast\": \"<string>\",\n      \"stem\": \"<string>\",\n      \"root\": \"<string>\",\n      \"pos\": \"<string>\",\n      \"formType\": \"<string>\",\n      \"isFinite\": \"<boolean>\",\n      \"morphology\": {\n        \"caseType\": \"<string>\",\n        \"gender\": \"<string>\",\n        \"numberType\": \"<string>\",\n        \"person\": \"<string>\",\n        \"tense\": \"<string>\",\n        \"mood\": \"<string>\",\n        \"voice\": \"<string>\"\n      },\n      \"derivation\": {\n        \"derivationType\": \"<string>\",\n        \"derivationalSuffix\": \"<string>\",\n        \"derivationalBase\": \"<string>\",\n        \"description\": \"<string>\"\n      },\n      \"lemmaGlossRu\": \"<string>\",\n      \"lemmaGlossEn\": \"<string>\",\n      \"contextGlossRu\": \"<string>\",\n      \"contextGlossEn\": \"<string>\",\n      \"formationRuleNumbers\": [\n        \"<integer>\",\n        \"<integer>\"\n      ],\n      \"analysisConfidence\": \"<string>\",\n      \"ambiguityNotes\": \"<string>\",\n      \"vocabularyWordId\": \"<uuid>\"\n    }\n  ],\n  \"verseTopicCode\": \"<string>\"\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "id": "64b343b2-50ce-44a8-8892-3a5b2a7ff9c0",
+                  "name": "Некорректный/пустой текст после разбора",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "analysis"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "disabled": false,
+                        "description": "(Required) Владелец standalone-стиха (ставится api-gateway из JWT)",
+                        "key": "X-User-Id",
+                        "value": "<uuid>"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"text\": \"<string>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "id": "86dc06f0-cb53-436e-8489-402d2382eee5",
+              "name": "Список standalone-стихов текущего пользователя",
+              "request": {
+                "name": "Список standalone-стихов текущего пользователя",
+                "description": {
+                  "content": "Standalone-стихи пользователя (chapter_id = null), новые сверху, без\nконтекста произведения/главы — только превью, статус и дата создания.\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "analysis"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/analysis"
+                },
+                "header": [
+                  {
+                    "disabled": false,
+                    "description": "(Required) Владелец standalone-стихов (ставится api-gateway из JWT)",
+                    "key": "X-User-Id",
+                    "value": "<uuid>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "3d581bc5-65df-4440-b418-88081d8f6503",
+                  "name": "Список разборов пользователя",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "analysis"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "disabled": false,
+                        "description": "(Required) Владелец standalone-стихов (ставится api-gateway из JWT)",
+                        "key": "X-User-Id",
+                        "value": "<uuid>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "[\n  {\n    \"id\": \"<uuid>\",\n    \"preview\": \"<string>\",\n    \"status\": \"<string>\",\n    \"createdAt\": \"<dateTime>\"\n  },\n  {\n    \"id\": \"<uuid>\",\n    \"preview\": \"<string>\",\n    \"status\": \"<string>\",\n    \"createdAt\": \"<dateTime>\"\n  }\n]",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "id": "620018b0-4ed8-4ab7-a1fd-39786d22fb8f",
+              "name": "Удалить standalone-стих (только владелец)",
+              "request": {
+                "name": "Удалить standalone-стих (только владелец)",
+                "description": {},
+                "url": {
+                  "path": [
+                    "analysis",
+                    ":verseId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "verseId",
+                      "description": "(Required) "
+                    }
+                  ],
+                  "raw": "{{baseUrl}}/api/v1/sangraha/analysis/:verseId"
+                },
+                "header": [
+                  {
+                    "disabled": false,
+                    "description": "(Required) Владелец standalone-стиха (ставится api-gateway из JWT)",
+                    "key": "X-User-Id",
+                    "value": "<uuid>"
+                  }
+                ],
+                "method": "DELETE",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bearerToken}}"
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "ea5c36b1-2df9-419b-8a41-4a9db2afe932",
+                  "name": "Мягко удалён",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "analysis",
+                        ":verseId"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "verseId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "disabled": false,
+                        "description": "(Required) Владелец standalone-стиха (ставится api-gateway из JWT)",
+                        "key": "X-User-Id",
+                        "value": "<uuid>"
+                      }
+                    ],
+                    "method": "DELETE",
+                    "body": {}
+                  },
+                  "status": "No Content",
+                  "code": 204,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                },
+                {
+                  "id": "a4e2946d-d49e-4e44-b33c-06309520cb06",
+                  "name": "Стих не standalone либо не принадлежит пользователю",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "analysis",
+                        ":verseId"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "verseId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "disabled": false,
+                        "description": "(Required) Владелец standalone-стиха (ставится api-gateway из JWT)",
+                        "key": "X-User-Id",
+                        "value": "<uuid>"
+                      }
+                    ],
+                    "method": "DELETE",
+                    "body": {}
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                },
+                {
+                  "id": "c4443056-7db9-41bf-867b-337fbc210738",
+                  "name": "Стих не найден",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "analysis",
+                        ":verseId"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "verseId",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      },
+                      {
+                        "disabled": false,
+                        "description": "(Required) Владелец standalone-стиха (ставится api-gateway из JWT)",
+                        "key": "X-User-Id",
+                        "value": "<uuid>"
+                      }
+                    ],
+                    "method": "DELETE",
+                    "body": {}
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ],
+          "event": []
         }
       ]
     },
     {
       "name": "Internal Lexicon API",
-      "description": "Service-to-service эндпоинты для словаря лемм и классификации. Вызываются минуя API Gateway.",
+      "description": "Service-to-service эндпоинты словаря лемм (прямой вызов sangraha-service:8082, минуя api-gateway).",
       "item": [
         {
-          "name": "Refresh Lemma Statistics",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "X-User-Id",
-                "value": "{{userId}}",
-                "disabled": true
-              }
-            ],
-            "url": {
-              "raw": "{{internalUrl}}/sangraha/internal/lexicon/lemmas/refresh-statistics",
-              "host": ["{{internalUrl}}"],
-              "path": ["sangraha", "internal", "lexicon", "lemmas", "refresh-statistics"]
-            },
-            "description": "Пересчитать словарь лемм и lemma_statistics из корпуса VerseWord."
+          "id": "7eec96b8-3446-4144-bd7d-769d861307ee",
+          "name": "lexicon",
+          "description": {
+            "content": "",
+            "type": "text/plain"
           },
-          "response": []
-        },
-        {
-          "name": "Export Lemmas",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{internalUrl}}/sangraha/internal/lexicon/lemmas/export?cursor={{cursor}}&limit=500",
-              "host": ["{{internalUrl}}"],
-              "path": ["sangraha", "internal", "lexicon", "lemmas", "export"],
-              "query": [
-                {
-                  "key": "cursor",
-                  "value": "",
-                  "description": "Последний lemmaStatistics.id; null — первая страница",
-                  "disabled": true
+          "item": [
+            {
+              "id": "65b6e675-b8cc-445f-b3c6-8d6d86911380",
+              "name": "Пересчитать словарь лемм и lemma_statistics из корпуса VerseWord",
+              "request": {
+                "name": "Пересчитать словарь лемм и lemma_statistics из корпуса VerseWord",
+                "description": {
+                  "content": "Собирает уникальные леммы из всех VerseWord, создаёт недостающие Записи lemma и пересчитывает статистику частотности (lemma_statistics).\n",
+                  "type": "text/plain"
                 },
-                {
-                  "key": "limit",
-                  "value": "500",
-                  "description": "Размер страницы (clamp 1..500, default 500)"
-                }
-              ]
-            },
-            "description": "Экспорт агрегированных лемм в curriculum-service (курсорная пагинация)."
-          },
-          "response": []
-        },
-        {
-          "name": "Start Classification Run",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+                "url": {
+                  "path": [
+                    "sangraha",
+                    "internal",
+                    "lexicon",
+                    "lemmas",
+                    "refresh-statistics"
+                  ],
+                  "host": [
+                    "{{internalUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [],
+                  "raw": "{{internalUrl}}/sangraha/internal/lexicon/lemmas/refresh-statistics"
+                },
+                "header": [
+                  {
+                    "disabled": false,
+                    "key": "X-User-Id",
+                    "value": "<uuid>",
+                    "description": ""
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null
               },
-              {
-                "key": "X-User-Id",
-                "value": "{{userId}}",
-                "disabled": true
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"schemeCode\": \"CURRICULUM\",\n  \"batchSize\": 50,\n  \"batchCount\": 2,\n  \"llmModel\": null\n}"
-            },
-            "url": {
-              "raw": "{{internalUrl}}/sangraha/internal/lexicon/classification/runs",
-              "host": ["{{internalUrl}}"],
-              "path": ["sangraha", "internal", "lexicon", "classification", "runs"]
-            },
-            "description": "Запустить batch-прогон классификации лемм."
-          },
-          "response": []
-        },
-        {
-          "name": "List Classifications For Review",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{internalUrl}}/sangraha/internal/lexicon/classifications?schemeCode=CURRICULUM&status=CANDIDATE&cursor=&limit=100",
-              "host": ["{{internalUrl}}"],
-              "path": ["sangraha", "internal", "lexicon", "classifications"],
-              "query": [
+              "response": [
                 {
-                  "key": "schemeCode",
-                  "value": "CURRICULUM",
-                  "description": "Код схемы (default CURRICULUM)"
-                },
-                {
-                  "key": "status",
-                  "value": "CANDIDATE",
-                  "description": "Статус (default CANDIDATE)"
-                },
-                {
-                  "key": "cursor",
-                  "value": "",
-                  "description": "Курсор по lemmaId",
-                  "disabled": true
-                },
-                {
-                  "key": "limit",
-                  "value": "100",
-                  "description": "Размер страницы (clamp 1..500, default 100)"
+                  "id": "40040492-f755-4ab0-8ed8-ece25415aa34",
+                  "name": "Итоги пересчёта",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "sangraha",
+                        "internal",
+                        "lexicon",
+                        "lemmas",
+                        "refresh-statistics"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "disabled": false,
+                        "key": "X-User-Id",
+                        "value": "<uuid>",
+                        "description": ""
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"lemmaCount\": \"<integer>\",\n  \"newLemmaCount\": \"<integer>\",\n  \"updatedLemmaCount\": \"<integer>\",\n  \"statisticsCount\": \"<integer>\",\n  \"newStatisticsCount\": \"<integer>\",\n  \"updatedStatisticsCount\": \"<integer>\",\n  \"verseStatisticsCount\": \"<integer>\"\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
                 }
-              ]
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
             },
-            "description": "Список классификаций на ревью (курсорная пагинация)."
-          },
-          "response": []
-        },
-        {
-          "name": "Review Classification",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+            {
+              "id": "b95a3b43-8426-4647-b045-45c747f8e08b",
+              "name": "Экспорт агрегированных лемм в curriculum-service",
+              "request": {
+                "name": "Экспорт агрегированных лемм в curriculum-service",
+                "description": {
+                  "content": "Курсорная выгрузка агрегированных данных лемм для batch-импорта в curriculum-service. Один вызов — всё, что нужно для импорта: JOIN lemma + lemma_statistics + lemma_classification (APPROVED, scheme=CURRICULUM) + nominal_lemmas (stemClass → vowelType). Одна строка = одна пара (lemma, gender). Данные уже агрегированы на стороне sangraha — curriculum-service делает простой upsert. Сортировка: occurrenceCount DESC, затем lemmaStatistics.id ASC. Курсор — последний lemmaStatistics.id в странице.\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "sangraha",
+                    "internal",
+                    "lexicon",
+                    "lemmas",
+                    "export"
+                  ],
+                  "host": [
+                    "{{internalUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "key": "cursor",
+                      "value": "<uuid>",
+                      "description": "Последний lemmaStatistics.id; null/отсутствует — первая страница"
+                    },
+                    {
+                      "disabled": false,
+                      "key": "limit",
+                      "value": "500",
+                      "description": "Размер страницы (clamp 1..500, default 500)"
+                    }
+                  ],
+                  "variable": [],
+                  "raw": "{{internalUrl}}/sangraha/internal/lexicon/lemmas/export?cursor=<uuid>&limit=500"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null
               },
-              {
-                "key": "X-User-Id",
-                "value": "{{userId}}",
-                "description": "Кто провёл ревью (сохраняется в reviewedBy)",
-                "disabled": true
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"APPROVED\",\n  \"categoryCode\": \"philosophy\",\n  \"glossRu\": \"действие\",\n  \"glossEn\": \"action\",\n  \"confidence\": 85\n}"
-            },
-            "url": {
-              "raw": "{{internalUrl}}/sangraha/internal/lexicon/classifications/{{classificationId}}",
-              "host": ["{{internalUrl}}"],
-              "path": ["sangraha", "internal", "lexicon", "classifications", "{{classificationId}}"]
-            },
-            "description": "Ревью одной классификации (исправление полей и/или смена статуса)."
-          },
-          "response": []
-        },
-        {
-          "name": "Export Approved Classifications",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{internalUrl}}/sangraha/internal/lexicon/lemma-classifications/export?schemeCode=CURRICULUM&cursor=&limit=500",
-              "host": ["{{internalUrl}}"],
-              "path": ["sangraha", "internal", "lexicon", "lemma-classifications", "export"],
-              "query": [
+              "response": [
                 {
-                  "key": "schemeCode",
-                  "value": "CURRICULUM",
-                  "description": "Код схемы (default CURRICULUM)"
-                },
-                {
-                  "key": "cursor",
-                  "value": "",
-                  "disabled": true
-                },
-                {
-                  "key": "limit",
-                  "value": "500",
-                  "description": "Размер страницы (clamp 1..500, default 500)"
+                  "id": "88b06798-c479-45ed-a3ef-b06a5fb4f066",
+                  "name": "Страница агрегированных лемм",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "sangraha",
+                        "internal",
+                        "lexicon",
+                        "lemmas",
+                        "export"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [
+                        {
+                          "key": "cursor",
+                          "value": "<uuid>"
+                        },
+                        {
+                          "key": "limit",
+                          "value": "500"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"items\": [\n    {\n      \"lemmaId\": \"<uuid>\",\n      \"lemmaSlp1\": \"<string>\",\n      \"lemmaIast\": \"<string>\",\n      \"lemmaDevanagari\": \"<string>\",\n      \"occurrenceCount\": \"<integer>\",\n      \"gender\": \"<string,null>\",\n      \"dominantPosCode\": \"<string,null>\",\n      \"categoryCodes\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"glossRu\": \"<string,null>\",\n      \"glossEn\": \"<string,null>\",\n      \"vowelType\": \"<string,null>\"\n    },\n    {\n      \"lemmaId\": \"<uuid>\",\n      \"lemmaSlp1\": \"<string>\",\n      \"lemmaIast\": \"<string>\",\n      \"lemmaDevanagari\": \"<string>\",\n      \"occurrenceCount\": \"<integer>\",\n      \"gender\": \"<string,null>\",\n      \"dominantPosCode\": \"<string,null>\",\n      \"categoryCodes\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"glossRu\": \"<string,null>\",\n      \"glossEn\": \"<string,null>\",\n      \"vowelType\": \"<string,null>\"\n    }\n  ],\n  \"nextCursor\": \"<string,null-uuid>\"\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
                 }
-              ]
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
             },
-            "description": "Экспорт APPROVED-классификаций (для отладки)."
-          },
-          "response": []
+            {
+              "id": "10e5b445-c985-48ab-ba63-e36f54cef851",
+              "name": "Список классификаций на ревью (курсорная пагинация)",
+              "request": {
+                "name": "Список классификаций на ревью (курсорная пагинация)",
+                "description": {},
+                "url": {
+                  "path": [
+                    "sangraha",
+                    "internal",
+                    "lexicon",
+                    "classifications"
+                  ],
+                  "host": [
+                    "{{internalUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "key": "schemeCode",
+                      "value": "CURRICULUM",
+                      "description": "Код схемы (default CURRICULUM)"
+                    },
+                    {
+                      "disabled": false,
+                      "key": "status",
+                      "value": "CANDIDATE",
+                      "description": "Статус (default CANDIDATE); неверное значение — 400"
+                    },
+                    {
+                      "disabled": false,
+                      "key": "cursor",
+                      "value": "<uuid>",
+                      "description": "Курсор по lemmaId"
+                    },
+                    {
+                      "disabled": false,
+                      "key": "limit",
+                      "value": "100",
+                      "description": "Размер страницы (clamp 1..500, default 100)"
+                    }
+                  ],
+                  "variable": [],
+                  "raw": "{{internalUrl}}/sangraha/internal/lexicon/classifications?schemeCode=CURRICULUM&status=CANDIDATE&cursor=<uuid>&limit=100"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null
+              },
+              "response": [
+                {
+                  "id": "eb3f548d-6606-47b9-b071-cc82b2c8f579",
+                  "name": "Страница классификаций",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "sangraha",
+                        "internal",
+                        "lexicon",
+                        "classifications"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [
+                        {
+                          "key": "schemeCode",
+                          "value": "CURRICULUM"
+                        },
+                        {
+                          "key": "status",
+                          "value": "CANDIDATE"
+                        },
+                        {
+                          "key": "cursor",
+                          "value": "<uuid>"
+                        },
+                        {
+                          "key": "limit",
+                          "value": "100"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"items\": [\n    {\n      \"id\": \"<uuid>\",\n      \"lemmaId\": \"<uuid>\",\n      \"lemmaSlp1\": \"<string>\",\n      \"lemmaIast\": \"<string>\",\n      \"lemmaDevanagari\": \"<string>\",\n      \"categoryCode\": \"<string>\",\n      \"status\": \"<string>\",\n      \"gender\": \"<string,null>\",\n      \"dominantPosCode\": \"<string,null>\",\n      \"occurrenceCount\": \"<integer,null>\",\n      \"glossRu\": \"<string,null>\",\n      \"glossEn\": \"<string,null>\",\n      \"confidence\": \"<integer,null>\",\n      \"reviewedBy\": \"<string,null>\",\n      \"reviewedAt\": \"<string,null-date-time>\"\n    },\n    {\n      \"id\": \"<uuid>\",\n      \"lemmaId\": \"<uuid>\",\n      \"lemmaSlp1\": \"<string>\",\n      \"lemmaIast\": \"<string>\",\n      \"lemmaDevanagari\": \"<string>\",\n      \"categoryCode\": \"<string>\",\n      \"status\": \"<string>\",\n      \"gender\": \"<string,null>\",\n      \"dominantPosCode\": \"<string,null>\",\n      \"occurrenceCount\": \"<integer,null>\",\n      \"glossRu\": \"<string,null>\",\n      \"glossEn\": \"<string,null>\",\n      \"confidence\": \"<integer,null>\",\n      \"reviewedBy\": \"<string,null>\",\n      \"reviewedAt\": \"<string,null-date-time>\"\n    }\n  ],\n  \"nextCursor\": \"<string,null-uuid>\"\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "id": "ecc1cb24-468c-45b2-b664-e7273718e058",
+                  "name": "Некорректный status/schemeCode",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "sangraha",
+                        "internal",
+                        "lexicon",
+                        "classifications"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [
+                        {
+                          "key": "schemeCode",
+                          "value": "CURRICULUM"
+                        },
+                        {
+                          "key": "status",
+                          "value": "CANDIDATE"
+                        },
+                        {
+                          "key": "cursor",
+                          "value": "<uuid>"
+                        },
+                        {
+                          "key": "limit",
+                          "value": "100"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            },
+            {
+              "id": "6d383357-b513-4384-9bf6-590c5b20f665",
+              "name": "Ревью одной классификации (исправление полей и/или смена статуса)",
+              "request": {
+                "name": "Ревью одной классификации (исправление полей и/или смена статуса)",
+                "description": {
+                  "content": "schemeCode подразумевается CURRICULUM. APPROVED требует валидный categoryCode.\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "sangraha",
+                    "internal",
+                    "lexicon",
+                    "classifications",
+                    ":id"
+                  ],
+                  "host": [
+                    "{{internalUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "id",
+                      "description": "(Required) "
+                    }
+                  ],
+                  "raw": "{{internalUrl}}/sangraha/internal/lexicon/classifications/:id"
+                },
+                "header": [
+                  {
+                    "disabled": false,
+                    "description": "Кто провёл ревью (сохраняется в reviewedBy)",
+                    "key": "X-User-Id",
+                    "value": "<uuid>"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PATCH",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"<string>\",\n  \"categoryCode\": \"<string,null>\",\n  \"glossRu\": \"<string,null>\",\n  \"glossEn\": \"<string,null>\",\n  \"confidence\": \"<integer,null>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "d5715b33-57d2-408c-bcf7-0ab5daf854f9",
+                  "name": "Обновлённая классификация",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "sangraha",
+                        "internal",
+                        "lexicon",
+                        "classifications",
+                        ":id"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "id",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "disabled": false,
+                        "description": "Кто провёл ревью (сохраняется в reviewedBy)",
+                        "key": "X-User-Id",
+                        "value": "<uuid>"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "PATCH",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"status\": \"<string>\",\n  \"categoryCode\": \"<string,null>\",\n  \"glossRu\": \"<string,null>\",\n  \"glossEn\": \"<string,null>\",\n  \"confidence\": \"<integer,null>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"id\": \"<uuid>\",\n  \"lemmaId\": \"<uuid>\",\n  \"lemmaSlp1\": \"<string>\",\n  \"lemmaIast\": \"<string>\",\n  \"lemmaDevanagari\": \"<string>\",\n  \"categoryCode\": \"<string>\",\n  \"status\": \"<string>\",\n  \"gender\": \"<string,null>\",\n  \"dominantPosCode\": \"<string,null>\",\n  \"occurrenceCount\": \"<integer,null>\",\n  \"glossRu\": \"<string,null>\",\n  \"glossEn\": \"<string,null>\",\n  \"confidence\": \"<integer,null>\",\n  \"reviewedBy\": \"<string,null>\",\n  \"reviewedAt\": \"<string,null-date-time>\"\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "id": "38886212-bb7e-41d1-bf2d-a119d523649b",
+                  "name": "Некорректные поля (например, APPROVED без valid categoryCode)",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "sangraha",
+                        "internal",
+                        "lexicon",
+                        "classifications",
+                        ":id"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "id",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "disabled": false,
+                        "description": "Кто провёл ревью (сохраняется в reviewedBy)",
+                        "key": "X-User-Id",
+                        "value": "<uuid>"
+                      }
+                    ],
+                    "method": "PATCH",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"status\": \"<string>\",\n  \"categoryCode\": \"<string,null>\",\n  \"glossRu\": \"<string,null>\",\n  \"glossEn\": \"<string,null>\",\n  \"confidence\": \"<integer,null>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                },
+                {
+                  "id": "488febfc-b23b-4fab-ba0b-9ae58e8bf14a",
+                  "name": "Классификация не найдена",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "sangraha",
+                        "internal",
+                        "lexicon",
+                        "classifications",
+                        ":id"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "type": "any",
+                          "value": "<uuid>",
+                          "key": "id",
+                          "description": "(Required) "
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "disabled": false,
+                        "description": "Кто провёл ревью (сохраняется в reviewedBy)",
+                        "key": "X-User-Id",
+                        "value": "<uuid>"
+                      }
+                    ],
+                    "method": "PATCH",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"status\": \"<string>\",\n  \"categoryCode\": \"<string,null>\",\n  \"glossRu\": \"<string,null>\",\n  \"glossEn\": \"<string,null>\",\n  \"confidence\": \"<integer,null>\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "text/plain"
+                    }
+                  ],
+                  "body": "",
+                  "cookie": [],
+                  "_postman_previewlanguage": "text"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ],
+          "event": []
         }
       ]
     },
     {
       "name": "Internal Content API",
-      "description": "Service-to-service эндпоинты, вызываемые content-service. Минуют API Gateway.",
+      "description": "Service-to-service эндпоинты строительных блоков агрегации (прямой вызов sangraha-service:8082).",
       "item": [
         {
-          "name": "Search Declension Examples",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"vowelType\": \"A_STEM\",\n  \"gender\": \"MASCULINE\",\n  \"limitPerGroup\": 3,\n  \"cells\": [\n    {\n      \"caseType\": \"NOMINATIVE\",\n      \"numberType\": \"SINGULAR\"\n    },\n    {\n      \"caseType\": \"ACCUSATIVE\",\n      \"numberType\": \"SINGULAR\"\n    },\n    {\n      \"caseType\": \"NOMINATIVE\",\n      \"numberType\": \"PLURAL\"\n    }\n  ]\n}"
-            },
-            "url": {
-              "raw": "{{internalUrl}}/sangraha/internal/content/declension-examples",
-              "host": ["{{internalUrl}}"],
-              "path": ["sangraha", "internal", "content", "declension-examples"]
-            },
-            "description": "Поиск примеров стихов для ячеек склонения, сгруппированных по (caseType, numberType)."
+          "id": "9e5d2ab0-a929-4dd9-beab-6cb4ef2201fb",
+          "name": "verse-word-export",
+          "description": {
+            "content": "",
+            "type": "text/plain"
           },
-          "response": []
-        },
-        {
-          "name": "Batch Fetch Verses",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"verseIds\": [\n    \"{{verseId}}\"\n  ]\n}"
-            },
-            "url": {
-              "raw": "{{internalUrl}}/sangraha/internal/content/verses/batch",
-              "host": ["{{internalUrl}}"],
-              "path": ["sangraha", "internal", "content", "verses", "batch"]
-            },
-            "description": "Batch-fetch verse text/translation/attribution by verseId list (только ANALYZED)."
-          },
-          "response": []
-        },
-        {
-          "name": "Export Verse Words",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{internalUrl}}/sangraha/internal/content/verse-words/export?cursor=&limit=500",
-              "host": ["{{internalUrl}}"],
-              "path": ["sangraha", "internal", "content", "verse-words", "export"],
-              "query": [
+          "item": [
+            {
+              "id": "9632ebb2-8d66-4149-a74d-075d6f5ae629",
+              "name": "Экспорт корпуса VerseWord для batch-импорта лексики",
+              "request": {
+                "name": "Экспорт корпуса VerseWord для batch-импорта лексики",
+                "description": {
+                  "content": "Курсорная постраничная выгрузка словоформ корпуса (после GET /sangraha/internal/lexicon/lemmas/export включает lemma_iast и stem для связывания с леммами). Вызывается curriculum-service (lexicon-content-pipeline.md §2). Сортировка и курсор — по verseId (одна страница = одно слово одного стиха).\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "sangraha",
+                    "internal",
+                    "content",
+                    "verse-words",
+                    "export"
+                  ],
+                  "host": [
+                    "{{internalUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "key": "cursor",
+                      "value": "<uuid>",
+                      "description": "Последний verseId из предыдущей страницы; null/отсутствует — первая страница"
+                    },
+                    {
+                      "disabled": false,
+                      "key": "limit",
+                      "value": "500",
+                      "description": "Размер страницы (clamp 1..500, default 500)"
+                    }
+                  ],
+                  "variable": [],
+                  "raw": "{{internalUrl}}/sangraha/internal/content/verse-words/export?cursor=<uuid>&limit=500"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null
+              },
+              "response": [
                 {
-                  "key": "cursor",
-                  "value": "",
-                  "disabled": true
+                  "id": "4e421115-3f09-42ce-8d01-7bce5c8a0ba0",
+                  "name": "Страница словоформ",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "sangraha",
+                        "internal",
+                        "content",
+                        "verse-words",
+                        "export"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [
+                        {
+                          "key": "cursor",
+                          "value": "<uuid>"
+                        },
+                        {
+                          "key": "limit",
+                          "value": "500"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"items\": [\n    {\n      \"verseId\": \"<uuid>\",\n      \"verseOrderIndex\": \"<integer>\",\n      \"workSlug\": \"<string>\",\n      \"chapterSlug\": \"<string>\",\n      \"lemmaIast\": \"<string>\",\n      \"stem\": \"<string>\",\n      \"surfaceIast\": \"<string>\",\n      \"surfaceDevanagari\": \"<string>\",\n      \"pos\": \"<string>\",\n      \"lemmaGlossRu\": \"<string>\",\n      \"lemmaGlossEn\": \"<string>\",\n      \"gender\": \"<string>\",\n      \"vowelType\": \"<string>\"\n    },\n    {\n      \"verseId\": \"<uuid>\",\n      \"verseOrderIndex\": \"<integer>\",\n      \"workSlug\": \"<string>\",\n      \"chapterSlug\": \"<string>\",\n      \"lemmaIast\": \"<string>\",\n      \"stem\": \"<string>\",\n      \"surfaceIast\": \"<string>\",\n      \"surfaceDevanagari\": \"<string>\",\n      \"pos\": \"<string>\",\n      \"lemmaGlossRu\": \"<string>\",\n      \"lemmaGlossEn\": \"<string>\",\n      \"gender\": \"<string>\",\n      \"vowelType\": \"<string>\"\n    }\n  ],\n  \"nextCursor\": \"<uuid>\"\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ],
+          "event": []
+        },
+        {
+          "id": "954a0709-9360-48c7-9566-1a92df43e010",
+          "name": "declension-examples",
+          "description": {
+            "content": "",
+            "type": "text/plain"
+          },
+          "item": [
+            {
+              "id": "bf5a033e-aefd-4ef3-abbb-3629f2addb49",
+              "name": "Batch-fetch verse text/translation/attribution by verseId list",
+              "request": {
+                "name": "Batch-fetch verse text/translation/attribution by verseId list",
+                "description": {
+                  "content": "Только status=ANALYZED. verseId, для которого стиха нет / не ANALYZED / мягко удалён — молча отсутствует в ответе, без ошибки (потребитель не различает причину, см. sangraha-service.md §9).\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "sangraha",
+                    "internal",
+                    "content",
+                    "verses",
+                    "batch"
+                  ],
+                  "host": [
+                    "{{internalUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [],
+                  "raw": "{{internalUrl}}/sangraha/internal/content/verses/batch"
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"verseIds\": [\n    \"<uuid>\",\n    \"<uuid>\"\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "aaccc854-5ac0-4ff1-8ca7-b128a5726a13",
+                  "name": "Только найденные и проанализированные стихи, в произвольном порядке",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "sangraha",
+                        "internal",
+                        "content",
+                        "verses",
+                        "batch"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"verseIds\": [\n    \"<uuid>\",\n    \"<uuid>\"\n  ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"verses\": [\n    {\n      \"verseId\": \"<uuid>\",\n      \"workSlug\": \"<string>\",\n      \"textIast\": \"<string>\",\n      \"textDevanagari\": \"<string>\",\n      \"translationRu\": \"<string>\",\n      \"translationEn\": \"<string>\",\n      \"workTitleRu\": \"<string>\",\n      \"workTitleEn\": \"<string>\",\n      \"chapterTitleRu\": \"<string>\",\n      \"chapterTitleEn\": \"<string>\",\n      \"verseOrderIndex\": \"<integer>\"\n    },\n    {\n      \"verseId\": \"<uuid>\",\n      \"workSlug\": \"<string>\",\n      \"textIast\": \"<string>\",\n      \"textDevanagari\": \"<string>\",\n      \"translationRu\": \"<string>\",\n      \"translationEn\": \"<string>\",\n      \"workTitleRu\": \"<string>\",\n      \"workTitleEn\": \"<string>\",\n      \"chapterTitleRu\": \"<string>\",\n      \"chapterTitleEn\": \"<string>\",\n      \"verseOrderIndex\": \"<integer>\"\n    }\n  ]\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
                 },
                 {
-                  "key": "limit",
-                  "value": "500",
-                  "description": "Размер страницы (clamp 1..500, default 500)"
+                  "id": "bade20a1-ad43-4634-b551-61313e01169c",
+                  "name": "Invalid payload",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "sangraha",
+                        "internal",
+                        "content",
+                        "verses",
+                        "batch"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"verseIds\": [\n    \"<uuid>\",\n    \"<uuid>\"\n  ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"errorCode\": \"<string>\",\n  \"message\": \"<string>\",\n  \"traceId\": \"<string>\"\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
                 }
-              ]
-            },
-            "description": "Курсорная пагинация всех VerseWord из ANALYZED стихов."
-          },
-          "response": []
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ],
+          "event": []
         },
         {
-          "name": "Get Nominal Lemma Candidates",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{internalUrl}}/sangraha/internal/content/nominal-lemmas?stemClass={{stemClass}}&limit=100",
-              "host": ["{{internalUrl}}"],
-              "path": ["sangraha", "internal", "content", "nominal-lemmas"],
-              "query": [
-                {
-                  "key": "stemClass",
-                  "value": "",
-                  "description": "Класс основы (опционально)",
-                  "disabled": true
-                },
-                {
-                  "key": "limit",
-                  "value": "100",
-                  "description": "Максимум записей"
-                }
-              ]
-            },
-            "description": "Поиск кандидатов nominal-lemmas для импорта."
+          "id": "67cdfc31-6db4-4d00-a7f2-50999a025869",
+          "name": "nominal-lemmas",
+          "description": {
+            "content": "",
+            "type": "text/plain"
           },
-          "response": []
+          "item": [
+            {
+              "id": "78de424d-f67d-47c8-81ae-84b6f042298d",
+              "name": "Кандидаты на импорт существительных (бутстрап склонений)",
+              "request": {
+                "name": "Кандидаты на импорт существительных (бутстрап склонений)",
+                "description": {
+                  "content": "Список существительных из nominal_lemmas (объединение с verse_words по lemma_iast для частотности), кандидаты на импорт в curriculum-лексикон для бутстрапа квизов/парадигм склонений. Вызывается curriculum-service (SangrahaClient). Род — самый частый по лемме из verse_word_morphology (может быть null).\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "sangraha",
+                    "internal",
+                    "content",
+                    "nominal-lemmas"
+                  ],
+                  "host": [
+                    "{{internalUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "key": "stemClass",
+                      "value": "<string>",
+                      "description": "Фильтр по классу основы (A_STEM … R_STEM); не задан — все классы"
+                    },
+                    {
+                      "disabled": false,
+                      "key": "limit",
+                      "value": "100",
+                      "description": "Максимум кандидатов (default 100)"
+                    }
+                  ],
+                  "variable": [],
+                  "raw": "{{internalUrl}}/sangraha/internal/content/nominal-lemmas?stemClass=<string>&limit=100"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null
+              },
+              "response": [
+                {
+                  "id": "0f2aa9c4-8783-40cf-a1fe-858a1a6fc6ea",
+                  "name": "Кандидаты, отсортированные по частоте вхождения убыванию",
+                  "originalRequest": {
+                    "url": {
+                      "path": [
+                        "sangraha",
+                        "internal",
+                        "content",
+                        "nominal-lemmas"
+                      ],
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "query": [
+                        {
+                          "key": "stemClass",
+                          "value": "<string>"
+                        },
+                        {
+                          "key": "limit",
+                          "value": "100"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"candidates\": [\n    {\n      \"lemmaIast\": \"<string>\",\n      \"lemmaDevanagari\": \"<string>\",\n      \"lemmaSlp1\": \"<string>\",\n      \"stemIast\": \"<string>\",\n      \"stemClass\": \"<string>\",\n      \"confidence\": \"<string>\",\n      \"frequency\": \"<integer>\",\n      \"gender\": \"<string>\"\n    },\n    {\n      \"lemmaIast\": \"<string>\",\n      \"lemmaDevanagari\": \"<string>\",\n      \"lemmaSlp1\": \"<string>\",\n      \"stemIast\": \"<string>\",\n      \"stemClass\": \"<string>\",\n      \"confidence\": \"<string>\",\n      \"frequency\": \"<integer>\",\n      \"gender\": \"<string>\"\n    }\n  ]\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ],
+          "event": []
         }
       ]
     }

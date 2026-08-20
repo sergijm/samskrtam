@@ -1,0 +1,104 @@
+{
+  "endings": {
+    "parasmaipada": [
+      {
+        "person": 3,
+        "person_name": "Prathama",
+        "singular": {
+          "sanskrit": "-त्",
+          "transliteration": "-t"
+        },
+        "dual": {
+          "sanskrit": "-ताम्",
+          "transliteration": "-tām"
+        },
+        "plural": {
+          "sanskrit": "-न्",
+          "transliteration": "-n"
+        }
+      },
+      {
+        "person": 2,
+        "person_name": "Madhyama",
+        "singular": {
+          "sanskrit": "-ः",
+          "transliteration": "-ḥ"
+        },
+        "dual": {
+          "sanskrit": "-तम्",
+          "transliteration": "-tam"
+        },
+        "plural": {
+          "sanskrit": "-त",
+          "transliteration": "-ta"
+        }
+      },
+      {
+        "person": 1,
+        "person_name": "Uttama",
+        "singular": {
+          "sanskrit": "-म्",
+          "transliteration": "-m"
+        },
+        "dual": {
+          "sanskrit": "-व",
+          "transliteration": "-va"
+        },
+        "plural": {
+          "sanskrit": "-म",
+          "transliteration": "-ma"
+        }
+      }
+    ],
+    "atmanepada": [
+      {
+        "person": 3,
+        "person_name": "Prathama",
+        "singular": {
+          "sanskrit": "-त",
+          "transliteration": "-ta"
+        },
+        "dual": {
+          "sanskrit": "-एताम्",
+          "transliteration": "-etām"
+        },
+        "plural": {
+          "sanskrit": "-न्त",
+          "transliteration": "-nta"
+        }
+      },
+      {
+        "person": 2,
+        "person_name": "Madhyama",
+        "singular": {
+          "sanskrit": "-थाः",
+          "transliteration": "-thāḥ"
+        },
+        "dual": {
+          "sanskrit": "-एथाम्",
+          "transliteration": "-ethām"
+        },
+        "plural": {
+          "sanskrit": "-ध्वम्",
+          "transliteration": "-dhvam"
+        }
+      },
+      {
+        "person": 1,
+        "person_name": "Uttama",
+        "singular": {
+          "sanskrit": "-इ",
+          "transliteration": "-i"
+        },
+        "dual": {
+          "sanskrit": "-वहि",
+          "transliteration": "-vahi"
+        },
+        "plural": {
+          "sanskrit": "-महि",
+          "transliteration": "-mahi"
+        }
+      }
+    ]
+  }
+}

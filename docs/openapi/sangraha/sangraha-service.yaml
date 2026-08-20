@@ -45,7 +45,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: 'sangraha-schemas.yaml#/WorkSummary'
+                  $ref: 'schemas/sangraha-schemas.yaml#/WorkSummary'
 
   /works/classes:
     get:
@@ -65,7 +65,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: 'sangraha-schemas.yaml#/WorksClassGroup'
+                  $ref: 'schemas/sangraha-schemas.yaml#/WorksClassGroup'
 
   /works/{workSlug}:
     get:
@@ -92,7 +92,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'sangraha-schemas.yaml#/WorkTree'
+                $ref: 'schemas/sangraha-schemas.yaml#/WorkTree'
         '404':
           description: Произведение не найдено
 
@@ -121,7 +121,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'sangraha-schemas.yaml#/ChapterWithVerses'
+                $ref: 'schemas/sangraha-schemas.yaml#/ChapterWithVerses'
         '404':
           description: Глава не найдена
 
@@ -153,13 +153,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'sangraha-schemas.yaml#/AnalyzeAllVersesResponse'
+                $ref: 'schemas/sangraha-schemas.yaml#/AnalyzeAllVersesResponse'
         '404':
           description: Глава не найдена
         '409':
           description: В главе нет стихов, доступных для анализа
 
-  # ── Verses (read-only + analyze + vocabulary-quiz) ──
+  # ── Verses (read-only + study + raw analysis/words) ──
 
   /verse:
     post:
@@ -179,14 +179,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'sangraha-schemas.yaml#/VersesBatchRequest'
+              $ref: 'schemas/sangraha-schemas.yaml#/VersesBatchRequest'
       responses:
         '200':
           description: Стихи по порядку id в запросе
           content:
             application/json:
               schema:
-                $ref: 'sangraha-schemas.yaml#/VersesBatchResponse'
+                $ref: 'schemas/sangraha-schemas.yaml#/VersesBatchResponse'
 
   /verse/analysis:
     post:
@@ -208,14 +208,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'sangraha-schemas.yaml#/AnalyzeVersesRequest'
+              $ref: 'schemas/sangraha-schemas.yaml#/AnalyzeVersesRequest'
       responses:
         '202':
           description: Анализ запущен
           content:
             application/json:
               schema:
-                $ref: 'sangraha-schemas.yaml#/AnalyzeVersesResponse'
+                $ref: 'schemas/sangraha-schemas.yaml#/AnalyzeVersesResponse'
 
   /words/examples:
     post:
@@ -234,14 +234,45 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'sangraha-schemas.yaml#/VerseWordExamplesRequest'
+              $ref: 'schemas/sangraha-schemas.yaml#/VerseWordExamplesRequest'
       responses:
         '200':
           description: Стихи-примеры по каждой форме
           content:
             application/json:
               schema:
-                $ref: 'sangraha-schemas.yaml#/VerseWordExamplesResponse'
+                $ref: 'schemas/sangraha-schemas.yaml#/VerseWordExamplesResponse'
+
+  /verses/examples:
+    post:
+      operationId: getDeclensionExamples
+      summary: Примеры склонений по словоизменительному классу (вкладка урока склонений)
+      description: |
+        Один запрос на всю парадигму склонения: для каждой ячейки
+        (caseType, numberType) ищутся реальные цитаты из проанализированных стихов,
+        результат группируется по (caseType, numberType) с текстом/переводом стихов.
+        gender/caseType/numberType в запросе опциональны: не заполнены — фильтр
+        по соответствующей оси не применяется (стихи с любым родом/падежом/числом). Фронтенд делает один такой
+        запрос на урок и рендерит вкладку «Примеры».
+        См. docs/services/sangraha-service.md §9.
+      tags: [Verses]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/sangraha-schemas.yaml#/DeclensionExamplesRequest'
+      responses:
+        '200':
+          description: Сгруппированные по ячейке парадигмы примеры с текстом стихов
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/sangraha-schemas.yaml#/DeclensionExamplesResponse'
+        '400':
+          description: vowelType не передан или limitPerGroup < 1
 
   /verses/{verseId}:
     get:
@@ -263,22 +294,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'sangraha-schemas.yaml#/VerseDetail'
+                $ref: 'schemas/sangraha-schemas.yaml#/VerseDetail'
         '404':
           description: Стих не найден
 
-  /verses/{verseId}/vocabulary-quiz:
+  /verses/{verseId}/study:
     post:
-      operationId: getOrCreateVocabularyQuiz
-      summary: Получить (или создать) лексический квиз этого стиха — кнопка «Изучить»
+      operationId: studyVerse
+      summary: Кнопка «Изучить» — экспорт лемм стиха и возврат кода VERSE-урока
       description: |
-        Если `verses.vocabulary_quiz_slug`/`vocabulary_quiz_id` уже заполнены —
-        возвращает их немедленно (без quizStatus), без обращения к content-service.
-        Иначе собирает уникальные слова стиха (VerseWord[], дедуп по lemmaIast+stem)
-        и синхронно вызывает content-service `POST /content/internal/sangraha/vocabulary-quiz`
-        (см. content-service.md §11), сохраняет полученные `quizSlug`/`quizId` в
-        `verses.vocabulary_quiz_slug`/`vocabulary_quiz_id` и возвращает их вместе с
-        `quizStatus`.
+        On-demand экспорт пачки лемм стиха в curriculum-service (см.
+        VerseBatchPushService / lexicon-content-pipeline.md §7) и возврат кода
+        VERSE-урока, на который ведёт кнопка «Изучить». Идемпотентен — повторный
+        вызов не создаёт дублей при импорте.
+        Код урока: для стиха в главе — «{workSlp1}_{chapterNumber}», для
+        standalone-стиха (без главы) — персональный «user-{ownerId}».
       tags: [Verses]
       security:
         - bearerAuth: []
@@ -291,29 +321,77 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Идентификаторы лексического квиза
+          description: Код VERSE-урока, на который ведёт кнопка «Изучить»
           content:
             application/json:
               schema:
                 type: object
-                required: [quizSlug, quizId]
+                required: [verseTopicCode]
                 properties:
-                  quizSlug:
+                  verseTopicCode:
                     type: string
-                  quizId:
-                    type: string
-                    format: uuid
-                  quizStatus:
-                    type: string
-                    enum: [CREATED, EXISTING]
-                    nullable: true
-                    description: >-
-                      Присутствует только когда content-service был реально
-                      вызван (не кэш-хит).
         '404':
           description: Стих не найден
         '409':
-          description: Стих ещё не проанализирован (status != ANALYZED) либо не содержит слов
+          description: Стих ещё не проанализирован (status != ANALYZED) либо код урока не резолвится
+
+  /verses/{verseId}/analysis:
+    get:
+      operationId: getVerseAnalysis
+      summary: Сырой VerseAnalysis стиха (сущность, без маппинга в DTO)
+      description: |
+        Возвращает запись verse_analyses напрямую (без VerseAnalysisDto).
+        sandhiSplits/rawModelResponse/rawPrompt хранятся текстом и отдаются
+        как есть (сырой JSON/промпт). Основной читающий путь фронтенда —
+        GET /verses/{verseId} (вложенный analysis в VerseDetail), этот эндпоинт
+        служит для отладки/выгрузки.
+      tags: [Verses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: verseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Сырой анализ стиха
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/sangraha-schemas.yaml#/VerseAnalysis'
+        '404':
+          description: Анализ стиха не найден
+
+  /verses/{verseId}/words:
+    get:
+      operationId: getVerseWords
+      summary: VerseWord[] стиха (сущности, без маппинга в DTO)
+      description: |
+        Возвращает словоформы стиха (verse_words) напрямую как сущности.
+        Основной читающий путь фронтенда — GET /verses/{verseId} (вложенные
+        words в VerseDetail), этот эндпоинт служит для отладки/выгрузки.
+      tags: [Verses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: verseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Словоформы стиха по порядку позиции
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/sangraha-schemas.yaml#/VerseWord'
 
   /verses/{verseId}/analyze:
     post:
@@ -321,7 +399,8 @@ paths:
       summary: Сохранить текст и запустить LLM-анализ стиха
       description: |
         Единственная точка сохранения текста стиха (Verse CRUD удалён).
-        Принимает обязательное тело `VerseTextRequest` с полем `text`.
+        Тело `VerseTextRequest` опционально: пустое тело — анализ по уже
+        сохранённому raw_text (повторный запуск). Ответ всегда 202 без тела.
       tags: [Verses]
       security:
         - bearerAuth:
@@ -334,25 +413,14 @@ paths:
             type: string
             format: uuid
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
-              $ref: 'sangraha-schemas.yaml#/VerseTextRequest'
+              $ref: 'schemas/sangraha-schemas.yaml#/VerseTextRequest'
       responses:
         '202':
-          description: raw_text сохранён, анализ запущен
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  verseId:
-                    type: string
-                    format: uuid
-                  status:
-                    type: string
-                    example: ANALYZING
+          description: raw_text сохранён (если передан), анализ запущен; без тела
         '404':
           description: Стих не найден
         '409':
@@ -366,25 +434,34 @@ paths:
         Создаёт новую запись в `verses` с `chapter_id = null` и `owner_id` текущего
         пользователя (стих не привязан к произведению/главе) и сразу запускает
         анализ. Каждое нажатие «Анализировать» на странице /analysis создаёт новую
-        запись. Доступ — любой авторизованный, стихи персональные.
+        запись. Доступ — любой авторизованный, стихи персональные. Тело
+        `VerseTextRequest` опционально (пустое тело — создаётся пустой стих).
       tags: [Analysis]
       security:
         - bearerAuth: []
+      parameters:
+        - name: X-User-Id
+          in: header
+          required: true
+          description: Владелец standalone-стиха (ставится api-gateway из JWT)
+          schema:
+            type: string
+            format: uuid
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
-              $ref: 'sangraha-schemas.yaml#/VerseTextRequest'
+              $ref: 'schemas/sangraha-schemas.yaml#/VerseTextRequest'
       responses:
         '200':
           description: Созданный стих (детали, статус ANALYZING сразу после запуска анализа)
           content:
             application/json:
               schema:
-                $ref: 'sangraha-schemas.yaml#/VerseDetail'
+                $ref: 'schemas/sangraha-schemas.yaml#/VerseDetail'
         '400':
-          description: Пустой текст
+          description: Некорректный/пустой текст после разбора
     get:
       operationId: listStandaloneAnalysis
       summary: Список standalone-стихов текущего пользователя
@@ -394,6 +471,14 @@ paths:
       tags: [Analysis]
       security:
         - bearerAuth: []
+      parameters:
+        - name: X-User-Id
+          in: header
+          required: true
+          description: Владелец standalone-стихов (ставится api-gateway из JWT)
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: Список разборов пользователя
@@ -402,7 +487,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: 'sangraha-schemas.yaml#/StandaloneVerseItem'
+                  $ref: 'schemas/sangraha-schemas.yaml#/StandaloneVerseItem'
 
   /analysis/{verseId}:
     delete:
@@ -415,6 +500,13 @@ paths:
         - name: verseId
           in: path
           required: true
+          schema:
+            type: string
+            format: uuid
+        - name: X-User-Id
+          in: header
+          required: true
+          description: Владелец standalone-стиха (ставится api-gateway из JWT)
           schema:
             type: string
             format: uuid

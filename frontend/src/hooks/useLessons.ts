@@ -1,5 +1,6 @@
 import { useQuery, keepPreviousData, useQueries } from '@tanstack/react-query';
 import { lessonApi } from '../api/lessonApi';
+import { sangrahaApi } from '../api/sangraha';
 import { sandhiApi } from '../api/sandhiApi';
 import { contentApi } from '../api/contentApi';
 import type { DeclensionParadigmPageDto } from '../types/content-dtos';
@@ -75,18 +76,45 @@ export const useAllDeclensionParadigms = (slug: string, totalCount: number, enab
 };
 
 /**
- * Examples for the declension lesson — one request per entire lesson, no index.
- * Lazy: fires only when enabled (active tab === 'examples').
+ * Examples for the declension lesson — one request to sangraha-service per lesson.
+ * Lazy: fires only when enabled (active tab === 'examples') and the lesson's
+ * stem class (vowelType, gender) is already known from the paradigm page.
  */
-export const useDeclensionExamples = (slug: string, enabled: boolean) =>
+export const useDeclensionExamples = (
+  slug: string,
+  vowelType: string,
+  gender: string,
+  enabled: boolean,
+) =>
   useQuery({
-    queryKey: ['declension-examples', slug],
-    queryFn: () => lessonApi.getDeclensionExamples(slug).then(res => res.data),
+    queryKey: ['declension-examples', slug, vowelType, gender],
+    queryFn: () => sangrahaApi.getDeclensionExamples(vowelType, gender).then(res => res.data),
+    enabled: !!slug && !!vowelType && !!gender && enabled,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+/**
+ * One conjugation paradigm page by index — lazy, fired from the verb-lesson
+ * "Paradigms" carousel. The carousel advances the index.
+ */
+export const useConjugationParadigm = (
+  slug: string,
+  index: number,
+  voice: string,
+  enabled: boolean,
+) =>
+  useQuery({
+    queryKey: ['conjugation-paradigm', slug, index, voice],
+    queryFn: () => lessonApi.getConjugationParadigm(slug, index, voice).then(res => res.data),
     enabled: !!slug && enabled,
     staleTime: Infinity,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    placeholderData: keepPreviousData,
   });
 
 export const useSandhiRules = (topicCode: string) =>

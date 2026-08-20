@@ -83,16 +83,27 @@ const GrammarLessonPage = () => {
     columnKey: string;
   } | null>(null);
 
+  // Filter state derived from the endings reference table (for examples tab).
+  const [filterCaseKey, setFilterCaseKey] = useState<string | null>(null);
+  const [filterColumnKey, setFilterColumnKey] = useState<string | null>(null);
+  const filterCaseType = filterCaseKey ? CASE_KEY_TO_CASE_TYPE[filterCaseKey] : null;
+  const filterNumberType = filterColumnKey ? ENDINGS_COLUMN_TO_NUMBER_GENDER[filterColumnKey]?.numberType ?? null : null;
+
   // Fetch first paradigm page to determine stem type for the endings reference table.
   // React Query deduplicates this with the carousel's own fetch for index 0.
   const { data: firstParadigmPage } = useDeclensionParadigm(slug || '', 0, lessonTabVisible);
-  const endingsTableData = firstParadigmPage?.paradigm?.vowelType
-    ? vowelTypeToEndingsTable[firstParadigmPage.paradigm.vowelType]
-    : undefined;
+  const vowelType = firstParadigmPage?.paradigm?.vowelType ?? '';
+  const gender = firstParadigmPage?.paradigm?.gender ?? '';
+  const endingsTableData = vowelType ? vowelTypeToEndingsTable[vowelType] : undefined;
 
-  // Examples data is fetched lazily in DeclensionExamplesPanel; React Query
-  // deduplicates the key, so fetching here for the tab-header icon is free.
-  const { data: examplesData } = useDeclensionExamples(slug || '', examplesSubTabVisible);
+  // Examples data is fetched lazily; the request goes directly to sangraha-service
+  // with the lesson's stem class (vowelType, gender) resolved from the paradigm page.
+  const { data: examplesData } = useDeclensionExamples(
+    slug || '',
+    vowelType,
+    gender,
+    examplesSubTabVisible && !!vowelType && !!gender,
+  );
 
   // Все verseId примеров урока — для иконки в заголовке таба «Примеры».
   const allExampleVerseIds = useMemo(
@@ -106,6 +117,8 @@ const GrammarLessonPage = () => {
   };
 
   const handleEndingCellClick = (caseKey: string, columnKey: string) => {
+    setFilterCaseKey(caseKey);
+    setFilterColumnKey(columnKey);
     const numGender = ENDINGS_COLUMN_TO_NUMBER_GENDER[columnKey];
     if (!numGender || !endingsTableData) return;
     const row = endingsTableData.rows.find(r => r.caseKey === caseKey);
@@ -118,6 +131,20 @@ const GrammarLessonPage = () => {
       endingText: cell.text,
     });
     setSelectedEndingCellKey({ caseKey, columnKey });
+  };
+
+  const handleCaseClick = (caseKey: string) => {
+    setFilterCaseKey(caseKey === filterCaseKey ? null : caseKey);
+    setFilterColumnKey(null);
+    setSelectedEndingCell(null);
+    setSelectedEndingCellKey(null);
+  };
+
+  const handleNumberClick = (columnKey: string) => {
+    setFilterColumnKey(columnKey === filterColumnKey ? null : columnKey);
+    setFilterCaseKey(null);
+    setSelectedEndingCell(null);
+    setSelectedEndingCellKey(null);
   };
 
   const handleTabChange = (e: { index: number }) => {
@@ -178,47 +205,58 @@ const GrammarLessonPage = () => {
                   <DeclensionEndingsReferenceTable
                     data={endingsTableData}
                     onCellClick={handleEndingCellClick}
+                    onCaseClick={handleCaseClick}
+                    onNumberClick={handleNumberClick}
                     selectedCell={selectedEndingCellKey}
+                    activeFilter={{ caseKeyFilter: filterCaseKey ?? undefined, columnKeyFilter: filterColumnKey ?? undefined }}
                   />
                 )}
-                {selectedEndingCell !== null ? (
-                  <DeclensionEndingWordsTable
-                    selection={selectedEndingCell}
-                    slug={slug || ''}
-                    totalCount={firstParadigmPage?.totalCount ?? 0}
-                    onBack={() => {
-                      setSelectedEndingCell(null);
-                      setSelectedEndingCellKey(null);
-                    }}
-                  />
-                ) : (
-                  <TabView
-                    activeIndex={activeSubTab}
-                    onTabChange={handleSubTabChange}
-                    className="grammar-lesson-subtabs"
+                <TabView
+                  activeIndex={activeSubTab}
+                  onTabChange={handleSubTabChange}
+                  className="grammar-lesson-subtabs"
+                >
+                  <TabPanel header={i18n.language === 'ru' ? 'Парадигмы' : 'Paradigms'}>
+                    {selectedEndingCell !== null && (
+                      <div className="mb-3">
+                        <DeclensionEndingWordsTable
+                          selection={selectedEndingCell}
+                          slug={slug || ''}
+                          totalCount={firstParadigmPage?.totalCount ?? 0}
+                          onBack={() => {
+                            setSelectedEndingCell(null);
+                            setSelectedEndingCellKey(null);
+                          }}
+                        />
+                      </div>
+                    )}
+                    <GrammarParadigmCarousel slug={slug || ''} enabled={paradigmsSubTabVisible} />
+                  </TabPanel>
+                  <TabPanel
+                    header={
+                      <span className="flex align-items-center gap-1">
+                        {i18n.language === 'ru' ? 'Примеры' : 'Examples'}
+                        {isAdmin && allExampleVerseIds.length > 0 && (
+                          <i
+                            className="pi pi-external-link cursor-pointer"
+                            title={t('examples.openAll', { count: allExampleVerseIds.length })}
+                            onClick={openAllExamples}
+                          />
+                        )}
+                      </span>
+                    }
+                    className="declension-examples-tab-panel"
                   >
-                    <TabPanel header={i18n.language === 'ru' ? 'Парадигмы' : 'Paradigms'}>
-                      <GrammarParadigmCarousel slug={slug || ''} enabled={paradigmsSubTabVisible} />
-                    </TabPanel>
-                    <TabPanel
-                      header={
-                        <span className="flex align-items-center gap-1">
-                          {i18n.language === 'ru' ? 'Примеры' : 'Examples'}
-                          {isAdmin && allExampleVerseIds.length > 0 && (
-                            <i
-                              className="pi pi-external-link cursor-pointer"
-                              title={t('examples.openAll', { count: allExampleVerseIds.length })}
-                              onClick={openAllExamples}
-                            />
-                          )}
-                        </span>
-                      }
-                      className="declension-examples-tab-panel"
-                    >
-                      <DeclensionExamplesPanel slug={slug || ''} enabled={examplesSubTabVisible} />
-                    </TabPanel>
-                  </TabView>
-                )}
+                    <DeclensionExamplesPanel
+                      slug={slug || ''}
+                      vowelType={vowelType}
+                      gender={gender}
+                      enabled={examplesSubTabVisible}
+                      filterCaseType={filterCaseType}
+                      filterNumberType={filterNumberType}
+                    />
+                  </TabPanel>
+                </TabView>
               </TabPanel>
               <TabPanel header={i18n.language === 'ru' ? 'Прогресс' : 'Progress'}>
                 <GrammarProgressGrid

@@ -42,8 +42,9 @@ public class VerseStatistics {
 
     /**
      * distinct-списки грамматического набора стиха, JSON вида
-     * {@code {"pos": [...], "formType": [...], "numberType": [...], "caseType": [...], "gender": [...]}}.
-     * Индексирован GIN (поиск "стих, где есть X" → {@code grammar_info @> ...}).
+     * {@code {"pos": [...], "formType": [...], "numberType": [...], "caseType": [...], "gender": [...], "tuples": [[...],...]}}.
+     * Поле {@code tuples} — массив кортежей {@code [stemClass, gender, case, number]} (по слову), для фильтрации через {@code @>}.
+     * Индексирован GIN.
      */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "grammar_info", columnDefinition = "JSONB", nullable = false)

@@ -17,19 +17,14 @@
 сандхи, пословная грамматика.
 
 Сервис **не хранит словарь**. Единственный канал наружу — синхронный REST-вызов
-`curriculum-service` (см. §6, [architecture.md §3.5](../architecture.md#35-sangraha-service-произведения-llm-анализ-стихов-синхронизация-лексики-через-rest)): по явному действию пользователя (кнопка «Изучить» на
-VersePage, §7) sangraha-service отправляет слова конкретного стиха, `curriculum-service`
-синхронно строит из них лексический квиз этого стиха и возвращает `quizSlug` и `quizId` (UUID сущности `Lesson` в curriculum-service — фронтенд стартует сессию по UUID напрямую, см. §7).
-Анализ стиха сам по себе не инициирует никакой отправки в curriculum-service — вызов
-происходит лениво, по клику пользователя, без фонового Outbox/relay. Слово попадает
-в curriculum-service только если хотя бы один пользователь захотел изучить слова этого
-стиха.
+`curriculum-service` (см. §6, [architecture.md §3.5](../architecture.md#35-sangraha-service-произведения-llm-анализ-стихов-синхронизация-лексики-через-rest)): после успешного анализа sangraha-service отправляет инкрементальную пачку лемм стиха, а кнопка «Изучить» на VersePage (§7) делает тот же push on-demand (идемпотентно) и возвращает код VERSE-урока для перехода в curriculum-service.
+Анализ стиха сохраняется независимо от успеха отправки: пачка уходит из транзакции анализа, любой сбой curriculum-service только логируется (см. §6, без фонового Outbox/relay).
 Сопоставление слов со словарными статьями `dictionary-service` **в текущей итерации не
 делается** (см. §8).
 
 Разделение ответственности:
 - **sangraha-service** — тексты, их структура, LLM-анализ (грамматика стиха)
-- **curriculum-service** — лексика для VOCABULARY-квизов (получает слова синхронным REST-вызовом, см. §6)
+- **curriculum-service** — лексика лексикона и VERSE-уроки (получает пачки лемм синхронным REST-вызовом, см. §6)
 - **dictionary-service** — полный словарь (MW/Frisch), не связан с sangraha в этой итерации
 
 ---
@@ -85,15 +80,18 @@ GET    /api/v1/sangraha/works/{workSlug}                        → ★ прои
                                                                    возвращает id, slug, titleRu/En и chapters[].verses[])
 
 GET    /api/v1/sangraha/verses/{verseId}                         → стих: текст + (если ANALYZED) VerseAnalysis + VerseWord[] +
-                                                                     vocabularyQuizSlug/vocabularyQuizId (кэш кнопки «Изучить», null пока
-                                                                     не нажата, см. §6, §7, sangraha-schemas.yaml#VerseDetail)
-POST   /api/v1/sangraha/verses/{verseId}/vocabulary-quiz         → кнопка «Изучить»: вернуть кэш ({quizSlug, quizId, quizStatus:"EXISTING"})
-                                                                     или синхронно создать/дозаполнить лексический квиз стиха в
-                                                                     curriculum-service ({quizSlug, quizId, quizStatus}), закэшировать
-                                                                     quizSlug/quizId (см. §6)
-POST   /api/v1/sangraha/verses/{verseId}/analyze                 → сохранить `text` и запустить LLM-анализ (ADMIN, см. §5); тело —
-                                                                     единое поле `text` (обязательно, см. §7) — backend определяет
-                                                                     письменность и заполняет textDevanagari/textIast
+                                                                     verseTopicCode (код VERSE-урока кнопки «Изучить», см. §6, §7,
+                                                                     sangraha-schemas.yaml#VerseDetail)
+GET    /api/v1/sangraha/verses/{verseId}/analysis                → сырая сущность VerseAnalysis (отладка/выгрузка; основной путь —
+                                                                     GET /verses/{verseId}, вложенный analysis)
+GET    /api/v1/sangraha/verses/{verseId}/words                   → сырые сущности VerseWord[] стиха (отладка/выгрузка; основной
+                                                                     путь — GET /verses/{verseId}, вложенные words)
+POST   /api/v1/sangraha/verses/{verseId}/study                   → кнопка «Изучить»: идемпотентный on-demand push пачки лемм стиха
+                                                                     в curriculum-service и возврат { verseTopicCode } для перехода
+                                                                     на VERSE-урок (см. §6)
+POST   /api/v1/sangraha/verses/{verseId}/analyze                 → сохранить `text` (тело опционально: пустое — переанализ по уже
+                                                                     сохранённому rawText) и запустить LLM-анализ (ADMIN, см. §5);
+                                                                     202 без тела — backend определяет письменность и запускает анализ
 POST   /api/v1/sangraha/chapters/{chapterId}/verses/analyze-all  → батч-анализ всех DRAFT/FAILED стихов главы (ADMIN, реализовано,
                                                                      )
 POST   /api/v1/sangraha/verse                                 → произвольный список стихов + status каждого
@@ -122,9 +120,11 @@ POST   /api/v1/sangraha/words/examples                           → приме�
 
 ### 5.1 Анализ стиха (tool calling)
 
-**Сохранение текста перед анализом.** `POST /verses/{verseId}/analyze` принимает обязательное
-тело с полем `text` — фронтенд всегда отправляет текущее значение единственного поля ввода.
-Backend сохраняет `text` как есть в `Verse.rawText`, затем детектирует письменность по
+**Сохранение текста перед анализом.** `POST /verses/{verseId}/analyze` принимает
+**опциональное** тело с полем `text`: фронтенд отправляет текущее значение
+единственного поля ввода при первом анализе; пустое тело — переанализ по уже
+сохранённому `rawText`. Backend сохраняет `text` (если передан) как есть в
+`Verse.rawText`, затем детектирует письменность по
 Unicode-диапазону деванагари и заполняет `textDevanagari` либо `textIast` — до перехода
 статуса в `ANALYZING` и до вызова LLM. Это единственная точка сохранения текста стиха
 (Verse CRUD удалён — стихи создаются через импорт, текст сохраняется здесь,
@@ -170,7 +170,11 @@ Backend:
 1. Валидирует `tool_calls[0].function.arguments` по этой схеме (например через JSON Schema validator, не доверяем модели).
 2. В одной транзакции: обновляет `Verse.textDevanagari/textIast` (если не были заданы вручную), пишет `VerseAnalysis` (перезаписывая предыдущую — см. §8), пересоздаёт `VerseWord[]` для стиха, переводит `Verse.status → ANALYZED`.
 
-Анализ стиха не инициирует никакой синхронизации с curriculum-service — слова уходят в curriculum-service только по явному действию пользователя, кнопка «Изучить» на VersePage (см. §6, §7).
+Анализ стиха **инициирует** синхронизацию лексики с curriculum-service: после
+успешного сохранения результатов sangraha отправляет инкрементальную пачку лемм
+стиха (`VerseBatchPushService.push`, вне транзакции, сбои только логируются — анализ
+не откатывается). Кнопка «Изучить» на VersePage дополнительно делает тот же push
+on-demand (идемпотентно) и возвращает код VERSE-урока (см. §6).
 
 Если пользователь ввёл текст только в одном представлении (только devanagari или только
 iast) — второе представление также генерирует модель, и backend сохраняет оба.
@@ -184,25 +188,51 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
 
 ---
 
-## 6. On-demand REST: sangraha → curriculum-service (по кнопке «Изучить»)
+## 6. Push пачек лемм в curriculum-service и кнопка «Изучить» (VERSE-урок)
 
-Синхронизация выполняется on-demand, по клику пользователя, без транзакционного Outbox:
-анализ стиха не запускает никакой синхронизации с curriculum-service сам по себе, вызов
-происходит внутри HTTP-запроса на кнопку «Изучить» — персистентная очередь и фоновые
-ретраи не нужны.
+Лексика стиха уходит в curriculum-service **маленькими пачками по стихам**,
+направление «наоборот» (разовый первичный импорт «curriculum тянет весь экспорт»
+остаётся, см. `curriculum-service/lexicon-content-pipeline.md` §2; этот раздел — §7
+того же документа). Старый on-demand поток «кнопка → `POST
+/content/internal/sangraha/vocabulary-quiz` → `content.vocabulary_words`»
+**удалён** вместе со своей таблицей (`lexicon-content-pipeline.md` §5): его место
+заняли инкрементальные пачки в `curriculum.lexeme` и VERSE-урок как `Topic домен=VERSE`.
 
-### VocabularyQuizController (endpoint из §7 таблицы API)
+### Push после успешного анализа (фоновый, не блокирует анализ)
 
-`POST /api/v1/sangraha/verses/{verseId}/vocabulary-quiz` — обрабатывается синхронно,
-в теле HTTP-запроса от фронтенда:
+После успешного `analysisSaver.saveResults(...)` (см. §5.1)
+`VerseBatchPushService.push` отправляет инкрементальную пачку лемм стиха в
+`POST /api/v2/lexicon/import/verse-batch` (контракт `VerseLemmaBatch`; слова —
+дедуп по `(lemmaSlp1, gender)` внутри стиха). Вызов — **вне** транзакции анализа и
+**не блокирует** его: любой сбой — недоступность curriculum-service,
+`app.curriculum-service.url` не задан (push отключается) — только логируется,
+анализ стиха уже сохранён и не откатывается. Повторная отправка той же пачки
+(переанализ стиха) идемпотентна: дубли не создаются.
 
-1. Загрузить `verse.vocabularyQuizSlug`/`vocabularyQuizId` и `VerseWord[]` этого стиха. Если квиз уже закэширован (`vocabularyQuizSlug`/`vocabularyQuizId` не пустые) **и** у каждого `VerseWord` этого стиха уже проставлен `vocabularyWordId` — вернуть `{ quizSlug, quizId, quizStatus: "EXISTING" }` немедленно, без обращения к curriculum-service. Если квиз закэширован, но хотя бы у одного слова `vocabularyWordId` ещё не проставлен (например, слово добавилось при повторном анализе стиха после того, как квиз уже был создан) — не возвращать сразу, а продолжить с шага 2, чтобы дозаполнить недостающие маппинги.
-2. Если квиз ещё не закэширован — проверить `verse.status == ANALYZED` и что `VerseWord[]` не пуст (иначе ошибка). Собрать `VerseWord[]` этого стиха, дедуплицировать по `(lemmaIast, stem)` **внутри стиха** (одно и то же слово, встретившееся в стихе дважды, не должно попасть в список дважды; для каждого уникального `(lemmaIast, stem)` в запрос идёт один представитель — первый по порядку `position`).
-3. `POST {CONTENT_SERVICE_URL}/content/internal/sangraha/vocabulary-quiz` (синхронный HTTP-клиент — `RestClient`) с телом: `verseId`, `workSlug`, `workTitleRu/En`, `chapterSlug`, `chapterTitleRu/En`, `verseOrderIndex`, `words[]`. Каждый элемент `words[]` собирается из представителя дедупликации по словарным полям — `verseWordId = VerseWord.id`, `wordIast = lemmaIast`, `translationRu/En = lemmaGlossRu/En`, `wordDevanagari = surfaceDevanagari` (у `VerseWord` нет отдельного деванагари-написания леммы, см. `verse-word-grammar.md` §1 — используется деванагари той словоформы, в которой слово встретилось первым; для слов без сандхи/окончания на стыке совпадает с деванагари леммы). Точный контракт — `curriculum-service.md` §11.
-4. **Успех (2xx):** из ответа `{ quizSlug, quizId, quizStatus, wordMappings[] }` — если квиз не был закэширован на шаге 1, сохранить `quizSlug`/`quizId` в `verse.vocabularyQuizSlug`/`verse.vocabularyQuizId`. Независимо от того, был ли квиз уже закэширован, разложить `wordMappings[]` (`verseWordId → vocabularyWordId`, где `verseWordId` — id дедуплицированного представителя) обратно на **все** `VerseWord[]` стиха по ключу `(lemmaIast, stem)` — включая слова-дубли внутри стиха, которые не были представителем и не попали в запрос напрямую — и сохранить `vocabularyWordId` у каждого. Ответ фронтенду: `{ quizSlug, quizId, quizStatus }` — `quizStatus` берётся из ответа curriculum-service, если квиз создавался/дозаполнялся в этом вызове, либо `"EXISTING"`, если был кэш-хит на шаге 1.
-5. **Ошибка (4xx/5xx/timeout):** вернуть ошибку как есть фронтенду, ничего не сохранять. Повторный клик по кнопке безопасен и идемпотентен — `quizSlug`/`quizId` на стороне curriculum-service детерминированы по `(workSlug, chapterSlug, verseId)` (см. `curriculum-service.md` §11), повторный вызов не создаёт дублей.
+### Кнопка «Изучить» — `POST /api/v1/sangraha/verses/{verseId}/study`
 
-Никакой персистентной очереди/ретраев в фоне не требуется — повтор при ошибке равен повторному клику пользователя.
+Обрабатывается синхронно в теле запроса фронтенда (`VerseService.triggerStudyExport`):
+
+1. Загрузить стих; если `status != ANALYZED` — `409`.
+2. Если у стиха заполнен `chapterId` — найти `Chapter`/`Work` (нужны только для
+   кода урока; для standalone-стиха контекста нет).
+3. Повторный on-demand push пачки лемм этого стиха (`VerseBatchPushService.push`) —
+   идемпотентен, сбой не валит запрос (только лог).
+4. Вернуть код VERSE-урока `{ verseTopicCode }`:
+   - стих в главе — `"{workSlp1}_{chapterNumber}"` (slug произведения в SLP1 +
+     номер главы `orderIndex`); тот же код строит curriculum-service при создании
+     урока пачки (`lexicon-content-pipeline.md` §7, шаг 3);
+   - standalone-стих (без главы) — персональный `"user-{ownerId}"` (совпадает с
+     фоновым push).
+   Если урок не резолвится (стих без главы и без владельца) — `409`.
+
+Обработка ошибок: недоступность curriculum-service при push не влияет на ответ —
+вернётся только код урока; кнопку можно жать повторно (идемпотентно). Отдельная
+очередь/ретраи в фоне не нужны.
+
+Тот же код лежит в `VerseDetail.verseTopicCode` (см. §7) — фронтенд показывает
+состояние урока (`useVocabularyLesson(verseTopicCode)`) ещё до клика
+через `GET /lessons/vocabulary/{code}`.
 
 ---
 
@@ -245,31 +275,22 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
   - Кнопка **«Изучить»** — рядом со списком слов (таблица `words[]`, см. выше), видна
     только при `status=ANALYZED` и непустом `words[]`; `disabled`, если слов нет
     (проверяется локально на фронте, без обращения к бэкенду).
-    - По клику — синхронный REST-вызов `POST /verses/{verseId}/vocabulary-quiz`
-      (sangraha-service, см. §6): если у стиха уже есть закэшированные
-      `vocabularyQuizSlug`/`vocabularyQuizId` и все слова стиха уже связаны со
-      словарными статьями — sangraha-service возвращает их сразу с
-      `quizStatus="EXISTING"` (см. §6, шаг 1); иначе сам синхронно
-      создаёт/дозаполняет лексический квиз в curriculum-service и кэширует
-      `quizSlug`/`quizId`.
-    - Из ответа `{ quizSlug, quizId, quizStatus }` фронтенд **не** делает
-      промежуточный `GET /api/v1/lessons/vocabulary/{slug}` — он не нужен для
-      запуска сессии. Вместо этого сразу вызывает
-      `POST /api/v1/quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&statusFilter={statusFilter}`
-      (quiz-service, `quest-engine.md` §3-4) — по UUID, не по slug.
-      `statusFilter` вычисляется на фронте из `quizStatus`: `quizStatus="CREATED"` →
-      `statusFilter=NEW` (весь пул квиза — новые слова, обычный смешанный
-      due/new/reserve-отбор не нужен, слов ещё никто не проходил); `quizStatus="EXISTING"`
-      → `statusFilter` не передаётся (обычный смешанный отбор).
-    - После успешного старта сессии — переход на `/quiz/vocabulary/{quizSlug}/{sessionId}`
-      (существующий маршрут `QuizPage`, см. `frontend-state.md`/`AppRoutes`) с передачей
-      результата через `navigate(url, { state: { sessionData } })` — паттерн,
-      уже поддержанный в `useQuizSession` (ветка 1 «navigation state»).
-    - Квиз создаётся на уровне **стиха**, а не произведения. Уникальность слов
-      внутри квиза стиха обеспечивает sangraha-service (дедуп по `(lemmaIast, stem)`
-      перед отправкой, см. §6) — curriculum-service дополнительно дедуплицирует
-      `VocabularyWord` по `(wordIast, stem)` в рамках всего своего словаря (см.
-      `curriculum-service.md` §11), но это не влияет на состав слов конкретного квиза.
+    - Иконка кнопки отражает прогресс VERSE-урока из `useVocabularyLesson(verseTopicCode)`
+      (`statusSummary`: mastery/learning/reviewDue/total из `GET /lessons/vocabulary/{code}`):
+      всё замастерено — `pi-check-circle`, есть learning/reviewDue — `pi-caret-right`,
+      иначе `pi-book`.
+    - По клику — `POST /api/v1/sangraha/verses/{verseId}/study` (sangraha-service,
+      см. §6): sangraha идемпотентно пушит пачку лемм стиха в curriculum-service и
+      возвращает `{ verseTopicCode }`.
+    - Из ответа берётся код VERSE-урока и выполняется переход на
+      `/lessons/vocabulary/{code}` — страницу лексического урока в curriculum-service,
+      без промежуточных запросов к quiz/content-service (старый поток `vocabulary-quiz`
+      с `quizSlug`/`quizId`/`quizStatus` удалён, см. `lexicon-content-pipeline.md` §5).
+    - Урок создаётся на уровне **пары «произведение, глава»** (не на произведение):
+      код `"{slp1_work}_{chapterNumber}"`, связь лексем накапливается по стихам главы
+      (`lexicon-content-pipeline.md` §7, шаг 3). Уникальность слов в уроке обеспечивает
+      sangraha-дедуп по `(lemmaSlp1, gender)` перед пачкой, а curriculum-service
+      дополнительно дедуплицирует `Lexeme` по значению по всему словарю.
 
 ---
 
@@ -280,44 +301,47 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
 - **Роль «редактор/переводчик»**: пока весь write — `ADMIN`. Отдельная роль (может вводить/анализировать стихи, но не управлять произведениями/главами) — следующая итерация; когда будет готова модель ролей, добавить `SANGRAHA_EDITOR` и обновить §4.
 - **Связь слов стиха со словарём** (`dictionary-service`, поиск по `slp1`): сознательно не делаем в этой итерации — только грамматика от LLM. Если понадобится — отдельным Kafka-каналом (sangraha публикует, dictionary-service асинхронно обогащает через ответное событие), без синхронных вызовов между сервисами.
 - **Политика ретраев** — не требуется: синхронизация происходит внутри HTTP-запроса на кнопку «Изучить», отдельного фонового Outbox/relay нет, повтор равен повторному клику пользователя.
-- **Уровень Quiz(VOCABULARY)** — стих, а не произведение: `slug = "{workSlug}.{chapterSlug}.verse-{verseId}"` (см. §6, §7).
+- **VERSE-урок лексики** — на уровне пары «произведение, глава» в curriculum-service:
+  `code = "{slp1_work}_{chapterNumber}"`, связь лексем накапливается по стихам главы;
+  для standalone-стихов — персональный `user-{ownerId}` (см. §6,
+  `lexicon-content-pipeline.md` §7).
 
-## 9. Internal REST: примеры склонений для curriculum-service
+## 9. Примеры склонений: публичный поиск и internal-эндпоинты
 
-Два service-to-service эндпоинта для вкладки «Примеры» на странице шага склонений (`curriculum-service.md` §12) — не публичные, не через api-gateway, вызываются напрямую по адресу sangraha-service (env `SANGRAHA_SERVICE_URL` у curriculum-service, по аналогии с `CONTENT_SERVICE_URL` у sangraha-service, §6).
+Вкладка «Примеры» на странице урока склонений делает **один** запрос на урок —
+`POST /api/v1/sangraha/verses/examples` (публичный, через api-gateway): sangraha сам
+агрегирует примеры по всей парадигме (по ячейкам `(caseType, numberType)`) и отдаёт
+текст/перевод стихов. Фронтенд не ходит в sangraha за каждой ячейкой и не склеивает
+результат (раньше эту агрегацию делал quiz-service — вызов
+`GET /api/v1/content/public/lessons/{slug}/examples`, удалён).
 
-### `POST /sangraha/internal/content/declension-examples`
+Агрегация внутри sangraha — `VerseWordSearchService.searchExamples`: весь поиск — **один**
+запрос к БД `findDeclensionExampleCells`: кортежи `[stemClass, gender, caseType, numberType]`
+из `grammar_info.tuples` служат только фильтром стихов-кандидатов (через `@>`), а ячейки
+парадигмы стиха берутся из именованных полей `grammar_info.caseType`/`grammar_info.numberType`;
+SQL раздаёт до `limitPerGroup` стихов на ячейку через
+`ROW_NUMBER() PARTITION BY (caseType, numberType)`, затем один батч-запрос текстов через
+`VerseBatchService`. `gender`/`caseType`/`numberType` из запроса опциональны: не заполнены — фильтр
+по соответствующей оси не применяется (стихи с любым родом/падежом/числом). Ответ: `groups[]` —
+по группе на каждую непустую ячейку (`caseType`, `numberType`, `examples[]` — с
+`textIast`/`textDevanagari`/`translationRu`/`translationEn` и атрибуцией стиха); стих,
+покрывающий несколько ячеек, попадает в каждую, в батч идёт один раз (distinct).
 
-Ищет примеры словоформ по словоизменительному классу и возвращает их сгруппированными по ячейке `(caseType, numberType)`, не сами цитаты — только `verseId[]` (за текстом/переводом curriculum-service идёт отдельно, см. следующий эндпоинт).
+Запрос (тело):
 
 ```json
 {
   "vowelType": "A_STEM",
   "gender": "MASCULINE",
-  "limitPerGroup": 3,
-  "cells": [
-    { "caseType": "NOMINATIVE", "numberType": "SINGULAR" },
-    { "caseType": "INSTRUMENTAL", "numberType": "SINGULAR" }
-  ]
+  "caseType": "NOMINATIVE",
+  "numberType": "SINGULAR",
+  "limitPerGroup": 3
 }
 ```
 
-`gender`/`caseType`/`numberType` — значения тех же enum'ов, что в `VerseWordMorphology` (`Gender`, `GrammaticalCase`, `NumberType`, см. `verse-word-grammar.md` §1); имена значений совпадают с одноимёнными enum'ами curriculum-service (`content.Gender/CaseType/NumberType`) один в один, поэтому маппинг на стороне curriculum-service — только сериализация имени enum, без таблицы соответствий. `vowelType` — значения = `declension_stems.vowel_type` curriculum-service (`ck_vowel_type`, см. `curriculum-service` V13-миграцию): 7 регулярных классов основы (`A_STEM`, `AA_STEM`, `I_STEM`, `II_STEM`, `U_STEM`, `UU_STEM`, `R_STEM`) + 8 местоимённых (`PRON_AHAM`, `PRON_TVAM`, `PRON_TAD`, `PRON_ETAD`, `PRON_IDAM`, `PRON_KIM`, `PRON_YAD`, `PRON_REFLEXIVE`). Для `PRON_*` классов сопоставление по основе в принципе не работает (местоимённые парадигмы супплетивны — например, `aham` → `mayā` в творительном, разные корни) — поиск для `PRON_*` идёт по фиксированному соответствию `vowelType → lemmaIast` (`PRON_AHAM` → `asmad`, `PRON_TVAM` → `yuṣmad`, `PRON_TAD` → `tad`, и т.д.) — таблица соответствий не в этом документе, фиксирует Агент 2 при реализации по словарю местоимений.
+`gender`/`caseType`/`numberType` — значения тех же enum'ов, что в `VerseWordMorphology` (`Gender`, `GrammaticalCase`, `NumberType`, см. `verse-word-grammar.md` §1); имена значений совпадают с одноимёнными enum'ами curriculum-service (`content.Gender/CaseType/NumberType`) один в один, поэтому маппинг — только сериализация имени enum. `vowelType` — значения = `declension_stems.vowel_type` curriculum-service (`ck_vowel_type`, см. `curriculum-service` V13-миграцию): 7 регулярных классов основы (`A_STEM`, `AA_STEM`, `I_STEM`, `II_STEM`, `U_STEM`, `UU_STEM`, `R_STEM`) + 8 местоимённых (`PRON_AHAM`, `PRON_TVAM`, `PRON_TAD`, `PRON_ETAD`, `PRON_IDAM`, `PRON_KIM`, `PRON_YAD`, `PRON_REFLEXIVE`).
 
-Для 7 регулярных классов основной источник `vowelType` слова — таблица `NominalLemma` (`nominal_lemmas`, одна строка на лемму, см. `verse-word-grammar.md` §1б): у слова-кандидата берётся `VerseWord.lemmaIast`, по нему batch-лукап `NominalLemma` (`findByLemmaIastIn`, без физической FK-связи — join по тексту леммы), `stemClass` найденной строки трактуется как `vowelType`. Классификация лемм считается заполненной для корпуса — fallback-эвристики по последней букве `stem` больше нет (удалено из кода; поисковый запрос `findVerseWordCountsByVowelType` фильтрует `nl.stemClass = :vowelType` напрямую). Таблица `noun_stems` была deprecated (см. `verse-word-grammar.md` §1а) и удалена (миграция V17).
-
-Ответ:
-
-```json
-{
-  "groups": [
-    { "caseType": "NOMINATIVE", "numberType": "SINGULAR", "verseIds": ["uuid1", "uuid2", "uuid3"] },
-    { "caseType": "INSTRUMENTAL", "numberType": "SINGULAR", "verseIds": [] }
-  ]
-}
-```
-
-По каждой запрошенной ячейке — ровно одна группа в ответе, даже если `verseIds` пуст (curriculum-service кэширует пустой результат как значимый, см. `curriculum-service.md` §12) — группа не пропускается молча. Отбор внутри группы (`≤ limitPerGroup` штук) — детерминированный (например, по `verse_id`), чтобы повторный запрос с тем же `limitPerGroup` возвращал тот же набор, а не случайную выборку.
+Для всех классов (регулярных и `PRON_*`) поиск идёт одним и тем же запросом `findDeclensionExampleCells` по предвычисленному полю `tuples` в `verse_statistics.grammar_info` (`[stemClass, gender, caseType, numberType]` на слово, только фильтр): `stemClass` — из `nominal_lemmas` (join по тексту `lemma_iast`); для `PRON_*` в `stemClass` лежит соответствующее значение `PRON_*`. Отбор (`≤ limitPerGroup`) и ранжирование — детерминированные, на стороне SQL (по `word_count`, при равенстве — по `verse_id`), чтобы повторный запрос с тем же `limitPerGroup` возвращал тот же набор, а не случайную выборку.
 
 ### `POST /sangraha/internal/content/verses/batch`
 
@@ -348,13 +372,16 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
 Два вкладчика семантики стиха, пересчитываемые на `POST /sangraha/internal/lexicon/lemmas/refresh-statistics` (upsert по PK `verse_id`, см. `lemma-classification.md` §1.4):
 
 - `word_count` — число слов стиха (COUNT `verse_words`), без COUNT при каждом поиске (§9, фильтр `< maxPhraseWords`);
-- `grammar_info` — JSON со distinct-массивами грамматического набора стиха, по одному полю на массив:
+- `grammar_info` — JSON с грамматическим составом стиха:
   ```json
   { "pos": ["NOUN", "VERB"], "formType": ["FINITE", "PARTICIPLE"],
     "numberType": ["SINGULAR", "PLURAL"], "caseType": ["NOMINATIVE", "ACCUSATIVE"],
-    "gender": ["MASCULINE", "NEUTER"] }
+    "gender": ["MASCULINE", "NEUTER"],
+    "tuples": [["A_STEM","MASCULINE","NOMINATIVE","SINGULAR"],
+               ["U_STEM","NEUTER","ACCUSATIVE","SINGULAR"]] }
   ```
-  Источник — `verse_words` (`pos`, `form_type`) и `verse_word_morphology` (`number_type`, `case_type`, `gender`); `NULL`-значения не попадают в массивы. GIN-индекс `idx_verse_statistics_grammar_info`: поиск «стихи, где встречается признак» — `grammar_info @> '{"caseType": ["ACCUSATIVE"]}'` (и аналогично по любому из пяти полей).
+  Поля `pos`–`gender` — distinct-массивы признаков по всему стиху. Поле `tuples` — массив кортежей `[stemClass, gender, caseType, numberType]` (один кортеж на слово, distinct), только для фильтрации стихов через `@>`, без join на `verse_words`/`verse_word_morphology`/`nominal_lemmas`; ячейки парадигмы стиха берутся из именованных полей `caseType`/`numberType`.
+  Источник — `verse_words` (`pos`, `form_type`), `verse_word_morphology` (`number_type`, `case_type`, `gender`) и `nominal_lemmas` (`stem_class`, join по `verse_words.lemma_iast`); `NULL`-значения не попадают в массивы. GIN-индекс `idx_verse_statistics_grammar_info`: поиск — `grammar_info @> '{"tuples": [["A_STEM","MASCULINE","NOMINATIVE","SINGULAR"]]}'`.
 
 ---
 

@@ -1,5 +1,8 @@
 import api from './axios';
-import { DeclensionParadigmPageDto, DeclensionExamplesResponseDto } from '../types/content-dtos';
+import {
+  DeclensionParadigmPageDto,
+  ConjugationParadigmPageDto,
+} from '../types/content-dtos';
 
 export const lessonApi = {
 
@@ -27,7 +30,9 @@ export const lessonApi = {
       params: { index },
     }),
 
-  // Получить примеры склонений для урока (вкладка «Примеры», без индекса) — v2
-  getDeclensionExamples: (slug: string) =>
-    api.get<DeclensionExamplesResponseDto>(`/api/v2/lessons/${slug}/examples`),
+  // Получить ОДНУ парадигму спряжений по индексу (карусель verb lesson) — v2
+  getConjugationParadigm: (slug: string, index: number, voice?: string) =>
+    api.get<ConjugationParadigmPageDto>(`/api/v2/lessons/${slug}/conjugation-paradigms`, {
+      params: { index, voice },
+    }),
 };

@@ -176,26 +176,14 @@ VerseDetail:
       items:
         $ref: '#/VerseWordDto'
       nullable: true
-    vocabularyQuizSlug:
+    verseTopicCode:
       type: string
       nullable: true
       description: >-
-        Slug лексического квиза этого стиха (кэш `verses.vocabulary_quiz_slug`,
-        см. sangraha-service.md §3/§6/§7, ADR-009). null, если по этому стиху
-        ещё никто не нажимал «Изучить» — квиз в content-service ещё не создан.
-        Заполняется вызовом POST /verses/{verseId}/vocabulary-quiz (см. §7) и
-        после первого успешного вызова возвращается здесь же напрямую из БД,
-        без обращения к content-service.
-    vocabularyQuizId:
-      type: string
-      format: uuid
-      nullable: true
-      description: >-
-        UUID сущности Lesson в content-service (кэш `verses.vocabulary_quiz_id`,
-        см. sangraha-service.md §3/§6/§7, ADR-009 «Обновление»). Заполняется
-        вместе с vocabularyQuizSlug, тем же вызовом. Используется фронтендом
-        для старта квиз-сессии напрямую по UUID (без промежуточного
-        GET /lessons/vocabulary/{slug}) — см. §7.
+        Код VERSE-урока, на который ведёт кнопка «Изучить» (см.
+        lexicon-content-pipeline.md §7): «{workSlp1}_{chapterNumber}» для стиха
+        в главе, «user-{ownerId}» для standalone-стиха. Возвращается и в ответе
+        POST /verses/{verseId}/study.
 
 VerseAnalysisDto:
   type: object
@@ -232,6 +220,43 @@ VerseAnalysisDto:
         Имя LLM-модели, которая фактически выполнила анализ (сохраняется
         отдельно от modelName для совместимости; заполняется тем же значением,
         см. sangraha-service.md §5.4).
+    analyzedAt:
+      type: string
+      format: date-time
+
+# Сырая сущность verse_analyses — ответ GET /verses/{verseId}/analysis
+# (в отличие от VerseAnalysisDto sandhiSplits/rawModelResponse/rawPrompt
+# отдаются как текст: сырой JSON ответа модели и сохранённый промпт).
+VerseAnalysis:
+  type: object
+  description: >-
+    Сырая запись VerseAnalysis (сущность, без маппинга в VerseAnalysisDto).
+    Основной читающий путь фронтенда — GET /verses/{verseId} (вложенный
+    analysis в VerseDetail); этот эндпоинт служит для отладки/выгрузки.
+  properties:
+    verseId:
+      type: string
+      format: uuid
+    translationRu:
+      type: string
+    translationEn:
+      type: string
+    sandhiSplits:
+      type: string
+      nullable: false
+      description: Сырой JSON массива сандхи-разбиений (как вернула LLM).
+    rawModelResponse:
+      type: string
+      nullable: true
+      description: Сырой JSON ответа модели.
+    rawPrompt:
+      type: string
+      nullable: true
+      description: Сохранённый промпт, отправленный модели.
+    modelName:
+      type: string
+    analyzerName:
+      type: string
     analyzedAt:
       type: string
       format: date-time
@@ -311,6 +336,88 @@ VerseWordDto:
       type: string
       format: uuid
       nullable: true
+
+# Сырая сущность verse_words — ответ GET /verses/{verseId}/words
+# (сущности без маппинга в VerseWordDto; поля морфологии/деривации/verse —
+# вложенные сущности).
+VerseWord:
+  type: object
+  description: >-
+    Словоформа стиха как сущность verse_words (без маппинга в VerseWordDto).
+    Основной читающий путь фронтенда — GET /verses/{verseId} (вложенные words
+    в VerseDetail); этот эндпоинт служит для отладки/выгрузки. Поля
+    morphology/derivation/verse — вложенные сущности, вложение verse может
+    отсутствовать при сериализации вне транзакции.
+  properties:
+    id:
+      type: string
+      format: uuid
+    position:
+      type: integer
+    surfaceIast:
+      type: string
+    surfaceDevanagari:
+      type: string
+    lemmaIast:
+      type: string
+    stem:
+      type: string
+      nullable: true
+    root:
+      type: string
+      nullable: true
+    pos:
+      type: string
+      nullable: true
+      description: Часть речи (NOUN|VERB|…), см. PartOfSpeech.
+    formType:
+      type: string
+      nullable: true
+      description: >-
+        FINITE|INFINITIVE|ABSOLUTIVE|PARTICIPLE|GERUNDIVE|OTHER_NONFINITE|
+        NOMINAL|ADJECTIVAL|PRONOMINAL|INDECLINABLE
+    isFinite:
+      type: boolean
+      nullable: true
+    lemmaGlossRu:
+      type: string
+      nullable: true
+    lemmaGlossEn:
+      type: string
+      nullable: true
+    contextGlossRu:
+      type: string
+    contextGlossEn:
+      type: string
+    formationRuleNumbers:
+      type: string
+      nullable: true
+      description: >-
+        Номера правил из emenau-sandhi-rules.json (внутренние, диапазон 1–40)
+        как сырая строка (TEXT-колонка). В VerseWordDto — массив чисел.
+    analysisConfidence:
+      type: string
+      nullable: true
+      description: HIGH|MEDIUM|LOW
+    ambiguityNotes:
+      type: string
+      nullable: true
+    vocabularyWordId:
+      type: string
+      format: uuid
+      nullable: true
+    verse:
+      type: object
+      nullable: true
+      description: Вложенный стих (сущность Verse); поля совпадают с WorkTree-представлением.
+    morphology:
+      type: object
+      nullable: true
+      description: То же, что VerseWordMorphologyDto (caseType/gender/numberType/person/tense/mood/voice).
+    derivation:
+      type: object
+      nullable: true
+      description: То же, что VerseWordDerivationDto (derivationType/derivationalSuffix/derivationalBase/description).
 
 VerseWordMorphologyDto:
   type: object
@@ -544,6 +651,63 @@ VerseWordExampleItem:
       type: string
     verseOrderIndex:
       type: integer
+
+# --- Поиск примеров склонений по словоизменительному классу (вкладка урока склонений) ---
+# Публичный DTO POST /api/v1/sangraha/verses/examples →
+# VerseWordSearchService.searchExamples (docs/services/sangraha-service.md §9).
+# gender/caseType/numberType опциональны — фильтр по соответствующей оси не применяется.
+DeclensionExamplesRequest:
+  type: object
+  required: [vowelType, limitPerGroup]
+  properties:
+    vowelType:
+      type: string
+      enum: [A_STEM, AA_STEM, I_STEM, II_STEM, U_STEM, UU_STEM, R_STEM, PRON_AHAM, PRON_TVAM, PRON_TAD, PRON_ETAD, PRON_IDAM, PRON_KIM, PRON_YAD, PRON_REFLEXIVE]
+    gender:
+      type: string
+      enum: [MASCULINE, FEMININE, NEUTER, UNKNOWN, UNSPECIFIED]
+      description: >-
+        Опциональный фильтр по роду; не заполнено — стихи с любым родом. UNKNOWN
+        осознанно матчит пусто (в корпусе таких значений нет).
+    caseType:
+      type: string
+      enum: [NOMINATIVE, ACCUSATIVE, INSTRUMENTAL, DATIVE, ABLATIVE, GENITIVE, LOCATIVE, VOCATIVE]
+      description: Опциональный фильтр по падежу; не заполнено — любой падеж.
+    numberType:
+      type: string
+      enum: [SINGULAR, DUAL, PLURAL]
+      description: Опциональный фильтр по числу; не заполнено — любое число.
+    limitPerGroup:
+      type: integer
+      minimum: 1
+      description: Максимум примеров на одну ячейку (caseType, numberType).
+    maxPhraseWords:
+      type: integer
+      description: Максимальная длина стиха в словах для кандидатов (default 10).
+
+DeclensionExamplesResponse:
+  type: object
+  required: [groups]
+  properties:
+    groups:
+      type: array
+      description: >-
+        По одной группе на каждую непустую ячейку парадигмы склонения. Пустые
+        ячейки не включаются в ответ.
+      items:
+        type: object
+        required: [caseType, numberType, examples]
+        properties:
+          caseType:
+            type: string
+            enum: [NOMINATIVE, ACCUSATIVE, INSTRUMENTAL, DATIVE, ABLATIVE, GENITIVE, LOCATIVE, VOCATIVE]
+          numberType:
+            type: string
+            enum: [SINGULAR, DUAL, PLURAL]
+          examples:
+            type: array
+            items:
+              $ref: '#/VerseWordExampleItem'
 
 # --- Классификатор произведений (works_class) ---
 WorksClassTreeNode:

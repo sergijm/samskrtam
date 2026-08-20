@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
+import sm.selflearn.samskrtam.content.dto.ConjugationParadigmPageDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionParadigmPageDto;
-import sm.selflearn.samskrtam.quiz.dto.DeclensionExamplesResponseDto;
 import sm.selflearn.samskrtam.quiz.dto.GrammarLesson;
 import sm.selflearn.samskrtam.quiz.dto.LessonItemDto;
 import sm.selflearn.samskrtam.quiz.dto.LessonListResponse;
@@ -117,12 +117,14 @@ public class LessonV2Controller {
         return lessonV2Service.paradigmPage(slug, index).map(ResponseEntity::ok);
     }
 
-    @GetMapping("/{slug}/examples")
-    public Mono<ResponseEntity<DeclensionExamplesResponseDto>> getDeclensionExamples(
+    @GetMapping("/{slug}/conjugation-paradigms")
+    public Mono<ResponseEntity<ConjugationParadigmPageDto>> getConjugationParadigm(
             @PathVariable("slug") String slug,
+            @RequestParam(defaultValue = "0") int index,
+            @RequestParam(required = false) String voice,
             @RequestHeader(value = "X-User-Id", required = false) UUID userId) {
-        log.info("v2 GET /{}/examples — X-User-Id={}", slug, userId);
-        return lessonV2Service.examples(slug).map(ResponseEntity::ok);
+        log.info("v2 GET /{}/conjugation-paradigms?index={}&voice={} — X-User-Id={}", slug, index, voice, userId);
+        return lessonV2Service.conjugationParadigmPage(slug, index, voice).map(ResponseEntity::ok);
     }
 
     private boolean isCategory(String param) {
