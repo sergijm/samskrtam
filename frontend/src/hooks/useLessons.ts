@@ -103,11 +103,11 @@ export const useDeclensionExamples = (
 export const useConjugationParadigm = (
   slug: string,
   index: number,
-  voice: string,
+  voice: string | null,
   enabled: boolean,
 ) =>
   useQuery({
-    queryKey: ['conjugation-paradigm', slug, index, voice],
+    queryKey: ['conjugation-paradigm', slug, index, voice ?? 'all'],
     queryFn: () => lessonApi.getConjugationParadigm(slug, index, voice).then(res => res.data),
     enabled: !!slug && enabled,
     staleTime: Infinity,

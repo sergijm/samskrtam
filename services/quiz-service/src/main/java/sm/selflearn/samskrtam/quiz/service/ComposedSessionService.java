@@ -159,9 +159,10 @@ public class ComposedSessionService {
     }
 
     /**
-     * MATCHING verification: the client pairs each word-form row with a case+number label.
-     * Every submitted pair must equal the reference pair from the payload and all rows must
-     * be answered, otherwise the question counts as incorrect.
+     * MATCHING verification: the client pairs each word-form row with a label.
+     * Every submitted pair must equal the reference pair from the payload
+     * (attribute arrays of length 2 for declension, length 3 for conjugation)
+     * and all rows must be answered, otherwise the question counts as incorrect.
      */
     private Mono<AnswerResponse> processMatchingAnswer(QuizSession session, UUID userId, AnswerRequest request,
                                                        SessionQuestion stored) {
@@ -177,11 +178,17 @@ public class ComposedSessionService {
             for (MatchSubmissionDto sub : submissions) {
                 String[] expected = referencePairs.get(sub.rowId());
                 String[] actual = labelMap.get(sub.optionId());
-                if (expected == null || actual == null
-                        || !expected[0].equals(actual[0]) || !expected[1].equals(actual[1])) {
+                if (expected == null || actual == null || expected.length != actual.length) {
                     allMatched = false;
                     break;
                 }
+                for (int i = 0; i < expected.length; i++) {
+                    if (!expected[i].equals(actual[i])) {
+                        allMatched = false;
+                        break;
+                    }
+                }
+                if (!allMatched) break;
                 correctCount++;
             }
             isCorrect = allMatched && correctCount == referencePairs.size();
@@ -239,6 +246,9 @@ public class ComposedSessionService {
         if (questItemTypeCode == null) return ItemType.VOCABULARY_WORD;
         if (questItemTypeCode.startsWith("DECLENSION_") || questItemTypeCode.startsWith("CASE_")) {
             return ItemType.DECLENSION_FORM;
+        }
+        if (questItemTypeCode.startsWith("CONJUGATION_")) {
+            return ItemType.CONJUGATION_FORM;
         }
         return ItemType.VOCABULARY_WORD;
     }

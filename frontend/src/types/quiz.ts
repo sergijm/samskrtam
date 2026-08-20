@@ -74,8 +74,10 @@ export interface QuestionMatchRow {
     id: string;
     wordFormIast: string;
     wordFormDevanagari?: string;
-    caseType: string;
+    caseType?: string;
     numberType: string;
+    person?: number;
+    voice?: string;
 }
 
 /**
@@ -209,8 +211,10 @@ export interface QuestionMatchRow {
     id: string;
     wordFormIast: string;
     wordFormDevanagari?: string;
-    caseType: string;
+    caseType?: string;
     numberType: string;
+    person?: number;
+    voice?: string;
 }
 
 export interface QuestionOption {
@@ -229,6 +233,8 @@ export interface QuestionOption {
     gender?: string;
     genderRu?: string;
     genderEn?: string;
+    person?: number;
+    voice?: string;
 }
 
 export interface MatchSubmission {

@@ -31,8 +31,9 @@ export const lessonApi = {
     }),
 
   // Получить ОДНУ парадигму спряжений по индексу (карусель verb lesson) — v2
-  getConjugationParadigm: (slug: string, index: number, voice?: string) =>
-    api.get<ConjugationParadigmPageDto>(`/api/v2/lessons/${slug}/conjugation-paradigms`, {
-      params: { index, voice },
-    }),
+  getConjugationParadigm: (slug: string, index: number, voice?: string | null) => {
+    const params: Record<string, string | number> = { index };
+    if (voice) params.voice = voice;
+    return api.get<ConjugationParadigmPageDto>(`/api/v2/lessons/${slug}/conjugation-paradigms`, { params });
+  },
 };

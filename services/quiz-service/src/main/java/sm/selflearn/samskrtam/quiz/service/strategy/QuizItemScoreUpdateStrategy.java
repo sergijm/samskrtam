@@ -61,6 +61,10 @@ public class QuizItemScoreUpdateStrategy implements ScoreUpdateStrategy {
                         ? caseType + "|" + numberType + "|" + gender
                         : null;
             }
+            case CONJUGATION_FORM -> {
+                // conjugation progress tags are not used in legacy flow
+                yield null;
+            }
             case VOCABULARY_WORD -> question.getCorrectFormIast();
         };
     }

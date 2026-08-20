@@ -8,7 +8,7 @@ import { PRESENT_NUMBERS } from '../../data/presentConjugation';
 
 interface ConjugationParadigmCarouselProps {
   slug: string;
-  voice: string;
+  voice: string | null;
   enabled: boolean;
   onTotalChange?: (total: number) => void;
 }

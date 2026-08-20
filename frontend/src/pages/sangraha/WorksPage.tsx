@@ -111,6 +111,9 @@ const WorksPage = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                       <span className="font-bold">
                         {work.titleSaIast}
+                        <span className="ml-1 text-color-secondary font-normal">
+                          {lang === 'ru' ? ` (${work.titleRu})` : ` (${work.titleEn})`}
+                        </span>
                         {work.titleSaDevanagari && (
                           <span
                             className="ml-2"

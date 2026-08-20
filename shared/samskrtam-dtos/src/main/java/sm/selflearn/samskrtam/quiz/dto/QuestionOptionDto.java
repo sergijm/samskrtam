@@ -11,7 +11,8 @@ public class QuestionOptionDto {
     UUID id;
 
     /**
-     * Option type: "FORM" (declension form, default) or "CASE_COMBINATION" (case×number×gender triple).
+     * Option type: "FORM" (declension form, default) or "CASE_COMBINATION" (case×number×gender triple)
+     * or "MATCH_LABEL_CONJ" (conjugation person×number×voice).
      * When null, frontend treats as "FORM".
      */
     String optionType;
@@ -38,4 +39,8 @@ public class QuestionOptionDto {
     String gender;
     String genderRu;
     String genderEn;
+
+    // Fields for optionType = "MATCH_LABEL_CONJ" (conjugation)
+    Integer person;
+    String voice;
 }

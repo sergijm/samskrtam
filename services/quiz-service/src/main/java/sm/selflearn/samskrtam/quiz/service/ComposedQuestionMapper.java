@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import sm.selflearn.samskrtam.quest.AnswerMode;
 import sm.selflearn.samskrtam.quest.HighlightToken;
 import sm.selflearn.samskrtam.quest.declension.DeclensionMatchPayload;
+import sm.selflearn.samskrtam.quest.conjugation.ConjugationMatchPayload;
 import sm.selflearn.samskrtam.quiz.dto.ComposedQuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.QuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.QuestionMatchRowDto;
@@ -108,12 +109,18 @@ public class ComposedQuestionMapper {
     }
 
     /**
-     * Right-side MATCHING labels: the distinct case+number combinations across the payload
-     * pairs. Each label carries caseType/numberType (needed for backend verification) and a
-     * deterministic id.
+     * Right-side MATCHING labels: for conjugation items, the distinct
+     * person+numberType+voice combinations; for declension, caseType+numberType.
      */
     private String buildMatchOptionsJson(QuestItemDto item) {
-        DeclensionMatchPayload payload = parseMatchPayload(item);
+        if (isConjugationItem(item)) {
+            return buildConjugationMatchOptions(item);
+        }
+        return buildDeclensionMatchOptions(item);
+    }
+
+    private String buildDeclensionMatchOptions(QuestItemDto item) {
+        DeclensionMatchPayload payload = parseDeclensionMatchPayload(item);
         List<ObjectNode> options = new ArrayList<>();
         Map<String, DeclensionMatchPayload.DeclensionMatchPair> labels = new LinkedHashMap<>();
         for (DeclensionMatchPayload.DeclensionMatchPair pair : payload.pairs()) {
@@ -134,19 +141,76 @@ public class ComposedQuestionMapper {
         return arrayToJson(options);
     }
 
-    private DeclensionMatchPayload parseMatchPayload(QuestItemDto item) {
+    private String buildConjugationMatchOptions(QuestItemDto item) {
+        ConjugationMatchPayload payload = parseConjugationMatchPayload(item);
+        List<ObjectNode> options = new ArrayList<>();
+        Map<String, ConjugationMatchPayload.ConjugationMatchPair> labels = new LinkedHashMap<>();
+        for (ConjugationMatchPayload.ConjugationMatchPair pair : payload.pairs()) {
+            labels.putIfAbsent(pair.person() + "|" + pair.numberType() + "|" + pair.voice(), pair);
+        }
+        for (var labelPair : labels.values()) {
+            String text = personLabelEn(labelPair.person()) + " " + numberLabel(labelPair.numberType())
+                    + " " + voiceLabelEn(labelPair.voice());
+            UUID optionId = UUID.nameUUIDFromBytes(
+                    (item.id() + "|L|" + labelPair.person() + "|" + labelPair.numberType() + "|" + labelPair.voice())
+                            .getBytes(StandardCharsets.UTF_8));
+            ObjectNode option = objectMapper.createObjectNode();
+            option.put("id", optionId.toString());
+            option.put("text", text);
+            option.put("person", labelPair.person());
+            option.put("numberType", labelPair.numberType());
+            option.put("voice", labelPair.voice());
+            options.add(option);
+        }
+        return arrayToJson(options);
+    }
+
+    private boolean isConjugationItem(QuestItemDto item) {
+        return item.itemType() != null && item.itemType().startsWith("CONJUGATION_");
+    }
+
+    private DeclensionMatchPayload parseDeclensionMatchPayload(QuestItemDto item) {
         if (item.payload() == null) {
             throw new IllegalStateException("MATCHING item without payload: " + item.id());
         }
         try {
             return objectMapper.treeToValue(item.payload(), DeclensionMatchPayload.class);
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to parse MATCHING payload for item " + item.id(), e);
+            throw new IllegalStateException("Failed to parse DECLENSION_MATCH payload for item " + item.id(), e);
+        }
+    }
+
+    private ConjugationMatchPayload parseConjugationMatchPayload(QuestItemDto item) {
+        if (item.payload() == null) {
+            throw new IllegalStateException("MATCHING item without payload: " + item.id());
+        }
+        try {
+            return objectMapper.treeToValue(item.payload(), ConjugationMatchPayload.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to parse CONJUGATION_MATCH payload for item " + item.id(), e);
         }
     }
 
     private String label(String caseType, String numberType) {
         return caseType + " " + numberType;
+    }
+
+    private static String personLabelEn(int person) {
+        return switch (person) { case 1 -> "1st"; case 2 -> "2nd"; default -> "3rd"; };
+    }
+
+    private static String numberLabel(String numberType) {
+        try {
+            return sm.selflearn.samskrtam.content.model.NumberType.valueOf(numberType).getEnName();
+        } catch (IllegalArgumentException e) {
+            return numberType;
+        }
+    }
+
+    private static String voiceLabelEn(String voice) {
+        if ("PARASMAIPADA".equals(voice)) return "active";
+        if ("ATMANEPADA".equals(voice)) return "middle";
+        return voice;
     }
 
     String payloadToJson(com.fasterxml.jackson.databind.JsonNode payload) {
@@ -240,21 +304,45 @@ public class ComposedQuestionMapper {
             return List.of();
         }
         try {
-            DeclensionMatchPayload payload = objectMapper.treeToValue(
-                    objectMapper.readTree(q.getPayload().asString()), DeclensionMatchPayload.class);
-            List<QuestionMatchRowDto> rows = new ArrayList<>();
-            for (DeclensionMatchPayload.DeclensionMatchPair pair : payload.pairs()) {
-                rows.add(new QuestionMatchRowDto(
-                        UUID.fromString(pair.pairId()),
-                        pair.wordFormIast(),
-                        pair.wordFormDevanagari(),
-                        pair.caseType(),
-                        pair.numberType()));
+            if (q.getItemType() != null && q.getItemType().startsWith("CONJUGATION_")) {
+                return parseConjugationMatchRows(q);
             }
-            return rows;
+            return parseDeclensionMatchRows(q);
         } catch (Exception e) {
             return List.of();
         }
+    }
+
+    private List<QuestionMatchRowDto> parseDeclensionMatchRows(SessionQuestion q) throws Exception {
+        DeclensionMatchPayload payload = objectMapper.treeToValue(
+                objectMapper.readTree(q.getPayload().asString()), DeclensionMatchPayload.class);
+        List<QuestionMatchRowDto> rows = new ArrayList<>();
+        for (DeclensionMatchPayload.DeclensionMatchPair pair : payload.pairs()) {
+            rows.add(new QuestionMatchRowDto(
+                    UUID.fromString(pair.pairId()),
+                    pair.wordFormIast(),
+                    pair.wordFormDevanagari(),
+                    pair.caseType(),
+                    pair.numberType(),
+                    null, null));
+        }
+        return rows;
+    }
+
+    private List<QuestionMatchRowDto> parseConjugationMatchRows(SessionQuestion q) throws Exception {
+        ConjugationMatchPayload payload = objectMapper.treeToValue(
+                objectMapper.readTree(q.getPayload().asString()), ConjugationMatchPayload.class);
+        List<QuestionMatchRowDto> rows = new ArrayList<>();
+        for (ConjugationMatchPayload.ConjugationMatchPair pair : payload.pairs()) {
+            rows.add(new QuestionMatchRowDto(
+                    UUID.fromString(pair.pairId()),
+                    pair.wordFormIast(),
+                    pair.wordFormDevanagari(),
+                    null, null,
+                    pair.person(),
+                    pair.voice()));
+        }
+        return rows;
     }
 
     List<QuestionOptionDto> parseOptions(Json options) {
@@ -264,14 +352,22 @@ public class ComposedQuestionMapper {
         try {
             var array = (ArrayNode) objectMapper.readTree(options.asString());
             List<QuestionOptionDto> result = new ArrayList<>();
-            array.forEach(node -> result.add(QuestionOptionDto.builder()
-                    .id(UUID.fromString(node.get("id").asText()))
-                    .optionType(node.has("caseType") ? "MATCH_LABEL" : "FORM")
-                    .formIast(node.get("text").asText())
-                    .textRu(node.has("textRu") ? node.get("textRu").asText() : null)
-                    .caseType(node.has("caseType") ? node.get("caseType").asText() : null)
-                    .numberType(node.has("numberType") ? node.get("numberType").asText() : null)
-                    .build()));
+            array.forEach(node -> {
+                var builder = QuestionOptionDto.builder()
+                        .id(UUID.fromString(node.get("id").asText()))
+                        .optionType(node.has("caseType") ? "MATCH_LABEL" : node.has("person") ? "MATCH_LABEL_CONJ" : "FORM")
+                        .formIast(node.get("text").asText())
+                        .textRu(node.has("textRu") ? node.get("textRu").asText() : null)
+                        .caseType(node.has("caseType") ? node.get("caseType").asText() : null)
+                        .numberType(node.has("numberType") ? node.get("numberType").asText() : null);
+                if (node.has("person")) {
+                    builder.person(node.get("person").asInt());
+                }
+                if (node.has("voice")) {
+                    builder.voice(node.get("voice").asText());
+                }
+                result.add(builder.build());
+            });
             return result;
         } catch (Exception e) {
             return List.of();
@@ -300,14 +396,17 @@ public class ComposedQuestionMapper {
     }
 
     /**
-     * For a MATCHING question, the mapping optionId → (caseType, numberType) used by the
-     * answer verifier. Empty for non-matching questions.
+     * For a MATCHING question, the mapping optionId → (caseType, numberType) or
+     * (person, numberType, voice) used by the answer verifier.
+     * Empty for non-matching questions.
      */
     Map<UUID, String[]> parseMatchLabelMap(Json options) {
         Map<UUID, String[]> map = new LinkedHashMap<>();
         for (QuestionOptionDto o : parseOptions(options)) {
             if (o.getCaseType() != null && o.getNumberType() != null) {
                 map.put(o.getId(), new String[]{o.getCaseType(), o.getNumberType()});
+            } else if (o.getNumberType() != null && o.getVoice() != null && o.getPerson() != null) {
+                map.put(o.getId(), new String[]{String.valueOf(o.getPerson()), o.getNumberType(), o.getVoice()});
             }
         }
         return map;
@@ -315,7 +414,7 @@ public class ComposedQuestionMapper {
 
     /**
      * For a MATCHING question, the reference mapping pairId → (caseType, numberType)
-     * read from the persisted payload. Empty when the payload is missing/illegal.
+     * or (person, numberType, voice) read from the persisted payload.
      */
     Map<UUID, String[]> parseMatchPairMap(Json payload) {
         Map<UUID, String[]> map = new LinkedHashMap<>();
@@ -323,13 +422,24 @@ public class ComposedQuestionMapper {
             return map;
         }
         try {
-            DeclensionMatchPayload parsed = objectMapper.treeToValue(
-                    objectMapper.readTree(payload.asString()), DeclensionMatchPayload.class);
-            for (DeclensionMatchPayload.DeclensionMatchPair pair : parsed.pairs()) {
-                map.put(UUID.fromString(pair.pairId()), new String[]{pair.caseType(), pair.numberType()});
+            var root = objectMapper.readTree(payload.asString());
+            // Try conjugation payload first
+            if (root.has("pairs") && root.get("pairs").isArray() && root.get("pairs").size() > 0
+                    && root.get("pairs").get(0).has("person")) {
+                ConjugationMatchPayload parsed = objectMapper.treeToValue(root, ConjugationMatchPayload.class);
+                for (ConjugationMatchPayload.ConjugationMatchPair pair : parsed.pairs()) {
+                    map.put(UUID.fromString(pair.pairId()),
+                            new String[]{String.valueOf(pair.person()), pair.numberType(), pair.voice()});
+                }
+            } else {
+                DeclensionMatchPayload parsed = objectMapper.treeToValue(root, DeclensionMatchPayload.class);
+                for (DeclensionMatchPayload.DeclensionMatchPair pair : parsed.pairs()) {
+                    map.put(UUID.fromString(pair.pairId()),
+                            new String[]{pair.caseType(), pair.numberType()});
+                }
             }
         } catch (Exception ignored) {
-            // malformed payload → treated as no reference pairs → answer counted incorrect
+            // malformed payload → treated as no reference pairs
         }
         return map;
     }

@@ -21,9 +21,7 @@ import java.util.stream.Collectors;
 
 /**
  * Builds a grammar lesson (progress grid) for a curriculum topic (API v2).
- * Topic metadata comes from {@code fetchTopics}, quest items (for progress tag
- * morphology attributes) from {@code fetchAllQuestItems}, per-tag progress from
- * {@code quiz_item_score}.
+ * Supports both declension (NOMINAL_MORPHOLOGY) and conjugation (VERBAL_MORPHOLOGY).
  */
 @Service
 @RequiredArgsConstructor
@@ -33,10 +31,14 @@ public class GrammarLessonV2Service {
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private record TagInfo(String itemType, String gender, String caseType,
-                           String numberType, String formIast) {}
+                           String numberType, String formIast, String voice, Integer person) {
+        TagInfo(String itemType, String gender, String caseType, String numberType, String formIast) {
+            this(itemType, gender, caseType, numberType, formIast, null, null);
+        }
+    }
 
-    private record TagProgress(String caseType, String numberType,
-                               int score, WordStatus status) {}
+    private record TagProgress(String caseType, String numberType, String voice,
+                               int person, int score, WordStatus status) {}
 
     private final CurriculumClient curriculumClient;
     private final QuizItemScoreRepository quizItemScoreRepository;
@@ -73,7 +75,7 @@ public class GrammarLessonV2Service {
         for (var entry : metadata.entrySet()) {
             TagInfo info = entry.getValue();
             progress.add(new TagProgress(info.caseType(), info.numberType(),
-                    0, WordStatus.NEW));
+                    info.voice(), info.person() != null ? info.person() : 0, 0, WordStatus.NEW));
         }
         LessonStatusSummary summary = new LessonStatusSummary(metadata.size(),
                 metadata.size(), 0, 0, 0);
@@ -99,6 +101,7 @@ public class GrammarLessonV2Service {
                 case REVIEW -> reviewDue++;
             }
             progress.add(new TagProgress(info.caseType(), info.numberType(),
+                    info.voice(), info.person() != null ? info.person() : 0,
                     score != null ? score.getScore() : 0, status));
         }
 
@@ -111,16 +114,19 @@ public class GrammarLessonV2Service {
 
     private GrammarLesson populate(TopicDto topic, List<TagProgress> progress,
                                     LessonStatusSummary summary, int learned, float pct) {
+        boolean isConjugation = topic.domain() != null && topic.domain().equals("VERBAL_MORPHOLOGY");
+
         List<GrammarProgressAggregationService.ItemAgg> items = progress.stream()
                 .map(p -> new GrammarProgressAggregationService.ItemAgg(
-                        p.caseType(), p.numberType(), p.score()))
+                        p.caseType() != null ? p.caseType() : (p.voice() != null ? p.voice() : ""),
+                        p.numberType(), p.score()))
                 .collect(Collectors.toList());
         GrammarProgressAggregationService.GrammarProgressAggregations aggregations =
                 aggregationService.aggregate(items);
 
         GrammarLesson l = new GrammarLesson();
         l.setLessonId(topic.id());
-        l.setType("DECLENSIONS");
+        l.setType(isConjugation ? "CONJUGATIONS" : "DECLENSIONS");
         l.setTitleRu(topic.titleRu());
         l.setTitleEn(topic.titleEn());
         l.setDifficulty(topic.learningLevel());
@@ -132,6 +138,18 @@ public class GrammarLessonV2Service {
         l.setNumberAggregations(aggregations.numberAggregations());
         l.setGrid(aggregations.grid());
         l.setPairAggregations(aggregations.pairAggregations());
+
+        if (isConjugation) {
+            l.setConjugationProgress(progress.stream()
+                    .map(p -> new ConjugationCellProgress(
+                            p.voice() != null ? p.voice() : "",
+                            p.person(),
+                            p.numberType(),
+                            p.score(),
+                            p.status().name()))
+                    .collect(Collectors.toList()));
+        }
+
         return l;
     }
 
@@ -168,6 +186,30 @@ public class GrammarLessonV2Service {
                                 null, p.caseType().toUpperCase(), null, null));
                     }
                 }
+                case "CONJUGATION_FORM", "CONJUGATION_FORM_CHOICE" -> {
+                    var p = parse(json, ConjFormPayload.class);
+                    metadata.putIfAbsent(qi.progressTag(), new TagInfo(itemType,
+                            null, null, p.numberType(), null, p.voice(), p.person()));
+                }
+                case "CONJUGATION_ANALYSIS" -> {
+                    var p = parse(json, ConjAnalPayload.class);
+                    metadata.putIfAbsent(qi.progressTag(), new TagInfo(itemType,
+                            null, null, p.correctNumberType(), null, p.correctVoice(), p.correctPerson()));
+                }
+                case "CONJUGATION_MATCH", "CONJUGATION_BUILD" -> {
+                    var p = parse(json, ConjMatchPayload.class);
+                    var first = p.pairs() == null || p.pairs().isEmpty() ? null : p.pairs().get(0);
+                    if (first != null) {
+                        metadata.putIfAbsent(qi.progressTag(), new TagInfo(itemType,
+                                null, null, first.numberType(), null, first.voice(), first.person()));
+                    }
+                }
+                case "CONJUGATION_CORRECTION", "CONJUGATION_FIT",
+                     "CONJUGATION_TRANSLATE", "CONJUGATION_RECALL", "CONJUGATION_ODD" -> {
+                    var p = parse(json, ConjFormPayload.class);
+                    metadata.putIfAbsent(qi.progressTag(), new TagInfo(itemType,
+                            null, null, p.numberType(), null, p.voice(), p.person()));
+                }
             }
         }
         return metadata;
@@ -178,6 +220,9 @@ public class GrammarLessonV2Service {
             if (info.itemType() != null) {
                 if (info.itemType().startsWith("DECLENSION_") || info.itemType().startsWith("CASE_")) {
                     return ItemType.DECLENSION_FORM;
+                }
+                if (info.itemType().startsWith("CONJUGATION_")) {
+                    return ItemType.CONJUGATION_FORM;
                 }
                 return ItemType.VOCABULARY_WORD;
             }
@@ -201,4 +246,9 @@ public class GrammarLessonV2Service {
         record MatchPair(String caseType, String numberType) {}
     }
     private record CaseMeanPayload(String caseType) {}
+    private record ConjFormPayload(String voice, int person, String numberType) {}
+    private record ConjAnalPayload(int correctPerson, String correctNumberType, String correctVoice) {}
+    private record ConjMatchPayload(List<ConjPair> pairs) {
+        record ConjPair(int person, String numberType, String voice) {}
+    }
 }

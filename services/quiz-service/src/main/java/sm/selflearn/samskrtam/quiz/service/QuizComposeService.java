@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
+import sm.selflearn.samskrtam.quiz.config.ConjugationSessionProperties;
 import sm.selflearn.samskrtam.quiz.config.DeclensionSessionProperties;
 import sm.selflearn.samskrtam.quiz.config.QuizGeneratorConfig;
 import sm.selflearn.samskrtam.quiz.dto.ComposedQuestionDto;
@@ -51,6 +52,7 @@ public class QuizComposeService {
     private final QuizItemScoreRepository quizItemScoreRepository;
     private final QuizGeneratorConfig config;
     private final DeclensionSessionProperties declensionSessionProperties;
+    private final ConjugationSessionProperties conjugationSessionProperties;
 
     @Transactional
     public Mono<ComposeQuizResponse> compose(
@@ -130,9 +132,16 @@ List<SessionQuestion> questions = new ArrayList<>();
     private Mono<List<QuestItemDto>> selectFullLesson(
             String topicCode, String itemType, String answerMode, int sessionSize) {
         return curriculumClient.fetchTopicByCode(topicCode)
-                .flatMap(topic -> isDeclensionTopic(topic.domain())
-                        ? selectDeclensionMix(topicCode, null)
-                        : selectGeneric(topicCode, null, itemType, answerMode, sessionSize))
+                .flatMap(topic -> {
+                    String domain = topic.domain();
+                    if (isDeclensionTopic(domain)) {
+                        return selectDeclensionMix(topicCode, null);
+                    }
+                    if (isConjugationTopic(domain)) {
+                        return selectConjugationMix(topicCode, null);
+                    }
+                    return selectGeneric(topicCode, null, itemType, answerMode, sessionSize);
+                })
                 .switchIfEmpty(Mono.defer(() -> selectGeneric(topicCode, null, itemType, answerMode, sessionSize)));
     }
 
@@ -155,6 +164,25 @@ List<SessionQuestion> questions = new ArrayList<>();
                 });
     }
 
+    private Mono<List<QuestItemDto>> selectConjugationMix(String topicCode, List<String> progressTags) {
+        return curriculumClient.selectQuestItems(topicCode, progressTags, null, null, 0)
+                .map(all -> {
+                    ConjugationSessionProperties props = conjugationSessionProperties;
+                    int singleChoiceTotal = props.getSingleChoiceCount() + props.getAnalysisCount();
+                    List<QuestItemDto> singleChoice = filterByAnswerMode(all, AnswerMode.SINGLE_CHOICE,
+                            singleChoiceTotal);
+                    List<QuestItemDto> matching = filterByAnswerMode(all, AnswerMode.MATCHING,
+                            props.getMatchCount());
+                    List<QuestItemDto> freeText = filterByAnswerMode(all, AnswerMode.FREE_TEXT,
+                            props.getFreeTextCount());
+                    List<QuestItemDto> ordered = new ArrayList<>();
+                    ordered.addAll(singleChoice);
+                    ordered.addAll(matching);
+                    ordered.addAll(freeText);
+                    return ordered;
+                });
+    }
+
     private static List<QuestItemDto> filterByAnswerMode(List<QuestItemDto> items,
                                                          AnswerMode answerMode, int count) {
         return items.stream()
@@ -171,6 +199,10 @@ List<SessionQuestion> questions = new ArrayList<>();
 
     private static boolean isDeclensionTopic(String domain) {
         return "NOMINAL_MORPHOLOGY".equals(domain);
+    }
+
+    private static boolean isConjugationTopic(String domain) {
+        return "VERBAL_MORPHOLOGY".equals(domain);
     }
 
     /** NEW: fetch full lesson, then remove items whose progress_tag already has a score. */
@@ -253,6 +285,9 @@ List<SessionQuestion> questions = new ArrayList<>();
         if (itemTypeCode == null) return ItemType.DECLENSION_FORM;
         if (itemTypeCode.startsWith("DECLENSION_") || itemTypeCode.startsWith("CASE_")) {
             return ItemType.DECLENSION_FORM;
+        }
+        if (itemTypeCode.startsWith("CONJUGATION_")) {
+            return ItemType.CONJUGATION_FORM;
         }
         return ItemType.VOCABULARY_WORD;
     }

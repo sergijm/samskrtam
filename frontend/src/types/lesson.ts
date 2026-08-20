@@ -91,6 +91,15 @@ export interface GrammarLesson {
   numberAggregations?: NumberAggregation[];
   grid?:            CaseNumberAggregation[];
   pairAggregations?: PairAggregation[];
+  conjugationProgress?: ConjugationCellProgress[];
+}
+
+export interface ConjugationCellProgress {
+  voice: string;
+  person: number;
+  numberType: string;
+  score: number;
+  status: WordStatus;
 }
 
 export interface AnswerHistoryEntry {

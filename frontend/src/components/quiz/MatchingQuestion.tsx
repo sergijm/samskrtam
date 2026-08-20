@@ -13,8 +13,11 @@ import HighlightedPrompt from './HighlightedPrompt';
 
 interface RightItem {
   id: string;
-  caseType: string;
-  numberType: string;
+  text?: string;
+  caseType?: string;
+  numberType?: string;
+  person?: number;
+  voice?: string;
 }
 
 interface MatchingQuestionProps {
@@ -56,8 +59,21 @@ export default function MatchingQuestion({
 
   const buildRight = (q: SessionQuestion): RightItem[] =>
     (q.options ?? [])
-      .filter((o) => o.caseType && o.numberType)
-      .map((o) => ({ id: o.id, caseType: o.caseType!, numberType: o.numberType! }))
+      .filter((o) => o.caseType && o.numberType || o.person !== undefined && o.numberType && o.voice)
+      .map((o) => {
+        const item: RightItem = { id: o.id };
+        if (o.caseType) {
+          item.caseType = o.caseType!;
+          item.numberType = o.numberType!;
+          item.text = o.formIast;
+        } else {
+          item.person = o.person!;
+          item.numberType = o.numberType!;
+          item.voice = o.voice!;
+          item.text = o.formIast;
+        }
+        return item;
+      })
       .sort(() => Math.random() - 0.5);
 
   const [questionId, setQuestionId] = useState(question.id);
@@ -74,6 +90,7 @@ export default function MatchingQuestion({
   const allAssigned = left.length > 0 && right.length === left.length;
 
   const labelText = (r: RightItem) => {
+    if (r.text) return r.text;
     const c = lookup(r.caseType, isRu ? FULL_CASE_RU : FULL_CASE);
     const n = lookup(r.numberType, isRu ? FULL_NUMBER_RU : FULL_NUMBER);
     return [c, n].filter(Boolean).join(', ') || `${r.caseType} ${r.numberType}`;

@@ -17,6 +17,7 @@ public class GrammarLesson {
     private List<GrammarNumberAggregation> numberAggregations;
     private List<GrammarGridCellAggregation> grid;
     private List<GrammarPairAggregation> pairAggregations;
+    private List<ConjugationCellProgress> conjugationProgress;
 
     // Getters and setters
     public UUID getLessonId() {
@@ -121,5 +122,13 @@ public class GrammarLesson {
 
     public void setPairAggregations(List<GrammarPairAggregation> pairAggregations) {
         this.pairAggregations = pairAggregations;
+    }
+
+    public List<ConjugationCellProgress> getConjugationProgress() {
+        return conjugationProgress;
+    }
+
+    public void setConjugationProgress(List<ConjugationCellProgress> conjugationProgress) {
+        this.conjugationProgress = conjugationProgress;
     }
 }
