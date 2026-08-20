@@ -1,7 +1,7 @@
 # US-SYNT-01 — Выбор падежа по семантической роли (kāraka)
 
 > Домен: Syntax · Тип: `KARAKA_CASE_CHOICE` (план)
-> Связанные файлы: [quest-catalog.md §4.1](../../../services/quest-catalog.md#41-karaka_case_choice--план)
+> Связанные файлы: [quest-catalog.md §4.1](../../../services/curriculum-service/quest-catalog.md#41-karaka_case_choice--план)
 
 ## История
 

@@ -1,7 +1,7 @@
 # US-LEX-04 — Определение тематической категории слова
 
 > Домен: Lexicon · Тип: `VOCABULARY_SEMANTIC_FIELD` (план)
-> Связанные файлы: [quest-catalog.md §5](../../../services/quest-catalog.md#5-лексика)
+> Связанные файлы: [quest-catalog.md §5](../../../services/curriculum-service/quest-catalog.md#5-лексика)
 
 ## История
 

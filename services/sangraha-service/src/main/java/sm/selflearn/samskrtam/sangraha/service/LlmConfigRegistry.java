@@ -26,7 +26,7 @@ import java.util.Optional;
  * {@code api-key: ${SANGRAHA_LLM_API_KEY}}.
  *
  * В {@code @PostConstruct} применяет найденную конфигурацию к {@link LlmProperties}
- * (baseUrl/apiKey/twoPass/maxCompletionTokens). Клиенты LLM (LlmClient,
+ * (baseUrl/apiKey/maxCompletionTokens). Клиенты LLM (LlmClient,
  * ChapterMetadataClient) аннотированы {@code @DependsOn} этого бина, поэтому
  * порядок гарантирован.
  *
@@ -56,21 +56,27 @@ public class LlmConfigRegistry {
     public void applyActiveConfig() {
         LlmConfigFile file = load();
         if (file == null || file.llm() == null || file.llm().configs() == null) {
-            log.warn("llm.yaml не найден или не содержит llm.configs — "
-                    + "используем baseUrl/twoPass/maxCompletionTokens из env (SANGRAHA_LLM_BASE_URL и т.п.)");
-            return;
+            throw new IllegalStateException(
+                    "llm.yaml не найден или не содержит llm.configs. "
+                    + "Укажите SANGRAHA_LLM_CONFIG_FILE или положите llm.yaml в корень/../app.");
         }
         configs = file.llm().configs();
 
-        LlmConfig active = configs.get(llmProperties.getModel());
+        String model = llmProperties.getModel();
+        LlmConfig active = configs.get(model);
         if (active == null) {
-            log.warn("Нет конфигурации в llm.yaml для модели '{}'. Доступны: {}. "
-                    + "Используем настройки из env.", llmProperties.getModel(), configs.keySet());
-            return;
+            throw new IllegalStateException(
+                    "Модель '" + model + "' не найдена в llm.yaml. Доступны: " + configs.keySet());
         }
         apply(active);
-        log.info("LLM config applied: model={}, baseUrl={}, twoPass={}, maxCompletionTokens={}",
-                llmProperties.getModel(), llmProperties.getBaseUrl(), llmProperties.isTwoPass(),
+
+        if (llmProperties.getBaseUrl() == null || llmProperties.getBaseUrl().isBlank()) {
+            throw new IllegalStateException(
+                    "base-url отсутствует в llm.yaml для модели '" + model + "'");
+        }
+
+        log.info("LLM config applied: model={}, baseUrl={}, maxCompletionTokens={}",
+                model, llmProperties.getBaseUrl(),
                 llmProperties.getMaxCompletionTokens());
     }
 
@@ -82,7 +88,6 @@ public class LlmConfigRegistry {
     private void apply(LlmConfig config) {
         if (config.baseUrl() != null) llmProperties.setBaseUrl(resolvePlaceholders(config.baseUrl()));
         if (config.apiKey() != null) llmProperties.setApiKey(resolvePlaceholders(config.apiKey()));
-        if (config.twoPass() != null) llmProperties.setTwoPass(config.twoPass());
         if (config.maxCompletionTokens() != null) {
             llmProperties.setMaxCompletionTokens(config.maxCompletionTokens());
         }

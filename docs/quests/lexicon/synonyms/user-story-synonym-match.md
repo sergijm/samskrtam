@@ -1,7 +1,7 @@
 # US-LEX-01 — Подбор синонима из группы близких по значению слов
 
 > Домен: Lexicon · Тип: `VOCABULARY_SYNONYM` (план)
-> Связанные файлы: [quest-catalog.md §5](../../../services/quest-catalog.md#5-лексика)
+> Связанные файлы: [quest-catalog.md §5](../../../services/curriculum-service/quest-catalog.md#5-лексика)
 
 ## История
 

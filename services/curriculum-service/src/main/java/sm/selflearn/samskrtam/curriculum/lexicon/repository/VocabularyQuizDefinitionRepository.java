@@ -13,6 +13,4 @@ public interface VocabularyQuizDefinitionRepository extends JpaRepository<Vocabu
     List<VocabularyQuizDefinition> findByKind(VocabularyQuizKind kind);
 
     List<VocabularyQuizDefinition> findByTopicId(UUID topicId);
-
-    List<VocabularyQuizDefinition> findBySourceId(UUID sourceId);
 }

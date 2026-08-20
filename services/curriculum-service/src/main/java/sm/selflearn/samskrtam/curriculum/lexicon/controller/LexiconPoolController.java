@@ -30,15 +30,13 @@ public class LexiconPoolController {
             @RequestParam(required = false) Integer frequencyRankMax,
             @RequestParam(required = false) List<String> posCodes,
             @RequestParam(required = false) List<String> morphologyClassCodes,
-            @RequestParam(required = false) UUID sourceId,
-            @RequestParam(required = false) String sourceLocationPrefix,
             @RequestParam(required = false) UUID collectionId,
             @RequestParam(required = false) UUID excludeMasteredForUserId,
             @RequestParam(required = false) Integer poolLimit) {
         PoolCriteria criteria = new PoolCriteria(
                 topicIds, frequencyRankMin, frequencyRankMax,
                 posCodes, morphologyClassCodes,
-                sourceId, sourceLocationPrefix, collectionId,
+                collectionId,
                 excludeMasteredForUserId, poolLimit);
         return lexemePoolService.resolve(criteria);
     }

@@ -1,53 +1,73 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card } from 'primereact/card';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
-import { Button } from 'primereact/button';
 import { useSandhiRules } from '../hooks/useContent';
-import { useLocation } from 'react-router-dom';
-import { OverlayPanel } from 'primereact/overlaypanel';
-import { Tooltip } from 'primereact/tooltip';
-
+import { useLocation, useSearchParams } from 'react-router-dom';
 const EmeneauRulesPage = () => {
   const { t } = useTranslation();
   const location = useLocation();
-  const { data: allSandhiRules, isLoading, isError, error } = useSandhiRules();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { data: response, isLoading, isError, error } = useSandhiRules();
 
-  const [currentPage, setCurrentPage] = useState(() => {
-    const storedPage = localStorage.getItem('emeneauRulesPage');
-    return storedPage ? parseInt(storedPage, 10) : 0;
-  });
-  const rulesPerPage = 10;
+  const allSandhiRules = response?.rules ?? [];
+  const categoryGlossary = response?.categoryGlossary ?? {};
+  const hasRuleParams = location.search.includes('rule=');
 
-  // Filter rules based on URL parameters
-  const getFilteredRules = () => {
-    const params = new URLSearchParams(location.search);
-    const ruleParams = params.getAll('rule'); // Changed to 'rule'
+  const categories = useMemo(() => {
+    const catSet = new Set<string>();
+    allSandhiRules.forEach(r => r.category?.forEach(c => catSet.add(c)));
+    return Array.from(catSet).sort();
+  }, [allSandhiRules]);
 
-    if (ruleParams.length > 0 && allSandhiRules) {
-      const ruleNumbersToFilter = ruleParams.map(Number);
-      return allSandhiRules.filter(rule => ruleNumbersToFilter.includes(rule.ruleNumber));
+  const selectedCategories = searchParams.getAll('category');
+
+  const categoryOptions = useMemo(() => {
+    return categories.map(cat => ({
+      label: categoryGlossary[cat] ?? cat,
+      value: cat,
+    }));
+  }, [categories, categoryGlossary]);
+
+  const filteredRules = useMemo(() => {
+    if (hasRuleParams) {
+      const params = new URLSearchParams(location.search);
+      const ruleParams = params.getAll('rule').map(Number).filter(n => !isNaN(n));
+
+      if (ruleParams.length > 0) {
+        const byNumber = new Map(allSandhiRules.map(r => [r.number, r]));
+        const requested = new Set(ruleParams);
+        const selected = new Set<number>();
+        const stack = [...ruleParams];
+        while (stack.length) {
+          const n = stack.pop()!;
+          if (selected.has(n)) continue;
+          selected.add(n);
+          byNumber.get(n)?.appliesWith?.forEach(d => stack.push(d));
+        }
+
+        const requestedRules = ruleParams
+          .filter(n => byNumber.has(n))
+          .map(n => byNumber.get(n)!);
+        const dependencyRules = allSandhiRules
+          .filter(r => selected.has(r.number) && !requested.has(r.number))
+          .sort((a, b) => a.number - b.number);
+
+        return { rules: [...requestedRules, ...dependencyRules], requested };
+      }
     }
-    return allSandhiRules;
-  };
 
-  const sandhiRules = getFilteredRules();
-
-  useEffect(() => {
-    localStorage.setItem('emeneauRulesPage', currentPage.toString());
-  }, [currentPage]);
-
-  const totalRules = sandhiRules?.length || 0;
-  const totalPages = Math.ceil(totalRules / rulesPerPage);
-
-  useEffect(() => {
-    if (currentPage >= totalPages && totalPages > 0) {
-      setCurrentPage(totalPages - 1);
-    } else if (currentPage < 0 && totalPages > 0) {
-      setCurrentPage(0);
+    let filtered = allSandhiRules;
+    if (selectedCategories.length > 0) {
+      filtered = allSandhiRules.filter(rule =>
+        rule.category && selectedCategories.every(cat => rule.category!.includes(cat))
+      );
     }
-  }, [currentPage, totalPages]);
+
+    return { rules: filtered, requested: null };
+  }, [allSandhiRules, hasRuleParams, location.search, selectedCategories]);
+
+  const { rules: sandhiRules, requested } = filteredRules;
 
   if (isLoading) {
     return (
@@ -65,67 +85,116 @@ const EmeneauRulesPage = () => {
     );
   }
 
-  const startIndex = currentPage * rulesPerPage;
-  const endIndex = Math.min(startIndex + rulesPerPage, totalRules);
-  const currentRules = sandhiRules?.slice(startIndex, endIndex) || [];
-
-  const pageRange = Array.from({ length: totalPages }, (_, i) => i);
+  const renderRuleLinks = (numbers: number[]) =>
+    numbers.map((d, i) => (
+      <span key={d}>
+        {i > 0 && ', '}
+        <span
+          className="cursor-pointer text-primary hover:underline"
+          onClick={(e) => {
+            e.stopPropagation();
+            const el = document.getElementById(`rule-${d}`);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }}
+        >
+          {d}
+        </span>
+      </span>
+    ));
 
   return (
     <div className="flex flex-column align-items-center justify-content-center p-4">
       <h1 className="text-center mb-5">{t('grammar.sandhiRulesTitle')}</h1>
-      <div className="w-full" style={{ maxWidth: '800px' }}>
-        {totalRules > rulesPerPage && (
-          <div className="flex justify-content-center gap-2 mb-4 flex-wrap">
-            {pageRange.map((pageIdx) => (
-              <Button
-                key={pageIdx}
-                label={`${pageIdx * rulesPerPage + 1}-${Math.min((pageIdx + 1) * rulesPerPage, totalRules)}`}
-                className={`p-button-sm ${currentPage === pageIdx ? 'p-button-primary' : 'p-button-outlined'}`}
-                onClick={() => setCurrentPage(pageIdx)}
-              />
-            ))}
-          </div>
-        )}
 
-        {currentRules.map((rule) => (
-          <Card
-            key={rule.id}
-            className="mb-4 relative" // Added relative positioning for absolute child
-          >
-            <div className="p-card-title flex justify-content-between align-items-start">
-              <div>
-                <span className="text-lg font-bold">{rule.ruleNumber}</span>
-                {rule.whitneyNumber && <span className="text-lg font-bold ml-2">({rule.whitneyNumber})</span>}
-                {rule.shortDescription && <span className="text-lg font-bold ml-2">{rule.shortDescription}</span>}
+      {!hasRuleParams && categories.length > 0 && (
+        <div className="w-full mb-3" style={{ maxWidth: '800px' }}>
+          <div className="flex flex-wrap align-items-center gap-1">
+            {categoryOptions.map(opt => {
+              const isSelected = selectedCategories.includes(opt.value);
+              return (
+                <span
+                  key={opt.value}
+                  className={`inline-flex align-items-center px-2 py-1 cursor-pointer text-sm border-none ${
+                    isSelected
+                      ? 'bg-primary text-primary-contrast'
+                      : 'bg-surface-100 text-color-secondary hover:bg-surface-200'
+                  }`}
+                  style={{ borderRadius: '4px', lineHeight: '1.2' }}
+                  onClick={() => {
+                    const newParams = new URLSearchParams(searchParams);
+                    newParams.delete('category');
+                    if (isSelected) {
+                      selectedCategories.filter(c => c !== opt.value).forEach(c => newParams.append('category', c));
+                    } else {
+                      [...selectedCategories, opt.value].forEach(c => newParams.append('category', c));
+                    }
+                    setSearchParams(newParams, { replace: true });
+                  }}
+                >
+                  {opt.label}
+                </span>
+              );
+            })}
+            {selectedCategories.length > 0 && (
+              <span
+                className="inline-flex align-items-center px-1 py-1 cursor-pointer text-sm text-color-secondary hover:text-color border-none"
+                onClick={() => {
+                  const newParams = new URLSearchParams(searchParams);
+                  newParams.delete('category');
+                  setSearchParams(newParams, { replace: true });
+                }}
+                title={t('eamenau.clearFilters')}
+              >
+                ✕
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="w-full" style={{ maxWidth: '800px' }}>
+        {sandhiRules?.map((rule) => {
+          const isDependency = requested !== null && !requested.has(rule.number);
+          return (
+            <div key={rule.number} id={`rule-${rule.number}`} className="mb-4">
+              <div className="flex align-items-center gap-2 mb-2">
+                <span
+                  id={`rule-badge-${rule.number}`}
+                  className={
+                    isDependency
+                      ? 'bg-surface-300 text-color border-circle w-2rem h-2rem flex align-items-center justify-content-center font-bold text-sm'
+                      : 'bg-orange-500 text-white border-circle w-2rem h-2rem flex align-items-center justify-content-center font-bold text-sm'
+                  }
+                >
+                  {rule.number}
+                </span>
+                {rule.reference && (
+                  <span className="text-sm text-color-secondary">({rule.reference})</span>
+                )}
+                {!isDependency && (
+                  <span className="ml-auto flex flex-wrap gap-2 text-xs text-color-secondary">
+                    {rule.supersedes && rule.supersedes.length > 0 && (
+                      <span>Заменяет: № {renderRuleLinks(rule.supersedes)}</span>
+                    )}
+                    {rule.defaultFor && rule.defaultFor.length > 0 && (
+                      <span>Общее для: № {renderRuleLinks(rule.defaultFor)}</span>
+                    )}
+                    {rule.appliesWith && rule.appliesWith.length > 0 && (
+                      <span>Одновременно: № {renderRuleLinks(rule.appliesWith)}</span>
+                    )}
+                  </span>
+                )}
               </div>
-              {rule.sandhiRuleGroups && rule.sandhiRuleGroups.length > 0 && (
-                <div className="flex gap-2 absolute top-0 right-0 p-3"> {/* Positioned top-right */}
-                  {rule.sandhiRuleGroups.map((group) => (
-                    <React.Fragment key={group.id}>
-                      <i
-                        className="pi pi-tag text-xl cursor-pointer" // Example icon, adjust as needed
-                        data-pr-tooltip={group.description}
-                        data-pr-position="top"
-                      ></i>
-                      <Tooltip target=".pi-tag" />
-                    </React.Fragment>
-                  ))}
-                </div>
+              <p className="m-0 mb-1">{rule.text}</p>
+              {rule.example && (
+                <p className="m-0 text-color-secondary font-italic">{rule.example}</p>
               )}
             </div>
-            <div className="p-card-content">
-              <p className="m-0">{rule.fullText}</p>
-              {rule.iastExample && (
-                <p className="m-0 pl-4 text-color-secondary font-italic"><br/>{rule.iastExample}</p>
-              )}
-            </div>
-          </Card>
-        ))}
-        {currentRules.length === 0 && totalRules > 0 && (
-          <Message severity="info" text={t('emeneau.noRulesFoundForPage')} />
-        )}
-        {totalRules === 0 && (
+          );
+        })}
+        {(!sandhiRules || sandhiRules.length === 0) && (
           <Message severity="info" text={t('emeneau.noRulesFound')} />
         )}
       </div>

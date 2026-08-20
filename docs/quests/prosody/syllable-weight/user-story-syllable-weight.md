@@ -1,6 +1,6 @@
 # US-PROS-02 — Разметка долготы слогов (laghu/guru) в строке
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `SYLLABLE_WEIGHT` (план)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `SYLLABLE_WEIGHT` (план)
 > Связанные файлы: [quest-types-overview.md, тип №26](../../../services/quest-types-overview.md)
 
 ## История

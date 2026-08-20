@@ -2,7 +2,7 @@
 
 > Заменяет: `services/quiz-service.md`, `services/quiz-service/quiz-generator-spec.md`,
 > `services/quiz-service/quiz-declension.md`, `services/quiz-service/quiz-service-repositories.md`.
-> Связанные файлы: [README.md](../README.md) · [architecture.md](../architecture.md) · [curriculum-service.md](./curriculum-service.md) · [quest-catalog.md](./quest-catalog.md) · [quest-item-model.md](./quest-item-model.md)
+> Связанные файлы: [README.md](../README.md) · [architecture.md](../architecture.md) · [curriculum-service.md](./curriculum-service.md) · [quest-catalog.md](curriculum-service/quest-catalog.md) · [quest-item-model.md](./quest-item-model.md)
 
 ---
 
@@ -109,7 +109,7 @@
 источнике — предпочтительный способ не терять прогресс при архивации контента.
 
 Источник `QuestItem` зависит от типа: для `DECLENSION_FORM`-семейства (4 типа, см.
-[curriculum-quest-items.md](./curriculum-quest-items.md)) quiz-service обращается к
+[curriculum-quest-items.md](curriculum-service/curriculum-quest-items.md)) quiz-service обращается к
 **curriculum-service (API v2)** через `CurriculumClient`; для остальных типов (`VOCABULARY_*`
 и т.д.) — по-прежнему к **curriculum-service (API v1)** через `ContentClient`, без изменений.
 Оба клиента реализуют один и тот же внутренний контракт получения списка `QuestItem` —

@@ -1,16 +1,17 @@
 package sm.selflearn.samskrtam.sangraha.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
 import sm.selflearn.samskrtam.sangraha.model.VerseStatus;
+import sm.selflearn.samskrtam.sangraha.model.VerseWord;
 import sm.selflearn.samskrtam.sangraha.model.Work;
 import sm.selflearn.samskrtam.sangraha.model.Chapter;
 import sm.selflearn.samskrtam.sangraha.repository.ChapterRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
+import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
 
 import java.time.Instant;
@@ -29,23 +30,43 @@ import static sm.selflearn.samskrtam.sangraha.service.VerseAnalysisSaver.getStri
 public class VerseAnalysisService {
 
     /**
-     * Размер чанка для analyzeVerses (batch-verse-review.md): не больше самой крупной
-     * существующей главы, чтобы не увеличивать LLM-промпт сверх проверенного на практике.
-     * TODO: прикинуть реальный максимум по корпусу (MAX(COUNT(*)) по chapter_id) и
-     * выровнять константу, если он заметно больше/меньше.
+     * Максимальный размер чанка для analyzeVerses (batch-verse-review.md):
+     * {@code max-completion-tokens / 3000} (3000 токенов — ориентир на один стих
+     * с полным разбором), но не больше {@link #ANALYSIS_CHUNK_SIZE_MAX}.
+     * Чтобы не увеличивать LLM-промпт сверх проверенного на практике.
      */
-    private static final int ANALYSIS_CHUNK_SIZE = 20;
+    private static final int ANALYSIS_CHUNK_SIZE_MAX = 20;
+    private static final int ANALYSIS_CHUNK_SIZE_DEFAULT = 20;
+    private static final int ANALYSIS_TOKENS_PER_VERSE = 3000;
 
     private final VerseRepository verseRepository;
     private final ChapterRepository chapterRepository;
     private final WorkRepository workRepository;
+    private final VerseWordRepository verseWordRepository;
     private final LlmClient llmClient;
+    private final LlmProperties llmProperties;
     private final VerseAnalysisSaver analysisSaver;
     private final VerseAnalysisResponseNormalizer responseNormalizer;
     private final ToolCallValidator toolCallValidator;
     private final JsonSchemas jsonSchemas;
-    private final LlmProperties llmProperties;
-    private final ObjectMapper objectMapper;
+    private final VerseBatchPushService verseBatchPushService;
+
+    /**
+     * Размер батча для анализа стихов: {@code max-completion-tokens / 3000},
+     * но не больше {@link #ANALYSIS_CHUNK_SIZE_MAX}. Если max-completion-tokens
+     * не задан — {@link #ANALYSIS_CHUNK_SIZE_DEFAULT}.
+     */
+    private int analysisChunkSize() {
+        Integer maxTokens = llmProperties.getMaxCompletionTokens();
+        if (maxTokens == null || maxTokens <= 0) {
+            return ANALYSIS_CHUNK_SIZE_DEFAULT;
+        }
+        int computed = maxTokens / ANALYSIS_TOKENS_PER_VERSE;
+        if (computed < 1) {
+            computed = 1;
+        }
+        return Math.min(computed, ANALYSIS_CHUNK_SIZE_MAX);
+    }
 
     /**
      * Запускает анализ одного стиха LLM.
@@ -117,8 +138,9 @@ public class VerseAnalysisService {
             }
         }
 
-        for (int i = 0; i < ordered.size(); i += ANALYSIS_CHUNK_SIZE) {
-            int end = Math.min(i + ANALYSIS_CHUNK_SIZE, ordered.size());
+        int chunkSize = analysisChunkSize();
+        for (int i = 0; i < ordered.size(); i += chunkSize) {
+            int end = Math.min(i + chunkSize, ordered.size());
             runAnalysis(ordered.subList(i, end));
         }
 
@@ -145,13 +167,15 @@ public class VerseAnalysisService {
             verseRepository.save(v);
         }
 
-        log.info("Starting batch analysis for {} verses (mode: {})", verses.size(),
-                llmProperties.isTwoPass() ? "two-pass" : "single-pass");
+        log.info("Starting batch analysis for {} verses", verses.size());
 
         // 2. LLM-вызов
         JsonNode llmResponse;
+        String rawPrompt;
         try {
-            llmResponse = llmClient.call(verses);
+            var result = llmClient.callWithResult(verses);
+            llmResponse = result == null ? null : result.response();
+            rawPrompt = result == null ? null : result.rawPrompt();
         } catch (Exception e) {
             log.error("LLM batch analysis failed for {} verses", verses.size(), e);
             for (Verse v : verses) {
@@ -216,7 +240,8 @@ public class VerseAnalysisService {
                         verseEntry,
                         llmResponse.toString(),
                         modelName,
-                        analyzerName
+                        analyzerName,
+                        rawPrompt
                 );
             } catch (Exception e) {
                 log.error(
@@ -253,7 +278,8 @@ public class VerseAnalysisService {
 
 
     private void saveSingleVerseResult(Verse verse, JsonNode verseEntry,
-                                        String rawResponse, String modelName, String analyzerName) {
+                                        String rawResponse, String modelName, String analyzerName,
+                                        String rawPrompt) {
         // Standalone-стихи (страница /analysis) не привязаны к главе/произведению —
         // контекст work/chapter для них отсутствует и в saveResults передаётся null.
         final Chapter chapter;
@@ -286,7 +312,11 @@ public class VerseAnalysisService {
         try {
             analysisSaver.saveResults(verse, work, chapter,
                     textDevanagari, textIast, translationRu, translationEn,
-                    sandhiSplitsNode, wordsNode, rawResponse, modelName, analyzerName);
+                    sandhiSplitsNode, wordsNode, rawResponse, modelName, analyzerName, rawPrompt);
+            // Инкрементальная пачка лемм в curriculum-service (lexicon-content-pipeline.md §7).
+            // Вне транзакции: сбой curriculum-service не откатывает анализ (см. VerseBatchPushService).
+            verseBatchPushService.push(verse, work, chapter,
+                    verseWordRepository.findAllByVerse_IdOrderByPositionAsc(verse.getId()));
         } catch (Exception e) {
             log.error("Failed to save analysis results for verse {}, reverting to DRAFT", verse.getId(), e);
             analysisSaver.revertToDraft(verse);

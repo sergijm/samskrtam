@@ -28,4 +28,8 @@ public class LessonItemDto {
     // === Поля прогресса (для VOCABULARY) ===
     private int totalWordsOwn;    // wordCount из content-service (слова без подкатегорий)
     private int learnedWords;     // слова userId со score >= 80
+
+    // === Домен (curriculum v2) ===
+    private String domain;
+    private String domainType;
 }

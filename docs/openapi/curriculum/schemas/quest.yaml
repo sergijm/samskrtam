@@ -116,6 +116,12 @@ QuestItemDto:
         type: string
     payload:
       $ref: '#/QuestItemPayload'
+    progressTag:
+      type:
+        - string
+        - 'null'
+      maxLength: 255
+      description: Progress grouping tag populated at generation time. DECLENSION_* -> caseType|numberType|gender (MATCH takes the first pair); VOCABULARY_WORD -> lemmaSlp1. Null on rows generated before migration V13.
 
 QuestPoolEntry:
   type: object

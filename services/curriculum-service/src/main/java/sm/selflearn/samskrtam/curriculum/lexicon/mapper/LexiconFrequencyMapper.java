@@ -8,7 +8,7 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.FrequencyBand;
 /**
  * Maps a {@link FrequencyBand} into a home-page frequency-band card. from/to
  * come from the rank range; wordCount is the real slice size; masteredCount is
- * injected per user (currently random).
+ * the per-user mastered subset.
  */
 @Mapper(componentModel = "spring")
 public interface LexiconFrequencyMapper {

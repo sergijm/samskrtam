@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.sangraha.model.Gender;
 import sm.selflearn.samskrtam.sangraha.model.NominalLemma;
 
@@ -34,7 +35,7 @@ public interface NominalLemmaRepository extends JpaRepository<NominalLemma, Long
             GROUP BY nl.lemmaIast, nl.stemIast, nl.stemClass
             ORDER BY COUNT(vw.id) DESC, nl.lemmaIast
             """)
-    List<CandidateRow> findCandidatesByStemClass(@Param("stemClass") String stemClass, Pageable pageable);
+    List<CandidateRow> findCandidatesByStemClass(@Param("stemClass") VowelType stemClass, Pageable pageable);
 
     /**
      * То же, что {@link #findCandidatesByStemClass}, но для всех классов.

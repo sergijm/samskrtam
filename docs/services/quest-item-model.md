@@ -1,8 +1,8 @@
 # Quest Item Model — базовые Java-абстракции
 
-> Связанные файлы: [quest-engine.md](./quest-engine.md) · [quest-catalog.md](./quest-catalog.md) · [curriculum-service.md](./curriculum-service.md)
+> Связанные файлы: [quest-engine.md](./quest-engine.md) · [quest-catalog.md](curriculum-service/quest-catalog.md) · [curriculum-service.md](./curriculum-service.md)
 
-Базовые интерфейсы и абстрактные классы для модели квестов — общие для curriculum-service (генерация) и quiz-service (прохождение, прогресс). Цель: добавление нового типа квеста (см. [quest-catalog.md](./quest-catalog.md)) не требует изменений в quiz-service и в алгоритме повторения — только новая реализация `QuestItemGenerator`/`AnswerChecker` в curriculum-service.
+Базовые интерфейсы и абстрактные классы для модели квестов — общие для curriculum-service (генерация) и quiz-service (прохождение, прогресс). Цель: добавление нового типа квеста (см. [quest-catalog.md](curriculum-service/quest-catalog.md)) не требует изменений в quiz-service и в алгоритме повторения — только новая реализация `QuestItemGenerator`/`AnswerChecker` в curriculum-service.
 
 Пакеты: `sm.selflearn.samskrtam.content.quest.*` (генерация, только curriculum-service), `sm.selflearn.samskrtam.quest.*` (общая модель, живёт в `shared/samskrtam-dtos` — доступна curriculum-service, curriculum-service и quiz-service), `sm.selflearn.samskrtam.quiz.progress.*` (прохождение и прогресс, только quiz-service).
 
@@ -72,7 +72,7 @@ public final class Quest {
 **Контракт `AnswerMode.MATCHING`:** `distractors` не используется (пусто) — вариантов для
 подбора столько же, сколько пар, и все они «правильные» для какой-то из пар. Список пар
 (левая часть — словоформа, правая — падеж+число или иной атрибут) хранится в `payload`
-конкретного типа (пример: `DeclensionMatchPayload`, см. [curriculum-quest-items.md §3](./curriculum-quest-items.md#3-типы-payload)). `userAnswer` в этом режиме —
+конкретного типа (пример: `DeclensionMatchPayload`, см. [curriculum-quest-items.md §3](curriculum-service/curriculum-quest-items.md#3-типы-payload)). `userAnswer` в этом режиме —
 сериализованный список сопоставлений (`{leftId: rightId, ...}`), `AnswerChecker` считает
 ответ верным только при полном совпадении всех пар (без частичного зачёта — упрощение
 первой версии).
@@ -158,7 +158,7 @@ public class DeclensionQuestItemGenerator
 
 ## 3. Реестр типов по доменам
 
-Каждый домен (см. [quest-catalog.md §1](./quest-catalog.md#1-домены)) — отдельный класс-держатель констант `QuestItemType`, без общего enum:
+Каждый домен (см. [quest-catalog.md §1](curriculum-service/quest-catalog.md#1-домены)) — отдельный класс-держатель констант `QuestItemType`, без общего enum:
 
 ```java
 public final class GrammarQuestItemTypes {
@@ -286,4 +286,4 @@ public interface QuestSessionService {
 | shared-модель (`QuestItem`, `QuestItemType`) | только контракт, не логику типов | нет |
 | quiz-service (`SpacedRepetitionAlgorithm`, `SessionItemSelector`) | нет | да, единая реализация для всех типов |
 
-Новый тип из [quest-catalog.md](./quest-catalog.md) добавляется реализацией `QuestItemGenerator`/`AnswerChecker` и константой в соответствующем `*QuestItemTypes` — без изменений в quiz-service.
+Новый тип из [quest-catalog.md](curriculum-service/quest-catalog.md) добавляется реализацией `QuestItemGenerator`/`AnswerChecker` и константой в соответствующем `*QuestItemTypes` — без изменений в quiz-service.

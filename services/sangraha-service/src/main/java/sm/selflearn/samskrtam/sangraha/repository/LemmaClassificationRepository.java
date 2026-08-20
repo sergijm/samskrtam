@@ -38,4 +38,7 @@ public interface LemmaClassificationRepository extends JpaRepository<LemmaClassi
 
     List<LemmaClassification> findBySchemeCodeAndStatusAndLemmaIdIn(
             String schemeCode, ClassificationStatus status, List<UUID> lemmaIds);
+
+    List<LemmaClassification> findBySchemeCodeAndLemmaIdIn(
+            String schemeCode, List<UUID> lemmaIds);
 }

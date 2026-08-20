@@ -1,6 +1,7 @@
 package sm.selflearn.samskrtam.curriculum.questitem.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import sm.selflearn.samskrtam.quest.AnswerMode;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,10 +16,15 @@ import java.util.UUID;
 public record QuestItemDto(
         UUID id,
         String itemType,
-        String answerMode,
+        AnswerMode answerMode,
         String prompt,
+        String promptRu,
         String correctAnswer,
+        String correctAnswerRu,
         List<String> distractors,
-        Object payload
+        List<String> distractorsRu,
+        Object payload,
+        String progressTag,
+        String questPattern
 ) {
 }

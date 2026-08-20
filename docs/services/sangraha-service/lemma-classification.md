@@ -2,21 +2,21 @@
 
 > Связанные файлы: [sangraha-service.md](../sangraha-service.md) §5 (существующая
 > LLM-интеграция, конвенции переиспользуются), §10 (точка входа), §9 (export для
-> curriculum-service — здесь дополняется), [lexical-curriculum.md](../lexical-curriculum.md)
-> §3 (таксономия — источник копии, см. §1), [lexicon-content-pipeline.md](../lexicon-content-pipeline.md)
+> curriculum-service — здесь дополняется), [lexical-curriculum.md](../curriculum-service/lexical-curriculum.md)
+> §3 (таксономия — источник копии, см. §1), [lexicon-content-pipeline.md](../curriculum-service/lexicon-content-pipeline.md)
 > (потребитель результата на стороне curriculum-service).
 
 ---
 
 ## 0. Зачем и где
 
-Раньше (`lexicon-content-pipeline.md` §2–§3, первая версия) `semanticTopicId` и
+Раньше (`lexicon-content-pipeline.md` §2, первая версия) `semanticClasses` и
 проверка перевода были единственным полем без эвристики — целиком ручной труд
 ADMIN на стороне curriculum-service. Этот документ закрывает именно этот
 пробел: **классификация лексем по семантике + перевод — отдельный модуль
 внутри sangraha-service**, использующий внешнюю LLM батчами, с ручным
 ADMIN-review результата (не автоматическое доверие модели — тот же принцип,
-что уже в §3 старого pipeline).
+что уже в §2 старого pipeline).
 
 **Почему в sangraha-service, а не в curriculum-service:** классификация
 работает на леммах, агрегированных по всему корпусу (частотность, вхождения),
@@ -89,10 +89,15 @@ ADMIN-триггер, `POST /sangraha/internal/lexicon/lemmas/refresh-statistics
    (`occurrenceCount`, `dominantPosCode` = мода по группе, §1.2). Устаревшие
    строки статистики (рода, которых больше нет в корпусе) удаляются.
 3. Проставить `VerseWord.lemmaId` для всех строк группы.
-4. Идемпотентно, безопасно перезапускать по мере роста корпуса.
+4. Пересчёт `verse_statistics` (sangraha-service.md §9): длина стиха в словах
+   (COUNT `verse_words` по не удалённым стихам) → upsert по PK `verse_id`.
+   Заодно пересчитывается `grammar_info` — distinct-массивы грамматического
+   состава стиха (pos/formType/numberType/caseType/gender), на которых стоит
+   GIN-индекс (поиск «стихи, где есть признак», см. sangraha-service.md §9).
+5. Идемпотентно, безопасно перезапускать по мере роста корпуса.
 
 Ответ: `{ lemmaCount, newLemmaCount, updatedLemmaCount, statisticsCount,
-newStatisticsCount, updatedStatisticsCount }`.
+newStatisticsCount, updatedStatisticsCount, verseStatisticsCount }`.
 
 Именно `LemmaStatistics`/частотность (не сырой `VerseWord`) — ресурс для
 классификации (§2) и отбора батчей (§3).
@@ -106,13 +111,13 @@ NULL), isActive (BOOLEAN, NOT NULL, DEFAULT `true` — `WORDNET` сидируе�
 строкой с `isActive = false`; запуск batch-классификации по неактивной схеме —
 400).
 
-### 1.6 `CurriculumSemanticTopic` — копия таксономии (только CURRICULUM)
+### 1.6 `CurriculumSemanticClass` — копия таксономии (только CURRICULUM)
 
-Таблица `sangraha.curriculum_semantic_topic` — **редактируемая копия**, не FK
+Таблица `sangraha.curriculum_semantic_class` — **редактируемая копия**, не FK
 на curriculum-service (разные БД, синхронный кросс-сервисный FK невозможен):
 
 code (VARCHAR 40, PK — `animals`, `plants`, `ritual-worship`, те же коды, что в
-`curriculum.semantic_topic.code`), parentCode (VARCHAR 40, NULL, FK на саму себя
+`curriculum.semantic_class.code`), parentCode (VARCHAR 40, NULL, FK на саму себя
 — для 9 корней/33 листьев), labelRu / labelEn (VARCHAR 100, NOT NULL),
 description (TEXT, NULL — включён в промпт LLM, §2).
 
@@ -127,7 +132,7 @@ description (TEXT, NULL — включён в промпт LLM, §2).
 id (UUID, PK), lemmaId (UUID, FK → lemma.id, ON DELETE CASCADE), **gender (VARCHAR 20,
 NULL — род из статистики пары, классифицируемой в батче, §3)**, schemeCode (VARCHAR
 20, FK), categoryCode (VARCHAR 40, NULL — для `CURRICULUM` FK-по-значению на
-`curriculum_semantic_topic.code`; проверяется в сервисном слое, не БД-констрейнтом),
+`curriculum_semantic_class.code`; проверяется в сервисном слое, не БД-констрейнтом),
 glossRu (VARCHAR 200, NULL), glossEn (VARCHAR 200, NULL), confidence (SMALLINT,
 NULL — 0–100, если модель вернула), status (VARCHAR 20, NOT NULL, DEFAULT
 `CANDIDATE` — `CANDIDATE`|`APPROVED`|`REJECTED`), llmModel (VARCHAR 100, NOT
@@ -272,9 +277,9 @@ gender)` (из `lemma_statistics`), содержит `gender` + `occurrenceCount
 
 Только `status = APPROVED`. Импорт curriculum-service (`task-curriculum-14`) при
 наличии готовой APPROVED-классификации использует `categoryCode` →
-`semanticTopicId` и gloss'ы напрямую вместо эвристики по представителю с
+`semanticClasses` и gloss'ы напрямую вместо эвристики по представителю с
 наибольшим числом вхождений — de facto заменяет шаг ручной разметки
-`lexicon-content-pipeline.md` §3 (правка §7).
+`lexicon-content-pipeline.md` §3 (правка §6).
 
 ---
 

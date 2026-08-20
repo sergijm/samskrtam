@@ -5,41 +5,11 @@ import { Tree } from "primereact/tree";
 import type { TreeNode } from "primereact/treenode";
 import { useMe } from "../../hooks/useUser";
 import { useSidebarStore } from "../../store/sidebarStore";
-import { curriculumTree, type CurriculumNode } from "../../config/curriculumTree";
 
 interface TreeNodeData {
   route?: string;
   status: "available" | "planned";
   isPlannedLeaf: boolean;
-}
-
-function curriculumNodeToTreeNode(
-  node: CurriculumNode,
-  t: (key: string) => string,
-): TreeNode {
-  const hasChildren = !!(node.children && node.children.length > 0);
-  const isPlannedLeaf = node.status === "planned" && !hasChildren;
-
-  const data: TreeNodeData = {
-    route: node.route,
-    status: node.status,
-    isPlannedLeaf,
-  };
-
-  return {
-    key: node.id,
-    label: t(node.titleKey) + (isPlannedLeaf ? ` [${t("status.planned")}]` : ""),
-    icon: node.icon ? `pi ${node.icon}` : undefined,
-    children: node.children?.map((c) => curriculumNodeToTreeNode(c, t)),
-    data,
-    leaf: !hasChildren,
-    className: isPlannedLeaf
-      ? "curriculum-tree-node-planned"
-      : hasChildren
-        ? "curriculum-tree-branch"
-        : "curriculum-tree-leaf",
-    selectable: !isPlannedLeaf,
-  };
 }
 
 const Sidebar: React.FC = () => {
@@ -57,12 +27,8 @@ const Sidebar: React.FC = () => {
       icon: "pi pi-home",
       data: { route: "/dashboard", status: "available" as const, isPlannedLeaf: false },
       leaf: true,
-      className: "curriculum-tree-leaf-highlighted",
+      className: "sidebar-tree-item-highlighted",
     });
-
-    for (const node of curriculumTree) {
-      items.push(curriculumNodeToTreeNode(node, t));
-    }
 
     items.push({
       key: "dictionary",
@@ -123,11 +89,10 @@ const Sidebar: React.FC = () => {
         expandedKeys={expandedKeys}
         onToggle={handleToggle}
         onNodeClick={handleNodeClick}
-        className="curriculum-tree w-full"
+        className="sidebar-tree w-full"
       />
     </div>
   );
 };
 
 export default Sidebar;
-

@@ -104,7 +104,7 @@ public class GatewayRoutesConfig {
                 // ── Eamenau Content ──────────────────────────────────────────────
                 .route("eamenau", r -> r
                         .path("/api/v1/eamenau/**")
-                        .uri(contentServiceUrl))
+                        .uri(curriculumServiceUrl))
 
                 // ── Quiz Service ─────────────────────────────────────────────────
                 .route("quiz", r -> r

@@ -9,12 +9,16 @@
 export interface EndingsCell {
   /** IAST transliteration of the ending, e.g. "-s", "-ā/-bhyām". */
   text: string;
-  /** Number of rows this cell spans vertically (rowSpan). 0 = skip (covered by previous row). */
+  /** Number of rows this cell spans vertically (rowSpan). 0 = skip (covered by previous cell). */
   rowSpan?: number;
+  /** Number of columns this cell spans horizontally (colSpan). 0 = skip (covered by previous cell). */
+  colSpan?: number;
   /** If true, the cell is an identity marker ("= stem" or "= N.") resolved via i18n. */
   isIdentity?: boolean;
   /** If true AND isIdentity, use dual/plural identity label ("= N.") instead of singular ("= stem"). */
   identityDuPl?: boolean;
+  /** Optional grade hint for background colour: "strong" (guṇa/vṛddhi) or "zero". */
+  grade?: 'strong' | 'zero';
 }
 
 export interface ColumnDescriptor {
@@ -40,6 +44,17 @@ export const ENDINGS_COLUMN_TO_NUMBER_GENDER: Record<string, { numberType: strin
   duMN: { numberType: 'DUAL' },
   plM: { numberType: 'PLURAL', gender: 'MASCULINE' },
   plN: { numberType: 'PLURAL', gender: 'NEUTER' },
+  // -ā stems (feminine)
+  sg: { numberType: 'SINGULAR', gender: 'FEMININE' },
+  du: { numberType: 'DUAL' },
+  pl: { numberType: 'PLURAL' },
+  // -ī/-ū stems (feminine, distinct singular columns per vowel length)
+  sgI: { numberType: 'SINGULAR', gender: 'FEMININE' },
+  sgU: { numberType: 'SINGULAR', gender: 'FEMININE' },
+  // -ṛ stems (m/f merged, n separate)
+  sgMF: { numberType: 'SINGULAR' },
+  duMF: { numberType: 'DUAL' },
+  plMF: { numberType: 'PLURAL' },
 };
 
 /** Maps an EndingsRow.caseKey (lowercase) to the uppercase CASE_TYPES value. */
@@ -403,6 +418,92 @@ export const iiUuStemEndings: EndingsTableData = {
 };
 
 // ============================================================================
+// -ṛ stems (masculine / feminine / neuter) — guṇa-grade names of relation
+// ============================================================================
+
+const R_STEM_COLS: ColumnDescriptor[] = [
+  { key: 'sgMF', label: 'sg. (m/f)' },
+  { key: 'sgN',  label: 'sg. n' },
+  { key: 'duMF', label: 'du. (m/f)' },
+  { key: 'duN',  label: 'du. n' },
+  { key: 'plMF', label: 'pl. (m/f)' },
+  { key: 'plN',  label: 'pl. n' },
+];
+
+const R_STEM_ROWS: EndingsRow[] = [
+  {
+    caseKey: 'nominative',
+    cells: {
+      sgMF: { text: '\u0101/', grade: 'strong' }, sgN: { text: '\u1e5b/', grade: 'zero' },
+      duMF: { text: 'au', grade: 'strong', rowSpan: 2 }, duN: { text: '\u1e5b\u1e47/\u012b', grade: 'zero' },
+      plMF: { text: 'as', grade: 'strong' }, plN: { text: '\u1e5b\u1e47/\u012b', grade: 'zero' },
+    },
+  },
+  {
+    caseKey: 'accusative',
+    cells: {
+      sgMF: { text: 'am', grade: 'strong' }, sgN: { text: '\u1e5b/', grade: 'zero' },
+      duMF: { text: '', rowSpan: 0 }, duN: { text: '\u1e5b\u1e47/\u012b', grade: 'zero' },
+      plMF: { text: '\u1e5dn / \u1e5d\u1e63', grade: 'zero' }, plN: { text: '\u1e5b\u1e47/\u012b', grade: 'zero' },
+    },
+  },
+  {
+    caseKey: 'instrumental',
+    cells: {
+      sgMF: { text: '\u0101', grade: 'zero' }, sgN: { text: '\u1e5b\u1e47/\u0101', grade: 'zero' },
+      duMF: { text: 't\u1e5b/bhy\u0101m', grade: 'zero', rowSpan: 3 }, duN: { text: 't\u1e5b/bhy\u0101m', grade: 'zero', rowSpan: 3 },
+      plMF: { text: '\u1e5b/bhis', grade: 'zero' }, plN: { text: '\u1e5b/bhis', grade: 'zero' },
+    },
+  },
+  {
+    caseKey: 'dative',
+    cells: {
+      sgMF: { text: 'e', grade: 'zero' }, sgN: { text: '\u1e5b\u1e47/e', grade: 'zero' },
+      duMF: { text: '', rowSpan: 0 }, duN: { text: '', rowSpan: 0 },
+      plMF: { text: '\u1e5b/bhyas', grade: 'zero', rowSpan: 2 }, plN: { text: '\u1e5b/bhyas', grade: 'zero', rowSpan: 2 },
+    },
+  },
+  {
+    caseKey: 'ablative',
+    cells: {
+      sgMF: { text: '/ur', rowSpan: 2 }, sgN: { text: '\u1e5b\u1e47/as', grade: 'zero' },
+      duMF: { text: '', rowSpan: 0 }, duN: { text: '', rowSpan: 0 },
+      plMF: { text: '', rowSpan: 0 }, plN: { text: '', rowSpan: 0 },
+    },
+  },
+  {
+    caseKey: 'genitive',
+    cells: {
+      sgMF: { text: '', rowSpan: 0 }, sgN: { text: '\u1e5b\u1e47/as', grade: 'zero' },
+      duMF: { text: 'tr/os', grade: 'zero' }, duN: { text: '\u1e5b\u1e47/os', grade: 'zero' },
+      plMF: { text: '\u1e5d\u1e47/\u0101m', grade: 'zero' }, plN: { text: '\u1e5d\u1e47/\u0101m', grade: 'zero' },
+    },
+  },
+  {
+    caseKey: 'locative',
+    cells: {
+      sgMF: { text: 'i' }, sgN: { text: '\u1e5b\u1e47/i', grade: 'zero' },
+      duMF: { text: 'tr/os', grade: 'zero' }, duN: { text: '\u1e5b\u1e47/os', grade: 'zero' },
+      plMF: { text: '\u1e63u', grade: 'zero' }, plN: { text: '\u1e63u', grade: 'zero' },
+    },
+  },
+  {
+    caseKey: 'vocative',
+    cells: {
+      sgMF: { text: 'ar/' }, sgN: { text: '\u1e5b/', grade: 'zero' },
+      duMF: { text: '', isIdentity: true, identityDuPl: true, colSpan: 2 }, duN: { text: '', colSpan: 0 },
+      plMF: { text: '', isIdentity: true, identityDuPl: true, colSpan: 2 }, plN: { text: '', colSpan: 0 },
+    },
+  },
+];
+
+export const rStemEndings: EndingsTableData = {
+  titleKey: 'endings.titleRStem',
+  columns: R_STEM_COLS,
+  rows: R_STEM_ROWS,
+};
+
+// ============================================================================
 // Map: VowelType → EndingsTableData
 // ============================================================================
 
@@ -415,4 +516,5 @@ export const vowelTypeToEndingsTable: Partial<Record<string, EndingsTableData>> 
   U_STEM: iuStemEndings,
   II_STEM: iiUuStemEndings,
   UU_STEM: iiUuStemEndings,
+  R_STEM: rStemEndings,
 };

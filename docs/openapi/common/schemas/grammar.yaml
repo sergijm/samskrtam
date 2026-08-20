@@ -1,6 +1,13 @@
 # Grammar lesson schemas
 
 GrammarQuestionProgress:
+  deprecated: true
+  description: >
+    Не входит в ответ GrammarLesson с момента переноса агрегации на бэкенд.
+    Классы DTO и внутренняя обработка (v1-билдер) сохраняются, но клиенту
+    больше не отдаются. Прогресс вкладки «Прогресс» формируют агрегаты
+    GrammarCaseAggregation / GrammarNumberAggregation / GrammarGridCellAggregation /
+    GrammarPairAggregation.
   type: object
   required:
     - questionId
@@ -90,9 +97,138 @@ GrammarQuestionProgress:
       type: string
       example: Masculine
 
+GrammarCaseAggregation:
+  type: object
+  required: [caseType, caseRu, caseEn, aggregatedProgress, totalCombinations, learnedCombinations, status]
+  properties:
+    caseType:
+      type: string
+      example: NOMINATIVE
+    caseRu:
+      type: string
+      example: Именительный
+    caseEn:
+      type: string
+      example: Nominative
+    aggregatedProgress:
+      type: integer
+      minimum: 0
+      maximum: 100
+      description: >
+        Усреднённый прогресс по всем комбинациям данного падежа.
+        Вычисляется на бэкенде: round(avg(score)) по вопросам падежа.
+    totalCombinations:
+      type: integer
+      minimum: 0
+      description: Количество комбинаций (число × род), по которым есть прогресс.
+    learnedCombinations:
+      type: integer
+      minimum: 0
+      description: Количество комбинаций с score >= 90 (masteredLowerThreshold).
+    status:
+      $ref: './vocabulary.yaml#/WordStatus'
+      description: >
+        NEW при aggregatedProgress <= 0, LEARNING при < 90, иначе MASTERED.
+        REVIEW на уровне агрегата не используется.
+
+GrammarNumberAggregation:
+  type: object
+  required: [numberType, numberRu, numberEn, aggregatedProgress, totalCombinations, learnedCombinations, status]
+  properties:
+    numberType:
+      type: string
+      example: SINGULAR
+    numberRu:
+      type: string
+      example: Единственное
+    numberEn:
+      type: string
+      example: Singular
+    aggregatedProgress:
+      type: integer
+      minimum: 0
+      maximum: 100
+      description: Вычисляется как round(avg(score)) по вопросам числа.
+    totalCombinations:
+      type: integer
+      minimum: 0
+    learnedCombinations:
+      type: integer
+      minimum: 0
+      description: score >= 90 (masteredLowerThreshold).
+    status:
+      $ref: './vocabulary.yaml#/WordStatus'
+      description: Аналогично GrammarCaseAggregation.status.
+
+GrammarGridCellAggregation:
+  type: object
+  required: [caseType, numberType, aggregatedProgress, totalCombinations, learnedCombinations, status]
+  properties:
+    caseType:
+      type: string
+      example: NOMINATIVE
+    numberType:
+      type: string
+      example: SINGULAR
+    aggregatedProgress:
+      type: integer
+      minimum: 0
+      maximum: 100
+      description: Прогресс ячейки падеж × число — round(avg(score)) по вопросам комбинации.
+    totalCombinations:
+      type: integer
+      minimum: 0
+    learnedCombinations:
+      type: integer
+      minimum: 0
+    status:
+      $ref: './vocabulary.yaml#/WordStatus'
+      description: Аналогично GrammarCaseAggregation.status.
+
+GrammarPairAggregation:
+  type: object
+  required: [setId, caseTypeA, caseTypeB, caseRuA, caseRuB, caseEnA, caseEnB, aggregatedProgress, totalCombinations, learnedCombinations, status]
+  properties:
+    setId:
+      type: string
+      description: Идентификатор набора progress-tag (срез-пара падежей, напр. GEN_LOC). Совпадает с ProgressTagSetId — по нему фронт запускает квиз по срезу.
+      example: GEN_LOC
+    caseTypeA:
+      type: string
+      example: GENITIVE
+    caseTypeB:
+      type: string
+      example: LOCATIVE
+    caseRuA:
+      type: string
+      example: Родительный
+    caseRuB:
+      type: string
+      example: Местный
+    caseEnA:
+      type: string
+      example: Genitive
+    caseEnB:
+      type: string
+      example: Locative
+    aggregatedProgress:
+      type: integer
+      minimum: 0
+      maximum: 100
+      description: round(avg(score)) по вопросам обоих падежей пары.
+    totalCombinations:
+      type: integer
+      minimum: 0
+    learnedCombinations:
+      type: integer
+      minimum: 0
+    status:
+      $ref: './vocabulary.yaml#/WordStatus'
+      description: Аналогично GrammarCaseAggregation.status.
+
 GrammarLesson:
   type: object
-  required: [lessonId, type, titleRu, titleEn, difficulty, totalQuestions, learnedQuestions, progressPercent, statusSummary, questions]
+  required: [lessonId, type, titleRu, titleEn, difficulty, totalQuestions, learnedQuestions, progressPercent, statusSummary, caseAggregations, numberAggregations, grid, pairAggregations]
   properties:
     lessonId:
       type: string
@@ -121,7 +257,23 @@ GrammarLesson:
       maximum: 100
     statusSummary:
       $ref: './lessons.yaml#/LessonStatusSummary'
-    questions:
+    caseAggregations:
       type: array
       items:
-        $ref: './grammar.yaml#/GrammarQuestionProgress'
+        $ref: './grammar.yaml#/GrammarCaseAggregation'
+      description: Агрегация прогресса по падежам (вкладка «Прогресс»). Вычисляется на бэкенде.
+    numberAggregations:
+      type: array
+      items:
+        $ref: './grammar.yaml#/GrammarNumberAggregation'
+      description: Агрегация прогресса по числам (вкладка «Прогресс»). Вычисляется на бэкенде.
+    grid:
+      type: array
+      items:
+        $ref: './grammar.yaml#/GrammarGridCellAggregation'
+      description: Сетка падеж × число (вкладка «Прогресс»). Вычисляется на бэкенде.
+    pairAggregations:
+      type: array
+      items:
+        $ref: './grammar.yaml#/GrammarPairAggregation'
+      description: Срезы-пары падежей для запуска квиза по progressTagSetId. Вычисляется на бэкенде.

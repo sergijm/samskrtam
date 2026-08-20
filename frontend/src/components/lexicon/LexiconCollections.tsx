@@ -35,7 +35,6 @@ const LexiconCollections: React.FC<LexiconCollectionsProps> = ({ collections }) 
       <section className="mb-5">
         <LexiconSectionHeader
           titleKey="lexicon.collectionsTitle"
-          subtitleKey="lexicon.collectionsSubtitle"
           icon="pi-star"
           action={
             <Button

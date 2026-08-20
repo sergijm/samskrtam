@@ -1,6 +1,6 @@
 # US-META-03 — Перевод целого предложения с разбором по словам
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `SENTENCE_TRANSLATION` (план)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `SENTENCE_TRANSLATION` (план)
 > Связанные файлы: [quest-types-overview.md, тип №32](../../../services/quest-types-overview.md)
 
 ## История

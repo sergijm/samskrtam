@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeFrequency;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeFrequencyId;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,6 +18,12 @@ public interface LexemeFrequencyRepository extends JpaRepository<LexemeFrequency
     List<LexemeFrequency> findByIdSourceOrderByRankAsc(String source);
 
     java.util.Optional<LexemeFrequency> findByIdLexemeIdAndIdSource(UUID lexemeId, String source);
+
+    @Query("select f from LexemeFrequency f "
+            + "where f.id.source = :source and f.id.lexemeId in :lexemeIds")
+    List<LexemeFrequency> findBySourceAndLexemeIdIn(
+            @Param("source") String source,
+            @Param("lexemeIds") Collection<UUID> lexemeIds);
 
     @Query("select f.id.lexemeId from LexemeFrequency f where f.id.source = :source "
             + "and (:min is null or f.rank >= :min) and (:max is null or f.rank <= :max)")

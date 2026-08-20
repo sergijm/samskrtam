@@ -73,34 +73,6 @@ paths:
               schema:
                 $ref: 'schemas/internal-lexicon-schemas.yaml#/LemmaExportPageDto'
 
-  /sangraha/internal/lexicon/classification/runs:
-    post:
-      operationId: startClassificationRun
-      summary: Запустить batch-прогон классификации лемм
-      tags: [lexicon]
-      parameters:
-        - name: X-User-Id
-          in: header
-          required: false
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: 'schemas/internal-lexicon-schemas.yaml#/StartClassificationRunRequest'
-      responses:
-        '200':
-          description: Прогон запущен, состояние прогона
-          content:
-            application/json:
-              schema:
-                $ref: 'schemas/internal-lexicon-schemas.yaml#/ClassificationRunResponse'
-        '400':
-          description: Неизвестный schemeCode или batchCount <= 0
-
   /sangraha/internal/lexicon/classifications:
     get:
       operationId: listClassificationsForReview
@@ -183,41 +155,3 @@ paths:
           description: Некорректные поля (например, APPROVED без valid categoryCode)
         '404':
           description: Классификация не найдена
-
-  /sangraha/internal/lexicon/lemma-classifications/export:
-    get:
-      operationId: exportApprovedClassifications
-      summary: Экспорт APPROVED-классификаций (отладка)
-      tags: [lexicon]
-      description: >
-        Отдельная выгрузка APPROVED-классификаций. В основном потоке импорта
-        curriculum-service не используется — все данные уже включены в lemmas/export.
-        Оставлен для отладки и ручной проверки.
-      parameters:
-        - name: schemeCode
-          in: query
-          required: false
-          description: Код схемы (default CURRICULUM)
-          schema:
-            type: string
-            default: CURRICULUM
-        - name: cursor
-          in: query
-          required: false
-          schema:
-            type: string
-            format: uuid
-        - name: limit
-          in: query
-          required: false
-          description: Размер страницы (clamp 1..500, default 500)
-          schema:
-            type: integer
-            default: 500
-      responses:
-        '200':
-          description: Страница APPROVED-классификаций
-          content:
-            application/json:
-              schema:
-                $ref: 'schemas/internal-lexicon-schemas.yaml#/LemmaClassificationPageDto'

@@ -29,10 +29,13 @@ public enum ItemType {
     VOCABULARY_WORD,
 
     /**
-     * Грамматические формы (склонения/спряжения):
-     * externalRefId → content.case_endings.id (эталонная связка vowel_type+gender+case_type+number_type).
-     * Прогресс общий для всех основ с одинаковым сочетанием.
+     * Грамматические формы склонения:
+     * externalRefId → content.case_endings.id.
      */
-    DECLENSION_FORM
-    // CONJUGATION_FORM, PRONOUN_FORM — для будущих типов
+    DECLENSION_FORM,
+
+    /**
+     * Грамматические формы спряжения: progress_tag = voice|person|numberType.
+     */
+    CONJUGATION_FORM
 }

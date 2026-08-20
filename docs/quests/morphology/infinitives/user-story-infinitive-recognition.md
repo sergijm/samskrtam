@@ -1,7 +1,7 @@
 # US-MORPH-08 — Узнавание инфинитива (tumun)
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `INFINITIVE_FORM` (план)
-> Связанные файлы: [quest-catalog.md (перечень INFINITIVE_FORM)](../../../services/quest-catalog.md)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `INFINITIVE_FORM` (план)
+> Связанные файлы: [quest-catalog.md (перечень INFINITIVE_FORM)](../../../services/curriculum-service/quest-catalog.md)
 
 ## История
 

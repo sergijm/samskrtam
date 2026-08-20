@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.sangraha.service;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
@@ -9,10 +10,10 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
  * резолвятся из Environment (.env) в {@link LlmConfigRegistry} — например
  * {@code api-key: ${SANGRAHA_LLM_API_KEY}}.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.KebabCaseStrategy.class)
 public record LlmConfig(
         String baseUrl,
         String apiKey,
-        Boolean twoPass,
         Integer maxCompletionTokens
 ) {}

@@ -239,7 +239,16 @@ curriculum-service не хранит per-session сгенерированные 
 
 ## 11. Internal REST: приём словаря из sangraha-service
 
-Вызывается sangraha-service синхронно, в теле HTTP-запроса на кнопку «Изучить» на VersePage (см. `sangraha-service.md` §6/§7).
+> **УДАЛЕНО.** Прежний поток «кнопка «Изучить» → `POST /content/internal/sangraha/vocabulary-quiz`
+> → `content.vocabulary_words`» удалён вместе со своей таблицей и контрактом
+> (см. `curriculum-service/lexicon-content-pipeline.md` §5). Его место заняли
+> инкрементальные пачки лемм по стихам: sangraha-service постит пачку в
+> `POST /api/v2/lexicon/import/verse-batch` (приём — `curriculum-service`,
+> `LexiconImportController`/`VerseLexemeImportService`, см. `lexicon-content-pipeline.md` §7),
+> урок лексики — `Topic domain=VERSE`. Весь этот раздел ниже — устаревшая спецификация
+> удалённого эндпоинта.
+
+Вызывался sangraha-service синхронно, в теле HTTP-запроса на кнопку «Изучить» на VersePage (см. `sangraha-service.md` §6/§7).
 
 ```
 POST /content/internal/sangraha/vocabulary-quiz
@@ -309,8 +318,8 @@ POST /content/internal/sangraha/vocabulary-quiz
 
 ## 12. Вкладка «Примеры» на странице шага склонений
 
-Реальные цитаты из проанализированных стихов sangraha-service для каждой ячейки `(caseType, numberType)` парадигмы склонения (`GET /lessons/{slug}/declension-paradigms?index=N`, §5а), сгруппированные по словоизменительному классу `(vowelType, gender)`. Полная спецификация: [services/curriculum-service/declension-examples.md](./curriculum-service/declension-examples.md).
+Реальные цитаты из проанализированных стихов sangraha-service для каждой ячейки `(caseType, numberType)` парадигмы склонения, сгруппированные по словоизменительному классу `(vowelType, gender)`.
 
-Новая таблица `content.declension_example_groups` (кэш `verseId[]` по группам `(vowel_type, gender, case_type, number_type)`, включая пустые результаты). **Endpoint:** `GET /content/public/lessons/{slug}/examples` (STUDENT). Источник данных — два internal-эндпоинта sangraha-service (`sangraha-service.md` §9): поиск примеров по классу и батч-получение текста/перевода стихов по `verseId[]`.
+В текущей архитектуре content-service в этой вкладке не участвует: фронтенд ходит напрямую в sangraha-service одним запросом на урок — `POST /api/v1/sangraha/verses/examples` (публичный эндпоинт агрегирует примеры по всей парадигме и отдаёт текст/перевод стихов, см. `sangraha-service.md` §9). Раньше вкладку обслуживал content-service (`GET /content/public/lessons/{slug}/examples` + кэш `content.declension_example_groups`), потом quiz-service — оба пути удалены; таблица `declension_example_groups` больше не используется.
 
 ---

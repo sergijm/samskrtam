@@ -7,6 +7,8 @@ import type {
   VerseBatchResponseDto,
   WorksClassGroupDto,
   StandaloneVerseItemDto,
+  VerseWordExamplesResponseDto,
+  DeclensionExamplesResponseDto,
 } from '../types/sangraha';
 
 const BASE = '/api/v1/sangraha';
@@ -40,14 +42,28 @@ export const sangrahaApi = {
   analyzeAllVerses: (chapterId: string) =>
     api.post<{ chapterId: string; verseIds: string[] }>(`${BASE}/chapters/${chapterId}/verses/analyze-all`),
 
-    getOrCreateVocabularyQuiz: (verseId: string) =>
-    api.post<{ quizSlug: string; quizId: string; quizStatus: string }>(`${BASE}/verses/${verseId}/vocabulary-quiz`),
+  // Кнопка «Изучить»: экспорт пачки лемм стиха в curriculum-service + код урока
+  studyVerse: (verseId: string) =>
+    api.post<{ verseTopicCode: string }>(`${BASE}/verses/${verseId}/study`),
 
   // Batch verse review (sangraha-service/batch-verse-review.md)
-  // Axios сериализует массивы как `id[]=...`, а бэкенд ждёт повторяющийся `id=...` —
-  // query-строку собираем вручную.
   getVersesBatch: (ids: string[]) =>
-    api.get<VerseBatchResponseDto>(`${BASE}/verse?${ids.map((id) => `id=${encodeURIComponent(id)}`).join('&')}`),
+    api.post<VerseBatchResponseDto>(`${BASE}/verse`, { verseIds: ids }),
+
+  // Примеры стихов по точным словоформам (урок склонений)
+  getWordExamples: (surfaceIasts: string[]) =>
+    api.post<VerseWordExamplesResponseDto>(`${BASE}/words/examples`, {
+      surfaceIasts,
+    }),
+
+  // Примеры склонений по словоизменительному классу — вкладка «Примеры» урока
+  // (один запрос на весь урок; caseType/numberType в теле не передаются)
+  getDeclensionExamples: (vowelType: string, gender: string, limitPerGroup = 5) =>
+    api.post<DeclensionExamplesResponseDto>(`${BASE}/verses/examples`, {
+      vowelType,
+      gender,
+      limitPerGroup,
+    }),
 
   analyzeVerses: (verseIds: string[]) =>
     api.post<{ verseIds: string[] }>(`${BASE}/verse/analysis`, { verseIds }),

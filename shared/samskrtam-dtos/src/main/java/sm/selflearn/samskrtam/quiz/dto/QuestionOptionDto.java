@@ -11,13 +11,20 @@ public class QuestionOptionDto {
     UUID id;
 
     /**
-     * Option type: "FORM" (declension form, default) or "CASE_COMBINATION" (case×number×gender triple).
+     * Option type: "FORM" (declension form, default) or "CASE_COMBINATION" (case×number×gender triple)
+     * or "MATCH_LABEL_CONJ" (conjugation person×number×voice).
      * When null, frontend treats as "FORM".
      */
     String optionType;
 
     /** IAST form of the declension, used when optionType = "FORM" (default). */
     String formIast;
+
+    /**
+     * Russian variant of the option text (bilingual curriculum options). Null when the
+     * option text is language-neutral (e.g. a word form) or no Russian variant exists.
+     */
+    String textRu;
 
     /** Devanagari form, used when optionType = "FORM" (default). */
     String formDevanagari;
@@ -32,4 +39,8 @@ public class QuestionOptionDto {
     String gender;
     String genderRu;
     String genderEn;
+
+    // Fields for optionType = "MATCH_LABEL_CONJ" (conjugation)
+    Integer person;
+    String voice;
 }

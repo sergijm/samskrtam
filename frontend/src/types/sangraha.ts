@@ -124,8 +124,7 @@ export interface VerseDetailDto {
   status: VerseStatus;
   analysis?: VerseAnalysisDto | null;
   words: VerseWordDto[];
-        vocabularyQuizSlug?: string | null;
-  vocabularyQuizId?: string | null;
+  verseTopicCode?: string | null;
 }
 
 // ── Standalone анализ (страница /analysis, verse.chapter_id = null) ──
@@ -174,5 +173,43 @@ export interface WorksClassTreeNodeDto {
 export interface WorksClassGroupDto {
   classification: string;
   classes: WorksClassTreeNodeDto[];
+}
+
+// ── Поиск примеров стихов по точной словоформе (урок склонений) ──
+
+export interface VerseWordExamplesResponseDto {
+  results: VerseWordExamplesResultDto[];
+}
+
+export interface VerseWordExamplesResultDto {
+  surfaceIast: string;
+  verses: VerseWordExampleItemDto[];
+}
+
+export interface VerseWordExampleItemDto {
+  verseId: string;
+  workSlug: string;
+  textIast: string;
+  textDevanagari: string;
+  translationRu: string | null;
+  translationEn: string | null;
+  workTitleRu: string;
+  workTitleEn: string;
+  chapterTitleRu: string;
+  chapterTitleEn: string;
+  verseOrderIndex: number;
+}
+
+// ── Примеры склонений по словоизменительному классу (вкладка «Примеры» урока) ──
+// POST /api/v1/sangraha/verses/examples — один запрос на урок, на вход
+// (vowelType, gender, limitPerGroup); caseType/numberType опциональны
+// (фильтр по падежу/числу), фронтендом не передаются.
+
+export interface DeclensionExamplesResponseDto {
+  groups: Array<{
+    caseType: string;
+    numberType: string;
+    examples: VerseWordExampleItemDto[];
+  }>;
 }
 

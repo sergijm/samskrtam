@@ -1,9 +1,10 @@
 import api from './axios';
-import { SandhiRuleDto, EamenauExerciseDto, EamenauExerciseDetailDto, SolutionDto, SandhiRuleInfo, SolutionUpdateRequestDto } from '../types';
+import { EamenauExerciseDto, EamenauExerciseDetailDto, SolutionDto, SandhiRuleInfo, SolutionUpdateRequestDto } from '../types';
+import type { SandhiRulesResponse } from '../types/content-dtos';
 
 export const contentApi = {
   getAllSandhiRules: () => {
-    return api.get<SandhiRuleDto[]>('/api/v1/eamenau/sandhi-rules');
+    return api.get<SandhiRulesResponse>('/api/v2/curriculum/sandhi-rules');
   },
   getAllEamenauExercises: () => {
     return api.get<EamenauExerciseDto[]>('/api/v1/eamenau/exercises');

@@ -18,9 +18,9 @@ export const useQuizList = (category?: string) => {
 export const useDeclensionLessons = () => {
   const { locale } = useLocaleStore();
   return useQuery<LessonItemDto[], Error>({
-    queryKey: ['quizzes', 'list', 'DECLENSIONS', locale],
+    queryKey: ['quizzes', 'list', 'GRAMMAR', locale],
     queryFn: async () => {
-      const response = await quizApi.getQuizList('DECLENSIONS');
+      const response = await quizApi.getQuizList('GRAMMAR');
       return response.data.lessons;
     },
   });
@@ -54,11 +54,13 @@ export const useComposeQuizSession = () => {
   return useMutation<
     ComposeQuizResponse,
     Error,
-    { topicCode: string; count: number }
+    { topicCode: string; count: number; progressTagSetId?: string }
   >({
-    mutationFn: async ({ topicCode, count }) => {
+    mutationFn: async ({ topicCode, count, progressTagSetId }) => {
       const request: ComposeQuizRequest = {
-        topics: [{ topicCode, count }],
+        topicCode,
+        progressTagSetId,
+        limit: count,
         userLocale: locale,
       };
       const response = await quizApi.composeSession(request);

@@ -36,16 +36,6 @@ public class PromptLoader {
     @Getter
     private JsonNode emenauSandhiRules;
 
-    // --- Two-pass промпты ---
-
-    /** Промпт первого прохода: свободное рассуждение по шагам (без tool_choice) */
-    @Getter
-    private String verseAnalysisPass1Prompt;
-
-    /** Промпт второго прохода: форсированный tool call по результатам рассуждения */
-    @Getter
-    private String verseAnalysisPass2Prompt;
-
     /** Промпт классификации лемм (lemma-classification.md §2.1) */
     @Getter
     private String lemmaClassificationPrompt;
@@ -56,14 +46,10 @@ public class PromptLoader {
         this.verseAnalysisPrompt = load("prompts/verse-analysis.md");
         this.chapterMetadataPrompt = load("prompts/chapter-metadata.md");
         this.emenauSandhiRules = loadJson("prompts/emenau-sandhi-rules.json");
-        this.verseAnalysisPass1Prompt = load("prompts/verse-analysis-pass1-reasoning.md");
-        this.verseAnalysisPass2Prompt = load("prompts/verse-analysis-pass2-formalize.md");
         this.lemmaClassificationPrompt = load("prompts/lemma-classification.md");
         log.info("Loaded workAnalysisPrompt ({} chars), verseAnalysisPrompt ({} chars), chapterMetadataPrompt ({} chars), emenauSandhiRules",
             workAnalysisPrompt.length(), verseAnalysisPrompt.length(), chapterMetadataPrompt.length());
-        log.info("Loaded pass1Prompt ({} chars), pass2Prompt ({} chars), lemmaClassificationPrompt ({} chars)",
-            verseAnalysisPass1Prompt.length(), verseAnalysisPass2Prompt.length(),
-            lemmaClassificationPrompt.length());
+        log.info("Loaded lemmaClassificationPrompt ({} chars)", lemmaClassificationPrompt.length());
     }
 
     private String load(String path) {

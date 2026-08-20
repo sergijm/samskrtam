@@ -11,7 +11,7 @@ import java.util.Map;
  * <pre>
  * llm:
  *   configs:
- *     &lt;model&gt;: { base-url, two-pass, max-completion-tokens }
+ *     &lt;model&gt;: { base-url, max-completion-tokens }
  * </pre>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

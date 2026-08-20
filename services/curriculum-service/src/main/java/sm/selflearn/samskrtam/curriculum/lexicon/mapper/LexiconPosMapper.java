@@ -7,7 +7,7 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
 
 /**
  * Maps a {@link PartOfSpeech} into a home-page chip. id is the stable pos code;
- * labels are localised on the node. wordCount is injected per user.
+ * labels are localised on the node. wordCount is the real lexeme count.
  */
 @Mapper(componentModel = "spring")
 public interface LexiconPosMapper {

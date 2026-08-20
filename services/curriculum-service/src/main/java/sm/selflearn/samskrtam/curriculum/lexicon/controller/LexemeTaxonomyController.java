@@ -22,10 +22,10 @@ public class LexemeTaxonomyController {
 
     private final LexemeAdminService adminService;
 
-    @PutMapping("/semantic-topics")
-    public LexemeDetailDto replaceSemanticTopics(@PathVariable UUID id,
-                                                 @RequestBody List<UUID> topicIds) {
-        return adminService.replaceSemanticTopics(id, topicIds);
+    @PutMapping("/semantic-classes")
+    public LexemeDetailDto replaceSemanticClasses(@PathVariable UUID id,
+                                                  @RequestBody List<UUID> classIds) {
+        return adminService.replaceSemanticClasses(id, classIds);
     }
 
     @PutMapping("/pos")

@@ -1,6 +1,8 @@
 import { useQuery, keepPreviousData, useQueries } from '@tanstack/react-query';
 import { lessonApi } from '../api/lessonApi';
+import { sangrahaApi } from '../api/sangraha';
 import { sandhiApi } from '../api/sandhiApi';
+import { contentApi } from '../api/contentApi';
 import type { DeclensionParadigmPageDto } from '../types/content-dtos';
 
 export const useVocabularyLesson = (slug: string) =>
@@ -74,18 +76,45 @@ export const useAllDeclensionParadigms = (slug: string, totalCount: number, enab
 };
 
 /**
- * Examples for the declension lesson — one request per entire lesson, no index.
- * Lazy: fires only when enabled (active tab === 'examples').
+ * Examples for the declension lesson — one request to sangraha-service per lesson.
+ * Lazy: fires only when enabled (active tab === 'examples') and the lesson's
+ * stem class (vowelType, gender) is already known from the paradigm page.
  */
-export const useDeclensionExamples = (slug: string, enabled: boolean) =>
+export const useDeclensionExamples = (
+  slug: string,
+  vowelType: string,
+  gender: string,
+  enabled: boolean,
+) =>
   useQuery({
-    queryKey: ['declension-examples', slug],
-    queryFn: () => lessonApi.getDeclensionExamples(slug).then(res => res.data),
+    queryKey: ['declension-examples', slug, vowelType, gender],
+    queryFn: () => sangrahaApi.getDeclensionExamples(vowelType, gender).then(res => res.data),
+    enabled: !!slug && !!vowelType && !!gender && enabled,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+/**
+ * One conjugation paradigm page by index — lazy, fired from the verb-lesson
+ * "Paradigms" carousel. The carousel advances the index.
+ */
+export const useConjugationParadigm = (
+  slug: string,
+  index: number,
+  voice: string | null,
+  enabled: boolean,
+) =>
+  useQuery({
+    queryKey: ['conjugation-paradigm', slug, index, voice ?? 'all'],
+    queryFn: () => lessonApi.getConjugationParadigm(slug, index, voice).then(res => res.data),
     enabled: !!slug && enabled,
     staleTime: Infinity,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    placeholderData: keepPreviousData,
   });
 
 export const useSandhiRules = (topicCode: string) =>
@@ -93,5 +122,36 @@ export const useSandhiRules = (topicCode: string) =>
     queryKey: ['sandhi-rules', topicCode],
     queryFn: () => sandhiApi.getRules(topicCode).then(res => res.data),
     enabled: !!topicCode,
+  });
+
+export const useSandhiRulesByNumbers = (ruleNumbers: number[]) =>
+  useQuery({
+    queryKey: ['sandhi-rules-by-numbers', ruleNumbers],
+    queryFn: async () => {
+      const res = await contentApi.getAllSandhiRules();
+      const all = res.data.rules;
+      const byNumber = new Map(all.map(r => [r.number, r]));
+
+      const selected = new Set<number>();
+      const requested = new Set(ruleNumbers);
+      const stack = [...ruleNumbers];
+      while (stack.length) {
+        const n = stack.pop()!;
+        if (selected.has(n)) continue;
+        selected.add(n);
+        const rule = byNumber.get(n);
+        rule?.dependsOn?.forEach(d => stack.push(d));
+      }
+
+      const requestedRules = ruleNumbers
+        .filter(n => byNumber.has(n))
+        .map(n => byNumber.get(n)!);
+      const dependencyRules = all
+        .filter(r => selected.has(r.number) && !requested.has(r.number))
+        .sort((a, b) => a.number - b.number);
+
+      return { topicCode: res.data.topicCode, title: res.data.title, rules: [...requestedRules, ...dependencyRules] };
+    },
+    enabled: ruleNumbers.length > 0,
   });
 

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useGrammarLesson } from '../../hooks/useLessons';
+import { useGrammarLesson, useDeclensionParadigm, useDeclensionExamples } from '../../hooks/useLessons';
 
 import { LessonHeader } from '../../components/lesson/LessonHeader';
 import { LessonStatsTab } from '../../components/lesson/LessonStatsTab';
@@ -11,50 +11,46 @@ import GrammarProgressTagSets from '../../components/lesson/GrammarProgressTagSe
 import DeclensionExamplesPanel from '../../components/lesson/DeclensionExamplesPanel';
 import DeclensionEndingsReferenceTable from '../../components/lesson/DeclensionEndingsReferenceTable';
 import DeclensionEndingWordsTable from '../../components/lesson/DeclensionEndingWordsTable';
-import {
-  aggregateByCaseAndNumber,
-  aggregateByCase,
-  aggregateByNumber,
-} from '../../utils/grammarAggregation';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { Skeleton } from 'primereact/skeleton';
-import { useDeclensionParadigm } from '../../hooks/useLessons';
+import { saveVerseBatchIds } from '../../utils/verseBatchIds';
+import { useAuthStore } from '../../store/authStore';
 import {
   vowelTypeToEndingsTable,
   ENDINGS_COLUMN_TO_NUMBER_GENDER,
   CASE_KEY_TO_CASE_TYPE,
 } from '../../data/aStemEndingsTable';
 
-const GRAMMAR_TAB_STORAGE_KEY = 'grammar-lesson-active-tab';
+const GRAMMAR_SUBTAB_STORAGE_KEY = 'grammar-lesson-active-subtab';
 
-function readSavedTab(): number {
+function readSavedSubTab(): number {
   try {
-    const raw = localStorage.getItem(GRAMMAR_TAB_STORAGE_KEY);
+    const raw = localStorage.getItem(GRAMMAR_SUBTAB_STORAGE_KEY);
     if (raw !== null) {
       const parsed = parseInt(raw, 10);
-      if (!isNaN(parsed) && parsed >= 0) return parsed;
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 2) return parsed;
     }
   } catch { /* ignore */ }
   return 0;
 }
 
-function saveTab(index: number) {
+function saveSubTab(index: number) {
   try {
-    localStorage.setItem(GRAMMAR_TAB_STORAGE_KEY, String(index));
+    localStorage.setItem(GRAMMAR_SUBTAB_STORAGE_KEY, String(index));
   } catch { /* ignore */ }
 }
 
 const GrammarLessonPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const isAdmin = useAuthStore((s) => s.user?.roles?.includes('ADMIN') ?? false);
   const { data: lesson, isLoading, isError } = useGrammarLesson(slug || '');
 
-  const [activeTab, setActiveTab] = useState<number>(readSavedTab);
+  const [activeSubTab, setActiveSubTab] = useState<number>(readSavedSubTab);
 
-  // Tab 0 (Paradigms) is the default active tab — fetch immediately if it's the saved tab
-  const [paradigmsTabOpened, setParadigmsTabOpened] = useState(readSavedTab() === 0);
-  // Tab 1 (Examples) — lazy, only when clicked
-  const [examplesTabOpened, setExamplesTabOpened] = useState(readSavedTab() === 1);
+  const paradigmsSubTabVisible = activeSubTab === 0;
+  const examplesSubTabVisible = activeSubTab === 1;
 
   const [selectedEndingCell, setSelectedEndingCell] = useState<{
     caseType: string;
@@ -67,14 +63,36 @@ const GrammarLessonPage = () => {
     columnKey: string;
   } | null>(null);
 
-  // Fetch first paradigm page to determine stem type for the endings reference table.
-  // React Query deduplicates this with the carousel's own fetch for index 0.
-  const { data: firstParadigmPage } = useDeclensionParadigm(slug || '', 0, paradigmsTabOpened);
-  const endingsTableData = firstParadigmPage?.paradigm?.vowelType
-    ? vowelTypeToEndingsTable[firstParadigmPage.paradigm.vowelType]
-    : undefined;
+  const [filterCaseKey, setFilterCaseKey] = useState<string | null>(null);
+  const [filterColumnKey, setFilterColumnKey] = useState<string | null>(null);
+  const filterCaseType = filterCaseKey ? CASE_KEY_TO_CASE_TYPE[filterCaseKey] : null;
+  const filterNumberType = filterColumnKey ? ENDINGS_COLUMN_TO_NUMBER_GENDER[filterColumnKey]?.numberType ?? null : null;
+
+  const { data: firstParadigmPage } = useDeclensionParadigm(slug || '', 0, true);
+  const vowelType = firstParadigmPage?.paradigm?.vowelType ?? '';
+  const gender = firstParadigmPage?.paradigm?.gender ?? '';
+  const endingsTableData = vowelType ? vowelTypeToEndingsTable[vowelType] : undefined;
+
+  const { data: examplesData } = useDeclensionExamples(
+    slug || '',
+    vowelType,
+    gender,
+    examplesSubTabVisible && !!vowelType && !!gender,
+  );
+
+  const allExampleVerseIds = useMemo(
+    () => [...new Set((examplesData?.groups ?? []).flatMap((g) => g.examples.map((e) => e.verseId)))],
+    [examplesData],
+  );
+
+  const openAllExamples = () => {
+    saveVerseBatchIds(allExampleVerseIds);
+    navigate('/sangraha/verses');
+  };
 
   const handleEndingCellClick = (caseKey: string, columnKey: string) => {
+    setFilterCaseKey(caseKey);
+    setFilterColumnKey(columnKey);
     const numGender = ENDINGS_COLUMN_TO_NUMBER_GENDER[columnKey];
     if (!numGender || !endingsTableData) return;
     const row = endingsTableData.rows.find(r => r.caseKey === caseKey);
@@ -89,15 +107,23 @@ const GrammarLessonPage = () => {
     setSelectedEndingCellKey({ caseKey, columnKey });
   };
 
-  const handleTabChange = (e: { index: number }) => {
-    setActiveTab(e.index);
-    saveTab(e.index);
-    if (e.index === 0) {
-      setParadigmsTabOpened(true);
-    }
-    if (e.index === 1) {
-      setExamplesTabOpened(true);
-    }
+  const handleCaseClick = (caseKey: string) => {
+    setFilterCaseKey(caseKey === filterCaseKey ? null : caseKey);
+    setFilterColumnKey(null);
+    setSelectedEndingCell(null);
+    setSelectedEndingCellKey(null);
+  };
+
+  const handleNumberClick = (columnKey: string) => {
+    setFilterColumnKey(columnKey === filterColumnKey ? null : columnKey);
+    setFilterCaseKey(null);
+    setSelectedEndingCell(null);
+    setSelectedEndingCellKey(null);
+  };
+
+  const handleSubTabChange = (e: { index: number }) => {
+    setActiveSubTab(e.index);
+    saveSubTab(e.index);
   };
 
   if (isError) {
@@ -140,47 +166,77 @@ const GrammarLessonPage = () => {
             </div>
           )}
 
+          {/* Endings table — always visible */}
+          {endingsTableData && (
+            <div className="mb-4" style={{ width: 'fit-content' }}>
+              <div className="card">
+                <DeclensionEndingsReferenceTable
+                  data={endingsTableData}
+                  onCellClick={handleEndingCellClick}
+                  onCaseClick={handleCaseClick}
+                  onNumberClick={handleNumberClick}
+                  selectedCell={selectedEndingCellKey}
+                  activeFilter={{ caseKeyFilter: filterCaseKey ?? undefined, columnKeyFilter: filterColumnKey ?? undefined }}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="mt-4">
-            <TabView activeIndex={activeTab} onTabChange={handleTabChange} className="grammar-lesson-tabs">
+            <TabView activeIndex={activeSubTab} onTabChange={handleSubTabChange} className="grammar-lesson-subtabs">
               <TabPanel header={i18n.language === 'ru' ? 'Парадигмы' : 'Paradigms'}>
-                {/* Static reference table of case endings — shown only when stem type is recognized */}
-                {endingsTableData && (
-                  <DeclensionEndingsReferenceTable
-                    data={endingsTableData}
-                    onCellClick={handleEndingCellClick}
-                    selectedCell={selectedEndingCellKey}
-                  />
+                {selectedEndingCell !== null && (
+                  <div className="mb-3">
+                    <DeclensionEndingWordsTable
+                      selection={selectedEndingCell}
+                      slug={slug || ''}
+                      totalCount={firstParadigmPage?.totalCount ?? 0}
+                      onBack={() => {
+                        setSelectedEndingCell(null);
+                        setSelectedEndingCellKey(null);
+                      }}
+                    />
+                  </div>
                 )}
-                {selectedEndingCell !== null ? (
-                  <DeclensionEndingWordsTable
-                    selection={selectedEndingCell}
-                    slug={slug || ''}
-                    totalCount={firstParadigmPage?.totalCount ?? 0}
-                    onBack={() => {
-                      setSelectedEndingCell(null);
-                      setSelectedEndingCellKey(null);
-                    }}
-                  />
-                ) : (
-                  <GrammarParadigmCarousel slug={slug || ''} enabled={paradigmsTabOpened} />
-                )}
+                <GrammarParadigmCarousel slug={slug || ''} enabled={paradigmsSubTabVisible} />
               </TabPanel>
-              <TabPanel header={i18n.language === 'ru' ? 'Примеры' : 'Examples'} className="declension-examples-tab-panel">
-                <DeclensionExamplesPanel slug={slug || ''} enabled={examplesTabOpened} />
+              <TabPanel
+                header={
+                  <span className="flex align-items-center gap-1">
+                    {i18n.language === 'ru' ? 'Примеры' : 'Examples'}
+                    {isAdmin && allExampleVerseIds.length > 0 && (
+                      <i
+                        className="pi pi-external-link cursor-pointer"
+                        title={t('examples.openAll', { count: allExampleVerseIds.length })}
+                        onClick={openAllExamples}
+                      />
+                    )}
+                  </span>
+                }
+                className="declension-examples-tab-panel"
+              >
+                <DeclensionExamplesPanel
+                  slug={slug || ''}
+                  vowelType={vowelType}
+                  gender={gender}
+                  enabled={examplesSubTabVisible}
+                  filterCaseType={filterCaseType}
+                  filterNumberType={filterNumberType}
+                />
               </TabPanel>
               <TabPanel header={i18n.language === 'ru' ? 'Прогресс' : 'Progress'}>
                 <GrammarProgressGrid
-                  aggregations={lesson.items ? aggregateByCaseAndNumber(lesson.items) : []}
-                  caseNames={lesson.items ? aggregateByCase(lesson.items) : []}
-                  numberNames={lesson.items ? aggregateByNumber(lesson.items) : []}
+                  aggregations={lesson.grid ?? []}
+                  caseNames={lesson.caseAggregations ?? []}
+                  numberNames={lesson.numberAggregations ?? []}
                   quizSlug={slug || ''}
                 />
-                {lesson.tagSetProgress && (
-                  <GrammarProgressTagSets
-                    tagSets={lesson.tagSetProgress}
-                    quizSlug={slug || ''}
-                  />
-                )}
+                <GrammarProgressTagSets
+                  cases={lesson.caseAggregations ?? []}
+                  numbers={lesson.numberAggregations ?? []}
+                  pairs={lesson.pairAggregations ?? []}
+                  quizSlug={slug || ''}
+                />
               </TabPanel>
             </TabView>
           </div>

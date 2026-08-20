@@ -23,10 +23,12 @@
     "submit": "Submit",
     "matching": {
       "checkButton": "Check",
-      "resetHint": "Click again to undo"
+      "resetHint": "Click again to undo",
+      "reorderHint": "Drag the tiles on the right so they match the words on the left in order"
     },
     "freeText": {
-      "placeholder": "Type the word form…"
+      "placeholder": "Type the word form in SLP1…",
+      "slp1Hint": "Type in SLP1 (Latin): rAmaH → rāmaḥ"
     }
   },
   "quizzes": {

@@ -6,18 +6,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.ReferenceClassDto;
-import sm.selflearn.samskrtam.curriculum.lexicon.dto.SemanticTopicNodeDto;
-import sm.selflearn.samskrtam.curriculum.lexicon.dto.SemanticTopicUpsertRequest;
+import sm.selflearn.samskrtam.curriculum.lexicon.dto.SemanticClassNodeDto;
+import sm.selflearn.samskrtam.curriculum.lexicon.dto.SemanticClassUpsertRequest;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.FrequencyBand;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyAppliesTo;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PosGroup;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticTopic;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.FrequencyBandRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.MorphologyClassRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticTopicRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticClassRepository;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -25,73 +25,73 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Admin CRUD справочников lexicon (task-curriculum-16 §6): SemanticTopic,
+ * Admin CRUD справочников lexicon (task-curriculum-16 §6): SemanticClass,
  * PartOfSpeech, MorphologyClass, FrequencyBand. Запись — ADMIN, чтение публичное.
  */
 @Service
 @RequiredArgsConstructor
 public class LexiconReferenceService {
 
-    private final SemanticTopicRepository semanticTopicRepository;
+    private final SemanticClassRepository semanticClassRepository;
     private final PartOfSpeechRepository partOfSpeechRepository;
     private final MorphologyClassRepository morphologyClassRepository;
     private final FrequencyBandRepository frequencyBandRepository;
 
-    // --- SemanticTopic ---
+    // --- SemanticClass ---
 
     @Transactional(readOnly = true)
-    public List<SemanticTopicNodeDto> semanticTopicTree() {
-        List<SemanticTopic> roots = semanticTopicRepository.findByParentIsNull()
+    public List<SemanticClassNodeDto> semanticClassTree() {
+        List<SemanticClass> roots = semanticClassRepository.findByParentIsNull()
                 .stream()
-                .sorted(Comparator.comparing(SemanticTopic::getCode))
+                .sorted(Comparator.comparing(SemanticClass::getCode))
                 .toList();
         return roots.stream().map(root -> toNode(root, new java.util.HashSet<>())).toList();
     }
 
     @Transactional
-    public SemanticTopicNodeDto createSemanticTopic(SemanticTopicUpsertRequest request) {
-        SemanticTopic topic = new SemanticTopic();
+    public SemanticClassNodeDto createSemanticClass(SemanticClassUpsertRequest request) {
+        SemanticClass topic = new SemanticClass();
         apply(topic, request);
-        return toNode(semanticTopicRepository.save(topic), new java.util.HashSet<>());
+        return toNode(semanticClassRepository.save(topic), new java.util.HashSet<>());
     }
 
     @Transactional
-    public SemanticTopicNodeDto updateSemanticTopic(UUID id, SemanticTopicUpsertRequest request) {
-        SemanticTopic topic = semanticTopicRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SemanticTopic not found"));
+    public SemanticClassNodeDto updateSemanticClass(UUID id, SemanticClassUpsertRequest request) {
+        SemanticClass topic = semanticClassRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SemanticClass not found"));
         apply(topic, request);
-        return toNode(semanticTopicRepository.save(topic), new java.util.HashSet<>());
+        return toNode(semanticClassRepository.save(topic), new java.util.HashSet<>());
     }
 
     @Transactional
-    public void deleteSemanticTopic(UUID id) {
-        if (!semanticTopicRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "SemanticTopic not found");
+    public void deleteSemanticClass(UUID id) {
+        if (!semanticClassRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "SemanticClass not found");
         }
-        semanticTopicRepository.deleteById(id);
+        semanticClassRepository.deleteById(id);
     }
 
-    private void apply(SemanticTopic topic, SemanticTopicUpsertRequest request) {
+    private void apply(SemanticClass topic, SemanticClassUpsertRequest request) {
         topic.setCode(request.code());
         topic.setNameRu(request.nameRu());
         topic.setNameEn(request.nameEn());
         if (request.parentId() != null) {
-            topic.setParent(semanticTopicRepository.findById(request.parentId())
+            topic.setParent(semanticClassRepository.findById(request.parentId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Parent not found")));
         } else {
             topic.setParent(null);
         }
     }
 
-    private SemanticTopicNodeDto toNode(SemanticTopic topic, java.util.Set<UUID> seen) {
-        List<SemanticTopicNodeDto> children = new ArrayList<>();
+    private SemanticClassNodeDto toNode(SemanticClass topic, java.util.Set<UUID> seen) {
+        List<SemanticClassNodeDto> children = new ArrayList<>();
         if (seen.add(topic.getId())) {
             children = topic.getChildren().stream()
-                    .sorted(Comparator.comparing(SemanticTopic::getCode))
+                    .sorted(Comparator.comparing(SemanticClass::getCode))
                     .map(child -> toNode(child, seen))
                     .toList();
         }
-        return new SemanticTopicNodeDto(
+        return new SemanticClassNodeDto(
                 topic.getId(), topic.getCode(), topic.getNameRu(), topic.getNameEn(),
                 topic.getParent() == null ? null : topic.getParent().getId(), children);
     }

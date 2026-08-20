@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.quest.declension;
 
+import sm.selflearn.samskrtam.quest.HighlightToken;
 import sm.selflearn.samskrtam.quest.QuestItemPayload;
 
 import java.util.List;
@@ -11,7 +12,8 @@ import java.util.List;
 public record DeclensionMatchPayload(
         String lemmaIast,
         String morphologyClassCode,
-        List<DeclensionMatchPair> pairs
+        List<DeclensionMatchPair> pairs,
+        List<HighlightToken> highlights
 ) implements QuestItemPayload {
 
     public record DeclensionMatchPair(

@@ -20,6 +20,8 @@ import sm.selflearn.samskrtam.curriculum.exception.TopicCycleException;
 import sm.selflearn.samskrtam.curriculum.mapper.TopicMapper;
 import sm.selflearn.samskrtam.curriculum.model.LearningLevel;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
+import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
+import sm.selflearn.samskrtam.curriculum.model.TopicDomainType;
 import sm.selflearn.samskrtam.curriculum.model.TopicPrerequisite;
 import sm.selflearn.samskrtam.curriculum.model.TopicPrerequisiteId;
 import sm.selflearn.samskrtam.curriculum.repository.TopicPrerequisiteRepository;
@@ -43,10 +45,12 @@ public class TopicService {
     private final ComplexQuizService complexQuizService;
     private final TopicMapper topicMapper;
 
-    public List<TopicDto> listTopics(boolean includeEvergreen) {
+    public List<TopicDto> listTopics(boolean includeEvergreen, TopicDomain domain, TopicDomainType domainType) {
         return topicRepository.findAll().stream()
                 .filter(topic -> !topic.isHidden())
                 .filter(topic -> includeEvergreen || !topic.isEvergreen())
+                .filter(topic -> domain == null || topic.getDomain() == domain)
+                .filter(topic -> domainType == null || topic.getDomainType() == domainType)
                 .map(topicMapper::toDto)
                 .toList();
     }
@@ -159,6 +163,12 @@ public class TopicService {
                 .toList();
     }
 
+    public TopicDto getTopicByCode(String code) {
+        Topic topic = topicRepository.findByCode(code)
+                .orElseThrow(() -> new EntityNotFoundException("Topic not found with code: " + code));
+        return topicMapper.toDto(topic);
+    }
+
     public List<TopicDto> listTopicsByLevel(LearningLevel level) {
         Sort sort = Sort.by(Sort.Order.asc("displayOrder").nullsLast(), Sort.Order.asc("titleRu"));
         return topicRepository.findByLearningLevel(level, sort).stream()
@@ -171,6 +181,7 @@ public class TopicService {
         TopicDto base = topicMapper.toDto(topic);
         return new TopicDto(
                 base.id(), base.code(), base.titleRu(), base.titleEn(), base.learningLevel(),
+                base.domain(), base.domainType(),
                 base.isEvergreen(), base.displayOrder(),
                 complexQuizService.resolveAppearsInLevels(topic.getId(), topic.getLearningLevel()),
                 base.createdAt(), base.updatedAt());

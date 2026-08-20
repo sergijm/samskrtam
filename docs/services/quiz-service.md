@@ -44,7 +44,7 @@ enum `ItemType` не расширялся (решение 2026-08). Quest-еди
 `QuestProgressTypes`; ref-id пространства не пересекаются, scoped-агрегации легаси не затронуты.
 Отбор на compose — `QuizGenerator` по пулу топика + `QuestSelectionPlanner.takeRoundRobin`
 (смешивание типов), затем compose по `itemIds`. Опция «чистого» ключа с кодами `QuestItemType`
-(`itemType`→String) — отложена, см. §6 [curriculum-session-composition.md](curriculum-session-composition.md).
+(`itemType`→String) — отложена, см. §6 [curriculum-session-composition.md](curriculum-service/curriculum-session-composition.md).
 
 Параметр `statusFilter` (`start`/`start-or-resume`, бакетный отбор NEW/LEARNING/REVIEW для LessonPage) **реализован**: `@RequestParam statusFilter` в `QuizSessionController`, ветка в `QuizSessionService.startOrResumeSession`, отбор — `QuizStatusFilteredGenerator`, запросы `findInProgressByStatusFilter`/`findLearningItems`/`findReviewItems`, колонка `quiz_session.status_filter` (миграция V10). См. [quiz-generator-spec.md §3](quiz-service/quiz-generator-spec.md#3-quizgeneratorconfig--параметры-отбора) и §7 п.5.
 

@@ -1,6 +1,5 @@
 package sm.selflearn.samskrtam.sangraha.service.strategy;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.models.FunctionDefinition;
@@ -36,7 +35,7 @@ public class SinglePassStrategy implements LlmCallStrategy {
     }
 
     @Override
-    public JsonNode call(List<Verse> verses) throws Exception {
+    public LlmCallResult call(List<Verse> verses) throws Exception {
         String systemPrompt = promptBuilder.extractSystemPrompt();
         String userPrompt = promptBuilder.buildBatchUserPrompt(verses);
 
@@ -73,9 +72,9 @@ public class SinglePassStrategy implements LlmCallStrategy {
         }
 
         ChatCompletionCreateParams params = builder.build();
+        String rawPrompt = objectMapper.writeValueAsString(params._body());
         if (log.isDebugEnabled()) {
-            var rawString = objectMapper.writeValueAsString(params._body());
-            log.debug("Single-pass request: {}", rawString);
+            log.debug("Single-pass request: {}", rawPrompt);
         }
 
         ChatCompletion response = openAIClient.chat().completions().create(params);
@@ -88,6 +87,6 @@ public class SinglePassStrategy implements LlmCallStrategy {
             log.debug("Single-pass response: {}", rawString);
         }
 
-        return objectMapper.valueToTree(response);
+        return new LlmCallResult(objectMapper.valueToTree(response), rawPrompt);
     }
 }

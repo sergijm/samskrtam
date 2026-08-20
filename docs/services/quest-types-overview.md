@@ -1,6 +1,6 @@
 # Quest Types Overview — полная инвентаризация
 
-> Связанные файлы: [quest-catalog.md](./quest-catalog.md) · [quest-item-model.md](./quest-item-model.md) · [../quests/](../quests/README.md) · [README.md §6 Milestones](../README.md#6-milestones)
+> Связанные файлы: [quest-catalog.md](curriculum-service/quest-catalog.md) · [quest-item-model.md](./quest-item-model.md) · [../quests/](../quests/README.md) · [README.md §6 Milestones](../README.md#6-milestones)
 
 Таблица оценивает объём работы по каждому типу квеста: сколько параметрических
 вариаций внутри типа (падеж/число/род/класс глагола и т.д.) и, соответственно, сколько
@@ -80,6 +80,6 @@
 ## Итог
 
 - **Типов (QuestItemType):** 32, из них 2 реализованы (`DECLENSION_FORM`, `VOCABULARY_WORD`), остальные — от «спроектировано, ждёт данных» (M5–M6) до «требует отдельного исследования формата» (Backlog: просодия, сложные словообразовательные типы).
-- **Конкретных `Quest` (уроков):** практически неограниченно — большинство типов масштабируются добавлением данных в curriculum-service без нового кода (см. правило добавления типа, [quest-catalog.md §8](./quest-catalog.md#8-правило-добавления-нового-типа)); верхний предел задаёт не движок, а объём вручную верифицированного лингвистического материала.
+- **Конкретных `Quest` (уроков):** практически неограниченно — большинство типов масштабируются добавлением данных в curriculum-service без нового кода (см. правило добавления типа, [quest-catalog.md §8](curriculum-service/quest-catalog.md#8-правило-добавления-нового-типа)); верхний предел задаёт не движок, а объём вручную верифицированного лингвистического материала.
 - **Ближайший осмысленный шаг (M5–M6):** `CONJUGATION_FORM` (parasmaipada, laṭ/loṭ/vidhiliṅ, I класс) и `VOCABULARY_SYNONYM` — уже описаны юзер-стори в [`docs/quests/`](../quests/README.md).
 - **Юзер-стори написаны на все 31 тип** (кроме уже реализованного `VOCABULARY_WORD`, прямое направление) — см. полный индекс в [`docs/quests/README.md`](../quests/README.md).

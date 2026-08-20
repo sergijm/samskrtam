@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.ReferenceClassDto;
-import sm.selflearn.samskrtam.curriculum.lexicon.dto.SemanticTopicNodeDto;
-import sm.selflearn.samskrtam.curriculum.lexicon.dto.SemanticTopicUpsertRequest;
+import sm.selflearn.samskrtam.curriculum.lexicon.dto.SemanticClassNodeDto;
+import sm.selflearn.samskrtam.curriculum.lexicon.dto.SemanticClassUpsertRequest;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.FrequencyBand;
 import sm.selflearn.samskrtam.curriculum.lexicon.service.LexiconReferenceService;
 
@@ -29,26 +29,26 @@ public class LexiconReferenceController {
 
     private final LexiconReferenceService referenceService;
 
-    // SemanticTopic
-    @GetMapping("/semantic-topics/tree")
-    public List<SemanticTopicNodeDto> semanticTopicTree() {
-        return referenceService.semanticTopicTree();
+    // SemanticClass
+    @GetMapping("/semantic-classes/tree")
+    public List<SemanticClassNodeDto> semanticClassTree() {
+        return referenceService.semanticClassTree();
     }
 
-    @PostMapping("/semantic-topics")
-    public SemanticTopicNodeDto createSemanticTopic(@RequestBody SemanticTopicUpsertRequest request) {
-        return referenceService.createSemanticTopic(request);
+    @PostMapping("/semantic-classes")
+    public SemanticClassNodeDto createSemanticClass(@RequestBody SemanticClassUpsertRequest request) {
+        return referenceService.createSemanticClass(request);
     }
 
-    @PutMapping("/semantic-topics/{id}")
-    public SemanticTopicNodeDto updateSemanticTopic(@PathVariable UUID id,
-                                                    @RequestBody SemanticTopicUpsertRequest request) {
-        return referenceService.updateSemanticTopic(id, request);
+    @PutMapping("/semantic-classes/{id}")
+    public SemanticClassNodeDto updateSemanticClass(@PathVariable UUID id,
+                                                    @RequestBody SemanticClassUpsertRequest request) {
+        return referenceService.updateSemanticClass(id, request);
     }
 
-    @DeleteMapping("/semantic-topics/{id}")
-    public void deleteSemanticTopic(@PathVariable UUID id) {
-        referenceService.deleteSemanticTopic(id);
+    @DeleteMapping("/semantic-classes/{id}")
+    public void deleteSemanticClass(@PathVariable UUID id) {
+        referenceService.deleteSemanticClass(id);
     }
 
     // PartOfSpeech

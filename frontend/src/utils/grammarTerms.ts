@@ -70,3 +70,19 @@ export function lookup(value: string | undefined | null, map: Record<string, str
   return map[value] ?? value;
 }
 
+/** Question prompt text for a UI language: Russian variant when available, English as fallback. */
+export function promptText(
+  question: { text: string; textRu?: string },
+  lang: string,
+): string {
+  return lang === 'ru' ? (question.textRu || question.text) : question.text;
+}
+
+/** Option label for a UI language: Russian variant when available, English text as fallback. */
+export function optionText(
+  option: { formIast: string; textRu?: string },
+  lang: string,
+): string {
+  return lang === 'ru' ? (option.textRu || option.formIast) : option.formIast;
+}
+

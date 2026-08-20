@@ -6,93 +6,102 @@ import org.springframework.transaction.annotation.Transactional;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconDashboardResponse;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconFrequencyDto;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconPosDto;
-import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconSemanticTopicDto;
-import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconSourceDto;
+import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconSemanticClassDto;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconSummaryDto;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconTodayDto;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconQuickStartDto;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconUserCollectionDto;
+import sm.selflearn.samskrtam.curriculum.lexicon.imports.LexiconImportService;
 import sm.selflearn.samskrtam.curriculum.lexicon.mapper.LexiconFrequencyMapper;
-import sm.selflearn.samskrtam.curriculum.lexicon.mapper.LexiconSemanticTopicMapper;
+import sm.selflearn.samskrtam.curriculum.lexicon.mapper.LexiconSemanticClassMapper;
 import sm.selflearn.samskrtam.curriculum.lexicon.mapper.LexiconPosMapper;
-import sm.selflearn.samskrtam.curriculum.lexicon.mapper.LexiconSourceMapper;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.FrequencyBand;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticTopic;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.Source;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticClass;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.UserLexemeProgress;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.FrequencyBandRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticTopicRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticClassRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.SourceRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserCollectionRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.UserLexemeProgressRepository;
 
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Builds the payload for the lexicon home page (the "Лексика" dashboard).
- * Taxonomy (frequency bands, semantic topics, parts of speech, sources) comes
- * from the real curriculum schema; per-user progress (mastered counts, Today
- * counters) is currently random — real spaced-repetition state is an open
- * question (see docs/docs/services/lexical-quizzes.md §4).
+ * Every counter comes from the real curriculum schema: total words and
+ * frequency-band/topic/pos sizes are actual lexeme counts, per-user mastered
+ * and "Today" counters are derived from {@code user_lexeme_progress}.
+ * With {@code userId == null} (anonymous) per-user counters return zero.
  */
 @Service
 @RequiredArgsConstructor
 public class LexiconDashboardService {
 
-    public static final int TOTAL_WORDS = 2000;
-
     private final FrequencyBandRepository frequencyBandRepository;
-    private final SemanticTopicRepository semanticTopicRepository;
+    private final SemanticClassRepository semanticClassRepository;
     private final PartOfSpeechRepository partOfSpeechRepository;
-    private final SourceRepository sourceRepository;
+    private final LexemeRepository lexemeRepository;
+    private final UserLexemeProgressRepository progressRepository;
+    private final LexemeFrequencyRepository frequencyRepository;
     private final UserCollectionRepository userCollectionRepository;
 
     private final LexiconFrequencyMapper frequencyMapper;
-    private final LexiconSemanticTopicMapper semanticTopicMapper;
+    private final LexiconSemanticClassMapper semanticClassMapper;
     private final LexiconPosMapper posMapper;
-    private final LexiconSourceMapper sourceMapper;
 
     @Transactional(readOnly = true)
-    public LexiconDashboardResponse getDashboard() {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
+    public LexiconDashboardResponse getDashboard(UUID userId) {
+        List<UserLexemeProgress> progress = userId == null ? List.of()
+                : progressRepository.findByIdUserId(userId);
 
-        int todayReview = random.nextInt(0, 40);
-        int todayNew = random.nextInt(0, 20);
-        int todayWeak = random.nextInt(0, 12);
+        int totalWords = (int) lexemeRepository.count();
+        Set<UUID> masteredLexemeIds = masteredIds(progress);
 
-        LexiconSummaryDto summary = new LexiconSummaryDto(
-                TOTAL_WORDS,
-                random.nextInt(0, TOTAL_WORDS + 1));
-        LexiconTodayDto today = new LexiconTodayDto(todayReview, todayNew, todayWeak);
+        LexiconSummaryDto summary = new LexiconSummaryDto(totalWords, masteredLexemeIds.size());
+        LexiconTodayDto today = today(progress, totalWords, userId);
 
         List<LexiconFrequencyDto> frequencyBands = frequencyBandRepository.findAllByOrderBySortOrderAsc()
                 .stream()
                 .map(band -> {
-                    int bandSize = Math.max(band.getMaxRank() - band.getMinRank() + 1, 0);
-                    int mastered = random.nextInt(0, bandSize + 1);
-                    return frequencyMapper.toDto(band, bandSize, mastered);
+                    Set<UUID> bandIds = new HashSet<>(frequencyRepository.findLexemeIdsBySourceAndRankRange(
+                            LexiconImportService.FREQUENCY_SOURCE, band.getMinRank(), band.getMaxRank()));
+                    int mastered = bandIds.isEmpty() ? 0
+                            : (int) bandIds.stream().filter(masteredLexemeIds::contains).count();
+                    return frequencyMapper.toDto(band, bandIds.size(), mastered);
                 })
                 .toList();
 
-        List<LexiconSemanticTopicDto> topics = semanticTopicRepository.findAll()
+        List<SemanticClass> classes = semanticClassRepository.findAll();
+        Map<String, Integer> wordCountByCode = semanticClassRepository.findSemanticClassLexemeCounts()
                 .stream()
-                .map(topic -> semanticTopicMapper.toDto(
-                        topic, random.nextInt(10, 160), random.nextInt(0, 160)))
+                .collect(Collectors.toMap(SemanticClassRepository.SemanticClassLexemeCount::getCode,
+                        c -> c.getLexemeCount() == null ? 0 : c.getLexemeCount().intValue()));
+        Map<String, Integer> masteredByCode = masteredBySemanticClass(classes, masteredLexemeIds);
+
+        List<LexiconSemanticClassDto> topics = classes.stream()
+                .map(topic -> semanticClassMapper.toDto(
+                        topic,
+                        wordCountByCode.getOrDefault(topic.getCode(), 0),
+                        masteredByCode.getOrDefault(topic.getCode(), 0)))
                 .toList();
+
+        Map<String, Long> posCountByCode = lexemeRepository.countLexemesByPartOfSpeech()
+                .stream()
+                .collect(Collectors.toMap(LexemeRepository.PosCount::getCode, LexemeRepository.PosCount::getCnt));
 
         List<LexiconPosDto> pos = partOfSpeechRepository.findAll()
                 .stream()
-                .map(part -> posMapper.toDto(part, random.nextInt(20, 700)))
+                .map(part -> posMapper.toDto(part, posCountByCode.getOrDefault(part.getCode(), 0L).intValue()))
                 .toList();
 
-        List<LexiconSourceDto> sources = sourceRepository.findAll()
-                .stream()
-                .map(source -> sourceMapper.toDto(source, random.nextInt(0, 500)))
-                .toList();
-
-        // Collections are per-user; the read-only dashboard has no user context
-        // yet, so an empty set is returned. Populated when auth wiring arrives.
         List<LexiconUserCollectionDto> collections = List.of();
 
         List<LexiconQuickStartDto> quickStart = List.of(
@@ -101,6 +110,57 @@ public class LexiconDashboardService {
                 new LexiconQuickStartDto("top500", "Топ-500", "Top 500", "20 вопросов", "20 questions"));
 
         return new LexiconDashboardResponse(
-                summary, today, frequencyBands, topics, pos, sources, collections, quickStart);
+                summary, today, frequencyBands, topics, pos, collections, quickStart);
+    }
+
+    private Set<UUID> masteredIds(List<UserLexemeProgress> progress) {
+        return progress.stream()
+                .filter(p -> p.getMasteryScore() != null
+                        && p.getMasteryScore() >= LexemeProgressService.MASTERED_THRESHOLD)
+                .map(p -> p.getId().getLexemeId())
+                .collect(Collectors.toSet());
+    }
+
+    private LexiconTodayDto today(List<UserLexemeProgress> progress, int totalWords, UUID userId) {
+        if (userId == null) {
+            return new LexiconTodayDto(0, 0, 0);
+        }
+        Instant now = Instant.now();
+        int reviewDue = (int) progress.stream()
+                .filter(p -> p.getNextReviewAt() != null && !p.getNextReviewAt().isAfter(now))
+                .count();
+        int weakWords = (int) progress.stream()
+                .filter(p -> p.getMasteryScore() == null
+                        || p.getMasteryScore() < LexemeProgressService.MASTERED_THRESHOLD)
+                .filter(p -> p.getExposureCount() != null && p.getExposureCount() > 0)
+                .count();
+        long seen = progress.stream()
+                .filter(p -> p.getExposureCount() != null && p.getExposureCount() > 0)
+                .count();
+        int newWords = (int) Math.max(0, (long) totalWords - seen);
+        return new LexiconTodayDto(reviewDue, newWords, weakWords);
+    }
+
+    /**
+     * Mastered lexemes per semantic class, including the subtree: a lexeme bound
+     * to a leaf counts into every ancestor, mirroring the
+     * {@code semantic_class_lexeme_counts} view aggregation.
+     */
+    private Map<String, Integer> masteredBySemanticClass(
+            List<SemanticClass> classes, Set<UUID> masteredLexemeIds) {
+        Map<String, Integer> masteredByCode = new HashMap<>();
+        if (masteredLexemeIds.isEmpty()) {
+            return masteredByCode;
+        }
+        Map<UUID, SemanticClass> byId = classes.stream()
+                .collect(Collectors.toMap(SemanticClass::getId, c -> c));
+        for (UUID classId : lexemeRepository.findSemanticClassIdsByLexemeIds(masteredLexemeIds)) {
+            SemanticClass node = byId.get(classId);
+            while (node != null) {
+                masteredByCode.merge(node.getCode(), 1, Integer::sum);
+                node = node.getParent();
+            }
+        }
+        return masteredByCode;
     }
 }

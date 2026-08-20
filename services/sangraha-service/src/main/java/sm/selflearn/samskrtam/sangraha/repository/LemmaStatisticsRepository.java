@@ -18,15 +18,17 @@ public interface LemmaStatisticsRepository extends JpaRepository<LemmaStatistics
 
     List<LemmaStatistics> findByLemmaIdIn(Collection<UUID> lemmaIds);
 
+    /**
+     * Все уникальные пары (лемма, род) из {@code lemma_statistics} с eagerly
+     * загруженной {@link sm.selflearn.samskrtam.sangraha.model.Lemma},
+     * отсортированные по частоте вхождения по убыванию. Курсор — {@code id}
+     * строки статистики.
+     */
     @Query("""
             SELECT s FROM LemmaStatistics s
-            WHERE s.lemma.id IN (
-                SELECT lc.lemma.id FROM sm.selflearn.samskrtam.sangraha.model.LemmaClassification lc
-                WHERE lc.schemeCode = 'CURRICULUM'
-                AND lc.status = 'APPROVED'
-            )
-            AND (:cursor IS NULL OR s.id > :cursor)
-            ORDER BY s.id ASC
+            JOIN FETCH s.lemma
+            WHERE (:cursor IS NULL OR s.id > :cursor)
+            ORDER BY s.occurrenceCount DESC, s.id ASC
             """)
     List<LemmaStatistics> findForExport(
             @Param("cursor") UUID cursor,

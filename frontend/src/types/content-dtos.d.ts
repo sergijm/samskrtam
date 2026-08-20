@@ -66,30 +66,31 @@ export interface DeclensionParadigmPageDto {
 }
 
 // =============================================
-// Declension Examples (grammar-lesson-page §2.2а)
+// Conjugation Paradigms (presence-indicativus carousel)
 // =============================================
 
-export interface DeclensionExamplesResponseDto {
-    groups: Array<{
-        caseType: CaseType;
-        numberType: NumberType;
-        examples: Array<{
-            verseId: string;
-            workSlug: string;
-            textIast: string;
-            textDevanagari: string;
-            translationRu: string;
-            translationEn: string;
-            workTitleRu: string;
-            workTitleEn: string;
-            chapterTitleRu: string;
-            chapterTitleEn: string;
-            verseOrderIndex: number;
-        }>;
-    }>;
-    /** Только для роли ADMIN (см. content-service/declension-examples.md, шаг 4а).
-     *  Для остальных ролей поле отсутствует в JSON — проверять через `?.length > 0`. */
-    missingVerseIds?: string[];
+export type Voice = 'PARASMAIPADA' | 'ATMANEPADA';
+
+export interface ConjugationFormDto {
+    person: number;
+    numberType: NumberType;
+    sentenceIast: string;
+    sentenceDevanagari: string;
+    translationRu: string;
+}
+
+export interface ConjugationParadigmDto {
+    lemmaIast: string;
+    lemmaDevanagari: string;
+    meaningRu: string;
+    voice: Voice;
+    forms: ConjugationFormDto[];
+}
+
+export interface ConjugationParadigmPageDto {
+    index: number;
+    totalCount: number;
+    paradigm: ConjugationParadigmDto;
 }
 
 // =============================================
@@ -103,11 +104,16 @@ export interface SandhiRuleSummaryDto {
     text: string;
     example: string | null;
     reference: string;
+    supersedes?: number[];
+    defaultFor?: number[];
+    appliesWith?: number[];
+    category?: string[];
 }
 
 export interface SandhiRulesResponse {
     topicCode: string;
     title: string;
     rules: SandhiRuleSummaryDto[];
+    categoryGlossary?: Record<string, string>;
 }
 

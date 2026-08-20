@@ -1,87 +1,96 @@
 package sm.selflearn.samskrtam.quiz.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import sm.selflearn.samskrtam.quiz.dto.GrammarLesson;
-import sm.selflearn.samskrtam.quiz.dto.GrammarQuestionProgress;
-import sm.selflearn.samskrtam.quiz.dto.LessonStatusSummary;
-import sm.selflearn.samskrtam.quiz.dto.ProgressTagInfo;
-import sm.selflearn.samskrtam.quiz.dto.TagSetProgress;
-import sm.selflearn.samskrtam.quiz.dto.TopicLessonDto;
-import sm.selflearn.samskrtam.quiz.dto.WordStatus;
-import sm.selflearn.samskrtam.quiz.localization.CaseNumberGenderLocalizer;
+import sm.selflearn.samskrtam.quiz.dto.*;
 import sm.selflearn.samskrtam.quiz.model.ItemType;
 import sm.selflearn.samskrtam.quiz.model.QuizItemScore;
 import sm.selflearn.samskrtam.quiz.repository.QuizItemScoreRepository;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
- * Builds a grammar lesson (progress grid) for a curriculum topic (API v2). The lesson
- * base data (metadata + unique progress tags with morphology attributes) comes from
- * curriculum-service via {@link CurriculumClient}; per-tag progress is read from
- * {@code quiz_item_score} (keyed as the resolved ItemType + progress_tag) and merged
- * in. This is the v2 replacement of the content-service-based {@link GrammarProgressBuilder}.
+ * Builds a grammar lesson (progress grid) for a curriculum topic (API v2).
+ * Supports both declension (NOMINAL_MORPHOLOGY) and conjugation (VERBAL_MORPHOLOGY).
  */
 @Service
 @RequiredArgsConstructor
 public class GrammarLessonV2Service {
 
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+    private record TagInfo(String itemType, String gender, String caseType,
+                           String numberType, String formIast, String voice, Integer person) {
+        TagInfo(String itemType, String gender, String caseType, String numberType, String formIast) {
+            this(itemType, gender, caseType, numberType, formIast, null, null);
+        }
+    }
+
+    private record TagProgress(String caseType, String numberType, String voice,
+                               int person, int score, WordStatus status) {}
+
     private final CurriculumClient curriculumClient;
     private final QuizItemScoreRepository quizItemScoreRepository;
     private final WordStatusResolver wordStatusResolver;
+    private final GrammarProgressAggregationService aggregationService;
 
     public Mono<GrammarLesson> build(String topicCode, UUID userId) {
-        return curriculumClient.fetchTopicLesson(topicCode)
-                .flatMap(lesson -> {
-                    Map<String, ProgressTagInfo> metadata = lesson.tagMetadata();
-                    if (userId == null) {
-                        return Mono.just(assemble(lesson, metadata, Map.of(), Instant.now()));
+        return curriculumClient.fetchTopics(null, null)
+                .flatMap(topics -> topics.stream()
+                        .filter(t -> t.code().equalsIgnoreCase(topicCode))
+                        .findFirst()
+                        .map(topic -> buildFromTopic(topic, userId))
+                        .orElse(Mono.empty()));
+    }
+
+    private Mono<GrammarLesson> buildFromTopic(TopicDto topic, UUID userId) {
+        return curriculumClient.fetchAllQuestItems(topic.id())
+                .flatMap(items -> {
+                    Map<String, TagInfo> metadata = extractTags(items);
+                    if (userId == null || metadata.isEmpty()) {
+                        return Mono.just(emptyLesson(topic, metadata));
                     }
                     ItemType itemType = resolveItemType(metadata);
                     List<String> tags = List.copyOf(metadata.keySet());
-                    if (tags.isEmpty()) {
-                        return Mono.just(assemble(lesson, metadata, Map.of(), Instant.now()));
-                    }
                     return quizItemScoreRepository
                             .findByUserIdAndItemTypeAndProgressTagIn(userId, itemType, tags)
                             .collectMap(QuizItemScore::getProgressTag, score -> score)
-                            .map(scoresMap -> assemble(lesson, metadata, scoresMap, Instant.now()));
+                            .map(scoresMap -> assemble(topic, metadata, scoresMap));
                 });
     }
 
-    private ItemType resolveItemType(Map<String, ProgressTagInfo> metadata) {
-        // Determine itemType from the first metadata entry
-        for (ProgressTagInfo info : metadata.values()) {
-            if (info.itemType() != null) {
-                return QuestProgressTypes.resolve(info.itemType());
-            }
+    private GrammarLesson emptyLesson(TopicDto topic, Map<String, TagInfo> metadata) {
+        List<TagProgress> progress = new ArrayList<>();
+        for (var entry : metadata.entrySet()) {
+            TagInfo info = entry.getValue();
+            progress.add(new TagProgress(info.caseType(), info.numberType(),
+                    info.voice(), info.person() != null ? info.person() : 0, 0, WordStatus.NEW));
         }
-        return ItemType.DECLENSION_FORM;
+        LessonStatusSummary summary = new LessonStatusSummary(metadata.size(),
+                metadata.size(), 0, 0, 0);
+        return populate(topic, progress, summary, 0, 0f);
     }
 
-    private GrammarLesson assemble(
-            TopicLessonDto lesson,
-            Map<String, ProgressTagInfo> metadata,
-            Map<String, QuizItemScore> scoresMap,
-            Instant now) {
+    private GrammarLesson assemble(TopicDto topic, Map<String, TagInfo> metadata,
+                                    Map<String, QuizItemScore> scoresMap) {
+        int newCount = 0, learning = 0, mastered = 0, reviewDue = 0;
+        List<TagProgress> progress = new ArrayList<>();
 
-        int distinctCells = metadata.size();
-        int newCount = 0;
-        int learning = 0;
-        int mastered = 0;
-        int reviewDue = 0;
-
-        List<GrammarQuestionProgress> items = new ArrayList<>();
-        for (Map.Entry<String, ProgressTagInfo> entry : metadata.entrySet()) {
+        Instant now = Instant.now();
+        for (var entry : metadata.entrySet()) {
             String tag = entry.getKey();
-            ProgressTagInfo info = entry.getValue();
+            TagInfo info = entry.getValue();
             QuizItemScore score = scoresMap.get(tag);
             WordStatus status = wordStatusResolver.resolve(score, now);
 
@@ -91,122 +100,155 @@ public class GrammarLessonV2Service {
                 case MASTERED -> mastered++;
                 case REVIEW -> reviewDue++;
             }
-
-            items.add(toProgress(tag, info, score, status, now));
+            progress.add(new TagProgress(info.caseType(), info.numberType(),
+                    info.voice(), info.person() != null ? info.person() : 0,
+                    score != null ? score.getScore() : 0, status));
         }
 
+        int total = metadata.size();
         int learned = mastered + reviewDue;
+        return populate(topic, progress,
+                new LessonStatusSummary(total, newCount, learning, mastered, reviewDue),
+                learned, total > 0 ? (float) learned / total * 100f : 0f);
+    }
+
+    private GrammarLesson populate(TopicDto topic, List<TagProgress> progress,
+                                    LessonStatusSummary summary, int learned, float pct) {
+        boolean isConjugation = topic.domain() != null && topic.domain().equals("VERBAL_MORPHOLOGY");
+
+        List<GrammarProgressAggregationService.ItemAgg> items = progress.stream()
+                .map(p -> new GrammarProgressAggregationService.ItemAgg(
+                        p.caseType() != null ? p.caseType() : (p.voice() != null ? p.voice() : ""),
+                        p.numberType(), p.score()))
+                .collect(Collectors.toList());
+        GrammarProgressAggregationService.GrammarProgressAggregations aggregations =
+                aggregationService.aggregate(items);
 
         GrammarLesson l = new GrammarLesson();
-        l.setLessonId(lesson.topicId());
-        l.setType("DECLENSIONS"); // v2 grammar topics are declension-family
-        l.setTitleRu(lesson.titleRu());
-        l.setTitleEn(lesson.titleEn());
-        l.setDifficulty(lesson.learningLevel());
-        l.setTotalQuestions(distinctCells);
+        l.setLessonId(topic.id());
+        l.setType(isConjugation ? "CONJUGATIONS" : "DECLENSIONS");
+        l.setTitleRu(topic.titleRu());
+        l.setTitleEn(topic.titleEn());
+        l.setDifficulty(topic.learningLevel());
+        l.setTotalQuestions(progress.size());
         l.setLearnedQuestions(learned);
-        l.setProgressPercent(distinctCells > 0 ? (float) learned / distinctCells * 100f : 0f);
-        l.setStatusSummary(new LessonStatusSummary(distinctCells, newCount, learning, mastered, reviewDue));
-        l.setItems(items);
-        l.setTagSetProgress(computeTagSetProgress(metadata, scoresMap, now));
+        l.setProgressPercent(pct);
+        l.setStatusSummary(summary);
+        l.setCaseAggregations(aggregations.caseAggregations());
+        l.setNumberAggregations(aggregations.numberAggregations());
+        l.setGrid(aggregations.grid());
+        l.setPairAggregations(aggregations.pairAggregations());
+
+        if (isConjugation) {
+            l.setConjugationProgress(progress.stream()
+                    .map(p -> new ConjugationCellProgress(
+                            p.voice() != null ? p.voice() : "",
+                            p.person(),
+                            p.numberType(),
+                            p.score(),
+                            p.status().name()))
+                    .collect(Collectors.toList()));
+        }
+
         return l;
     }
 
-    private GrammarQuestionProgress toProgress(
-            String tag, ProgressTagInfo info, QuizItemScore score, WordStatus status, Instant now) {
-        String caseType = info.caseType();
-        String numberType = info.numberType();
-        String gender = info.gender() != null ? info.gender() : "UNSPECIFIED";
-
-        GrammarQuestionProgress p = new GrammarQuestionProgress();
-        p.setQuestionId(UUID.nameUUIDFromBytes(tag.getBytes()));
-        p.setTextRu(contentLabel("ru", caseType, numberType, info));
-        p.setTextEn(contentLabel("en", caseType, numberType, info));
-        p.setCaseType(caseType);
-        p.setCaseRu(CaseNumberGenderLocalizer.caseTypeRu(caseType));
-        p.setCaseEn(CaseNumberGenderLocalizer.caseTypeEn(caseType));
-        p.setNumberType(numberType);
-        p.setNumberRu(CaseNumberGenderLocalizer.numberTypeRu(numberType));
-        p.setNumberEn(CaseNumberGenderLocalizer.numberTypeEn(numberType));
-        p.setGender(gender);
-        p.setGenderRu(CaseNumberGenderLocalizer.genderRu(gender));
-        p.setGenderEn(CaseNumberGenderLocalizer.genderEn(gender));
-        p.setScore(score != null ? score.getScore() : 0);
-        p.setStatus(status);
-        return p;
-    }
-
-    private String contentLabel(String lang, String caseType, String numberType, ProgressTagInfo info) {
-        String caseName = "ru".equals(lang)
-                ? CaseNumberGenderLocalizer.caseTypeRu(caseType)
-                : CaseNumberGenderLocalizer.caseTypeEn(caseType);
-        String numberName = "ru".equals(lang)
-                ? CaseNumberGenderLocalizer.numberTypeRu(numberType)
-                : CaseNumberGenderLocalizer.numberTypeEn(numberType);
-        if (caseName != null || numberName != null) {
-            return (caseName != null ? caseName : "") + ", " + (numberName != null ? numberName : "");
-        }
-        return info.formIast() != null ? info.formIast() : "?";
-    }
-
-    private List<TagSetProgress> computeTagSetProgress(
-            Map<String, ProgressTagInfo> metadata,
-            Map<String, QuizItemScore> scoresMap,
-            Instant now) {
-
-        record TagDef(String setId, String labelRu, String labelEn) {}
-        List<TagDef> tagDefs = List.of(
-                new TagDef("SINGULAR", "Ед. число", "Singular"),
-                new TagDef("DUAL", "Дв. число", "Dual"),
-                new TagDef("PLURAL", "Мн. число", "Plural"),
-                new TagDef("ACC_LOC", "Acc + Loc", "Acc + Loc"),
-                new TagDef("INS_ABL", "Ins + Abl", "Ins + Abl"),
-                new TagDef("GEN_LOC", "Gen + Loc", "Gen + Loc"),
-                new TagDef("DAT_ACC", "Dat + Acc", "Dat + Acc")
-        );
-
-        List<TagSetProgress> result = new ArrayList<>();
-        for (TagDef def : tagDefs) {
-            int total = 0;
-            int sumScore = 0;
-            int learned = 0;
-            for (Map.Entry<String, ProgressTagInfo> e : metadata.entrySet()) {
-                ProgressTagInfo info = e.getValue();
-                if (!matches(def.setId(), info)) continue;
-                QuizItemScore score = scoresMap.get(e.getKey());
-                int s = score != null ? score.getScore() : 0;
-                total++;
-                sumScore += s;
-                if (s >= 95) learned++;
+    private Map<String, TagInfo> extractTags(List<QuestItemDto> items) {
+        Map<String, TagInfo> metadata = new LinkedHashMap<>();
+        for (QuestItemDto qi : items) {
+            if (qi.progressTag() == null) continue;
+            String json = qi.payload() != null ? qi.payload().toString() : null;
+            if (json == null) continue;
+            String itemType = qi.itemType();
+            switch (itemType) {
+                case "DECLENSION_FORM", "DECLENSION_FORM_CHOICE" -> {
+                    var p = parse(json, DeclFormPayload.class);
+                    metadata.putIfAbsent(qi.progressTag(), new TagInfo(itemType,
+                            p.gender(), p.caseType(), p.numberType(), p.correctFormIast()));
+                }
+                case "CASE_RECOGNITION" -> {
+                    var p = parse(json, CaseRecogPayload.class);
+                    metadata.putIfAbsent(qi.progressTag(), new TagInfo(itemType,
+                            p.correctGender(), p.correctCaseType(), p.correctNumberType(), p.wordFormIast()));
+                }
+                case "DECLENSION_MATCH" -> {
+                    var p = parse(json, DeclMatchPayload.class);
+                    var first = p.pairs() == null || p.pairs().isEmpty() ? null : p.pairs().get(0);
+                    if (first != null) {
+                        metadata.putIfAbsent(qi.progressTag(), new TagInfo(itemType,
+                                null, first.caseType(), first.numberType(), null));
+                    }
+                }
+                case "CASE_MEANING" -> {
+                    var p = parse(json, CaseMeanPayload.class);
+                    if (p.caseType() != null) {
+                        metadata.putIfAbsent(qi.progressTag(), new TagInfo(itemType,
+                                null, p.caseType().toUpperCase(), null, null));
+                    }
+                }
+                case "CONJUGATION_FORM", "CONJUGATION_FORM_CHOICE" -> {
+                    var p = parse(json, ConjFormPayload.class);
+                    metadata.putIfAbsent(qi.progressTag(), new TagInfo(itemType,
+                            null, null, p.numberType(), null, p.voice(), p.person()));
+                }
+                case "CONJUGATION_ANALYSIS" -> {
+                    var p = parse(json, ConjAnalPayload.class);
+                    metadata.putIfAbsent(qi.progressTag(), new TagInfo(itemType,
+                            null, null, p.correctNumberType(), null, p.correctVoice(), p.correctPerson()));
+                }
+                case "CONJUGATION_MATCH", "CONJUGATION_BUILD" -> {
+                    var p = parse(json, ConjMatchPayload.class);
+                    var first = p.pairs() == null || p.pairs().isEmpty() ? null : p.pairs().get(0);
+                    if (first != null) {
+                        metadata.putIfAbsent(qi.progressTag(), new TagInfo(itemType,
+                                null, null, first.numberType(), null, first.voice(), first.person()));
+                    }
+                }
+                case "CONJUGATION_CORRECTION", "CONJUGATION_FIT",
+                     "CONJUGATION_TRANSLATE", "CONJUGATION_RECALL", "CONJUGATION_ODD" -> {
+                    var p = parse(json, ConjFormPayload.class);
+                    metadata.putIfAbsent(qi.progressTag(), new TagInfo(itemType,
+                            null, null, p.numberType(), null, p.voice(), p.person()));
+                }
             }
-            if (total == 0) continue;
-
-            int avg = total > 0 ? sumScore / total : 0;
-            String status = avg <= 0 ? "NEW" : avg < 95 ? "LEARNING" : "MASTERED";
-
-            TagSetProgress tsp = new TagSetProgress();
-            tsp.setSetId(def.setId());
-            tsp.setLabelRu(def.labelRu());
-            tsp.setLabelEn(def.labelEn());
-            tsp.setAggregatedProgress(avg);
-            tsp.setTotalCombinations(total);
-            tsp.setLearnedCombinations(learned);
-            tsp.setStatus(status);
-            result.add(tsp);
         }
-        return result;
+        return metadata;
     }
 
-    private boolean matches(String setId, ProgressTagInfo info) {
-        return switch (setId) {
-            case "SINGULAR" -> "SINGULAR".equals(info.numberType());
-            case "DUAL" -> "DUAL".equals(info.numberType());
-            case "PLURAL" -> "PLURAL".equals(info.numberType());
-            case "ACC_LOC" -> "ACCUSATIVE".equals(info.caseType()) || "LOCATIVE".equals(info.caseType());
-            case "INS_ABL" -> "INSTRUMENTAL".equals(info.caseType()) || "ABLATIVE".equals(info.caseType());
-            case "GEN_LOC" -> "GENITIVE".equals(info.caseType()) || "LOCATIVE".equals(info.caseType());
-            case "DAT_ACC" -> "DATIVE".equals(info.caseType()) || "ACCUSATIVE".equals(info.caseType());
-            default -> false;
-        };
+    private ItemType resolveItemType(Map<String, TagInfo> metadata) {
+        for (TagInfo info : metadata.values()) {
+            if (info.itemType() != null) {
+                if (info.itemType().startsWith("DECLENSION_") || info.itemType().startsWith("CASE_")) {
+                    return ItemType.DECLENSION_FORM;
+                }
+                if (info.itemType().startsWith("CONJUGATION_")) {
+                    return ItemType.CONJUGATION_FORM;
+                }
+                return ItemType.VOCABULARY_WORD;
+            }
+        }
+        return ItemType.DECLENSION_FORM;
+    }
+
+    private <T> T parse(String json, Class<T> type) {
+        try {
+            return MAPPER.readValue(json, type);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to parse payload as " + type.getSimpleName(), e);
+        }
+    }
+
+    private record DeclFormPayload(String gender, String caseType, String numberType,
+                                    String correctFormIast) {}
+    private record CaseRecogPayload(String correctGender, String correctCaseType,
+                                     String correctNumberType, String wordFormIast) {}
+    private record DeclMatchPayload(List<MatchPair> pairs) {
+        record MatchPair(String caseType, String numberType) {}
+    }
+    private record CaseMeanPayload(String caseType) {}
+    private record ConjFormPayload(String voice, int person, String numberType) {}
+    private record ConjAnalPayload(int correctPerson, String correctNumberType, String correctVoice) {}
+    private record ConjMatchPayload(List<ConjPair> pairs) {
+        record ConjPair(int person, String numberType, String voice) {}
     }
 }

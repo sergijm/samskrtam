@@ -9,6 +9,7 @@ import type {
   VerseBatchResponseDto,
   WorksClassGroupDto,
   StandaloneVerseItemDto,
+  VerseWordExamplesResponseDto,
 } from '../types/sangraha';
 
 export const useWorks = (classIds?: string[]) =>
@@ -72,16 +73,6 @@ export const useAnalyzeVerse = () => {
   });
 };
 
-export const useGetOrCreateVocabularyQuiz = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (verseId: string) => sangrahaApi.getOrCreateVocabularyQuiz(verseId),
-    onSuccess: (_data, verseId) => {
-      qc.invalidateQueries({ queryKey: ['sangraha', 'verse', verseId] });
-    },
-  });
-};
-
 export const useAnalyzeAllVerses = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -103,6 +94,18 @@ export const useVersesBatch = (ids: string[]) =>
       return res.data;
     },
     enabled: ids.length > 0,
+  });
+
+// ── Примеры стихов по точным словоформам (урок склонений) ──
+
+export const useWordExamples = (surfaceIasts: string[], enabled: boolean) =>
+  useQuery<VerseWordExamplesResponseDto, Error>({
+    queryKey: ['sangraha', 'word-examples', surfaceIasts],
+    queryFn: async () => {
+      const res = await sangrahaApi.getWordExamples(surfaceIasts);
+      return res.data;
+    },
+    enabled: enabled && surfaceIasts.length > 0,
   });
 
 export const useAnalyzeVerses = () => {

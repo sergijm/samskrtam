@@ -6,7 +6,7 @@ import java.util.UUID;
 
 /**
  * Создание/обновление определения вок. викторины (task-curriculum-16 §10).
- * Ровно одно из {topicId, complexQuizId, sourceId, frequencyRankMax}
+ * Ровно одно из {topicId, complexQuizId, frequencyRankMax}
  * должно быть заполнено.
  */
 public record VocabularyQuizDefinitionUpsertRequest(
@@ -15,8 +15,6 @@ public record VocabularyQuizDefinitionUpsertRequest(
         String titleEn,
         UUID topicId,
         UUID complexQuizId,
-        UUID sourceId,
-        String sourceLocationPrefix,
         Integer frequencyRankMax
 ) {
 }

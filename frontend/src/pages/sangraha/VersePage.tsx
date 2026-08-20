@@ -2,13 +2,9 @@ import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   useVerseDetail,
-  useGetOrCreateVocabularyQuiz,
 } from '../../hooks/useSangraha';
 import { useAuthStore } from '../../store/authStore';
-import { useLocaleStore } from '../../store/localeStore';
-import { quizApi } from '../../api/quizApi';
 import { sangrahaApi } from '../../api/sangraha';
-import { LessonType } from '../../types/quiz';
 import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
@@ -28,13 +24,12 @@ const VersePage = () => {
   const toast = useRef<Toast>(null);
   const queryClient = useQueryClient();
   const { data: verse, isLoading, isError } = useVerseDetail(verseId || '');
-  const getOrCreateVocabularyQuiz = useGetOrCreateVocabularyQuiz();
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.roles?.includes('ADMIN') ?? false;
 
-  // Load lesson progress if quizSlug already exists
-  const vocabSlug = verse?.vocabularyQuizSlug;
-  const { data: vocabularyLesson } = useVocabularyLesson(vocabSlug || '');
+  // Load lesson progress if the chapter VERSE topic already exists
+  const verseTopicCode = verse?.verseTopicCode;
+  const { data: vocabularyLesson } = useVocabularyLesson(verseTopicCode || '');
 
   // Build map vocabularyWordId -> progress
   const wordProgressMap = useMemo<Record<string, VocabularyWordProgress> | null>(() => {
@@ -57,6 +52,7 @@ const VersePage = () => {
 
   const [editText, setEditText] = useState('');
   const [analyzePending, setAnalyzePending] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (verse) {
@@ -76,39 +72,26 @@ const VersePage = () => {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     } finally {
       setAnalyzePending(false);
+      setIsEditing(false);
     }
   }, [verseId, editText, queryClient, t]);
 
   const handleStudy = useCallback(async () => {
     if (!verseId) return;
     try {
-      const quizRes = await getOrCreateVocabularyQuiz.mutateAsync(verseId);
-      const { quizSlug, quizId } = quizRes.data;
-
-      queryClient.invalidateQueries({ queryKey: ['lesson', 'vocabulary', quizSlug] });
-
-      const locale = useLocaleStore.getState().locale;
-      const sessionRes = await quizApi.startOrResumeWithStatusFilter(
-        quizId,
-        LessonType.VOCABULARY,
-        locale,
-        'NEW',
-      );
-      const sessionData = sessionRes.data;
-
-      navigate(`/quiz/vocabulary/${quizSlug}/${sessionData.sessionId}`, {
-        state: { sessionData },
-      });
+      const res = await sangrahaApi.studyVerse(verseId);
+      const { verseTopicCode: code } = res.data;
+      navigate(`/lessons/vocabulary/${code}`);
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     }
-  }, [verseId, getOrCreateVocabularyQuiz, navigate, t, queryClient]);
+  }, [verseId, navigate, t]);
 
   const isAnalyzed = verse?.status === 'ANALYZED';
   const isAnalyzing = verse?.status === 'ANALYZING';
   const isDraftOrFailed = verse?.status === 'DRAFT' || verse?.status === 'FAILED';
 
-  const statusSeverity = verse?.status === 'ANALYZED' ? 'success' : verse?.status === 'FAILED' ? 'danger' : 'warn';
+  const statusSeverity = verse?.status === 'ANALYZED' ? 'success' : verse?.status === 'FAILED' ? 'danger' : 'warning';
 
   if (isError) {
     return (
@@ -146,6 +129,14 @@ const VersePage = () => {
         />
         <h2 className="m-0">{t('sangraha.verse')} #{verse.orderIndex}</h2>
         <Tag value={t(`sangraha.status.${verse.status}`)} severity={statusSeverity} className="ml-2" />
+        {isAnalyzed && isAdmin && (
+          <CtaButton
+            labelKey="common.edit"
+            iconName="pi-pencil"
+            className="p-button-text ml-auto"
+            onClick={() => setIsEditing(true)}
+          />
+        )}
       </div>
 
       {isAnalyzing && (
@@ -155,8 +146,8 @@ const VersePage = () => {
         </div>
       )}
 
-      {/* DRAFT/FAILED: input + Analyze button */}
-      {isDraftOrFailed && !isAnalyzing && (
+      {/* DRAFT/FAILED or editing: input + Analyze button */}
+      {(isDraftOrFailed || isEditing) && !isAnalyzing && (
         <div className="mb-4">
           <div className="mb-3">
             <label className="block mb-1 font-semibold">{t('sangraha.fields.text')}</label>
@@ -169,13 +160,23 @@ const VersePage = () => {
             />
           </div>
           {isAdmin && (
-            <CtaButton
-              labelKey="sangraha.action.analyze"
-              iconName="pi-robot"
-              className="p-button-success"
-              onClick={handleAnalyze}
-              loading={analyzePending}
-            />
+            <div className="flex align-items-center gap-2">
+              <CtaButton
+                labelKey="sangraha.action.analyze"
+                iconName="pi-robot"
+                className="p-button-success"
+                onClick={handleAnalyze}
+                loading={analyzePending}
+              />
+              {isEditing && (
+                <CtaButton
+                  labelKey="common.cancel"
+                  iconName="pi-times"
+                  className="p-button-text"
+                  onClick={() => setIsEditing(false)}
+                />
+              )}
+            </div>
           )}
         </div>
       )}
@@ -220,7 +221,6 @@ const VersePage = () => {
                   iconName={studyIcon}
                   className="p-button-text"
                   onClick={handleStudy}
-                  loading={getOrCreateVocabularyQuiz.isPending}
                 />
               }
             />

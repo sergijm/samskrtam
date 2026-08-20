@@ -24,9 +24,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Admin review + экспорт APPROVED-классификаций (lemma-classification.md §4–§5,
- * task-sangraha-19). Статистика (occurrenceCount/dominantPosCode) берётся из
- * строки (lemma, gender) — той же пары, что у classification.
+ * Admin review классификаций (lemma-classification.md §4, task-sangraha-19).
+ * Статистика (occurrenceCount/dominantPosCode) берётся из строки (lemma, gender) —
+ * той же пары, что у classification.
  */
 @Slf4j
 @Service
@@ -90,20 +90,6 @@ public class LemmaClassificationReviewService {
         }
         LemmaClassification saved = classificationRepository.save(row);
         return toDto(saved, statsFor(saved));
-    }
-
-    /**
-     * Экспорт APPROVED в curriculum-service (lemma-classification.md §5): JOIN
-     * Classification + Lemma + Statistics, курсор по lemmaId, сортировка
-     * occurrenceCount статистики.
-     */
-    @Transactional(readOnly = true)
-    public LemmaClassificationPageDto exportApproved(String schemeCode, UUID cursor, int limit) {
-        String code = schemeCode == null ? "CURRICULUM" : schemeCode;
-        int limit1 = safeLimit(limit);
-        List<LemmaClassification> rows = classificationRepository.findForReview(
-                code, ClassificationStatus.APPROVED, cursor, PageRequest.of(0, limit1));
-        return toPage(rows);
     }
 
     private LemmaClassificationPageDto toPage(List<LemmaClassification> rows) {

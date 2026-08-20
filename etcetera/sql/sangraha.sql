@@ -79,21 +79,6 @@ CREATE TABLE "sangraha"."nominal_lemmas" (
 ;
 
 -- ----------------------------
--- Table structure for noun_stems
--- ----------------------------
-DROP TABLE IF EXISTS "sangraha"."noun_stems";
-CREATE TABLE "sangraha"."noun_stems" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid(),
-  "verse_word_id" uuid NOT NULL,
-  "stem_iast" varchar(200) COLLATE "pg_catalog"."default" NOT NULL,
-  "stem_class" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-  "confidence" varchar(10) COLLATE "pg_catalog"."default" NOT NULL,
-  "model" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-  "created_at" timestamptz(6) NOT NULL DEFAULT now()
-)
-;
-
--- ----------------------------
 -- Table structure for sources
 -- ----------------------------
 DROP TABLE IF EXISTS "sangraha"."sources";
@@ -118,6 +103,18 @@ CREATE TABLE "sangraha"."verse_analyses" (
   "model_name" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
   "analyzed_at" timestamptz(6) NOT NULL DEFAULT now(),
   "analyzer_name" varchar(200) COLLATE "pg_catalog"."default" NOT NULL
+)
+;
+
+-- ----------------------------
+-- Table structure for verse_statistics
+-- ----------------------------
+DROP TABLE IF EXISTS "sangraha"."verse_statistics";
+CREATE TABLE "sangraha"."verse_statistics" (
+  "verse_id" uuid NOT NULL,
+  "word_count" int4 NOT NULL,
+  "grammar_info" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now()
 )
 ;
 
@@ -278,27 +275,6 @@ ALTER TABLE "sangraha"."nominal_lemmas" ADD CONSTRAINT "ck_nominal_lemma_confide
 ALTER TABLE "sangraha"."nominal_lemmas" ADD CONSTRAINT "pk_nominal_lemmas" PRIMARY KEY ("id");
 
 -- ----------------------------
--- Indexes structure for table noun_stems
--- ----------------------------
-CREATE INDEX "idx_noun_stems_stem_class" ON "sangraha"."noun_stems" USING btree (
-  "stem_class" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
-);
-CREATE INDEX "idx_noun_stems_verse_word_id" ON "sangraha"."noun_stems" USING btree (
-  "verse_word_id" "pg_catalog"."uuid_ops" ASC NULLS LAST
-);
-
--- ----------------------------
--- Checks structure for table noun_stems
--- ----------------------------
-ALTER TABLE "sangraha"."noun_stems" ADD CONSTRAINT "ck_noun_stem_class" CHECK (stem_class::text = ANY (ARRAY['A_STEM'::text, 'AA_STEM'::text, 'I_STEM'::text, 'II_STEM'::text, 'U_STEM'::text, 'UU_STEM'::text, 'R_STEM'::text]));
-ALTER TABLE "sangraha"."noun_stems" ADD CONSTRAINT "ck_noun_stem_confidence" CHECK (confidence::text = ANY (ARRAY['HIGH'::text, 'MEDIUM'::text, 'LOW'::text]));
-
--- ----------------------------
--- Primary Key structure for table noun_stems
--- ----------------------------
-ALTER TABLE "sangraha"."noun_stems" ADD CONSTRAINT "pk_noun_stems" PRIMARY KEY ("id");
-
--- ----------------------------
 -- Uniques structure for table sources
 -- ----------------------------
 ALTER TABLE "sangraha"."sources" ADD CONSTRAINT "uq_sources_code" UNIQUE ("code");
@@ -312,6 +288,21 @@ ALTER TABLE "sangraha"."sources" ADD CONSTRAINT "pk_sources" PRIMARY KEY ("id");
 -- Primary Key structure for table verse_analyses
 -- ----------------------------
 ALTER TABLE "sangraha"."verse_analyses" ADD CONSTRAINT "pk_verse_analyses" PRIMARY KEY ("verse_id");
+
+-- ----------------------------
+-- Indexes structure for table verse_statistics
+-- ----------------------------
+CREATE INDEX "idx_verse_statistics_word_count" ON "sangraha"."verse_statistics" USING btree (
+  "word_count" "pg_catalog"."int4_ops" ASC NULLS LAST
+);
+CREATE INDEX "idx_verse_statistics_grammar_info" ON "sangraha"."verse_statistics" USING gin (
+  "grammar_info"
+);
+
+-- ----------------------------
+-- Primary Key structure for table verse_statistics
+-- ----------------------------
+ALTER TABLE "sangraha"."verse_statistics" ADD CONSTRAINT "pk_verse_statistics" PRIMARY KEY ("verse_id");
 
 -- ----------------------------
 -- Primary Key structure for table verse_word_derivation
@@ -386,14 +377,14 @@ ALTER TABLE "sangraha"."works" ADD CONSTRAINT "pk_works" PRIMARY KEY ("id");
 ALTER TABLE "sangraha"."chapters" ADD CONSTRAINT "chapters_work_id_fkey" FOREIGN KEY ("work_id") REFERENCES "sangraha"."works" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- ----------------------------
--- Foreign Keys structure for table noun_stems
--- ----------------------------
-ALTER TABLE "sangraha"."noun_stems" ADD CONSTRAINT "fk_noun_stems_word" FOREIGN KEY ("verse_word_id") REFERENCES "sangraha"."verse_words" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- ----------------------------
 -- Foreign Keys structure for table verse_analyses
 -- ----------------------------
 ALTER TABLE "sangraha"."verse_analyses" ADD CONSTRAINT "verse_analyses_verse_id_fkey" FOREIGN KEY ("verse_id") REFERENCES "sangraha"."verses" ("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- ----------------------------
+-- Foreign Keys structure for table verse_statistics
+-- ----------------------------
+ALTER TABLE "sangraha"."verse_statistics" ADD CONSTRAINT "fk_verse_statistics_verse" FOREIGN KEY ("verse_id") REFERENCES "sangraha"."verses" ("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- ----------------------------
 -- Foreign Keys structure for table verse_word_derivation

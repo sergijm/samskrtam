@@ -14,13 +14,9 @@ import {
   useCreateStandaloneAnalysis,
   useDeleteStandaloneVerse,
   useVerseDetail,
-  useGetOrCreateVocabularyQuiz,
 } from '../../hooks/useSangraha';
 import { useVocabularyLesson } from '../../hooks/useLessons';
 import { sangrahaApi } from '../../api/sangraha';
-import { quizApi } from '../../api/quizApi';
-import { useLocaleStore } from '../../store/localeStore';
-import { LessonType } from '../../types/quiz';
 import { verseStatusIcon } from '../../utils/verseStatus';
 import type { VerseStatus } from '../../types/sangraha';
 import type { StandaloneVerseItemDto } from '../../types/sangraha';
@@ -52,9 +48,8 @@ const AnalysisPage = () => {
   // Детальный просмотр выбранного standalone-стиха
   const { data: verse, isLoading: verseLoading } = useVerseDetail(selectedId || '');
 
-  const study = useGetOrCreateVocabularyQuiz();
-  const vocabSlug = verse?.vocabularyQuizSlug;
-  const { data: vocabularyLesson } = useVocabularyLesson(vocabSlug || '');
+  const verseTopicCode = verse?.verseTopicCode;
+  const { data: vocabularyLesson } = useVocabularyLesson(verseTopicCode || '');
 
   const wordProgressMap = useMemo<Record<string, VocabularyWordProgress> | null>(() => {
     if (!vocabularyLesson?.words) return null;
@@ -67,6 +62,7 @@ const AnalysisPage = () => {
 
   const [editText, setEditText] = useState('');
   const [analyzePending, setAnalyzePending] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   // При выборе нового стиха сбрасываем поле редактирования текста
   const selectVerse = useCallback(
@@ -95,7 +91,7 @@ const AnalysisPage = () => {
     }
   }, [newText, create, selectVerse, t]);
 
-  // ── Повторный анализ (DRAFT/FAILED) ──
+  // ── Повторный анализ (DRAFT/FAILED/повторное редактирование) ──
   const handleAnalyze = useCallback(async () => {
     if (!selectedId) return;
     setAnalyzePending(true);
@@ -108,34 +104,21 @@ const AnalysisPage = () => {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     } finally {
       setAnalyzePending(false);
+      setIsEditing(false);
     }
   }, [selectedId, editText, queryClient, t]);
 
-  // ── «Изучить» — vocabulary quiz по словам стиха ──
+  // ── «Изучить» — экспорт пачки лемм стиха и переход на урок ──
   const handleStudy = useCallback(async () => {
     if (!selectedId) return;
     try {
-      const quizRes = await study.mutateAsync(selectedId);
-      const { quizSlug, quizId } = quizRes.data;
-
-      queryClient.invalidateQueries({ queryKey: ['lesson', 'vocabulary', quizSlug] });
-
-      const locale = useLocaleStore.getState().locale;
-      const sessionRes = await quizApi.startOrResumeWithStatusFilter(
-        quizId,
-        LessonType.VOCABULARY,
-        locale,
-        'NEW',
-      );
-      const sessionData = sessionRes.data;
-
-      navigate(`/quiz/vocabulary/${quizSlug}/${sessionData.sessionId}`, {
-        state: { sessionData },
-      });
+      const res = await sangrahaApi.studyVerse(selectedId);
+      const { verseTopicCode: code } = res.data;
+      navigate(`/lessons/vocabulary/${code}`);
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     }
-  }, [selectedId, study, navigate, t, queryClient]);
+  }, [selectedId, navigate, t]);
 
   const handleDelete = useCallback(
     async (item: StandaloneVerseItemDto) => {
@@ -198,6 +181,17 @@ const AnalysisPage = () => {
                 className="ml-2"
               />
             )}
+            {isAnalyzed && (
+              <CtaButton
+                labelKey="common.edit"
+                iconName="pi-pencil"
+                className="p-button-text ml-auto"
+                onClick={() => {
+                  setEditText(verse?.rawText ?? verse?.textDevanagari ?? verse?.textIast ?? '');
+                  setIsEditing(true);
+                }}
+              />
+            )}
           </div>
 
           {verseLoading ? (
@@ -217,8 +211,8 @@ const AnalysisPage = () => {
                 </div>
               )}
 
-              {/* DRAFT/FAILED: ввод текста + анализ */}
-              {isDraftOrFailed && !isAnalyzing && (
+              {/* DRAFT/FAILED or editing: input + Analyze button */}
+              {(isDraftOrFailed || isEditing) && !isAnalyzing && (
                 <div className="mb-4">
                   <div className="mb-3">
                     <label className="block mb-1 font-semibold">{t('sangraha.fields.text')}</label>
@@ -230,13 +224,23 @@ const AnalysisPage = () => {
                       placeholder={t('sangraha.placeholder.text')}
                     />
                   </div>
-                  <CtaButton
-                    labelKey="sangraha.action.analyze"
-                    iconName="pi-robot"
-                    className="p-button-success"
-                    onClick={handleAnalyze}
-                    loading={analyzePending}
-                  />
+                  <div className="flex align-items-center gap-2">
+                    <CtaButton
+                      labelKey="sangraha.action.analyze"
+                      iconName="pi-robot"
+                      className="p-button-success"
+                      onClick={handleAnalyze}
+                      loading={analyzePending}
+                    />
+                    {isEditing && (
+                      <CtaButton
+                        labelKey="common.cancel"
+                        iconName="pi-times"
+                        className="p-button-text"
+                        onClick={() => setIsEditing(false)}
+                      />
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -284,7 +288,6 @@ const AnalysisPage = () => {
                           iconName={studyIcon}
                           className="p-button-text"
                           onClick={handleStudy}
-                          loading={study.isPending}
                         />
                       }
                     />

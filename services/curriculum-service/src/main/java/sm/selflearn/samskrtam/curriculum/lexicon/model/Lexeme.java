@@ -19,7 +19,6 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import sm.selflearn.samskrtam.curriculum.model.Topic;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -63,9 +62,9 @@ public class Lexeme {
     @Column(name = "gender", length = 20)
     private LexemeGender gender;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
-    private LexemeStatus status = LexemeStatus.DRAFT;
+    /** Порядковый номер значения леммы внутри написания (lexicon.md §1); первичный импорт = 1. */
+    @Column(name = "meaning_number", nullable = false)
+    private int meaningNumber = 1;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -81,12 +80,12 @@ public class Lexeme {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-        name = "lexeme_semantic_topic",
+        name = "lexeme_semantic_class",
         schema = "curriculum",
         joinColumns = @JoinColumn(name = "lexeme_id"),
-        inverseJoinColumns = @JoinColumn(name = "semantic_topic_id")
+        inverseJoinColumns = @JoinColumn(name = "semantic_class_id")
     )
-    private Set<SemanticTopic> semanticTopics = new HashSet<>();
+    private Set<SemanticClass> semanticClasses = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -105,18 +104,6 @@ public class Lexeme {
         inverseJoinColumns = @JoinColumn(name = "morphology_class_code")
     )
     private Set<MorphologyClass> morphologyClasses = new HashSet<>();
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "lexical_topic_binding",
-        schema = "curriculum",
-        joinColumns = @JoinColumn(name = "lexeme_id"),
-        inverseJoinColumns = @JoinColumn(name = "lexical_topic_id")
-    )
-    private Set<Topic> lexicalTopics = new HashSet<>();
-
-    @OneToMany(mappedBy = "lexeme", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<SourceOccurrence> sourceOccurrences = new ArrayList<>();
 
     @OneToMany(mappedBy = "lexeme", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<UserCollectionItem> collectionItems = new ArrayList<>();

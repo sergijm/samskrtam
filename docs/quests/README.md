@@ -1,6 +1,6 @@
 # Quests — юзер-стори по разделам грамматики и лексики
 
-> Структура повторяет домены из [services/quest-catalog.md](../services/quest-catalog.md).
+> Структура повторяет домены из [services/quest-catalog.md](../services/curriculum-service/quest-catalog.md).
 > Каждая подпапка — один тип квеста; юзер-стори внутри описывают конкретный сценарий
 > использования этого типа с точки зрения ученика.
 

@@ -53,13 +53,6 @@ public class VocabularyQuizDefinition {
     @Column(name = "frequency_rank_max")
     private Integer frequencyRankMax;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_id")
-    private Source source;
-
-    @Column(name = "source_location_prefix", length = 100)
-    private String sourceLocationPrefix;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

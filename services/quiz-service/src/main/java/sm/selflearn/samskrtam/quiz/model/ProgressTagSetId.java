@@ -16,8 +16,20 @@ public enum ProgressTagSetId {
     SINGULAR,
     DUAL,
     PLURAL,
+    NOMINATIVE,
+    ACCUSATIVE,
+    INSTRUMENTAL,
+    DATIVE,
+    ABLATIVE,
+    GENITIVE,
+    LOCATIVE,
+    VOCATIVE,
     ACC_LOC,
     INS_ABL,
     GEN_LOC,
-    DAT_ACC
+    DAT_ACC,
+    GEN_ABL,
+    INS_LOC,
+    DAT_GEN,
+    ABL_LOC
 }

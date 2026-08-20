@@ -40,10 +40,6 @@ public class WordForm {
     @Column(name = "grammatical_note", length = 200)
     private String grammaticalNote;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_occurrence_id")
-    private SourceOccurrence sourceOccurrence;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

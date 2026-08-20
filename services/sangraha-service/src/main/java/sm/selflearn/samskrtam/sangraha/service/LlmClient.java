@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
+import sm.selflearn.samskrtam.sangraha.service.strategy.LlmCallResult;
 import sm.selflearn.samskrtam.sangraha.service.strategy.LlmCallStrategy;
 import sm.selflearn.samskrtam.sangraha.service.strategy.LlmCallStrategyFactory;
 
@@ -21,7 +22,7 @@ import java.util.List;
  * Использует официальный OpenAI Java SDK (com.openai:openai-java).
  * Совместим с любым OpenAI-compatible endpoint (ADR-006).
  *
- * Делегирует логику single-pass / two-pass в соответствующие стратегии через
+ * Делегирует вызов LLM через стратегию (single-pass, см. LlmCallStrategy).
  * {@link LlmCallStrategyFactory}.
  */
 @Component
@@ -46,8 +47,8 @@ public class LlmClient {
                 .baseUrl(llmProperties.getBaseUrl())
                 .apiKey(llmProperties.getApiKey())
                 .build();
-        log.info("LlmClient initialized with baseUrl={}, model={}, twoPass={}, maxCompletionTokens={}",
-                llmProperties.getBaseUrl(), llmProperties.getModel(), llmProperties.isTwoPass(),
+        log.info("LlmClient initialized with baseUrl={}, model={}, maxCompletionTokens={}",
+                llmProperties.getBaseUrl(), llmProperties.getModel(),
                 llmProperties.getMaxCompletionTokens());
     }
 
@@ -55,10 +56,18 @@ public class LlmClient {
      * Вызывает LLM для анализа списка стихов через выбранную стратегию.
      */
     public JsonNode call(List<Verse> verses) {
+        LlmCallResult result = callWithResult(verses);
+        return result == null ? null : result.response();
+    }
+
+    /**
+     * Вызывает LLM и возвращает и ответ, и отправленный промпт (для raw_prompt).
+     */
+    public LlmCallResult callWithResult(List<Verse> verses) {
         try {
             LlmCallStrategy strategy = strategyFactory.create(openAIClient);
             log.debug("Using strategy: {}", strategy.getName());
-            return (JsonNode) strategy.call(verses);
+            return strategy.call(verses);
         } catch (Exception e) {
             log.error("Failed to call LLM API for {} verses", verses.size(), e);
             return null;

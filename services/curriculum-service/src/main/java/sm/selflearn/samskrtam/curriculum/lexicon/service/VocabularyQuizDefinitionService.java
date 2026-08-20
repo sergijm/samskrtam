@@ -6,9 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.VocabularyQuizDefinitionUpsertRequest;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.Source;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.VocabularyQuizDefinition;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.SourceRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.VocabularyQuizDefinitionRepository;
 import sm.selflearn.samskrtam.curriculum.model.ComplexQuiz;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
@@ -28,7 +26,6 @@ public class VocabularyQuizDefinitionService {
     private final VocabularyQuizDefinitionRepository definitionRepository;
     private final TopicRepository topicRepository;
     private final ComplexQuizRepository complexQuizRepository;
-    private final SourceRepository sourceRepository;
 
     @Transactional(readOnly = true)
     public VocabularyQuizDefinition get(UUID id) {
@@ -68,8 +65,6 @@ public class VocabularyQuizDefinitionService {
         definition.setTopic(resolve(request.topicId(), Topic.class, topicRepository::findById));
         definition.setComplexQuiz(resolve(request.complexQuizId(), ComplexQuiz.class,
                 complexQuizRepository::findById));
-        definition.setSource(resolve(request.sourceId(), Source.class, sourceRepository::findById));
-        definition.setSourceLocationPrefix(request.sourceLocationPrefix());
         definition.setFrequencyRankMax(request.frequencyRankMax());
     }
 
@@ -77,15 +72,10 @@ public class VocabularyQuizDefinitionService {
         int filled = 0;
         if (request.topicId() != null) filled++;
         if (request.complexQuizId() != null) filled++;
-        if (request.sourceId() != null) filled++;
         if (request.frequencyRankMax() != null) filled++;
         if (filled != 1) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Exactly one of topicId/complexQuizId/sourceId/frequencyRankMax must be set");
-        }
-        if (request.frequencyRankMax() == null && request.sourceLocationPrefix() != null) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "sourceLocationPrefix requires sourceId");
+                    "Exactly one of topicId/complexQuizId/frequencyRankMax must be set");
         }
     }
 

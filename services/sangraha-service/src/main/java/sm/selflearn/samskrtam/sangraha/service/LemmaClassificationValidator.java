@@ -2,7 +2,7 @@ package sm.selflearn.samskrtam.sangraha.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import sm.selflearn.samskrtam.sangraha.repository.CurriculumSemanticTopicRepository;
+import sm.selflearn.samskrtam.sangraha.repository.CurriculumSemanticClassRepository;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -17,7 +17,7 @@ public class LemmaClassificationValidator {
 
     private static final String DEVANAGARI_REGEX = "\\p{InDevanagari}";
 
-    private final CurriculumSemanticTopicRepository topicRepository;
+    private final CurriculumSemanticClassRepository topicRepository;
 
     /**
      * Проверяет, что {@code categoryCode} есть в справочнике CURRICULUM.

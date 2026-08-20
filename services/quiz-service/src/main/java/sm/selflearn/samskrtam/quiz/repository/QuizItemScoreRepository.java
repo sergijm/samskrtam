@@ -108,25 +108,4 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
             """)
     Flux<QuizItemScore> findReviewItems(
             UUID userId, ItemType itemType, List<String> progressTags, int masteredLowerThreshold, Instant now);
-
-    /** Найти записи DIFFICULT (score &lt;= difficultUpperThreshold) с гистерезисом выхода. */
-    @Query("""
-            SELECT * FROM quiz.quiz_item_score
-            WHERE user_id = :userId
-              AND item_type = :itemType
-              AND progress_tag IN (:progressTags)
-              AND (consecutive_mistakes >= 2 OR score <= :difficultUpperThreshold)
-              AND (score <= :difficultUpperThreshold + :exitMargin)
-            """)
-    Flux<QuizItemScore> findDifficultItems(
-            UUID userId, ItemType itemType, List<String> progressTags,
-            int difficultUpperThreshold, int exitMargin);
-
-    /** Найти все записи пользователя — для получения списка уже существующих тегов. */
-    @Query("""
-            SELECT progress_tag FROM quiz.quiz_item_score
-            WHERE user_id = :userId
-              AND item_type = :itemType
-            """)
-    Flux<String> findExistingProgressTags(UUID userId, ItemType itemType);
 }
