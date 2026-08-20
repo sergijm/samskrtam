@@ -1,50 +1,52 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import PageLoader from '../components/common/PageLoader';
 
 // Pages
-import HomePage from '../pages/HomePage';
-import LoginPage from '../pages/LoginPage';
-import RegisterPage from '../pages/RegisterPage';
-import ForgotPasswordPage from '../pages/ForgotPasswordPage';
-import ResetPasswordPage from '../pages/ResetPasswordPage';
-import AuthCallbackPage from '../pages/AuthCallbackPage';
-import LearnGraphPage from '../pages/LearnGraphPage';
-import SettingsPage from '../pages/SettingsPage';
-import ChangePasswordPage from '../pages/ChangePasswordPage';
-import UserProfilePage from '../pages/UserProfilePage';
-import GroupListPage from '../pages/GroupListPage';
-import GroupCreatePage from '../pages/GroupCreatePage';
-import GroupPage from '../pages/GroupPage';
-import GroupEditPage from '../pages/GroupEditPage';
-import AdminUsersPage from '../pages/AdminUsersPage';
-import AdminHomePage from '../pages/AdminHomePage';
-import AdminGroupsPage from '../pages/AdminGroupsPage';
-import QuizzesPage from '../pages/QuizzesPage';
-import QuizPage from '../pages/QuizPage';
-import UserStatisticsPage from '../pages/UserStatisticsPage';
-import UserQuizSessionsPage from '../pages/UserQuizSessionsPage';
-import SessionHistoryPage from '../pages/SessionHistoryPage';
-import GrammarPage from '../pages/grammar/GrammarPage';
-import LexiconPage from '../pages/lexicon/LexiconPage';
-import VocabularyPage from '../pages/vocabulary/VocabularyPage';
-import VocabularyBasicPage from '../pages/vocabulary/VocabularyBasicPage';
-import VocabularyTextsPage from '../pages/vocabulary/VocabularyTextsPage';
-import UnderConstructionPage from '../pages/UnderConstructionPage';
-import EmeneauRulesPage from '../pages/EmeneauRulesPage';
-import EmeneauExercisesPage from '../pages/eamenau/EmeneauExercisesPage';
-import EmeneauExerciseDetailPage from '../pages/eamenau/EmeneauExerciseDetailPage';
-import DictionaryPage from '../pages/dictionary/DictionaryPage';
-import AlphabetPage from '../pages/writing/AlphabetPage';
-import TransliterationPracticePage from '../pages/tools/TransliterationPracticePage';
-import VocabularyLessonPage from '../pages/lessons/VocabularyLessonPage';
-import GrammarRouteResolver from '../pages/lessons/GrammarRouteResolver';
-import SandhiLessonPage from '../pages/lessons/SandhiLessonPage';
-import GrammarAllStemsPage from '../pages/lessons/GrammarAllStemsPage';
-import WorksPage from '../pages/sangraha/WorksPage';
-import WorkPage from '../pages/sangraha/WorkPage';
-import ChapterPage from '../pages/sangraha/ChapterPage';
-import VersePage from '../pages/sangraha/VersePage';
-import VersesBatchPage from '../pages/sangraha/VersesBatchPage';
-import AnalysisPage from '../pages/analysis/AnalysisPage';
+const HomePage = lazy(() => import('../pages/HomePage'));
+const LoginPage = lazy(() => import('../pages/LoginPage'));
+const RegisterPage = lazy(() => import('../pages/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('../pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('../pages/ResetPasswordPage'));
+const AuthCallbackPage = lazy(() => import('../pages/AuthCallbackPage'));
+const LearnGraphPage = lazy(() => import('../pages/LearnGraphPage'));
+const SettingsPage = lazy(() => import('../pages/SettingsPage'));
+const ChangePasswordPage = lazy(() => import('../pages/ChangePasswordPage'));
+const UserProfilePage = lazy(() => import('../pages/UserProfilePage'));
+const GroupListPage = lazy(() => import('../pages/GroupListPage'));
+const GroupCreatePage = lazy(() => import('../pages/GroupCreatePage'));
+const GroupPage = lazy(() => import('../pages/GroupPage'));
+const GroupEditPage = lazy(() => import('../pages/GroupEditPage'));
+const AdminUsersPage = lazy(() => import('../pages/AdminUsersPage'));
+const AdminHomePage = lazy(() => import('../pages/AdminHomePage'));
+const AdminGroupsPage = lazy(() => import('../pages/AdminGroupsPage'));
+const QuizzesPage = lazy(() => import('../pages/QuizzesPage'));
+const QuizPage = lazy(() => import('../pages/QuizPage'));
+const UserStatisticsPage = lazy(() => import('../pages/UserStatisticsPage'));
+const UserQuizSessionsPage = lazy(() => import('../pages/UserQuizSessionsPage'));
+const SessionHistoryPage = lazy(() => import('../pages/SessionHistoryPage'));
+const GrammarPage = lazy(() => import('../pages/grammar/GrammarPage'));
+const LexiconPage = lazy(() => import('../pages/lexicon/LexiconPage'));
+const VocabularyPage = lazy(() => import('../pages/vocabulary/VocabularyPage'));
+const VocabularyBasicPage = lazy(() => import('../pages/vocabulary/VocabularyBasicPage'));
+const VocabularyTextsPage = lazy(() => import('../pages/vocabulary/VocabularyTextsPage'));
+const UnderConstructionPage = lazy(() => import('../pages/UnderConstructionPage'));
+const EmeneauRulesPage = lazy(() => import('../pages/EmeneauRulesPage'));
+const EmeneauExercisesPage = lazy(() => import('../pages/eamenau/EmeneauExercisesPage'));
+const EmeneauExerciseDetailPage = lazy(() => import('../pages/eamenau/EmeneauExerciseDetailPage'));
+const DictionaryPage = lazy(() => import('../pages/dictionary/DictionaryPage'));
+const AlphabetPage = lazy(() => import('../pages/writing/AlphabetPage'));
+const TransliterationPracticePage = lazy(() => import('../pages/tools/TransliterationPracticePage'));
+const VocabularyLessonPage = lazy(() => import('../pages/lessons/VocabularyLessonPage'));
+const GrammarRouteResolver = lazy(() => import('../pages/lessons/GrammarRouteResolver'));
+const SandhiLessonPage = lazy(() => import('../pages/lessons/SandhiLessonPage'));
+const GrammarAllStemsPage = lazy(() => import('../pages/lessons/GrammarAllStemsPage'));
+const WorksPage = lazy(() => import('../pages/sangraha/WorksPage'));
+const WorkPage = lazy(() => import('../pages/sangraha/WorkPage'));
+const ChapterPage = lazy(() => import('../pages/sangraha/ChapterPage'));
+const VersePage = lazy(() => import('../pages/sangraha/VersePage'));
+const VersesBatchPage = lazy(() => import('../pages/sangraha/VersesBatchPage'));
+const AnalysisPage = lazy(() => import('../pages/analysis/AnalysisPage'));
 
 // Components
 import ProtectedRoute from '../components/auth/ProtectedRoute';
@@ -78,6 +80,7 @@ function RoleLayoutRoute({ role, children }: { role: string; children: ReactNode
 
 export default function AppRoutes() {
   return (
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<HomePage />} />
@@ -155,5 +158,6 @@ export default function AppRoutes() {
       {/* Catch-all */}
       <Route path="*" element={<ProtectedRoute><Navigate to="/" /></ProtectedRoute>} />
     </Routes>
+    </Suspense>
   );
 }
