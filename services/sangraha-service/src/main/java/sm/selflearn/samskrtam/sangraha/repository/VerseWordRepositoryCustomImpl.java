@@ -27,7 +27,7 @@ public class VerseWordRepositoryCustomImpl implements VerseWordRepositoryCustom 
     @PersistenceContext
     private EntityManager entityManager;
 
-    @Override
+@Override
     public List<VerseWordRepository.VerseCellCount> findDeclensionExampleCells(
             String gender,
             String caseType,
@@ -64,14 +64,16 @@ public class VerseWordRepositoryCustomImpl implements VerseWordRepositoryCustom 
                 
                      AND jsonb_exists(vs.grammar_info -> 'pos', 'NOUN')
                      AND jsonb_exists(vs.grammar_info -> 'pos', 'VERB')
-               		 AND vs.grammar_info @> jsonb_build_object(
+                		 AND vs.grammar_info @> jsonb_build_object(
                 				'tuples', jsonb_build_array(
                 						%s
                           )
                       )
                 
-                    WHERE vs.word_count >= :minPrimaryWords
-                      AND vs.word_count < :maxPhraseWords
+WHERE vs.word_count >= :minPrimaryWords
+      AND vs.word_count < :maxPhraseWords
+      AND vs.grammar_info -> 'caseType' -> 0 IS NOT NULL
+      AND vs.grammar_info -> 'numberType' -> 0 IS NOT NULL
                 )
                 SELECT *
                 FROM tmp
@@ -86,6 +88,60 @@ public class VerseWordRepositoryCustomImpl implements VerseWordRepositoryCustom 
         List<?> rows = query.getResultList();
         return rows.stream()
                 .map(row -> toVerseCellCount((Object[]) row))
+                .toList();
+    }
+
+    @Override
+    public List<VerseWordRepository.VerseConjugationCellCount> findConjugationExampleCells(
+            String tense,
+            String mood,
+            int maxPhraseWords,
+            int limitPerGroup) {
+
+        // для LLM. Скрипт написан человеком, без обсуждения не менять
+        String tupleExpr = Stream.of(tense, mood)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining("','", "jsonb_build_array('", "')"))
+                .replace("''", "");
+
+        String sql = """
+                WITH tmp AS (
+                    SELECT
+                        v.id as verseId,
+                        vs.grammar_info -> 'tense' ->> 0 as tense,
+                        vs.grammar_info -> 'mood' ->> 0 as mood,
+                        vs.word_count,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY
+                                vs.grammar_info -> 'tense' -> 0,
+                                vs.grammar_info -> 'mood' -> 0
+                            ORDER BY vs.word_count, vs.verse_id
+                        ) AS rn
+                    FROM sangraha.verses v
+                    JOIN sangraha.verse_statistics vs
+                      ON vs.verse_id = v.id
+                     AND jsonb_exists(vs.grammar_info -> 'pos', 'VERB')
+                     AND vs.grammar_info @> jsonb_build_object(
+                            'tuples', jsonb_build_array(%s)
+                        )
+                    WHERE vs.word_count >= :minPrimaryWords
+                      AND vs.word_count < :maxPhraseWords
+                      AND vs.grammar_info -> 'tense' -> 0 IS NOT NULL
+                      AND vs.grammar_info -> 'mood' -> 0 IS NOT NULL
+                )
+                SELECT *
+                FROM tmp
+                WHERE rn < :limitPerGroup
+                """.formatted(tupleExpr);
+
+        Query query = entityManager.createNativeQuery(sql)
+                .setParameter("maxPhraseWords", maxPhraseWords)
+                .setParameter("minPrimaryWords", MIN_PRIMARY_WORDS)
+                .setParameter("limitPerGroup", limitPerGroup);
+
+        List<?> rows = query.getResultList();
+        return rows.stream()
+                .map(row -> toVerseConjugationCellCount((Object[]) row))
                 .toList();
     }
 
@@ -119,6 +175,13 @@ public class VerseWordRepositoryCustomImpl implements VerseWordRepositoryCustom 
         return new VerseCellCountRow(verseId, caseType, numberType);
     }
 
+    private VerseWordRepository.VerseConjugationCellCount toVerseConjugationCellCount(Object[] row) {
+        UUID verseId = (UUID) row[0];
+        String tense = (String) row[1];
+        String mood = (String) row[2];
+        return new VerseConjugationCellCountRow(verseId, tense, mood);
+    }
+
     private record NamedParam(String name, String value) {
     }
 
@@ -137,6 +200,24 @@ public class VerseWordRepositoryCustomImpl implements VerseWordRepositoryCustom 
         @Override
         public String getNumberType() {
             return numberType;
+        }
+    }
+
+    private record VerseConjugationCellCountRow(UUID verseId, String tense, String mood)
+            implements VerseWordRepository.VerseConjugationCellCount {
+        @Override
+        public UUID getVerseId() {
+            return verseId;
+        }
+
+        @Override
+        public String getTense() {
+            return tense;
+        }
+
+        @Override
+        public String getMood() {
+            return mood;
         }
     }
 }

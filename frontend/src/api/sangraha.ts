@@ -9,6 +9,7 @@ import type {
   StandaloneVerseItemDto,
   VerseWordExamplesResponseDto,
   DeclensionExamplesResponseDto,
+  ConjugationExamplesResponseDto,
 } from '../types/sangraha';
 
 const BASE = '/api/v1/sangraha';
@@ -58,10 +59,17 @@ export const sangrahaApi = {
 
   // Примеры склонений по словоизменительному классу — вкладка «Примеры» урока
   // (один запрос на весь урок; caseType/numberType в теле не передаются)
-  getDeclensionExamples: (vowelType: string, gender: string, limitPerGroup = 5) =>
-    api.post<DeclensionExamplesResponseDto>(`${BASE}/verses/examples`, {
+  getDeclensionExamples: (vowelType: string, limitPerGroup = 5) =>
+    api.post<DeclensionExamplesResponseDto>(`${BASE}/verses/examples/declensions`, {
       vowelType,
-      gender,
+      limitPerGroup,
+    }),
+
+  // Примеры спряжений — вкладка «Примеры» урока спряжений
+  getConjugationExamples: (limitPerGroup = 5, tense?: string, mood?: string) =>
+    api.post<ConjugationExamplesResponseDto>(`${BASE}/verses/examples/conjugations`, {
+      tense,
+      mood,
       limitPerGroup,
     }),
 

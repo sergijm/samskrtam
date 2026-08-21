@@ -201,14 +201,26 @@ export interface VerseWordExampleItemDto {
 }
 
 // ── Примеры склонений по словоизменительному классу (вкладка «Примеры» урока) ──
-// POST /api/v1/sangraha/verses/examples — один запрос на урок, на вход
-// (vowelType, gender, limitPerGroup); caseType/numberType опциональны
+// POST /api/v1/sangraha/verses/examples/declensions — один запрос на урок, на вход
+// (vowelType, limitPerGroup); caseType/numberType опциональны
 // (фильтр по падежу/числу), фронтендом не передаются.
 
 export interface DeclensionExamplesResponseDto {
   groups: Array<{
     caseType: string;
     numberType: string;
+    examples: VerseWordExampleItemDto[];
+  }>;
+}
+
+// ── Примеры спряжений (вкладка «Примеры» урока спряжений) ──
+// POST /api/v1/sangraha/verses/examples/conjugations — один запрос на урок,
+// на вход (tense, mood, limitPerGroup); tense/mood опциональны.
+
+export interface ConjugationExamplesResponseDto {
+  groups: Array<{
+    tense: string;
+    mood: string;
     examples: VerseWordExampleItemDto[];
   }>;
 }

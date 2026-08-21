@@ -8,6 +8,7 @@ import { LessonHeader } from '../../components/lesson/LessonHeader';
 import { LessonStatsTab } from '../../components/lesson/LessonStatsTab';
 import ConjugationEndingsTable from '../../components/lesson/ConjugationEndingsTable';
 import ConjugationParadigmCarousel from '../../components/lesson/ConjugationParadigmCarousel';
+import ConjugationExamplesPanel from '../../components/lesson/ConjugationExamplesPanel';
 import ConjugationProgressGrid from '../../components/lesson/ConjugationProgressGrid';
 import { PRESENT_ENDINGS } from '../../data/presentConjugation';
 import { IMPERFECT_ENDINGS } from '../../data/imperfectConjugation';
@@ -18,6 +19,13 @@ import type { Voice } from '../../types/content-dtos';
 type SelectedVoice = Voice | null;
 
 const voiceKey = (v: Voice) => (v === 'PARASMAIPADA' ? 'parasmaipada' : 'atmanepada');
+
+const SLUG_TO_TENSE_MOOD: Record<string, { tense: string; mood: string }> = {
+  'presence-indicativus': { tense: 'PRESENT', mood: 'INDICATIVE' },
+  'imperfectum':          { tense: 'IMPERFECT', mood: 'INDICATIVE' },
+  'optativus':            { tense: 'PRESENT', mood: 'OPTATIVE' },
+  'imperativus':          { tense: 'PRESENT', mood: 'IMPERATIVE' },
+};
 
 const ConjugationLessonPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -96,10 +104,12 @@ const ConjugationLessonPage = () => {
             </TabPanel>
             <TabPanel header={i18n.language === 'ru' ? 'Примеры' : 'Examples'}>
               <div className="card p-4 md:p-5">
-                <div className="text-lg font-semibold mb-3">
-                  {t('grammar.paradigmSectionTitle')}
-                </div>
-                <ConjugationParadigmCarousel slug={slug || ''} voice={selectedVoice} enabled={true} />
+                <ConjugationExamplesPanel
+                  slug={slug || ''}
+                  tense={SLUG_TO_TENSE_MOOD[slug ?? '']?.tense ?? null}
+                  mood={SLUG_TO_TENSE_MOOD[slug ?? '']?.mood ?? null}
+                  enabled={true}
+                />
               </div>
             </TabPanel>
             <TabPanel header={i18n.language === 'ru' ? 'Прогресс' : 'Progress'}>

@@ -6,7 +6,6 @@ import { useGrammarLesson, useDeclensionParadigm, useDeclensionExamples } from '
 import { LessonHeader } from '../../components/lesson/LessonHeader';
 import { LessonStatsTab } from '../../components/lesson/LessonStatsTab';
 import GrammarParadigmCarousel from '../../components/lesson/GrammarParadigmCarousel';
-import GrammarProgressGrid from '../../components/lesson/GrammarProgressGrid';
 import GrammarProgressTagSets from '../../components/lesson/GrammarProgressTagSets';
 import DeclensionExamplesPanel from '../../components/lesson/DeclensionExamplesPanel';
 import DeclensionEndingsReferenceTable from '../../components/lesson/DeclensionEndingsReferenceTable';
@@ -70,14 +69,12 @@ const GrammarLessonPage = () => {
 
   const { data: firstParadigmPage } = useDeclensionParadigm(slug || '', 0, true);
   const vowelType = firstParadigmPage?.paradigm?.vowelType ?? '';
-  const gender = firstParadigmPage?.paradigm?.gender ?? '';
   const endingsTableData = vowelType ? vowelTypeToEndingsTable[vowelType] : undefined;
 
   const { data: examplesData } = useDeclensionExamples(
     slug || '',
     vowelType,
-    gender,
-    examplesSubTabVisible && !!vowelType && !!gender,
+    examplesSubTabVisible && !!vowelType,
   );
 
   const allExampleVerseIds = useMemo(
@@ -218,19 +215,12 @@ const GrammarLessonPage = () => {
                 <DeclensionExamplesPanel
                   slug={slug || ''}
                   vowelType={vowelType}
-                  gender={gender}
                   enabled={examplesSubTabVisible}
                   filterCaseType={filterCaseType}
                   filterNumberType={filterNumberType}
                 />
               </TabPanel>
               <TabPanel header={i18n.language === 'ru' ? 'Прогресс' : 'Progress'}>
-                <GrammarProgressGrid
-                  aggregations={lesson.grid ?? []}
-                  caseNames={lesson.caseAggregations ?? []}
-                  numberNames={lesson.numberAggregations ?? []}
-                  quizSlug={slug || ''}
-                />
                 <GrammarProgressTagSets
                   cases={lesson.caseAggregations ?? []}
                   numbers={lesson.numberAggregations ?? []}

@@ -9,17 +9,16 @@ import type { DeclensionExamplesResponseDto } from '../../types/sangraha';
 interface DeclensionExamplesPanelProps {
   slug: string;
   vowelType: string;
-  gender: string;
   enabled: boolean;
   filterCaseType?: string | null;
   filterNumberType?: string | null;
 }
 
 const DeclensionExamplesPanel: React.FC<DeclensionExamplesPanelProps> =
-  ({ slug, vowelType, gender, enabled, filterCaseType, filterNumberType }) => {
+  ({ slug, vowelType, enabled, filterCaseType, filterNumberType }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { data, isLoading, isError } = useDeclensionExamples(slug, vowelType, gender, enabled);
+  const { data, isLoading, isError } = useDeclensionExamples(slug, vowelType, enabled);
 
   // -- Not yet enabled --
   if (!enabled) {

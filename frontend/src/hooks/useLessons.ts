@@ -3,7 +3,7 @@ import { lessonApi } from '../api/lessonApi';
 import { sangrahaApi } from '../api/sangraha';
 import { sandhiApi } from '../api/sandhiApi';
 import { contentApi } from '../api/contentApi';
-import type { DeclensionParadigmPageDto } from '../types/content-dtos';
+import type { DeclensionParadigmPageDto, ConjugationParadigmPageDto } from '../types/content-dtos';
 
 export const useVocabularyLesson = (slug: string) =>
   useQuery({
@@ -76,20 +76,18 @@ export const useAllDeclensionParadigms = (slug: string, totalCount: number, enab
 };
 
 /**
- * Examples for the declension lesson — one request to sangraha-service per lesson.
  * Lazy: fires only when enabled (active tab === 'examples') and the lesson's
- * stem class (vowelType, gender) is already known from the paradigm page.
+ * stem class (vowelType) is already known from the paradigm page.
  */
 export const useDeclensionExamples = (
   slug: string,
   vowelType: string,
-  gender: string,
   enabled: boolean,
 ) =>
   useQuery({
-    queryKey: ['declension-examples', slug, vowelType, gender],
-    queryFn: () => sangrahaApi.getDeclensionExamples(vowelType, gender).then(res => res.data),
-    enabled: !!slug && !!vowelType && !!gender && enabled,
+    queryKey: ['declension-examples', slug, vowelType],
+    queryFn: () => sangrahaApi.getDeclensionExamples(vowelType).then(res => res.data),
+    enabled: !!slug && !!vowelType && enabled,
     staleTime: Infinity,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
@@ -97,17 +95,11 @@ export const useDeclensionExamples = (
   });
 
 /**
- * One conjugation paradigm page by index — lazy, fired from the verb-lesson
- * "Paradigms" carousel. The carousel advances the index.
+ * One conjugation paradigm page by index — lazy, loaded when the "Paradigms" tab is opened.
  */
-export const useConjugationParadigm = (
-  slug: string,
-  index: number,
-  voice: string | null,
-  enabled: boolean,
-) =>
+export const useConjugationParadigm = (slug: string, index: number, voice: string | null, enabled: boolean) =>
   useQuery({
-    queryKey: ['conjugation-paradigm', slug, index, voice ?? 'all'],
+    queryKey: ['conjugation-paradigm', slug, index, voice],
     queryFn: () => lessonApi.getConjugationParadigm(slug, index, voice).then(res => res.data),
     enabled: !!slug && enabled,
     staleTime: Infinity,
@@ -115,6 +107,25 @@ export const useConjugationParadigm = (
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     placeholderData: keepPreviousData,
+  });
+
+/**
+ * Examples for the conjugation lesson — one request to sangraha-service per lesson.
+ */
+export const useConjugationExamples = (
+  slug: string,
+  tense: string | null,
+  mood: string | null,
+  enabled: boolean,
+) =>
+  useQuery({
+    queryKey: ['conjugation-examples', slug, tense, mood],
+    queryFn: () => sangrahaApi.getConjugationExamples(undefined, tense ?? undefined, mood ?? undefined).then(res => res.data),
+    enabled: !!slug && enabled,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
 export const useSandhiRules = (topicCode: string) =>

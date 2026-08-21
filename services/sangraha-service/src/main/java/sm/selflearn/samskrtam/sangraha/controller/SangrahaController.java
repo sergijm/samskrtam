@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import sm.selflearn.samskrtam.sangraha.dto.ChapterVersesDto;
+import sm.selflearn.samskrtam.sangraha.dto.ConjugationExamplesResponseDto;
+import sm.selflearn.samskrtam.sangraha.dto.ConjugationExamplesSearchRequestDto;
 import sm.selflearn.samskrtam.sangraha.dto.DeclensionExamplesResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.DeclensionExamplesSearchRequestDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseBatchResponseDto;
@@ -115,10 +117,17 @@ public class SangrahaController {
     }
 
     // ── Примеры склонений по словоизменительному классу (вкладка «Примеры») ──
-    @PostMapping("/verses/examples")
+    @PostMapping("/verses/examples/declensions")
     public ResponseEntity<DeclensionExamplesResponseDto> getExamplesByStemClass(
             @RequestBody DeclensionExamplesSearchRequestDto request) {
-        return ResponseEntity.ok(verseWordSearchService.searchExamples(request));
+        return ResponseEntity.ok(verseWordSearchService.searchDeclensionExamples(request));
+    }
+
+    // ── Примеры спряжений (вкладка «Примеры» урока спряжений) ──
+    @PostMapping("/verses/examples/conjugations")
+    public ResponseEntity<ConjugationExamplesResponseDto> getConjugationExamples(
+            @RequestBody ConjugationExamplesSearchRequestDto request) {
+        return ResponseEntity.ok(verseWordSearchService.searchConjugationExamples(request));
     }
 }
 

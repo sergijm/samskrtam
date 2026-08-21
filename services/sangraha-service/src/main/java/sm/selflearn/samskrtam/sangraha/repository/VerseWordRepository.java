@@ -87,4 +87,16 @@ public interface VerseWordRepository extends JpaRepository<VerseWord, UUID>, Ver
 
         String getNumberType();
     }
+
+    /**
+     * Одна строка = одно совпадение кортежа {@code [person, tense, mood, voice]}
+     * в {@code verse_statistics.grammar_info.tuples}: verseId + ячейка времени/наклонения.
+     */
+    interface VerseConjugationCellCount {
+        UUID getVerseId();
+
+        String getTense();
+
+        String getMood();
+    }
 }

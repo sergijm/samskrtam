@@ -29,4 +29,17 @@ public interface VerseWordRepositoryCustom {
             int limitPerGroup);
 
 
+    /**
+     * Ячейки парадигмы {@code (tense, mood)} со стихами-примерами: стихи, у
+     * которых есть слово с набором (tense, mood) — проверка через предвычисленное
+     * поле {@code tuples} в {@code grammar_info}. {@code tense}/{@code mood} допускают
+     * {@code null} — пропущенное значение означает «любой» по этой оси.
+     * Ячейки парадигмы стиха берутся из {@code grammar_info.tense}/{@code grammar_info.mood}.
+     */
+    List<VerseWordRepository.VerseConjugationCellCount> findConjugationExampleCells(
+            String tense,
+            String mood,
+            int maxPhraseWords,
+            int limitPerGroup);
+
 }

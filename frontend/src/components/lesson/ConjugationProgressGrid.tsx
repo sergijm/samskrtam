@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { MiniProgressBar } from '../common/MiniProgressBar';
@@ -41,30 +40,6 @@ export default function ConjugationProgressGrid({ progress, quizSlug }: Props) {
   const navigate = useNavigate();
   const ru = i18n.language === 'ru';
 
-  const cellByKey = useMemo(() => {
-    const map = new Map<string, ConjugationCellProgress>();
-    for (const p of progress) {
-      map.set(`${p.voice}:${p.person}:${p.numberType}`, p);
-    }
-    return map;
-  }, [progress]);
-
-  const handleCellClick = (voice: string, person: number, numberType: string) => {
-    navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${voice}|${person}|${numberType}`);
-  };
-
-  const handleVoiceClick = (voice: string) => {
-    navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${voice}`);
-  };
-
-  const handlePersonClick = (person: number) => {
-    navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${person}`);
-  };
-
-  const handleNumberClick = (numberType: string) => {
-    navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${numberType}`);
-  };
-
   if (progress.length === 0) {
     return (
       <div className="text-center p-4 text-color-secondary">
@@ -75,118 +50,58 @@ export default function ConjugationProgressGrid({ progress, quizSlug }: Props) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr>
-            <th className="text-left p-2 border-bottom-1 border-200 font-semibold" style={{ width: '30%' }} />
-            {NUMBERS.map(num => (
-              <th
-                key={num}
-                className="text-center p-2 border-bottom-1 border-200 font-semibold cursor-pointer hover:surface-100 transition-colors"
-                onClick={() => handleNumberClick(num)}
-              >
-                {numberLabel(num, ru)}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {VOICES.map(voice => (
-            PERSONS.map((person, pi) => {
-              const isFirst = pi === 0;
+      <div className="grid pl-2">
+        <div className="col-12 md:col-6">
+          <div className="flex flex-column gap-1">
+            {VOICES.map(v => {
+              const rows = progress.filter(p => p.voice === v);
+              const agg = computeAgg(rows);
               return (
-                <tr key={`${voice}:${person}`}>
-                  {isFirst && (
-                    <td
-                      rowSpan={PERSONS.length}
-                      className="px-2 py-1 font-semibold cursor-pointer hover:surface-100 transition-colors align-top"
-                      onClick={() => handleVoiceClick(voice)}
-                      style={{ verticalAlign: 'top', paddingTop: '0.5rem' }}
-                    >
-                      {voiceLabel(voice)}
-                    </td>
-                  )}
-                  <td
-                    className="px-2 py-1 text-sm cursor-pointer hover:surface-100 transition-colors"
-                    onClick={() => handlePersonClick(person)}
-                  >
-                    {personLabel(person)}
-                  </td>
-                  {NUMBERS.map(num => {
-                    const cell = cellByKey.get(`${voice}:${person}:${num}`);
-                    const score = cell?.score ?? 0;
-                    const status = cell?.status ?? 'NEW';
-                    return (
-                      <td
-                        key={num}
-                        className="text-center px-2 py-1 cursor-pointer hover:surface-100 transition-colors"
-                        onClick={() => handleCellClick(voice, person, num)}
-                      >
-                        <MiniProgressBar value={score} status={status} width="90px" className="justify-content-center" />
-                      </td>
-                    );
-                  })}
-                </tr>
+                <AggRow
+                  key={v}
+                  id={v}
+                  name={voiceLabel(v)}
+                  score={agg.aggregatedProgress}
+                  status={agg.status}
+                  ru={ru}
+                  onStart={() => navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${v}`)}
+                />
               );
-            })
-          ))}
-        </tbody>
-      </table>
-
-      <div className="mt-4 pt-3 border-top-1 border-200">
-        <div className="grid pl-2">
-          <div className="col-12 md:col-6">
-            <div className="flex flex-column gap-1">
-              {VOICES.map(v => {
-                const rows = progress.filter(p => p.voice === v);
-                const agg = computeAgg(rows);
-                return (
-                  <AggRow
-                    key={v}
-                    id={v}
-                    name={voiceLabel(v)}
-                    score={agg.aggregatedProgress}
-                    status={agg.status}
-                    ru={ru}
-                    onStart={() => navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${v}`)}
-                  />
-                );
-              })}
-            </div>
-            <div className="flex flex-column gap-1 mt-3">
-              {PERSONS.map(p => {
-                const rows = progress.filter(r => r.person === p);
-                const agg = computeAgg(rows);
-                return (
-                  <AggRow
-                    key={p}
-                    id={String(p)}
-                    name={personLabel(p)}
-                    score={agg.aggregatedProgress}
-                    status={agg.status}
-                    ru={ru}
-                    onStart={() => navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${p}`)}
-                  />
-                );
-              })}
-            </div>
-            <div className="flex flex-column gap-1 mt-3">
-              {NUMBERS.map(n => {
-                const rows = progress.filter(r => r.numberType === n);
-                const agg = computeAgg(rows);
-                return (
-                  <AggRow
-                    key={n}
-                    id={n}
-                    name={numberLabel(n, ru)}
-                    score={agg.aggregatedProgress}
-                    status={agg.status}
-                    ru={ru}
-                    onStart={() => navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${n}`)}
-                  />
-                );
-              })}
-            </div>
+            })}
+          </div>
+          <div className="flex flex-column gap-1 mt-3">
+            {PERSONS.map(p => {
+              const rows = progress.filter(r => r.person === p);
+              const agg = computeAgg(rows);
+              return (
+                <AggRow
+                  key={p}
+                  id={String(p)}
+                  name={personLabel(p)}
+                  score={agg.aggregatedProgress}
+                  status={agg.status}
+                  ru={ru}
+                  onStart={() => navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${p}`)}
+                />
+              );
+            })}
+          </div>
+          <div className="flex flex-column gap-1 mt-3">
+            {NUMBERS.map(n => {
+              const rows = progress.filter(r => r.numberType === n);
+              const agg = computeAgg(rows);
+              return (
+                <AggRow
+                  key={n}
+                  id={n}
+                  name={numberLabel(n, ru)}
+                  score={agg.aggregatedProgress}
+                  status={agg.status}
+                  ru={ru}
+                  onStart={() => navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${n}`)}
+                />
+              );
+            })}
           </div>
         </div>
       </div>
