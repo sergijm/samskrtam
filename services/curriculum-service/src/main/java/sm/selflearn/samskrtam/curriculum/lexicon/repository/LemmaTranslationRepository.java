@@ -47,4 +47,11 @@ public interface LemmaTranslationRepository extends JpaRepository<LemmaTranslati
     List<String> findDistinctLemmaIastByFrequencyRankRange(@Param("min") int min, @Param("max") int max);
 
     void deleteByLemmaIast(String lemmaIast);
+
+    @Query("SELECT COUNT(DISTINCT lt.lemmaIast) FROM LemmaTranslation lt")
+    Long countDistinctLemmaIast();
+
+    @Query("SELECT lt.pos, COUNT(DISTINCT lt.lemmaIast) FROM LemmaTranslation lt " +
+            "WHERE lt.pos IS NOT NULL GROUP BY lt.pos")
+    List<Object[]> countDistinctLemmasByPos();
 }

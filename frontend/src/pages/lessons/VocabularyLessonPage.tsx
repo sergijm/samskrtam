@@ -127,14 +127,13 @@ export const VocabularyLessonPage = () => {
                 header={isRu ? "Перевод" : "Translation"}
                 body={(rowData) => <TranslationCell row={rowData} />}
                 sortable
-                style={{ width: "35%" }}
               />
               <Column
                 field="score"
                 header={isRu ? "Прогресс" : "Progress"}
                 body={(rowData) => <WordProgressCell row={rowData} />}
                 sortable
-                style={{ width: "40%" }}
+                style={{ width: "90px" }}
               />
             </DataTable>
           </TabPanel>

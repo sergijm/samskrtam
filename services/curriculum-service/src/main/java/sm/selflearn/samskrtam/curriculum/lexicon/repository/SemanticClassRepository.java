@@ -16,24 +16,4 @@ public interface SemanticClassRepository extends JpaRepository<SemanticClass, UU
     List<SemanticClass> findByParentId(UUID parentId);
 
     List<SemanticClass> findByParentIsNull();
-
-    /** Projection over the {@code semantic_class_lexeme_counts} view (node + whole subtree). */
-    interface SemanticClassLexemeCount {
-        String getCode();
-
-        String getNameRu();
-
-        String getNameEn();
-
-        Long getLexemeCount();
-    }
-
-    @Query(value = """
-            select code,
-                   name_ru  as "nameRu",
-                   name_en  as "nameEn",
-                   lexeme_count as "lexemeCount"
-            from curriculum.semantic_class_lexeme_counts
-            """, nativeQuery = true)
-    List<SemanticClassLexemeCount> findSemanticClassLexemeCounts();
 }

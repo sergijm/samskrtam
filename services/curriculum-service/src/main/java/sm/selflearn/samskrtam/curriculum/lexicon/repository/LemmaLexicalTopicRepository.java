@@ -20,4 +20,8 @@ public interface LemmaLexicalTopicRepository extends JpaRepository<LemmaLexicalT
     void deleteByIdTopicCode(String topicCode);
 
     boolean existsByIdTopicCodeAndIdLemmaIast(String topicCode, String lemmaIast);
+
+    @Query("SELECT l.id.topicCode, COUNT(l.id.lemmaIast) FROM LemmaLexicalTopic l " +
+            "GROUP BY l.id.topicCode")
+    List<Object[]> countLemmasByTopicCode();
 }

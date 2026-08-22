@@ -54,10 +54,10 @@ public class VerseLexemeImportService {
         List<String> batchLemmas = new ArrayList<>();
 
         for (LemmaExportItem word : uniqueWords) {
-            if (LexiconImportService.isBlank(word.lemmaIast())) {
+            if (isBlank(word.lemmaIast())) {
                 continue;
             }
-            LexemeGender gender = LexiconImportService.parseGender(word.gender());
+            LexemeGender gender = parseGender(word.gender());
             String pos = word.dominantPosCode();
             boolean createdRu = upsertTranslation(word.lemmaIast(), "ru", word.glossRu(), pos, gender);
             boolean createdEn = upsertTranslation(word.lemmaIast(), "en", word.glossEn(), pos, gender);
@@ -90,7 +90,7 @@ public class VerseLexemeImportService {
         }
         Map<String, LemmaExportItem> unique = new LinkedHashMap<>();
         for (LemmaExportItem word : words) {
-            if (LexiconImportService.isBlank(word.lemmaIast())) {
+            if (isBlank(word.lemmaIast())) {
                 continue;
             }
             unique.putIfAbsent(word.lemmaIast(), word);
@@ -104,7 +104,7 @@ public class VerseLexemeImportService {
      */
     private boolean upsertTranslation(String lemmaIast, String language, String gloss,
                                       String pos, LexemeGender gender) {
-        if (LexiconImportService.isBlank(gloss)) {
+        if (isBlank(gloss)) {
             return false;
         }
         if (!lemmaTranslationRepository.findByLemmaIastAndLanguage(lemmaIast, language).isEmpty()) {
@@ -170,7 +170,7 @@ public class VerseLexemeImportService {
         if (request.ownerId() != null) {
             return "user-" + request.ownerId();
         }
-        String base = LexiconImportService.isBlank(request.workSlp1()) ? "verse" : request.workSlp1();
+        String base = isBlank(request.workSlp1()) ? "verse" : request.workSlp1();
         return base + "_" + request.chapterNumber();
     }
 
@@ -186,6 +186,21 @@ public class VerseLexemeImportService {
     }
 
     private static String blankTo(String value, String fallback) {
-        return LexiconImportService.isBlank(value) ? (fallback == null ? "" : fallback) : value;
+        return isBlank(value) ? (fallback == null ? "" : fallback) : value;
+    }
+
+    static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    static LexemeGender parseGender(String gender) {
+        if (gender == null) {
+            return null;
+        }
+        try {
+            return LexemeGender.valueOf(gender);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }
