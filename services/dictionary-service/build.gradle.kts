@@ -25,6 +25,7 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     implementation(project(":shared:common-dtos"))
+    implementation(project(":shared:samskrtam-dtos"))
 
     implementation("org.apache.commons:commons-text:1.15.0")
 

@@ -14,7 +14,20 @@ public interface ParadigmFormRepository extends JpaRepository<ParadigmForm, Para
 
     List<ParadigmForm> findByLemmaIastAndVowelType(String lemmaIast, VowelType vowelType);
 
-    /** Distinct lemma IASTs that have at least one stored paradigm cell in the given classes. */
-    @Query("select distinct f.lemmaIast from ParadigmForm f where f.vowelType in :vowelTypes")
-    List<String> findDistinctLemmaIastsByVowelTypeIn(@Param("vowelTypes") Collection<VowelType> vowelTypes);
+    /**
+     * Distinct {@code (lemmaIast, vowelType)} pairs that have at least one stored
+     * paradigm cell in the given declension classes. Used to enumerate the lemmas a
+     * topic's paradigm page serves, directly from {@code curriculum.declension_form}.
+     */
+    @Query("select distinct f.lemmaIast as lemmaIast, f.vowelType as vowelType "
+            + "from ParadigmForm f where f.vowelType in :vowelTypes")
+    List<LemmaVowelType> findDistinctLemmaVowelTypeByVowelTypeIn(
+            @Param("vowelTypes") Collection<VowelType> vowelTypes);
+
+    /** Projection of a distinct {@code (lemmaIast, vowelType)} pair. */
+    interface LemmaVowelType {
+        String getLemmaIast();
+
+        VowelType getVowelType();
+    }
 }

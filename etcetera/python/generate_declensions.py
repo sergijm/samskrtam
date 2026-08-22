@@ -54,40 +54,10 @@ CASE_LABELS_RU = {
     "VOCATIVE": "Звательный",
 }
 
-# Personal pronouns for special handling
-PERSONAL_PRONOUNS = {
-    "aham": "PRON_AHAM",      # 1st person singular
-    "āvām": "PRON_AHAM",      # 1st person dual
-    "vayam": "PRON_AHAM",     # 1st person plural
-    "tvam": "PRON_TVAM",      # 2nd person singular
-    "yuvām": "PRON_TVAM",     # 2nd person dual
-    "yūyam": "PRON_TVAM",     # 2nd person plural
-}
-
-# All pronoun lemmas that should be processed
-PRONOUN_LEMMAS = [
-    # Personal pronouns
-    "aham", "āvām", "vayam",
-    "tvam", "yuvām", "yūyam",
-
-    # Demonstrative pronouns
-    "tad", "etad", "idam", "adas",
-
-    # Relative and interrogative
-    "yad", "kim",
-
-    # Reflexive and possessive
-    "ātman", "sva", "madīya", "tvadīya", "asmadīya", "yuṣmadīya",
-
-    # Determinative and indefinite
-    "sarva", "viśva", "eka", "ekatara", "ekatama",
-    "anya", "anyatara", "itara", "ubhaya", "para", "pūrva",
-]
-
 SYSTEM_PROMPT = """
 You are an expert in Classical Sanskrit morphology and declension.
 
-For every Sanskrit nominal lemma (noun or pronoun) given in IAST, generate
+For every Sanskrit nominal lemma (noun) given in IAST, generate
 all 24 forms (8 cases × 3 numbers) of its declension.
 
 For each case+number combination, provide:
@@ -117,28 +87,11 @@ For NOUNS (based on stem ending):
 - O_STEM: stems ending in -o (e.g., go)
 - AU_STEM: stems ending in -au (e.g., nau, glāu)
 
-For PRONOUNS (pronominal declension):
-- PRON_AHAM: first person pronoun (aham = I)
-- PRON_TVAM: second person pronoun (tvam = you)
-- PRON_TAD: demonstrative pronoun (tad = that, he)
-- PRON_ETAD: demonstrative pronoun (etad = this, near)
-- PRON_IDAM: demonstrative pronoun (idam = this)
-- PRON_KIM: interrogative pronoun (kim = who? what?)
-- PRON_YAD: relative pronoun (yad = which)
-- PRON_REFLEXIVE: reflexive pronoun (sva = self)
-- PRON_POSSESSIVE: possessive pronouns (madīya, tvadīya, etc.)
-- PRON_DEMONSTRATIVE: other demonstrative pronouns
-- PRON_DETERMINATIVE: determinative pronouns (sarva, viśva, eka, etc.)
-
 IMPORTANT RULES:
-1. If the lemma is a PRONOUN, use its pronominal declension pattern and choose the appropriate PRON_* vowel_type.
-2. If the lemma is a NOUN, use its nominal declension pattern based on its stem ending.
-3. For dual forms, always use the correct dual endings.
-4. For vocative, use the correct vocative form (may differ from nominative).
-5. If a particular form does not exist (e.g., vocative for some pronouns),
-   still provide the most appropriate form or the nominative as fallback.
-6. For personal pronouns (aham, tvam), use the special irregular declension patterns.
-7. For reflexive pronouns like ātman, use the appropriate stem declension.
+1. For every lemma, use its nominal declension pattern based on its stem ending.
+2. For dual forms, always use the correct dual endings.
+3. For vocative, use the correct vocative form (may differ from nominative).
+4. If a particular form does not exist, still provide the most appropriate form or the nominative as fallback.
 
 CONFIDENCE LEVELS:
 - HIGH: You are absolutely certain about the vowel_type and all forms
@@ -354,135 +307,64 @@ def create_llm_client(llm_config):
     )
 
 
-def get_unprocessed_lexemes(conn, limit, include_pronouns=False):
+def get_unprocessed_lexemes(conn, limit):
     """
-    Select noun and pronoun lexemes that don't have declension forms yet.
-    Now checking by lemma_iast in declension_form table.
+    Select noun lexemes that don't have declension forms yet.
+    Selection is by lemma_iast absence in the declension_form table.
 
     Args:
         conn: Database connection
         limit: Maximum number of lexemes to return
-        include_pronouns: If True, include pronoun lexemes from PRONOUN_LEMMAS list
     """
 
-    # Base SQL for nouns and pronouns
-    if include_pronouns:
-        # Include both regular nouns/pronouns from DB and hardcoded pronoun list
-        # We'll get lexemes from DB first, then add hardcoded pronouns if missing
-        sql = """
-              WITH lexemes_to_process AS (
-                  SELECT DISTINCT l.id, l.lemma_iast, l.lemma_devanagari, l.gender
-                  FROM curriculum.lexeme l
-                  WHERE l.lemma_iast NOT IN (
-                      SELECT DISTINCT df.lemma_iast
-                      FROM curriculum.declension_form df
-                  )
-                    AND EXISTS (
-                      SELECT 1
-                      FROM curriculum.lexeme_pos lp
-                      WHERE lp.lexeme_id = l.id
-                        AND lp.pos_code IN ('noun', 'pronoun')
-                  )
-                    AND l.gender IS NOT NULL
-                    AND l.gender != 'UNSPECIFIED'
-                    AND l.lemma_iast not like '%%a'
-                  ORDER BY l.lemma_iast
-                  LIMIT %s
+    sql = """
+          WITH lexemes_to_process AS (
+              SELECT DISTINCT l.id, l.lemma_iast, l.lemma_devanagari, l.gender
+              FROM curriculum.lexeme l
+              WHERE l.lemma_iast NOT IN (
+                  SELECT DISTINCT df.lemma_iast
+                  FROM curriculum.declension_form df
               )
-              SELECT
-                  lp.id,
-                  lp.lemma_iast,
-                  lp.lemma_devanagari,
-                  lp.gender,
-                  (
-                      SELECT array_agg(pos_code)
-                      FROM curriculum.lexeme_pos
-                      WHERE lexeme_id = lp.id
-                  ) AS pos_codes
-              FROM lexemes_to_process lp
-              ORDER BY lp.lemma_iast
-              """
+                AND EXISTS (
+                  SELECT 1
+                  FROM curriculum.lexeme_pos lp
+                  WHERE lp.lexeme_id = l.id
+                    AND lp.pos_code = 'noun'
+                )
+                AND l.gender IS NOT NULL
+                AND l.gender != 'UNSPECIFIED'
+                AND l.lemma_iast not like '%%a'
+              ORDER BY l.lemma_iast
+              LIMIT %s
+          )
+          SELECT
+              lp.id,
+              lp.lemma_iast,
+              lp.lemma_devanagari,
+              lp.gender,
+              (
+                  SELECT array_agg(pos_code)
+                  FROM curriculum.lexeme_pos
+                  WHERE lexeme_id = lp.id
+              ) AS pos_codes
+          FROM lexemes_to_process lp
+          ORDER BY lp.lemma_iast
+          """
 
-        with conn.cursor() as cur:
-            cur.execute(sql, (limit,))
-            rows = cur.fetchall()
+    with conn.cursor() as cur:
+        cur.execute(sql, (limit,))
+        rows = cur.fetchall()
 
-            result = [
-                {
-                    "id": row[0],
-                    "lemma_iast": row[1],
-                    "lemma_devanagari": row[2],
-                    "gender": row[3],
-                    "pos_codes": row[4] if row[4] else [],
-                }
-                for row in rows
-            ]
-
-            # Add hardcoded pronouns if not already in result
-            existing_lemmas = {item["lemma_iast"] for item in result}
-            for pronoun in PRONOUN_LEMMAS:
-                if pronoun not in existing_lemmas and len(result) < limit:
-                    result.append({
-                        "id": None,  # No DB id for hardcoded pronouns
-                        "lemma_iast": pronoun,
-                        "lemma_devanagari": "",  # Will be generated by LLM
-                        "gender": "MASCULINE",  # Default gender
-                        "pos_codes": ["pronoun"],
-                        "is_hardcoded": True,
-                    })
-                    existing_lemmas.add(pronoun)
-
-            return result
-    else:
-        # Original behavior - only nouns
-        sql = """
-              WITH lexemes_to_process AS (
-                  SELECT DISTINCT l.id, l.lemma_iast, l.lemma_devanagari, l.gender
-                  FROM curriculum.lexeme l
-                  WHERE l.lemma_iast NOT IN (
-                      SELECT DISTINCT df.lemma_iast
-                      FROM curriculum.declension_form df
-                  )
-                    AND EXISTS (
-                      SELECT 1
-                      FROM curriculum.lexeme_pos lp
-                      WHERE lp.lexeme_id = l.id
-                        AND lp.pos_code IN ('noun', 'pronoun')
-                  )
-                    AND l.gender IS NOT NULL
-                    AND l.gender != 'UNSPECIFIED'
-                    AND l.lemma_iast not like '%%a'
-                  ORDER BY l.lemma_iast
-                  LIMIT %s
-              )
-              SELECT
-                  lp.id,
-                  lp.lemma_iast,
-                  lp.lemma_devanagari,
-                  lp.gender,
-                  (
-                      SELECT array_agg(pos_code)
-                      FROM curriculum.lexeme_pos
-                      WHERE lexeme_id = lp.id
-                  ) AS pos_codes
-              FROM lexemes_to_process lp
-              ORDER BY lp.lemma_iast
-              """
-
-        with conn.cursor() as cur:
-            cur.execute(sql, (limit,))
-            rows = cur.fetchall()
-
-            return [
-                {
-                    "id": row[0],
-                    "lemma_iast": row[1],
-                    "lemma_devanagari": row[2],
-                    "gender": row[3],
-                    "pos_codes": row[4] if row[4] else [],
-                }
-                for row in rows
-            ]
+        return [
+            {
+                "id": row[0],
+                "lemma_iast": row[1],
+                "lemma_devanagari": row[2],
+                "gender": row[3],
+                "pos_codes": row[4] if row[4] else [],
+            }
+            for row in rows
+        ]
 
 
 def log_llm_interaction(
@@ -555,10 +437,8 @@ def call_llm(
     Send one batch to the LLM and return parsed JSON.
     """
 
-    # Add note about pronouns in the payload
     payload = {
         "lemmas": [l["lemma_iast"] for l in lexemes],
-        "include_pronouns": True  # Signal to LLM that pronouns are included
     }
 
     messages = [
@@ -1053,7 +933,7 @@ def main():
 
     parser = argparse.ArgumentParser(
         description=(
-            "Generate Sanskrit declension forms for nouns and pronouns "
+            "Generate Sanskrit declension forms for nouns "
             "using an LLM"
         )
     )
@@ -1066,12 +946,6 @@ def main():
             "Number of lemmas per LLM request "
             f"(default: {DEFAULT_BATCH_SIZE})"
         ),
-    )
-
-    parser.add_argument(
-        "--include-pronouns",
-        action="store_true",
-        help="Include pronoun lemmas in generation (personal, demonstrative, relative, etc.)"
     )
 
     args = parser.parse_args()
@@ -1093,12 +967,6 @@ def main():
         "LLM prompts log file: %s",
         PROMPTS_LOG_FILE,
     )
-
-    if args.include_pronouns:
-        logger.info("INCLUDING PRONOUNS in generation")
-        logger.info("Pronoun lemmas to include: %s", ", ".join(PRONOUN_LEMMAS[:20]))
-        if len(PRONOUN_LEMMAS) > 20:
-            logger.info("... and %d more", len(PRONOUN_LEMMAS) - 20)
 
     env = load_env(ENV_FILE_PATH)
 
@@ -1142,13 +1010,12 @@ def main():
             lexemes = get_unprocessed_lexemes(
                 conn,
                 args.batch_size,
-                include_pronouns=args.include_pronouns,
             )
 
             if not lexemes:
 
                 logger.info(
-                    "No more unprocessed nouns or pronouns."
+                    "No more unprocessed nouns."
                 )
 
                 break
@@ -1168,11 +1035,6 @@ def main():
                 batch_number,
                 len(lemma_list),
             )
-
-            # Log if pronouns are included in this batch
-            pronoun_count = sum(1 for l in lexemes if l.get("is_hardcoded", False))
-            if pronoun_count > 0:
-                logger.info("  Includes %d hardcoded pronouns", pronoun_count)
 
             logger.debug(
                 "BATCH LEMMAS:\n%s",

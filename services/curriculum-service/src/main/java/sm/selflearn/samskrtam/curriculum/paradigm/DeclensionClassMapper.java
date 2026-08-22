@@ -4,17 +4,22 @@ import sm.selflearn.samskrtam.content.model.VowelType;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * Maps curriculum topics and morphology classes to the declension class
- * ({@link VowelType}) their paradigms are stored under in
- * {@code curriculum.declension_form}.
+ * Maps curriculum topics to the declension classes ({@link VowelType}) their
+ * paradigms are stored under in {@code curriculum.declension_form}.
  *
- * <p>A topic (lesson slug) may cover <b>several</b> morphology classes — the
+ * <p>A topic (lesson slug) may cover <b>several</b> declension classes — the
  * merged {@code a-stem} lesson covers {@code a-stem-masc}/{@code a-stem-neut},
  * {@code i-u-stems} covers {@code i-stem}/{@code u-stem} — so the relation
  * {@code topic → classCodes} is 1:N while {@code classCode → VowelType} is 1:1.
- * Shared by {@link ParadigmService}, the batch generator and the
+ * Noun/adjective topics are expressed through their {@code morphology_class}
+ * codes; pronoun topics map directly to their {@code PRON_*} vowel types since
+ * their paradigms live in {@code declension_form} keyed by
+ * {@code (lemma_iast, vowel_type)} with no separate morphology-class binding.
+ *
+ * <p>Shared by {@link ParadigmService}, the batch generator and the
  * {@code DeclensionDataImporter}.
  */
 public final class DeclensionClassMapper {
@@ -33,6 +38,35 @@ public final class DeclensionClassMapper {
             Map.entry("root-stems", List.of("root-stem", "o-stem", "au-stem")),
             // long-vowel feminine stems (-ī/-ū), parallel to i/u-stems:
             Map.entry("ii-uu-stems", List.of("ii-stem", "uu-stem"))
+    );
+
+    /**
+     * Pronoun topics map straight to their {@code PRON_*} vowel types (no
+     * morphology-class codes), per ADR-008. Bases are split by gender
+     * (e.g. {@code PRON_TAD_MASC/NEUT/FEM}); the lemma's stored paradigm cells
+     * select which of these the paradigm page serves.
+     */
+    private static final Map<String, List<VowelType>> TOPIC_VOWEL_TYPES = Map.ofEntries(
+            // personal-pronouns: 1st/2nd person (asmad/yuṣmad) are epicene — a single,
+            // non-gender-split category each, like PRON_AN / PRON_KATI.
+            Map.entry("personal-pronouns", List.of(VowelType.PRON_ASMAD, VowelType.PRON_YUSMAD)),
+            Map.entry("demonstrative-pronouns", List.of(
+                    VowelType.PRON_TAD_MASC, VowelType.PRON_TAD_NEUT, VowelType.PRON_TAD_FEM,
+                    VowelType.PRON_IDAM_MASC, VowelType.PRON_IDAM_NEUT, VowelType.PRON_IDAM_FEM,
+                    VowelType.PRON_ADAS_MASC, VowelType.PRON_ADAS_NEUT, VowelType.PRON_ADAS_FEM)),
+            Map.entry("interrogative-pronouns", List.of(
+                    VowelType.PRON_TAD_MASC, VowelType.PRON_TAD_NEUT, VowelType.PRON_TAD_FEM)),
+            Map.entry("relative-pronouns", List.of(
+                    VowelType.PRON_TAD_MASC, VowelType.PRON_TAD_NEUT, VowelType.PRON_TAD_FEM)),
+            Map.entry("indefinite-pronouns", List.of(
+                    VowelType.PRON_TAD_MASC, VowelType.PRON_TAD_NEUT, VowelType.PRON_TAD_FEM)),
+            Map.entry("reflexive-possessive-pronouns", List.of(
+                    VowelType.PRON_AN, VowelType.PRON_VAT_MASC, VowelType.PRON_VAT_FEM,
+                    VowelType.A_STEM, VowelType.AA_STEM)),
+            Map.entry("pronominal-adjectives", List.of(
+                    VowelType.PRON_SARVA_MASC, VowelType.PRON_SARVA_NEUT, VowelType.PRON_SARVA_FEM,
+                    VowelType.PRON_PURVA_MASC, VowelType.PRON_PURVA_NEUT, VowelType.PRON_PURVA_FEM)),
+            Map.entry("quantifier-pronouns", List.of(VowelType.PRON_UBHA_MASC, VowelType.PRON_UBHA_FN))
     );
 
     private DeclensionClassMapper() {
@@ -54,9 +88,25 @@ public final class DeclensionClassMapper {
         return toVowelType(topicCode) != null ? List.of(topicCode) : List.of();
     }
 
+    /** The declension classes (vowel types) a topic's paradigm page serves. */
+    public static List<VowelType> topicToVowelTypes(String topicCode) {
+        if (topicCode == null) {
+            return List.of();
+        }
+        List<VowelType> direct = TOPIC_VOWEL_TYPES.get(topicCode);
+        if (direct != null) {
+            return direct;
+        }
+        return topicToClassCodes(topicCode).stream()
+                .map(DeclensionClassMapper::toVowelType)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+    }
+
     /** Whether the topic serves stored paradigms of regular noun classes. */
     public static boolean isRegularDeclensionTopic(String topicCode) {
-        return !topicToClassCodes(topicCode).isEmpty();
+        return !topicToVowelTypes(topicCode).isEmpty();
     }
 
     /** {@code null} when the code is not a regular noun declension class. */

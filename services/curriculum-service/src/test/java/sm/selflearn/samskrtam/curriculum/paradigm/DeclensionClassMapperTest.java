@@ -26,18 +26,52 @@ class DeclensionClassMapperTest {
     }
 
     @Test
-    void topicToClassCodes_unknownOrNull_returnsEmpty() {
+    void topicToClassCodes_pronounTopics_haveNoMorphologyClassCodes() {
         assertThat(DeclensionClassMapper.topicToClassCodes("personal-pronouns")).isEmpty();
+        assertThat(DeclensionClassMapper.topicToClassCodes("demonstrative-pronouns")).isEmpty();
         assertThat(DeclensionClassMapper.topicToClassCodes("no-such-topic")).isEmpty();
         assertThat(DeclensionClassMapper.topicToClassCodes(null)).isEmpty();
     }
 
     @Test
-    void isRegularDeclensionTopic_regularClasses_returnsTrue() {
+    void topicToVowelTypes_mapsNounAndPronounTopics() {
+        assertThat(DeclensionClassMapper.topicToVowelTypes("a-stem"))
+                .containsExactly(VowelType.A_STEM);
+        assertThat(DeclensionClassMapper.topicToVowelTypes("i-u-stems"))
+                .containsExactlyInAnyOrder(VowelType.I_STEM, VowelType.U_STEM);
+        assertThat(DeclensionClassMapper.topicToVowelTypes("personal-pronouns"))
+                .containsExactlyInAnyOrder(VowelType.PRON_ASMAD, VowelType.PRON_YUSMAD);
+        assertThat(DeclensionClassMapper.topicToVowelTypes("demonstrative-pronouns"))
+                .containsExactlyInAnyOrder(
+                        VowelType.PRON_TAD_MASC, VowelType.PRON_TAD_NEUT, VowelType.PRON_TAD_FEM,
+                        VowelType.PRON_IDAM_MASC, VowelType.PRON_IDAM_NEUT, VowelType.PRON_IDAM_FEM,
+                        VowelType.PRON_ADAS_MASC, VowelType.PRON_ADAS_NEUT, VowelType.PRON_ADAS_FEM);
+        assertThat(DeclensionClassMapper.topicToVowelTypes("interrogative-pronouns"))
+                .containsExactlyInAnyOrder(VowelType.PRON_TAD_MASC, VowelType.PRON_TAD_NEUT, VowelType.PRON_TAD_FEM);
+        assertThat(DeclensionClassMapper.topicToVowelTypes("relative-pronouns"))
+                .containsExactlyInAnyOrder(VowelType.PRON_TAD_MASC, VowelType.PRON_TAD_NEUT, VowelType.PRON_TAD_FEM);
+        assertThat(DeclensionClassMapper.topicToVowelTypes("indefinite-pronouns"))
+                .containsExactlyInAnyOrder(VowelType.PRON_TAD_MASC, VowelType.PRON_TAD_NEUT, VowelType.PRON_TAD_FEM);
+        assertThat(DeclensionClassMapper.topicToVowelTypes("reflexive-possessive-pronouns"))
+                .containsExactlyInAnyOrder(VowelType.PRON_AN, VowelType.PRON_VAT_MASC, VowelType.PRON_VAT_FEM,
+                        VowelType.A_STEM, VowelType.AA_STEM);
+        assertThat(DeclensionClassMapper.topicToVowelTypes("pronominal-adjectives"))
+                .containsExactlyInAnyOrder(
+                        VowelType.PRON_SARVA_MASC, VowelType.PRON_SARVA_NEUT, VowelType.PRON_SARVA_FEM,
+                        VowelType.PRON_PURVA_MASC, VowelType.PRON_PURVA_NEUT, VowelType.PRON_PURVA_FEM);
+        assertThat(DeclensionClassMapper.topicToVowelTypes("quantifier-pronouns"))
+                .containsExactlyInAnyOrder(VowelType.PRON_UBHA_MASC, VowelType.PRON_UBHA_FN);
+    }
+
+    @Test
+    void isRegularDeclensionTopic_regularAndPronounTopics_returnTrue() {
         assertThat(DeclensionClassMapper.isRegularDeclensionTopic("a-stem")).isTrue();
         assertThat(DeclensionClassMapper.isRegularDeclensionTopic("i-u-stems")).isTrue();
         assertThat(DeclensionClassMapper.isRegularDeclensionTopic("a-stem-masc")).isTrue();
-        assertThat(DeclensionClassMapper.isRegularDeclensionTopic("personal-pronouns")).isFalse();
+        assertThat(DeclensionClassMapper.isRegularDeclensionTopic("demonstrative-pronouns")).isTrue();
+        assertThat(DeclensionClassMapper.isRegularDeclensionTopic("pronominal-adjectives")).isTrue();
+        assertThat(DeclensionClassMapper.isRegularDeclensionTopic("personal-pronouns")).isTrue();
+        assertThat(DeclensionClassMapper.isRegularDeclensionTopic("no-such-topic")).isFalse();
     }
 
     @Test

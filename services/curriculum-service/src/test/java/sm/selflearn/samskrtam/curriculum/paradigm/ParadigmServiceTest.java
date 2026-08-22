@@ -3,58 +3,48 @@ package sm.selflearn.samskrtam.curriculum.paradigm;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import sm.selflearn.samskrtam.content.dto.DeclensionParadigmPageDto;
+import sm.selflearn.samskrtam.content.dto.frisch.FrischEntryDto;
+import sm.selflearn.samskrtam.content.dto.frisch.FrischGenderDto;
 import sm.selflearn.samskrtam.content.model.CaseType;
 import sm.selflearn.samskrtam.content.model.Gender;
 import sm.selflearn.samskrtam.content.model.NumberType;
 import sm.selflearn.samskrtam.content.model.VowelType;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeFrequency;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeFrequencyId;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.MorphologyClass;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeFrequencyRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
+import sm.selflearn.samskrtam.curriculum.dictionary.DictionaryClient;
+import sm.selflearn.samskrtam.curriculum.lexicon.service.TransliterationService;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class ParadigmServiceTest {
 
-    private LexemeRepository lexemeRepository;
-    private LexemeFrequencyRepository lexemeFrequencyRepository;
     private ParadigmFormRepository paradigmFormRepository;
+    private DictionaryClient dictionaryClient;
+    private TransliterationService transliterationService;
     private ParadigmService service;
 
     @BeforeEach
     void setUp() {
-        lexemeRepository = mock(LexemeRepository.class);
-        lexemeFrequencyRepository = mock(LexemeFrequencyRepository.class);
         paradigmFormRepository = mock(ParadigmFormRepository.class);
-        service = new ParadigmService(paradigmFormRepository, lexemeRepository, lexemeFrequencyRepository);
+        dictionaryClient = mock(DictionaryClient.class);
+        transliterationService = mock(TransliterationService.class);
+        when(dictionaryClient.getFrischLemma(any())).thenReturn(List.of());
+        when(transliterationService.iastToDevanagari(anyString())).thenAnswer(a -> a.getArgument(0));
+        service = new ParadigmService(paradigmFormRepository, dictionaryClient, transliterationService);
     }
 
-    private Lexeme lexeme(UUID id, String iast, String deva, LexemeGender gender, String... classCodes) {
-        Lexeme l = new Lexeme();
-        l.setId(id);
-        l.setLemmaIast(iast);
-        l.setLemmaDevanagari(deva);
-        l.setGender(gender);
-        Set<MorphologyClass> classes = new HashSet<>();
-        for (String code : classCodes) {
-            MorphologyClass mc = new MorphologyClass();
-            mc.setCode(code);
-            classes.add(mc);
-        }
-        l.setMorphologyClasses(classes);
-        return l;
+    private void stubFrischGender(String lemma, Gender gender, String ru, String en) {
+        FrischGenderDto g = gender == null ? null : new FrischGenderDto(gender.name(), null);
+        FrischEntryDto entry = new FrischEntryDto(null, null,
+                gender == null ? null : List.of(g),
+                null, null, null, en, ru, lemma, null, null, null, null, null,
+                null, null, null, null, null, null);
+        when(dictionaryClient.getFrischLemma(lemma)).thenReturn(List.of(entry));
     }
 
     private ParadigmForm form(String lemmaIast, VowelType vowelType, CaseType caseType, NumberType numberType, String iast) {
@@ -67,21 +57,34 @@ class ParadigmServiceTest {
         return f;
     }
 
-    private void stubForms(List<VowelType> vowelTypes, String lemmaIast, VowelType vowelType,
-                           String nominativeSingular) {
-        when(paradigmFormRepository.findDistinctLemmaIastsByVowelTypeIn(anyCollection()))
-                .thenReturn(List.of(lemmaIast));
+    private ParadigmFormRepository.LemmaVowelType pair(String lemmaIast, VowelType vowelType) {
+        return new ParadigmFormRepository.LemmaVowelType() {
+            public String getLemmaIast() {
+                return lemmaIast;
+            }
+
+            public VowelType getVowelType() {
+                return vowelType;
+            }
+        };
+    }
+
+    private void stubPairs(List<VowelType> vowelTypes, ParadigmFormRepository.LemmaVowelType... pairs) {
+        when(paradigmFormRepository.findDistinctLemmaVowelTypeByVowelTypeIn(anyCollection()))
+                .thenReturn(List.of(pairs));
+    }
+
+    private void stubForms(String lemmaIast, VowelType vowelType, String nominativeSingular) {
         when(paradigmFormRepository.findByLemmaIastAndVowelType(lemmaIast, vowelType))
                 .thenReturn(List.of(form(lemmaIast, vowelType,
                         CaseType.NOMINATIVE, NumberType.SINGULAR, nominativeSingular)));
     }
 
     @Test
-    void aStemMerged_lexemeGenderNull_usesActualClass() {
-        Lexeme nara = lexeme(UUID.fromString("00000000-0000-0000-0000-000000000001"), "nara", "नर", null, "a-stem-masc");
-        when(lexemeRepository.findNounsWithMorphologyByCodeIn(eq(List.of("a-stem-masc", "a-stem-neut"))))
-                .thenReturn(List.of(nara));
-        stubForms(List.of(VowelType.A_STEM), "nara", VowelType.A_STEM, "naraḥ");
+    void aStem_masc_usesFrischGender() {
+        stubPairs(List.of(VowelType.A_STEM), pair("nara", VowelType.A_STEM));
+        stubForms("nara", VowelType.A_STEM, "naraḥ");
+        stubFrischGender("nara", Gender.MASCULINE, "человек", "man");
 
         DeclensionParadigmPageDto page = service.getParadigmPage("a-stem", 0);
 
@@ -89,6 +92,7 @@ class ParadigmServiceTest {
         assertThat(page.getParadigm()).isNotNull();
         assertThat(page.getParadigm().getVowelType()).isEqualTo(VowelType.A_STEM);
         assertThat(page.getParadigm().getGender()).isEqualTo(Gender.MASCULINE);
+        assertThat(page.getParadigm().getTranslationRu()).isEqualTo("человек");
         assertThat(page.getParadigm().getForms()).isNotEmpty();
         assertThat(page.getParadigm().getForms())
                 .anyMatch(f -> f.getCaseType().name().equals("NOMINATIVE")
@@ -97,108 +101,95 @@ class ParadigmServiceTest {
     }
 
     @Test
-    void aStemMerged_neuterLexemeGenderNull_usesActualClass() {
-        Lexeme phala = lexeme(UUID.fromString("00000000-0000-0000-0000-000000000001"), "phala", "फल", null, "a-stem-neut");
-        when(lexemeRepository.findNounsWithMorphologyByCodeIn(eq(List.of("a-stem-masc", "a-stem-neut"))))
-                .thenReturn(List.of(phala));
-        stubForms(List.of(VowelType.A_STEM), "phala", VowelType.A_STEM, "phalam");
+    void aStem_neuter_usesFrischGender() {
+        stubPairs(List.of(VowelType.A_STEM), pair("phala", VowelType.A_STEM));
+        stubForms("phala", VowelType.A_STEM, "phalam");
+        stubFrischGender("phala", Gender.NEUTER, "плод", "fruit");
 
         DeclensionParadigmPageDto page = service.getParadigmPage("a-stem", 0);
 
         assertThat(page.getParadigm()).isNotNull();
         assertThat(page.getParadigm().getVowelType()).isEqualTo(VowelType.A_STEM);
         assertThat(page.getParadigm().getGender()).isEqualTo(Gender.NEUTER);
-        assertThat(page.getParadigm().getForms())
-                .anyMatch(f -> f.getCaseType().name().equals("NOMINATIVE")
-                        && f.getNumberType().name().equals("SINGULAR")
-                        && f.getFormIast().equals("phalam"));
+        assertThat(page.getParadigm().getTranslationEn()).isEqualTo("fruit");
     }
 
     @Test
-    void aStemMerged_allLexemesBoundBeforeParadigms() {
-        Lexeme nara = lexeme(UUID.fromString("00000000-0000-0000-0000-000000000001"), "nara", "नर", LexemeGender.MASCULINE, "a-stem-masc");
-        Lexeme phala = lexeme(UUID.fromString("00000000-0000-0000-0000-000000000002"), "phala", "फल", LexemeGender.NEUTER, "a-stem-neut");
-        when(lexemeRepository.findNounsWithMorphologyByCodeIn(anyCollection()))
-                .thenReturn(List.of(nara, phala));
-        when(paradigmFormRepository.findDistinctLemmaIastsByVowelTypeIn(anyCollection()))
-                .thenReturn(List.of("nara", "phala"));
-        when(paradigmFormRepository.findByLemmaIastAndVowelType("nara", VowelType.A_STEM))
-                .thenReturn(List.of(form("nara", VowelType.A_STEM,
-                        CaseType.NOMINATIVE, NumberType.SINGULAR, "naraḥ")));
-        when(paradigmFormRepository.findByLemmaIastAndVowelType("phala", VowelType.A_STEM))
-                .thenReturn(List.of(form("phala", VowelType.A_STEM,
-                        CaseType.NOMINATIVE, NumberType.SINGULAR, "phalam")));
+    void multipleLemmas_sortedAlphabetically() {
+        stubPairs(List.of(VowelType.A_STEM), pair("nara", VowelType.A_STEM), pair("phala", VowelType.A_STEM));
+        stubForms("nara", VowelType.A_STEM, "naraḥ");
+        stubForms("phala", VowelType.A_STEM, "phalam");
+        stubFrischGender("nara", Gender.MASCULINE, "человек", "man");
+        stubFrischGender("phala", Gender.NEUTER, "плод", "fruit");
 
         DeclensionParadigmPageDto page = service.getParadigmPage("a-stem", 1);
 
         assertThat(page.getTotalCount()).isEqualTo(2);
         assertThat(page.getParadigm()).isNotNull();
+        assertThat(page.getParadigm().getStemIast()).isEqualTo("phala");
         assertThat(page.getParadigm().getGender()).isEqualTo(Gender.NEUTER);
     }
 
     @Test
-    void aStemMerged_orderedByFrequencyRankAscending() {
-        UUID rareId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        UUID commonId = UUID.fromString("00000000-0000-0000-0000-000000000002");
-        Lexeme rare = lexeme(rareId, "hara", "हर", LexemeGender.MASCULINE, "a-stem-masc");
-        Lexeme common = lexeme(commonId, "nara", "नर", LexemeGender.MASCULINE, "a-stem-masc");
-        when(lexemeRepository.findNounsWithMorphologyByCodeIn(eq(List.of("a-stem-masc", "a-stem-neut"))))
-                .thenReturn(List.of(rare, common));
-        when(paradigmFormRepository.findDistinctLemmaIastsByVowelTypeIn(anyCollection()))
-                .thenReturn(List.of("hara", "nara"));
-        when(paradigmFormRepository.findByLemmaIastAndVowelType("hara", VowelType.A_STEM))
-                .thenReturn(List.of(form("hara", VowelType.A_STEM,
-                        CaseType.NOMINATIVE, NumberType.SINGULAR, "haraḥ")));
-        when(paradigmFormRepository.findByLemmaIastAndVowelType("nara", VowelType.A_STEM))
-                .thenReturn(List.of(form("nara", VowelType.A_STEM,
-                        CaseType.NOMINATIVE, NumberType.SINGULAR, "naraḥ")));
-
-        LexemeFrequency commonFreq = frequency(commonId, 1);
-        LexemeFrequency rareFreq = frequency(rareId, 50);
-        when(lexemeFrequencyRepository.findBySourceAndLexemeIdIn(eq("SANGRAHA_CORPUS"), anyCollection()))
-                .thenReturn(List.of(commonFreq, rareFreq));
+    void orderedByIastAscending() {
+        stubPairs(List.of(VowelType.A_STEM), pair("hara", VowelType.A_STEM), pair("nara", VowelType.A_STEM));
+        stubForms("hara", VowelType.A_STEM, "haraḥ");
+        stubForms("nara", VowelType.A_STEM, "naraḥ");
+        stubFrischGender("hara", Gender.MASCULINE, "брать", "to take");
+        stubFrischGender("nara", Gender.MASCULINE, "человек", "man");
 
         DeclensionParadigmPageDto page0 = service.getParadigmPage("a-stem", 0);
         DeclensionParadigmPageDto page1 = service.getParadigmPage("a-stem", 1);
 
-        assertThat(page0.getParadigm().getStemIast()).isEqualTo("nara");
-        assertThat(page1.getParadigm().getStemIast()).isEqualTo("hara");
+        assertThat(page0.getParadigm().getStemIast()).isEqualTo("hara");
+        assertThat(page1.getParadigm().getStemIast()).isEqualTo("nara");
     }
 
     @Test
-    void suppletive_pronounLexemesLoadedByLemma() {
-        UUID tadId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        Lexeme tad = lexeme(tadId, "tad", "तद्", LexemeGender.UNSPECIFIED);
-        when(lexemeRepository.findByLemmaIastIn(eq(List.of("tad", "etad", "idam"))))
-                .thenReturn(List.of(tad));
-        when(paradigmFormRepository.findDistinctLemmaIastsByVowelTypeIn(anyCollection()))
-                .thenReturn(List.of("tad"));
-        when(paradigmFormRepository.findByLemmaIastAndVowelType("tad", VowelType.PRON_TAD))
-                .thenReturn(List.of(form("tad", VowelType.PRON_TAD,
-                        CaseType.NOMINATIVE, NumberType.SINGULAR, "saḥ")));
+    void pronoun_frischWithoutGender_isUnspecified() {
+        stubPairs(List.of(VowelType.PRON_TAD_MASC, VowelType.PRON_TAD_NEUT, VowelType.PRON_TAD_FEM,
+                        VowelType.PRON_IDAM_MASC, VowelType.PRON_IDAM_NEUT, VowelType.PRON_IDAM_FEM,
+                        VowelType.PRON_ADAS_MASC, VowelType.PRON_ADAS_NEUT, VowelType.PRON_ADAS_FEM),
+                pair("tad", VowelType.PRON_TAD_MASC));
+        stubForms("tad", VowelType.PRON_TAD_MASC, "saḥ");
+        stubFrischGender("tad", null, "тот", "that");
 
         DeclensionParadigmPageDto page = service.getParadigmPage("demonstrative-pronouns", 0);
 
         assertThat(page.getTotalCount()).isEqualTo(1);
         assertThat(page.getParadigm()).isNotNull();
         assertThat(page.getParadigm().getStemIast()).isEqualTo("tad");
-        assertThat(page.getParadigm().getVowelType()).isEqualTo(VowelType.PRON_TAD);
+        assertThat(page.getParadigm().getVowelType()).isEqualTo(VowelType.PRON_TAD_MASC);
+        assertThat(page.getParadigm().getGender()).isEqualTo(Gender.UNSPECIFIED);
+    }
+
+    @Test
+    void pronoun_emptyLemmaSearch_fallsBackToNominativeSingular() {
+        stubPairs(List.of(VowelType.PRON_TAD_MASC, VowelType.PRON_TAD_NEUT, VowelType.PRON_TAD_FEM,
+                        VowelType.PRON_IDAM_MASC, VowelType.PRON_IDAM_NEUT, VowelType.PRON_IDAM_FEM,
+                        VowelType.PRON_ADAS_MASC, VowelType.PRON_ADAS_NEUT, VowelType.PRON_ADAS_FEM),
+                pair("tad", VowelType.PRON_TAD_MASC));
+        stubForms("tad", VowelType.PRON_TAD_MASC, "saḥ");
+        // базовая лемма "tad" в Фрише не найдена -> фоллбэк по форме "saḥ"
+        stubFrischGender("saḥ", Gender.MASCULINE, "он", "he");
+
+        DeclensionParadigmPageDto page = service.getParadigmPage("demonstrative-pronouns", 0);
+
+        assertThat(page.getTotalCount()).isEqualTo(1);
+        assertThat(page.getParadigm()).isNotNull();
+        assertThat(page.getParadigm().getStemIast()).isEqualTo("tad");
+        assertThat(page.getParadigm().getGender()).isEqualTo(Gender.MASCULINE);
+        assertThat(page.getParadigm().getTranslationRu()).isEqualTo("он");
     }
 
     @Test
     void multiClassTopic_iUStems_servesParadigmsOfBothVowelTypes() {
-        Lexeme agni = lexeme(UUID.fromString("00000000-0000-0000-0000-000000000001"), "agni", "अग्नि", LexemeGender.MASCULINE, "i-stem");
-        Lexeme vedu = lexeme(UUID.fromString("00000000-0000-0000-0000-000000000002"), "vedu", "वेदु", LexemeGender.MASCULINE, "u-stem");
-        when(lexemeRepository.findNounsWithMorphologyByCodeIn(eq(List.of("i-stem", "u-stem"))))
-                .thenReturn(List.of(agni, vedu));
-        when(paradigmFormRepository.findDistinctLemmaIastsByVowelTypeIn(anyCollection()))
-                .thenReturn(List.of("agni", "vedu"));
-        when(paradigmFormRepository.findByLemmaIastAndVowelType("agni", VowelType.I_STEM))
-                .thenReturn(List.of(form("agni", VowelType.I_STEM,
-                        CaseType.NOMINATIVE, NumberType.SINGULAR, "agniḥ")));
-        when(paradigmFormRepository.findByLemmaIastAndVowelType("vedu", VowelType.U_STEM))
-                .thenReturn(List.of(form("vedu", VowelType.U_STEM,
-                        CaseType.NOMINATIVE, NumberType.SINGULAR, "veduḥ")));
+        stubPairs(List.of(VowelType.I_STEM, VowelType.U_STEM),
+                pair("agni", VowelType.I_STEM), pair("vedu", VowelType.U_STEM));
+        stubForms("agni", VowelType.I_STEM, "agniḥ");
+        stubForms("vedu", VowelType.U_STEM, "veduḥ");
+        stubFrischGender("agni", Gender.MASCULINE, "огонь", "fire");
+        stubFrischGender("vedu", Gender.MASCULINE, "веда", "veda");
 
         DeclensionParadigmPageDto iPage = service.getParadigmPage("i-u-stems", 0);
         DeclensionParadigmPageDto uPage = service.getParadigmPage("i-u-stems", 1);
@@ -208,15 +199,5 @@ class ParadigmServiceTest {
         assertThat(iPage.getParadigm().getVowelType()).isEqualTo(VowelType.I_STEM);
         assertThat(uPage.getParadigm().getStemIast()).isEqualTo("vedu");
         assertThat(uPage.getParadigm().getVowelType()).isEqualTo(VowelType.U_STEM);
-    }
-
-    private LexemeFrequency frequency(UUID lexemeId, int rank) {
-        LexemeFrequencyId id = new LexemeFrequencyId();
-        id.setLexemeId(lexemeId);
-        id.setSource("SANGRAHA_CORPUS");
-        LexemeFrequency f = new LexemeFrequency();
-        f.setId(id);
-        f.setRank(rank);
-        return f;
     }
 }
