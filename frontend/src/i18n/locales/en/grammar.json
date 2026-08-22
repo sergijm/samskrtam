@@ -126,7 +126,11 @@
     "filterRules": "Filter Rules",
     "categoryFilter": "Filter by category",
     "noCategoriesSelected": "All categories",
-    "clearFilters": "Clear filters"
+    "clearFilters": "Clear filters",
+    "showDependencies": "Show dependent rules ({{count}})",
+    "hideDependencies": "Hide dependent rules",
+    "filterAnd": "AND",
+    "filterOr": "OR"
   },
   "dictionary": {
     "noWordsFound": "No words found."

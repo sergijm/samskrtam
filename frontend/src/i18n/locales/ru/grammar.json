@@ -134,7 +134,11 @@
     "filterRules": "Фильтровать правила",
     "categoryFilter": "Фильтр по категории",
     "noCategoriesSelected": "Все категории",
-    "clearFilters": "Сбросить фильтры"
+    "clearFilters": "Сбросить фильтры",
+    "showDependencies": "Показать зависимые правила ({{count}})",
+    "hideDependencies": "Скрыть зависимые правила",
+    "filterAnd": "И",
+    "filterOr": "ИЛИ"
   },
   "dictionary": {
     "noWordsFound": "Слова не найдены."

@@ -3,20 +3,24 @@ package sm.selflearn.samskrtam.curriculum.questgen;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
+import sm.selflearn.samskrtam.content.dto.frisch.FrischEntryDto;
+import sm.selflearn.samskrtam.content.dto.frisch.FrischGenderDto;
+import sm.selflearn.samskrtam.content.model.CaseType;
+import sm.selflearn.samskrtam.content.model.NumberType;
+import sm.selflearn.samskrtam.content.model.VowelType;
+import sm.selflearn.samskrtam.curriculum.dictionary.DictionaryClient;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.service.TransliterationService;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
 import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
 import sm.selflearn.samskrtam.curriculum.paradigm.DeclensionClassMapper;
+import sm.selflearn.samskrtam.curriculum.paradigm.ParadigmForm;
 import sm.selflearn.samskrtam.curriculum.paradigm.ParadigmFormRepository;
-import sm.selflearn.samskrtam.curriculum.questgen.morphology.CaseType;
-import sm.selflearn.samskrtam.curriculum.questgen.morphology.NumberType;
 import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
 import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemRepository;
-import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.quest.GrammarQuestItemTypes;
 import sm.selflearn.samskrtam.quest.HighlightToken;
 import sm.selflearn.samskrtam.quest.QuestItemType;
@@ -33,6 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -40,30 +45,32 @@ import java.util.UUID;
 /**
  * Generates the four DECLENSION quest types ({@code DECLENSION_FORM},
  * {@code DECLENSION_FORM_CHOICE}, {@code CASE_RECOGNITION},
- * {@code DECLENSION_MATCH}) for the regular noun topics of the curriculum.
+ * {@code DECLENSION_MATCH}) for declension topics of the curriculum
+ * (regular noun/adjective classes and pronoun classes alike).
  *
- * <p>The topic slug maps to one or more {@code morphology_class.code}s via
- * {@code DeclensionClassMapper} (the merged {@code a-stem} lesson covers both
- * {@code a-stem-masc} and {@code a-stem-neut}, {@code i-u-stems} covers
- * {@code i-stem}/{@code u-stem}, {@code r-stems} covers {@code r-stem}); every
- * lexeme bound to one of those classes is a candidate. No more than
- * {@value #MAX_LEXEMES} lexemes are used per topic (random sample when there
- * are more), and for each lexeme all possible questions are composed from its
- * paradigm cells — see curriculum-quest-items.md §4.
+ * <p>Кандидаты берутся напрямую из {@code curriculum.declension_form}
+ * (уникальный {@code lemma_iast} по {@code vowel_type} темы через
+ * {@link DeclensionClassMapper}) — сущность {@code Lexeme} не используется.
+ * Род и переводы подтягиваются из словаря Фриша через dictionary-service
+ * (REST, {@link DictionaryClient}); для местоимений, чья базовая лемма в Фрише
+ * отсутствует, делается повторный поиск по форме именительного падежа
+ * единственного числа из {@code declension_form}.
  *
  * <p>Paradigm cells are read from {@code curriculum.declension_form}
- * ({@link ParadigmFormRepository}), keyed by {@code lexeme_id}; nothing is
- * composed at generator time. Every produced row carries a {@code progress_tag}
- * ({@code caseType|numberType|gender}; {@code DECLENSION_MATCH} takes the first
- * pair and {@code gender=UNSPECIFIED}), see migration V13.
+ * ({@link ParadigmFormRepository}), keyed by {@code (lemma_iast, vowel_type)};
+ * nothing is composed at generator time. Every produced row carries a
+ * {@code progress_tag} ({@code caseType|numberType|gender};
+ * {@code DECLENSION_MATCH} takes the first pair and {@code gender=UNSPECIFIED}),
+ * see migration V13.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DeclensionQuizItemGenerator extends QuizItemGenerator {
 
     public static final String GENERATOR_SOURCE = "DECLENSION_BATCH";
 
-    /** Random sample size of lexemes per topic ("no more than 10 basic words"). */
+    /** Random sample size of lemmas per topic ("no more than 10 basic words"). */
     static final int MAX_LEXEMES = 10;
 
     private static final Random RANDOM = new Random();
@@ -85,93 +92,133 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
             Map.entry("DUAL", "двойственного"),
             Map.entry("PLURAL", "множественного"));
 
-    private final LexemeRepository lexemeRepository;
     private final QuestItemRepository questItemRepository;
     private final ParadigmFormRepository paradigmFormRepository;
     private final DeclensionMatchProperties matchProperties;
     private final ObjectMapper objectMapper;
+    private final DictionaryClient dictionaryClient;
+    private final TransliterationService transliterationService;
 
     /** One paradigm cell: (case, number) plus the word form. */
-    private record Cell(CaseType caseType, NumberType numberType, Form form) {
+    protected record Cell(CaseType caseType, NumberType numberType, Form form) {
     }
 
-    private record Form(String iast, String devanagari) {
+    /** One surface word form. */
+    protected record Form(String iast, String devanagari) {
+    }
+
+    /** Declension stem decoupled from Lexeme: a lemma + its grammatical context. */
+    protected record Stem(
+            String lemmaIast,
+            String lemmaDevanagari,
+            LexemeGender gender,
+            VowelType vowelType,
+            String classCode,
+            String glossRu,
+            String glossEn) {
     }
 
 
     @Override
     public boolean isDomainSupported(TopicDomain domain) {
-        return domain == TopicDomain.NOMINAL_MORPHOLOGY;
+        return domain == TopicDomain.NOMINAL_MORPHOLOGY || domain == TopicDomain.PRONOUNS;
     }
 
     @Override
     @Transactional
     public int generate(Topic topic) {
-        List<String> classCodes = DeclensionClassMapper.topicToClassCodes(topic.getCode());
-        if (classCodes.isEmpty()) {
+        List<VowelType> vowelTypes = DeclensionClassMapper.topicToVowelTypes(topic.getCode());
+        if (vowelTypes.isEmpty()) {
             return 0;
         }
 
-        List<Lexeme> lexemes = lexemeRepository.findWithMorphologyByCodeIn(classCodes);
-        if (lexemes.isEmpty()) {
-            return 0;
-        }
-        if (lexemes.size() > MAX_LEXEMES) {
-            List<Lexeme> shuffled = new ArrayList<>(lexemes);
-            Collections.shuffle(shuffled, RANDOM);
-            lexemes = shuffled.subList(0, MAX_LEXEMES);
+        // уникальные леммы из curriculum.declension_form (с привязанным vowel_type)
+        Map<String, VowelType> lemmaVowelType = new LinkedHashMap<>();
+        for (ParadigmFormRepository.LemmaVowelType p :
+                paradigmFormRepository.findDistinctLemmaVowelTypeByVowelTypeIn(vowelTypes)) {
+            lemmaVowelType.putIfAbsent(p.getLemmaIast(), p.getVowelType());
         }
 
-        Map<String, Set<LexemeGender>> formGenders = collectFormGenders(classCodes, lexemes);
+        List<String> lemmas = new ArrayList<>(lemmaVowelType.keySet());
+        if (lemmas.size() > MAX_LEXEMES) {
+            Collections.shuffle(lemmas, RANDOM);
+            lemmas = lemmas.subList(0, MAX_LEXEMES);
+        }
+
+        List<Stem> stems = new ArrayList<>();
+        for (String lemma : lemmas) {
+            VowelType vowelType = lemmaVowelType.get(lemma);
+            stems.add(toStem(lemma, vowelType));
+        }
+
+        Map<String, Set<LexemeGender>> formGenders = collectFormGenders(stems);
 
         List<QuestItem> items = new ArrayList<>();
-        for (Lexeme lexeme : lexemes) {
-            String classCode = resolveClassCode(lexeme, classCodes);
-            if (classCode == null) {
-                continue;
-            }
-            LexemeGender gender = resolveGender(classCode, lexeme.getGender());
-            List<Cell> cells = cells(classCode, lexeme);
-            for (Cell cell : cells) {
-                buildForm(topic, lexeme, classCode, gender, cell, items);
-                buildFormChoice(topic, lexeme, classCode, gender, cell, cells, items);
-                buildCaseRecognition(topic, lexeme, classCode, gender, cell, cells, formGenders, items);
-            }
-            buildMatch(topic, lexeme, classCode, gender, cells, items);
+        for (Stem stem : stems) {
+            List<Cell> cells = cells(stem.vowelType(), stem.lemmaIast());
+            items.addAll(buildItemsForStem(topic, stem, cells, formGenders));
         }
 
         return persist(items);
     }
 
-    private void buildForm(Topic topic, Lexeme lexeme, String classCode, LexemeGender gender,
-                           Cell cell, List<QuestItem> items) {
-        DeclensionFormPayload payload = formPayload(lexeme, classCode, gender, cell);
-        String progressTag = progressTag(cell, gender);
+    /** Builds a {@link Stem} from a declension_form lemma, enriching it with Frisch data. */
+    private Stem toStem(String lemma, VowelType vowelType) {
+        List<FrischEntryDto> frischEntries = dictionaryClient.getFrischLemma(lemma);
+
+        // Для местоимений базовая лемма в Фрише часто отсутствует — ищем по форме
+        // именительного падежа единственного числа из declension_form.
+        if (frischEntries.isEmpty() && isPronoun(vowelType)) {
+            String nominativeSingular = nominativeSingularFormIast(lemma, vowelType);
+            if (nominativeSingular != null) {
+                frischEntries = dictionaryClient.getFrischLemma(nominativeSingular);
+            }
+        }
+
+        LexemeGender gender = resolveGender(frischEntries, vowelType);
+        String devanagari = transliterationService.iastToDevanagari(lemma);
+        return new Stem(lemma, devanagari, gender, vowelType, vowelType.name(),
+                firstGlossRu(frischEntries), firstGlossEn(frischEntries));
+    }
+
+    protected List<QuestItem> buildItemsForStem(Topic topic, Stem stem, List<Cell> cells,
+                                                Map<String, Set<LexemeGender>> formGenders) {
+        List<QuestItem> items = new ArrayList<>();
+        for (Cell cell : cells) {
+            buildForm(topic, stem, cell, items);
+            buildFormChoice(topic, stem, cell, cells, items);
+            buildCaseRecognition(topic, stem, cell, cells, formGenders, items);
+        }
+        buildMatch(topic, stem, cells, items);
+        return items;
+    }
+
+    private void buildForm(Topic topic, Stem stem, Cell cell, List<QuestItem> items) {
+        DeclensionFormPayload payload = formPayload(stem, cell);
+        String progressTag = progressTag(cell, stem.gender());
         items.add(buildItem(topic, GrammarQuestItemTypes.DECLENSION_FORM,
-                prompt(lexeme, cell, false), cell.form().iast(), List.of(),
-                promptRu(lexeme, cell, false), null, null,
+                prompt(stem, cell, false), cell.form().iast(), List.of(),
+                promptRu(stem, cell, false), null, null,
                 payload, progressTag));
     }
 
-    private void buildFormChoice(Topic topic, Lexeme lexeme, String classCode, LexemeGender gender,
-                                 Cell cell, List<Cell> cells, List<QuestItem> items) {
+    private void buildFormChoice(Topic topic, Stem stem, Cell cell, List<Cell> cells, List<QuestItem> items) {
         List<String> distractors = choiceDistractors(cells, cell);
-        DeclensionFormPayload payload = formPayload(lexeme, classCode, gender, cell);
+        DeclensionFormPayload payload = formPayload(stem, cell);
         items.add(buildItem(topic, GrammarQuestItemTypes.DECLENSION_FORM_CHOICE,
-                prompt(lexeme, cell, true), cell.form().iast(), distractors,
-                promptRu(lexeme, cell, true), null, null,
-                payload, progressTag(cell, gender)));
+                prompt(stem, cell, true), cell.form().iast(), distractors,
+                promptRu(stem, cell, true), null, null,
+                payload, progressTag(cell, stem.gender())));
     }
 
-    private void buildCaseRecognition(Topic topic, Lexeme lexeme, String classCode, LexemeGender gender,
-                                      Cell cell, List<Cell> cells,
-                                      Map<String, Set<LexemeGender>> formGenders, List<QuestItem> items) {
+    private void buildCaseRecognition(Topic topic, Stem stem, Cell cell, List<Cell> cells,
+                                       Map<String, Set<LexemeGender>> formGenders, List<QuestItem> items) {
         boolean genderRequired = formGenders.getOrDefault(cell.form().iast(), Set.of()).size() > 1;
-        List<String> distractorCombinations = caseCombinations(cells, cell, gender, genderRequired);
-        List<String> distractorCombinationsRu = caseCombinationsRu(cells, cell, gender, genderRequired);
+        List<String> distractorCombinations = caseCombinations(cells, cell, stem.gender(), genderRequired);
+        List<String> distractorCombinationsRu = caseCombinationsRu(cells, cell, stem.gender(), genderRequired);
 
-        String correctLabel = label(cell.caseType(), cell.numberType(), gender, genderRequired);
-        String correctLabelRu = labelRu(cell.caseType(), cell.numberType(), gender, genderRequired);
+        String correctLabel = label(cell.caseType(), cell.numberType(), stem.gender(), genderRequired);
+        String correctLabelRu = labelRu(cell.caseType(), cell.numberType(), stem.gender(), genderRequired);
         String word = sanskritWord(cell.form().iast(), cell.form().devanagari());
         String prompt = "Identify the case" + (genderRequired ? ", number and gender" : " and number")
                 + " of the word form " + word + ".";
@@ -183,11 +230,11 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
         CaseRecognitionPayload payload = new CaseRecognitionPayload(
                 cell.form().iast(),
                 cell.form().devanagari(),
-                lexeme.getLemmaIast(),
-                classCode,
+                stem.lemmaIast(),
+                stem.classCode(),
                 cell.caseType().name(),
                 cell.numberType().name(),
-                gender.name(),
+                stem.gender().name(),
                 genderRequired,
                 distractorCombinations,
                 highlights);
@@ -195,11 +242,10 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
         items.add(buildItem(topic, GrammarQuestItemTypes.CASE_RECOGNITION,
                 prompt, correctLabel, distractorCombinations,
                 promptRu, correctLabelRu, distractorCombinationsRu,
-                payload, progressTag(cell, gender)));
+                payload, progressTag(cell, stem.gender())));
     }
 
-    private void buildMatch(Topic topic, Lexeme lexeme, String classCode, LexemeGender gender,
-                            List<Cell> cells, List<QuestItem> items) {
+    private void buildMatch(Topic topic, Stem stem, List<Cell> cells, List<QuestItem> items) {
         int pairsPerItem = matchProperties.getPairsPerItem();
         if (pairsPerItem <= 0) {
             return;
@@ -220,15 +266,15 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
                         cell.numberType().name()));
             }
             DeclensionMatchPayload payload = new DeclensionMatchPayload(
-                    lexeme.getLemmaIast(), classCode, pairs,
-                    List.of(new HighlightToken(lexeme.getLemmaIast(), lexeme.getLemmaIast())));
+                    stem.lemmaIast(), stem.classCode(), pairs,
+                    List.of(new HighlightToken(stem.lemmaIast(), stem.lemmaIast())));
 
             String progressTag = leading.caseType() + "|" + leading.numberType() + "|" + LexemeGender.UNSPECIFIED;
             items.add(buildItem(topic, GrammarQuestItemTypes.DECLENSION_MATCH,
-                    "Match each word form of " + sanskritWord(lexeme.getLemmaIast(), lexeme.getLemmaDevanagari())
+                    "Match each word form of " + sanskritWord(stem.lemmaIast(), stem.lemmaDevanagari())
                             + " to its case and number.",
                     null, List.of(),
-                    "Сопоставьте каждую форму слова " + sanskritWord(lexeme.getLemmaIast(), lexeme.getLemmaDevanagari())
+                    "Сопоставьте каждую форму слова " + sanskritWord(stem.lemmaIast(), stem.lemmaDevanagari())
                             + " с её падежом и числом.",
                     null, null,
                     payload, progressTag));
@@ -290,19 +336,21 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
         }
     }
 
-    private String prompt(Lexeme lexeme, Cell cell, boolean choice) {
+    private String prompt(Stem stem, Cell cell, boolean choice) {
         String verb = choice ? "Choose the correct" : "Enter the correct";
-        return verb + " " + cell.caseType().name().toLowerCase() + " " + cell.numberType().name().toLowerCase()
-                + " form of " + sanskritWord(lexeme.getLemmaIast(), lexeme.getLemmaDevanagari()) + ".";
+        String base = verb + " " + cell.caseType().name().toLowerCase() + " " + cell.numberType().name().toLowerCase()
+                + " form of " + sanskritWord(stem.lemmaIast(), stem.lemmaDevanagari());
+        return stem.glossEn() != null ? base + " — '" + stem.glossEn() + "'." : base + ".";
     }
 
-    private String promptRu(Lexeme lexeme, Cell cell, boolean choice) {
+    private String promptRu(Stem stem, Cell cell, boolean choice) {
         String verb = choice ? "Выберите" : "Введите";
-        return verb + " правильную форму " + CASE_GENITIVE_RU.getOrDefault(
+        String base = verb + " правильную форму " + CASE_GENITIVE_RU.getOrDefault(
                 cell.caseType().name(), cell.caseType().name().toLowerCase())
                 + " падежа, " + NUMBER_GENITIVE_RU.getOrDefault(
                 cell.numberType().name(), cell.numberType().name().toLowerCase())
-                + " числа слова " + sanskritWord(lexeme.getLemmaIast(), lexeme.getLemmaDevanagari()) + ".";
+                + " числа слова " + sanskritWord(stem.lemmaIast(), stem.lemmaDevanagari());
+        return stem.glossRu() != null ? base + " — «" + stem.glossRu() + "»." : base + ".";
     }
 
     private static String sanskritWord(String iast, String devanagari) {
@@ -312,17 +360,17 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
         return iast + " (" + devanagari + ")";
     }
 
-    private DeclensionFormPayload formPayload(Lexeme lexeme, String classCode, LexemeGender gender, Cell cell) {
+    private DeclensionFormPayload formPayload(Stem stem, Cell cell) {
         return new DeclensionFormPayload(
-                lexeme.getLemmaIast(),
-                lexeme.getLemmaDevanagari(),
-                classCode,
-                gender.name(),
+                stem.lemmaIast(),
+                stem.lemmaDevanagari(),
+                stem.classCode(),
+                stem.gender().name(),
                 cell.caseType().name(),
                 cell.numberType().name(),
                 cell.form().iast(),
                 cell.form().devanagari(),
-                List.of(new HighlightToken(lexeme.getLemmaIast(), lexeme.getLemmaIast())));
+                List.of(new HighlightToken(stem.lemmaIast(), stem.lemmaIast())));
     }
 
     private String progressTag(Cell cell, LexemeGender gender) {
@@ -357,7 +405,7 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
     }
 
     private List<String> caseCombinations(List<Cell> cells, Cell correct,
-                                          LexemeGender gender, boolean withGender) {
+                                           LexemeGender gender, boolean withGender) {
         List<String> combos = new ArrayList<>();
         for (Cell cell : cells) {
             if (cell.caseType() == correct.caseType() && cell.numberType() == correct.numberType()) {
@@ -375,7 +423,7 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
     }
 
     private List<String> caseCombinationsRu(List<Cell> cells, Cell correct,
-                                            LexemeGender gender, boolean withGender) {
+                                             LexemeGender gender, boolean withGender) {
         List<String> combos = new ArrayList<>();
         for (Cell cell : cells) {
             if (cell.caseType() == correct.caseType() && cell.numberType() == correct.numberType()) {
@@ -392,12 +440,8 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
         return combos;
     }
 
-    private List<Cell> cells(String classCode, Lexeme lexeme) {
-        VowelType vowelType = DeclensionClassMapper.toVowelType(classCode);
-        if (vowelType == null) {
-            return List.of();
-        }
-        return paradigmFormRepository.findByLemmaIastAndVowelType(lexeme.getLemmaIast(), vowelType).stream()
+    private List<Cell> cells(VowelType vowelType, String lemmaIast) {
+        return paradigmFormRepository.findByLemmaIastAndVowelType(lemmaIast, vowelType).stream()
                 .map(f -> new Cell(
                         CaseType.valueOf(f.getCaseType().name()),
                         NumberType.valueOf(f.getNumberType().name()),
@@ -406,59 +450,89 @@ public class DeclensionQuizItemGenerator extends QuizItemGenerator {
     }
 
     /**
-     * Collects, across all lexemes of the topic, the set of genders that produce
+     * Collects, across all stems of the topic, the set of genders that produce
      * each distinct word form. Used to decide {@code genderRequired}: a form is
      * grammatically ambiguous without gender iff more than one gender yields it.
      */
-    private Map<String, Set<LexemeGender>> collectFormGenders(List<String> classCodes, List<Lexeme> lexemes) {
+    private Map<String, Set<LexemeGender>> collectFormGenders(List<Stem> stems) {
         Map<String, Set<LexemeGender>> result = new LinkedHashMap<>();
-        for (Lexeme lexeme : lexemes) {
-            String classCode = resolveClassCode(lexeme, classCodes);
-            if (classCode == null) {
-                continue;
-            }
-            LexemeGender gender = resolveGender(classCode, lexeme.getGender());
-            for (Cell cell : cells(classCode, lexeme)) {
-                result.computeIfAbsent(cell.form().iast(), k -> new HashSet<>()).add(gender);
+        for (Stem stem : stems) {
+            for (Cell cell : cells(stem.vowelType(), stem.lemmaIast())) {
+                result.computeIfAbsent(cell.form().iast(), k -> new HashSet<>()).add(stem.gender());
             }
         }
         return result;
     }
 
     // ----------------------------------------------------------------------
-    // Morphology class mapping (topic slug -> lexeme's morphology class)
+    // Frisch (dictionary-service) integration
     // ----------------------------------------------------------------------
 
-    /**
-     * Which of the topic's morphology classes the lexeme is actually bound to.
-     * Iterates {@code classCodes} in priority order and returns the first code
-     * present in the lexeme's (already fetched) class set; {@code null} when the
-     * lexeme belongs to none of them.
-     */
-    private String resolveClassCode(Lexeme lexeme, List<String> classCodes) {
-        if (lexeme.getMorphologyClasses() == null) {
+    private static boolean isPronoun(VowelType vowelType) {
+        return vowelType != null && vowelType.name().startsWith("PRON_");
+    }
+
+    private String nominativeSingularFormIast(String lemma, VowelType vowelType) {
+        return paradigmFormRepository.findByLemmaIastAndVowelType(lemma, vowelType).stream()
+                .filter(f -> f.getCaseType() == CaseType.NOMINATIVE && f.getNumberType() == NumberType.SINGULAR)
+                .map(ParadigmForm::getFormIast)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static LexemeGender resolveGender(List<FrischEntryDto> frischEntries, VowelType vowelType) {
+        for (FrischEntryDto entry : frischEntries) {
+            if (entry.genders() != null) {
+                for (FrischGenderDto gender : entry.genders()) {
+                    LexemeGender mapped = mapFrischGender(gender.gender());
+                    if (mapped != null) {
+                        return mapped;
+                    }
+                }
+            }
+        }
+        // для местоимений род можно вывести из vowel_type
+        if (isPronoun(vowelType)) {
+            LexemeGender fromVowel = genderFromVowelType(vowelType);
+            if (fromVowel != null) {
+                return fromVowel;
+            }
+        }
+        return LexemeGender.UNSPECIFIED;
+    }
+
+    private static LexemeGender mapFrischGender(String gender) {
+        if (gender == null) {
             return null;
         }
-        for (String code : classCodes) {
-            boolean bound = lexeme.getMorphologyClasses().stream().anyMatch(mc -> mc.getCode().equals(code));
-            if (bound) {
-                return code;
-            }
+        return switch (gender) {
+            case "MASCULINE" -> LexemeGender.MASCULINE;
+            case "FEMININE" -> LexemeGender.FEMININE;
+            case "NEUTER" -> LexemeGender.NEUTER;
+            default -> null;
+        };
+    }
+
+    private static LexemeGender genderFromVowelType(VowelType vowelType) {
+        String name = vowelType.name();
+        if (name.endsWith("_MASC")) {
+            return LexemeGender.MASCULINE;
+        }
+        if (name.endsWith("_NEUT")) {
+            return LexemeGender.NEUTER;
+        }
+        if (name.endsWith("_FEM")) {
+            return LexemeGender.FEMININE;
         }
         return null;
     }
 
-    private LexemeGender resolveGender(String classCode, LexemeGender lexemeGender) {
-        return switch (classCode) {
-            case "a-stem-masc" -> LexemeGender.MASCULINE;
-            case "a-stem-neut" -> LexemeGender.NEUTER;
-            case "a-stem-fem" -> LexemeGender.FEMININE;
-            case "i-stem", "u-stem" ->
-                    lexemeGender == LexemeGender.NEUTER ? LexemeGender.NEUTER : LexemeGender.MASCULINE;
-            case "r-stem", "in-stem", "an-stem", "as-stem", "ant-stem",
-                    "vat-stem", "root-stem", "o-stem", "au-stem", "is-stem", "us-stem" ->
-                    lexemeGender == LexemeGender.FEMININE ? LexemeGender.FEMININE : LexemeGender.MASCULINE;
-            default -> lexemeGender == null ? LexemeGender.UNSPECIFIED : lexemeGender;
-        };
+    private static String firstGlossRu(List<FrischEntryDto> entries) {
+        return entries.stream().map(FrischEntryDto::glossRu).filter(Objects::nonNull).findFirst().orElse(null);
+    }
+
+    private static String firstGlossEn(List<FrischEntryDto> entries) {
+        return entries.stream().map(FrischEntryDto::glossEn).filter(Objects::nonNull).findFirst().orElse(null);
     }
 }

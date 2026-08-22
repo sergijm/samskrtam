@@ -9,6 +9,10 @@ llm:
       base-url: https://api.aitunnel.ru/v1
       api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
       max-completion-tokens: 128000
+    deepseek-v4-flash:
+      base-url: https://api.aitunnel.ru/v1
+      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      max-completion-tokens: 128000
 
     # ================================================
     # ТОП-5 ФЛАГМАНСКИХ МОДЕЛЕЙ

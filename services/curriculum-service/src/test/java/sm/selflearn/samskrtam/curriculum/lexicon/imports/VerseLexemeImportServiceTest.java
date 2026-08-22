@@ -1,14 +1,11 @@
 package sm.selflearn.samskrtam.curriculum.lexicon.imports;
 
 import org.junit.jupiter.api.Test;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeLexicalTopic;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeLexicalTopicId;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeLexicalTopicRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.MorphologyClassRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.LemmaLexicalTopic;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.LemmaLexicalTopicId;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.LemmaTranslation;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaLexicalTopicRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaTranslationRepository;
 import sm.selflearn.samskrtam.curriculum.model.LearningLevel;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
 import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
@@ -18,7 +15,6 @@ import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemRepositor
 import sm.selflearn.samskrtam.curriculum.repository.TopicRepository;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,40 +22,36 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Приём инкрементальной пачки стиха (lexicon-content-pipeline.md §7):
- * meaningNumber = max+1 для новых значений, идемпотентность повторной пачки,
- * создание VERSE-урока главы и накопление привязок.
+ * Приём инкрементальной пачки стиха (lexicon-content-pipeline.md §7): пишем
+ * переводы в lemma_translation и привязки в lemma_lexical_topic (без Lexeme),
+ * создаём VERSE-урок главы и накапливаем привязки идемпотентно.
  */
 class VerseLexemeImportServiceTest {
 
-    private final List<Lexeme> savedLexemes = new ArrayList<>();
-    private final Map<String, List<Lexeme>> byKey = new HashMap<>();
-    private final Map<String, Integer> maxMeaning = new HashMap<>();
+    private final List<LemmaTranslation> savedTranslations = new ArrayList<>();
+    private final Map<String, List<LemmaTranslation>> byLemmaLang = new java.util.HashMap<>();
+    private final List<LemmaLexicalTopic> savedBindings = new ArrayList<>();
+    private final List<LemmaLexicalTopicId> existingBindings = new ArrayList<>();
     private Topic createdTopic;
-    private final List<LexemeLexicalTopic> savedBindings = new ArrayList<>();
-    private final List<LexemeLexicalTopicId> existingBindings = new ArrayList<>();
 
     private VerseLexemeImportService service() {
-        LexemeRepository lexemeRepo = mock(LexemeRepository.class);
-        when(lexemeRepo.findByLemmaSlp1AndGenderOrderByMeaningNumberAsc(any(), any()))
-                .thenAnswer(inv -> byKey.getOrDefault(key(inv.getArgument(0), inv.getArgument(1)), List.of()));
-        when(lexemeRepo.findMaxMeaningNumber(any())).thenAnswer(inv ->
-                maxMeaning.getOrDefault(inv.getArgument(0), 0));
-        when(lexemeRepo.save(any())).thenAnswer(inv -> {
-            Lexeme l = inv.getArgument(0);
-            if (l.getId() == null) {
-                l.setId(UUID.randomUUID());
+        LemmaTranslationRepository translationRepo = mock(LemmaTranslationRepository.class);
+        when(translationRepo.findByLemmaIastAndLanguage(any(), any()))
+                .thenAnswer(inv -> byLemmaLang.getOrDefault(
+                        inv.getArgument(0) + "|" + inv.getArgument(1), List.of()));
+        when(translationRepo.save(any())).thenAnswer(inv -> {
+            LemmaTranslation t = inv.getArgument(0);
+            if (t.getId() == null) {
+                t.setId(UUID.randomUUID());
             }
-            savedLexemes.add(l);
-            String k = key(l.getLemmaSlp1(), l.getGender());
-            byKey.computeIfAbsent(k, x -> new ArrayList<>()).add(l);
-            maxMeaning.merge(l.getLemmaSlp1(), l.getMeaningNumber(), Math::max);
-            return l;
+            savedTranslations.add(t);
+            byLemmaLang.computeIfAbsent(t.getLemmaIast() + "|" + t.getLanguage(),
+                    x -> new ArrayList<>()).add(t);
+            return t;
         });
 
         TopicRepository topicRepo = mock(TopicRepository.class);
@@ -71,27 +63,21 @@ class VerseLexemeImportServiceTest {
             return createdTopic;
         });
 
-        LexemeLexicalTopicRepository bindingRepo = mock(LexemeLexicalTopicRepository.class);
+        LemmaLexicalTopicRepository bindingRepo = mock(LemmaLexicalTopicRepository.class);
         when(bindingRepo.existsById(any())).thenAnswer(inv -> existingBindings.contains(inv.getArgument(0)));
-        when(bindingRepo.saveAll(any())).thenAnswer(inv -> {
-            List<LexemeLexicalTopic> list = inv.getArgument(0);
-            savedBindings.addAll(list);
-            list.forEach(b -> existingBindings.add(b.getId()));
-            return list;
+        when(bindingRepo.save(any())).thenAnswer(inv -> {
+            LemmaLexicalTopic b = inv.getArgument(0);
+            savedBindings.add(b);
+            existingBindings.add(b.getId());
+            return b;
         });
 
         return new VerseLexemeImportService(
-                lexemeRepo,
-                mock(PartOfSpeechRepository.class),
-                mock(MorphologyClassRepository.class),
-                topicRepo,
+                translationRepo,
                 bindingRepo,
+                topicRepo,
                 mock(QuestItemRepository.class),
                 mock(LexicalQuizItemGenerator.class));
-    }
-
-    private static String key(String slp1, LexemeGender gender) {
-        return slp1 + "|" + (gender == null ? "" : gender.name());
     }
 
     private static VerseLemmaBatchRequest batch(String workSlp1, int chapter,
@@ -104,8 +90,12 @@ class VerseLexemeImportServiceTest {
         return new LemmaExportItem(null, slp1, iast, "देव", gender, "NOUN", 1, List.of(), glossRu, glossEn, null);
     }
 
+    private static String langKey(String lemmaIast, String language) {
+        return lemmaIast + "|" + language;
+    }
+
     @Test
-    void importVerseBatch_newWords_createsLexemesAndVerseTopic() {
+    void importVerseBatch_newWords_createsTranslationsAndVerseTopic() {
         VerseLexemeImportService service = service();
 
         VerseBatchImportResult result = service.importVerseBatch(batch(
@@ -113,9 +103,15 @@ class VerseLexemeImportServiceTest {
                 List.of(word("nara", "nara", "MASCULINE", "мужчина", "man"),
                         word("gaja", "gaja", "MASCULINE", "слон", "elephant"))));
 
+        // imported counts lemmas (ru+en written for each new lemma)
         assertThat(result.importedCount()).isEqualTo(2);
         assertThat(result.updatedCount()).isZero();
-        assertThat(savedLexemes).extracting(Lexeme::getMeaningNumber).containsExactly(1, 1);
+
+        assertThat(savedTranslations).hasSize(4); // 2 lemmas * (ru + en)
+        assertThat(savedTranslations).filteredOn(t -> t.getLanguage().equals("ru"))
+                .extracting(LemmaTranslation::getGloss)
+                .containsExactlyInAnyOrder("мужчина", "слон");
+        assertThat(savedTranslations).allMatch(LemmaTranslation::isMain);
 
         assertThat(createdTopic).isNotNull();
         assertThat(createdTopic.getCode()).isEqualTo("bhagavad_gita_1");
@@ -123,22 +119,8 @@ class VerseLexemeImportServiceTest {
         assertThat(createdTopic.getDomainType()).isEqualTo(TopicDomainType.VERSE);
         assertThat(createdTopic.getLearningLevel()).isEqualTo(LearningLevel.L0);
         assertThat(savedBindings).hasSize(2);
-    }
-
-    @Test
-    void importVerseBatch_differentGloss_sameLemma_getsNextMeaningNumber() {
-        VerseLexemeImportService service = service();
-
-        service.importVerseBatch(batch("w", 1, List.of(word("gram", "gram", "MASCULINE", "деревня", "village"))));
-        VerseBatchImportResult second = service.importVerseBatch(batch("w", 1,
-                List.of(word("gram", "gram", "MASCULINE", "ГРАММ", "gram-measure"))));
-
-        assertThat(second.importedCount()).isEqualTo(1);
-        assertThat(savedLexemes).hasSize(2);
-        assertThat(savedLexemes).extracting(Lexeme::getMeaningNumber).containsExactly(1, 2);
-        // Разные значения одного написания — не склеиваются (§7, lexicon.md §1).
-        assertThat(savedLexemes).extracting(Lexeme::getGlossRu)
-                .containsExactly("деревня", "ГРАММ");
+        assertThat(savedBindings).extracting(b -> b.getId().getLemmaIast())
+                .containsExactlyInAnyOrder("nara", "gaja");
     }
 
     @Test
@@ -150,9 +132,25 @@ class VerseLexemeImportServiceTest {
                 List.of(word("nara", "nara", "MASCULINE", "мужчина", "man"))));
 
         assertThat(second.importedCount()).isZero();
-        assertThat(savedLexemes).hasSize(1);
+        assertThat(savedTranslations).hasSize(2); // ru + en, not duplicated
         assertThat(savedBindings).hasSize(1);
         assertThat(createdTopic.getCode()).isEqualTo("w_1");
+    }
+
+    @Test
+    void importVerseBatch_differentGloss_sameLemma_stillIdempotent() {
+        VerseLexemeImportService service = service();
+
+        service.importVerseBatch(batch("w", 1, List.of(word("gram", "gram", "MASCULINE", "деревня", "village"))));
+        VerseBatchImportResult second = service.importVerseBatch(batch("w", 1,
+                List.of(word("gram", "gram", "MASCULINE", "ГРАММ", "gram-measure"))));
+
+        // first gloss wins; the translation is not overwritten / duplicated
+        assertThat(second.importedCount()).isZero();
+        assertThat(savedTranslations).hasSize(2);
+        assertThat(savedTranslations).filteredOn(t -> t.getLanguage().equals("ru"))
+                .extracting(LemmaTranslation::getGloss)
+                .containsExactly("деревня");
     }
 
     @Test
@@ -164,9 +162,8 @@ class VerseLexemeImportServiceTest {
 
         assertThat(createdTopic.getCode()).isEqualTo("w_1");
         assertThat(savedBindings).hasSize(2);
-        // Тот же урок главы, разные лексемы двух стихов.
-        assertThat(savedBindings).extracting(b -> b.getId().getLexicalTopicId())
-                .containsOnly(createdTopic.getId());
+        assertThat(savedBindings).extracting(b -> b.getId().getTopicCode())
+                .containsOnly("w_1");
     }
 
     @Test
