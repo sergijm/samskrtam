@@ -6,6 +6,7 @@ import { ProgressBar } from 'primereact/progressbar';
 import { Message } from 'primereact/message';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { LessonItemDto } from '../../types/quiz';
+import ProgressSummaryPanel from '../../components/dashboard/ProgressSummaryPanel';
 
 interface DomainMeta {
   labelRu: string;
@@ -70,6 +71,9 @@ const GrammarPage = () => {
           <div>
             <h1 className="m-0 text-3xl">{t('nav.grammar')}</h1>
             <p className="m-0 text-500 mt-1">{t('grammar.subtitle')}</p>
+          </div>
+          <div className="w-full md:w-20rem">
+            <ProgressSummaryPanel scope="grammar" showScopeTitle={false} />
           </div>
         </div>
         <div className="lexicon-hero-stats mt-4">

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useWorks, useWorksClasses } from '../../hooks/useSangraha';
 import type { WorksClassTreeNodeDto } from '../../types/sangraha';
+import './WorkPage.css';
 
 const FILTER_GROUPS = ['tradition', 'genre', 'school'];
 

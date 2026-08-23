@@ -283,6 +283,18 @@ export interface LessonItemDto extends QuizListItem {
     domainType?: string;
 }
 
+/**
+ * Реальная сводка прогресса по области (scope), вычисляется в quiz-service
+ * по таблице quiz_item_score. Всегда идёт через quiz-service.
+ */
+export interface ProgressSummaryDto {
+    scope: 'learn-graph' | 'grammar' | 'lexicon' | string;
+    totalProgressTags: number;
+    masteredProgressTags: number;
+    learnedProgressTags: number;
+    percent: number;
+}
+
 
 
 

@@ -9,6 +9,7 @@ import LexiconFrequency from '../../components/lexicon/LexiconFrequency';
 import LexiconTopics from '../../components/lexicon/LexiconTopics';
 import LexiconPos from '../../components/lexicon/LexiconPos';
 import LexiconCollections from '../../components/lexicon/LexiconCollections';
+import ProgressSummaryPanel from '../../components/dashboard/ProgressSummaryPanel';
 
 /**
  * LexiconPage — стартовая страница «Лексика» (learning dashboard).
@@ -40,6 +41,9 @@ const LexiconPage: React.FC = () => {
   return (
     <div className="lexicon-page p-3 md:p-4">
       <LexiconHero summary={data.summary} />
+      <div className="mb-4">
+        <ProgressSummaryPanel scope="lexicon" />
+      </div>
       <LexiconToday today={data.today} />
 
       <LexiconFrequency bands={data.frequencyBands} />

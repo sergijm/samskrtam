@@ -44,6 +44,20 @@
     "progressMapButton": "Open progress map",
     "progressMapComingSoon": "Progress map will be available in a future update.",
 
-    "categoryTilesTitle": "Explore"
+    "categoryTilesTitle": "Explore",
+    "progressPanelTitle": "Your real progress",
+
+    "_comment_progressPanel": "=== Real progress panel (computed by quiz-service) ===",
+    "progressPanel": {
+      "scope": {
+        "learn-graph": "Learning map",
+        "grammar": "Grammar",
+        "lexicon": "Lexicon"
+      },
+      "realTags": "Progress tags",
+      "mastered": "Mastered",
+      "percent": "Completion",
+      "unavailable": "Progress unavailable"
+    }
   }
 }

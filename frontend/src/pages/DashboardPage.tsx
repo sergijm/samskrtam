@@ -10,6 +10,7 @@ import WeakSpots from '../components/dashboard/WeakSpots';
 import ReadingPath from '../components/dashboard/ReadingPath';
 import ProgressMapLink from '../components/dashboard/ProgressMapLink';
 import CategoryTiles from '../components/dashboard/CategoryTiles';
+import ProgressSummaryPanel from '../components/dashboard/ProgressSummaryPanel';
 
 /**
  * DashboardPage — «командный центр» (§5 IA).
@@ -82,6 +83,22 @@ export default function DashboardPage() {
 
       {/* Ссылка на карту прогресса — §5.5 */}
       <ProgressMapLink />
+
+      {/* Реальный прогресс по областям (через quiz-service) */}
+      <section className="mb-4">
+        <h3 className="text-lg font-medium mb-3">{t('dashboard.progressPanelTitle')}</h3>
+        <div className="grid">
+          <div className="col-12 md:col-4">
+            <ProgressSummaryPanel scope="learn-graph" />
+          </div>
+          <div className="col-12 md:col-4">
+            <ProgressSummaryPanel scope="grammar" />
+          </div>
+          <div className="col-12 md:col-4">
+            <ProgressSummaryPanel scope="lexicon" />
+          </div>
+        </div>
+      </section>
 
       {/* Плитки категорий внизу — §5.6 */}
       <CategoryTiles />

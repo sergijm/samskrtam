@@ -5,6 +5,7 @@ import { verseStatusIcon } from '../../utils/verseStatus';
 import { Skeleton } from 'primereact/skeleton';
 import { IconButton, PageButton } from '../../components/common/buttons';
 import { Tooltip } from 'primereact/tooltip';
+import './WorkPage.css';
 
 const ChapterPage = () => {
   const { t, i18n } = useTranslation();

@@ -1,6 +1,7 @@
 package sm.selflearn.samskrtam.sangraha.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -85,7 +86,14 @@ public interface VerseRepository extends JpaRepository<Verse, UUID> {
               AND v.deletedAt IS NULL
             ORDER BY v.createdAt DESC
             """)
-    List<Verse> findAllByChapterIdIsNullAndOwnerIdAndDeletedAtIsNullOrderByCreatedAtDesc(
+List<Verse> findAllByChapterIdIsNullAndOwnerIdAndDeletedAtIsNullOrderByCreatedAtDesc(
             @Param("ownerId") UUID ownerId);
 
+    /**
+     * Сбрасывает стихи, зависшие в ANALYZING после аварийной остановки,
+     * обратно в DRAFT при старте (sangraha-service startup).
+     */
+    @Modifying
+    @Query("UPDATE Verse v SET v.status = :newStatus, v.updatedAt = CURRENT_TIMESTAMP WHERE v.status = :oldStatus")
+    int resetStatusByCurrentStatus(@Param("oldStatus") VerseStatus oldStatus, @Param("newStatus") VerseStatus newStatus);
 }

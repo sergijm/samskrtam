@@ -3,15 +3,15 @@ llm:
     # --- Существующие модели (платные) ---
     claude-fable-5:
       base-url: https://api.aitunnel.ru/v1
-      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      api-key: ${LLM_API_KEY}
       max-completion-tokens: 64000
     deepseek-v4-pro:
       base-url: https://api.aitunnel.ru/v1
-      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      api-key: ${LLM_API_KEY}
       max-completion-tokens: 128000
     deepseek-v4-flash:
       base-url: https://api.aitunnel.ru/v1
-      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      api-key: ${LLM_API_KEY}
       max-completion-tokens: 128000
 
     # ================================================
@@ -19,7 +19,7 @@ llm:
     # ================================================
     claude-opus-5: # Если уже есть, просто оставьте
       base-url: https://api.aitunnel.ru/v1
-      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      api-key: ${LLM_API_KEY}
       max-completion-tokens: 128000
 
 
@@ -28,34 +28,34 @@ llm:
     # ================================================
     claude-sonnet-5:
       base-url: https://api.aitunnel.ru/v1
-      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      api-key: ${LLM_API_KEY}
       max-completion-tokens: 128000
 
     gpt-5.6-terra:
       base-url: https://api.aitunnel.ru/v1
-      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      api-key: ${LLM_API_KEY}
       max-completion-tokens: 64000
 
     qwen3.7-plus:
       base-url: https://api.aitunnel.ru/v1
-      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      api-key: ${LLM_API_KEY}
       max-completion-tokens: 65000  # Максимальный вывод модели [citation:11]
 
 
     # ---------------------------------------
     gemini-3.5-flash:
       base-url: https://api.aitunnel.ru/v1
-      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      api-key: ${LLM_API_KEY}
       max-completion-tokens: 65000
 
     gemini-3.6-flash:
       base-url: https://api.aitunnel.ru/v1
-      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      api-key: ${LLM_API_KEY}
       max-completion-tokens: 65000
 
     gemini-3.7-flash:
       base-url: https://api.aitunnel.ru/v1
-      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      api-key: ${LLM_API_KEY}
       max-completion-tokens: 65000
 
 
@@ -64,24 +64,23 @@ llm:
     # ================================================
     gpt-4.1-nano:
       base-url: https://api.aitunnel.ru/v1
-      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      api-key: ${LLM_API_KEY}
       
       max-completion-tokens: 8192
     gpt-5-nano:
       base-url: https://api.aitunnel.ru/v1
-      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      api-key: ${LLM_API_KEY}
       
       max-completion-tokens: 4096
 
     gpt-5.6-luna:
       base-url: https://api.aitunnel.ru/v1
-      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
+      api-key: ${LLM_API_KEY}
       max-completion-tokens: 128000
 
     gpt-5-mini:
       base-url: https://api.aitunnel.ru/v1
-      api-key: sk-aitunnel-tJPt67QbdPpCeL9tXf6Js3QxPZsaovwk
-      
+      api-key: ${LLM_API_KEY}
       max-completion-tokens: 16384
 
     # --- Новый провайдер для бесплатных моделей OpenCode Zen ---

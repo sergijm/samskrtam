@@ -37,12 +37,11 @@ public interface LemmaTranslationRepository extends JpaRepository<LemmaTranslati
     @Query("SELECT DISTINCT lt.lemmaIast FROM LemmaTranslation lt WHERE lt.pos = :pos")
     List<String> findDistinctLemmaIastByPos(@Param("pos") String pos);
 
-    /** Unique lemmas within a frequency rank window (lingua.lemma_frequency.row_num). */
+    /** Unique lemmas within a frequency rank window (curriculum.lemma_translation.freq_order). */
     @Query(value = """
             SELECT DISTINCT lt.lemma_iast
             FROM curriculum.lemma_translation lt
-            JOIN lingua.lemma_frequency lf ON lf.lemma_iast = lt.lemma_iast
-            WHERE lf.row_num BETWEEN :min AND :max
+            WHERE lt.freq_order BETWEEN :min AND :max AND lt.is_main
             """, nativeQuery = true)
     List<String> findDistinctLemmaIastByFrequencyRankRange(@Param("min") int min, @Param("max") int max);
 

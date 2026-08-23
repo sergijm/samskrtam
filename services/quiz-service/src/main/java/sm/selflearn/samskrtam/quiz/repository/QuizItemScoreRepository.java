@@ -29,6 +29,9 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
     /** Найти все записи пользователя для данного itemType. */
     Flux<QuizItemScore> findByUserIdAndItemType(UUID userId, ItemType itemType);
 
+    /** Найти все записи пользователя для набора itemType (срез области прогресса). */
+    Flux<QuizItemScore> findByUserIdAndItemTypeIn(UUID userId, List<ItemType> itemTypes);
+
     /** Найти все записи пользователя для нескольких progressTag данного itemType. */
     @Query("""
             SELECT * FROM quiz.quiz_item_score

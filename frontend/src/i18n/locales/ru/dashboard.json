@@ -44,6 +44,20 @@
     "progressMapButton": "Открыть карту прогресса",
     "progressMapComingSoon": "Карта прогресса появится в следующем обновлении.",
 
-    "categoryTilesTitle": "Разделы"
+    "categoryTilesTitle": "Разделы",
+    "progressPanelTitle": "Ваш реальный прогресс",
+
+    "_comment_progressPanel": "=== Панель реального прогресса (вычисляется в quiz-service) ===",
+    "progressPanel": {
+      "scope": {
+        "learn-graph": "Карта обучения",
+        "grammar": "Грамматика",
+        "lexicon": "Лексика"
+      },
+      "realTags": "Теги прогресса",
+      "mastered": "Освоено",
+      "percent": "Прохождение",
+      "unavailable": "Прогресс недоступен"
+    }
   }
 }

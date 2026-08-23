@@ -119,6 +119,21 @@ The purpose of this analysis is to distinguish:
 9. the dictionary meaning of the lemma.
 DO NOT collapse these concepts into one another.
 For every word return all of the following fields.
+
+For each verse, first determine the underlying word sequence (undoing all external
+sandhi) — this word sequence is the single source of truth for BOTH sandhiSplits and
+words[]. Do not derive them independently; sandhiSplits.components must exactly
+match the surface forms you then analyze in words[].
+
+Process verses strictly one at a time, in verseIndex order. Fully complete the
+analysis of one verse (sandhi, words, translation) before considering the next.
+Do not let vocabulary, sandhi patterns, or interpretations from one verse influence
+another verse's independent analysis.
+
+For each junction, first classify the final sound of the left word (vowel /
+visarga / nasal / stop) — this tells you which rule section (external_vowels /
+external_visarga / external_nasals / external_plosives) is relevant; check only
+that section's rules before falling back to others.
 --------------------------------------------------
 A. SURFACE FORM
 --------------------------------------------------
@@ -447,6 +462,14 @@ to have a non-empty answer.
 
 Respond only by calling the function submit_verse_analyses, with no text outside the
 call.
+
+
+Before calling submit_verse_analyses, verify for each verse:
+- every sandhiSplits.components, concatenated with unchanged words, reconstructs
+  the original textIast exactly (no words dropped or duplicated);
+- every word in words[] appears in the same order as in the reconstructed sequence;
+- no ruleNumbers value from sandhiSplits appears in a words[].formationRuleNumbers
+  and vice versa (external vs internal must not mix).
 ```
 
 ## user (template — backend fills in the values, one or more verses)

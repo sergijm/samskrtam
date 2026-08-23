@@ -19,6 +19,7 @@ import sm.selflearn.samskrtam.quiz.repository.QuizItemScoreRepository;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -80,6 +81,11 @@ public class LessonV2Service {
 
     private Mono<VocabularyLessonDto> buildVocabularyLesson(TopicDto topic, UUID userId) {
         return curriculumClient.fetchQuestItemsByTopic(topic.id(), "VOCABULARY_WORD")
+                .map(items -> {
+                    items.sort(Comparator.comparingInt(
+                            it -> extractInt(it.payload(), "order", 0)));
+                    return items;
+                })
                 .flatMap(items -> {
 
             VocabularyLessonDto dto = new VocabularyLessonDto();
@@ -173,6 +179,12 @@ public class LessonV2Service {
         if (payload == null) return "";
         JsonNode node = payload.get(field);
         return node != null && !node.isNull() ? node.asText() : "";
+    }
+
+    private int extractInt(JsonNode payload, String field, int defaultValue) {
+        if (payload == null) return defaultValue;
+        JsonNode node = payload.get(field);
+        return node != null && !node.isNull() ? node.asInt(defaultValue) : defaultValue;
     }
 
     private VocabularyLessonDto emptyVocabularyLesson(String slug) {

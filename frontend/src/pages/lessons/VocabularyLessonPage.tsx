@@ -1,15 +1,13 @@
-﻿import React, { useState, useMemo } from "react";
+﻿import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useVocabularyLesson } from "../../hooks/useLessons";
 import { LessonHeader } from "../../components/lesson/LessonHeader";
 import { LessonStatsTab } from "../../components/lesson/LessonStatsTab";
 import { WordHistoryDialog } from "../../components/lesson/WordHistoryDialog";
-import { SessionsTab } from "../../components/lesson/SessionsTab";
 import { ProgressBar } from "primereact/progressbar";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
-import { TabView, TabPanel } from "primereact/tabview";
 import { Skeleton } from "primereact/skeleton";
 import { statusToProgressColor } from "../../utils/statusColor";
 import type { VocabularyWordProgress } from "../../types/lesson";
@@ -48,7 +46,6 @@ export const VocabularyLessonPage = () => {
   const { data: lesson, isLoading, isError } = useVocabularyLesson(slug || "");
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [wordHistoryDialogVisible, setWordHistoryDialogVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState<number>(0);
   const isRu = i18n.language === "ru";
 
   const handleWordHistoryClick = (wordId: string) => {
@@ -96,52 +93,44 @@ export const VocabularyLessonPage = () => {
       )}
 
       <div className="card mt-3">
-        <TabView activeIndex={activeTab} onTabChange={(e) => setActiveTab(e.index)}>
-          <TabPanel header={isRu ? "Слова" : "Words"}>
-            <DataTable
-              value={lesson.words}
-              paginator
-              rows={15}
-              responsiveLayout="scroll"
-              sortField="status"
-              sortOrder={-1}
-              rowClassName={(row) =>
-                `cursor-pointer hover:surface-hover transition-colors transition-duration-150`
-              }
-              onRowClick={(e) => handleWordHistoryClick(e.data.wordId)}
-              emptyMessage={
-                <div className="text-center p-4 text-color-secondary">
-                  {isRu ? "Нет слов в уроке" : "No words in this lesson"}
-                </div>
-              }
-            >
-              <Column
-                field="word"
-                header={isRu ? "Слово" : "Word"}
-                body={(rowData) => <WordCell row={rowData} />}
-                sortable
-                style={{ width: "25%" }}
-              />
-              <Column
-                field="translationRu"
-                header={isRu ? "Перевод" : "Translation"}
-                body={(rowData) => <TranslationCell row={rowData} />}
-                sortable
-              />
-              <Column
-                field="score"
-                header={isRu ? "Прогресс" : "Progress"}
-                body={(rowData) => <WordProgressCell row={rowData} />}
-                sortable
-                style={{ width: "90px" }}
-              />
-            </DataTable>
-          </TabPanel>
-
-          <TabPanel header={isRu ? "Сессии" : "Sessions"}>
-            <SessionsTab quizId={lesson.lessonId} slug={slug || ""} lessonType="vocabulary" />
-          </TabPanel>
-        </TabView>
+        <DataTable
+          value={lesson.words}
+          paginator
+          rows={15}
+          responsiveLayout="scroll"
+          sortField="status"
+          sortOrder={-1}
+          rowClassName={(row) =>
+            `cursor-pointer hover:surface-hover transition-colors transition-duration-150`
+          }
+          onRowClick={(e) => handleWordHistoryClick(e.data.wordId)}
+          emptyMessage={
+            <div className="text-center p-4 text-color-secondary">
+              {isRu ? "Нет слов в уроке" : "No words in this lesson"}
+            </div>
+          }
+        >
+          <Column
+            field="word"
+            header={isRu ? "Слово" : "Word"}
+            body={(rowData) => <WordCell row={rowData} />}
+            sortable
+            style={{ width: "25%" }}
+          />
+          <Column
+            field="translationRu"
+            header={isRu ? "Перевод" : "Translation"}
+            body={(rowData) => <TranslationCell row={rowData} />}
+            sortable
+          />
+          <Column
+            field="score"
+            header={isRu ? "Прогресс" : "Progress"}
+            body={(rowData) => <WordProgressCell row={rowData} />}
+            sortable
+            style={{ width: "90px" }}
+          />
+        </DataTable>
       </div>
 
       <WordHistoryDialog

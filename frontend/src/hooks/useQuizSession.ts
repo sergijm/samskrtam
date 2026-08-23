@@ -142,11 +142,17 @@ export function useQuizSession(
         {
           onSuccess: () =>
             navigate(`/quiz-sessions/${state.sessionId}/history`, {
-              state: { lessonType: state.quizSummaryData?.lessonType },
+              state: {
+                lessonType: state.quizSummaryData?.lessonType,
+                slug: state.quizSummaryData?.slug,
+              },
             }),
           onError: () =>
             navigate(`/quiz-sessions/${state.sessionId}/history`, {
-              state: { lessonType: state.quizSummaryData?.lessonType },
+              state: {
+                lessonType: state.quizSummaryData?.lessonType,
+                slug: state.quizSummaryData?.slug,
+              },
             }),
         },
       );

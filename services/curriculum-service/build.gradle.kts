@@ -26,6 +26,9 @@ dependencies {
     // Sanscript.java для транслитерации санскрита (IAST → SLP1 для lemmaSlp1)
     implementation("com.github.sanskrit:sanscript.java:0.1")
 
+    // Levenshtein distance for distractor selection
+    implementation("org.apache.commons:commons-text:1.15.0")
+
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 

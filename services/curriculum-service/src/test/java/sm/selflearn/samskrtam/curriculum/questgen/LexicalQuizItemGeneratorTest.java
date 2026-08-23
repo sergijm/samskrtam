@@ -221,7 +221,7 @@ class LexicalQuizItemGeneratorTest {
                 .findFirst().orElseThrow();
         assertThat(man.getCorrectAnswer()).isEqualTo("man");
         assertThat(man.getCorrectAnswerRu()).isEqualTo("muzhchina");
-        assertThat(man.getDistractorsRu()).contains("loshad", "slon", "lev");
+        assertThat(man.getDistractorsRu()).contains("loshad", "lev", "tigr");
 
         VocabularyWordPayload payload = read(man.getPayload(), VocabularyWordPayload.class);
         assertThat(payload.lemmaSlp1()).isNull();

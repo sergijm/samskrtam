@@ -42,4 +42,7 @@ public class LemmaTranslation {
 
     @Column(name = "is_main", nullable = false)
     private boolean isMain;
+
+    @Column(name = "freq_order")
+    private Integer freqOrder;
 }

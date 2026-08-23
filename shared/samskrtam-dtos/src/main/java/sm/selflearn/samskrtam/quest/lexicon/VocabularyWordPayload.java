@@ -15,6 +15,7 @@ public record VocabularyWordPayload(
         String lemmaDevanagari,
         String glossEn,
         String glossRu,
-        List<HighlightToken> highlights
+        List<HighlightToken> highlights,
+        int order
 ) implements QuestItemPayload {
 }

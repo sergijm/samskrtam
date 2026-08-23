@@ -29,14 +29,15 @@ import sm.selflearn.samskrtam.quest.VocabularyQuestItemTypes;
 import sm.selflearn.samskrtam.quest.HighlightToken;
 import sm.selflearn.samskrtam.quest.lexicon.VocabularyWordPayload;
 
+import org.apache.commons.text.similarity.LevenshteinDistance;
+
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -71,7 +72,7 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
     /** Code of the cumulative "500 most frequent words" lesson (§2, V31). */
     static final String TOP500_TOPIC_CODE = "lex-frequency-top500";
 
-    /** Cumulative rank ceiling of the top-500 lesson (lingua.lemma_frequency.row_num). */
+    /** Cumulative rank ceiling of the top-500 lesson (curriculum.lemma_translation.freq_order). */
     static final int TOP500_MAX_RANK = 500;
 
     static final int DISTRACTOR_COUNT = 3;
@@ -98,8 +99,6 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
             Map.entry("particle", "PARTICLE"),
             Map.entry("conjunction", "CONJUNCTION"),
             Map.entry("interjection", "INTERJECTION"));
-
-    private static final Random RANDOM = new Random();
 
     private final TopicRepository topicRepository;
     private final QuestItemRepository questItemRepository;
@@ -255,6 +254,12 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
         for (LemmaTranslation row : lemmaTranslationRepository.findByLemmaIastIn(lemmaIasts)) {
             Translation t = byLemma.computeIfAbsent(row.getLemmaIast(),
                     k -> new Translation(k, transliterationService.iastToDevanagari(k)));
+            if (t.freqOrder == null && row.getFreqOrder() != null) {
+                t.freqOrder = row.getFreqOrder();
+            }
+            if (t.pos == null && row.getPos() != null) {
+                t.pos = row.getPos();
+            }
             if (row.isMain()) {
                 if ("en".equals(row.getLanguage())) {
                     t.glossEn = row.getGloss();
@@ -268,25 +273,31 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
     }
 
     private List<String[]> distractors(List<Translation> pool, Translation correct) {
-        Set<GlossPair> seen = new LinkedHashSet<>();
-        List<String[]> candidates = new ArrayList<>();
-        for (Translation other : pool) {
-            if (other.lemmaIast.equals(correct.lemmaIast)) {
-                continue;
-            }
-            if (other.glossEn.equals(correct.glossEn) || other.glossRu.equals(correct.glossRu)) {
-                continue;
-            }
-            if (!seen.add(new GlossPair(other.glossEn, other.glossRu))) {
-                continue;
-            }
-            candidates.add(new String[]{other.glossEn, other.glossRu});
-            if (candidates.size() == DISTRACTOR_COUNT) {
-                break;
-            }
-        }
-        Collections.shuffle(candidates, RANDOM);
-        return candidates;
+        int correctWordCount = correct.glossEn.trim().isEmpty()
+                ? 0 : correct.glossEn.trim().split("\\s+").length;
+        boolean correctSingleWord = correctWordCount <= 1;
+        LevenshteinDistance ld = new LevenshteinDistance();
+        List<Translation> candidates = pool.stream()
+                .filter(other -> !other.lemmaIast.equals(correct.lemmaIast))
+                .filter(other -> correct.pos == null || correct.pos.equals(other.pos))
+                .filter(other -> !other.glossEn.equals(correct.glossEn)
+                        && !other.glossRu.equals(correct.glossRu))
+                .sorted(Comparator.comparingInt(other -> {
+                    if (correctSingleWord) {
+                        String otherEn = other.glossEn;
+                        int otherWc = otherEn.trim().isEmpty() ? 0 : otherEn.trim().split("\\s+").length;
+                        if (otherWc > 1) return Integer.MAX_VALUE;
+                        return ld.apply(correct.glossEn, otherEn);
+                    }
+                    int otherWc = other.glossEn.trim().isEmpty()
+                            ? 0 : other.glossEn.trim().split("\\s+").length;
+                    return Math.abs(correctWordCount - otherWc);
+                }))
+                .limit(DISTRACTOR_COUNT)
+                .collect(Collectors.toList());
+        return candidates.stream()
+                .map(c -> new String[]{c.glossEn, c.glossRu})
+                .collect(Collectors.toList());
     }
 
     private QuestItem buildItem(Topic topic, Translation t,
@@ -299,7 +310,8 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
                 t.lemmaDevanagari,
                 t.glossEn,
                 t.glossRu,
-                highlights);
+                highlights,
+                t.freqOrder != null ? t.freqOrder : 0);
 
         QuestItem item = new QuestItem();
         item.setTopicId(topic.getId());
@@ -403,6 +415,8 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
         final String lemmaDevanagari;
         String glossEn;
         String glossRu;
+        Integer freqOrder;
+        String pos;
 
         Translation(String lemmaIast, String lemmaDevanagari) {
             this.lemmaIast = lemmaIast;

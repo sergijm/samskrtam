@@ -35,8 +35,8 @@ public class VerseAnalysisService {
      * с полным разбором), но не больше {@link #ANALYSIS_CHUNK_SIZE_MAX}.
      * Чтобы не увеличивать LLM-промпт сверх проверенного на практике.
      */
-    private static final int ANALYSIS_CHUNK_SIZE_MAX = 20;
-    private static final int ANALYSIS_CHUNK_SIZE_DEFAULT = 20;
+    private static final int ANALYSIS_CHUNK_SIZE_MAX = 5;
+    private static final int ANALYSIS_CHUNK_SIZE_DEFAULT = 5;
     private static final int ANALYSIS_TOKENS_PER_VERSE = 3000;
 
     private final VerseRepository verseRepository;
@@ -70,13 +70,15 @@ public class VerseAnalysisService {
 
     /**
      * Запускает анализ одного стиха LLM.
-     * Сохраняет rawText в стих и делегирует в runAnalysis() с одним элементом.
+     * Если rawText передан и у стиха ещё нет rawText — сохраняет его.
+     * Если rawText уже есть — НЕ перезаписывает (поле rawText неизменно после первого сохранения).
      */
     public void analyze(UUID verseId, String rawText) {
         Verse verse = verseRepository.findByIdAndDeletedAtIsNull(verseId)
                 .orElseThrow(() -> new IllegalArgumentException("Verse not found: " + verseId));
 
-        if (rawText != null && !rawText.isBlank()) {
+        if (rawText != null && !rawText.isBlank()
+                && (verse.getRawText() == null || verse.getRawText().isBlank())) {
             verse.setRawText(rawText);
         }
 
@@ -105,7 +107,11 @@ public class VerseAnalysisService {
                     + " (all verses have status different from DRAFT/FAILED)");
         }
 
-        runAnalysis(versesToAnalyze);
+        int chunkSize = analysisChunkSize();
+        for (int i = 0; i < versesToAnalyze.size(); i += chunkSize) {
+            int end = Math.min(i + chunkSize, versesToAnalyze.size());
+            runAnalysis(versesToAnalyze.subList(i, end));
+        }
 
         return versesToAnalyze.stream().map(Verse::getId).collect(Collectors.toList());
     }

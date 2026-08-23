@@ -130,4 +130,10 @@ public interface QuestItemRepository extends JpaRepository<QuestItem, UUID> {
      */
     @Query("select count(distinct qi.progressTag) from QuestItem qi where qi.topicId = :topicId and qi.progressTag is not null")
     long countDistinctProgressTagByTopicId(@Param("topicId") UUID topicId);
+
+    /**
+     * All quest items whose topic is in the given collection. Used by the learn
+     * graph to gather progress tags across all visible topics in one query.
+     */
+    List<QuestItem> findByTopicIdIn(java.util.Collection<UUID> topicIds);
 }
