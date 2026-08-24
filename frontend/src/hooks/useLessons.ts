@@ -135,6 +135,17 @@ export const useSandhiRules = (topicCode: string) =>
     enabled: !!topicCode,
   });
 
+export const useWordLemmaExamples = (lemma: string | null, enabled: boolean) =>
+  useQuery({
+    queryKey: ['word-lemma-examples', lemma],
+    queryFn: () => sangrahaApi.getLemmaExamples([lemma ?? ''], 5).then(res => res.data),
+    enabled: !!lemma && enabled,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
 export const useSandhiRulesByNumbers = (ruleNumbers: number[]) =>
   useQuery({
     queryKey: ['sandhi-rules-by-numbers', ruleNumbers],

@@ -14,6 +14,9 @@ import sm.selflearn.samskrtam.sangraha.dto.ConjugationExamplesResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.ConjugationExamplesSearchRequestDto;
 import sm.selflearn.samskrtam.sangraha.dto.DeclensionExamplesResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.DeclensionExamplesSearchRequestDto;
+import sm.selflearn.samskrtam.sangraha.dto.DeclensionExamplesResponseDto;
+import sm.selflearn.samskrtam.sangraha.dto.LemmaExamplesRequestDto;
+import sm.selflearn.samskrtam.sangraha.dto.LemmaExamplesResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseBatchResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseWordExamplesRequestDto;
@@ -24,6 +27,7 @@ import sm.selflearn.samskrtam.sangraha.dto.WorkTreeDto;
 import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
 import sm.selflearn.samskrtam.sangraha.model.VerseWord;
 import sm.selflearn.samskrtam.sangraha.model.Work;
+import sm.selflearn.samskrtam.sangraha.model.Source;
 import sm.selflearn.samskrtam.sangraha.service.ChapterService;
 import sm.selflearn.samskrtam.sangraha.service.VerseBatchService;
 import sm.selflearn.samskrtam.sangraha.service.VerseService;
@@ -32,6 +36,7 @@ import sm.selflearn.samskrtam.sangraha.service.VerseWordSearchService;
 import sm.selflearn.samskrtam.sangraha.service.WorkService;
 import sm.selflearn.samskrtam.sangraha.service.WorkTreeService;
 import sm.selflearn.samskrtam.sangraha.service.WorksClassService;
+import sm.selflearn.samskrtam.sangraha.service.SourceService;
 
 import java.util.List;
 import java.util.UUID;
@@ -49,13 +54,20 @@ public class SangrahaController {
     private final WorksClassService worksClassService;
     private final VerseWordExamplesService verseWordExamplesService;
     private final VerseWordSearchService verseWordSearchService;
+    private final SourceService sourceService;
 
     // ── Works (read-only) ───────────────────────────────────────────
 
     @GetMapping("/works")
     public ResponseEntity<List<Work>> getAllWorks(
-            @RequestParam(value = "classId", required = false) List<UUID> classIds) {
-        return ResponseEntity.ok(worksClassService.filterWorks(classIds));
+            @RequestParam(value = "classId", required = false) List<UUID> classIds,
+            @RequestParam(value = "sourceCode", required = false) String sourceCode) {
+        return ResponseEntity.ok(worksClassService.filterWorks(classIds, sourceCode));
+    }
+
+    @GetMapping("/sources")
+    public ResponseEntity<List<Source>> getSources() {
+        return ResponseEntity.ok(sourceService.getAllSources());
     }
 
     @GetMapping("/works/classes")
@@ -114,6 +126,13 @@ public class SangrahaController {
     public ResponseEntity<VerseWordExamplesResponseDto> getWordExamples(
             @RequestBody VerseWordExamplesRequestDto request) {
         return ResponseEntity.ok(verseWordExamplesService.findExamples(request));
+    }
+
+    // ── Леммы: примеры стихов по словарной форме (раскрываемые строки урока лексики) ──
+    @PostMapping("/words/examples-by-lemma")
+    public ResponseEntity<LemmaExamplesResponseDto> getLemmaExamples(
+            @RequestBody LemmaExamplesRequestDto request) {
+        return ResponseEntity.ok(verseWordExamplesService.findLemmaExamples(request));
     }
 
     // ── Примеры склонений по словоизменительному классу (вкладка «Примеры») ──

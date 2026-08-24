@@ -13,6 +13,13 @@ export interface WorkSummaryDto {
   createdAt: string;
 }
 
+export interface SourceDto {
+  id: string;
+  code: string;
+  titleEn: string;
+  titleRu: string;
+}
+
 export interface ChapterSummaryDto {
   id: string;
   slug: string;
@@ -198,6 +205,19 @@ export interface VerseWordExampleItemDto {
   chapterTitleRu: string;
   chapterTitleEn: string;
   verseOrderIndex: number;
+}
+
+// ── Примеры стихов по лемме (раскрываемые строки урока лексики) ──
+// POST /api/v1/sangraha/words/examples-by-lemma — на вход (lemmas, limitPerLemma);
+// для каждой леммы возвращается до limitPerLemma стихов, содержащих эту лемму.
+
+export interface LemmaExamplesResponseDto {
+  results: LemmaExamplesResultDto[];
+}
+
+export interface LemmaExamplesResultDto {
+  lemmaIast: string;
+  verses: VerseWordExampleItemDto[];
 }
 
 // ── Примеры склонений по словоизменительному классу (вкладка «Примеры» урока) ──

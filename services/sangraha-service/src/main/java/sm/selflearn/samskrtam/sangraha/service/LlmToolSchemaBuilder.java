@@ -41,7 +41,7 @@ public class LlmToolSchemaBuilder {
         verseItem.put("type", "object");
 
         ArrayNode verseRequired = verseItem.putArray("required");
-        verseRequired.add("verseIndex").add("textDevanagari").add("textIast").add("translationRu")
+        verseRequired.add("verseIndex").add("textIast").add("translationRu")
                 .add("translationEn").add("sandhiSplits").add("words");
 
         ObjectNode verseProps = verseItem.putObject("properties");
@@ -49,7 +49,7 @@ public class LlmToolSchemaBuilder {
                 .put("description", "0-based index of the verse in the input batch");
 
         verseProps.putObject("textDevanagari").put("type", "string")
-                .put("description", "Verse text in Devanagari script");
+                .put("description", "Verse text in Devanagari (derived server-side, not supplied by the model)");
         verseProps.putObject("textIast").put("type", "string")
                 .put("description", "Verse text in IAST transliteration");
         verseProps.putObject("translationRu").put("type", "string")
@@ -78,7 +78,7 @@ public class LlmToolSchemaBuilder {
         wordItemObj.put("type", "object");
 
         ArrayNode wordRequired = wordItemObj.putArray("required");
-        wordRequired.add("position").add("surfaceIast").add("surfaceDevanagari")
+        wordRequired.add("position").add("surfaceIast")
                 .add("lemmaIast").add("stem").add("pos").add("glossRu").add("glossEn")
                 .add("formType").add("analysisConfidence")
                 .add("formationRuleNumbers");
@@ -86,7 +86,8 @@ public class LlmToolSchemaBuilder {
         ObjectNode wordProps = wordItemObj.putObject("properties");
         wordProps.putObject("position").put("type", "integer");
         wordProps.putObject("surfaceIast").put("type", "string");
-        wordProps.putObject("surfaceDevanagari").put("type", "string");
+        wordProps.putObject("surfaceDevanagari").put("type", "string")
+                .put("description", "Surface form in Devanagari (derived server-side, not supplied by the model)");
         wordProps.putObject("lemmaIast").put("type", "string");
         wordProps.putObject("stem").put("type", "string");
         wordProps.putObject("root").put("type", "string");

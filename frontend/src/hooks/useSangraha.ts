@@ -10,13 +10,14 @@ import type {
   WorksClassGroupDto,
   StandaloneVerseItemDto,
   VerseWordExamplesResponseDto,
+  SourceDto,
 } from '../types/sangraha';
 
-export const useWorks = (classIds?: string[]) =>
+export const useWorks = (classIds?: string[], sourceCode?: string) =>
   useQuery<WorkSummaryDto[], Error>({
-    queryKey: ['sangraha', 'works', classIds ?? []],
+    queryKey: ['sangraha', 'works', classIds ?? [], sourceCode ?? null],
     queryFn: async () => {
-      const res = await sangrahaApi.getAllWorks(classIds);
+      const res = await sangrahaApi.getAllWorks(classIds, sourceCode);
       return res.data;
     },
   });
@@ -26,6 +27,15 @@ export const useWorksClasses = () =>
     queryKey: ['sangraha', 'works', 'classes'],
     queryFn: async () => {
       const res = await sangrahaApi.getWorksClasses();
+      return res.data;
+    },
+  });
+
+export const useSources = () =>
+  useQuery<SourceDto[], Error>({
+    queryKey: ['sangraha', 'sources'],
+    queryFn: async () => {
+      const res = await sangrahaApi.getSources();
       return res.data;
     },
   });

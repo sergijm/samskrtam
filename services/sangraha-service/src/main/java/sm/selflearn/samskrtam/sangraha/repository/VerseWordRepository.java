@@ -73,6 +73,54 @@ public interface VerseWordRepository extends JpaRepository<VerseWord, UUID>, Ver
         int getWordCount();
     }
 
+    /**
+     * Для каждой леммы — до {@code limitPerLemma} стихов (по возрастанию длины
+     * стиха в словах, при равенстве — по verse_id), содержащих эту лемму.
+     * Дубликаты фраз убираются на уровне SQL: одна лемма может встречаться в
+     * одном стихе несколько раз (несколько verse_words с тем же verse_id) и один
+     * и тот же текст стиха может повторяться в корпусе — оба случая дают
+     * повторяющуюся фразу, поэтому ранжируем по {@code (lemma_iast, text_iast)}
+     * (phrase_rn = 1 оставляет только первую фразу) и лишь затем берём топ-N
+     * на лемму (rn). Ищем только по verse_words реальных произведений
+     * (chapter_id NOT NULL), чтобы у стиха гарантированно был workSlug.
+     */
+    @Query(value = """
+            SELECT lemma_iast AS lemmaIast, verse_id AS verseId FROM (
+                SELECT lemma_iast,
+                       verse_id,
+                       row_number() OVER (
+                           PARTITION BY lemma_iast
+                           ORDER BY word_count, verse_id_order
+                       ) AS rn
+                FROM (
+                    SELECT vw.lemma_iast AS lemma_iast,
+                           vw.verse_id AS verse_id,
+                           vs.word_count AS word_count,
+                           v.id AS verse_id_order,
+                           row_number() OVER (
+                               PARTITION BY vw.lemma_iast, v.text_iast
+                               ORDER BY vs.word_count, v.id
+                           ) AS phrase_rn
+                    FROM sangraha.verse_words vw
+                    JOIN sangraha.verses v ON v.id = vw.verse_id
+                    JOIN sangraha.verse_statistics vs ON vs.verse_id = v.id
+                    WHERE vw.lemma_iast IN (:lemmas)
+                      AND v.deleted_at IS NULL
+                      AND v.chapter_id IS NOT NULL
+                ) dedup
+                WHERE dedup.phrase_rn = 1
+            ) ranked
+            WHERE ranked.rn <= :limitPerLemma
+            """, nativeQuery = true)
+    List<LemmaVerseRank> findLemmaVerseIds(
+            @Param("lemmas") List<String> lemmas,
+            @Param("limitPerLemma") int limitPerLemma);
+
+    interface LemmaVerseRank {
+        String getLemmaIast();
+        UUID getVerseId();
+    }
+
     void deleteAllByVerse_Id(UUID verseId);
 
     /**

@@ -95,6 +95,20 @@ public class TransliterationService {
     }
 
     /**
+     * Конвертация из Devanagari в IAST.
+     * Используется перед отправкой текста в LLM, чтобы модель всегда получала IAST
+     * (промпт запрещает передавать и возвращать деванагари).
+     */
+    public String devanagariToIast(String devanagari) {
+        if (devanagari == null || devanagari.isBlank()) return "";
+        try {
+            return sanscript.t(devanagari, "devanagari", "iast");
+        } catch (Exception e) {
+            return devanagari;
+        }
+    }
+
+    /**
      * Детекция языка по Unicode-диапазону первого значимого символа.
      * @return "SANSKRIT", "RU" или "EN"
      */

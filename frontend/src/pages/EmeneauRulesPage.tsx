@@ -235,6 +235,22 @@ const EmeneauRulesPage = () => {
         </div>
       )}
 
+      {hasRuleParams && categories.length > 0 && (
+        <div className="w-full mb-3" style={{ maxWidth: '800px' }}>
+          <span
+            className="inline-flex align-items-center cursor-pointer text-sm border-1 bg-surface-100 hover:bg-surface-200"
+            style={{ padding: '2px 5px', borderRadius: '4px', lineHeight: '1.2', borderColor: 'var(--surface-300, #d4d4d8)' }}
+            onClick={() => {
+              const newParams = new URLSearchParams(searchParams);
+              newParams.delete('rule');
+              setSearchParams(newParams, { replace: true });
+            }}
+          >
+            {t('eamenau.allFilters')}
+          </span>
+        </div>
+      )}
+
       <div className="w-full" style={{ maxWidth: '800px' }}>
         {sandhiRules?.map((rule) => {
           const isDependency = requested !== null && !requested.has(rule.number);
@@ -252,6 +268,12 @@ const EmeneauRulesPage = () => {
                 >
                   {rule.number}
                 </span>
+                {rule.applicability && (
+                  <span className="text-xs text-color-secondary border-1 bg-surface-100"
+                    style={{ padding: '1px 5px', borderRadius: '4px', lineHeight: '1.2', borderColor: 'var(--surface-300, #d4d4d8)' }}>
+                    {categoryGlossary[rule.applicability] ?? rule.applicability}
+                  </span>
+                )}
                 {rule.reference && (
                   <span className="text-sm text-color-secondary">({rule.reference})</span>
                 )}

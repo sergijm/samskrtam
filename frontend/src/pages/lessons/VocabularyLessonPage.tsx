@@ -1,10 +1,10 @@
-﻿import React, { useState } from "react";
+﻿import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useVocabularyLesson } from "../../hooks/useLessons";
 import { LessonHeader } from "../../components/lesson/LessonHeader";
 import { LessonStatsTab } from "../../components/lesson/LessonStatsTab";
-import { WordHistoryDialog } from "../../components/lesson/WordHistoryDialog";
+import WordLemmaExamplesPanel from "../../components/lesson/WordLemmaExamplesPanel";
 import { ProgressBar } from "primereact/progressbar";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
@@ -44,14 +44,8 @@ export const VocabularyLessonPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { t, i18n } = useTranslation();
   const { data: lesson, isLoading, isError } = useVocabularyLesson(slug || "");
-  const [selectedWord, setSelectedWord] = useState<string | null>(null);
-  const [wordHistoryDialogVisible, setWordHistoryDialogVisible] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<VocabularyWordProgress[]>([]);
   const isRu = i18n.language === "ru";
-
-  const handleWordHistoryClick = (wordId: string) => {
-    setSelectedWord(wordId);
-    setWordHistoryDialogVisible(true);
-  };
 
   if (isError) {
     return (
@@ -100,16 +94,28 @@ export const VocabularyLessonPage = () => {
           responsiveLayout="scroll"
           sortField="status"
           sortOrder={-1}
-          rowClassName={(row) =>
+          dataKey="wordId"
+          expandedRows={expandedRows}
+          onRowToggle={(e) => setExpandedRows(e.data as VocabularyWordProgress[])}
+          rowExpansionTemplate={(rowData) => {
+            const row = rowData as VocabularyWordProgress;
+            return (
+              <WordLemmaExamplesPanel
+                lemma={row.word}
+                enabled
+              />
+            );
+          }}
+          rowClassName={() =>
             `cursor-pointer hover:surface-hover transition-colors transition-duration-150`
           }
-          onRowClick={(e) => handleWordHistoryClick(e.data.wordId)}
           emptyMessage={
             <div className="text-center p-4 text-color-secondary">
               {isRu ? "Нет слов в уроке" : "No words in this lesson"}
             </div>
           }
         >
+          <Column expander style={{ width: "3em" }} />
           <Column
             field="word"
             header={isRu ? "Слово" : "Word"}
@@ -132,13 +138,6 @@ export const VocabularyLessonPage = () => {
           />
         </DataTable>
       </div>
-
-      <WordHistoryDialog
-        visible={wordHistoryDialogVisible}
-        onHide={() => setWordHistoryDialogVisible(false)}
-        wordId={selectedWord}
-        slug={lesson.slug}
-      />
     </div>
   );
 };

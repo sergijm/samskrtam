@@ -7,6 +7,7 @@ import sm.selflearn.samskrtam.sangraha.dto.WorksClassGroupDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorksClassTreeNodeDto;
 import sm.selflearn.samskrtam.sangraha.model.Work;
 import sm.selflearn.samskrtam.sangraha.model.WorksClass;
+import sm.selflearn.samskrtam.sangraha.model.Source;
 import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorksClassRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorksWorkClassRepository;
@@ -38,6 +39,7 @@ public class WorksClassService {
     private final WorksClassRepository worksClassRepository;
     private final WorksWorkClassRepository worksWorkClassRepository;
     private final WorkRepository workRepository;
+    private final SourceService sourceService;
 
     @Transactional(readOnly = true)
     public List<WorksClassGroupDto> getClassGroups() {
@@ -123,25 +125,41 @@ public class WorksClassService {
     }
 
     /**
-     * Фильтрация произведений по выбранным категориям классификатора.
-     * Выбор категории включает все её подкатегории (рекурсивно). Произведение
-     * подходит, если оно привязано хотя бы к одной категории из выбранного набора.
+     * Фильтрация произведений по выбранным категориям классификатора и (опционально)
+     * по источнику. Выбор категории включает все её подкатегории (рекурсивно).
+     * Произведение подходит, если оно привязано хотя бы к одной категории из
+     * выбранного набора И (при заданном sourceCode) относится к этому источнику.
+     * Фильтры комбинируются по И (AND).
      *
-     * @param classIds пустой/null — без фильтра, возвращает все произведения
+     * @param classIds   пустой/null — без фильтра по классификатору
+     * @param sourceCode пустой/null — без фильтра по источнику
      */
     @Transactional(readOnly = true)
-    public List<Work> filterWorks(Collection<UUID> classIds) {
+    public List<Work> filterWorks(Collection<UUID> classIds, String sourceCode) {
+        List<Work> base;
         if (classIds == null || classIds.isEmpty()) {
-            return workRepository.findAllByDeletedAtIsNullOrderByCreatedAtAsc();
+            base = workRepository.findAllByDeletedAtIsNullOrderByCreatedAtAsc();
+        } else {
+            Set<UUID> expanded = expandWithDescendants(classIds);
+            List<UUID> workIds = worksWorkClassRepository.findWorkIdsByClassIdIn(List.copyOf(expanded));
+            if (workIds.isEmpty()) {
+                return List.of();
+            }
+            base = workRepository.findAllByIdInAndDeletedAtIsNullOrderByCreatedAtAsc(
+                    new HashSet<>(workIds));
         }
 
-        Set<UUID> expanded = expandWithDescendants(classIds);
-        List<UUID> workIds = worksWorkClassRepository.findWorkIdsByClassIdIn(List.copyOf(expanded));
-        if (workIds.isEmpty()) {
+        if (sourceCode == null || sourceCode.isBlank()) {
+            return base;
+        }
+        Source source = sourceService.findByCode(sourceCode).orElse(null);
+        if (source == null) {
             return List.of();
         }
-        return workRepository.findAllByIdInAndDeletedAtIsNullOrderByCreatedAtAsc(
-                new HashSet<>(workIds));
+        UUID sourceId = source.getId();
+        return base.stream()
+                .filter(w -> sourceId.equals(w.getSourceId()))
+                .toList();
     }
 
     private Set<UUID> expandWithDescendants(Collection<UUID> classIds) {

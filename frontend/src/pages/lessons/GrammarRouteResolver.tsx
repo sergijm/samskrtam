@@ -3,6 +3,7 @@ import GrammarLessonPage from './GrammarLessonPage';
 import SandhiLessonPage from './SandhiLessonPage';
 import CaseMeaningsLessonPage from './CaseMeaningsLessonPage';
 import ConjugationLessonPage from './ConjugationLessonPage';
+import CaseEndingsLessonPage from './CaseEndingsLessonPage';
 
 const CONJUGATION_SLUGS: string[] = ['presence-indicativus', 'imperfectum', 'optativus', 'imperativus'];
 
@@ -14,6 +15,9 @@ const GrammarRouteResolver = () => {
   }
   if (slug === 'case-meanings-basic') {
     return <CaseMeaningsLessonPage />;
+  }
+  if (slug === 'case-endings') {
+    return <CaseEndingsLessonPage />;
   }
   if (slug && CONJUGATION_SLUGS.includes(slug)) {
     return <ConjugationLessonPage />;

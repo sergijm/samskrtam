@@ -20,6 +20,7 @@ public class LlmPromptBuilder {
 
     private final ObjectMapper objectMapper;
     private final PromptLoader promptLoader;
+    private final TransliterationService transliterationService;
 
     /**
      * Извлекает содержимое секции ## system из markdown-файла промпта verse-analysis.
@@ -79,21 +80,17 @@ public class LlmPromptBuilder {
 
         /**
      * Строит user-промпт с текстом стиха и контекстом правил сандхи (batch-формат).
+     * В LLM всегда передаётся только IAST: если исходный текст задан в деванагари,
+     * он детектируется и конвертируется в IAST до отправки (деванагари не передаётся).
      */
     public String buildUserPrompt(Verse verse) {
         var sb = new StringBuilder();
-        if (verse.getRawText() != null && !verse.getRawText().isBlank()) {
-            sb.append("verseIndex: 0\n");
-            sb.append("textDevanagari: ").append(verse.getRawText()).append("\n");
-            sb.append("textIast: null\n");
+        String iast = resolveIastInput(verse);
+        sb.append("verseIndex: 0\n");
+        if (iast != null) {
+            sb.append("textIast: ").append(iast).append("\n");
         } else {
-            sb.append("verseIndex: 0\n");
-            sb.append("textDevanagari: null\n");
-            if (verse.getTextIast() != null && !verse.getTextIast().isBlank()) {
-                sb.append("textIast: ").append(verse.getTextIast()).append("\n");
-            } else {
-                sb.append("textIast: null\n");
-            }
+            sb.append("textIast: null\n");
         }
 
         appendSandhiRules(sb);
@@ -103,28 +100,19 @@ public class LlmPromptBuilder {
 
     /**
      * Строит batch user-промпт для нескольких стихов.
-     * Для каждого стиха выводит блок verseIndex/textDevanagari/textIast.
-     * verseIndex = позиция в списке.
+     * Для каждого стиха выводит блок verseIndex/textIast (только IAST).
+     * verseIndex = позиция в списке. Деванагари не передаётся — конвертируется в IAST.
      */
     public String buildBatchUserPrompt(List<Verse> verses) {
         var sb = new StringBuilder("Analyze the following Sanskrit verses:\n\n");
         for (int i = 0; i < verses.size(); i++) {
             Verse verse = verses.get(i);
             sb.append("verseIndex: ").append(i).append("\n");
-            if (verse.getRawText() != null && !verse.getRawText().isBlank()) {
-                sb.append("textDevanagari: ").append(verse.getRawText()).append("\n");
-                sb.append("textIast: null\n");
+            String iast = resolveIastInput(verse);
+            if (iast != null) {
+                sb.append("textIast: ").append(iast).append("\n");
             } else {
-                if (verse.getTextDevanagari() != null && !verse.getTextDevanagari().isBlank()) {
-                    sb.append("textDevanagari: ").append(verse.getTextDevanagari()).append("\n");
-                } else {
-                    sb.append("textDevanagari: null\n");
-                }
-                if (verse.getTextIast() != null && !verse.getTextIast().isBlank()) {
-                    sb.append("textIast: ").append(verse.getTextIast()).append("\n");
-                } else {
-                    sb.append("textIast: null\n");
-                }
+                sb.append("textIast: null\n");
             }
             sb.append("\n");
         }
@@ -132,6 +120,29 @@ public class LlmPromptBuilder {
         appendSandhiRules(sb);
 
         return sb.toString();
+    }
+
+    /**
+     * Возвращает текст стиха в IAST для передачи в LLM.
+     * Источник (в порядке приоритета): rawText → textIast → textDevanagari.
+     * Если источник обнаружен как деванагари — конвертируется в IAST.
+     * Возвращает null, если ни один источник не задан.
+     */
+    private String resolveIastInput(Verse verse) {
+        String source = verse.getRawText();
+        if (source == null || source.isBlank()) {
+            source = verse.getTextIast();
+        }
+        if (source == null || source.isBlank()) {
+            source = verse.getTextDevanagari();
+        }
+        if (source == null || source.isBlank()) {
+            return null;
+        }
+        if ("devanagari".equals(transliterationService.detectScript(source))) {
+            return transliterationService.devanagariToIast(source);
+        }
+        return source;
     }
 
     private void appendSandhiRules(StringBuilder sb) {

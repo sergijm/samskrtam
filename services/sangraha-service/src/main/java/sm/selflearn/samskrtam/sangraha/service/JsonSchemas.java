@@ -107,12 +107,13 @@ public class JsonSchemas {
         verseItem.put("type", "object");
 
         ArrayNode verseRequired = verseItem.putArray("required");
-        verseRequired.add("verseIndex").add("textDevanagari").add("textIast").add("translationRu")
+        verseRequired.add("verseIndex").add("textIast").add("translationRu")
                 .add("translationEn").add("sandhiSplits").add("words");
 
         ObjectNode verseProps = verseItem.putObject("properties");
         verseProps.putObject("verseIndex").put("type", "integer").put("minimum", 0);
-        verseProps.putObject("textDevanagari").put("type", "string");
+        verseProps.putObject("textDevanagari").put("type", "string")
+                .put("description", "Verse text in Devanagari (derived server-side, not supplied by the model)");
         verseProps.putObject("textIast").put("type", "string");
         verseProps.putObject("translationRu").put("type", "string").put("minLength", 1);
         verseProps.putObject("translationEn").put("type", "string").put("minLength", 1);
@@ -139,14 +140,15 @@ public class JsonSchemas {
         ObjectNode wordItem = words.putObject("items");
         wordItem.put("type", "object");
         ArrayNode wordRequired = wordItem.putArray("required");
-        wordRequired.add("position").add("surfaceIast").add("surfaceDevanagari")
+        wordRequired.add("position").add("surfaceIast")
                 .add("lemmaIast").add("stem").add("pos").add("glossRu").add("glossEn")
                 .add("formType").add("analysisConfidence");
 
         ObjectNode wordProps = wordItem.putObject("properties");
         wordProps.putObject("position").put("type", "integer").put("minimum", 0);
         wordProps.putObject("surfaceIast").put("type", "string").put("minLength", 1);
-        wordProps.putObject("surfaceDevanagari").put("type", "string").put("minLength", 1);
+        wordProps.putObject("surfaceDevanagari").put("type", "string")
+                .put("description", "Surface form in Devanagari (derived server-side, not supplied by the model)");
         wordProps.putObject("lemmaIast").put("type", "string").put("minLength", 1);
         wordProps.putObject("stem").put("type", "string");
         wordProps.putObject("root").put("type", "string");

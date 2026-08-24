@@ -2,6 +2,7 @@ import api from './axios';
 import {
   DeclensionParadigmPageDto,
   ConjugationParadigmPageDto,
+  CaseEndingDto,
 } from '../types/content-dtos';
 
 export const lessonApi = {
@@ -36,4 +37,8 @@ export const lessonApi = {
     if (voice) params.voice = voice;
     return api.get<ConjugationParadigmPageDto>(`/api/v2/lessons/${slug}/conjugation-paradigms`, { params });
   },
+
+  // Получить справочную таблицу падежных окончаний (lingua.case_endings)
+  getCaseEndings: () =>
+    api.get<CaseEndingDto[]>('/api/v2/curriculum/lingua/case-endings'),
 };

@@ -8,20 +8,30 @@ import type {
   WorksClassGroupDto,
   StandaloneVerseItemDto,
   VerseWordExamplesResponseDto,
+  LemmaExamplesResponseDto,
   DeclensionExamplesResponseDto,
   ConjugationExamplesResponseDto,
+  SourceDto,
 } from '../types/sangraha';
 
 const BASE = '/api/v1/sangraha';
 
 export const sangrahaApi = {
-// Works (read-only, отфильтрованные по классификатору)
-  getAllWorks: (classIds?: string[]) =>
-    api.get<WorkSummaryDto[]>(
-      classIds && classIds.length > 0
-        ? `${BASE}/works?${classIds.map((id) => `classId=${encodeURIComponent(id)}`).join('&')}`
-        : `${BASE}/works`,
-    ),
+// Works (read-only, отфильтрованные по классификатору и источнику)
+  getAllWorks: (classIds?: string[], sourceCode?: string) => {
+    const params: string[] = [];
+    if (classIds && classIds.length > 0) {
+      classIds.forEach((id) => params.push(`classId=${encodeURIComponent(id)}`));
+    }
+    if (sourceCode) {
+      params.push(`sourceCode=${encodeURIComponent(sourceCode)}`);
+    }
+    const qs = params.length > 0 ? `?${params.join('&')}` : '';
+    return api.get<WorkSummaryDto[]>(`${BASE}/works${qs}`);
+  },
+
+  // Источники произведений (для фильтра слева)
+  getSources: () => api.get<SourceDto[]>(`${BASE}/sources`),
 
   // Классификатор произведений: дерево по classification (для дропдаунов)
   getWorksClasses: () => api.get<WorksClassGroupDto[]>(`${BASE}/works/classes`),
@@ -55,6 +65,13 @@ export const sangrahaApi = {
   getWordExamples: (surfaceIasts: string[]) =>
     api.post<VerseWordExamplesResponseDto>(`${BASE}/words/examples`, {
       surfaceIasts,
+    }),
+
+  // Примеры стихов по леммам (раскрываемые строки урока лексики)
+  getLemmaExamples: (lemmas: string[], limitPerLemma = 5) =>
+    api.post<LemmaExamplesResponseDto>(`${BASE}/words/examples-by-lemma`, {
+      lemmas,
+      limitPerLemma,
     }),
 
   // Примеры склонений по словоизменительному классу — вкладка «Примеры» урока

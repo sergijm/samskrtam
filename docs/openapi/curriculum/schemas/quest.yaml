@@ -17,11 +17,30 @@ SandhiRuleDto:
       type: string
     reference:
       type: string
-    dependson:
+    supersedes:
       type: array
+      nullable: true
       items:
         type: integer
-      description: Rule numbers this rule depends on.
+      description: Rule numbers this rule supersedes.
+    defaultFor:
+      type: array
+      nullable: true
+      items:
+        type: integer
+      description: Rule numbers this rule is the default for.
+    appliesWith:
+      type: array
+      nullable: true
+      items:
+        type: integer
+      description: Rule numbers this rule applies together with.
+    category:
+      type: array
+      nullable: true
+      items:
+        type: string
+      description: Category codes attached to this rule.
 
 SandhiRulesResponse:
   type: object
@@ -35,6 +54,12 @@ SandhiRulesResponse:
       type: array
       items:
         $ref: '#/SandhiRuleDto'
+    categoryGlossary:
+      type: object
+      nullable: true
+      additionalProperties:
+        type: string
+      description: Glossary of category codes to human-readable meanings used by rule applicability/category.
 
 QuestItemPayload:
   type: object

@@ -137,7 +137,9 @@ LexiconQuickStartDto:
 
 LexiconDashboardResponse:
   type: object
-  required: [summary, today, frequencyBands, topics, pos, sources, collections, quickStart]
+  # NB: source-list block removed in V41 together with the lexeme table; the Java
+  # record carries no `sources` field (see LexiconDashboardResponse.java).
+  required: [summary, today, frequencyBands, topics, pos, collections, quickStart]
   properties:
     summary:
       $ref: '#/LexiconSummaryDto'
@@ -155,10 +157,6 @@ LexiconDashboardResponse:
       type: array
       items:
         $ref: '#/LexiconPosDto'
-    sources:
-      type: array
-      items:
-        $ref: '#/LexiconSourceDto'
     collections:
       type: array
       items:

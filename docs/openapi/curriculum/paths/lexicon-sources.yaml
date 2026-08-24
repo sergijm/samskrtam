@@ -1,8 +1,0 @@
-# Пути из curriculum-service.yaml → lexicon-sources.yaml
-paths:
-  /lexicon/sources:
-    $ref: 'paths/lexicon-sources.yaml#/paths/~1~1lexicon~1sources'
-  /lexicon/sources/{id}:
-    $ref: 'paths/lexicon-sources.yaml#/paths/~1~1lexicon~1sources~1{id}'
-  /lexicon/sources/{id}/occurrences/refresh-cache:
-    $ref: 'paths/lexicon-sources.yaml#/paths/~1~1lexicon~1sources~1{id}~1occurrences~1refresh-cache'

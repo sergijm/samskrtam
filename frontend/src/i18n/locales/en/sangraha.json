@@ -3,6 +3,8 @@
     "title": "Texts",
     "works": "Works",
     "noWorks": "No works found",
+    "source": "Source",
+    "filterBySource": "Filter by source",
     "work": "Work",
     "workNotFound": "Work not found",
     "chapters": "Chapters",

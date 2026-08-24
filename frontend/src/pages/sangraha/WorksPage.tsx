@@ -1,10 +1,11 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Skeleton } from 'primereact/skeleton';
+import { Dropdown } from 'primereact/dropdown';
 import { useNavigate } from 'react-router-dom';
 
-import { useWorks, useWorksClasses } from '../../hooks/useSangraha';
-import type { WorksClassTreeNodeDto } from '../../types/sangraha';
+import { useWorks, useWorksClasses, useSources } from '../../hooks/useSangraha';
+import type { WorksClassTreeNodeDto, SourceDto } from '../../types/sangraha';
 import './WorkPage.css';
 
 const FILTER_GROUPS = ['tradition', 'genre', 'school'];
@@ -34,18 +35,30 @@ const WorksPage = () => {
   const lang = i18n.language;
 
   const { data: classes, isLoading: classesLoading } = useWorksClasses();
+  const { data: sources } = useSources();
   const [activeClassId, setActiveClassId] = useState<string | null>(null);
+  const [activeSourceCode, setActiveSourceCode] = useState<string | undefined>(undefined);
 
   const selectedIds = useMemo(
     () => (activeClassId ? [activeClassId] : []),
     [activeClassId],
   );
 
-  const { data: works, isLoading, isError } = useWorks(selectedIds);
+  const { data: works, isLoading, isError } = useWorks(selectedIds, activeSourceCode);
 
   const handleClassClick = useCallback((id: string) => {
     setActiveClassId((prev) => (prev === id ? null : id));
   }, []);
+
+  const sourceOptions = useMemo(() => {
+    const opts: { label: string; value: string | undefined }[] = [
+      { label: t('common.all'), value: undefined },
+    ];
+    (sources ?? []).forEach((s: SourceDto) => {
+      opts.push({ label: s.code, value: s.code });
+    });
+    return opts;
+  }, [sources, lang, t]);
 
   const filterGroups = useMemo(() => {
     if (!classes) return [];
@@ -84,9 +97,27 @@ const WorksPage = () => {
                     ))}
                   </ul>
                 </div>
-              ))}
-            </div>
-          ) : null}
+               ))}
+             </div>
+           ) : null}
+
+          {/* Source filter (bottom of left column, AND with the rest) */}
+          <div className="border-1 border-200 border-round-lg surface-card p-1 mt-2">
+            <div className="text-xs font-semibold mb-1 px-1">{t('sangraha.source')}</div>
+            <Dropdown
+              value={activeSourceCode}
+              options={sourceOptions}
+              onChange={(e) => setActiveSourceCode(e.value)}
+              placeholder={t('sangraha.filterBySource')}
+              className="w-full"
+              pt={{
+                root: { style: { padding: '0' } },
+                input: { style: { padding: '0.15rem 0.4rem' } },
+                item: { style: { padding: '0.2rem 0.6rem' } },
+                itemLabel: { style: { lineHeight: '1.1' } },
+              }}
+            />
+          </div>
         </div>
 
         {/* Right column: works */}

@@ -15,6 +15,7 @@ import { useVocabularyLesson } from '../../hooks/useLessons';
 import type { VocabularyWordProgress } from '../../types/lesson';
 import VerseWordsList from '../../components/sangraha/VerseWordsList';
 import SandhiSplitsList from '../../components/sangraha/SandhiSplitsList';
+import './VersePage.css';
 import { IconButton, CtaButton } from '../../components/common/buttons';
 
 const VersePage = () => {
@@ -185,17 +186,10 @@ const VersePage = () => {
       {isAnalyzed && (
         <>
           <div className="mb-4">
-            <div className="mb-3">
-              <label className="block mb-1 font-semibold">{t('sangraha.fields.textDevanagari')}</label>
-              <div className="p-3 border-1 border-round surface-border surface-ground">
-                <p className="m-0 text-lg">{verse.textDevanagari || '-'}</p>
-              </div>
-            </div>
-            <div className="mb-3">
-              <label className="block mb-1 font-semibold">{t('sangraha.fields.textIast')}</label>
-              <div className="p-3 border-1 border-round surface-border surface-ground">
-                <p className="m-0 text-lg">{verse.textIast || '-'}</p>
-              </div>
+            <label className="block mb-1 font-semibold">{t('sangraha.fields.text')}</label>
+            <div className="p-3 border-1 border-round surface-border surface-ground">
+              <p className="m-0 verse-devanagari">{verse.textDevanagari || '-'}</p>
+              <p className="m-0 mt-1 text-lg text-color-secondary">{verse.textIast || '-'}</p>
             </div>
           </div>
 

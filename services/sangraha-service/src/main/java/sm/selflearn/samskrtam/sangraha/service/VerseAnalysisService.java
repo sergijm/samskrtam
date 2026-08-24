@@ -35,8 +35,8 @@ public class VerseAnalysisService {
      * с полным разбором), но не больше {@link #ANALYSIS_CHUNK_SIZE_MAX}.
      * Чтобы не увеличивать LLM-промпт сверх проверенного на практике.
      */
-    private static final int ANALYSIS_CHUNK_SIZE_MAX = 5;
-    private static final int ANALYSIS_CHUNK_SIZE_DEFAULT = 5;
+    private static final int ANALYSIS_CHUNK_SIZE_MAX = 3;
+    private static final int ANALYSIS_CHUNK_SIZE_DEFAULT = 3;
     private static final int ANALYSIS_TOKENS_PER_VERSE = 3000;
 
     private final VerseRepository verseRepository;
@@ -50,6 +50,7 @@ public class VerseAnalysisService {
     private final ToolCallValidator toolCallValidator;
     private final JsonSchemas jsonSchemas;
     private final VerseBatchPushService verseBatchPushService;
+    private final TransliterationService transliterationService;
 
     /**
      * Размер батча для анализа стихов: {@code max-completion-tokens / 3000},
@@ -70,17 +71,13 @@ public class VerseAnalysisService {
 
     /**
      * Запускает анализ одного стиха LLM.
-     * Если rawText передан и у стиха ещё нет rawText — сохраняет его.
-     * Если rawText уже есть — НЕ перезаписывает (поле rawText неизменно после первого сохранения).
+     * Поле rawText (исходный текст) изменяется только со стороны фронтэнда вручную —
+     * здесь оно НЕ перезаписывается. Текстовые колонки text_iast/text_devanagari
+     * нормализуются из rawText на этапе runAnalysis.
      */
     public void analyze(UUID verseId, String rawText) {
         Verse verse = verseRepository.findByIdAndDeletedAtIsNull(verseId)
                 .orElseThrow(() -> new IllegalArgumentException("Verse not found: " + verseId));
-
-        if (rawText != null && !rawText.isBlank()
-                && (verse.getRawText() == null || verse.getRawText().isBlank())) {
-            verse.setRawText(rawText);
-        }
 
         runAnalysis(List.of(verse));
     }
@@ -165,12 +162,12 @@ public class VerseAnalysisService {
      * </ol>
      */
     private void runAnalysis(List<Verse> verses) {
-        // 1. Помечаем все ANALYZING
+        // 1. Помечаем все ANALYZING и нормализуем текстовые колонки из rawText
+        //    (детектируем iast|devanagari и заполняем text_iast/text_devanagari).
+        //    Само поле rawText не трогаем — оно меняется только вручную с фронтэнда.
         Instant now = Instant.now();
         for (Verse v : verses) {
-            v.setStatus(VerseStatus.ANALYZING);
-            v.setUpdatedAt(now);
-            verseRepository.save(v);
+            prepareVerseForAnalysis(v, now);
         }
 
         log.info("Starting batch analysis for {} verses", verses.size());
@@ -283,6 +280,34 @@ public class VerseAnalysisService {
     }
 
 
+    /**
+     * Подготавливает стих к анализу: выставляет статус ANALYZING и заполняет
+     * текстовые колонки (text_iast / text_devanagari) на основе исходного rawText.
+     * Письменность определяется по rawText:
+     * <ul>
+     *   <li>деванагари → textDevanagari = rawText, textIast = devanagariToIast(rawText);</li>
+     *   <li>иначе (IAST) → textIast = rawText, textDevanagari = iastToDevanagari(rawText).</li>
+     * </ul>
+     * Поле rawText остаётся нетронутым.
+     */
+    private void prepareVerseForAnalysis(Verse verse, Instant now) {
+        verse.setStatus(VerseStatus.ANALYZING);
+        verse.setUpdatedAt(now);
+
+        String raw = verse.getRawText();
+        if (raw != null && !raw.isBlank()) {
+            if ("devanagari".equals(transliterationService.detectScript(raw))) {
+                verse.setTextDevanagari(raw);
+                verse.setTextIast(transliterationService.devanagariToIast(raw));
+            } else {
+                verse.setTextIast(raw);
+                verse.setTextDevanagari(transliterationService.iastToDevanagari(raw));
+            }
+        }
+
+        verseRepository.save(verse);
+    }
+
     private void saveSingleVerseResult(Verse verse, JsonNode verseEntry,
                                         String rawResponse, String modelName, String analyzerName,
                                         String rawPrompt) {
@@ -300,14 +325,17 @@ public class VerseAnalysisService {
             work = null;
         }
 
-        String textDevanagari = getString(verseEntry, "textDevanagari");
         String textIast = getString(verseEntry, "textIast");
         String translationRu = getString(verseEntry, "translationRu");
         String translationEn = getString(verseEntry, "translationEn");
         JsonNode sandhiSplitsNode = verseEntry.get("sandhiSplits");
         JsonNode wordsNode = verseEntry.get("words");
 
-        if (textDevanagari == null || textIast == null || translationRu == null || translationEn == null
+        // textIast из ответа LLM НЕ сохраняется в колонку — остаётся только внутри
+        // raw_model_response (JSON). Текстовые колонки text_iast/text_devanagari уже
+        // заполнены из rawText на этапе prepareVerseForAnalysis. Поэтому здесь
+        // достаточно проверить наличие textIast как признак корректного ответа.
+        if (textIast == null || translationRu == null || translationEn == null
                 || sandhiSplitsNode == null || !sandhiSplitsNode.isArray()
                 || wordsNode == null || !wordsNode.isArray()) {
             log.error("Invalid tool call arguments for verse {}: missing required fields", verse.getId());
@@ -317,7 +345,7 @@ public class VerseAnalysisService {
 
         try {
             analysisSaver.saveResults(verse, work, chapter,
-                    textDevanagari, textIast, translationRu, translationEn,
+                    translationRu, translationEn,
                     sandhiSplitsNode, wordsNode, rawResponse, modelName, analyzerName, rawPrompt);
             // Инкрементальная пачка лемм в curriculum-service (lexicon-content-pipeline.md §7).
             // Вне транзакции: сбой curriculum-service не откатывает анализ (см. VerseBatchPushService).

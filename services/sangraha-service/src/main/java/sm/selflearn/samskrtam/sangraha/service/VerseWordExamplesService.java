@@ -4,14 +4,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sm.selflearn.samskrtam.sangraha.dto.LemmaExamplesRequestDto;
+import sm.selflearn.samskrtam.sangraha.dto.LemmaExamplesResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseWordExamplesRequestDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseWordExamplesResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.VersesBatchRequestDto;
 import sm.selflearn.samskrtam.sangraha.dto.VersesBatchResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.VersesBatchResponseDto.VerseDto;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
+import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository.LemmaVerseRank;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository.SurfaceVerseRank;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,5 +85,51 @@ public class VerseWordExamplesService {
         VersesBatchResponseDto batch = verseBatchService.fetchBatch(new VersesBatchRequestDto(verseIds));
         return batch.verses().stream()
                 .collect(Collectors.toMap(VerseDto::verseId, Function.identity()));
+    }
+
+    /**
+     * Поиск примеров стихов по леммам (словарным формам) для раскрываемых строк
+     * таблицы слов лексического урока. Для каждой запрошенной леммы возвращается
+     * до {@code limitPerLemma} стихов, содержащих эту лемму. Лемма без подходящих
+     * стихов получает пустой verses; порядок results повторяет порядок lemmas.
+     */
+    @Transactional(readOnly = true)
+    public LemmaExamplesResponseDto findLemmaExamples(LemmaExamplesRequestDto request) {
+        List<String> lemmas = request.lemmas().stream()
+                .filter(l -> l != null && !l.isBlank())
+                .distinct()
+                .toList();
+        int limit = Math.max(1, request.limitPerLemma());
+        if (lemmas.isEmpty()) {
+            return new LemmaExamplesResponseDto(List.of());
+        }
+
+        List<LemmaVerseRank> ranks = verseWordRepository
+                .findLemmaVerseIds(lemmas, limit);
+        // lemma → упорядоченный список verseId (до limit на лемму), без дублей.
+        Map<String, List<UUID>> verseIdsByLemma = new LinkedHashMap<>();
+        for (LemmaVerseRank rank : ranks) {
+            verseIdsByLemma
+                    .computeIfAbsent(rank.getLemmaIast(), k -> new ArrayList<>())
+                    .add(rank.getVerseId());
+        }
+
+        List<UUID> allVerseIds = verseIdsByLemma.values().stream()
+                .flatMap(List::stream)
+                .distinct()
+                .toList();
+        Map<UUID, VerseDto> verseById = fetchVerseDtos(allVerseIds);
+
+        List<LemmaExamplesResponseDto.ResultDto> results = lemmas.stream()
+                .map(lemma -> {
+                    List<UUID> verseIds = verseIdsByLemma.getOrDefault(lemma, List.of());
+                    List<VerseDto> verses = verseIds.stream()
+                            .map(verseById::get)
+                            .filter(v -> v != null)
+                            .toList();
+                    return new LemmaExamplesResponseDto.ResultDto(lemma, verses);
+                })
+                .toList();
+        return new LemmaExamplesResponseDto(results);
     }
 }

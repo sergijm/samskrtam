@@ -22,6 +22,7 @@ public class VerseAnalysisSaver {
     private final VerseAnalysisRepository verseAnalysisRepository;
     private final VerseWordRepository verseWordRepository;
     private final ObjectMapper objectMapper;
+    private final TransliterationService transliterationService;
 
     /**
      * Единственная транзакция анализа стиха. Порядок операций:
@@ -34,19 +35,15 @@ public class VerseAnalysisSaver {
         @Transactional
     public void saveResults(
             Verse verse, Work work, Chapter chapter,
-            String textDevanagari, String textIast,
             String translationRu, String translationEn,
             JsonNode sandhiSplitsNode, JsonNode wordsNode,
             String rawResponse, String modelName, String analyzerName,
             String rawPrompt
     ) {
-        // 1. Заполняем текст стиха, если не был введён вручную
-        if (verse.getTextDevanagari() == null || verse.getTextDevanagari().isBlank()) {
-            verse.setTextDevanagari(textDevanagari);
-        }
-        if (verse.getTextIast() == null || verse.getTextIast().isBlank()) {
-            verse.setTextIast(textIast);
-        }
+        // 1. Текстовые колонки text_iast / text_devanagari уже заполнены из rawText
+        //    на этапе подготовки анализа (VerseAnalysisService.prepareVerseForAnalysis).
+        //    Ответ LLM содержит textIast, но НЕ сохраняется в колонку — он остаётся
+        //    только внутри raw_model_response (JSON). Поэтому здесь колонки не трогаем.
 
         // 2. Перезаписываем VerseAnalysis
         verseAnalysisRepository.deleteByVerseId(verse.getId());
@@ -103,7 +100,7 @@ public class VerseAnalysisSaver {
                     .verse(verse)
                     .position(w.get("position").asInt())
                     .surfaceIast(getString(w, "surfaceIast"))
-                    .surfaceDevanagari(getString(w, "surfaceDevanagari"))
+                    .surfaceDevanagari(deriveSurfaceDevanagari(w))
                     .lemmaIast(getString(w, "lemmaIast"))
                     .stem(getStringOrNull(w, "stem"))
                     .root(getStringOrNull(w, "root"))
@@ -160,6 +157,22 @@ public class VerseAnalysisSaver {
             words.add(word);
         }
         return words;
+    }
+
+    /**
+     * Поверхностная форма в деванагари. Модель возвращает только IAST
+     * (surfaceIast), поэтому деванагари восстанавливается серверно при необходимости.
+     */
+    private String deriveSurfaceDevanagari(JsonNode w) {
+        String devanagari = getString(w, "surfaceDevanagari");
+        if (devanagari != null && !devanagari.isBlank()) {
+            return devanagari;
+        }
+        String iast = getString(w, "surfaceIast");
+        if (iast != null && !iast.isBlank()) {
+            return transliterationService.iastToDevanagari(iast);
+        }
+        return null;
     }
 
     private static boolean hasAnyNonNull(JsonNode node) {

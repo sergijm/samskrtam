@@ -79,6 +79,12 @@
       "mistakesMeta": "8 words · ~4 min",
       "top100": "Top 100",
       "top100Meta": "10 questions"
+    },
+    "vocabulary": {
+      "examplesFromSangraha": "Examples from Saṅgraha",
+      "examplesError": "Could not load examples",
+      "noExamples": "No examples found in Saṅgraha",
+      "answerHistory": "Answer history"
     }
   }
 }

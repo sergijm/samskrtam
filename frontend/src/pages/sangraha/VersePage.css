@@ -29,3 +29,10 @@
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
+
+/* Combined verse text block: Devanagari slightly larger than IAST */
+.verse-devanagari {
+  font-size: 1.3rem;
+  font-weight: 500;
+  line-height: 1.8;
+}

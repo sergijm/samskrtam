@@ -79,6 +79,12 @@
       "mistakesMeta": "8 слов · ~4 мин",
       "top100": "Top 100",
       "top100Meta": "10 вопросов"
+    },
+    "vocabulary": {
+      "examplesFromSangraha": "Примеры из Санграхи",
+      "examplesError": "Не удалось загрузить примеры",
+      "noExamples": "В Санграхе примеры не найдены",
+      "answerHistory": "История ответов"
     }
   }
 }

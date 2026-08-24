@@ -106,9 +106,13 @@ GET    /api/v1/sangraha/analysis                                 → списо�
                                                                       только превью/статус/createdAt — без контекста произведения/главы)
 DELETE /api/v1/sangraha/analysis/{verseId}                       → мягкое удаление standalone-стиха (только владелец)
 POST   /api/v1/sangraha/words/examples                           → примеры стихов по точной словоформе (тело — { surfaceIasts,
-                                                                      limitPerForm? }); до limitPerForm стихов на форму, перевод
-                                                                      (translationRu/En) может отсутствовать, форма без совпадений —
-                                                                      пустой verses (колонка «примеры из санграхи» урока склонений)
+                                                                       limitPerForm? }); до limitPerForm стихов на форму, перевод
+                                                                       (translationRu/En) может отсутствовать, форма без совпадений —
+                                                                       пустой verses (колонка «примеры из санграхи» урока склонений)
+POST   /api/v1/sangraha/words/examples-by-lemma                   → примеры стихов по лемме (словарной форме, lemmaIast); тело —
+                                                                       { lemmas, limitPerLemma? } (по умолчанию 5 стихов на лемму);
+                                                                       раскрываемые строки таблицы слов лексического урока, лемма без
+                                                                       совпадений — пустой verses
 ```
 
 Ответ `GET /works/{workSlug}` (и `GET /works?id={workId}`) — двухуровневое дерево для TreeGrid:
