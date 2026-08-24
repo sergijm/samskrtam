@@ -199,6 +199,10 @@
     "allFilters": "All filters"
   },
   "dictionary": {
-    "noWordsFound": "No words found."
+    "noWordsFound": "No words found.",
+    "enterLemma": "Enter a lemma to search.",
+    "gloss": "Gloss",
+    "parentLemma": "Parent lemma",
+    "senses": "Senses"
   }
 }

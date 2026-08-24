@@ -50,14 +50,6 @@ export interface SandhiRuleDto {
 }
 
 // Monier-Williams Dictionary Types
-export interface MwWordSearchDto {
-    id: number;
-    slp1Spelling: string;
-    slp1Normalized: string;
-    iastSpelling?: string;
-    key1: string;
-}
-
 export interface MwDictionaryEntryDto {
     recordId: string;
     key1: string;
@@ -81,4 +73,46 @@ export interface MwDictionaryEntryDto {
 
 export interface MwEntryDto {
     entries: MwDictionaryEntryDto[];
+}
+
+// Frisch Dictionary Types (exact IAST lemma lookup)
+export interface FrischSenseDto {
+    genders?: any;
+    number_note?: string;
+    is_proper_noun?: boolean;
+    cs?: string;
+    ru?: string;
+    en?: string;
+}
+
+export interface FrischEntryDto {
+    pos?: any[];
+    senses?: FrischSenseDto[];
+    genders?: any[];
+    is_root?: boolean;
+    entry_id?: number;
+    gloss_cs?: string;
+    gloss_en?: string;
+    gloss_ru?: string;
+    lemma_iast?: string;
+    verb_class?: number;
+    verb_forms?: any[];
+    grammar_note?: string;
+    parent_lemma?: string;
+    raw_headline?: string;
+    derived_stems?: any[];
+    homonym_index?: number;
+    related_forms?: any[];
+    is_related_form?: boolean;
+    parent_entry_id?: number;
+    cross_references?: any[];
+}
+
+// Apte Dictionary Types (lookup by SLP1 key derived from IAST lemma)
+export interface ApteEntryDto {
+    id?: number;
+    headwordDevanagari?: string;
+    bodyText?: string;
+    rawMarkup?: string;
+    homonymNum?: number;
 }

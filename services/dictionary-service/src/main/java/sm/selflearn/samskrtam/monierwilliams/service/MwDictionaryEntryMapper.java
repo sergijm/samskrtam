@@ -2,9 +2,7 @@ package sm.selflearn.samskrtam.monierwilliams.service;
 
 import org.springframework.stereotype.Component;
 import sm.selflearn.samskrtam.monierwilliams.dto.MwDictionaryEntryDto;
-import sm.selflearn.samskrtam.monierwilliams.dto.MwWordSearchDto;
 import sm.selflearn.samskrtam.monierwilliams.entity.*;
-import sm.selflearn.samskrtam.monierwilliams.model.SanskritWordSearchResult;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -81,14 +79,5 @@ public class MwDictionaryEntryMapper {
                         .whitneyPage(info.getWhitneyPage())
                         .build())
                 .collect(Collectors.toList());
-    }
-
-    public MwWordSearchDto mapToMwWordSearchDto(SanskritWordSearchResult word) {
-        return MwWordSearchDto.builder()
-                .slp1Spelling(word.getSlp1Spelling())
-                .slp1Normalized(word.getSlp1Normalized())
-                .iastSpelling(word.getIastSpelling())
-                .similarity(word.getSimilarity())
-                .build();
     }
 }

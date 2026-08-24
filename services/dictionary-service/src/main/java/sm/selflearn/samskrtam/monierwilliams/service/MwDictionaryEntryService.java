@@ -5,10 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sm.selflearn.samskrtam.dictionary.service.TransliterationService;
-import sm.selflearn.samskrtam.monierwilliams.dto.MwWordSearchDto;
 import sm.selflearn.samskrtam.monierwilliams.dto.MwDictionaryEntryDto;
 import sm.selflearn.samskrtam.monierwilliams.entity.MwEntry;
-import sm.selflearn.samskrtam.monierwilliams.model.SanskritWordSearchResult;
 import sm.selflearn.samskrtam.monierwilliams.repository.MwEntryRepository;
 
 import java.util.Comparator;
@@ -23,7 +21,6 @@ public class MwDictionaryEntryService {
     private final MwEntryRepository entryRepository;
     private final TransliterationService transliterationService;
     private final MwEntryBuilder entryBuilder;
-    private final MwDictionaryEntryMapper mapper;
 
     /**
      * Получить полную статью по record_id
@@ -36,12 +33,20 @@ public class MwDictionaryEntryService {
     }
 
     /**
-     * Получить список слов по ключу поиска (неточное совпадение)
+     * Получить статью по лемме в IAST (точное совпадение по key1_iast_plain).
+     * Запрос нормализуется в БД через lingua.normalize_lemma (снятие диакритиков + lower).
      */
-    public List<MwWordSearchDto> findWordsByKey1Normalized(String normalizedQuery) {
-        List<SanskritWordSearchResult> words = entryRepository.findWordsByKey1NormalizedSimilarity(normalizedQuery);
-        return words.stream().map(mapper::mapToMwWordSearchDto)
+    @Transactional(readOnly = true)
+    public List<MwDictionaryEntryDto> getEntriesByLemmaIast(String query) {
+        List<MwEntry> entries = entryRepository.findByLemmaIast(query);
+
+        List<MwEntry> sorted = entries.stream()
+                .sorted(Comparator.comparing(MwEntry::getECode))
                 .collect(Collectors.toUnmodifiableList());
+
+        return sorted.stream()
+                .map(entryBuilder::build)
+                .collect(Collectors.toList());
     }
 
     /**

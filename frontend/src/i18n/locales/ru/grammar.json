@@ -207,7 +207,11 @@
     "allFilters": "Все фильтры"
   },
   "dictionary": {
-    "noWordsFound": "Слова не найдены."
+    "noWordsFound": "Слова не найдены.",
+    "enterLemma": "Введите лемму для поиска.",
+    "gloss": "Перевод",
+    "parentLemma": "Родительская лемма",
+    "senses": "Значения"
   }
 }
 

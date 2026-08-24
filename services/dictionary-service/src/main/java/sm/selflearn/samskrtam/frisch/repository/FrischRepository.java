@@ -15,7 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FrischRepository {
 
-    private static final String GET_LEMMA_JSON_SQL = "SELECT frisch.get_lemma_json(?)";
+    private static final String GET_LEMMA_JSON_SQL = "SELECT cologne_frisch.get_lemma_json(?)";
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
@@ -35,7 +35,7 @@ public class FrischRepository {
                     json,
                     objectMapper.getTypeFactory().constructCollectionType(List.class, FrischEntryDto.class));
         } catch (Exception e) {
-            log.error("Failed to parse frisch.get_lemma_json result for lemma '{}'", lemma, e);
+            log.error("Failed to parse cologne_frisch.get_lemma_json result for lemma '{}'", lemma, e);
             throw new IllegalStateException("Failed to parse frisch lemma json", e);
         }
     }

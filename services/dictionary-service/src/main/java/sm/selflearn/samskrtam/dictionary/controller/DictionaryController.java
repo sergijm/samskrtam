@@ -7,12 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import sm.selflearn.samskrtam.dictionary.dto.MwEntryDto;
-import sm.selflearn.samskrtam.dictionary.model.DictionaryEntry;
-import sm.selflearn.samskrtam.dictionary.model.WordSearchResult;
 import sm.selflearn.samskrtam.dictionary.service.DictionaryService;
-import sm.selflearn.samskrtam.monierwilliams.dto.MwWordSearchDto;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/dictionary")
@@ -22,10 +17,8 @@ public class DictionaryController {
     private final DictionaryService dictionaryService;
 
     @GetMapping("/search")
-    public List<MwWordSearchDto> searchWords(
-            @RequestParam String query,
-            @RequestParam(required = false) String scheme) {
-        return dictionaryService.searchWords(query);
+    public ResponseEntity<MwEntryDto> searchByLemma(@RequestParam String query) {
+        return ResponseEntity.ok(dictionaryService.searchByLemma(query));
     }
 
     @GetMapping("/entry")

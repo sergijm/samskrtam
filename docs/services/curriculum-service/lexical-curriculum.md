@@ -8,7 +8,7 @@
 
 ## 1. LexicalTopic = запись curriculum.topic (domain=LEXICON) + композиция в той же схеме
 
-**Главное архитектурное решение этого документа:** Lexical Topic не заводит
+_Архитектурное решение вынесено в единый раздел «Архитектурные решения (ADR)» файла curriculum-service.md (ADR-7)._ Lexical Topic не заводит
 собственную таблицу «тема» — он **регистрируется как обычная строка**
 `curriculum.topic` (тот же сервис и та же схема, что и grammar-темы, см.
 `curriculum-service.md`), с новым полем-дискриминатором:
@@ -241,7 +241,7 @@ verb-noun collocations») — на нижней; конкретные числа
 ## 7. LearningMaterial для Lexical Topic
 
 Переиспользуется существующая модель `LearningMaterial` (`learning-materials.md`,
-`topicId` → `curriculum.topic.id`, физически хранится в curriculum-service, см.
+`topicId` → `curriculum.topic.id`, физически принадлежит **content-service**, см.
 `curriculum-service.md` §5) без изменений схемы. Для lexical Topic обязательный
 минимальный набор материалов (не «энциклопедия», задача §11 явно просит
 краткость):

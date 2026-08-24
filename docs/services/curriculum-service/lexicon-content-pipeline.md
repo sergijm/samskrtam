@@ -46,7 +46,7 @@ batch-job (ADMIN-инициируемый, синхронный или асин�
 реализации), а не очередь review для AI-предложений:
 
 1. **Экспорт сырья.** Существующий internal-эндпоинт
-   `GET /sangraha/internal/lexicon/lemmas/export` (постранично, курсор по
+   `GET /sangraha/internal/api/v2/lexicon/lemmas/export` (постранично, курсор по
    `lemma_statistics.id`, сортировка по `occurrenceCount` по убыванию) — отдаёт
    уже агрегированные по `(лемма, род)` строки `LemmaExportItem` с полями
    `lemmaId`, `lemmaSlp1`, `lemmaIast`, `lemmaDevanagari`, `gender`,
@@ -128,24 +128,15 @@ batch-job (ADMIN-инициируемый, синхронный или асин�
 
 ## 4. Открытые вопросы
 
-- **Достаточность объёма корпуса sangraha-service для 2000 уникальных лемм** —
-  зависит от того, сколько произведений/стихов будет проанализировано к моменту
-  запуска pipeline; если объём корпуса органически ограничивает результат
-  меньшим числом лемм — решение принимается по факту (расширить корпус
-  дополнительными произведениями в sangraha-service, либо принять меньший
-  словарь), не в этом документе.
-- **Ручная разметка `semanticClasses`** — самое трудоёмкое место pipeline
-  теперь (единственное поле без эвристики); возможное будущее облегчение —
-  словарь ключевых слов/сопоставление по корню для грубой авто-подсказки перед
-  ручным подтверждением, вне периметра текущей итерации.
+_Архитектурное решение по объёму корпуса, ручной разметке `semanticClasses` и ручному
+ADMIN-триггеру импорта вынесено в единый раздел «Архитектурные решения (ADR)» файла
+curriculum-service.md (ADR-8)._
+
 - Омонимы разделяются через `meaningNumber` (`lexicon.md` §1): значение =
   `(lemma_slp1, gender, нормализованный gloss)`. Разделение работает в пределах
   того, что различимо в данных sangraha (перевод-глосс); если LLM даёт двум
-  разным значениям одинаковый перевод — они останутся одной строкой (граница
+  разным значениям одинаковый перевод — они остаются одной строкой (граница
   упирается в качество глоссов, осознанный допуск, не блокер).
-- Формат/периодичность запуска импорта (ручная кнопка ADMIN vs cron) — вопрос
-  реализации, не архитектуры; в этой итерации — ручной запуск ADMIN
-  (`POST /api/v2/lexicon/import/from-sangraha`, см. `task-curriculum-14`).
 
 ---
 
@@ -176,7 +167,7 @@ ADMIN-review на стороне sangraha-service.
 
 **Актуальный порядок шага 3 импорта:**
 1. Перед группировкой (§2 шаг 2) curriculum-service запрашивает
-   `GET /sangraha/internal/lexicon/lemma-classifications/export?schemeCode=CURRICULUM&status=APPROVED`
+   `GET /sangraha/internal/api/v2/lexicon/lemma-classifications/export?schemeCode=CURRICULUM&status=APPROVED`
    (постранично, `sangraha-service/lemma-classification.md` §5).
 2. Если для группы `(lemmaSlp1, gender)` есть `APPROVED`-классификация —
    `semanticClasses` (по `categoryCode`) и `glossRu`/`glossEn` берутся из неё

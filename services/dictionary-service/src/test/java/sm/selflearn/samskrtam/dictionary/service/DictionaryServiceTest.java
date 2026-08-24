@@ -5,21 +5,15 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import sm.selflearn.samskrtam.monierwilliams.dto.MwWordSearchDto;
 import sm.selflearn.samskrtam.monierwilliams.service.MwDictionaryEntryService;
 
 import java.util.Collections;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 class DictionaryServiceTest {
-
-    @Mock
-    private TransliterationService transliterationService;
 
     @Mock
     private MwDictionaryEntryService mwDictionaryEntryService;
@@ -33,18 +27,13 @@ class DictionaryServiceTest {
     }
 
     @Test
-    void searchWords_shouldReturnListOfWords() {
-        String query = "test";
-        when(transliterationService.normalizeToSlp1(anyString(), any())).thenReturn("test");
-        when(mwDictionaryEntryService.findWordsByKey1Normalized(anyString()))
-                .thenReturn(Collections.singletonList(
-                        MwWordSearchDto.builder().slp1Normalized("test").similarity(1.0).build()
-                ));
+    void searchByLemma_shouldReturnEntry() {
+        String query = "rāma";
+        when(mwDictionaryEntryService.getEntriesByLemmaIast(anyString())).thenReturn(Collections.emptyList());
 
-        List<MwWordSearchDto> result = dictionaryService.searchWords(query);
+        var result = dictionaryService.searchByLemma(query);
 
-        assertEquals(1, result.size());
-        assertEquals("test", result.get(0).getSlp1Normalized());
+        assertEquals(0, result.getEntries().size());
     }
 
     @Test

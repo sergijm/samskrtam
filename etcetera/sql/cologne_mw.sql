@@ -1,18 +1,18 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : mdm-dev-vm
+ Source Server         : localhost-pg17
  Source Server Type    : PostgreSQL
- Source Server Version : 170009 (170009)
- Source Host           : mdm-dev:5432
+ Source Server Version : 170000 (170000)
+ Source Host           : localhost:5436
  Source Catalog        : samskrtam
  Source Schema         : cologne_mw
 
  Target Server Type    : PostgreSQL
- Target Server Version : 170009 (170009)
+ Target Server Version : 170000 (170000)
  File Encoding         : 65001
 
- Date: 23/06/2026 06:09:56
+ Date: 24/08/2026 13:32:21
 */
 
 
@@ -656,7 +656,7 @@ CREATE INDEX "idx_mw_biological_name_entry_id" ON "cologne_mw"."biological_name"
 -- ----------------------------
 -- Checks structure for table biological_name
 -- ----------------------------
-ALTER TABLE "cologne_mw"."biological_name" ADD CONSTRAINT "biological_name_name_type_check" CHECK (name_type::text = ANY (ARRAY['bot'::character varying, 'bio'::character varying]::text[]));
+ALTER TABLE "cologne_mw"."biological_name" ADD CONSTRAINT "biological_name_name_type_check" CHECK (name_type::text = ANY (ARRAY['bot'::character varying::text, 'bio'::character varying::text]));
 
 -- ----------------------------
 -- Primary Key structure for table biological_name

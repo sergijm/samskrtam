@@ -9,20 +9,7 @@
 
 ## 0. Решение и границы
 
-`curriculum-service` (API v1) **не изменяется** — старая реализация `DECLENSION_FORM` там
-остаётся как есть (либо считается deprecated и постепенно выводится из использования,
-решение о выводе — отдельная будущая задача, не эта). Новый функционал 4 типов квестов
-склонения реализуется **только** в curriculum-service, под новым путём `/api/v2/curriculum/quest-items`,
-без единой строки изменений в curriculum-service.
-
-**Ключевое архитектурное отличие от старой модели** (`quest-item-model.md` §2): никакой
-генерации «на лету» через `QuestItemGenerator.generate(ctx)` по запросу. Вместо этого —
-**batch-генератор**, офлайн-процесс (Spring `@Scheduled`/CLI-команда ADMIN, см. §4), который
-один раз проходит по всем `Lexeme` нужного `morphologyClass`, строит словоформы по таблице
-окончаний (переиспользуя парадигмы, которыми ранее оперировал curriculum-service, см.
-`architecture.md §3.3`) и **материализует** весь набор `QuestItem` (включая дистракторы) в
-таблицу `curriculum.quest_item`. Эндпоинт чтения — простой отбор уже готовых строк, без
-вычислений в рантайме.
+_Архитектурное решение вынесено в единый раздел «Архитектурные решения (ADR)» файла curriculum-service.md (ADR-3, ADR-4)._
 
 Источник лемм — уже существующие таблицы curriculum-service: `curriculum.lexeme` (лемма,
 `gender`) и `curriculum.morphology_class` (`a-stem-masc`, `i-stem` и т.д., см. миграцию
@@ -139,8 +126,9 @@ IAST-часть леммы/словоформы). quiz-service прокидыв�
 ## 4. Batch-генератор
 
 Класс `DeclensionQuestItemBatchGenerator` (пакет `sm.selflearn.samskrtam.curriculum.questgen`),
-CLI-triggered (административный REST-эндпоинт `POST /api/v2/curriculum/quest-items/regenerate?topicId=&itemType=`,
-ADMIN-only) — не выполняется автоматически по расписанию в первой версии (нет расписания —
+CLI-triggered (административный REST-эндпоинт `POST /api/v2/curriculum/quest-items/regenerate`,
+ADMIN-only, возвращает `202` и статистику по всем темам с зарегистрированным генератором) —
+не выполняется автоматически по расписанию в первой версии (нет расписания —
 запуск только вручную ADMIN после наполнения `Lexeme`).
 
 Конфигурация количества пар для DECLENSION_MATCH — `application.yaml`:
@@ -198,8 +186,9 @@ quiz:
 ## 6. API v2 (новые эндпоинты curriculum-service)
 
 ```
-GET  /api/v2/curriculum/quest-items?topicId=&itemType=&limit=   — выборка готовых QuestItem (любой аутентифицированный)
-POST /api/v2/curriculum/quest-items/regenerate?topicId=&itemType=  — ADMIN, перегенерировать (удалить старые строки по ключу, создать заново)
+GET  /api/v2/curriculum/quest-items?topicId=&itemType=&limit=   — выборка готовых QuestItem (любой аутентифицированный, случайная выборка по типу темы)
+POST /api/v2/curriculum/quest-items/select   — тело QuestItemSelectionRequest + topicCode (query); выборка по прогресс-тегам/типу/режиму (любой аутентифицированный)
+POST /api/v2/curriculum/quest-items/regenerate   — ADMIN, 202 (перегенерация офлайн-батчем для всех тем с зарегистрированным генератором; возвращает статистику по темам)
 ```
 
 Полная OpenAPI-схема — задача Агента 5 (Contract & Documentation Agent), не входит в этот

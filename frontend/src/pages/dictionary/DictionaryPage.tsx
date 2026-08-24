@@ -5,7 +5,9 @@ import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
-import { useMwWordSearch, useMwEntry } from '../../hooks/useDictionary';
+import { TabView, TabPanel } from 'primereact/tabview';
+import { useDictionarySearch, useFrischLemma, useApteLemma } from '../../hooks/useDictionary';
+import { MwDictionaryEntryDto, FrischEntryDto, ApteEntryDto } from '../../types';
 
 const DictionaryPage = () => {
   const { t } = useTranslation();
@@ -13,35 +15,31 @@ const DictionaryPage = () => {
   const navigate = useNavigate();
 
   const query = searchParams.get('q');
-  const selectedSlp1 = searchParams.get('slp');
 
   const [searchTerm, setSearchTerm] = useState(query || '');
 
   const {
-    data: searchResults,
-    isPending: isSearching,
-    error: searchError,
-  } = useMwWordSearch(query);
+    data: mwEntry,
+    isPending: isMwSearching,
+    error: mwError,
+  } = useDictionarySearch(query);
 
   const {
-    data: entryDetails,
-    isFetching: isFetchingEntry,
-    error: entryError,
-  } = useMwEntry(selectedSlp1);
+    data: frischEntries,
+    isPending: isFrischSearching,
+    error: frischError,
+  } = useFrischLemma(query);
+
+  const {
+    data: apteEntries,
+    isPending: isApteSearching,
+    error: apteError,
+  } = useApteLemma(query);
 
   const handleSearch = () => {
     if (searchTerm.trim()) {
       navigate(`/dictionary?q=${encodeURIComponent(searchTerm.trim())}`);
     }
-  };
-
-  const handleSelectWord = (slp1Normalized: string) => {
-    const currentQuery = query || searchTerm;
-    navigate(
-      `/dictionary?q=${encodeURIComponent(
-        currentQuery
-      )}&slp=${encodeURIComponent(slp1Normalized)}`
-    );
   };
 
   const stripHtmlTags = (html: string) => {
@@ -52,7 +50,94 @@ const DictionaryPage = () => {
     return text.replace(/\s+/g, ' ').trim();
   };
 
-  const showSpinner = (isSearching && !!query) || (isFetchingEntry && !!selectedSlp1);
+  const renderMwTable = (entries: MwDictionaryEntryDto[]) => (
+    <table className="w-full">
+      <tbody>
+        {entries.map((entry, index) => (
+          <tr
+            key={entry.recordId}
+            style={{
+              borderBottom:
+                index < entries.length - 1
+                  ? '1px solid var(--surface-d)'
+                  : 'none',
+            }}
+          >
+            <td
+              style={{
+                width: '300px',
+                padding: '0.75rem',
+                verticalAlign: 'top',
+                fontWeight: 'bold',
+              }}
+            >
+              {entry.key1Display}
+            </td>
+            <td
+              style={{
+                padding: '0.75rem',
+                whiteSpace: 'pre-wrap',
+                wordWrap: 'break-word',
+              }}
+            >
+              {stripHtmlTags(entry.rawBody)}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+
+  const renderFrisch = (entries: FrischEntryDto[]) => (
+    <div className="flex flex-column gap-3">
+      {entries.map((entry) => (
+        <div key={entry.entry_id} className="card">
+          <h3 className="mb-1">
+            {entry.lemma_iast}
+            {entry.homonym_index != null ? ` (${entry.homonym_index})` : ''}
+          </h3>
+          {entry.grammar_note && (
+            <p className="text-sm text-color-secondary mb-2">{entry.grammar_note}</p>
+          )}
+          {entry.gloss_ru && <p className="mb-1"><strong>{t('dictionary.gloss')} (ru):</strong> {entry.gloss_ru}</p>}
+          {entry.gloss_en && <p className="mb-1"><strong>{t('dictionary.gloss')} (en):</strong> {entry.gloss_en}</p>}
+          {entry.gloss_cs && <p className="mb-1"><strong>{t('dictionary.gloss')} (cs):</strong> {entry.gloss_cs}</p>}
+          {entry.parent_lemma && (
+            <p className="mb-1 text-sm">{t('dictionary.parentLemma')}: {entry.parent_lemma}</p>
+          )}
+          {entry.senses && entry.senses.length > 0 && (
+            <div className="mt-2">
+              <strong>{t('dictionary.senses')}:</strong>
+              <ul className="ml-3">
+                {entry.senses.map((sense, i) => (
+                  <li key={i}>
+                    {[sense.ru, sense.en, sense.cs].filter(Boolean).join(' / ')}
+                    {sense.number_note ? ` (${sense.number_note})` : ''}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderApte = (entries: ApteEntryDto[]) => (
+    <div className="flex flex-column gap-3">
+      {entries.map((entry) => (
+        <div key={entry.id} className="card">
+          <h3 className="mb-2">
+            {entry.headwordDevanagari}
+            {entry.homonymNum != null ? ` (${entry.homonymNum})` : ''}
+          </h3>
+          <p className="white-space-pre-wrap" style={{ wordWrap: 'break-word' }}>
+            {entry.bodyText || entry.rawMarkup}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="p-4">
@@ -72,76 +157,56 @@ const DictionaryPage = () => {
         </div>
       </div>
 
-      {showSpinner && (
-        <div className="flex justify-content-center my-4">
-          <ProgressSpinner />
-        </div>
-      )}
-      {searchError && <Message severity="error" text={searchError.message} />}
-      {entryError && <Message severity="error" text={entryError.message} />}
+      {mwError && <Message severity="error" text={mwError.message} />}
+      {frischError && <Message severity="error" text={frischError.message} />}
+      {apteError && <Message severity="error" text={apteError.message} />}
 
-      {searchResults && searchResults.length > 0 && (
-        <div className="flex flex-wrap justify-content-center gap-2 mb-4">
-          {searchResults.map((word) => (
-            <Button
-              key={word.id}
-              label={word.iastSpelling || word.slp1Normalized || word.slp1Spelling}
-              className={
-                word.slp1Normalized === selectedSlp1
-                  ? 'p-button-sm'
-                  : 'p-button-outlined p-button-sm'
-              }
-              onClick={() => handleSelectWord(word.slp1Normalized)}
-            />
-          ))}
-        </div>
-      )}
-      {searchResults &&
-        searchResults.length === 0 &&
-        !isSearching &&
-        query && (
-          <p className="text-center">{t('dictionary.noWordsFound')}</p>
-        )}
+      <TabView>
+        <TabPanel header="Monier-Williams">
+          {isMwSearching && !!query && (
+            <div className="flex justify-content-center my-4">
+              <ProgressSpinner />
+            </div>
+          )}
+          {mwEntry && mwEntry.entries.length > 0 && (
+            <div className="card mt-3">{renderMwTable(mwEntry.entries)}</div>
+          )}
+          {mwEntry && mwEntry.entries.length === 0 && !isMwSearching && query && (
+            <p className="text-center mt-3">{t('dictionary.noWordsFound')}</p>
+          )}
+          {!query && <p className="text-center mt-3 text-color-secondary">{t('dictionary.enterLemma')}</p>}
+        </TabPanel>
 
-      {entryDetails && (
-        <div className="card mt-4">
-          <table className="w-full">
-            <tbody>
-              {entryDetails.entries.map((entry, index) => (
-                <tr
-                  key={entry.recordId}
-                  style={{
-                    borderBottom:
-                      index < entryDetails.entries.length - 1
-                        ? '1px solid var(--surface-d)'
-                        : 'none',
-                  }}
-                >
-                  <td
-                    style={{
-                      width: '300px',
-                      padding: '0.75rem',
-                      verticalAlign: 'top',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {entry.key1Display}
-                  </td>
-                  <td
-                    style={{
-                      padding: '0.75rem',
-                      whiteSpace: 'pre-wrap',
-                      wordWrap: 'break-word',
-                    }}
-                  >
-                    {stripHtmlTags(entry.rawBody)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        <TabPanel header="Frisch (IAST)">
+          {isFrischSearching && !!query && (
+            <div className="flex justify-content-center my-4">
+              <ProgressSpinner />
+            </div>
+          )}
+          {frischEntries && frischEntries.length > 0 && (
+            <div className="mt-3">{renderFrisch(frischEntries)}</div>
+          )}
+          {frischEntries && frischEntries.length === 0 && !isFrischSearching && query && (
+            <p className="text-center mt-3">{t('dictionary.noWordsFound')}</p>
+          )}
+          {!query && <p className="text-center mt-3 text-color-secondary">{t('dictionary.enterLemma')}</p>}
+        </TabPanel>
+
+        <TabPanel header="Apte">
+          {isApteSearching && !!query && (
+            <div className="flex justify-content-center my-4">
+              <ProgressSpinner />
+            </div>
+          )}
+          {apteEntries && apteEntries.length > 0 && (
+            <div className="mt-3">{renderApte(apteEntries)}</div>
+          )}
+          {apteEntries && apteEntries.length === 0 && !isApteSearching && query && (
+            <p className="text-center mt-3">{t('dictionary.noWordsFound')}</p>
+          )}
+          {!query && <p className="text-center mt-3 text-color-secondary">{t('dictionary.enterLemma')}</p>}
+        </TabPanel>
+      </TabView>
     </div>
   );
 };

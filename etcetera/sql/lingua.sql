@@ -12,7 +12,7 @@
  Target Server Version : 170000 (170000)
  File Encoding         : 65001
 
- Date: 24/08/2026 09:06:59
+ Date: 24/08/2026 13:34:07
 */
 
 
@@ -177,16 +177,28 @@ CREATE TABLE "lingua"."semantic_class" (
 -- ----------------------------
 ALTER SEQUENCE "lingua"."case_endings_id_seq"
 OWNED BY "lingua"."case_endings"."id";
-SELECT setval('"lingua"."case_endings_id_seq"', 524, true);
+SELECT setval('"lingua"."case_endings_id_seq"', 602, true);
 
 -- ----------------------------
 -- Indexes structure for table case_endings
 -- ----------------------------
-CREATE INDEX "idx_case_endings_lookup" ON "lingua"."case_endings" USING btree (
-  "stem_type" "pg_catalog"."enum_ops" ASC NULLS LAST,
-  "gender" "pg_catalog"."enum_ops" ASC NULLS LAST,
-  "number" "pg_catalog"."enum_ops" ASC NULLS LAST,
+CREATE INDEX "case_endings_case_ending_idx" ON "lingua"."case_endings" USING btree (
+  "case_ending" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
+);
+CREATE INDEX "case_endings_gender_idx" ON "lingua"."case_endings" USING btree (
+  "gender" "pg_catalog"."enum_ops" ASC NULLS LAST
+);
+CREATE INDEX "case_endings_grammatical_case_idx" ON "lingua"."case_endings" USING btree (
   "grammatical_case" "pg_catalog"."enum_ops" ASC NULLS LAST
+);
+CREATE INDEX "case_endings_number_idx" ON "lingua"."case_endings" USING btree (
+  "number" "pg_catalog"."enum_ops" ASC NULLS LAST
+);
+CREATE INDEX "case_endings_pos_idx" ON "lingua"."case_endings" USING btree (
+  "pos" "pg_catalog"."enum_ops" ASC NULLS LAST
+);
+CREATE INDEX "case_endings_stem_type_idx" ON "lingua"."case_endings" USING btree (
+  "stem_type" "pg_catalog"."enum_ops" ASC NULLS LAST
 );
 
 -- ----------------------------
