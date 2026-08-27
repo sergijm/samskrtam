@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 import sm.selflearn.samskrtam.quiz.constants.ProgressConstants;
 import sm.selflearn.samskrtam.quiz.dto.*;
 import sm.selflearn.samskrtam.quiz.localization.CaseNumberGenderLocalizer;
+import sm.selflearn.samskrtam.quiz.model.ProgressTagSetId;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -42,16 +43,17 @@ public class GrammarProgressAggregationService {
             "SINGULAR", "DUAL", "PLURAL");
 
     public static final List<CasePair> CASE_PAIRS = List.of(
-            new CasePair("GEN_LOC", "GENITIVE", "LOCATIVE"),
-            new CasePair("GEN_ABL", "GENITIVE", "ABLATIVE"),
-            new CasePair("DAT_ACC", "DATIVE", "ACCUSATIVE"),
-            new CasePair("INS_ABL", "INSTRUMENTAL", "ABLATIVE"),
-            new CasePair("INS_LOC", "INSTRUMENTAL", "LOCATIVE"),
-            new CasePair("ACC_LOC", "ACCUSATIVE", "LOCATIVE"),
-            new CasePair("DAT_GEN", "DATIVE", "GENITIVE"),
-            new CasePair("ABL_LOC", "ABLATIVE", "LOCATIVE"));
+            new CasePair(ProgressTagSetId.GEN_LOC, "GENITIVE", "LOCATIVE"),
+            new CasePair(ProgressTagSetId.GEN_ABL, "GENITIVE", "ABLATIVE"),
+            new CasePair(ProgressTagSetId.DAT_ACC, "DATIVE", "ACCUSATIVE"),
+            new CasePair(ProgressTagSetId.INS_ABL, "INSTRUMENTAL", "ABLATIVE"),
+            new CasePair(ProgressTagSetId.INS_LOC, "INSTRUMENTAL", "LOCATIVE"),
+            new CasePair(ProgressTagSetId.ACC_LOC, "ACCUSATIVE", "LOCATIVE"),
+            new CasePair(ProgressTagSetId.DAT_GEN, "DATIVE", "GENITIVE"),
+            new CasePair(ProgressTagSetId.ABL_LOC, "ABLATIVE", "LOCATIVE"),
+            new CasePair(ProgressTagSetId.NOM_ACC, "NOMINATIVE", "ACCUSATIVE"));
 
-    public record CasePair(String setId, String caseTypeA, String caseTypeB) {}
+    public record CasePair(ProgressTagSetId setId, String caseTypeA, String caseTypeB) {}
 
     public record ItemAgg(String caseType, String numberType, int score) {}
 
@@ -146,7 +148,7 @@ public class GrammarProgressAggregationService {
             int progress = avgProgress(bucket);
             int learned = countLearned(bucket);
             result.add(new GrammarPairAggregation(
-                    pair.setId(),
+                    pair.setId().name(),
                     pair.caseTypeA(), pair.caseTypeB(),
                     CaseNumberGenderLocalizer.caseTypeRu(pair.caseTypeA()),
                     CaseNumberGenderLocalizer.caseTypeRu(pair.caseTypeB()),

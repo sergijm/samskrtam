@@ -38,22 +38,6 @@ const Sidebar: React.FC = () => {
       leaf: true,
     });
 
-    items.push({
-      key: "statistics",
-      label: t("nav.statistics"),
-      icon: "pi pi-chart-bar",
-      data: { route: "/statistics", status: "available" as const, isPlannedLeaf: false },
-      leaf: true,
-    });
-
-    items.push({
-      key: "leaderboard",
-      label: t("nav.leaderboard"),
-      icon: "pi pi-sitemap",
-      data: { route: "/leaderboard", status: "available" as const, isPlannedLeaf: false },
-      leaf: true,
-    });
-
     if (user?.roles.includes("ADMIN")) {
       items.push({
         key: "admin",

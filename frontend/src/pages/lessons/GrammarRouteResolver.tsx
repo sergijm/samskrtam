@@ -4,6 +4,7 @@ import SandhiLessonPage from './SandhiLessonPage';
 import CaseMeaningsLessonPage from './CaseMeaningsLessonPage';
 import ConjugationLessonPage from './ConjugationLessonPage';
 import CaseEndingsLessonPage from './CaseEndingsLessonPage';
+import VerbalEndingsLessonPage from './VerbalEndingsLessonPage';
 
 const CONJUGATION_SLUGS: string[] = ['presence-indicativus', 'imperfectum', 'optativus', 'imperativus'];
 
@@ -18,6 +19,9 @@ const GrammarRouteResolver = () => {
   }
   if (slug === 'case-endings') {
     return <CaseEndingsLessonPage />;
+  }
+  if (slug === 'verbal-endings') {
+    return <VerbalEndingsLessonPage />;
   }
   if (slug && CONJUGATION_SLUGS.includes(slug)) {
     return <ConjugationLessonPage />;

@@ -118,7 +118,7 @@ List<SessionQuestion> questions = new ArrayList<>();
             case DIFFICULT -> selectDifficultItems(userId, topicCode, itemType, answerMode);
             case SINGULAR, DUAL, PLURAL, NOMINATIVE, ACCUSATIVE, INSTRUMENTAL, DATIVE, ABLATIVE,
                     GENITIVE, LOCATIVE, VOCATIVE, ACC_LOC, INS_ABL, GEN_LOC, DAT_ACC, GEN_ABL,
-                    INS_LOC, DAT_GEN, ABL_LOC ->
+                 INS_LOC, DAT_GEN, ABL_LOC, NOM_ACC ->
                     selectGrammarItems(topicCode, setId, itemType, answerMode, sessionSize);
         };
     }
@@ -308,6 +308,7 @@ List<SessionQuestion> questions = new ArrayList<>();
             case INS_LOC -> List.of("INSTRUMENTAL", "LOCATIVE");
             case DAT_GEN -> List.of("DATIVE", "GENITIVE");
             case ABL_LOC -> List.of("ABLATIVE", "LOCATIVE");
+            case NOM_ACC -> List.of("NOMINATIVE", "ACCUSATIVE");
             case NOMINATIVE -> List.of("NOMINATIVE");
             case ACCUSATIVE -> List.of("ACCUSATIVE");
             case INSTRUMENTAL -> List.of("INSTRUMENTAL");

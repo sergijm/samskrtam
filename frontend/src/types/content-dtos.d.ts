@@ -52,6 +52,17 @@ export interface CaseEndingDto {
     caseEnding: string;
 }
 
+export interface VerbalEndingDto {
+    id: number;
+    ending: string;
+    lemmaSuffix: string;
+    hasAugment: boolean;
+    tenseMood: string;
+    personNumber: string;
+    pada: string;
+    notes?: string;
+}
+
 export interface DeclensionFormDto {
     declensionStemId: string;
     caseType: CaseType;

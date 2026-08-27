@@ -160,7 +160,7 @@ graph TD
 | Milestone | Что добавляет | Слои плана, становящиеся доступны |
 |---|---|---|
 | **M2 — First Quiz** | `DECLENSION_FORM` (declensions) | Слой 1 (Declension a-основы) |
-| **M3 — Statistics** | Kafka, события | — (инфраструктура, план не меняется) |
+| **M3 — Progress Tracking** | Отслеживание прогресса квизов | — (инфраструктура, план не меняется) |
 | **M4 — Dictionary** | `VOCABULARY_WORD` (прямое направление) | Слой 0 (Базовый словарь) |
 | **M5 — More Quizzes** | `CONJUGATION_FORM` (parasmaipada laṭ/loṭ/vidhiliṅ), `VOCABULARY_SYNONYM` | Слой 2 (Conjugation present), часть слоя 3 (Vocabulary synonyms) |
 | **M6 — Observability** | инфраструктура, план не меняется | — |

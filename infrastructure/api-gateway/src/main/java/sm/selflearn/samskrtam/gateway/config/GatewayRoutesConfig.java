@@ -34,9 +34,6 @@ public class GatewayRoutesConfig {
     @Value("${DICTIONARY_SERVICE_URL:http://dictionary-service:8083}")
     private String dictionaryServiceUrl;
 
-    @Value("${STATISTICS_SERVICE_URL:http://statistics-service:8086}")
-    private String statisticsServiceUrl;
-
     @Value("${CURRICULUM_SERVICE_URL:http://curriculum-service:8091}")
     private String curriculumServiceUrl;
 
@@ -140,11 +137,6 @@ public class GatewayRoutesConfig {
                 .route("sangraha", r -> r
                         .path("/api/v1/sangraha/**")
                         .uri(sangrahaServiceUrl))
-
-                // ── Statistics & Leaderboard ─────────────────────────────────────
-                .route("statistics", r -> r
-                        .path("/api/v1/statistics/**", "/api/v1/leaderboard/**")
-                        .uri(statisticsServiceUrl))
 
                 // ── Curriculum (Learning map) ─────────────────────────────────────
                 .route("curriculum", r -> r

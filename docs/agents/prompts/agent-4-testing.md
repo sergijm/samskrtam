@@ -19,7 +19,6 @@
 | HTTP-контракты (servlet) | MockMvc |
 | HTTP-контракты (reactive) | WebTestClient |
 | БД в тестах | Embedded/локальная PostgreSQL |
-| Kafka в тестах | EmbeddedKafka |
 | Redis в тестах | Embedded/локальный Redis |
 | Архитектурные тесты | ArchUnit |
 | Покрытие | JaCoCo |
@@ -95,14 +94,6 @@ register_existingEmail_returns409()
 register_validData_createsProfileAndOutboxEvent()
 forgotPassword_existingEmail_sendsEmailAndSavesOutboxEvent()
 forgotPassword_unknownEmail_returns200()  // не раскрывать существование аккаунта
-```
-
-### statistics-service
-```java
-// Kafka Streams тесты — используй TopologyTestDriver
-consumeQuizAnsweredEvent_validEvent_aggregatesScore()
-consumeQuizAnsweredEvent_multipleEvents_accumulatesCorrectly()
-consumeSessionStatusChanged_completed_updatesSessionCount()
 ```
 
 ### dictionary-service (Java + JUnit 5 + Mockito)

@@ -42,7 +42,6 @@
 | `/api/v1/content/**` | curriculum-service:8081 | ADMIN |
 | `/api/v1/quiz/**` | quiz-service:8082 | STUDENT |
 | `/api/v1/dictionary/**` | dictionary-service:8085 | STUDENT |
-| `/api/v1/statistics/**` | statistics-service:8086 | STUDENT |
 | `/actuator/health` | gateway | Public |
 
 При добавлении нового маршрута — сначала убедись, что он есть в `docs/services/api-gateway.md`. Если нет — сообщи Агенту 6 (Contract) для обновления документации.

@@ -736,7 +736,74 @@ form .p-avatar.p-avatar-image img {
     text-decoration: underline;
 }
 
+/* ─── Verbal endings reference table ─── */
+.verbal-endings-table.p-datatable {
+    width: 100%;
+}
 
+.verbal-endings-table .p-datatable-thead > tr > th.verbal-endings-header .p-column-header-content {
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.15;
+}
+
+/* ─── Verbal endings faceted filters (chips) ─── */
+.verbal-endings-filter-row .verbal-endings-filter-group {
+    margin-bottom: 0;
+}
+
+.verbal-endings-filter-group .verbal-endings-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    max-height: 8rem;
+    overflow-y: auto;
+    padding: 0.15rem;
+}
+
+.verbal-endings-group-label {
+    font-weight: 600;
+    color: var(--text-color);
+    white-space: nowrap;
+    margin-right: 0.25rem;
+}
+
+.verbal-endings-chip {
+    border: 1px solid var(--surface-300);
+    background: var(--surface-0);
+    color: var(--text-color);
+    border-radius: 1rem;
+    padding: 0.15rem 0.65rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+
+.verbal-endings-chip:hover {
+    background: var(--surface-200);
+}
+
+.verbal-endings-chip.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--primary-color-text);
+    font-weight: 600;
+}
+
+.verbal-endings-clear-btn {
+    border: none;
+    background: transparent;
+    color: var(--primary-color);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0;
+}
+
+.verbal-endings-clear-btn:hover {
+    text-decoration: underline;
+}
 
 /* ─── Monier-Williams dictionary article (CologneBasic) ─── */
 .mw-entry-html #CologneBasic {

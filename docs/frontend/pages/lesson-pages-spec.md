@@ -2,7 +2,7 @@
 
 > ⚠️ **Требует согласования:** этот документ описывает UI-контракт (`filterScope`, `statusFilter=REVIEW`, `lessonId`) в терминах старой модели прогресса quiz-service. Модель прогресса и API сессий переработаны — см. [services/quest-engine.md](../../services/quest-engine.md). Детали фронтенд-контракта в этом файле нуждаются в пересмотре под новый API (`questId`, статусы NEW/LEARNING/DUE/MASTERED, без ручного `filterScope`).
 
-> Связанные файлы: [frontend-overview.md](../frontend-overview.md) · [curriculum-service.md](../../services/curriculum-service.md) · [quest-engine.md](../../services/quest-engine.md) · [statistics-service.md](../../services/statistics-service.md)
+> Связанные файлы: [frontend-overview.md](../frontend-overview.md) · [curriculum-service.md](../../services/curriculum-service.md) · [quest-engine.md](../../services/quest-engine.md)
 > Status: **DRAFT**
 
 ---

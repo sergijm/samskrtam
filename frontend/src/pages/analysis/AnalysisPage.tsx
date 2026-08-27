@@ -1,26 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { Tag } from 'primereact/tag';
-import { Toast } from 'primereact/toast';
-import { Skeleton } from 'primereact/skeleton';
-import { InputTextarea } from 'primereact/inputtextarea';
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { Tooltip } from 'primereact/tooltip';
-import {
-  useStandaloneVerses,
-  useCreateStandaloneAnalysis,
-  useDeleteStandaloneVerse,
-  useVerseDetail,
-} from '../../hooks/useSangraha';
-import { useVocabularyLesson } from '../../hooks/useLessons';
-import { sangrahaApi } from '../../api/sangraha';
-import { verseStatusIcon } from '../../utils/verseStatus';
-import type { VerseStatus } from '../../types/sangraha';
-import type { StandaloneVerseItemDto } from '../../types/sangraha';
-import type { VocabularyWordProgress } from '../../types/lesson';
 import VerseWordsList from '../../components/sangraha/VerseWordsList';
 import SandhiSplitsList from '../../components/sangraha/SandhiSplitsList';
 import { IconButton, CtaButton } from '../../components/common/buttons';
@@ -47,18 +26,6 @@ const AnalysisPage = () => {
 
   // Детальный просмотр выбранного standalone-стиха
   const { data: verse, isLoading: verseLoading } = useVerseDetail(selectedId || '');
-
-  const verseTopicCode = verse?.verseTopicCode;
-  const { data: vocabularyLesson } = useVocabularyLesson(verseTopicCode || '');
-
-  const wordProgressMap = useMemo<Record<string, VocabularyWordProgress> | null>(() => {
-    if (!vocabularyLesson?.words) return null;
-    const map: Record<string, VocabularyWordProgress> = {};
-    for (const wp of vocabularyLesson.words) {
-      map[wp.wordId] = wp;
-    }
-    return map;
-  }, [vocabularyLesson]);
 
   const [editText, setEditText] = useState('');
   const [analyzePending, setAnalyzePending] = useState(false);
@@ -145,13 +112,7 @@ const AnalysisPage = () => {
   const tagSeverityFor = (s: VerseStatus | undefined): 'success' | 'info' | 'warning' | 'danger' =>
     s === 'ANALYZED' ? 'success' : s === 'FAILED' ? 'danger' : s === 'ANALYZING' ? 'info' : 'warning';
 
-  const studyIcon = useMemo(() => {
-    if (!vocabularyLesson?.statusSummary) return 'pi-book';
-    const { total, mastered, learning, reviewDue } = vocabularyLesson.statusSummary;
-    if (mastered === total) return 'pi-check-circle';
-    if (learning > 0 || reviewDue > 0) return 'pi-caret-right';
-    return 'pi-book';
-  }, [vocabularyLesson]);
+  const studyIcon = useMemo(() => 'pi-book', []);
 
   const rows = items ?? [];
   const selectedCreatedAt = rows.find((i) => i.id === selectedId)?.createdAt;
@@ -279,10 +240,9 @@ const AnalysisPage = () => {
                   )}
 
                   {verse.words && verse.words.length > 0 && (
-                    <VerseWordsList
-                      words={verse.words}
-                      wordProgressMap={wordProgressMap}
-                      headerActions={
+<VerseWordsList
+                        words={verse.words}
+                        headerActions={
                         <CtaButton
                           labelKey="sangraha.action.study"
                           iconName={studyIcon}

@@ -11,8 +11,6 @@ import { Skeleton } from 'primereact/skeleton';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useVocabularyLesson } from '../../hooks/useLessons';
-import type { VocabularyWordProgress } from '../../types/lesson';
 import VerseWordsList from '../../components/sangraha/VerseWordsList';
 import SandhiSplitsList from '../../components/sangraha/SandhiSplitsList';
 import './VersePage.css';
@@ -28,28 +26,10 @@ const VersePage = () => {
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.roles?.includes('ADMIN') ?? false;
 
-  // Load lesson progress if the chapter VERSE topic already exists
-  const verseTopicCode = verse?.verseTopicCode;
-  const { data: vocabularyLesson } = useVocabularyLesson(verseTopicCode || '');
-
-  // Build map vocabularyWordId -> progress
-  const wordProgressMap = useMemo<Record<string, VocabularyWordProgress> | null>(() => {
-    if (!vocabularyLesson?.words) return null;
-    const map: Record<string, VocabularyWordProgress> = {};
-    for (const wp of vocabularyLesson.words) {
-      map[wp.wordId] = wp;
-    }
-    return map;
-  }, [vocabularyLesson]);
-
-  // Study icon based on statusSummary
+  // Study icon
   const studyIcon = useMemo(() => {
-    if (!vocabularyLesson?.statusSummary) return 'pi-book';
-    const { total, mastered, learning, reviewDue } = vocabularyLesson.statusSummary;
-    if (mastered === total) return 'pi-check-circle';
-    if (learning > 0 || reviewDue > 0) return 'pi-caret-right';
     return 'pi-book';
-  }, [vocabularyLesson]);
+  }, []);
 
   const [editText, setEditText] = useState('');
   const [analyzePending, setAnalyzePending] = useState(false);
@@ -208,7 +188,6 @@ const VersePage = () => {
           {verse.words && verse.words.length > 0 && (
             <VerseWordsList
               words={verse.words}
-              wordProgressMap={wordProgressMap}
               headerActions={
                 <CtaButton
                   labelKey="sangraha.action.study"

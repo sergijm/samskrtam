@@ -52,8 +52,8 @@ public interface QuestItemRepository extends JpaRepository<QuestItem, UUID> {
               FROM curriculum.quest_item
               WHERE topic_id = :topicId
                 AND progress_tag = ANY(:progressTags)
-                AND (:itemType IS NULL OR item_type = CAST(:itemType AS varchar))
-                AND (:answerMode IS NULL OR answer_mode = CAST(:answerMode AS varchar))
+                AND (CAST(:itemType AS varchar) IS NULL OR item_type = CAST(:itemType AS varchar))
+                AND (CAST(:answerMode AS varchar) IS NULL OR answer_mode = CAST(:answerMode AS varchar))
                 AND progress_tag IS NOT NULL
             ) sub WHERE sub.rn = 1
             ORDER BY random()

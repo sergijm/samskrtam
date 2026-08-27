@@ -47,15 +47,15 @@
 - `docs/services/curriculum-service.md`
 - `docs/quest-engine.md`
 - `docs/services/dictionary-service.md`
-- `docs/services/statistics-service.md`
-- `docs/services/leaderboard.md`
 - `docs/services/sangraha-service.md`
 - `docs/quizzes/quest-engine.md`
 - `docs/conventions.md`
 
-**Ответственность:** user-service (8087): регистрация, пароли, SMTP, профили, MinIO, Keycloak Outbox, группы. curriculum-service (8081): CRUD уроков, категории слов, session-data для quiz-service, ADMIN/STUDENT доступ. quiz-service (8082, WebFlux+R2DBC): сессии start→answer→complete, resume, WordAnswerHistory, Outbox→Kafka (QuizAnsweredEvent, QuizSessionStatusChangedEvent), WebClient к curriculum-service. dictionary-service (8085): поиск по slp1Spelling, cache-aside Redis→внешнее API, fallback. sangraha-service (порт из env): иерархия Work→Chapter→Verse, LLM-анализ (OpenAI tool calling), синхронный REST-вызов curriculum-service для синхронизации лексики (см. architecture.md §3.5), write только ADMIN. statistics-service (8086, Kafka Streams): потребление quiz-answered-events/quiz-session-status-changed-events, агрегация, REST API, лидерборд (см. leaderboard.md).
+**Ответственность:** user-service (8087): регистрация, пароли, SMTP, профили, MinIO, Keycloak Outbox, группы. curriculum-service (8081): CRUD уроков, категории слов, session-data для quiz-service, ADMIN/STUDENT доступ. quiz-service (8082, WebFlux+R2DBC): сессии start→answer→complete, resume, WordAnswerHistory, Transactional Outbox (события пишутся в `quiz.outbox_events`, релей читает их вхолостую и помечает `PROCESSED`, публикация в Kafka отключена), WebClient к curriculum-service. dictionary-service (8085): поиск по slp1Spelling, cache-aside Redis→внешнее API, fallback. sangraha-service (порт из env): иерархия Work→Chapter→Verse, LLM-анализ (OpenAI tool calling), синхронный REST-вызов curriculum-service для синхронизации лексики (см. architecture.md §3.5), write только ADMIN.
 
-**Выход:** сервисы с Flyway-миграциями, OpenAPI, Kafka-топики, shared DTO.
+> statistics-service удалён: расчёт статистики/лидерборда и Kafka Streams больше не входят в проект.
+
+**Выход:** сервисы с Flyway-миграциями, OpenAPI, shared DTO.
 
 **Ограничения:** quiz-service только R2DBC, конфигурация через env, пакеты sm.selflearn.samskrtam.<сервис>.
 

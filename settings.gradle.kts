@@ -8,7 +8,6 @@ include(
     ":infrastructure:api-gateway",
     ":services:user-service",
     ":services:quiz-service",
-    ":services:statistics-service",
     ":services:dictionary-service",
     ":services:sangraha-service",
     ":services:curriculum-service",

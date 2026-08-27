@@ -18,8 +18,6 @@ dependencies {
     implementation(libs.postgresql.jdbc)
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgresql)
-    implementation(libs.spring.kafka)
-    implementation(libs.reactor.kafka)
     implementation(libs.spring.redis.reactive)
 
     implementation(libs.springdoc.openapi.webflux.ui)

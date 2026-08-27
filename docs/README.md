@@ -1,7 +1,7 @@
 # SamskrtamApp — Project Specification
 
 > Specification-Driven Development · Microservices · Monorepo
-> Stack: Java 21 + Virtual Threads · WebFlux (gateway, quiz-service) · React/TypeScript · PostgreSQL · Keycloak · Kafka · MinIO · Grafana Stack (Tempo · Loki · Prometheus)
+> Stack: Java 21 + Virtual Threads · WebFlux (gateway, quiz-service) · React/TypeScript · PostgreSQL · Keycloak · MinIO · Grafana Stack (Tempo · Loki · Prometheus)
 
 ---
 
@@ -12,7 +12,7 @@
 **Архитектура:** Микросервисы (монорепо), Contract-First SDD
 **Язык интерфейса:** Русский + English (i18n с первого дня)
 
-SamskrtamApp построен как референсная реализация современной Java-микросервисной системы — но не в силу необходимости, а как учебный полигон для практического знакомства с технологиями. Архитектура намеренно избыточна для реальных задач проекта и охватывает паттерны, актуальные при высокой нагрузке: событийную асинхронность через Kafka, stateless-сервисы, централизованную аутентификацию через Gateway, Specification-Driven Development.
+SamskrtamApp построен как референсная реализация современной Java-микросервисной системы — но не в силу необходимости, а как учебный полигон для практического знакомства с технологиями. Архитектура намеренно избыточна для реальных задач проекта и охватывает паттерны, актуальные при высокой нагрузке: stateless-сервисы, централизованную аутентификацию через Gateway, Specification-Driven Development.
 
 ---
 
@@ -21,10 +21,9 @@ SamskrtamApp построен как референсная реализация
 ### Goals (v1.0)
 - Квизы по грамматике санскрита (склонения, спряжения) и лексике
 - Словарь с fallback на внешнее API
-- Статистика через очередь событий
-- Групповой лидерборд
+- Отслеживание прогресса прохождения квизов
 - Аутентификация: Keycloak (собственный аккаунт + Google + Mail.ru)
-- Горизонтальное масштабирование: stateless-сервисы, Kafka для async
+- Горизонтальное масштабирование: stateless-сервисы
 - Bilingual UI (ru / en)
 - [Упражнения по сандхи (Eamenau)](./services/curriculum-service/eamenau.md) — разбор правил сандхи на материале учебника Eméneau
 
@@ -41,12 +40,11 @@ SamskrtamApp построен как референсная реализация
 | api-gateway | Java 21 | WebFlux (Reactor) | Gateway требует реактивный стек |
 | user-service | Java 21 | Virtual Threads | Профили, регистрация, аватарки, блокировка |
 | curriculum-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов, иерархические категории для VOCABULARY-квизов, домен Eamenau (упражнения по сандхи) |
-| quiz-service | Java 21 | WebFlux (Reactor) + R2DBC | Единый сервис прохождения всех квизов, публикация событий в Kafka через Outbox Pattern |
+| quiz-service | Java 21 | WebFlux (Reactor) + R2DBC | Единый сервис прохождения всех квизов; Transactional Outbox (чтение вхолостую, публикация в Kafka отключена) |
 | dictionary-service | Java 21 | Virtual Threads | Поиск по словарю, fallback на внешнее API |
-| statistics-service | Java 21 | Kafka Streams | Расчёт статистики и лидерборда |
 | sangraha-service | Java 21 | Virtual Threads | Санскритские произведения, LLM-анализ стихов |
 | curriculum-service | Java 21 | Virtual Threads | Учебный план: темы (Topic) и мягкие prerequisite-связи + модуль lexicon (учебная лексика, таксономии, batch-импорт из sangraha-service, см. `services/curriculum-service.md` §9), независимая схема БД, без наполнения квизов-заданий |
-| shared/samskrtam-dtos | Java 21 | — | Общий модуль DTO и событий для квизов, контента и статистики |
+| shared/samskrtam-dtos | Java 21 | — | Общий модуль DTO и событий для квизов и контента |
 | shared/common-dto | Java 21 | — | Общие DTO для всех сервисов |
 
 ---
@@ -79,10 +77,6 @@ graph TD
     DS[dictionary-service]
   end
 
-  subgraph Stats ["📊 Statistics — Java 21 + Kafka Streams"]
-    ST[statistics-service]
-  end
-
   Browser --> GW
   GW -->|валидирует JWT| KC
   GW --> US
@@ -91,10 +85,7 @@ graph TD
   GW --> QS
   GW --> CS
   GW --> DS
-  GW --> ST
   QS -->|читает квизы и вопросы| CS
-  QS -->|публикует QuizAnsweredEvent, QuizSessionStatusChangedEvent| Kafka
-  Kafka --> ST
 ```
 
 ---
@@ -128,8 +119,6 @@ graph TD
 | [services/quest-item-model.md](./services/quest-item-model.md) | Java 21 | Базовые интерфейсы/абстрактные классы модели квестов (curriculum-service + quiz-service) |
 | [quests/](./quests/README.md) | — | Юзер-стори по типам квестов, разложенные по доменам грамматики и лексики |
 | [services/dictionary-service.md](./services/dictionary-service.md) | Java 21 + VT | Словарь + внешнее API |
-| [services/statistics-service.md](./services/statistics-service.md) | Java 21 + VT | Статистика |
-| [services/leaderboard.md](./services/leaderboard.md) | — | Алгоритмы лидерборда (XP, Elo, Skill, Composite) |
 | [services/sangraha-service.md](./services/sangraha-service.md) | Java 21 + VT | Санскритские произведения, LLM-анализ стихов |
 | [openapi/](./openapi/) | — | OpenAPI-спецификации для всех сервисов |
 

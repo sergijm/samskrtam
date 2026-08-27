@@ -14,16 +14,15 @@ SamskrtamApp — платформа изучения санскрита. Мон�
 - `services/curriculum-service` — Java 21 + Virtual Threads, порт 8081
 - `services/quiz-service` — Java 21 + WebFlux + R2DBC, порт 8082
 - `services/dictionary-service` — Java 21 + Virtual Threads, порт 8085
-- `services/statistics-service` — Java 21 + Kafka Streams, порт 8086
 - `frontend/` — React 18 + TypeScript 5 + PrimeReact 10.x
 
-Milestones: M1 (Foundation) → M2 (First Quiz) → M3 (Statistics) → M4 (Dictionary) → M5 (More Quizzes) → M6 (Observability) → M7 (Polish)
+Milestones: M1 (Foundation) → M2 (First Quiz) → M3 (Dictionary) → M4 (More Quizzes) → M5 (Observability) → M6 (Polish)
 
 ## Документы, которые ты должен знать
 
 - `docs/README.md` — milestones, open questions, bounded contexts
 - `docs/architecture.md` — топология, монорепо, Gradle, пакеты
-- `docs/conventions.md` — git, CI, тесты, конфигурация, Kafka
+- `docs/conventions.md` — git, CI, тесты, конфигурация, Outbox
 
 ## Алгоритм работы
 

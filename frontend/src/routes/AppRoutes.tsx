@@ -22,8 +22,6 @@ const AdminHomePage = lazy(() => import('../pages/AdminHomePage'));
 const AdminGroupsPage = lazy(() => import('../pages/AdminGroupsPage'));
 const QuizzesPage = lazy(() => import('../pages/QuizzesPage'));
 const QuizPage = lazy(() => import('../pages/QuizPage'));
-const UserStatisticsPage = lazy(() => import('../pages/UserStatisticsPage'));
-const UserQuizSessionsPage = lazy(() => import('../pages/UserQuizSessionsPage'));
 const SessionHistoryPage = lazy(() => import('../pages/SessionHistoryPage'));
 const GrammarPage = lazy(() => import('../pages/grammar/GrammarPage'));
 const LexiconPage = lazy(() => import('../pages/lexicon/LexiconPage'));
@@ -95,9 +93,7 @@ export default function AppRoutes() {
       <Route path="/settings" element={<ProtectedLayoutRoute><SettingsPage /></ProtectedLayoutRoute>} />
       <Route path="/settings/password" element={<ProtectedLayoutRoute><ChangePasswordPage /></ProtectedLayoutRoute>} />
       <Route path="/users/:id" element={<ProtectedLayoutRoute><UserProfilePage /></ProtectedLayoutRoute>} />
-      <Route path="/quiz-sessions" element={<ProtectedLayoutRoute><UserQuizSessionsPage /></ProtectedLayoutRoute>} />
       <Route path="/quiz-sessions/:sessionId/history" element={<ProtectedLayoutRoute><SessionHistoryPage /></ProtectedLayoutRoute>} />
-      <Route path="/statistics" element={<ProtectedLayoutRoute><UserStatisticsPage /></ProtectedLayoutRoute>} />
       <Route path="/groups/:id" element={<ProtectedLayoutRoute><GroupPage /></ProtectedLayoutRoute>} />
       <Route path="/groups" element={<ProtectedLayoutRoute><GroupListPage /></ProtectedLayoutRoute>} />
       <Route path="/groups/new" element={<ProtectedLayoutRoute><GroupCreatePage /></ProtectedLayoutRoute>} />

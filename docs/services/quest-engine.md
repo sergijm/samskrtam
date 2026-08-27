@@ -98,7 +98,7 @@
 
 ### 4.3 Завершение
 
-`POST /api/v1/quiz/sessions/{sessionId}/complete` → сводка `{ total, correct }`. Публикует `QuestSessionCompletedEvent` в Kafka (Outbox Pattern, как раньше) для statistics-service.
+`POST /api/v1/quiz/sessions/{sessionId}/complete` → сводка `{ total, correct }`. Пишет событие в Transactional Outbox (`quiz.outbox_events`); релей работает вхолостую (публикация в Kafka удалена).
 
 ---
 
