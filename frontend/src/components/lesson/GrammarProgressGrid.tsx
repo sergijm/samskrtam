@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { MiniProgressBar } from '../common/MiniProgressBar';
 import type {
   CaseAggregation,
@@ -22,7 +21,6 @@ const GrammarProgressGrid: React.FC<GrammarProgressGridProps> = ({
   quizSlug,
 }) => {
   const { i18n } = useTranslation();
-  const navigate = useNavigate();
 
   if (caseNames.length === 0 && numberNames.length === 0) {
     return (
@@ -40,11 +38,11 @@ const GrammarProgressGrid: React.FC<GrammarProgressGridProps> = ({
   }
 
   const handleCaseClick = (caseType: string) => {
-    navigate(`/quiz/grammar/${quizSlug}?filterScope=CASE_ONLY&filterCaseType=${caseType}`);
+    window.open(`/quiz/grammar/${quizSlug}?filterScope=CASE_ONLY&filterCaseType=${caseType}`, '_blank');
   };
 
   const handleNumberClick = (numberType: string) => {
-    navigate(`/quiz/grammar/${quizSlug}?filterScope=NUMBER_ONLY&filterNumberTypes=${numberType}`);
+    window.open(`/quiz/grammar/${quizSlug}?filterScope=NUMBER_ONLY&filterNumberTypes=${numberType}`, '_blank');
   };
 
   return (

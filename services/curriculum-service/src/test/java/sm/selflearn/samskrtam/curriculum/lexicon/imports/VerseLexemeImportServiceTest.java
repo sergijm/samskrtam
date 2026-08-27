@@ -1,10 +1,12 @@
 package sm.selflearn.samskrtam.curriculum.lexicon.imports;
 
 import org.junit.jupiter.api.Test;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.Lemma;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LemmaLexicalTopic;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LemmaLexicalTopicId;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LemmaTranslation;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaLexicalTopicRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaTranslationRepository;
 import sm.selflearn.samskrtam.curriculum.model.LearningLevel;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
@@ -15,6 +17,7 @@ import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemRepositor
 import sm.selflearn.samskrtam.curriculum.repository.TopicRepository;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,22 +28,32 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * Приём инкрементальной пачки стиха (lexicon-content-pipeline.md §7): пишем
- * переводы в lemma_translation и привязки в lemma_lexical_topic (без Lexeme),
- * создаём VERSE-урок главы и накапливаем привязки идемпотентно.
- */
 class VerseLexemeImportServiceTest {
 
+    private final List<Lemma> savedLemmas = new ArrayList<>();
     private final List<LemmaTranslation> savedTranslations = new ArrayList<>();
-    private final Map<String, List<LemmaTranslation>> byLemmaLang = new java.util.HashMap<>();
+    private final Map<String, List<LemmaTranslation>> byLemmaLang = new HashMap<>();
+    private final Map<String, Lemma> byLemmaIast = new HashMap<>();
     private final List<LemmaLexicalTopic> savedBindings = new ArrayList<>();
     private final List<LemmaLexicalTopicId> existingBindings = new ArrayList<>();
     private Topic createdTopic;
 
     private VerseLexemeImportService service() {
+        LemmaRepository lemmaRepo = mock(LemmaRepository.class);
+        when(lemmaRepo.findByLemmaIast(any())).thenAnswer(inv ->
+                Optional.ofNullable(byLemmaIast.get(inv.getArgument(0))));
+        when(lemmaRepo.save(any())).thenAnswer(inv -> {
+            Lemma l = inv.getArgument(0);
+            if (l.getId() == null) {
+                l.setId(UUID.randomUUID());
+            }
+            savedLemmas.add(l);
+            byLemmaIast.put(l.getLemmaIast(), l);
+            return l;
+        });
+
         LemmaTranslationRepository translationRepo = mock(LemmaTranslationRepository.class);
-        when(translationRepo.findByLemmaIastAndLanguage(any(), any()))
+        when(translationRepo.findByLemma_LemmaIastAndLanguage(any(), any()))
                 .thenAnswer(inv -> byLemmaLang.getOrDefault(
                         inv.getArgument(0) + "|" + inv.getArgument(1), List.of()));
         when(translationRepo.save(any())).thenAnswer(inv -> {
@@ -49,7 +62,7 @@ class VerseLexemeImportServiceTest {
                 t.setId(UUID.randomUUID());
             }
             savedTranslations.add(t);
-            byLemmaLang.computeIfAbsent(t.getLemmaIast() + "|" + t.getLanguage(),
+            byLemmaLang.computeIfAbsent(t.getLemma().getLemmaIast() + "|" + t.getLanguage(),
                     x -> new ArrayList<>()).add(t);
             return t;
         });
@@ -73,6 +86,7 @@ class VerseLexemeImportServiceTest {
         });
 
         return new VerseLexemeImportService(
+                lemmaRepo,
                 translationRepo,
                 bindingRepo,
                 topicRepo,
@@ -103,7 +117,6 @@ class VerseLexemeImportServiceTest {
                 List.of(word("nara", "nara", "MASCULINE", "мужчина", "man"),
                         word("gaja", "gaja", "MASCULINE", "слон", "elephant"))));
 
-        // imported counts lemmas (ru+en written for each new lemma)
         assertThat(result.importedCount()).isEqualTo(2);
         assertThat(result.updatedCount()).isZero();
 
@@ -145,7 +158,6 @@ class VerseLexemeImportServiceTest {
         VerseBatchImportResult second = service.importVerseBatch(batch("w", 1,
                 List.of(word("gram", "gram", "MASCULINE", "ГРАММ", "gram-measure"))));
 
-        // first gloss wins; the translation is not overwritten / duplicated
         assertThat(second.importedCount()).isZero();
         assertThat(savedTranslations).hasSize(2);
         assertThat(savedTranslations).filteredOn(t -> t.getLanguage().equals("ru"))

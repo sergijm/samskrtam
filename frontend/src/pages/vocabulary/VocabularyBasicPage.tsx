@@ -1,4 +1,3 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataView } from 'primereact/dataview';
 import { ProgressBar } from 'primereact/progressbar';
@@ -6,26 +5,34 @@ import { Button } from 'primereact/button';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
 import { useNavigate } from 'react-router-dom';
-import { useQuizList } from '../../hooks/useQuiz';
+import { useQuizList, useStartOrResumeQuizSession } from '../../hooks/useQuiz';
 import { useMe } from '../../hooks/useUser';
-import { isVocabularyQuiz, LessonItemDto } from '../../types/quiz';
+import { LessonItemDto } from '../../types/quiz';
 
 const VocabularyBasicPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { data: quizList, isLoading, isError, error } = useQuizList('vocabulary-basic');
   const { data: user, isLoading: isUserLoading } = useMe();
+  const startOrResumeMutation = useStartOrResumeQuizSession();
 
   const handleClick = (lesson: LessonItemDto) => {
     if (!user) {
       navigate('/login');
       return;
     }
-    if (isVocabularyQuiz(lesson.lessonType)) {
-      navigate(`/lessons/vocabulary/${lesson.slug}`);
-      return;
-    }
-    navigate(`/lessons/grammar/${lesson.slug}`);
+    startOrResumeMutation.mutate(
+      { quizId: lesson.id, lessonType: lesson.lessonType },
+      {
+        onSuccess: (data) => {
+          const quizCategory = data.lessonType.toLowerCase();
+          window.open(`/quiz/${quizCategory}/${lesson.slug}/${data.sessionId}`, '_blank');
+        },
+        onError: (err) => {
+          console.error('Failed to start or resume lesson session:', err);
+        },
+      }
+    );
   };
 
   if (isLoading || isUserLoading) {

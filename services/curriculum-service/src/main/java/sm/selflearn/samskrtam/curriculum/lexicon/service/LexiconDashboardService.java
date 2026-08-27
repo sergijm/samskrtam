@@ -11,6 +11,7 @@ import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconDashboardResponse.Us
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.FrequencyBandRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaLexicalTopicRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaTranslationRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
@@ -24,6 +25,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class LexiconDashboardService {
 
+    private final LemmaRepository lemmaRepository;
     private final LemmaTranslationRepository lemmaTranslationRepository;
     private final LemmaLexicalTopicRepository lemmaLexicalTopicRepository;
     private final FrequencyBandRepository frequencyBandRepository;
@@ -31,7 +33,7 @@ public class LexiconDashboardService {
     private final PartOfSpeechRepository partOfSpeechRepository;
 
     public LexiconDashboardResponse getDashboard() {
-        long totalDistinctLemmas = lemmaTranslationRepository.countDistinctLemmaIast();
+        long totalDistinctLemmas = lemmaRepository.count();
 
         List<FrequencyBand> frequencyBands = frequencyBandRepository.findAllByOrderBySortOrderAsc().stream()
                 .map(this::toBand)
@@ -42,7 +44,7 @@ public class LexiconDashboardService {
                 .toList();
 
         Map<String, PartOfSpeech> posByName = posIndex();
-        List<LexiconPos> pos = lemmaTranslationRepository.countDistinctLemmasByPos().stream()
+        List<LexiconPos> pos = lemmaRepository.countDistinctLemmasByPos().stream()
                 .map(r -> toPos((String) r[0], ((Number) r[1]).longValue(), posByName))
                 .toList();
 
@@ -57,7 +59,7 @@ public class LexiconDashboardService {
     }
 
     private FrequencyBand toBand(sm.selflearn.samskrtam.curriculum.lexicon.model.FrequencyBand band) {
-        long wordCount = lemmaTranslationRepository
+        long wordCount = lemmaRepository
                 .findDistinctLemmaIastByFrequencyRankRange(band.getMinRank(), band.getMaxRank())
                 .size();
         return new FrequencyBand(band.getCode(), band.getMinRank(), band.getMaxRank(), wordCount, 0L);

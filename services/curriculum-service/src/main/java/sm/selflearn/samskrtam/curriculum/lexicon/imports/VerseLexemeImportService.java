@@ -4,11 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.Lemma;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LemmaLexicalTopic;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LemmaLexicalTopicId;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LemmaTranslation;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaLexicalTopicRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaTranslationRepository;
 import sm.selflearn.samskrtam.curriculum.model.LearningLevel;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
@@ -25,20 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Приём инкрементальной пачки лемм одного стиха от sangraha-service
- * (lexicon-content-pipeline.md §7). Для каждого слова пишется перевод в
- * {@code curriculum.lemma_translation} (ru + en, is_main) и привязка леммы к
- * уроку в {@code curriculum.lemma_lexical_topic} — таблица Lexeme больше не
- * трогается. Затем создаётся/обновляется лексический урок
- * (Topic.domain = VERSE, code = "{workSlp1}_{chapterNumber}") и для него
- * перегенерируются квест-единицы словаря из lemma_translation.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class VerseLexemeImportService {
 
+    private final LemmaRepository lemmaRepository;
     private final LemmaTranslationRepository lemmaTranslationRepository;
     private final LemmaLexicalTopicRepository lemmaLexicalTopicRepository;
     private final TopicRepository topicRepository;
@@ -59,8 +53,9 @@ public class VerseLexemeImportService {
             }
             LexemeGender gender = parseGender(word.gender());
             String pos = word.dominantPosCode();
-            boolean createdRu = upsertTranslation(word.lemmaIast(), "ru", word.glossRu(), pos, gender);
-            boolean createdEn = upsertTranslation(word.lemmaIast(), "en", word.glossEn(), pos, gender);
+            Lemma lemma = findOrCreateLemma(word.lemmaIast(), pos, gender);
+            boolean createdRu = upsertTranslation(lemma, "ru", word.glossRu());
+            boolean createdEn = upsertTranslation(lemma, "en", word.glossEn());
             if (createdRu || createdEn) {
                 imported++;
             } else {
@@ -81,9 +76,6 @@ public class VerseLexemeImportService {
         return new VerseBatchImportResult(imported, updated, topic.getId(), topic.getCode());
     }
 
-    /**
-     * Дедуп внутри пачки: одно lemma_iast → один upsert (привязка по написанию).
-     */
     private List<LemmaExportItem> dedupe(List<LemmaExportItem> words) {
         if (words == null || words.isEmpty()) {
             return List.of();
@@ -98,24 +90,28 @@ public class VerseLexemeImportService {
         return List.copyOf(unique.values());
     }
 
-    /**
-     * Upsert перевода в lemma_translation: одна main-строка на (lemma_iast, language).
-     * Если перевод уже есть — не перезаписываем (идемпотентность повторной пачки).
-     */
-    private boolean upsertTranslation(String lemmaIast, String language, String gloss,
-                                      String pos, LexemeGender gender) {
+    private Lemma findOrCreateLemma(String lemmaIast, String pos, LexemeGender gender) {
+        return lemmaRepository.findByLemmaIast(lemmaIast)
+                .orElseGet(() -> {
+                    Lemma lemma = new Lemma();
+                    lemma.setLemmaIast(lemmaIast);
+                    lemma.setPos(pos);
+                    lemma.setGender(gender);
+                    return lemmaRepository.save(lemma);
+                });
+    }
+
+    private boolean upsertTranslation(Lemma lemma, String language, String gloss) {
         if (isBlank(gloss)) {
             return false;
         }
-        if (!lemmaTranslationRepository.findByLemmaIastAndLanguage(lemmaIast, language).isEmpty()) {
+        if (!lemmaTranslationRepository.findByLemma_LemmaIastAndLanguage(lemma.getLemmaIast(), language).isEmpty()) {
             return false;
         }
         LemmaTranslation translation = new LemmaTranslation();
-        translation.setLemmaIast(lemmaIast);
+        translation.setLemma(lemma);
         translation.setLanguage(language);
         translation.setGloss(gloss.length() > 300 ? gloss.substring(0, 300) : gloss);
-        translation.setPos(pos);
-        translation.setGender(gender);
         translation.setMain(true);
         lemmaTranslationRepository.save(translation);
         return true;
@@ -174,11 +170,6 @@ public class VerseLexemeImportService {
         return base + "_" + request.chapterNumber();
     }
 
-    /**
-     * Перегенерация квест-единиц VERSE-урока после накопления привязок пачки.
-     * Удаляет старые VOCABULARY_WORD единицы топика и собирает заново из всех
-     * привязанных лемм (накопление по стихам главы → идемпотентно).
-     */
     private void regenerateVerseTopicItems(Topic topic) {
         questItemRepository.deleteByTopicIdAndItemType(topic.getId(),
                 VocabularyQuestItemTypes.VOCABULARY_WORD.code());

@@ -1,7 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useGrammarLesson, useDeclensionParadigm, useDeclensionExamples } from '../../hooks/useLessons';
+import { useStartOrResumeWithStatusFilter, useComposeQuizSession } from '../../hooks/useQuiz';
+import { getQuizCategory, LessonType, ComposeQuizResponse } from '../../types/quiz';
 
 import { LessonHeader } from '../../components/lesson/LessonHeader';
 import { LessonStatsTab } from '../../components/lesson/LessonStatsTab';
@@ -123,6 +125,43 @@ const GrammarLessonPage = () => {
     saveSubTab(e.index);
   };
 
+  const startOrResumeWithFilter = useStartOrResumeWithStatusFilter();
+  const composeSession = useComposeQuizSession();
+
+  const handleStartQuiz = useCallback((statusFilter: string) => {
+    if (!lesson) return;
+    const lessonType = lesson.type as LessonType;
+    const quizCategory = getQuizCategory(lessonType);
+    startOrResumeWithFilter.mutate(
+      { quizId: lesson.lessonId, lessonType, statusFilter },
+      {
+        onSuccess: (data) => {
+          window.open(`/quiz/${quizCategory}/${slug}/${data.sessionId}`, '_blank');
+        },
+        onError: (e) => console.error('startOrResume failed:', e),
+      },
+    );
+  }, [lesson, slug, navigate, startOrResumeWithFilter]);
+
+  const handleStartProgressQuiz = useCallback((progressTagSetId: string) => {
+    if (!lesson) return;
+    const lessonType = lesson.type as LessonType;
+    const quizCategory = getQuizCategory(lessonType);
+    composeSession.mutate(
+      {
+        topicCode: slug || '',
+        count: lesson.totalQuestions > 0 ? lesson.totalQuestions : 10,
+        progressTagSetId,
+      },
+      {
+        onSuccess: (data: ComposeQuizResponse) => {
+          window.open(`/quiz/${quizCategory}/${slug}/${data.sessionId}`, '_blank');
+        },
+        onError: (e) => console.error('compose failed:', e),
+      },
+    );
+  }, [lesson, slug, navigate, composeSession]);
+
   if (isError) {
     return (
       <div className="p-4">
@@ -158,7 +197,7 @@ const GrammarLessonPage = () => {
             <div className="mb-3">
               <LessonStatsTab
                 statusSummary={lesson.statusSummary}
-                quizPath={`/quiz/grammar/${slug}`}
+                onStartQuiz={handleStartQuiz}
               />
             </div>
           )}
@@ -225,7 +264,7 @@ const GrammarLessonPage = () => {
                   cases={lesson.caseAggregations ?? []}
                   numbers={lesson.numberAggregations ?? []}
                   pairs={lesson.pairAggregations ?? []}
-                  quizSlug={slug || ''}
+                  onStartQuiz={handleStartProgressQuiz}
                 />
               </TabPanel>
             </TabView>

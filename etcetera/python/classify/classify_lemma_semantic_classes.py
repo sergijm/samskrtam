@@ -227,22 +227,23 @@ def load_semantic_classes(conn):
 
 def get_unprocessed_translations(conn, limit):
     """
-    Translations from curriculum.lemma_translation that are not yet
-    bound to any semantic class.
+    Lemmas from curriculum.lemma that are not yet bound to any semantic class.
+    Uses the en translation gloss as context for the LLM.
     """
     sql = """
-          SELECT lt.id,
-                 lt.lemma_iast,
-                 lt.language,
+          SELECT l.id,
+                 l.lemma_iast,
+                 'en',
                  lt.gloss
-          FROM curriculum.lemma_translation lt
-          WHERE NOT EXISTS (
+          FROM curriculum.lemma l
+          JOIN curriculum.lemma_translation lt ON lt.lemma_id = l.id
+          WHERE lt.language = 'en'
+            AND NOT EXISTS (
               SELECT 1
               FROM curriculum.lemma_semantic_class lsc
-              WHERE lsc.lemma_translation_id = lt.id
+              WHERE lsc.lemma_id = l.id
           )
-          and lt.language = 'en'
-          ORDER BY lt.lemma_iast, lt.language
+          ORDER BY l.lemma_iast
           LIMIT %s \
           """
 
@@ -428,7 +429,7 @@ def save_results(conn, results, logger):
     """
     sql = """
           INSERT INTO curriculum.lemma_semantic_class
-               (lemma_translation_id, semantic_class_id)
+               (lemma_id, semantic_class_id)
           VALUES (%s, %s)
           ON CONFLICT
               DO NOTHING \
@@ -437,9 +438,9 @@ def save_results(conn, results, logger):
     total_rows = 0
 
     with conn.cursor() as cur:
-        for translation_id, class_ids in results.items():
+        for lemma_id, class_ids in results.items():
             for cid in class_ids:
-                cur.execute(sql, (translation_id, cid))
+                cur.execute(sql, (lemma_id, cid))
                 total_rows += 1
 
     conn.commit()

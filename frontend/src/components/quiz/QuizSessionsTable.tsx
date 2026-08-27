@@ -66,7 +66,7 @@ export default function QuizSessionsTable({
             className="p-button-rounded p-button-text p-button-success"
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/quiz/${quizCategory}/${rowData.slug}/${rowData.sessionId}`);
+              window.open(`/quiz/${quizCategory}/${rowData.slug}/${rowData.sessionId}`, '_blank');
             }}
             tooltip={t('common.continue')}
           />

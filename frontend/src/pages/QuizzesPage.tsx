@@ -1,13 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card } from 'primereact/card';
 import { ProgressBar } from 'primereact/progressbar';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useQuizList, useStartOrResumeQuizSession } from '../hooks/useQuiz';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
 import { useMe } from '../hooks/useUser';
-import {isDeclensionsQuiz, isVocabularyQuiz, LessonItemDto, LessonType} from '../types/quiz';
+import { isVocabularyQuiz, LessonItemDto } from '../types/quiz';
 
 interface QuizzesPageProps {
   category?: string;
@@ -26,25 +25,13 @@ const QuizzesPage: React.FC<QuizzesPageProps> = ({ category: propCategory }) => 
       return;
     }
 
-    // For vocabulary quizzes, navigate to lesson page instead of lesson page
-    if ( isVocabularyQuiz(lesson.lessonType)) {
-      navigate(`/lessons/vocabulary/${lesson.slug}`);
-      return;
-    }
-
-    // For grammar quizzes, navigate to lesson page instead of lesson page
-    if (isDeclensionsQuiz(lesson.lessonType)) {
-      navigate(`/lessons/grammar/${lesson.slug}`);
-      return;
-    }
-
-    // Fallback to original behavior if needed
+    // Start or resume quiz session for all lesson types
     startOrResumeMutation.mutate(
       { quizId: lesson.id, lessonType: lesson.lessonType },
       {
         onSuccess: (data) => {
           const quizCategory = data.lessonType.toLowerCase();
-          navigate(`/lesson/${quizCategory}/${lesson.slug}/${data.sessionId}`, { state: { sessionData: data } });
+          window.open(`/quiz/${quizCategory}/${lesson.slug}/${data.sessionId}`, '_blank');
         },
         onError: (err) => {
           console.error('Failed to start or resume lesson session:', err);

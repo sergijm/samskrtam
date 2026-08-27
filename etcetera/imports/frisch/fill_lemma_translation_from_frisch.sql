@@ -1,21 +1,17 @@
 -- ============================================================================
 -- fill_lemma_translation_from_frisch.sql
 --
--- Fills curriculum.lemma_translation from the Friš dictionary (frisch schema),
--- taking the 2500 most frequent lemmas according to lingua.lemma_frequency.
--- Translations come from frisch.gloss_sense (one row per sense, ru + en).
---
--- One row per (lemma_iast, pos, language) — only the first sense (seq = 1).
--- freq_order is sequential (no gaps) and is the same for both ru and en
--- rows of the same lemma+pos.
+-- Fills curriculum.lemma and curriculum.lemma_translation from the Friš
+-- dictionary (frisch schema), taking the 2500 most frequent lemmas according
+-- to lingua.lemma_frequency.
 --
 -- Prerequisites (same PostgreSQL database):
 --   * frisch schema loaded        (see etcetera/imports/frisch/import_frisch.py)
 --   * lingua.lemma_frequency populated (lemma_iast, pos, occurrence_count)
---   * curriculum.lemma_translation exists (with freq_order column)
+--   * curriculum.lemma + curriculum.lemma_translation exist
 --
--- Idempotent: existing translation rows for the chosen lemmas are removed
--- first, then re-inserted, so the script can be re-run safely.
+-- Idempotent: existing rows for the chosen lemmas are removed first, then
+-- re-inserted.
 --
 -- Run with:  psql "$DATABASE_URL" -f fill_lemma_translation_from_frisch.sql
 -- ============================================================================
@@ -53,7 +49,7 @@ top_candidate AS (
 
 -- ----------------------------------------------------------------------------
 -- 3. Assign sequential freq_order only to candidates that actually have
---    a gloss_sense with seq = 1 (i.e. will be inserted).
+--    a gloss_sense with seq = 1.
 -- ----------------------------------------------------------------------------
 has_gloss AS (
     SELECT DISTINCT tc.lemma_iast, tc.pos, tc.entry_id
@@ -75,32 +71,51 @@ final AS (
 
 -- ----------------------------------------------------------------------------
 -- 4. Clear any previously generated rows for those lemmas (cascades to
---    lemma_semantic_class via ON DELETE CASCADE).
+--    lemma_semantic_class via FK).
 -- ----------------------------------------------------------------------------
 clear_old AS (
     DELETE FROM curriculum.lemma_translation lt
-    WHERE (lt.lemma_iast, lt.pos) IN (SELECT lemma_iast, pos FROM final)
+    WHERE lt.lemma_id IN (
+        SELECT l.id FROM curriculum.lemma l
+        WHERE (l.lemma_iast, l.pos) IN (SELECT lemma_iast, pos FROM final)
+    )
+),
+clear_lemma AS (
+    DELETE FROM curriculum.lemma l
+    WHERE (l.lemma_iast, l.pos) IN (SELECT lemma_iast, pos FROM final)
 )
 
 -- ----------------------------------------------------------------------------
--- 5. Insert one row per (lemma, pos, language) — only the first sense.
+-- 5. Insert one row per lemma and one row per (lemma, language) translation.
 -- ----------------------------------------------------------------------------
-INSERT INTO curriculum.lemma_translation
-    (id, lemma_iast, language, gloss, pos, gender, is_main, freq_order)
+INSERT INTO curriculum.lemma (id, lemma_iast, pos, gender, freq_order)
 SELECT
     gen_random_uuid(),
     f.lemma_iast,
-    gs.lang_code,
-    LEFT(gs.sense_text, 300),
     f.pos,
     (gs.genders)[1]::text,
-    TRUE,
     f.freq_order
 FROM final f
 JOIN frisch.gloss_sense gs
   ON gs.entry_id = f.entry_id
  AND gs.lang_code IN ('ru', 'en')
  AND gs.seq = 1
+GROUP BY f.lemma_iast, f.pos, f.freq_order, (gs.genders)[1]::text
+ON CONFLICT (lemma_iast) DO NOTHING;
+
+INSERT INTO curriculum.lemma_translation (id, lemma_id, language, gloss, is_main)
+SELECT
+    gen_random_uuid(),
+    l.id,
+    gs.lang_code,
+    LEFT(gs.sense_text, 300),
+    TRUE
+FROM final f
+JOIN frisch.gloss_sense gs
+  ON gs.entry_id = f.entry_id
+ AND gs.lang_code IN ('ru', 'en')
+ AND gs.seq = 1
+JOIN curriculum.lemma l ON l.lemma_iast = f.lemma_iast
 ON CONFLICT ON CONSTRAINT uq_lemma_translation DO NOTHING;
 
 -- ----------------------------------------------------------------------------
@@ -110,10 +125,11 @@ SELECT
     COUNT(*)                                   AS total_rows,
     COUNT(*) FILTER (WHERE language = 'ru')    AS ru_rows,
     COUNT(*) FILTER (WHERE language = 'en')    AS en_rows,
-    COUNT(DISTINCT (lemma_iast, pos))          AS distinct_lemma_pos
-FROM curriculum.lemma_translation
-WHERE (lemma_iast, pos) IN (
-    SELECT lemma_iast, pos FROM final
+    COUNT(DISTINCT lemma_id)                   AS distinct_lemmas
+FROM curriculum.lemma_translation lt
+WHERE lt.lemma_id IN (
+    SELECT l.id FROM curriculum.lemma l
+    WHERE (l.lemma_iast, l.pos) IN (SELECT lemma_iast, pos FROM final)
 );
 
 COMMIT;

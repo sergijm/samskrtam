@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.FrequencyBand;
+import sm.selflearn.samskrtam.curriculum.lexicon.model.Lemma;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LemmaTranslation;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.FrequencyBandRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaLexicalTopicRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaTranslationRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticClassRepository;
@@ -48,6 +50,7 @@ class LexicalQuizItemGeneratorTest {
     private SemanticClassRepository semanticClassRepository;
     private FrequencyBandRepository frequencyBandRepository;
     private PartOfSpeechRepository partOfSpeechRepository;
+    private LemmaRepository lemmaRepository;
     private LemmaTranslationRepository lemmaTranslationRepository;
     private LemmaLexicalTopicRepository lemmaLexicalTopicRepository;
     private TransliterationService transliterationService;
@@ -61,6 +64,7 @@ class LexicalQuizItemGeneratorTest {
         semanticClassRepository = mock(SemanticClassRepository.class);
         frequencyBandRepository = mock(FrequencyBandRepository.class);
         partOfSpeechRepository = mock(PartOfSpeechRepository.class);
+        lemmaRepository = mock(LemmaRepository.class);
         lemmaTranslationRepository = mock(LemmaTranslationRepository.class);
         lemmaLexicalTopicRepository = mock(LemmaLexicalTopicRepository.class);
         transliterationService = mock(TransliterationService.class);
@@ -69,10 +73,9 @@ class LexicalQuizItemGeneratorTest {
         generator = new LexicalQuizItemGenerator(
                 topicRepository, questItemRepository, semanticClassRepository,
                 frequencyBandRepository, partOfSpeechRepository,
-                lemmaTranslationRepository, lemmaLexicalTopicRepository,
+                lemmaRepository, lemmaTranslationRepository, lemmaLexicalTopicRepository,
                 transliterationService, objectMapper);
 
-        // devanagari = iast surrounded by parentheses-friendly marker for assertions
         when(transliterationService.iastToDevanagari(any()))
                 .thenAnswer(inv -> "{" + inv.getArgument(0) + "}");
     }
@@ -105,9 +108,16 @@ class LexicalQuizItemGeneratorTest {
         return sc;
     }
 
+    private Lemma lemma(String iast) {
+        Lemma l = new Lemma();
+        l.setId(UUID.randomUUID());
+        l.setLemmaIast(iast);
+        return l;
+    }
+
     private LemmaTranslation tr(String lemma, String lang, String gloss, boolean main) {
         LemmaTranslation t = new LemmaTranslation();
-        t.setLemmaIast(lemma);
+        t.setLemma(this.lemma(lemma));
         t.setLanguage(lang);
         t.setGloss(gloss);
         t.setMain(main);
@@ -269,7 +279,6 @@ class LexicalQuizItemGeneratorTest {
 
     @Test
     void generate_skipsLemmaMissingOneLanguage() throws Exception {
-        // "ksana" has only en -> dropped, so 4 usable lemmas remain -> 4 items
         stubLemmaIastsBySemanticClass(SEMANTIC_CLASS_ID,
                 List.of("ksana", "nara", "gaja", "simha", "vyaghra"));
         stubTranslations(List.of(
@@ -289,7 +298,7 @@ class LexicalQuizItemGeneratorTest {
         UUID bandId = UUID.randomUUID();
         when(frequencyBandRepository.findByCode("CORE")).thenReturn(Optional.of(band("CORE", 1, 100, 1)));
         Topic freqTopic = topicWithId(bandId, "lex-frequency-core");
-        when(lemmaTranslationRepository.findDistinctLemmaIastByFrequencyRankRange(1, 100))
+        when(lemmaRepository.findDistinctLemmaIastByFrequencyRankRange(1, 100))
                 .thenReturn(List.of("nara", "asva", "gaja", "simha"));
         stubTranslations(List.of(
                 tr("nara", "en", "man", true), tr("nara", "ru", "muzhchina", true),
@@ -305,7 +314,7 @@ class LexicalQuizItemGeneratorTest {
     void generate_posTopic_matchesFrischPos() {
         UUID nounId = UUID.randomUUID();
         Topic posTopic = topicWithId(nounId, "lex-pos-noun");
-        when(lemmaTranslationRepository.findDistinctLemmaIastByPos("NOUN"))
+        when(lemmaRepository.findDistinctLemmaIastByPos("NOUN"))
                 .thenReturn(List.of("nara", "asva", "gaja", "simha"));
         stubTranslations(List.of(
                 tr("nara", "en", "man", true), tr("nara", "ru", "muzhchina", true),
@@ -350,7 +359,7 @@ class LexicalQuizItemGeneratorTest {
 
     @SuppressWarnings("unchecked")
     private void stubLemmaIastsBySemanticClass(UUID classId, List<String> lemmas) {
-        when(lemmaTranslationRepository.findDistinctLemmaIastBySemanticClassIds(anySet()))
+        when(lemmaRepository.findDistinctLemmaIastBySemanticClassIds(anySet()))
                 .thenAnswer(invocation -> {
                     Set<UUID> requested = invocation.getArgument(0);
                     return requested.contains(classId) ? lemmas : List.of();
@@ -359,11 +368,11 @@ class LexicalQuizItemGeneratorTest {
 
     @SuppressWarnings("unchecked")
     private void stubTranslations(List<LemmaTranslation> rows) {
-        when(lemmaTranslationRepository.findByLemmaIastIn(anySet()))
+        when(lemmaTranslationRepository.findByLemma_LemmaIastIn(anySet()))
                 .thenAnswer(invocation -> {
                     Set<String> requested = invocation.getArgument(0);
                     return rows.stream()
-                            .filter(r -> requested.contains(r.getLemmaIast()))
+                            .filter(r -> requested.contains(r.getLemma().getLemmaIast()))
                             .toList();
                 });
     }

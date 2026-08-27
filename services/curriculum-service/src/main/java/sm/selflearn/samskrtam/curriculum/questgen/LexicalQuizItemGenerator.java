@@ -11,6 +11,7 @@ import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.SemanticClass;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.FrequencyBandRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaLexicalTopicRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaTranslationRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticClassRepository;
@@ -42,49 +43,23 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Generates VOCABULARY_WORD quest items for lexical topics straight from
- * {@code curriculum.lemma_translation} — no {@code Lexeme} dependency.
- *
- * <p>Candidates are unique {@code lemma_iast} spellings resolved per topic:
- * <ul>
- *   <li>semantic lessons — via {@code lemma_semantic_class} (topic → semantic class);</li>
- *   <li>frequency lessons ({@code lex-frequency-*}, {@code lex-frequency-top500}) —
- *       via {@code lingua.lemma_frequency} rank window intersected with the
- *       translated lemmas;</li>
- *   <li>part-of-speech lessons ({@code lex-pos-*}) — via the {@code pos} column
- *       of {@code lemma_translation} (Friš part-of-speech code).</li>
- * </ul>
- *
- * Every produced item carries a {@code progress_tag} equal to its {@code lemma_iast}
- * (the unique spelling), see V39.
- */
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class LexicalQuizItemGenerator extends QuizItemGenerator {
 
     public static final String GENERATOR_SOURCE = "LEXICAL_BATCH";
 
-    /** Code prefix of the frequency-band lessons (lexical-curriculum.md §2). */
     static final String FREQUENCY_TOPIC_PREFIX = "lex-frequency-";
 
-    /** Code of the cumulative "500 most frequent words" lesson (§2, V31). */
     static final String TOP500_TOPIC_CODE = "lex-frequency-top500";
 
-    /** Cumulative rank ceiling of the top-500 lesson (curriculum.lemma_translation.freq_order). */
     static final int TOP500_MAX_RANK = 500;
 
     static final int DISTRACTOR_COUNT = 3;
 
-    /** Code prefix of the part-of-speech lessons (V32). */
     static final String POS_TOPIC_PREFIX = "lex-pos-";
 
-    /**
-     * Maps a {@code lex-pos-*} topic suffix to the Friš {@code part_of_speech}
-     * code stored in {@code lemma_translation.pos}. Suffixes without a Friš
-     * equivalent (preverb, preposition) yield no candidates.
-     */
     private static final Map<String, String> POS_SUFFIX_TO_FRISCH = Map.ofEntries(
             Map.entry("noun", "NOUN"),
             Map.entry("adjective", "ADJECTIVE"),
@@ -105,6 +80,7 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
     private final SemanticClassRepository semanticClassRepository;
     private final FrequencyBandRepository frequencyBandRepository;
     private final PartOfSpeechRepository partOfSpeechRepository;
+    private final LemmaRepository lemmaRepository;
     private final LemmaTranslationRepository lemmaTranslationRepository;
     private final LemmaLexicalTopicRepository lemmaLexicalTopicRepository;
     private final TransliterationService transliterationService;
@@ -154,7 +130,6 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
     @Override
     @Transactional
     public void ensureTopicsExist() {
-        // Semantic-class lessons come from the leaves of the semantic-class tree.
         for (SemanticClass leaf : semanticClassRepository.findAll().stream()
                 .filter(st -> st.getParent() != null)
                 .toList()) {
@@ -163,7 +138,6 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
             }
             topicRepository.save(createSemanticTopic(leaf));
         }
-        // Frequency lessons come from the seeded frequency bands + the cumulative top-500.
         for (FrequencyBand band : frequencyBandRepository.findAllByOrderBySortOrderAsc()) {
             String code = FREQUENCY_TOPIC_PREFIX + band.getCode().toLowerCase();
             topicRepository.findByCode(code)
@@ -171,7 +145,6 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
         }
         topicRepository.findByCode(TOP500_TOPIC_CODE)
                 .ifPresentOrElse(t -> {}, () -> topicRepository.save(createTop500Topic()));
-        // Part-of-speech lessons come from the seeded part-of-speech codes.
         for (PartOfSpeech pos : partOfSpeechRepository.findAll()) {
             String code = POS_TOPIC_PREFIX + pos.getCode();
             topicRepository.findByCode(code)
@@ -210,10 +183,6 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
         return persist(items);
     }
 
-    /**
-     * Resolves the unique {@code lemma_iast} spellings a topic quizzes, from
-     * {@code lemma_translation} (no Lexeme involved).
-     */
     private List<String> resolveLemmaIasts(Topic topic) {
         String code = topic.getCode();
         if (topic.getDomain() == TopicDomain.VERSE) {
@@ -221,11 +190,11 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
         }
         if (code.startsWith(FREQUENCY_TOPIC_PREFIX)) {
             if (TOP500_TOPIC_CODE.equals(code)) {
-                return lemmaTranslationRepository.findDistinctLemmaIastByFrequencyRankRange(1, TOP500_MAX_RANK);
+                return lemmaRepository.findDistinctLemmaIastByFrequencyRankRange(1, TOP500_MAX_RANK);
             }
             String band = code.substring(FREQUENCY_TOPIC_PREFIX.length());
             return frequencyBandRepository.findByCode(band.toUpperCase())
-                    .map(b -> lemmaTranslationRepository.findDistinctLemmaIastByFrequencyRankRange(
+                    .map(b -> lemmaRepository.findDistinctLemmaIastByFrequencyRankRange(
                             b.getMinRank(), b.getMaxRank()))
                     .orElse(List.of());
         }
@@ -234,7 +203,7 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
             if (frischPos == null) {
                 return List.of();
             }
-            return lemmaTranslationRepository.findDistinctLemmaIastByPos(frischPos);
+            return lemmaRepository.findDistinctLemmaIastByPos(frischPos);
         }
         Set<UUID> classIds = topic.getSemanticClasses().stream()
                 .map(SemanticClass::getId)
@@ -242,23 +211,19 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
         if (classIds.isEmpty()) {
             return List.of();
         }
-        return lemmaTranslationRepository.findDistinctLemmaIastBySemanticClassIds(classIds);
+        return lemmaRepository.findDistinctLemmaIastBySemanticClassIds(classIds);
     }
 
-    /**
-     * Loads the main ru/en gloss for each lemma and keeps only lemmas that have
-     * both languages (a vocabulary item needs a meaning in both learner tongues).
-     */
     private Map<String, Translation> loadTranslations(Set<String> lemmaIasts) {
         Map<String, Translation> byLemma = new LinkedHashMap<>();
-        for (LemmaTranslation row : lemmaTranslationRepository.findByLemmaIastIn(lemmaIasts)) {
-            Translation t = byLemma.computeIfAbsent(row.getLemmaIast(),
+        for (LemmaTranslation row : lemmaTranslationRepository.findByLemma_LemmaIastIn(lemmaIasts)) {
+            Translation t = byLemma.computeIfAbsent(row.getLemma().getLemmaIast(),
                     k -> new Translation(k, transliterationService.iastToDevanagari(k)));
-            if (t.freqOrder == null && row.getFreqOrder() != null) {
-                t.freqOrder = row.getFreqOrder();
+            if (t.freqOrder == null && row.getLemma().getFreqOrder() != null) {
+                t.freqOrder = row.getLemma().getFreqOrder();
             }
-            if (t.pos == null && row.getPos() != null) {
-                t.pos = row.getPos();
+            if (t.pos == null && row.getLemma().getPos() != null) {
+                t.pos = row.getLemma().getPos();
             }
             if (row.isMain()) {
                 if ("en".equals(row.getLanguage())) {
@@ -305,7 +270,7 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
         List<HighlightToken> highlights = List.of(new HighlightToken(t.lemmaIast, t.lemmaIast));
 
         VocabularyWordPayload payload = new VocabularyWordPayload(
-                null,                       // lemmaSlp1 — not stored in lemma_translation
+                null,
                 t.lemmaIast,
                 t.lemmaDevanagari,
                 t.glossEn,
@@ -353,7 +318,7 @@ public class LexicalQuizItemGenerator extends QuizItemGenerator {
     }
 
     // ----------------------------------------------------------------------
-    // Topic provisioning (no Lexeme bindings — resolution is computed on generate)
+    // Topic provisioning
     // ----------------------------------------------------------------------
 
     private Topic createSemanticTopic(SemanticClass leaf) {

@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { MiniProgressBar } from '../common/MiniProgressBar';
 import type { ConjugationCellProgress, WordStatus } from '../../types/lesson';
 
@@ -37,7 +36,6 @@ function computeAgg(
 
 export default function ConjugationProgressGrid({ progress, quizSlug }: Props) {
   const { i18n } = useTranslation();
-  const navigate = useNavigate();
   const ru = i18n.language === 'ru';
 
   if (progress.length === 0) {
@@ -64,7 +62,7 @@ export default function ConjugationProgressGrid({ progress, quizSlug }: Props) {
                   score={agg.aggregatedProgress}
                   status={agg.status}
                   ru={ru}
-                  onStart={() => navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${v}`)}
+                  onStart={() => window.open(`/quiz/grammar/${quizSlug}?progressTagSetId=${v}`, '_blank')}
                 />
               );
             })}
@@ -81,7 +79,7 @@ export default function ConjugationProgressGrid({ progress, quizSlug }: Props) {
                   score={agg.aggregatedProgress}
                   status={agg.status}
                   ru={ru}
-                  onStart={() => navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${p}`)}
+                  onStart={() => window.open(`/quiz/grammar/${quizSlug}?progressTagSetId=${p}`, '_blank')}
                 />
               );
             })}
@@ -98,7 +96,7 @@ export default function ConjugationProgressGrid({ progress, quizSlug }: Props) {
                   score={agg.aggregatedProgress}
                   status={agg.status}
                   ru={ru}
-                  onStart={() => navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${n}`)}
+                  onStart={() => window.open(`/quiz/grammar/${quizSlug}?progressTagSetId=${n}`, '_blank')}
                 />
               );
             })}

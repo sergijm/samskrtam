@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Skeleton } from 'primereact/skeleton';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { useGrammarLesson } from '../../hooks/useLessons';
+import { useStartOrResumeWithStatusFilter } from '../../hooks/useQuiz';
+import { getQuizCategory, LessonType } from '../../types/quiz';
 import { LessonHeader } from '../../components/lesson/LessonHeader';
 import { LessonStatsTab } from '../../components/lesson/LessonStatsTab';
 import ConjugationEndingsTable from '../../components/lesson/ConjugationEndingsTable';
@@ -38,6 +40,23 @@ const ConjugationLessonPage = () => {
   const { data: lesson, isLoading } = useGrammarLesson(slug || '');
 
   const [selectedVoice, setSelectedVoice] = useState<SelectedVoice>(null);
+  const startOrResumeWithFilter = useStartOrResumeWithStatusFilter();
+  const navigate = useNavigate();
+
+  const handleStartQuiz = useCallback((statusFilter: string) => {
+    if (!lesson) return;
+    const lessonType = lesson.type as LessonType;
+    const quizCategory = getQuizCategory(lessonType);
+    startOrResumeWithFilter.mutate(
+      { quizId: lesson.lessonId, lessonType, statusFilter },
+      {
+        onSuccess: (data) => {
+          window.open(`/quiz/${quizCategory}/${slug}/${data.sessionId}`, '_blank');
+        },
+        onError: (e) => console.error('startOrResume failed:', e),
+      },
+    );
+  }, [lesson, slug, navigate, startOrResumeWithFilter]);
 
   const voices: Voice[] = ['PARASMAIPADA', 'ATMANEPADA'];
 
@@ -59,7 +78,7 @@ const ConjugationLessonPage = () => {
             <div className="mb-3">
               <LessonStatsTab
                 statusSummary={lesson.statusSummary}
-                quizPath={`/quiz/grammar/${slug}`}
+                onStartQuiz={handleStartQuiz}
               />
             </div>
           )}

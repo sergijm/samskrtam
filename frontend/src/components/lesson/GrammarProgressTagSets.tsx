@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { Button } from 'primereact/button';
 import { MiniProgressBar } from '../common/MiniProgressBar';
 import type {
@@ -14,7 +13,8 @@ interface Props {
   cases: CaseAggregation[];
   numbers: NumberAggregation[];
   pairs: PairAggregation[];
-  quizSlug: string;
+  /** Колбэк для старта квиза по прогресс-тегу (setId) */
+  onStartQuiz: (progressTagSetId: string) => void;
 }
 
 interface RowProgress {
@@ -22,27 +22,10 @@ interface RowProgress {
   status: WordStatus;
 }
 
-/**
- * Additional progress slices (progress-tag sets) for the grammar lesson
- * Progress tab, rendered below the case×number grid.
- *
- * Layout: two columns — the left one stacks per-case and per-number rows,
- * the right one holds the per-case-pair rows. Each row is a single line:
- * name (left), mini progress bar, then a start-quiz button (double chevron).
- * The button opens a quiz filtered by the corresponding progressTagSetId.
- *
- * Data comes pre-aggregated from the backend (`GrammarLesson` → this page →
- * `caseAggregations`/`numberAggregations`/`pairAggregations`).
- */
-const GrammarProgressTagSets: React.FC<Props> = ({ cases, numbers, pairs, quizSlug }) => {
+const GrammarProgressTagSets: React.FC<Props> = ({ cases, numbers, pairs, onStartQuiz }) => {
   const { i18n } = useTranslation();
-  const navigate = useNavigate();
 
   if (cases.length === 0 && numbers.length === 0 && pairs.length === 0) return null;
-
-  const startQuiz = (setId: string) => {
-    navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${setId}`);
-  };
 
   const lang = i18n.language;
 
@@ -58,7 +41,7 @@ const GrammarProgressTagSets: React.FC<Props> = ({ cases, numbers, pairs, quizSl
                 name={lang === 'ru' ? agg.caseRu : agg.caseEn}
                 progress={agg}
                 lang={lang}
-                onStart={startQuiz}
+                onStart={onStartQuiz}
               />
             ))}
           </div>
@@ -70,7 +53,7 @@ const GrammarProgressTagSets: React.FC<Props> = ({ cases, numbers, pairs, quizSl
                 name={lang === 'ru' ? agg.numberRu : agg.numberEn}
                 progress={agg}
                 lang={lang}
-                onStart={startQuiz}
+                onStart={onStartQuiz}
               />
             ))}
           </div>
@@ -84,7 +67,7 @@ const GrammarProgressTagSets: React.FC<Props> = ({ cases, numbers, pairs, quizSl
                 name={lang === 'ru' ? `${agg.caseRuA} ↔ ${agg.caseRuB}` : `${agg.caseEnA} ↔ ${agg.caseEnB}`}
                 progress={agg}
                 lang={lang}
-                onStart={startQuiz}
+                onStart={onStartQuiz}
               />
             ))}
           </div>
@@ -103,7 +86,7 @@ const Row: React.FC<{
 }> = ({ id, name, progress, lang, onStart }) => (
   <div className="flex align-items-center gap-4" style={{ minHeight: 0 }}>
     <span className="flex-1 text-sm" style={{ lineHeight: '1.25rem' }}>{name}</span>
-    <MiniProgressBar value={progress.aggregatedProgress} status={progress.status} width="110px" />
+    <MiniProgressBar value={progress.aggregatedProgress} status={progress.status} />
     <Button
       icon="pi pi-angle-double-right"
       severity="secondary"

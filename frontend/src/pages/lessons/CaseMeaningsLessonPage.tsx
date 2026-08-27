@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Skeleton } from 'primereact/skeleton';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { useGrammarLesson } from '../../hooks/useLessons';
+import { useStartOrResumeWithStatusFilter } from '../../hooks/useQuiz';
+import { getQuizCategory, LessonType } from '../../types/quiz';
 import { LessonHeader } from '../../components/lesson/LessonHeader';
 import { LessonStatsTab } from '../../components/lesson/LessonStatsTab';
 import { MiniProgressBar } from '../../components/common/MiniProgressBar';
@@ -17,6 +19,22 @@ const CaseMeaningsLessonPage = () => {
   const navigate = useNavigate();
   const { data: lesson, isLoading, isError } = useGrammarLesson(slug || '');
   const [activeTab, setActiveTab] = useState(0);
+  const startOrResumeWithFilter = useStartOrResumeWithStatusFilter();
+
+  const handleStartQuiz = useCallback((statusFilter: string) => {
+    if (!lesson) return;
+    const lessonType = lesson.type as LessonType;
+    const quizCategory = getQuizCategory(lessonType);
+    startOrResumeWithFilter.mutate(
+      { quizId: lesson.lessonId, lessonType, statusFilter },
+      {
+        onSuccess: (data) => {
+          window.open(`/quiz/${quizCategory}/${slug}/${data.sessionId}`, '_blank');
+        },
+        onError: (e) => console.error('startOrResume failed:', e),
+      },
+    );
+  }, [lesson, slug, navigate, startOrResumeWithFilter]);
 
   const handleCaseQuiz = async (caseType: string) => {
     if (!slug) return;
@@ -27,7 +45,7 @@ const CaseMeaningsLessonPage = () => {
         limit: 10,
         userLocale: i18n.language,
       });
-      navigate(`/quiz/grammar/${slug}/${response.data.sessionId}`);
+      window.open(`/quiz/grammar/${slug}/${response.data.sessionId}`, '_blank');
     } catch { /* ignore */ }
   };
 
@@ -65,7 +83,7 @@ const CaseMeaningsLessonPage = () => {
             <div className="mb-3">
               <LessonStatsTab
                 statusSummary={lesson.statusSummary}
-                quizPath={`/quiz/grammar/${slug}`}
+                onStartQuiz={handleStartQuiz}
               />
             </div>
           )}

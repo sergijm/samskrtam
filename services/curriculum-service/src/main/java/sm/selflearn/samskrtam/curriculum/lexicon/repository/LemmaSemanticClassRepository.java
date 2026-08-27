@@ -11,9 +11,9 @@ import java.util.UUID;
 @Repository
 public interface LemmaSemanticClassRepository extends JpaRepository<LemmaSemanticClass, LemmaSemanticClassId> {
 
-    List<LemmaSemanticClass> findById_LemmaTranslationId(UUID lemmaTranslationId);
+    List<LemmaSemanticClass> findById_LemmaId(UUID lemmaId);
 
     List<LemmaSemanticClass> findById_SemanticClassId(UUID semanticClassId);
 
-    void deleteById_LemmaTranslationId(UUID lemmaTranslationId);
+    void deleteById_LemmaId(UUID lemmaId);
 }

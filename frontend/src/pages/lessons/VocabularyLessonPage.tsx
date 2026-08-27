@@ -1,7 +1,9 @@
-﻿import { useState } from "react";
-import { useParams } from "react-router-dom";
+﻿import { useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useVocabularyLesson } from "../../hooks/useLessons";
+import { useStartOrResumeQuizSession } from "../../hooks/useQuiz";
+import { LessonType } from "../../types/quiz";
 import { LessonHeader } from "../../components/lesson/LessonHeader";
 import { LessonStatsTab } from "../../components/lesson/LessonStatsTab";
 import WordLemmaExamplesPanel from "../../components/lesson/WordLemmaExamplesPanel";
@@ -43,9 +45,24 @@ const TranslationCell = ({ row }: { row: VocabularyWordProgress }) => (
 export const VocabularyLessonPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const { data: lesson, isLoading, isError } = useVocabularyLesson(slug || "");
+  const startOrResumeMutation = useStartOrResumeQuizSession();
   const [expandedRows, setExpandedRows] = useState<VocabularyWordProgress[]>([]);
   const isRu = i18n.language === "ru";
+
+  const handleStartQuiz = useCallback((_statusFilter: string) => {
+    if (!lesson) return;
+    startOrResumeMutation.mutate(
+      { quizId: lesson.lessonId, lessonType: LessonType.VOCABULARY },
+      {
+        onSuccess: (data) => {
+          window.open(`/quiz/vocabulary/${slug}/${data.sessionId}`, '_blank');
+        },
+        onError: (e) => console.error('startOrResume failed:', e),
+      },
+    );
+  }, [lesson, slug, navigate, startOrResumeMutation]);
 
   if (isError) {
     return (
@@ -82,7 +99,7 @@ export const VocabularyLessonPage = () => {
 
       {lesson.statusSummary && (
         <div className="mb-3">
-          <LessonStatsTab statusSummary={lesson.statusSummary} quizPath={`/quiz/vocabulary/${slug}`} />
+          <LessonStatsTab statusSummary={lesson.statusSummary} onStartQuiz={handleStartQuiz} />
         </div>
       )}
 

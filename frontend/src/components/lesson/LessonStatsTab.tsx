@@ -1,13 +1,11 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from 'primereact/button';
-import { useNavigate } from 'react-router-dom';
 import type { LessonStatusSummary as LessonStatusSummaryType } from '../../types/lesson';
 
 interface LessonStatsTabProps {
   statusSummary: LessonStatusSummaryType | null | undefined;
-  /** Путь квиза для навигации (e.g., '/quiz/vocabulary/:slug' or '/quiz/grammar/:type') */
-  quizPath: string;
+  /** Колбэк для старта квиза с фильтром статуса (NEW / LEARNING / REVIEW) */
+  onStartQuiz: (statusFilter: string) => void;
 }
 
 interface StatRowProps {
@@ -42,9 +40,8 @@ const StatRow = ({ className, label, value, severity, buttonLabel, buttonIcon, d
   );
 };
 
-export const LessonStatsTab = ({ statusSummary, quizPath }: LessonStatsTabProps) => {
+export const LessonStatsTab = ({ statusSummary, onStartQuiz }: LessonStatsTabProps) => {
   const { i18n } = useTranslation();
-  const navigate = useNavigate();
   const isRu = i18n.language === 'ru';
 
   if (!statusSummary) {
@@ -52,10 +49,6 @@ export const LessonStatsTab = ({ statusSummary, quizPath }: LessonStatsTabProps)
   }
 
   const { newCount, learning, mastered, reviewDue } = statusSummary;
-
-  const handleStatusClick = (statusFilter: string) => {
-    navigate(quizPath);
-  };
 
   return (
     <div className="flex flex-wrap gap-3">
@@ -68,7 +61,7 @@ export const LessonStatsTab = ({ statusSummary, quizPath }: LessonStatsTabProps)
         buttonLabel={isRu ? 'Изучить' : 'Study'}
         buttonIcon="pi pi-play"
         disabled={newCount <= 0}
-        onClick={() => handleStatusClick('NEW')}
+        onClick={() => onStartQuiz('NEW')}
       />
 
       <StatRow
@@ -79,7 +72,7 @@ export const LessonStatsTab = ({ statusSummary, quizPath }: LessonStatsTabProps)
         buttonLabel={isRu ? 'Продолжить' : 'Continue'}
         buttonIcon="pi pi-forward"
         disabled={learning <= 0}
-        onClick={() => handleStatusClick('LEARNING')}
+        onClick={() => onStartQuiz('LEARNING')}
       />
 
       <StatRow
@@ -90,7 +83,7 @@ export const LessonStatsTab = ({ statusSummary, quizPath }: LessonStatsTabProps)
         buttonLabel={isRu ? 'Повторить' : 'Review'}
         buttonIcon="pi pi-history"
         disabled={reviewDue <= 0}
-        onClick={() => handleStatusClick('REVIEW')}
+        onClick={() => onStartQuiz('REVIEW')}
       />
     </div>
   );
