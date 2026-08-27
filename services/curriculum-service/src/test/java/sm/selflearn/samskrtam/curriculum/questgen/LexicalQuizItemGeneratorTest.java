@@ -12,7 +12,7 @@ import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaLexicalTopicRep
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaTranslationRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.SemanticClassRepository;
-import sm.selflearn.samskrtam.curriculum.lexicon.service.TransliterationService;
+import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
 import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
 import sm.selflearn.samskrtam.curriculum.model.TopicDomainType;

@@ -129,7 +129,6 @@ requestWithoutJwt_toProtectedEndpoint_returns401()
 requestWithStudentRole_toAdminEndpoint_returns403()
 requestExceedingRateLimit_returns429()
 requestWithValidJwt_addsIdentityHeaders()
-rateLimitDisabledByFeatureFlag_requestNotLimited()
 ```
 
 ## JaCoCo — конфигурация (добавлять в каждый build.gradle.kts сервиса)

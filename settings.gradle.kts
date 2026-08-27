@@ -2,9 +2,9 @@ rootProject.name = "samskrtam"
 
 include(
     ":shared:user-dtos",
-    ":shared:feature-flag-dtos",
     ":shared:samskrtam-dtos",
     ":shared:common-dtos",
+    ":shared:samskrtam-commons",
     ":infrastructure:api-gateway",
     ":services:user-service",
     ":services:quiz-service",

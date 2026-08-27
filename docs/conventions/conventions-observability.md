@@ -46,7 +46,6 @@ Propagation: WebClient автоматически добавляет traceparent
 | Сервис | Env переменная | Порт по умолчанию |
 |---|---|---|
 | api-gateway | GATEWAY_MANAGEMENT_PORT | 9090 |
-| feature-flag-service | FEATURE_FLAG_SERVICE_PORT | 9091 |
 | user-service | USER_MANAGEMENT_PORT | 9092 |
 | curriculum-service | CONTENT_MANAGEMENT_PORT | 9093 |
 | quiz-service | QUIZ_MANAGEMENT_PORT | 9094 |

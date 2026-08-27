@@ -788,3 +788,10 @@ form .p-avatar.p-avatar-image img {
 .mw-page-refs a:hover {
     text-decoration: none;
 }
+
+/* ─── MW group label (H1, H2E, ...) ─── */
+.mw-entry-html .mw-group-label {
+    font-weight: bold;
+    color: #2f4f2f;
+    text-decoration: underline;
+}

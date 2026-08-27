@@ -3,6 +3,7 @@ package sm.selflearn.samskrtam.mw;
 import java.util.*;
 import java.util.regex.*;
 
+import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 import sm.selflearn.samskrtam.mw.dto.MwEntryDto;
 
 /**
@@ -21,9 +22,10 @@ import sm.selflearn.samskrtam.mw.dto.MwEntryDto;
  *                        structure as the reference HTML (sdata_siddhanta
  *                        spans for Sanskrit, dotted-underline tooltip spans
  *                        for abbreviations/gender/literary sources, etc.)
- *  4. Slp1ToDevanagari – transliterates the SLP1-encoded Sanskrit found in
- *                        <s>, <s1>, <ab n=".." slp1="..">, <bot>, <bio>
- *                        into Devanagari for the sdata_siddhanta spans.
+ *  4. TransliterationService.slp1ToDevanagari (из samskrtam-commons) –
+ *                        транслитерирует SLP1-санскрит из <s>, <s1>,
+ *                        <ab n=".." slp1="..">, <bot>, <bio> в деванагари
+ *                        для sdata_siddhanta-спанов.
  *  5. ArticleRenderer  – emits one <div id="CologneBasic"> ... </div> block
  *                        per entry, one <tr> per sub-entry, exactly like the sample.
  *
@@ -162,117 +164,10 @@ public class MwHtmlRenderer {
     }
 
     // ------------------------------------------------------------------
-    // 3. SLP1 -> Devanagari transliteration
+    // 3. SLP1 -> Devanagari transliteration (общая реализация из samskrtam-commons)
     // ------------------------------------------------------------------
 
-    static class Slp1ToDevanagari {
-        // independent vowels
-        private static final Map<Character, String> VOWEL = new HashMap<>();
-        // dependent vowel signs (matras); "a" has none
-        private static final Map<Character, String> MATRA = new HashMap<>();
-        // consonants (without inherent 'a' handling - handled by caller)
-        private static final Map<Character, String> CONS = new HashMap<>();
-        // misc marks
-        private static final Map<Character, String> MARK = new HashMap<>();
-
-        static {
-            VOWEL.put('a', "अ"); VOWEL.put('A', "आ");
-            VOWEL.put('i', "इ"); VOWEL.put('I', "ई");
-            VOWEL.put('u', "उ"); VOWEL.put('U', "ऊ");
-            VOWEL.put('f', "ऋ"); VOWEL.put('F', "ॠ");
-            VOWEL.put('x', "ऌ"); VOWEL.put('X', "ॡ");
-            VOWEL.put('e', "ए"); VOWEL.put('E', "ऐ");
-            VOWEL.put('o', "ओ"); VOWEL.put('O', "औ");
-
-            MATRA.put('A', "ा"); MATRA.put('i', "ि"); MATRA.put('I', "ी");
-            MATRA.put('u', "ु"); MATRA.put('U', "ू"); MATRA.put('f', "ृ");
-            MATRA.put('F', "ॄ"); MATRA.put('x', "ॢ"); MATRA.put('X', "ॣ");
-            MATRA.put('e', "े"); MATRA.put('E', "ै"); MATRA.put('o', "ो");
-            MATRA.put('O', "ौ");
-
-            CONS.put('k', "क"); CONS.put('K', "ख"); CONS.put('g', "ग");
-            CONS.put('G', "घ"); CONS.put('N', "ङ");
-            CONS.put('c', "च"); CONS.put('C', "छ"); CONS.put('j', "ज");
-            CONS.put('J', "झ"); CONS.put('Y', "ञ");
-            CONS.put('w', "ट"); CONS.put('W', "ठ"); CONS.put('q', "ड");
-            CONS.put('Q', "ढ"); CONS.put('R', "ण");
-            CONS.put('t', "त"); CONS.put('T', "थ"); CONS.put('d', "द");
-            CONS.put('D', "ध"); CONS.put('n', "न");
-            CONS.put('p', "प"); CONS.put('P', "फ"); CONS.put('b', "ब");
-            CONS.put('B', "भ"); CONS.put('m', "म");
-            CONS.put('y', "य"); CONS.put('r', "र"); CONS.put('l', "ल");
-            CONS.put('v', "व");
-            CONS.put('S', "श"); CONS.put('z', "ष"); CONS.put('s', "स");
-            CONS.put('h', "ह"); CONS.put('L', "ळ");
-
-            MARK.put('M', "ं"); MARK.put('H', "ः"); MARK.put('~', "ँ");
-        }
-
-        /**
-         * Converts a headword / SLP1 fragment to Devanagari.
-         * Handles the pipe-delimiting used for compound headwords like
-         * "nara—da" -> caller splits on the em-dash before calling this.
-         */
-        static String convert(String slp1) {
-            StringBuilder out = new StringBuilder();
-            int i = 0;
-            int n = slp1.length();
-            boolean pendingConsonant = false;
-
-            while (i < n) {
-                char c = slp1.charAt(i);
-
-                if (c == '\'') { // avagraha
-                    if (pendingConsonant) { out.append(virama()); pendingConsonant = false; }
-                    out.append('ऽ');
-                    i++;
-                    continue;
-                }
-                if (MARK.containsKey(c)) {
-                    if (pendingConsonant) { out.append(virama()); pendingConsonant = false; }
-                    out.append(MARK.get(c));
-                    i++;
-                    continue;
-                }
-                if (CONS.containsKey(c)) {
-                    if (pendingConsonant) out.append(virama()); // previous consonant, no vowel -> conjunct
-                    out.append(CONS.get(c));
-                    pendingConsonant = true;
-                    i++;
-                    continue;
-                }
-                if (c == 'a' && pendingConsonant) {
-                    // inherent vowel: nothing to add
-                    pendingConsonant = false;
-                    i++;
-                    continue;
-                }
-                if (MATRA.containsKey(c) && pendingConsonant) {
-                    out.append(MATRA.get(c));
-                    pendingConsonant = false;
-                    i++;
-                    continue;
-                }
-                if (VOWEL.containsKey(c)) {
-                    if (pendingConsonant) out.append(virama());
-                    out.append(VOWEL.get(c));
-                    pendingConsonant = false;
-                    i++;
-                    continue;
-                }
-                // markers with no independent glyph, e.g. shortlong/srs are
-                // stripped out before this method is called (see BodyRenderer).
-                // Unknown char: pass through verbatim (digits, punctuation, spaces...).
-                if (pendingConsonant) { out.append(virama()); pendingConsonant = false; }
-                out.append(c);
-                i++;
-            }
-            if (pendingConsonant) out.append(virama());
-            return out.toString();
-        }
-
-        private static String virama() { return "्"; }
-    }
+    private static final TransliterationService TRANSLITERATION = new TransliterationService();
 
     // ------------------------------------------------------------------
     // 4. Lookup tables (stand-ins for mwab / mwauth external tables)
@@ -411,11 +306,11 @@ public class MwHtmlRenderer {
             String[] segs = slp1.split("—", -1);
             for (int i = 0; i < segs.length; i++) {
                 if (i > 0) sb.append("<span class=\"sdata_siddhanta\">—")
-                             .append(Slp1ToDevanagari.convert(segs[i]))
+                             .append(TRANSLITERATION.slp1ToDevanagari(segs[i]))
                              .append("</span>");
                 else
                     sb.append("<span class=\"sdata_siddhanta\">")
-                      .append(Slp1ToDevanagari.convert(segs[i]))
+                      .append(TRANSLITERATION.slp1ToDevanagari(segs[i]))
                       .append("</span>");
             }
             return sb.toString();
@@ -489,7 +384,7 @@ public class MwHtmlRenderer {
         /** rows must already share the same key1/devanagari headword and be in entry_no order. */
         RenderedArticle renderArticle(List<MwRow> rows) {
             if (rows.isEmpty()) return new RenderedArticle("", "", "");
-            String headwordDevanagari = Slp1ToDevanagari.convert(rows.get(0).key1);
+            String headwordDevanagari = TRANSLITERATION.slp1ToDevanagari(rows.get(0).key1);
 
             // All unique page_col values across the whole article, merged into a
             // single "[Printed book page a, b, c]" line (one link per page).
@@ -517,7 +412,7 @@ public class MwHtmlRenderer {
 
                 MwRow first = group.get(0);
                 if (isPrimarySubentry(first.entryNo)) {
-                    body.append(" <span style=\"font-weight:bold\">(")
+                    body.append(" <span class=\"mw-group-label\">(")
                         .append(first.hLabel()).append(")</span> ");
                 }
 
@@ -528,10 +423,6 @@ public class MwHtmlRenderer {
 
                     MiniXmlParser parser = new MiniXmlParser(row.body);
                     body.append(bodyRenderer.render(parser.parse()));
-
-                    body.append(" <span class=\"lnum\"> [<span title=\"Cologne record ID\" ")
-                        .append("style=\"font-size:normal; color:rgb(160,160,160);\">ID=")
-                        .append(row.entryId).append("</span> ]</span>");
                 }
             }
 

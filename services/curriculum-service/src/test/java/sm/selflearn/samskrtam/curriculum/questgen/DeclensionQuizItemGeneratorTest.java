@@ -10,7 +10,7 @@ import sm.selflearn.samskrtam.morphology.NumberType;
 import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.curriculum.dictionary.DictionaryClient;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
-import sm.selflearn.samskrtam.curriculum.lexicon.service.TransliterationService;
+import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
 import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
 import sm.selflearn.samskrtam.curriculum.paradigm.ParadigmForm;

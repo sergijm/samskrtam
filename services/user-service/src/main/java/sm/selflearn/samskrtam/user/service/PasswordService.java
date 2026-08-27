@@ -14,7 +14,6 @@ import sm.selflearn.samskrtam.user.repository.UserProfileRepository;
 
 // Импорты DTO из нового shared модуля
 import sm.selflearn.samskrtam.user.dto.ChangePasswordRequest;
-import sm.selflearn.samskrtam.user.dto.ForgotPasswordRequest;
 import sm.selflearn.samskrtam.user.dto.ResetPasswordRequest; // Import new DTO
 
 import java.time.Instant;

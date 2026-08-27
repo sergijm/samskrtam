@@ -2,7 +2,7 @@ package sm.selflearn.samskrtam.search;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import sm.selflearn.samskrtam.dictionary.service.TransliterationService;
+import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 import sm.selflearn.samskrtam.search.dto.LemmaSearchResult;
 
 import java.util.ArrayList;

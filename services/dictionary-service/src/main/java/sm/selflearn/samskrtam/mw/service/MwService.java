@@ -2,7 +2,7 @@ package sm.selflearn.samskrtam.mw.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import sm.selflearn.samskrtam.dictionary.service.TransliterationService;
+import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 import sm.selflearn.samskrtam.mw.MwHtmlRenderer;
 import sm.selflearn.samskrtam.mw.dto.MwEntryDto;
 import sm.selflearn.samskrtam.mw.repository.MwRepository;

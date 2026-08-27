@@ -8,6 +8,10 @@
  *   - cologne_mw.entries    (headword keys in SLP1: key1/key2;
  *                            part of speech taken from the grammar JSONB
  *                            column, grammar->>'partOfSpeech')
+ *   - cologne_cae.cae_entries (Cappeller; headwords in Cappeller romanization,
+ *                            k1=headword_plain, k2=headword_accented;
+ *                            part of speech taken from the grammar JSONB array
+ *                            grammar->'partsOfSpeech'->>0)
  *
  * Normalized search key
  * ----------------------
@@ -91,6 +95,32 @@ SELECT
 FROM cologne_mw.entries e
 ON CONFLICT (dictionary_code, external_entry_id) DO UPDATE SET
     k1_slp1         = EXCLUDED.k1_slp1,
+    k2_original     = EXCLUDED.k2_original,
+    headword_display = EXCLUDED.headword_display,
+     search_key      = EXCLUDED.search_key,
+    pos             = EXCLUDED.pos;
+
+-- ============================================================
+-- 4. Cappeller  (cologne_cae.cae_entries)
+-- ============================================================
+-- Cappeller headwords are stored in Cappeller romanization (headword_plain = k1,
+-- headword_accented = k2); they are NOT SLP1, so k1_slp1 is left NULL (as for
+-- Frisch) and the search_key is derived from headword_plain after
+-- lingua.normalize_lemma + stress/punctuation stripping. The part of speech is
+-- projected from the grammar JSONB array (first element if present), matching
+-- MW's single-value pos column.
+INSERT INTO lingua.lemmas
+    (dictionary_code, external_entry_id, k1_slp1, k2_original, headword_display, search_key, pos)
+SELECT
+    'cae',
+    e.cae_id,
+    NULL,
+    e.headword_accented,
+    COALESCE(e.headword_accented, e.headword_plain),
+    lower(regexp_replace(lingua.normalize_lemma(e.headword_plain), '[^a-zA-Z]', '', 'g')),
+    e.grammar->'partsOfSpeech'->>0
+FROM cologne_cae.cae_entries e
+ON CONFLICT (dictionary_code, external_entry_id) DO UPDATE SET
     k2_original     = EXCLUDED.k2_original,
     headword_display = EXCLUDED.headword_display,
     search_key      = EXCLUDED.search_key,

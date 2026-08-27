@@ -20,7 +20,6 @@
 
 Связанные спецификации:
 - [user-frontend.md](user-frontend.md) — пользователи, группы, настройки
-- [feature-flags-frontend.md](feature-flags-frontend.md) — UI управления feature flags (ADMIN)
 - [lesson-pages-spec.md](lesson-pages-spec.md) — страницы уроков (VocabularyLessonPage, GrammarLessonPage)
 - [lesson-aggregation-openapi.yaml](../openapi/lesson-aggregation-openapi.yaml) — OpenAPI для lesson-страниц
 ---

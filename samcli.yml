@@ -22,3 +22,22 @@ mw:
 
   # If true, the target table is TRUNCATE'd before import (idempotent re-import).
   truncate: false
+
+cae:
+  # Path to the Cappeller Sanskrit-English source text (cae.txt).
+  source-file: "C:/github/sanskrit-lexicon/csl-orig/v02/cae/cae.txt"
+
+  # Target NEW flat schema/table for the Cappeller dictionary.
+  schema: "cologne_cae"
+  table: "cae_entries"
+
+  # Rows per INSERT batch.
+  batch-size: 1000
+
+  # If true, the target table is TRUNCATE'd before import (idempotent re-import).
+  truncate: false
+
+lemmas:
+  # Path to the SQL script that (re)builds the unified lemma index lingua.lemmas.
+  # Falls back to the bundled classpath resource when the file is not found.
+  script-file: "etcetera/sql/lingua_index_lemmas.sql"

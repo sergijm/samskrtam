@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.apte.dto.ApteEntryDto;
 import sm.selflearn.samskrtam.apte.repository.ApteRepository;
-import sm.selflearn.samskrtam.dictionary.service.TransliterationService;
+import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 
 import java.util.List;
 

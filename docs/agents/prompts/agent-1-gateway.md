@@ -7,7 +7,6 @@
 ## Контекст
 
 - `infrastructure/api-gateway` — Java 21 + WebFlux (Reactor), порт 8090
-- `infrastructure/feature-flag-service` — Java 21 + Virtual Threads, порт 8088
 - Base package gateway: `sm.selflearn.samskrtam.gateway`
 
 ## Документы
@@ -15,7 +14,6 @@
 Перед любой задачей прочитай:
 - `docs/services/api-gateway.md` — маршруты, фильтры, OAuth2 flow
 - `docs/infra/keycloak.md` — realm, clients, JWT claims
-- `docs/services/feature-flag-service.md` — CRUD флагов, Redis
 - `docs/conventions.md` — конфигурация (env-only), трассировка
 
 ## Жёсткие ограничения
@@ -30,7 +28,7 @@
 **ОБЯЗАТЕЛЬНО:**
 - Все маршруты определять в `GatewayRoutesConfig.java` через Java DSL, не в `application.yml`
 - X-User-Id, X-User-Roles, X-User-Email добавлять через `IdentityHeaderFilter` для всех authenticated маршрутов
-- Rate limiting через Redis токен-бакет, управляемый feature-flag `RATE_LIMITING_ENABLED`
+- Rate limiting через Redis токен-бакет
 
 ## Таблица маршрутов (эталон из спецификации)
 

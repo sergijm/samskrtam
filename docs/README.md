@@ -39,7 +39,6 @@ SamskrtamApp построен как референсная реализация
 | Сервис | Язык | Async-модель | Причина |
 |---|---|---|---|
 | api-gateway | Java 21 | WebFlux (Reactor) | Gateway требует реактивный стек |
-| feature-flag-service | Java 21 | Virtual Threads | Простой CRUD + Redis, реактивность избыточна |
 | user-service | Java 21 | Virtual Threads | Профили, регистрация, аватарки, блокировка |
 | curriculum-service | Java 21 | Virtual Threads | CRUD настроек квизов и вопросов, иерархические категории для VOCABULARY-квизов, домен Eamenau (упражнения по сандхи) |
 | quiz-service | Java 21 | WebFlux (Reactor) + R2DBC | Единый сервис прохождения всех квизов, публикация событий в Kafka через Outbox Pattern |
@@ -111,14 +110,12 @@ graph TD
 | [conventions.md](./conventions.md) | Соглашения: конфигурация, логирование, трассировка, тесты, git |
 | [infra/keycloak.md](./infra/keycloak.md) | Аутентификация, identity providers, JWT claims |
 | [services/api-gateway.md](./services/api-gateway.md) | Маршруты, фильтры, rate limiting, OAuth2 flow |
-| [services/feature-flag-service.md](./services/feature-flag-service.md) | Feature flags — управление поведением без деплоя |
 
 ### Per-Service Specifications
 
 | Файл | Стек | Содержание |
 |---|---|---|
 | [services/api-gateway.md](./services/api-gateway.md) | Java 21 + WebFlux | Spring Cloud Gateway |
-| [services/feature-flag-service.md](./services/feature-flag-service.md) | Java 21 + VT | Feature Flag Service |
 | [services/user-service.md](./services/user-service.md) | Java 21 + VT | Логин, регистрация, OAuth, управление паролем |
 | [services/curriculum-service.md](services/curriculum-service.md) | Java 21 + VT | Настройки и содержание всех квизов |
 | [services/curriculum-service/eamenau.md](./services/curriculum-service/eamenau.md) | домен curriculum-service | Упражнения по сандхи, фонемная система |
@@ -144,7 +141,6 @@ graph TD
 | [frontend/frontend-conventions.md](./frontend/frontend-conventions.md) | i18n, env, coding conventions, acceptance criteria |
 | [frontend/frontend-state.md](./frontend/frontend-state.md) | TS-типы, API-хуки, Zustand stores |
 | [frontend/user-frontend.md](./frontend/user-frontend.md) | Пользователи, группы, настройки |
-| [frontend/feature-flags-frontend.md](./frontend/feature-flags-frontend.md) | UI управления feature flags (только ADMIN) |
 | [frontend/pages/lesson-pages-spec.md](./frontend/pages/lesson-pages-spec.md) | Страницы уроков (VocabularyLessonPage, GrammarLessonPage) |
 
 ---

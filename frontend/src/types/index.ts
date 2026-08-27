@@ -125,6 +125,20 @@ export interface ApteEntryDto {
     html?: string;
 }
 
+// Cappeller (cae) Dictionary Types (lookup by cae_id)
+export interface CaeEntryDto {
+    id?: number;
+    page?: number;
+    homonymNum?: number;
+    entryVariant?: string;
+    headwordPlain?: string;
+    headwordAccented?: string;
+    rawText?: string;
+    cleanText?: string;
+    gloss?: string;
+    grammarPos?: string;
+}
+
 // Unified fuzzy lemma search (across all dictionaries)
 export interface LemmaSearchResultDto {
     lemmaId?: number;

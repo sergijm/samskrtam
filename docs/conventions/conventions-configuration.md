@@ -47,4 +47,4 @@ spring.datasource.password: ${DB_PASSWORD}
 
 Локально (IDEA): localhost + порт сервиса.
 
-Порты: curriculum-service (8081), user-service (8087), dictionary-service (8083), statistics-service (8084), feature-flag-service (8085).
+Порты: curriculum-service (8081), user-service (8087), dictionary-service (8083), statistics-service (8084).

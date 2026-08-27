@@ -24,15 +24,15 @@
 
 ## Агент 1 — API Gateway & Infrastructure Agent
 
-**Роль:** Инфраструктурный слой (Gateway, Keycloak, Feature Flags).
+**Роль:** Инфраструктурный слой (Gateway, Keycloak).
 
-**Входные документы:** docs/services/api-gateway.md, docs/infra/keycloak.md, docs/services/feature-flag-service.md, docs/conventions.md
+**Входные документы:** docs/services/api-gateway.md, docs/infra/keycloak.md, docs/conventions.md
 
-**Ответственность:** Spring Cloud Gateway (маршруты, фильтры IdentityHeader/RateLimit/RequestId), OAuth2/OIDC (Authorization Code, ROPC, refresh, logout), JWT-валидация через Keycloak JWKS, rate limiting (Redis + feature-flag), Feature Flag Service (CRUD, Redis), Keycloak realm/clients/providers.
+**Ответственность:** Spring Cloud Gateway (маршруты, фильтры IdentityHeader/RateLimit/RequestId), OAuth2/OIDC (Authorization Code, ROPC, refresh, logout), JWT-валидация через Keycloak JWKS, rate limiting (Redis), Keycloak realm/clients/providers.
 
-**Стек:** Java 21 + WebFlux (Gateway), Java 21 + Virtual Threads (feature-flag-service).
+**Стек:** Java 21 + WebFlux (Gateway).
 
-**Выход:** Gateway с маршрутами, Feature Flag API, realm-export.json.
+**Выход:** Gateway с маршрутами, realm-export.json.
 
 **Ограничения:** Gateway без бизнес-логики, Virtual Threads неприменимы (WebFlux), client_secret только через env.
 
@@ -65,7 +65,7 @@
 
 **Роль:** React/TypeScript фронтенд.
 
-**Входные документы:** docs/frontend/frontend-overview.md, user-frontend.md, feature-flags-frontend.md, docs/frontend/pages/lesson-pages-spec.md, docs/openapi/lesson-aggregation-openapi.yaml, sangraha-service.md §7, docs/conventions.md (i18n, git).
+**Входные документы:** docs/frontend/frontend-overview.md, user-frontend.md, docs/frontend/pages/lesson-pages-spec.md, docs/openapi/lesson-aggregation-openapi.yaml, sangraha-service.md §7, docs/conventions.md (i18n, git).
 
 **Ответственность:** роутинг (публичные + защищённые), auth flow (Keycloak Authorization Code через Gateway, authStore, ProtectedRoute), компоненты по доменам, i18n ru/en, темы lara-light-blue/lara-dark-blue, React Query + Zustand, AdminPage.
 

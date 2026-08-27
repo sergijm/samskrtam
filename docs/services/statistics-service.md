@@ -209,14 +209,11 @@ frontend/
 | `/groups/:id` | GroupPage | Да | STUDENT, ADMIN |
 | `/groups/:id/edit` | GroupEditPage | Да | ADMIN, CURATOR |
 | `/admin` | AdminPage | Да | ADMIN |
-| `/admin/flags` | FeatureFlagsPage | Да | ADMIN |
-| `/admin/flags/:name/history` | FlagHistoryPage | Да | ADMIN |
 
 > Маршрут `/` — единственный с условным рендером: `isAuthenticated ? <DashboardPage/> : <HomePage/>`.
 > HomePage не требует авторизации и доступна по прямой ссылке.
 
 Роуты `/settings`, `/users/:id`, `/groups/*` — подробная спецификация в [user-frontend.md](user-frontend.md).
-Роуты `/admin/flags/*` — подробная спецификация в [feature-flags-frontend.md](feature-flags-frontend.md).
 
 Роуты `/lessons/*` — подробная спецификация в [lesson-pages-spec.md](../frontend/pages/lesson-pages-spec.md). OpenAPI: [lesson-aggregation-openapi.yaml](../openapi/lesson-aggregation-openapi.yaml).
     ├──► API Contract Agent (5)          ← первый: контракты

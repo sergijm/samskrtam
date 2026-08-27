@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.spring.boot)
     id("java")
+    id("edu.sc.seis.launch4j") version "2.5.4"
 }
 
 java {
@@ -35,5 +36,38 @@ tasks.withType<Test> {
 tasks.processResources {
     from(rootProject.projectDir) {
         include("samcli.yml")
+    }
+    // Bundle the lemma-index SQL as a classpath fallback for `refresh-lemmas`.
+    // Single source of truth remains etcetera/sql/lingua_index_lemmas.sql.
+    from(rootProject.file("etcetera/sql")) {
+        include("lingua_index_lemmas.sql")
+        into("sql")
+    }
+}
+
+// launch4j: wrap the Spring Boot fat jar into a native Windows .exe that simply
+// launches it with the system-installed Java (thin wrapper, no bundled JRE).
+launch4j {
+    outfile = "samcli.exe"
+    mainClassName = "sm.selflearn.samskrtam.samcli.SamcliApplication"
+    jar = "${layout.buildDirectory.get()}/libs/samcli-${project.version}.jar"
+    headerType = "console"
+    jvmOptions = setOf("-Xmx256m")
+    // Let launch4j find a Java on PATH / Windows registry; no bundled JRE.
+    jreMinVersion = "21"
+    dontWrapJar = false
+}
+
+tasks.named("launch4j") {
+    dependsOn(tasks.named("bootJar"))
+}
+
+// After the wrapper is built, copy samcli.exe into the project root for convenience.
+tasks.named("createExe") {
+    doLast {
+        val exe = layout.buildDirectory.file("launch4j/samcli.exe").get().asFile
+        val dest = rootProject.layout.projectDirectory.file("samcli.exe").asFile
+        exe.copyTo(dest, overwrite = true)
+        logger.lifecycle("Copied launcher to {}", dest)
     }
 }

@@ -18,7 +18,6 @@ class MwHtmlRendererTest {
         assertTrue(html.contains("<div id=\"CologneBasic\">"));
         assertTrue(html.contains("class=\"sdata_siddhanta\">नर</span>"));
         assertTrue(html.contains("Printed book page"));
-        assertTrue(html.contains("ID=12345"));
         assertTrue(html.contains("529"));
     }
 

@@ -7,7 +7,7 @@ import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { useDictionaryEntries, useLemmaSearch } from '../../hooks/useDictionary';
-import { MwDictionaryEntryDto, FrischEntryDto, ApteEntryDto, LemmaSearchResultDto } from '../../types';
+import { MwDictionaryEntryDto, FrischEntryDto, ApteEntryDto, CaeEntryDto, LemmaSearchResultDto } from '../../types';
 
 const DictionaryPage = () => {
   const { t } = useTranslation();
@@ -57,9 +57,10 @@ const DictionaryPage = () => {
   }, [selectedResult]);
 
   const allTabs = [
-    { code: 'mw', header: 'Monier-Williams' },
     { code: 'frisch', header: 'Frisch (IAST)' },
+    { code: 'cae', header: 'Cappeller' },
     { code: 'apte', header: 'Apte' },
+    { code: 'mw', header: 'Monier-Williams' },
   ];
   const availableTabs = allTabs.filter((t) => foundDictionaries.includes(t.code));
 
@@ -120,6 +121,11 @@ const DictionaryPage = () => {
   const apteEntries =
     (activeCode === 'apte'
       ? (activeEntriesData?.entries as ApteEntryDto[] | undefined)
+      : undefined) ?? [];
+
+  const caeEntries =
+    (activeCode === 'cae'
+      ? (activeEntriesData?.entries as CaeEntryDto[] | undefined)
       : undefined) ?? [];
 
   const stripHtmlTags = (html: string) => {
@@ -236,6 +242,32 @@ const DictionaryPage = () => {
     </div>
   );
 
+  const renderCae = (entries: CaeEntryDto[]) => (
+    <div className="flex flex-column gap-3">
+      {entries.map((entry) => (
+        <div key={entry.id} className="card">
+          <h3 className="mb-1">
+            {entry.headwordAccented}
+            {entry.headwordPlain && entry.headwordPlain !== entry.headwordAccented ? (
+              <span className="text-sm text-color-secondary"> ({entry.headwordPlain})</span>
+            ) : null}
+            {entry.homonymNum != null ? ` (${entry.homonymNum})` : ''}
+          </h3>
+          <div className="flex gap-3 text-sm text-color-secondary mb-2">
+            {entry.grammarPos && <span>{entry.grammarPos}</span>}
+            {entry.page != null && <span>p. {entry.page}</span>}
+          </div>
+          {entry.gloss && (
+            <p className="mb-1"><strong>{t('dictionary.gloss')}:</strong> {entry.gloss}</p>
+          )}
+          <p className="white-space-pre-wrap" style={{ wordWrap: 'break-word' }}>
+            {entry.cleanText || entry.rawText}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="p-4">
       <h1 className="text-center mb-5">{t('nav.dictionary')}</h1>
@@ -346,6 +378,24 @@ const DictionaryPage = () => {
                   <div className="mt-3">{renderApte(apteEntries)}</div>
                 )}
                 {activeCode === 'apte' && apteEntries.length === 0 && !isActiveSearching && selectedLemma && (
+                  <p className="text-center mt-3">{t('dictionary.noWordsFound')}</p>
+                )}
+                {!selectedLemma && <p className="text-center mt-3 text-color-secondary">{t('dictionary.enterLemma')}</p>}
+              </TabPanel>
+            );
+          }
+          if (tab.code === 'cae') {
+            return (
+              <TabPanel key="cae" header={t('dictionary.cae')}>
+                {activeCode === 'cae' && isActiveSearching && !!selectedLemma && (
+                  <div className="flex justify-content-center my-4">
+                    <ProgressSpinner />
+                  </div>
+                )}
+                {activeCode === 'cae' && caeEntries.length > 0 && (
+                  <div className="mt-3">{renderCae(caeEntries)}</div>
+                )}
+                {activeCode === 'cae' && caeEntries.length === 0 && !isActiveSearching && selectedLemma && (
                   <p className="text-center mt-3">{t('dictionary.noWordsFound')}</p>
                 )}
                 {!selectedLemma && <p className="text-center mt-3 text-color-secondary">{t('dictionary.enterLemma')}</p>}

@@ -13,7 +13,7 @@ import sm.selflearn.samskrtam.morphology.Gender;
 import sm.selflearn.samskrtam.morphology.NumberType;
 import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.curriculum.dictionary.DictionaryClient;
-import sm.selflearn.samskrtam.curriculum.lexicon.service.TransliterationService;
+import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
