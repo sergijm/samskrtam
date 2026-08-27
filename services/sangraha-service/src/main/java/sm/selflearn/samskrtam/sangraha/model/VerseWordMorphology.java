@@ -1,5 +1,13 @@
 package sm.selflearn.samskrtam.sangraha.model;
 
+import sm.selflearn.samskrtam.morphology.Gender;
+import sm.selflearn.samskrtam.morphology.GrammaticalCase;
+import sm.selflearn.samskrtam.morphology.Mood;
+import sm.selflearn.samskrtam.morphology.NumberType;
+import sm.selflearn.samskrtam.morphology.Person;
+import sm.selflearn.samskrtam.morphology.Tense;
+import sm.selflearn.samskrtam.morphology.Voice;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import sm.selflearn.samskrtam.content.dto.frisch.FrischEntryDto;
 import sm.selflearn.samskrtam.content.dto.frisch.FrischGenderDto;
 import sm.selflearn.samskrtam.content.model.CaseType;
-import sm.selflearn.samskrtam.content.model.NumberType;
+import sm.selflearn.samskrtam.morphology.NumberType;
 import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.curriculum.dictionary.DictionaryClient;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;

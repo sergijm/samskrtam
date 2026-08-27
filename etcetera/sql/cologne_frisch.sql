@@ -12,7 +12,7 @@
  Target Server Version : 170000 (170000)
  File Encoding         : 65001
 
- Date: 24/08/2026 13:33:49
+ Date: 24/08/2026 17:49:41
 */
 
 
@@ -405,7 +405,7 @@ DECLARE
     seg     TEXT := btrim(p_seg);
     mtc     TEXT[];
     letters TEXT[];
-    result_genders frisch.gender[] := ARRAY[]::frisch.gender[];
+    result_genders cologne_frisch.gender[] := ARRAY[]::cologne_frisch.gender[];
     letter  TEXT;
 BEGIN
     IF seg = '' THEN
@@ -431,17 +431,17 @@ BEGIN
 
     FOREACH letter IN ARRAY letters LOOP
         result_genders := result_genders || CASE letter
-            WHEN 'm' THEN 'MASCULINE'::frisch.gender
-            WHEN 'f' THEN 'FEMININE'::frisch.gender
-            WHEN 'n' THEN 'NEUTER'::frisch.gender
+            WHEN 'm' THEN 'MASCULINE'::cologne_frisch.gender
+            WHEN 'f' THEN 'FEMININE'::cologne_frisch.gender
+            WHEN 'n' THEN 'NEUTER'::cologne_frisch.gender
         END;
     END LOOP;
     genders := result_genders;
 
     number_note := CASE btrim(coalesce(mtc[2], ''), '. ')
-        WHEN 'pl' THEN 'PLURAL'::frisch.number_type
-        WHEN 'du' THEN 'DUAL'::frisch.number_type
-        WHEN 'sg' THEN 'SINGULAR'::frisch.number_type
+        WHEN 'pl' THEN 'PLURAL'::cologne_frisch.number_type
+        WHEN 'du' THEN 'DUAL'::cologne_frisch.number_type
+        WHEN 'sg' THEN 'SINGULAR'::cologne_frisch.number_type
         ELSE NULL
     END;
     is_proper_noun := mtc[3] IS NOT NULL;
@@ -462,12 +462,12 @@ CREATE OR REPLACE FUNCTION "cologne_frisch"."get_lemma_info"("p_lemma" text)
   RETURNS TABLE("entry_id" int4, "homonym_index" int2, "lemma_iast" text, "is_root" bool, "is_related_form" bool, "parent_entry_id" int4, "parent_lemma" text, "grammar_note" text, "pos" jsonb, "genders" jsonb, "verb_class" int2, "verb_forms" jsonb, "derived_stems" jsonb, "related_forms" jsonb, "cross_references" jsonb, "gloss_ru" text, "gloss_cs" text, "gloss_en" text, "senses" jsonb, "raw_headline" text) AS $BODY$
     WITH matched AS (
         SELECT e.*
-        FROM frisch.dict_entry e
+        FROM cologne_frisch.dict_entry e
         WHERE e.lemma_iast = p_lemma
         UNION
         SELECT e.*
-        FROM frisch.dict_entry e
-        WHERE e.lemma_ascii = frisch.normalize_lemma(p_lemma)
+        FROM cologne_frisch.dict_entry e
+        WHERE e.lemma_ascii = lingua.normalize_lemma(p_lemma)
     )
     SELECT
         e.entry_id,
@@ -483,14 +483,14 @@ CREATE OR REPLACE FUNCTION "cologne_frisch"."get_lemma_info"("p_lemma" text)
                     'pos', ep.pos,
                     'qualifier', NULLIF(ep.qualifier, '')
                 ))
-         FROM frisch.entry_pos ep
+         FROM cologne_frisch.entry_pos ep
          WHERE ep.entry_id = e.entry_id)                              AS pos,
 
         (SELECT jsonb_agg(jsonb_build_object(
                     'gender', eg.gender,
                     'stem_suffix', eg.stem_suffix
                 ))
-         FROM frisch.entry_gender eg
+         FROM cologne_frisch.entry_gender eg
          WHERE eg.entry_id = e.entry_id)                              AS genders,
 
         vc.conj_class                                                  AS verb_class,
@@ -506,7 +506,7 @@ CREATE OR REPLACE FUNCTION "cologne_frisch"."get_lemma_info"("p_lemma" text)
                     'form', vf.form_text,
                     'raw_tag', vf.raw_tag
                 ) ORDER BY vf.seq)
-         FROM frisch.verb_form vf
+         FROM cologne_frisch.verb_form vf
          WHERE vf.entry_id = e.entry_id)                              AS verb_forms,
 
         (SELECT jsonb_agg(jsonb_build_object(
@@ -514,7 +514,7 @@ CREATE OR REPLACE FUNCTION "cologne_frisch"."get_lemma_info"("p_lemma" text)
                     'form', ds.surface_form,
                     'raw_tag', ds.raw_tag
                 ) ORDER BY ds.seq)
-         FROM frisch.derived_stem ds
+         FROM cologne_frisch.derived_stem ds
          WHERE ds.entry_id = e.entry_id)                              AS derived_stems,
 
         (SELECT jsonb_agg(jsonb_build_object(
@@ -525,8 +525,8 @@ CREATE OR REPLACE FUNCTION "cologne_frisch"."get_lemma_info"("p_lemma" text)
                     'entry_id', rf.entry_id,
                     'lemma_iast', d2.lemma_iast
                 ))
-         FROM frisch.related_form rf
-         JOIN frisch.dict_entry d2 ON d2.entry_id = rf.entry_id
+         FROM cologne_frisch.related_form rf
+         JOIN cologne_frisch.dict_entry d2 ON d2.entry_id = rf.entry_id
          WHERE rf.base_entry_id = e.entry_id)                         AS related_forms,
 
         (SELECT jsonb_agg(jsonb_build_object(
@@ -535,17 +535,17 @@ CREATE OR REPLACE FUNCTION "cologne_frisch"."get_lemma_info"("p_lemma" text)
                     'target_entry_id', cr.target_entry_id,
                     'target_lemma', d3.lemma_iast
                 ))
-         FROM frisch.cross_reference cr
-         LEFT JOIN frisch.dict_entry d3 ON d3.entry_id = cr.target_entry_id
+         FROM cologne_frisch.cross_reference cr
+         LEFT JOIN cologne_frisch.dict_entry d3 ON d3.entry_id = cr.target_entry_id
          WHERE cr.entry_id = e.entry_id)                              AS cross_references,
 
-        (SELECT g.gloss_text FROM frisch.gloss g
+        (SELECT g.gloss_text FROM cologne_frisch.gloss g
          WHERE g.entry_id = e.entry_id AND g.lang_code = 'ru'
          ORDER BY g.seq LIMIT 1)                                      AS gloss_ru,
-        (SELECT g.gloss_text FROM frisch.gloss g
+        (SELECT g.gloss_text FROM cologne_frisch.gloss g
          WHERE g.entry_id = e.entry_id AND g.lang_code = 'cs'
          ORDER BY g.seq LIMIT 1)                                      AS gloss_cs,
-        (SELECT g.gloss_text FROM frisch.gloss g
+        (SELECT g.gloss_text FROM cologne_frisch.gloss g
          WHERE g.entry_id = e.entry_id AND g.lang_code = 'en'
          ORDER BY g.seq LIMIT 1)                                      AS gloss_en,
 
@@ -557,16 +557,16 @@ CREATE OR REPLACE FUNCTION "cologne_frisch"."get_lemma_info"("p_lemma" text)
                     'ru', ru.sense_text,
                     'en', en.sense_text
                 ) ORDER BY coalesce(cs.seq, ru.seq, en.seq))
-         FROM (SELECT * FROM frisch.gloss_sense WHERE entry_id = e.entry_id AND lang_code = 'cs') cs
-         FULL JOIN (SELECT * FROM frisch.gloss_sense WHERE entry_id = e.entry_id AND lang_code = 'ru') ru
+         FROM (SELECT * FROM cologne_frisch.gloss_sense WHERE entry_id = e.entry_id AND lang_code = 'cs') cs
+         FULL JOIN (SELECT * FROM cologne_frisch.gloss_sense WHERE entry_id = e.entry_id AND lang_code = 'ru') ru
                 ON ru.seq = cs.seq
-         FULL JOIN (SELECT * FROM frisch.gloss_sense WHERE entry_id = e.entry_id AND lang_code = 'en') en
+         FULL JOIN (SELECT * FROM cologne_frisch.gloss_sense WHERE entry_id = e.entry_id AND lang_code = 'en') en
                 ON en.seq = coalesce(cs.seq, ru.seq))                 AS senses,
 
         e.raw_headline
     FROM matched e
-    LEFT JOIN frisch.verb_class vc     ON vc.entry_id = e.entry_id
-    LEFT JOIN frisch.dict_entry parent ON parent.entry_id = e.parent_entry_id
+    LEFT JOIN cologne_frisch.verb_class vc     ON vc.entry_id = e.entry_id
+    LEFT JOIN cologne_frisch.dict_entry parent ON parent.entry_id = e.parent_entry_id
     ORDER BY e.homonym_index NULLS FIRST, e.entry_id;
 $BODY$
   LANGUAGE sql STABLE
@@ -581,24 +581,11 @@ DROP FUNCTION IF EXISTS "cologne_frisch"."get_lemma_json"("p_lemma" text);
 CREATE OR REPLACE FUNCTION "cologne_frisch"."get_lemma_json"("p_lemma" text)
   RETURNS "pg_catalog"."jsonb" AS $BODY$
     SELECT COALESCE(jsonb_agg(to_jsonb(t)), '[]'::jsonb)
-    FROM frisch.get_lemma_info(p_lemma) AS t;
+    FROM cologne_frisch.get_lemma_info(p_lemma) AS t;
 $BODY$
   LANGUAGE sql STABLE
   COST 100;
 COMMENT ON FUNCTION "cologne_frisch"."get_lemma_json"("p_lemma" text) IS 'Same as get_lemma_info(), collapsed into a single JSONB array (one object per homonym).';
-
--- ----------------------------
--- Function structure for normalize_lemma
--- ----------------------------
-DROP FUNCTION IF EXISTS "cologne_frisch"."normalize_lemma"("p_text" text);
-CREATE OR REPLACE FUNCTION "cologne_frisch"."normalize_lemma"("p_text" text)
-  RETURNS "pg_catalog"."text" AS $BODY$
-    SELECT lower(
-        regexp_replace(normalize(trim(p_text), NFKD), '[\u0300-\u036f]', '', 'g')
-    );
-$BODY$
-  LANGUAGE sql IMMUTABLE STRICT
-  COST 100;
 
 -- ----------------------------
 -- Function structure for rebuild_gloss_sense
@@ -609,9 +596,9 @@ CREATE OR REPLACE FUNCTION "cologne_frisch"."rebuild_gloss_sense"()
 DECLARE
     n_inserted INTEGER;
 BEGIN
-    TRUNCATE frisch.gloss_sense RESTART IDENTITY;
+    TRUNCATE cologne_frisch.gloss_sense RESTART IDENTITY;
 
-    INSERT INTO frisch.gloss_sense (entry_id, lang_code, seq, genders, number_note, is_proper_noun, sense_text)
+    INSERT INTO cologne_frisch.gloss_sense (entry_id, lang_code, seq, genders, number_note, is_proper_noun, sense_text)
     SELECT
         g.entry_id,
         g.lang_code,
@@ -620,9 +607,9 @@ BEGIN
         p.number_note,
         p.is_proper_noun,
         p.sense_text
-    FROM frisch.gloss g,
+    FROM cologne_frisch.gloss g,
          LATERAL unnest(string_to_array(g.gloss_text, ';')) WITH ORDINALITY AS seg(text_seg, ord),
-         LATERAL frisch._parse_gloss_segment(seg.text_seg) p
+         LATERAL cologne_frisch._parse_gloss_segment(seg.text_seg) p
     WHERE btrim(seg.text_seg) <> '';
 
     GET DIAGNOSTICS n_inserted = ROW_COUNT;

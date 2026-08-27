@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Value;
-import sm.selflearn.samskrtam.content.model.NumberType;
+import sm.selflearn.samskrtam.morphology.NumberType;
 
 /**
  * One conjugation paradigm cell: the example sentence for a (person, number) of

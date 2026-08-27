@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Value;
-import sm.selflearn.samskrtam.content.model.Voice;
+import sm.selflearn.samskrtam.morphology.Pada;
 
 import java.util.List;
 
@@ -18,7 +18,7 @@ public class ConjugationParadigmDto {
     String lemmaIast;
     String lemmaDevanagari;
     String meaningRu;
-    Voice voice;
+    Pada voice;
     List<ConjugationFormDto> forms;
 
     @JsonCreator
@@ -26,7 +26,7 @@ public class ConjugationParadigmDto {
             @JsonProperty("lemmaIast") String lemmaIast,
             @JsonProperty("lemmaDevanagari") String lemmaDevanagari,
             @JsonProperty("meaningRu") String meaningRu,
-            @JsonProperty("voice") Voice voice,
+            @JsonProperty("voice") Pada voice,
             @JsonProperty("forms") List<ConjugationFormDto> forms) {
         this.lemmaIast = lemmaIast;
         this.lemmaDevanagari = lemmaDevanagari;

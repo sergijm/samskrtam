@@ -11,4 +11,5 @@ public class ApteEntryDto {
     private String bodyText;
     private String rawMarkup;
     private Integer homonymNum;
+    private String html;
 }

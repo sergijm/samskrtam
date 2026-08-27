@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
 import sm.selflearn.samskrtam.curriculum.questgen.morphology.CaseType;
-import sm.selflearn.samskrtam.curriculum.questgen.morphology.NumberType;
+import sm.selflearn.samskrtam.morphology.NumberType;
 
 @Getter
 @Setter

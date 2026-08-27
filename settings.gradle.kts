@@ -11,6 +11,7 @@ include(
     ":services:statistics-service",
     ":services:dictionary-service",
     ":services:sangraha-service",
-    ":services:curriculum-service"
+    ":services:curriculum-service",
+    ":cli:samcli"
 )
 

@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.sangraha.dto.NominalLemmaCandidateDto;
 import sm.selflearn.samskrtam.sangraha.dto.NominalLemmaCandidatesResponseDto;
-import sm.selflearn.samskrtam.sangraha.model.Gender;
+import sm.selflearn.samskrtam.morphology.Gender;
 import sm.selflearn.samskrtam.sangraha.repository.NominalLemmaRepository;
 import sm.selflearn.samskrtam.sangraha.repository.NominalLemmaRepository.CandidateRow;
 import sm.selflearn.samskrtam.sangraha.repository.NominalLemmaRepository.LemmaGenderCount;

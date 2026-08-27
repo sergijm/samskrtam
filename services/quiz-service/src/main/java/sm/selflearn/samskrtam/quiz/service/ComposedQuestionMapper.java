@@ -201,7 +201,7 @@ public class ComposedQuestionMapper {
 
     private static String numberLabel(String numberType) {
         try {
-            return sm.selflearn.samskrtam.content.model.NumberType.valueOf(numberType).getEnName();
+            return sm.selflearn.samskrtam.morphology.NumberType.valueOf(numberType).getEnName();
         } catch (IllegalArgumentException e) {
             return numberType;
         }

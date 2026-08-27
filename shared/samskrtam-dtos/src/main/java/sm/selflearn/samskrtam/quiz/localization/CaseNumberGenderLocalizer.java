@@ -1,8 +1,8 @@
 package sm.selflearn.samskrtam.quiz.localization;
 
 import sm.selflearn.samskrtam.content.model.CaseType;
-import sm.selflearn.samskrtam.content.model.Gender;
-import sm.selflearn.samskrtam.content.model.NumberType;
+import sm.selflearn.samskrtam.morphology.Gender;
+import sm.selflearn.samskrtam.morphology.NumberType;
 
 /**
  * Единая точка локализации CaseType / NumberType / Gender.

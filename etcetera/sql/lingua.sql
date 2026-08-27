@@ -12,7 +12,7 @@
  Target Server Version : 170000 (170000)
  File Encoding         : 65001
 
- Date: 24/08/2026 13:34:07
+ Date: 24/08/2026 17:50:54
 */
 
 
@@ -171,6 +171,19 @@ CREATE TABLE "lingua"."semantic_class" (
   "parent_id" uuid
 )
 ;
+
+-- ----------------------------
+-- Function structure for normalize_lemma
+-- ----------------------------
+DROP FUNCTION IF EXISTS "lingua"."normalize_lemma"("p_text" text);
+CREATE OR REPLACE FUNCTION "lingua"."normalize_lemma"("p_text" text)
+  RETURNS "pg_catalog"."text" AS $BODY$
+    SELECT lower(
+        regexp_replace(normalize(trim(p_text), NFKD), '[\u0300-\u036f]', '', 'g')
+    );
+$BODY$
+  LANGUAGE sql IMMUTABLE STRICT
+  COST 100;
 
 -- ----------------------------
 -- Alter sequences owned by

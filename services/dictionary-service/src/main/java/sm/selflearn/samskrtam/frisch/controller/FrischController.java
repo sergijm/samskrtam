@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import sm.selflearn.samskrtam.content.dto.frisch.FrischEntryDto;
+import sm.selflearn.samskrtam.dictionary.service.TransliterationService;
 import sm.selflearn.samskrtam.frisch.service.FrischService;
 
 import java.util.List;
@@ -17,9 +18,11 @@ import java.util.List;
 public class FrischController {
 
     private final FrischService frischService;
+    private final TransliterationService transliterationService;
 
     @GetMapping
     public ResponseEntity<List<FrischEntryDto>> getLemma(@RequestParam String lemma) {
-        return ResponseEntity.ok(frischService.getLemma(lemma));
+        String iast = transliterationService.slp1ToIast(lemma);
+        return ResponseEntity.ok(frischService.getLemma(iast));
     }
 }

@@ -201,8 +201,16 @@
   "dictionary": {
     "noWordsFound": "No words found.",
     "enterLemma": "Enter a lemma to search.",
+    "mw": "Monier-Williams",
+    "frisch": "Frisch",
+    "apte": "Apte",
     "gloss": "Gloss",
     "parentLemma": "Parent lemma",
-    "senses": "Senses"
+    "senses": "Senses",
+    "lemmaSearch": "Lemma search",
+    "score": "Score",
+    "lemma": "Lemma",
+    "source": "Source",
+    "dict": "Dictionary"
   }
 }

@@ -6,7 +6,7 @@ import reactor.core.publisher.Mono;
 import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
 import sm.selflearn.samskrtam.content.model.CaseType;
-import sm.selflearn.samskrtam.content.model.NumberType;
+import sm.selflearn.samskrtam.morphology.NumberType;
 import sm.selflearn.samskrtam.quiz.dto.QuestionOptionDto;
 import sm.selflearn.samskrtam.quiz.localization.CaseNumberGenderLocalizer;
 

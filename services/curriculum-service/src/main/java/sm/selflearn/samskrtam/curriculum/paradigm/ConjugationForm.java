@@ -11,8 +11,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import sm.selflearn.samskrtam.content.model.NumberType;
-import sm.selflearn.samskrtam.content.model.Voice;
+import sm.selflearn.samskrtam.morphology.NumberType;
+import sm.selflearn.samskrtam.morphology.Pada;
 
 import java.util.UUID;
 
@@ -46,7 +46,7 @@ public class ConjugationForm {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "voice", nullable = false, length = 40)
-    private Voice voice;
+    private Pada voice;
 
     @Column(name = "person", nullable = false)
     private int person;

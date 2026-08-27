@@ -5,8 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import sm.selflearn.samskrtam.content.model.CaseType;
-import sm.selflearn.samskrtam.content.model.Gender;
-import sm.selflearn.samskrtam.content.model.NumberType;
+import sm.selflearn.samskrtam.morphology.Gender;
+import sm.selflearn.samskrtam.morphology.NumberType;
 import sm.selflearn.samskrtam.content.model.VowelType;
 
 import java.util.UUID;

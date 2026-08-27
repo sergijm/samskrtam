@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty; // Import JsonProperty
 import lombok.Builder;
 import lombok.Value;
 import sm.selflearn.samskrtam.content.model.CaseType;
-import sm.selflearn.samskrtam.content.model.NumberType;
+import sm.selflearn.samskrtam.morphology.NumberType;
 
 import java.util.UUID;
 

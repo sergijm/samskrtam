@@ -1,7 +1,7 @@
 package sm.selflearn.samskrtam.sangraha.dto;
 
-import sm.selflearn.samskrtam.sangraha.model.Mood;
-import sm.selflearn.samskrtam.sangraha.model.Tense;
+import sm.selflearn.samskrtam.morphology.Mood;
+import sm.selflearn.samskrtam.morphology.Tense;
 
 /**
  * Запрос примеров стихов по спряжению (вкладка «Примеры» урока спряжений).

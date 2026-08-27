@@ -3,7 +3,7 @@ package sm.selflearn.samskrtam.content.dto;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized; // Import Jacksonized
-import sm.selflearn.samskrtam.content.model.Gender; // Corrected import
+import sm.selflearn.samskrtam.morphology.Gender; // Corrected import
 
 import java.util.List; // Import List
 import java.util.UUID;

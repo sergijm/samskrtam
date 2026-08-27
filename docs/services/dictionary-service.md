@@ -73,7 +73,7 @@
 ]
 ```
 
-### 5.2. GET /api/v1/dictionary/entry?slp1Spelling={slp1Normalized}
+### 5.2. GET /api/v1/dictionary/mw?slp1Spelling={slp1Normalized}
 
 Возвращает полную словарную статью для указанного слова. Фронтенд передает `slp1Normalized` из результатов поиска в параметр `slp1Spelling`.
 
@@ -111,24 +111,35 @@
 ## 6. Backend структура
 
 ```
-sm/selflearn/samskrtam/dictionary/
-├── Application.java
-├── controller/
-│   └── DictionaryController.java       ← Публичные эндпоинты (поиск, статья)
-├── service/
-│   └── DictionaryService.java          ← Основная бизнес-логика
-│   └── TransliterationService.java     ← Сервис для транслитерации и нормализации
-├── repository/
-│   ├── MwEntryRepository.java          ← Репозиторий для основных статей Monier-Williams
-│   ├── MwSanskritWordRepository.java   ← Репозиторий для санскритских слов в статьях
-│   └── ... (другие репозитории для деталей статей)
-├── model/
-│   ├── MwEntry.java                    ← Сущность основной статьи Monier-Williams
-│   ├── MwSanskritWord.java             ← Сущность санскритского слова
-│   └── ... (другие сущности для деталей статей)
-└── dto/
-    ├── MwWordSearchDto.java            ← DTO для результатов поиска слов
-    └── MwEntryDto.java                 ← DTO для полной статьи (содержит List<MwDictionaryEntryDto>)
+sm/selflearn/samskrtam/
+├── dictionary/                          ← Общие утилиты
+│   └── service/
+│       └── TransliterationService.java  ← Транслитерация и нормализация
+├── monierwilliams/                      ← Monier-Williams словарь
+│   ├── controller/
+│   │   └── DictionaryController.java    ← Публичные эндпоинты (поиск, статья)
+│   ├── service/
+│   │   ├── DictionaryService.java       ← Основная бизнес-логика
+│   │   ├── MwDictionaryEntryService.java
+│   │   └── ...
+│   ├── repository/                      ← JPA репозитории
+│   │   ├── MwEntryRepository.java
+│   │   └── ...
+│   ├── model/
+│   │   ├── MwEntry.java
+│   │   └── ...
+│   ├── entity/                          ← JPA сущности
+│   │   ├── MwEntry.java
+│   │   └── ...
+│   └── dto/
+│       ├── MwEntryDto.java             ← DTO для полной статьи
+│       └── MwDictionaryEntryDto.java
+├── search/                              ← Поиск по начальным буквам
+│   └── LemmaSearchController.java
+├── frisch/                              ← Словарь Фриша
+│   └── ...
+└── apte/                                ← Словарь Апте
+    └── ...
 ```
 
 ## 7. Ключевые классы

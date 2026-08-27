@@ -6,6 +6,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import sm.selflearn.samskrtam.morphology.FormType;
+import sm.selflearn.samskrtam.morphology.Gender;
+import sm.selflearn.samskrtam.morphology.GrammaticalCase;
+import sm.selflearn.samskrtam.morphology.Mood;
+import sm.selflearn.samskrtam.morphology.NumberType;
+import sm.selflearn.samskrtam.morphology.PartOfSpeech;
+import sm.selflearn.samskrtam.morphology.Person;
+import sm.selflearn.samskrtam.morphology.Tense;
+import sm.selflearn.samskrtam.morphology.Voice;
 import sm.selflearn.samskrtam.sangraha.model.*;
 import sm.selflearn.samskrtam.sangraha.repository.*;
 

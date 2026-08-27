@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import sm.selflearn.samskrtam.content.model.VowelType;
-import sm.selflearn.samskrtam.sangraha.model.Gender;
+import sm.selflearn.samskrtam.morphology.Gender;
 import sm.selflearn.samskrtam.sangraha.model.NominalLemma;
 
 import java.util.Collection;

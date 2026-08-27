@@ -1,5 +1,8 @@
 package sm.selflearn.samskrtam.sangraha.model;
 
+import sm.selflearn.samskrtam.morphology.FormType;
+import sm.selflearn.samskrtam.morphology.PartOfSpeech;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

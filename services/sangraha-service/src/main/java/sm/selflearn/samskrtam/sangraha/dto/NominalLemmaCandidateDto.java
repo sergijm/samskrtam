@@ -1,7 +1,7 @@
 package sm.selflearn.samskrtam.sangraha.dto;
 
 import sm.selflearn.samskrtam.sangraha.model.AnalysisConfidence;
-import sm.selflearn.samskrtam.sangraha.model.Gender;
+import sm.selflearn.samskrtam.morphology.Gender;
 
 /**
  * Кандидат на импорт существительного в curriculum-лексикон (для бутстрапа

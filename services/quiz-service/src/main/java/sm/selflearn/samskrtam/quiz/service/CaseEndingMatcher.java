@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import sm.selflearn.samskrtam.content.dto.CaseEndingDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
-import sm.selflearn.samskrtam.content.model.Gender;
+import sm.selflearn.samskrtam.morphology.Gender;
 
 import java.util.List;
 

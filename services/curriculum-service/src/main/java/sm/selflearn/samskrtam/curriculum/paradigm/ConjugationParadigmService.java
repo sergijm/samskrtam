@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import sm.selflearn.samskrtam.content.dto.ConjugationFormDto;
 import sm.selflearn.samskrtam.content.dto.ConjugationParadigmDto;
 import sm.selflearn.samskrtam.content.dto.ConjugationParadigmPageDto;
-import sm.selflearn.samskrtam.content.model.Voice;
+import sm.selflearn.samskrtam.morphology.Pada;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -29,7 +29,7 @@ public class ConjugationParadigmService {
     private final ConjugationFormRepository conjugationFormRepository;
 
     @Transactional(readOnly = true)
-    public ConjugationParadigmPageDto getParadigmPage(String topicCode, int index, Voice voice) {
+    public ConjugationParadigmPageDto getParadigmPage(String topicCode, int index, Pada voice) {
         List<ConjugationForm> forms = (voice == null)
                 ? conjugationFormRepository.findByTopicCodeOrderByLemmaIastAscVoiceAscPersonDescNumberTypeAsc(topicCode)
                 : conjugationFormRepository.findByTopicCodeAndVoiceOrderByLemmaIastAscPersonDescNumberTypeAsc(topicCode, voice);

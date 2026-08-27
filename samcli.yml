@@ -1,0 +1,24 @@
+# ===================================================================
+# samcli — external defaults (editable without rebuild)
+# Override any value per command via CLI options, e.g.:
+#   samcli import-mw --schema my_schema --table my_table
+# Config file location itself is overridable:
+#   samcli --config /path/to/samcli.yml ...
+# ===================================================================
+
+mw:
+  # Path to the Monier-Williams source text (Cologne csl-orig distribution).
+  # Forward slashes are valid Path separators on Windows too.
+  source-file: "C:/github/sanskrit-lexicon/csl-orig/v02/mw/mw.txt"
+
+  # Target NEW flat schema/table.
+  # IMPORTANT: must NOT be the existing dictionary-service schema "cologne_mw"
+  # (that one is owned by dictionary-service with ddl-auto: validate).
+  schema: "cologne_mw"
+  table: "entries"
+
+  # Rows per INSERT batch.
+  batch-size: 1000
+
+  # If true, the target table is TRUNCATE'd before import (idempotent re-import).
+  truncate: false

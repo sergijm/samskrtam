@@ -51,7 +51,9 @@ export interface SandhiRuleDto {
 
 // Monier-Williams Dictionary Types
 export interface MwDictionaryEntryDto {
-    recordId: string;
+    recordId?: string;
+    id?: number;
+    entryId?: string;
     key1: string;
     key1Display: string;
     key2: string;
@@ -68,6 +70,11 @@ export interface MwDictionaryEntryDto {
     literarySources: any[];
     infoTags: any[];
     rawBody: string;
+    html?: string;
+    headwordDevanagari?: string;
+    pageRefsHtml?: string;
+    cleanText?: string;
+    body?: string;
     displayTitle: string;
 }
 
@@ -115,4 +122,26 @@ export interface ApteEntryDto {
     bodyText?: string;
     rawMarkup?: string;
     homonymNum?: number;
+    html?: string;
+}
+
+// Unified fuzzy lemma search (across all dictionaries)
+export interface LemmaSearchResultDto {
+    lemmaId?: number;
+    dictionaryCode?: string;
+    k1Slp1?: string;
+    k2Original?: string;
+    headwordDisplay?: string;
+    lemmaDevanagari?: string;
+    k1Iast?: string;
+    path?: string;
+    score?: number;
+    notes?: Record<string, unknown>;
+    entries?: Record<string, number[]>;
+}
+
+// Unified endpoint: load dictionary articles by dictionary code + entry ids
+export interface DictionaryEntriesResponseDto {
+    dictionary?: string;
+    entries?: unknown[];
 }

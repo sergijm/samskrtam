@@ -737,3 +737,54 @@ form .p-avatar.p-avatar-image img {
 }
 
 
+
+/* ─── Monier-Williams dictionary article (CologneBasic) ─── */
+.mw-entry-html #CologneBasic {
+    font-family: "Noto Sans Devanagari", "Sanskrit 2003", "Arial Unicode MS", sans-serif;
+}
+
+.mw-entry-html #CologneBasic h1 {
+    font-size: 1.6rem;
+    margin: 0 0 0.75rem 0;
+    font-weight: 700;
+}
+
+.mw-entry-html #CologneBasic table.display {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.mw-entry-html #CologneBasic td.display {
+    padding: 0.5rem 0.25rem;
+    vertical-align: top;
+    line-height: 1.6;
+    font-size: 1rem;
+}
+
+.mw-entry-html .sdata_siddhanta {
+    font-family: "Noto Sans Devanagari", "Sanskrit 2003", "Arial Unicode MS", sans-serif;
+    font-weight: 600;
+}
+
+.mw-entry-html .lnum {
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+}
+
+/* ─── MW article header (headword + page references) ─── */
+.mw-headword {
+    font-family: "Noto Sans Devanagari", "Sanskrit 2003", "Arial Unicode MS", sans-serif;
+    font-weight: 600;
+    font-size: 1.6rem;
+    line-height: 1.3;
+}
+
+.mw-page-refs a {
+    color: var(--primary-color);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--text-color-secondary);
+}
+
+.mw-page-refs a:hover {
+    text-decoration: none;
+}

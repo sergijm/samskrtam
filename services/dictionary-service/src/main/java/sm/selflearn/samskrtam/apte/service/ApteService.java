@@ -24,4 +24,8 @@ public class ApteService {
                 transliterationService.normalizeToSlp1(lemma, null));
         return apteRepository.findByK1Slp1(slp1);
     }
+
+    public List<ApteEntryDto> getEntriesByIds(List<Long> ids) {
+        return apteRepository.findByIds(ids);
+    }
 }

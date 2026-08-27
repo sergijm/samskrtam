@@ -16,7 +16,7 @@ public interface SessionQuestionToDtoMapper {
     @Mapping(target = "explanationEn", source = "explanationEn")
     @Mapping(target = "declensionStemId", source = "declensionStemId")
     @Mapping(target = "targetCase", expression = "java(sessionQuestion.getTargetCase() != null ? sm.selflearn.samskrtam.content.model.CaseType.valueOf(sessionQuestion.getTargetCase()) : null)")
-    @Mapping(target = "targetNumber", expression = "java(sessionQuestion.getTargetNumber() != null ? sm.selflearn.samskrtam.content.model.NumberType.valueOf(sessionQuestion.getTargetNumber()) : null)")
+    @Mapping(target = "targetNumber", expression = "java(sessionQuestion.getTargetNumber() != null ? sm.selflearn.samskrtam.morphology.NumberType.valueOf(sessionQuestion.getTargetNumber()) : null)")
     @Mapping(target = "correctFormIast", source = "correctFormIast")
     @Mapping(target = "correctFormDevanagari", source = "correctFormDevanagari")
     @Mapping(target = "vocabularyWordId", source = "vocabularyWordId")

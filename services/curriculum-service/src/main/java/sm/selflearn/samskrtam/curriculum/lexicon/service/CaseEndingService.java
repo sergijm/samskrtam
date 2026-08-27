@@ -9,7 +9,7 @@ import sm.selflearn.samskrtam.curriculum.lexicon.repository.CaseEndingRepository
 import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
 import sm.selflearn.samskrtam.curriculum.mapper.CaseEndingMapper;
 import sm.selflearn.samskrtam.curriculum.questgen.morphology.CaseType;
-import sm.selflearn.samskrtam.curriculum.questgen.morphology.NumberType;
+import sm.selflearn.samskrtam.morphology.NumberType;
 
 import java.util.Comparator;
 import java.util.List;

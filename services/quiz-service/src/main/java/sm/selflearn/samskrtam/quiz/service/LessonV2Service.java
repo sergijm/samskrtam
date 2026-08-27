@@ -11,7 +11,7 @@ import sm.selflearn.samskrtam.content.dto.DeclensionParadigmDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionParadigmPageDto;
 import sm.selflearn.samskrtam.content.dto.Difficulty;
 import sm.selflearn.samskrtam.content.dto.LessonType;
-import sm.selflearn.samskrtam.content.model.Gender;
+import sm.selflearn.samskrtam.morphology.Gender;
 import sm.selflearn.samskrtam.quiz.dto.*;
 import sm.selflearn.samskrtam.quiz.model.ItemType;
 import sm.selflearn.samskrtam.quiz.model.QuizItemScore;

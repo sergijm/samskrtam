@@ -2,7 +2,7 @@ package sm.selflearn.samskrtam.curriculum.paradigm;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import sm.selflearn.samskrtam.content.model.Voice;
+import sm.selflearn.samskrtam.morphology.Pada;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,5 +14,5 @@ public interface ConjugationFormRepository extends JpaRepository<ConjugationForm
             String topicCode);
 
     List<ConjugationForm> findByTopicCodeAndVoiceOrderByLemmaIastAscPersonDescNumberTypeAsc(
-            String topicCode, Voice voice);
+            String topicCode, Pada voice);
 }

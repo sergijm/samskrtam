@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import sm.selflearn.samskrtam.content.dto.ConjugationParadigmPageDto;
-import sm.selflearn.samskrtam.content.model.Voice;
+import sm.selflearn.samskrtam.morphology.Pada;
 
 /**
  * v2 conjugation-paradigm page (present-tense carousel). Index-based:
@@ -24,7 +24,7 @@ public class ConjugationParadigmController {
     public ConjugationParadigmPageDto getParadigmPage(
             @PathVariable String topicCode,
             @RequestParam(defaultValue = "0") int index,
-            @RequestParam(required = false) Voice voice) {
+            @RequestParam(required = false) Pada voice) {
         return conjugationParadigmService.getParadigmPage(topicCode, index, voice);
     }
 }
