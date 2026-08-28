@@ -26,6 +26,15 @@ WorkSummary:
     author:
       type: string
       nullable: true
+    createdAt:
+      type: string
+      format: date-time
+    chapterCount:
+      type: integer
+      description: Общее число не удалённых глав произведения
+    verseCount:
+      type: integer
+      description: Общее число не удалённых стихов произведения (по всем его главам)
 
 WorkTree:
   type: object

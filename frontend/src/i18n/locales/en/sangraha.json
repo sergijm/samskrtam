@@ -10,7 +10,9 @@
     "chapters": "Chapters",
     "chapterNotFound": "Chapter not found",
     "chapter": "Chapter",
+    "chaptersCount": "{{count}} chapters",
     "verses": "Verses",
+    "versesCount": "{{count}} verses",
     "noVerses": "No verses in this chapter",
     "verse": "Verse",
     "batchReviewTitle": "Bulk verse review",
@@ -23,6 +25,7 @@
     "action": {
       "analyze": "Analyze",
       "analyzeAll": "Analyze all",
+      "analyzeMorphology": "Analyze morphology",
       "study": "Study",
       "resetFilter": "Reset filter"
     },

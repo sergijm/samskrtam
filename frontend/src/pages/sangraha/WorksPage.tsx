@@ -164,6 +164,11 @@ const WorksPage = () => {
                     {work.author && (
                       <span className="text-sm text-color-secondary">{work.author}</span>
                     )}
+                    <span className="text-sm text-color-secondary ml-3 white-space-nowrap">
+                      {t('sangraha.chaptersCount', { count: work.chapterCount })}
+                      {' · '}
+                      {t('sangraha.versesCount', { count: work.verseCount })}
+                    </span>
                     <i className="pi pi-chevron-right text-color-secondary ml-2" />
                   </div>
                 </div>

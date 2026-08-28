@@ -22,6 +22,7 @@ import sm.selflearn.samskrtam.sangraha.repository.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -101,6 +102,81 @@ public class VerseAnalysisSaver {
         verse.setStatus(VerseStatus.DRAFT);
         verse.setUpdatedAt(Instant.now());
         verseRepository.save(verse);
+    }
+
+    /**
+     * ШАГ 2: сохраняет внутренние сандхи (formationRuleNumbers) и при необходимости
+     * уточняет словообразование (derivationalBase/derivationalSuffix/derivationType),
+     * возвращённые tool submit_word_formations. Джойн к слову — по паре
+     * verseIndex (позиция стиха в батче) + position внутри стиха.
+     * <p>
+     * formationRuleNumbers пишется дословно как JSON-массив (включая пустой {@code []}),
+     * чтобы отличать «ШАГ 2 выполнен, внутренних сандхи нет» от «ШАГ 2 ещё не запускался»
+     * (для последнего поле остаётся NULL после ШАГА 1).
+     */
+    @Transactional
+    public void saveFormations(List<Verse> verses, JsonNode wordsArray) {
+        Map<Integer, Verse> verseByIndex = new java.util.HashMap<>();
+        for (int i = 0; i < verses.size(); i++) {
+            verseByIndex.put(i, verses.get(i));
+        }
+
+        for (JsonNode entry : wordsArray) {
+            if (entry == null || !entry.isObject()) {
+                continue;
+            }
+            int verseIndex = entry.path("verseIndex").asInt(-1);
+            int position = entry.path("position").asInt(-1);
+            Verse verse = verseByIndex.get(verseIndex);
+            if (verse == null || position < 0) {
+                log.warn("STEP 2: unmatched verseIndex={}, position={}, skipping", verseIndex, position);
+                continue;
+            }
+
+            VerseWord word = verseWordRepository.findByVerseIdAndPosition(verse.getId(), position);
+            if (word == null) {
+                log.warn("STEP 2: no VerseWord for verseIndex={}, position={}, skipping", verseIndex, position);
+                continue;
+            }
+
+            JsonNode frn = entry.get("formationRuleNumbers");
+            if (frn != null && frn.isArray()) {
+                word.setFormationRuleNumbers(frn.toString());
+            }
+
+            // Уточняем словообразование, только если STEP 1 оставил поля null.
+            String base = getStringOrNull(entry, "derivationalBase");
+            String suffix = getStringOrNull(entry, "derivationalSuffix");
+            String typeStr = getStringOrNull(entry, "derivationType");
+            if (base != null || suffix != null || typeStr != null) {
+                VerseWordDerivation derivation = word.getDerivation();
+                boolean changed = false;
+                if (derivation == null) {
+                    derivation = VerseWordDerivation.builder().verseWord(word).build();
+                    word.setDerivation(derivation);
+                    changed = true;
+                }
+                if (base != null && derivation.getDerivationalBase() == null) {
+                    derivation.setDerivationalBase(base);
+                    changed = true;
+                }
+                if (suffix != null && derivation.getDerivationalSuffix() == null) {
+                    derivation.setDerivationalSuffix(suffix);
+                    changed = true;
+                }
+                if (typeStr != null && derivation.getDerivationType() == null) {
+                    derivation.setDerivationType(safeEnum(DerivationType.class, typeStr));
+                    changed = true;
+                }
+                if (changed) {
+                    log.debug("STEP 2: refined derivation for verseIndex={}, position={}", verseIndex, position);
+                }
+            }
+
+            verseWordRepository.save(word);
+            log.info("STEP 2: formation saved for verse {} position {}: {}",
+                    verse.getId(), position, word.getFormationRuleNumbers());
+        }
     }
 
         private List<VerseWord> buildWords(Verse verse, JsonNode wordsNode) {

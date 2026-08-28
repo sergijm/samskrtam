@@ -10,7 +10,9 @@
     "chapters": "Главы",
     "chapterNotFound": "Глава не найдена",
     "chapter": "Глава",
+    "chaptersCount": "{{count}} глав",
     "verses": "Стихи",
+    "versesCount": "{{count}} стихов",
     "noVerses": "Нет стихов в этой главе",
     "verse": "Стих",
     "batchReviewTitle": "Массовый просмотр стихов",
@@ -23,6 +25,7 @@
     "action": {
       "analyze": "Анализировать",
       "analyzeAll": "Анализировать всё",
+      "analyzeMorphology": "Анализировать морфологию",
       "study": "Изучить",
       "resetFilter": "Сбросить фильтр"
     },

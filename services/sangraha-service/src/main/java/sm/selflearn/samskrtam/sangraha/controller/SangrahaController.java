@@ -23,10 +23,10 @@ import sm.selflearn.samskrtam.sangraha.dto.VerseWordExamplesRequestDto;
 import sm.selflearn.samskrtam.sangraha.dto.VerseWordExamplesResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.VersesBatchRequestDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorksClassGroupDto;
+import sm.selflearn.samskrtam.sangraha.dto.WorkSummaryDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorkTreeDto;
 import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
 import sm.selflearn.samskrtam.sangraha.model.VerseWord;
-import sm.selflearn.samskrtam.sangraha.model.Work;
 import sm.selflearn.samskrtam.sangraha.model.Source;
 import sm.selflearn.samskrtam.sangraha.service.ChapterService;
 import sm.selflearn.samskrtam.sangraha.service.VerseBatchService;
@@ -59,7 +59,7 @@ public class SangrahaController {
     // ── Works (read-only) ───────────────────────────────────────────
 
     @GetMapping("/works")
-    public ResponseEntity<List<Work>> getAllWorks(
+    public ResponseEntity<List<WorkSummaryDto>> getAllWorks(
             @RequestParam(value = "classId", required = false) List<UUID> classIds,
             @RequestParam(value = "sourceCode", required = false) String sourceCode) {
         return ResponseEntity.ok(worksClassService.filterWorks(classIds, sourceCode));

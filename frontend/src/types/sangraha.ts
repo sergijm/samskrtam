@@ -11,6 +11,8 @@ export interface WorkSummaryDto {
   descriptionEn?: string | null;
   author?: string | null;
   createdAt: string;
+  chapterCount: number;
+  verseCount: number;
 }
 
 export interface SourceDto {

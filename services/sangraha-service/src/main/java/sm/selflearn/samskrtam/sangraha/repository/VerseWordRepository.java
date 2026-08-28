@@ -17,6 +17,8 @@ public interface VerseWordRepository extends JpaRepository<VerseWord, UUID>, Ver
 
     List<VerseWord> findAllByVerse_IdOrderByPositionAsc(UUID verseId);
 
+    VerseWord findByVerseIdAndPosition(UUID verseId, int position);
+
     /** Страница verse_words с id > :id (курсор) — проход по корпусу без загрузки стихов. */
     List<VerseWord> findAllByIdGreaterThanOrderByIdAsc(UUID id, Pageable pageable);
 

@@ -1,4 +1,9 @@
 llm:
+  analysis:
+    chunk-size-max: 10
+    chunk-size-default: 10
+    tokens-per-verse: 3000
+
   configs:
     # --- Существующие модели (платные) ---
     claude-fable-5:

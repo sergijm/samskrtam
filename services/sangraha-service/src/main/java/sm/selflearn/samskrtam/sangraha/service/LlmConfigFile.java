@@ -10,6 +10,10 @@ import java.util.Map;
  * Корень llm.yaml (см. LlmConfigRegistry). Структура:
  * <pre>
  * llm:
+ *   analysis:
+ *     chunk-size-max: 3
+ *     chunk-size-default: 3
+ *     tokens-per-verse: 3000
  *   configs:
  *     &lt;model&gt;: { base-url, max-completion-tokens }
  * </pre>
@@ -20,5 +24,13 @@ public record LlmConfigFile(Llm llm) {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonNaming(PropertyNamingStrategies.KebabCaseStrategy.class)
-    public record Llm(Map<String, LlmConfig> configs) {}
+    public record Analysis(
+            Integer chunkSizeMax,
+            Integer chunkSizeDefault,
+            Integer tokensPerVerse
+    ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonNaming(PropertyNamingStrategies.KebabCaseStrategy.class)
+    public record Llm(Map<String, LlmConfig> configs, Analysis analysis) {}
 }

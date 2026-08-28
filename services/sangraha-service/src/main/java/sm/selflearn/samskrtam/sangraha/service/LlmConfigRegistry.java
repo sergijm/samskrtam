@@ -43,6 +43,7 @@ public class LlmConfigRegistry {
     private final ObjectMapper yamlMapper = new YAMLMapper();
 
     private Map<String, LlmConfig> configs = Map.of();
+    private LlmConfigFile.Analysis analysis;
 
     public LlmConfigRegistry(LlmProperties llmProperties,
                              @Value("${sangraha.llm.config-file:}") String configFile,
@@ -61,6 +62,7 @@ public class LlmConfigRegistry {
                     + "Укажите SANGRAHA_LLM_CONFIG_FILE или положите llm.yaml в корень/../app.");
         }
         configs = file.llm().configs();
+        this.analysis = file.llm().analysis();
 
         String model = llmProperties.getModel();
         LlmConfig active = configs.get(model);
@@ -83,6 +85,11 @@ public class LlmConfigRegistry {
     /** Конфигурация конкретной модели (для тестов и диагностики). */
     public Optional<LlmConfig> findByModel(String model) {
         return Optional.ofNullable(configs.get(model));
+    }
+
+    /** Параметры батч-анализа стихов (llm.analysis в llm.yaml); может быть null, если секция отсутствует. */
+    public LlmConfigFile.Analysis getAnalysis() {
+        return analysis;
     }
 
     private void apply(LlmConfig config) {

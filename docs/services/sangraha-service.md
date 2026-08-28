@@ -97,7 +97,15 @@ POST   /api/v1/sangraha/chapters/{chapterId}/verses/analyze-all  → батч-а
 POST   /api/v1/sangraha/verse                                 → произвольный список стихов + status каждого
                                                                       (тело — { verseIds: UUID[] }), см. sangraha-service/batch-verse-review.md
 POST   /api/v1/sangraha/verse/analysis                           → батч-анализ произвольного списка verseId (ADMIN,
-                                                                      безусловный повтор), см. sangraha-service/batch-verse-review.md
+                                                                        безусловный повтор), см. sangraha-service/batch-verse-review.md
+POST   /api/v1/sangraha/verses/{verseId}/internal-sandhi         → ШАГ 2 (внутренние сандхи) для одного стиха:
+                                                                        перевызывает LLM, дописывает words[].formationRuleNumbers
+                                                                        в существующие VerseWord (стих должен быть ANALYZED). 202,
+                                                                        не стартует автоматически после ШАГА 1 (ADMIN)
+POST   /api/v1/sangraha/chapters/{chapterId}/verses/internal-sandhi → ШАГ 2 для всех ANALYZED-стихов главы
+                                                                        (SAME_WORK, батч; ADMIN)
+POST   /api/v1/sangraha/verse/internal-sandhi                    → ШАГ 2 для произвольного списка verseId в теле
+                                                                        { verseIds: [...] } (MIXED_WORKS, батч; ADMIN)
 POST   /api/v1/sangraha/analysis                                 → страница /analysis: создать standalone-стих (chapter_id = null,
                                                                       owner_id = X-User-Id) и сразу запустить LLM-анализ; каждое
                                                                       нажатие «Анализировать» создаёт новую запись (любой авторизованный,
@@ -142,15 +150,41 @@ SANGRAHA_LLM_API_KEY
 SANGRAHA_LLM_MODEL        # например gpt-4.1 / другая OpenAI-совместимая модель
 ```
 
-Backend вызывает `/chat/completions` (или `/responses`) с промптом (файл
-[`prompts/verse-analysis.md`](./prompts/verse-analysis.md)) и
-**одним** объявленным tool — модель обязана вернуть результат через `tool_calls`,
-а не свободным текстом.
+Анализ разбит на два последовательных шага (каждый — отдельный tool-calling вызов):
 
-Tool `submit_verse_analysis` с параметрами: textDevanagari, textIast,
-translationRu, translationEn, sandhiSplits (массив {surface, components[],
-ruleNumbers[]}), words — полный лексико-грамматический разбор
-каждого слова, точный список полей и JPA-модель хранения —
+- **ШАГ 1 (активен сейчас):** translation + external sandhi + полный
+  лексико-морфологический разбор слов. Промпт —
+  [`prompts/2/step1-translation-external-sandhi.md`](./prompts/2/step1-translation-external-sandhi.md),
+  tool `submit_verse_analyses_step1`. **Без** `words[].formationRuleNumbers`
+  (внутренние сандхи — это ШАГ 2). Режим `BATCH_CONTEXT_MODE` выбирается backend-ом по
+  точке входа: «Анализировать все» из страницы главы → `SAME_WORK` (все стихи одного
+  произведения, в промпт добавляется `workTitle`); страница списка стихов
+  (`/sangraha/verses`) → `MIXED_WORKS`.
+- **ШАГ 2 (реализован, НЕ автоматический):** внутренние сандхи (formationRuleNumbers,
+  правила 1–40), потребляет `words[]`, сохранённые ШАГОМ 1. Промпт —
+  [`prompts/2/step2-internal-sandhi.md`](./prompts/2/step2-internal-sandhi.md),
+  tool `submit_word_formations` (плоский массив `words` с `verseIndex`/`position` для
+  джойна к записи ШАГА 1). На ШАГЕ 1 поле `formationRuleNumbers` в `VerseWord`
+  остаётся `NULL` — это маркер «требуется ШАГ 2». ШАГ 2 **не запускается автоматически**
+  после ШАГА 1: он вызывается только явным эндпоинтом (см. ниже) и лишь дописывает
+  `formationRuleNumbers` (плюс при необходимости уточняет `derivation`) в уже
+  существующие `VerseWord`; статус стиха (`ANALYZED`) не меняется. Пустой
+  `formationRuleNumbers: []` после ШАГА 2 отличает «внутренних сандхи нет» от
+  «ШАГ 2 ещё не запускался» (поле остаётся `NULL`).
+
+  Эндпоинты ШАГА 2 (ADMIN, как и анализ):
+  - `POST /api/v1/sangraha/verses/{verseId}/internal-sandhi` — один стих (должен быть `ANALYZED`).
+  - `POST /api/v1/sangraha/chapters/{chapterId}/verses/internal-sandhi` — все `ANALYZED`-стихи главы (`SAME_WORK`).
+  - `POST /api/v1/sangraha/verse/internal-sandhi` — произвольный список `verseId` в теле `{ verseIds: [...] }` (`MIXED_WORKS`).
+
+Backend вызывает `/chat/completions` (или `/responses`) с промптом шага 1 и
+**одним** объявленным tool (`submit_verse_analyses_step1`) — модель обязана
+вернуть результат через `tool_calls`, а не свободным текстом.
+
+Tool `submit_verse_analyses_step1` с параметрами: textIast, translationRu,
+translationEn, sandhiSplits (массив {surface, components[], ruleNumbers[]}),
+words — полный лексико-грамматический разбор каждого слова (без
+formationRuleNumbers), точный список полей и JPA-модель хранения —
 [verse-word-grammar.md §1–§3](./sangraha-service/verse-word-grammar.md).
 
 **Письменность:** везде, кроме `textDevanagari` и `surfaceDevanagari`, — только IAST.
@@ -159,16 +193,21 @@ ruleNumbers[]}), words — полный лексико-грамматическ�
 при валидации ответа LLM (наличие символов деванагари в этих полях — признак ошибки
 модели).
 
-Справочник правил сандхи (нумерация 1–71, внутренние + внешние, из Эмено, с
-глоссарием фонетических терминов) —
-[`prompts/emenau-sandhi-rules.json`](./prompts/emenau-sandhi-rules.json).
+Справочник правил сандхи (нумерация 1–71, из Эмено, с глоссарием фонетических
+терминов) разбит на два файла:
+[`prompts/2/emenau-sandhi-rules-external.json`](./prompts/2/emenau-sandhi-rules-external.json)
+(41–71, внешние) и
+[`prompts/2/emenau-sandhi-rules-internal.json`](./prompts/2/emenau-sandhi-rules-internal.json)
+(1–40, внутренние). На ШАГЕ 1 backend передаёт модели **только внешние** правила
+(41–71); внутренние правила задействуются на ШАГЕ 2.
+
 Правила `applicability=external` (41–71) — граница между словами, цитируются в
 `sandhiSplits.ruleNumbers`. Правила `applicability=internal` (1–40) — как образована
 сама словоформа из корня/основы (морфофонемные изменения при словообразовании),
-цитируются в `words[].formationRuleNumbers`; **не путать поля местами**. Если сандхи
-на стыке слов нет — граница не попадает в `sandhiSplits`; если словоформа не требует
-объяснения через внутренние сандхи — `formationRuleNumbers: []`. Если правило неясно
-в любом из двух случаев — пустой массив, не угадывать номер.
+цитируются в `words[].formationRuleNumbers` на ШАГЕ 2; **не путать поля местами**.
+Если сандхи на стыке слов нет — граница не попадает в `sandhiSplits`; если словоформа
+не требует объяснения через внутренние сандхи — `formationRuleNumbers: []`. Если
+правило неясно в любом из двух случаев — пустой массив, не угадывать номер.
 
 Backend:
 1. Валидирует `tool_calls[0].function.arguments` по этой схеме (например через JSON Schema validator, не доверяем модели).

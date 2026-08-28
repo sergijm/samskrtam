@@ -13,6 +13,8 @@ public interface ChapterRepository extends JpaRepository<Chapter, UUID> {
 
     List<Chapter> findAllByWorkIdAndDeletedAtIsNullOrderByOrderIndexAsc(UUID workId);
 
+    long countByWorkIdAndDeletedAtIsNull(UUID workId);
+
     Optional<Chapter> findByIdAndDeletedAtIsNull(UUID id);
 
     boolean existsByWorkIdAndSlug(UUID workId, String slug);

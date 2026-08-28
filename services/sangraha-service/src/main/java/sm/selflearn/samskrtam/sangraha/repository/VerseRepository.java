@@ -23,6 +23,18 @@ public interface VerseRepository extends JpaRepository<Verse, UUID> {
     int countByChapterIdAndDeletedAtIsNull(UUID chapterId);
 
     /**
+     * Общее число не удалённых стихов произведения (по всем его не удалённым главам).
+     */
+    @Query("""
+            SELECT COUNT(v) FROM Verse v
+            WHERE v.chapterId IN (
+                SELECT c.id FROM Chapter c WHERE c.workId = :workId AND c.deletedAt IS NULL
+            )
+            AND v.deletedAt IS NULL
+            """)
+    int countByWorkIdAndDeletedAtIsNull(@Param("workId") UUID workId);
+
+    /**
      * Пакетный поиск стихов по списку ID: только ANALYZED, не удалённые.
      * Не найденные ID просто отсутствуют в результате (sangraha-service.md §9).
      */

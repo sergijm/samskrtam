@@ -19,15 +19,18 @@ public class LlmCallStrategyFactory {
 
     /**
      * Creates the appropriate strategy. Always single-pass (two-pass removed).
+     *
+     * @param step этап анализа (STEP1 — translation + external sandhi, STEP2 — internal sandhi)
      */
-    public LlmCallStrategy create(OpenAIClient openAIClient) {
+    public LlmCallStrategy create(OpenAIClient openAIClient, LlmStep step) {
         return new SinglePassStrategy(
                 openAIClient,
                 promptBuilder,
                 toolSchemaBuilder,
                 objectMapper,
                 llmProperties.getModel(),
-                llmProperties.getMaxCompletionTokens()
+                llmProperties.getMaxCompletionTokens(),
+                step
         );
     }
 }

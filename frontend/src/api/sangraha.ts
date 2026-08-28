@@ -93,6 +93,10 @@ export const sangrahaApi = {
   analyzeVerses: (verseIds: string[]) =>
     api.post<{ verseIds: string[] }>(`${BASE}/verse/analysis`, { verseIds }),
 
+  // ШАГ 2 (внутренние сандхи / морфология) — отдельный, не-автоматический вызов
+  analyzeVerseInternalSandhi: (verseId: string) =>
+    api.post(`${BASE}/verses/${verseId}/internal-sandhi`),
+
   // ── Standalone анализ (страница /analysis, verse.chapter_id = null) ──
   // Каждое нажатие «Анализировать» создаёт новую запись в verses и запускает анализ.
 

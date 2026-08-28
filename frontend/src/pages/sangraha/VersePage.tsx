@@ -33,6 +33,7 @@ const VersePage = () => {
 
   const [editText, setEditText] = useState('');
   const [analyzePending, setAnalyzePending] = useState(false);
+  const [analyzeMorphologyPending, setAnalyzeMorphologyPending] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
@@ -67,6 +68,20 @@ const VersePage = () => {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     }
   }, [verseId, navigate, t]);
+
+  const handleAnalyzeMorphology = useCallback(async () => {
+    if (!verseId) return;
+    setAnalyzeMorphologyPending(true);
+    try {
+      await sangrahaApi.analyzeVerseInternalSandhi(verseId);
+      queryClient.invalidateQueries({ queryKey: ['sangraha', 'verse', verseId] });
+      toast.current?.show({ severity: 'success', summary: t('sangraha.action.analyzeMorphology') });
+    } catch {
+      toast.current?.show({ severity: 'error', summary: t('common.error') });
+    } finally {
+      setAnalyzeMorphologyPending(false);
+    }
+  }, [verseId, queryClient, t]);
 
   const isAnalyzed = verse?.status === 'ANALYZED';
   const isAnalyzing = verse?.status === 'ANALYZING';
@@ -111,12 +126,21 @@ const VersePage = () => {
         <h2 className="m-0">{t('sangraha.verse')} #{verse.orderIndex}</h2>
         <Tag value={t(`sangraha.status.${verse.status}`)} severity={statusSeverity} className="ml-2" />
         {isAnalyzed && isAdmin && (
-          <CtaButton
-            labelKey="common.edit"
-            iconName="pi-pencil"
-            className="p-button-text ml-auto"
-            onClick={() => setIsEditing(true)}
-          />
+          <div className="flex align-items-center gap-2 ml-auto">
+            <CtaButton
+              labelKey="sangraha.action.analyze"
+              iconName="pi-robot"
+              className="p-button-text"
+              onClick={handleAnalyze}
+              loading={analyzePending}
+            />
+            <CtaButton
+              labelKey="common.edit"
+              iconName="pi-pencil"
+              className="p-button-text"
+              onClick={() => setIsEditing(true)}
+            />
+          </div>
         )}
       </div>
 
@@ -189,12 +213,21 @@ const VersePage = () => {
             <VerseWordsList
               words={verse.words}
               headerActions={
-                <CtaButton
-                  labelKey="sangraha.action.study"
-                  iconName={studyIcon}
-                  className="p-button-text"
-                  onClick={handleStudy}
-                />
+                <>
+                  <CtaButton
+                    labelKey="sangraha.action.analyzeMorphology"
+                    iconName="pi-sitemap"
+                    className="p-button-text"
+                    onClick={handleAnalyzeMorphology}
+                    loading={analyzeMorphologyPending}
+                  />
+                  <CtaButton
+                    labelKey="sangraha.action.study"
+                    iconName={studyIcon}
+                    className="p-button-text"
+                    onClick={handleStudy}
+                  />
+                </>
               }
             />
           )}

@@ -1,0 +1,177 @@
+# =====================================================================
+# samskrtam.yaml — центральный конфигурационный файл (несекретная часть).
+#
+# Общие параметры лежат в КОРНЕ как flat env-имена (группированы по
+# секциям) — они резолвятся напрямую из ${ENV_VAR} в application.yml
+# и переопределяют значения по умолчанию. Пер-сервисные блоки
+# (<service-name>) нужны только для того, что отличается у сервиса
+# (порт, URL межсервисных вызовов, custom-ключи) — чтобы исключить
+# случайное пересечение (например, разные server.port).
+#
+# Секреты (пароли, client-secret, LLM API-key, mail password) остаются
+# в .env и подставляются здесь через ${...}.
+#
+# Импортируется каждым сервисом: spring.config.import (default
+# ./samskrtam.yaml или SAMSKRTAM_CONFIG=<абсолютный путь>).
+# Локальные значения можно править свободно — файл в .gitignore.
+# Эталонная копия: samskrtam.yaml.example.
+# =====================================================================
+
+# ── Profiles ─────────────────────────────────────────────
+SPRING_PROFILES_ACTIVE: local
+
+# ── Database (connection strings, environment-specific) ──
+DB_HOST: mdm-dev
+DB_PORT: 5432
+DB_NAME: samskrtam
+SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+SPRING_R2DBC_URL: r2dbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+CURRICULUM_DB_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/c${DB_NAME}
+
+# ── Connection Pool ──────────────────────────────────────
+DB_POOL_MAX_SIZE: 10
+DB_POOL_MIN_IDLE: 2
+DB_POOL_CONNECTION_TIMEOUT_MS: 3000
+
+# ── Redis ───────────────────────────────────────────────
+REDIS_HOST: mdm-dev
+REDIS_PORT: 6379
+
+# ── Keycloak ────────────────────────────────────────────
+KEYCLOAK_URL: https://keycloak.sm.dev
+KEYCLOAK_INTERNAL_URL: http://keycloak.sm.dev:10280
+KEYCLOAK_ISSUER_URL: https://keycloak.sm.dev
+KEYCLOAK_REALM: samskrtam
+KEYCLOAK_JWKS_URI: http://keycloak.sm.dev:10280/realms/samskrtam/protocol/openid-connect/certs
+KEYCLOAK_CLIENT_ID: samskrtam-frontend
+KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+KEYCLOAK_CLIENT_ID_ADMIN: admin-cli
+KEYCLOAK_CLIENT_SECRET_ADMIN: ${KEYCLOAK_CLIENT_SECRET_ADMIN}
+KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER}
+KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+
+# ── MinIO ───────────────────────────────────────────────
+MINIO_URL: http://mdm-dev:9000
+MINIO_EXTERNAL_URL: http://samskrtam.local
+MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+MINIO_BUCKET_AVATARS: samskrtam-avatars
+
+# ── Service Ports ───────────────────────────────────────
+API_GATEWAY_PORT: 8090
+USER_SERVICE_PORT: 8087
+CONTENT_SERVICE_PORT: 8081
+QUIZ_SERVICE_PORT: 8082
+DICTIONARY_SERVICE_PORT: 8085
+SANGRAHA_SERVICE_PORT: 8089
+CURRICULUM_SERVICE_PORT: 8091
+MANAGEMENT_PORT: 8099
+DICTIONARY_MANAGEMENT_PORT: 8093
+
+# ── Service URLs (inter-service) ────────────────────────
+USER_SERVICE_URL: http://localhost:${USER_SERVICE_PORT}
+CONTENT_SERVICE_URL: http://localhost:${CONTENT_SERVICE_PORT}
+QUIZ_SERVICE_URL: http://localhost:${QUIZ_SERVICE_PORT}
+DICTIONARY_SERVICE_URL: http://localhost:${DICTIONARY_SERVICE_PORT}
+SANGRAHA_SERVICE_URL: http://localhost:${SANGRAHA_SERVICE_PORT}
+CURRICULUM_SERVICE_URL: http://localhost:${CURRICULUM_SERVICE_PORT}
+
+# ── CORS / Frontend / Gateway ───────────────────────────
+CORS_ALLOWED_ORIGINS: http://localhost:3000,http://samskrtam.local
+FRONTEND_URL: http://samskrtam.local
+APP_BASE_URL: samskrtam.local
+GATEWAY_URL: http://samskrtam.local
+
+# ── Observability (Tracing with Tempo) ──────────────────
+OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4318/v1/traces
+TRACING_SAMPLING_PROBABILITY: 1.0
+
+# ── Swagger / OpenAPI ───────────────────────────────────
+SPRINGDOC_ENABLED: true
+
+# ── Graceful Shutdown ───────────────────────────────────
+GRACEFUL_SHUTDOWN_TIMEOUT: 30s
+
+# ── Mail ────────────────────────────────────────────────
+SPRING_MAIL_HOST: mailpit.sm.home
+SPRING_MAIL_PORT: 1025
+SPRING_MAIL_USERNAME: admin
+SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+
+# ── Sangraha LLM ────────────────────────────────────────
+SANGRAHA_LLM_API_KEY: ${SANGRAHA_LLM_API_KEY}
+SANGRAHA_LLM_MODEL: gemini-3.6-flash
+SANGRAHA_LLM_CONFIG_FILE: ""
+
+# ── Quiz Service ────────────────────────────────────────
+QUIZ_WEB_CLIENT_MAX_IN_MEMORY_SIZE: 2097152
+
+# ══ Пер-сервисные блоки (только то, что отличается) ══════
+
+user-service:
+  server:
+    port: ${USER_SERVICE_PORT}
+
+quiz-service:
+  server:
+    port: ${QUIZ_SERVICE_PORT}
+  content:
+    service:
+      url: ${CONTENT_SERVICE_URL}
+  curriculum-service:
+    base-url: ${CURRICULUM_SERVICE_URL}
+  quiz:
+    webclient:
+      max-in-memory-size: ${QUIZ_WEB_CLIENT_MAX_IN_MEMORY_SIZE}
+
+curriculum-service:
+  server:
+    port: ${CURRICULUM_SERVICE_PORT}
+  sangraha-service:
+    url: ${SANGRAHA_SERVICE_URL}
+  curriculum:
+    quest-items:
+      declension-match:
+        pairs-per-item: 6
+  flyway:
+    url: ${CURRICULUM_DB_URL}
+    user: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+dictionary-service:
+  server:
+    port: ${DICTIONARY_SERVICE_PORT}
+  management:
+    port: ${DICTIONARY_MANAGEMENT_PORT}
+
+sangraha-service:
+  server:
+    port: ${SANGRAHA_SERVICE_PORT}
+  sangraha:
+    llm:
+      api-key: ${SANGRAHA_LLM_API_KEY}
+      model: ${SANGRAHA_LLM_MODEL}
+      config-file: ${SANGRAHA_LLM_CONFIG_FILE}
+  app:
+    content-service:
+      url: ${CONTENT_SERVICE_URL}
+    curriculum-service:
+      url: ${CURRICULUM_SERVICE_URL}
+
+api-gateway:
+  server:
+    port: ${API_GATEWAY_PORT}
+  oauth2:
+    keycloak:
+      base-url: ${KEYCLOAK_URL}
+      internal-base-url: ${KEYCLOAK_INTERNAL_URL}
+      realm: ${KEYCLOAK_REALM}
+      client-id: ${KEYCLOAK_CLIENT_ID}
+      client-secret: ${KEYCLOAK_CLIENT_SECRET}
+      redirect-uri: ${GATEWAY_URL}/api/v1/auth/oauth2/callback
+  frontend:
+    url: ${FRONTEND_URL}
+  services:
+    user-service-url: ${USER_SERVICE_URL}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}

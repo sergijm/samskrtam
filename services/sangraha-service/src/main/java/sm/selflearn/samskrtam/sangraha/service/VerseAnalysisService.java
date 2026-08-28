@@ -14,6 +14,8 @@ import sm.selflearn.samskrtam.sangraha.repository.ChapterRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
+import sm.selflearn.samskrtam.sangraha.service.LlmConfigRegistry;
+import sm.selflearn.samskrtam.sangraha.service.LlmConfigFile;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -31,14 +33,14 @@ import static sm.selflearn.samskrtam.sangraha.service.VerseAnalysisSaver.getStri
 public class VerseAnalysisService {
 
     /**
-     * Максимальный размер чанка для analyzeVerses (batch-verse-review.md):
-     * {@code max-completion-tokens / 3000} (3000 токенов — ориентир на один стих
-     * с полным разбором), но не больше {@link #ANALYSIS_CHUNK_SIZE_MAX}.
-     * Чтобы не увеличивать LLM-промпт сверх проверенного на практике.
+     * Значения по умолчанию для батч-анализа стихов (используются, если в llm.yaml
+     * в секции llm.analysis соответствующие поля не заданы):
+     * {@code max-completion-tokens / tokensPerVerse}, но не больше chunkSizeMax;
+     * при отсутствии max-completion-tokens — chunkSizeDefault.
      */
-    private static final int ANALYSIS_CHUNK_SIZE_MAX = 3;
-    private static final int ANALYSIS_CHUNK_SIZE_DEFAULT = 3;
-    private static final int ANALYSIS_TOKENS_PER_VERSE = 3000;
+    private static final int ANALYSIS_CHUNK_SIZE_MAX_DEFAULT = 3;
+    private static final int ANALYSIS_CHUNK_SIZE_DEFAULT_FALLBACK = 3;
+    private static final int ANALYSIS_TOKENS_PER_VERSE_FALLBACK = 3000;
 
     private final VerseRepository verseRepository;
     private final ChapterRepository chapterRepository;
@@ -52,22 +54,32 @@ public class VerseAnalysisService {
     private final JsonSchemas jsonSchemas;
     private final VerseBatchPushService verseBatchPushService;
     private final TransliterationService transliterationService;
+    private final LlmConfigRegistry llmConfigRegistry;
 
     /**
-     * Размер батча для анализа стихов: {@code max-completion-tokens / 3000},
-     * но не больше {@link #ANALYSIS_CHUNK_SIZE_MAX}. Если max-completion-tokens
-     * не задан — {@link #ANALYSIS_CHUNK_SIZE_DEFAULT}.
+     * Размер батча для анализа стихов: {@code max-completion-tokens / tokensPerVerse},
+     * но не больше chunkSizeMax. Если max-completion-tokens не задан — chunkSizeDefault.
+     * Параметры берутся из секции llm.analysis файла llm.yaml (см. LlmConfigRegistry),
+     * при отсутствии — значения по умолчанию.
      */
     private int analysisChunkSize() {
+        LlmConfigFile.Analysis a = llmConfigRegistry.getAnalysis();
+        int chunkSizeMax = a != null && a.chunkSizeMax() != null
+                ? a.chunkSizeMax() : ANALYSIS_CHUNK_SIZE_MAX_DEFAULT;
+        int chunkSizeDefault = a != null && a.chunkSizeDefault() != null
+                ? a.chunkSizeDefault() : ANALYSIS_CHUNK_SIZE_DEFAULT_FALLBACK;
+        int tokensPerVerse = a != null && a.tokensPerVerse() != null
+                ? a.tokensPerVerse() : ANALYSIS_TOKENS_PER_VERSE_FALLBACK;
+
         Integer maxTokens = llmProperties.getMaxCompletionTokens();
         if (maxTokens == null || maxTokens <= 0) {
-            return ANALYSIS_CHUNK_SIZE_DEFAULT;
+            return chunkSizeDefault;
         }
-        int computed = maxTokens / ANALYSIS_TOKENS_PER_VERSE;
+        int computed = maxTokens / tokensPerVerse;
         if (computed < 1) {
             computed = 1;
         }
-        return Math.min(computed, ANALYSIS_CHUNK_SIZE_MAX);
+        return Math.min(computed, chunkSizeMax);
     }
 
     /**
@@ -80,7 +92,7 @@ public class VerseAnalysisService {
         Verse verse = verseRepository.findByIdAndDeletedAtIsNull(verseId)
                 .orElseThrow(() -> new IllegalArgumentException("Verse not found: " + verseId));
 
-        runAnalysis(List.of(verse));
+        runAnalysis(List.of(verse), false);
     }
 
     /**
@@ -108,7 +120,7 @@ public class VerseAnalysisService {
         int chunkSize = analysisChunkSize();
         for (int i = 0; i < versesToAnalyze.size(); i += chunkSize) {
             int end = Math.min(i + chunkSize, versesToAnalyze.size());
-            runAnalysis(versesToAnalyze.subList(i, end));
+            runAnalysis(versesToAnalyze.subList(i, end), true);
         }
 
         return versesToAnalyze.stream().map(Verse::getId).collect(Collectors.toList());
@@ -145,7 +157,7 @@ public class VerseAnalysisService {
         int chunkSize = analysisChunkSize();
         for (int i = 0; i < ordered.size(); i += chunkSize) {
             int end = Math.min(i + chunkSize, ordered.size());
-            runAnalysis(ordered.subList(i, end));
+            runAnalysis(ordered.subList(i, end), false);
         }
 
         return ordered.stream().map(Verse::getId).collect(Collectors.toList());
@@ -162,7 +174,7 @@ public class VerseAnalysisService {
      *   <li>Стихи без результата — markFailed</li>
      * </ol>
      */
-    private void runAnalysis(List<Verse> verses) {
+    private void runAnalysis(List<Verse> verses, boolean sameWork) {
         // 1. Помечаем все ANALYZING и нормализуем текстовые колонки из rawText
         //    (детектируем iast|devanagari и заполняем text_iast/text_devanagari).
         //    Само поле rawText не трогаем — оно меняется только вручную с фронтэнда.
@@ -177,7 +189,7 @@ public class VerseAnalysisService {
         JsonNode llmResponse;
         String rawPrompt;
         try {
-            var result = llmClient.callWithResult(verses);
+            var result = llmClient.callWithResult(verses, sameWork);
             llmResponse = result == null ? null : result.response();
             rawPrompt = result == null ? null : result.rawPrompt();
         } catch (Exception e) {
