@@ -63,7 +63,8 @@
       "base": "Base",
       "lemmaGloss": "Dict. gloss",
       "contextGloss": "Context gloss",
-      "formationRules": "Formation rules"
+      "formationRules": "Formation rules",
+      "formationExplanation": "Formation explanation"
     },
     "placeholder": {
       "textDevanagari": "Enter text in Devanagari...",

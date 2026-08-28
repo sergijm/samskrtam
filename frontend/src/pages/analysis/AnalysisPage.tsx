@@ -1,8 +1,26 @@
 import { useTranslation } from 'react-i18next';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  useStandaloneVerses,
+  useCreateStandaloneAnalysis,
+  useDeleteStandaloneVerse,
+  useVerseDetail,
+} from '../../hooks/useSangraha';
+import { sangrahaApi } from '../../api/sangraha';
+import { VerseStatus, StandaloneVerseItemDto } from '../../types/sangraha';
+import { verseStatusIcon } from '../../utils/verseStatus';
 import VerseWordsList from '../../components/sangraha/VerseWordsList';
 import SandhiSplitsList from '../../components/sangraha/SandhiSplitsList';
 import { IconButton, CtaButton } from '../../components/common/buttons';
+import { Tag } from 'primereact/tag';
+import { Toast } from 'primereact/toast';
+import { Tooltip } from 'primereact/tooltip';
+import { Skeleton } from 'primereact/skeleton';
+import { InputTextarea } from 'primereact/inputtextarea';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 
 /**
  * Страница /analysis — разбор произвольного предложения (standalone-стих,
@@ -29,6 +47,7 @@ const AnalysisPage = () => {
 
   const [editText, setEditText] = useState('');
   const [analyzePending, setAnalyzePending] = useState(false);
+  const [analyzeMorphologyPending, setAnalyzeMorphologyPending] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   // При выборе нового стиха сбрасываем поле редактирования текста
@@ -74,6 +93,21 @@ const AnalysisPage = () => {
       setIsEditing(false);
     }
   }, [selectedId, editText, queryClient, t]);
+
+  // ── «Анализировать морфологию» — шаг 2: пословный разбор слов (ADMIN) ──
+  const handleAnalyzeMorphology = useCallback(async () => {
+    if (!selectedId) return;
+    setAnalyzeMorphologyPending(true);
+    try {
+      await sangrahaApi.analyzeVerseInternalSandhi(selectedId);
+      queryClient.invalidateQueries({ queryKey: ['sangraha', 'verse', selectedId] });
+      toast.current?.show({ severity: 'success', summary: t('sangraha.action.analyzeMorphology') });
+    } catch {
+      toast.current?.show({ severity: 'error', summary: t('common.error') });
+    } finally {
+      setAnalyzeMorphologyPending(false);
+    }
+  }, [selectedId, queryClient, t]);
 
   // ── «Изучить» — экспорт пачки лемм стиха и переход на урок ──
   const handleStudy = useCallback(async () => {
@@ -143,15 +177,24 @@ const AnalysisPage = () => {
               />
             )}
             {isAnalyzed && (
-              <CtaButton
-                labelKey="common.edit"
-                iconName="pi-pencil"
-                className="p-button-text ml-auto"
-                onClick={() => {
-                  setEditText(verse?.rawText ?? verse?.textDevanagari ?? verse?.textIast ?? '');
-                  setIsEditing(true);
-                }}
-              />
+              <div className="flex align-items-center gap-2 ml-auto">
+                <CtaButton
+                  labelKey="sangraha.action.analyze"
+                  iconName="pi-robot"
+                  className="p-button-text"
+                  onClick={handleAnalyze}
+                  loading={analyzePending}
+                />
+                <CtaButton
+                  labelKey="common.edit"
+                  iconName="pi-pencil"
+                  className="p-button-text"
+                  onClick={() => {
+                    setEditText(verse?.rawText ?? verse?.textDevanagari ?? verse?.textIast ?? '');
+                    setIsEditing(true);
+                  }}
+                />
+              </div>
             )}
           </div>
 
@@ -243,12 +286,21 @@ const AnalysisPage = () => {
 <VerseWordsList
                         words={verse.words}
                         headerActions={
-                        <CtaButton
-                          labelKey="sangraha.action.study"
-                          iconName={studyIcon}
-                          className="p-button-text"
-                          onClick={handleStudy}
-                        />
+                        <>
+                          <CtaButton
+                            labelKey="sangraha.action.analyzeMorphology"
+                            iconName="pi-sitemap"
+                            className="p-button-text"
+                            onClick={handleAnalyzeMorphology}
+                            loading={analyzeMorphologyPending}
+                          />
+                          <CtaButton
+                            labelKey="sangraha.action.study"
+                            iconName={studyIcon}
+                            className="p-button-text"
+                            onClick={handleStudy}
+                          />
+                        </>
                       }
                     />
                   )}

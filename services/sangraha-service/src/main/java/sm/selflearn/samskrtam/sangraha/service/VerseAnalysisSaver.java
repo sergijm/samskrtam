@@ -148,7 +148,8 @@ public class VerseAnalysisSaver {
             String base = getStringOrNull(entry, "derivationalBase");
             String suffix = getStringOrNull(entry, "derivationalSuffix");
             String typeStr = getStringOrNull(entry, "derivationType");
-            if (base != null || suffix != null || typeStr != null) {
+            String formationExplanation = getStringOrNull(entry, "formationExplanation");
+            if (base != null || suffix != null || typeStr != null || formationExplanation != null) {
                 VerseWordDerivation derivation = word.getDerivation();
                 boolean changed = false;
                 if (derivation == null) {
@@ -166,6 +167,13 @@ public class VerseAnalysisSaver {
                 }
                 if (typeStr != null && derivation.getDerivationType() == null) {
                     derivation.setDerivationType(safeEnum(DerivationType.class, typeStr));
+                    changed = true;
+                }
+                // formationExplanation (пояснение внутренних сандхи) — в description
+                // деривации; только если STEP 1 его не заполнил.
+                if (formationExplanation != null
+                        && (derivation.getDescription() == null || derivation.getDescription().isBlank())) {
+                    derivation.setDescription(formationExplanation);
                     changed = true;
                 }
                 if (changed) {

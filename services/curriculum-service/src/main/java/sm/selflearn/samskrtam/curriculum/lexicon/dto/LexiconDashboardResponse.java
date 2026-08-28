@@ -14,6 +14,7 @@ public record LexiconDashboardResponse(
         LexiconToday today,
         List<FrequencyBand> frequencyBands,
         List<LexicalTopic> topics,
+        List<SemanticTopic> semanticTopics,
         List<LexiconPos> pos,
         List<UserCollection> collections,
         List<QuickStartPreset> quickStart) {
@@ -28,6 +29,9 @@ public record LexiconDashboardResponse(
     }
 
     public record LexicalTopic(String id, String nameRu, String nameEn, long wordCount, long masteredCount) {
+    }
+
+    public record SemanticTopic(String id, String nameRu, String nameEn, long wordCount, long masteredCount) {
     }
 
     public record LexiconPos(String id, String nameRu, String nameEn, long wordCount) {

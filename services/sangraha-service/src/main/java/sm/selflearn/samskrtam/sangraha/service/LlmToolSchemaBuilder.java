@@ -332,6 +332,9 @@ public class LlmToolSchemaBuilder {
         formationConfidence.put("type", "string");
         formationConfidence.putArray("enum").add("HIGH").add("MEDIUM").add("LOW");
         wordProps.putObject("formationNotes").put("type", "string");
+        wordProps.putObject("formationExplanation").put("type", "string")
+                .put("description", "Prose reasoning of how the surface form was built internally "
+                        + "(always a non-empty string; even when formationRuleNumbers is empty)");
 
         return params;
     }

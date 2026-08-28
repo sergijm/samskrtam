@@ -7,11 +7,13 @@ import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconDashboardResponse.Fr
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconDashboardResponse.LexicalTopic;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconDashboardResponse.LexiconPos;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconDashboardResponse.QuickStartPreset;
+import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconDashboardResponse.SemanticTopic;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconDashboardResponse.UserCollection;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.PartOfSpeech;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.FrequencyBandRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaLexicalTopicRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaRepository;
+import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaSemanticClassRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.LemmaTranslationRepository;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.PartOfSpeechRepository;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
@@ -28,6 +30,7 @@ public class LexiconDashboardService {
     private final LemmaRepository lemmaRepository;
     private final LemmaTranslationRepository lemmaTranslationRepository;
     private final LemmaLexicalTopicRepository lemmaLexicalTopicRepository;
+    private final LemmaSemanticClassRepository lemmaSemanticClassRepository;
     private final FrequencyBandRepository frequencyBandRepository;
     private final TopicRepository topicRepository;
     private final PartOfSpeechRepository partOfSpeechRepository;
@@ -43,6 +46,10 @@ public class LexiconDashboardService {
                 .map(r -> toTopic((String) r[0], ((Number) r[1]).longValue()))
                 .toList();
 
+        List<SemanticTopic> semanticTopics = lemmaSemanticClassRepository.countLemmasByTopicCode().stream()
+                .map(r -> toSemanticTopic((String) r[0], ((Number) r[1]).longValue()))
+                .toList();
+
         Map<String, PartOfSpeech> posByName = posIndex();
         List<LexiconPos> pos = lemmaRepository.countDistinctLemmasByPos().stream()
                 .map(r -> toPos((String) r[0], ((Number) r[1]).longValue(), posByName))
@@ -53,6 +60,7 @@ public class LexiconDashboardService {
                 new LexiconDashboardResponse.LexiconToday(0L, 0L, 0L),
                 frequencyBands,
                 topics,
+                semanticTopics,
                 pos,
                 List.of(),
                 List.of());
@@ -70,6 +78,13 @@ public class LexiconDashboardService {
         String nameRu = topic.map(Topic::getTitleRu).orElse(topicCode);
         String nameEn = topic.map(Topic::getTitleEn).orElse(topicCode);
         return new LexicalTopic(topicCode, nameRu, nameEn, wordCount, 0L);
+    }
+
+    private SemanticTopic toSemanticTopic(String topicCode, long wordCount) {
+        Optional<Topic> topic = topicRepository.findByCode(topicCode);
+        String nameRu = topic.map(Topic::getTitleRu).orElse(topicCode);
+        String nameEn = topic.map(Topic::getTitleEn).orElse(topicCode);
+        return new SemanticTopic(topicCode, nameRu, nameEn, wordCount, 0L);
     }
 
     private Map<String, PartOfSpeech> posIndex() {

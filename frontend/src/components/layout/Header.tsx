@@ -2,21 +2,15 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useMe } from '../../hooks/useUser';
-import { useSidebarStore } from '../../store/sidebarStore';
 import { LocaleSwitcher } from '../common/LocaleSwitcher';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import UserAvatar from '../user/UserAvatar';
 import { IconButton } from '../common/buttons';
 import HeaderNav from './HeaderNav';
 
-interface HeaderProps {
-  showSidebarToggle?: boolean;
-}
-
-const Header = ({ showSidebarToggle = true }: HeaderProps) => {
+const Header = () => {
   const { isAuthenticated, logout } = useAuthStore();
   const { data: user } = useMe();
-  const { collapsed, toggle } = useSidebarStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -32,16 +26,6 @@ const Header = ({ showSidebarToggle = true }: HeaderProps) => {
                style={{ height: '70px', width: '70px', marginRight: '0' }} />
           <span className="text-3xl font-bold " >Akshara Mārga</span>
         </Link>
-        {isAuthenticated && showSidebarToggle && (
-          <IconButton
-            iconName={`pi-chevron-${collapsed ? 'right' : 'left'}`}
-            className="sidebar-toggle-btn ml-2"
-            onClick={toggle}
-            tooltip={collapsed ? 'Show sidebar' : 'Hide sidebar'}
-            tooltipOptions={{ position: 'bottom' }}
-            aria-label="Toggle sidebar"
-          />
-        )}
       </div>
       <HeaderNav />
       <div className="layout-topbar-menu flex align-items-center gap-3">

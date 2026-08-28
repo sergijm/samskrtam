@@ -282,9 +282,14 @@ const VerseWordsList = ({ words, headerActions }: VerseWordsListProps) => {
                           {t('sangraha.fields.base')}: {w.derivation.derivationalBase}{' '}
                         </span>
                       )}
-                      {w.derivation.description && (
-                        <span className="text-color-secondary">({w.derivation.description})</span>
-                      )}
+                    </div>
+                  )}
+
+                  {/* Formation explanation (STEP 2 internal sandhi reasoning) */}
+                  {w.derivation?.description && (
+                    <div className="mb-2 text-sm">
+                      <span className="font-semibold">{t('sangraha.fields.formationExplanation')}: </span>
+                      <span className="text-color-secondary">{w.derivation.description}</span>
                     </div>
                   )}
 

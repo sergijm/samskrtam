@@ -16,7 +16,7 @@ class MwHtmlRendererTest {
         String html = MwHtmlRenderer.renderEntry("nara", "12345", "529,1", "1", null, body);
 
         assertTrue(html.contains("<div id=\"CologneBasic\">"));
-        assertTrue(html.contains("class=\"sdata_siddhanta\">नर</span>"));
+        assertTrue(html.contains("class=\"sdata_siddhanta\">nara</span>"));
         assertTrue(html.contains("Printed book page"));
         assertTrue(html.contains("529"));
     }
@@ -26,7 +26,7 @@ class MwHtmlRendererTest {
         String body = "<s>devaH</s> ¦ god <ab>cf.</ab>";
         String html = MwHtmlRenderer.renderEntry("devaH", "999", "1,2", "1", null, body);
 
-        assertTrue(html.contains("class=\"sdata_siddhanta\">देवः</span>"));
+        assertTrue(html.contains("class=\"sdata_siddhanta\">devaḥ</span>"));
         assertTrue(html.contains("border-bottom: 1px dotted"));
         assertTrue(html.contains("confer, compare"));
     }
@@ -61,7 +61,7 @@ class MwHtmlRendererTest {
 
         MwHtmlRenderer.RenderedArticle article = MwHtmlRenderer.renderEntries(List.of(a, b));
 
-        assertTrue(article.headwordDevanagari.contains("देवः"));
+        assertTrue(article.headwordIast.contains("devaḥ"));
         // each DB record on its own line
         assertTrue(article.bodyHtml.contains("(H1)"));
         assertTrue(article.bodyHtml.contains("<br>"));

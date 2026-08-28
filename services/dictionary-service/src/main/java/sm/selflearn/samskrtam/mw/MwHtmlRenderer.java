@@ -22,9 +22,9 @@ import sm.selflearn.samskrtam.mw.dto.MwEntryDto;
  *                        structure as the reference HTML (sdata_siddhanta
  *                        spans for Sanskrit, dotted-underline tooltip spans
  *                        for abbreviations/gender/literary sources, etc.)
- *  4. TransliterationService.slp1ToDevanagari (из samskrtam-commons) –
+ *  4. TransliterationService.slp1ToIast (из samskrtam-commons) –
  *                        транслитерирует SLP1-санскрит из <s>, <s1>,
- *                        <ab n=".." slp1="..">, <bot>, <bio> в деванагари
+ *                        <ab n=".." slp1="..">, <bot>, <bio> в IAST
  *                        для sdata_siddhanta-спанов.
  *  5. ArticleRenderer  – emits one <div id="CologneBasic"> ... </div> block
  *                        per entry, one <tr> per sub-entry, exactly like the sample.
@@ -164,7 +164,7 @@ public class MwHtmlRenderer {
     }
 
     // ------------------------------------------------------------------
-    // 3. SLP1 -> Devanagari transliteration (общая реализация из samskrtam-commons)
+    // 3. SLP1 -> IAST transliteration (общая реализация из samskrtam-commons)
     // ------------------------------------------------------------------
 
     private static final TransliterationService TRANSLITERATION = new TransliterationService();
@@ -306,12 +306,12 @@ public class MwHtmlRenderer {
             String[] segs = slp1.split("—", -1);
             for (int i = 0; i < segs.length; i++) {
                 if (i > 0) sb.append("<span class=\"sdata_siddhanta\">—")
-                             .append(TRANSLITERATION.slp1ToDevanagari(segs[i]))
+                             .append(TRANSLITERATION.slp1ToIast(segs[i]))
                              .append("</span>");
                 else
                     sb.append("<span class=\"sdata_siddhanta\">")
-                      .append(TRANSLITERATION.slp1ToDevanagari(segs[i]))
-                      .append("</span>");
+                       .append(TRANSLITERATION.slp1ToIast(segs[i]))
+                       .append("</span>");
             }
             return sb.toString();
         }
@@ -368,11 +368,11 @@ public class MwHtmlRenderer {
      *  from the body so the frontend can lay them out (headword left, page
      *  references right-aligned) with its own components. */
     public static class RenderedArticle {
-        public final String headwordDevanagari;
+         public final String headwordIast;
         public final String pageRefsHtml;
         public final String bodyHtml;
-        public RenderedArticle(String headwordDevanagari, String pageRefsHtml, String bodyHtml) {
-            this.headwordDevanagari = headwordDevanagari;
+        public RenderedArticle(String headwordIast, String pageRefsHtml, String bodyHtml) {
+            this.headwordIast = headwordIast;
             this.pageRefsHtml = pageRefsHtml;
             this.bodyHtml = bodyHtml;
         }
@@ -384,7 +384,7 @@ public class MwHtmlRenderer {
         /** rows must already share the same key1/devanagari headword and be in entry_no order. */
         RenderedArticle renderArticle(List<MwRow> rows) {
             if (rows.isEmpty()) return new RenderedArticle("", "", "");
-            String headwordDevanagari = TRANSLITERATION.slp1ToDevanagari(rows.get(0).key1);
+            String headwordIast = TRANSLITERATION.slp1ToIast(rows.get(0).key1);
 
             // All unique page_col values across the whole article, merged into a
             // single "[Printed book page a, b, c]" line (one link per page).
@@ -426,7 +426,7 @@ public class MwHtmlRenderer {
                 }
             }
 
-            return new RenderedArticle(headwordDevanagari, pageRefsHtml, body.toString());
+            return new RenderedArticle(headwordIast, pageRefsHtml, body.toString());
         }
 
         /** Renders the merged "[Printed book page a, b, c]" line with one link per page. */
@@ -483,7 +483,7 @@ public class MwHtmlRenderer {
         RenderedArticle a = new ArticleRenderer().renderArticle(List.of(row));
         StringBuilder html = new StringBuilder();
         html.append("<div id=\"CologneBasic\">\n");
-        html.append("<h1>&nbsp;<span class=\"sdata_siddhanta\">").append(a.headwordDevanagari).append("</span>");
+        html.append("<h1>&nbsp;<span class=\"sdata_siddhanta\">").append(a.headwordIast).append("</span>");
         if (!a.pageRefsHtml.isEmpty()) html.append("&nbsp;").append(a.pageRefsHtml);
         html.append("</h1>\n");
         html.append(a.bodyHtml).append("\n</div>");

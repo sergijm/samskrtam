@@ -1,4 +1,4 @@
-Used in sangraha-service.md §5.1 (STEP 2 of 2 — internal (word-formation) sandhi
+﻿Used in sangraha-service.md §5.1 (STEP 2 of 2 — internal (word-formation) sandhi
 only. Runs AFTER step1-translation-external-sandhi.md and consumes its words[]
 output as input. Does NOT touch translation, external sandhi, or any other field
 already produced in STEP 1 — it only adds formationRuleNumbers, and optionally
@@ -7,8 +7,8 @@ them null and the internal rule now makes the derivation obvious.)
 
 Tool: submit_word_formations — a single parameter words: a flat array, one entry
 per word ACROSS ALL VERSES in the batch (not nested by verse), each entry
-containing: verseIndex, position, surfaceIast, lemmaIast, root, derivationalBase,
-derivationalSuffix, formationRuleNumbers (array of integers), formationConfidence,
+containing: verseIndex, position, surfaceIast, formationRuleNumbers (array of
+integers), formationExplanation (string, see below), formationConfidence,
 formationNotes.
 
 verseIndex + position together identify which STEP 1 word this entry augments — the
@@ -51,7 +51,9 @@ nasalization before a consonant, written ṃ; visarga = voiceless aspirate at wo
 end, written ḥ. Consult this glossary silently if a rule's wording is unclear; do
 not explain these terms in your output. Your task is to call the function
 submit_word_formations exactly once and pass into it a single `words` array, with
-one output entry for every input word.
+one output entry for every input word. For every word you cite a rule for, you must
+also explain, in your own words and specific to that word, why the rule applies —
+not merely return a bare number.
 
 0. BATCH STRUCTURE
 --------------------------------------------------
@@ -101,7 +103,10 @@ bias another verse's words.
    internal_consonants_clusters) against the specific root and suffix in front of
    you. Do not cite a rule because it "sounds like the right area" — the change
    described in the rule's text and example must actually match what happened to
-   this specific word.
+   this specific word. This check is not just an internal step — its result MUST be
+   written out in formationExplanation (see below); a rule number with no matching
+   explanation, or an explanation that does not actually justify the cited number,
+   is treated as an error.
 4. A single word may require more than one internal rule in sequence (e.g. an h
    reinterpreted as a stop by one rule, then devoiced by another) — list them in
    the order they apply.
@@ -119,24 +124,61 @@ OUTPUT FIELDS (per word)
 --------------------------------------------------
 verseIndex
 - Unchanged from the input block.
-position
+  position
 - Unchanged from the input block.
-surfaceIast
+  surfaceIast
 - Unchanged from the input block (echoed back for validation, not re-derived).
-formationRuleNumbers
+  formationRuleNumbers
 - List of rule numbers from `emenau-sandhi-rules-internal.json` (numbers 1–40 only)
   that were applied, in the order applied.
 - [] if no internal morphophonemic rule applies, or if one applies but cannot be
   matched with confidence.
 - NEVER guess a rule number, and never cite a number outside 1–40.
-formationConfidence
+  formationExplanation
+- A short, concrete explanation (2–4 sentences, plain prose, **на русском языке**)
+  of HOW the surface form was actually built from root/base + suffix at the internal
+  boundary, and WHY each rule in formationRuleNumbers applies here specifically — not
+  a restatement of the rule's abstract wording, but the reasoning applied to THIS
+  word. Пиши пояснение целиком на русском языке (включая названия звуковых
+  процессов при необходимости — например, «аспирированный звонкий взрывной»),
+  независимо от языка остальных полей вывода.
+- Required structure of the explanation:
+  (a) state the underlying pre-sandhi juxtaposition (e.g. "budh + ta"),
+  (b) name the actual phonetic change that occurs at the boundary (e.g. "the
+  suffix-initial t becomes the voiced aspirate dh"),
+  (c) name the phonetic condition that triggers it, in your own words, not by
+  quoting the rule verbatim (e.g. "because a voiceless stop becomes voiced and
+  aspirated after a preceding voiced aspirated stop"),
+  (d) if more than one rule applies in sequence, walk through the intermediate
+  stage(s) explicitly (e.g. "h is first reinterpreted as a stop by rule X,
+  giving the intermediate form Y, which is then devoiced by rule Z to give the
+  attested surface form").
+- If formationRuleNumbers is [] because no internal change is visible at all
+  (plain, regular stem+suffix concatenation), formationExplanation should say so
+  briefly (e.g. "regular thematic suffixation with no alternation at the
+  root/suffix boundary; nothing to explain") — do not leave it as a bare "null" or
+  an empty string, and do not invent a change that did not happen just to have
+  something to explain.
+- If formationRuleNumbers is [] because a change clearly occurred but could not be
+  confidently matched to a rule 1–40, formationExplanation should describe what
+  change was observed and why no rule was cited (e.g. "the surface form shows an
+  alternation at the root-final consonant that does not correspond to any of the
+  patterns described in rules 1–40; citing a specific rule here would be a guess").
+  This is the same situation as formationNotes below, but formationNotes is a
+  short flag/label while formationExplanation is the actual prose reasoning — do
+  not duplicate one into the other verbatim; formationNotes may cross-reference it
+  briefly (e.g. "see formationExplanation").
+- Never quote a rule's example verbatim as if it were this word's own derivation;
+  the explanation must be about the specific surfaceIast given, not a copy of the
+  rule file's own example sentence.
+  formationConfidence
 - Return exactly one of: HIGH, MEDIUM, LOW.
 - HIGH: the internal derivation and any cited rule(s) are clear and well attested.
 - MEDIUM: plausible but some detail (e.g. which of two similar rules, or the exact
   suffix boundary) is uncertain.
 - LOW: genuinely ambiguous, or insufficient information (e.g. root/suffix left null
   by STEP 1) to determine internal sandhi with confidence.
-formationNotes
+  formationNotes
 - null if there is no meaningful ambiguity or nothing to add.
 - Otherwise a brief note: why no rule was cited despite an apparent change, or which
   alternative rule/analysis was considered and rejected.
@@ -159,21 +201,33 @@ Expected output entry:
 "position": 7,
 "surfaceIast": "buddha",
 "formationRuleNumbers": [30],
+"formationExplanation": "Исходная стыковка: budh + ta (корень budh- «бодрствовать,
+пробуждаться» + суффикс причастия прошедшего пассива -ta). На стыке корня и
+суффикса начальный t суффикса переходит в звонкий придыхательный dh, поскольку
+глухой непридыхательный взрывной регулярно озвончается и приобретает
+придыхание, когда непосредственно следует за звонким придыхательным взрывным
+(здесь — за конечным dh корня). Получается budh + dha, и возникающая
+геминатоподобная последовательность даёт поверхностную форму buddha.",
 "formationConfidence": "HIGH",
 "formationNotes": null
 }
 — because rule 30 explicitly describes t/th becoming dh after a voiced aspirated
 stop, matching budh- + -ta- ⇒ buddha- exactly (see the rule's own example in the
-file). This example illustrates the REQUIRED STRUCTURE; do not blindly copy these
-values when analysing a different word.
+file) — but note that formationExplanation above restates this reasoning for THIS
+word (budh+ta), not by copying the rule file's own example. This example
+illustrates the REQUIRED STRUCTURE; do not blindly copy these values when analysing
+a different word.
 
 --------------------------------------------------
 OUTPUT REQUIREMENT
 --------------------------------------------------
 Return all words in the same order they were given, one output entry per input
-word, with verseIndex/position unchanged. Use [] for an empty rule-number list. Use
-null for formationNotes when there is nothing to add. NEVER invent a rule number
-merely to avoid returning [].
+word, with verseIndex/position unchanged. Use [] for an empty rule-number list.
+formationExplanation is always a non-empty string (never null) — even a [] rule
+list gets a one-line explanation of why nothing was cited (see above). Use null for
+formationNotes when there is nothing to add beyond formationExplanation. NEVER
+invent a rule number merely to avoid returning [], and never write an explanation
+that describes a change different from what formationRuleNumbers actually cites.
 
 Respond only by calling the function submit_word_formations, with no text outside
 the call.
@@ -185,7 +239,14 @@ Before calling submit_word_formations, verify:
   unchanged;
 - every formationRuleNumbers value used is in the range 1–40 (internal only) — this
   step must never emit a number from the 41–71 (external) range, since that range
-  belongs to STEP 1's sandhiSplits and is not visible to this step at all.
+  belongs to STEP 1's sandhiSplits and is not visible to this step at all;
+- every formationExplanation is present, non-empty, and specific to this word's own
+  surfaceIast/root/suffix — not a generic restatement of a rule's own text or
+  example, and not copy-pasted between different words;
+- for every word, the rule numbers named in formationRuleNumbers and the rule
+  numbers/steps actually walked through in formationExplanation agree exactly — no
+  rule cited in the list is left unexplained, and no rule described in the prose is
+  missing from the list.
 
 user (template — backend fills in the values, one or more words, drawn from STEP 1's
 words[] output across one or more verses)

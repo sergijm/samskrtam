@@ -42,4 +42,4 @@ out/
 ### Kotlin ###
 .kotlin
 /frontend/node_modules/
-/docs/.obsidian/
+/frontend/dist/

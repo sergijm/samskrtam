@@ -52,11 +52,11 @@ public class MwService {
                 for (int i = 0; i < group.size(); i++) {
                     MwEntryDto dto = group.get(i);
                     if (i == 0) {
-                        dto.setHeadwordDevanagari(article.headwordDevanagari);
+                        dto.setHeadwordIast(article.headwordIast);
                         dto.setPageRefsHtml(article.pageRefsHtml);
                         dto.setHtml(article.bodyHtml);
                     } else {
-                        dto.setHeadwordDevanagari(null);
+                        dto.setHeadwordIast(null);
                         dto.setPageRefsHtml(null);
                         dto.setHtml(null);
                     }

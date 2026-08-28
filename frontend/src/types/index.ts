@@ -71,7 +71,7 @@ export interface MwDictionaryEntryDto {
     infoTags: any[];
     rawBody: string;
     html?: string;
-    headwordDevanagari?: string;
+    headwordIast?: string;
     pageRefsHtml?: string;
     cleanText?: string;
     body?: string;

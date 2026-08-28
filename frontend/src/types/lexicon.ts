@@ -39,6 +39,15 @@ export interface LexicalTopic {
   masteredCount: number;
 }
 
+/** Семантическая тема (привязка леммы к топику через семантические классы) */
+export interface SemanticTopic {
+  id: string;
+  nameRu: string;
+  nameEn: string;
+  wordCount: number;
+  masteredCount: number;
+}
+
 /** Часть речи */
 export interface LexiconPos {
   id: string;
@@ -69,6 +78,7 @@ export interface LexiconDashboardData {
   today: LexiconToday;
   frequencyBands: FrequencyBand[];
   topics: LexicalTopic[];
+  semanticTopics: SemanticTopic[];
   pos: LexiconPos[];
   collections: UserCollection[];
   quickStart: QuickStartPreset[];

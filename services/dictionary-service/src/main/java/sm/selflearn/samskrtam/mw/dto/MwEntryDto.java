@@ -18,6 +18,6 @@ public class MwEntryDto {
     private String grammarJson;
     private String cleanText;
     private String html;
-    private String headwordDevanagari;
+    private String headwordIast;
     private String pageRefsHtml;
 }

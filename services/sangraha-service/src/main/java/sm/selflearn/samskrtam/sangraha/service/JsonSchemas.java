@@ -345,6 +345,7 @@ public class JsonSchemas {
         formationConfidence.putArray("enum").add("HIGH").add("MEDIUM").add("LOW");
 
         wordProps.putObject("formationNotes").put("type", "string");
+        wordProps.putObject("formationExplanation").put("type", "string");
 
         schema.putObject("additionalProperties").put("type", "string");
 

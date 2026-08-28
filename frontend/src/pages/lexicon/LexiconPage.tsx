@@ -7,6 +7,7 @@ import LexiconHero from '../../components/lexicon/LexiconHero';
 import LexiconToday from '../../components/lexicon/LexiconToday';
 import LexiconFrequency from '../../components/lexicon/LexiconFrequency';
 import LexiconTopics from '../../components/lexicon/LexiconTopics';
+import LexiconSemanticTopics from '../../components/lexicon/LexiconSemanticTopics';
 import LexiconPos from '../../components/lexicon/LexiconPos';
 import LexiconCollections from '../../components/lexicon/LexiconCollections';
 import ProgressSummaryPanel from '../../components/dashboard/ProgressSummaryPanel';
@@ -48,6 +49,7 @@ const LexiconPage: React.FC = () => {
 
       <LexiconFrequency bands={data.frequencyBands} />
       <LexiconTopics topics={data.topics} />
+      <LexiconSemanticTopics topics={data.semanticTopics} />
       <LexiconPos pos={data.pos} />
       <LexiconCollections collections={data.collections} />
     </div>

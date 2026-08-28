@@ -53,10 +53,10 @@ import AppLayout from '../components/layout/AppLayout';
 import { ReactNode } from 'react';
 
 /** Helper: защищённый маршрут с общим лейаутом */
-function ProtectedLayoutRoute({ children, hideSidebar }: { children: ReactNode; hideSidebar?: boolean }) {
+function ProtectedLayoutRoute({ children }: { children: ReactNode }) {
   return (
     <ProtectedRoute>
-      <AppLayout hideSidebar={hideSidebar}>
+      <AppLayout>
         {children}
       </AppLayout>
     </ProtectedRoute>
@@ -89,7 +89,7 @@ export default function AppRoutes() {
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
       {/* Protected routes */}
-      <Route path="/dashboard" element={<ProtectedLayoutRoute hideSidebar><LearnGraphPage /></ProtectedLayoutRoute>} />
+      <Route path="/dashboard" element={<ProtectedLayoutRoute><LearnGraphPage /></ProtectedLayoutRoute>} />
       <Route path="/settings" element={<ProtectedLayoutRoute><SettingsPage /></ProtectedLayoutRoute>} />
       <Route path="/settings/password" element={<ProtectedLayoutRoute><ChangePasswordPage /></ProtectedLayoutRoute>} />
       <Route path="/users/:id" element={<ProtectedLayoutRoute><UserProfilePage /></ProtectedLayoutRoute>} />
@@ -112,7 +112,7 @@ export default function AppRoutes() {
       <Route path="/vocabulary" element={<ProtectedLayoutRoute><VocabularyPage /></ProtectedLayoutRoute>} />
 
       {/* Lexicon (стартовая страница лексики) */}
-      <Route path="/lexicon" element={<ProtectedLayoutRoute hideSidebar><LexiconPage /></ProtectedLayoutRoute>} />
+      <Route path="/lexicon" element={<ProtectedLayoutRoute><LexiconPage /></ProtectedLayoutRoute>} />
       <Route path="/vocabulary/lists" element={<ProtectedLayoutRoute><UnderConstructionPage /></ProtectedLayoutRoute>} />
       <Route path="/vocabulary/basic" element={<ProtectedLayoutRoute><VocabularyBasicPage /></ProtectedLayoutRoute>} />
       <Route path="/vocabulary/texts" element={<ProtectedLayoutRoute><VocabularyTextsPage /></ProtectedLayoutRoute>} />

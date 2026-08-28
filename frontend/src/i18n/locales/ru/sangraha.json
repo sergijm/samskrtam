@@ -63,7 +63,8 @@
       "base": "Основа",
       "lemmaGloss": "Словарный перевод",
       "contextGloss": "Контекстный перевод",
-      "formationRules": "Правила образования"
+      "formationRules": "Правила образования",
+      "formationExplanation": "Пояснение образования формы"
     },
     "placeholder": {
       "textDevanagari": "Введите текст на деванагари...",

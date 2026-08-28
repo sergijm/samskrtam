@@ -160,7 +160,7 @@ const DictionaryPage = () => {
           <div key={entry.entryId ?? entry.id ?? entry.recordId} className="card">
             <div className="flex justify-content-between align-items-start mb-2">
               <span className="mw-headword sdata_siddhanta">
-                {entry.headwordDevanagari}
+                {entry.headwordIast}
               </span>
               {entry.pageRefsHtml && (
                 <span
