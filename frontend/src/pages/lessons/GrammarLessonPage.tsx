@@ -6,6 +6,7 @@ import { useStartOrResumeWithStatusFilter, useComposeQuizSession } from '../../h
 import { getQuizCategory, LessonType, ComposeQuizResponse } from '../../types/quiz';
 
 import { LessonHeader } from '../../components/lesson/LessonHeader';
+import { LessonCrossNav, DECLENSION_CROSS_LINK_SLUGS } from '../../components/lesson/LessonCrossNav';
 import { LessonStatsTab } from '../../components/lesson/LessonStatsTab';
 import GrammarParadigmCarousel from '../../components/lesson/GrammarParadigmCarousel';
 import GrammarProgressTagSets from '../../components/lesson/GrammarProgressTagSets';
@@ -182,8 +183,17 @@ const GrammarLessonPage = () => {
       ) : (
         <>
           <div className="card mb-3">
-            <div className="flex align-items-center justify-content-between">
-              <LessonHeader title={lesson.titleRu} titleEn={lesson.titleEn} />
+            <div className="flex align-items-start justify-content-between flex-wrap gap-2">
+              <LessonHeader
+                title={lesson.titleRu}
+                subtitle={
+                  slug && DECLENSION_CROSS_LINK_SLUGS.includes(slug) ? (
+                    <LessonCrossNav currentSlug={slug} />
+                  ) : (
+                    lesson.titleEn
+                  )
+                }
+              />
               {lesson.statusSummary && (
                 <div className="flex align-items-center gap-1">
                   <span className="text-2xl font-bold">{lesson.statusSummary.total}</span>

@@ -7,6 +7,7 @@ import CaseEndingsTable from '../../components/lesson/CaseEndingsTable';
 import CaseEndingsFilters, { ColumnFilterDef } from '../../components/lesson/CaseEndingsFilters';
 import { normalizeDiacritics, truncateEnding } from '../../utils/diacritics';
 import type { CaseEndingDto } from '../../types/content-dtos';
+import { LessonCrossNav } from '../../components/lesson/LessonCrossNav';
 
 const FILTER_COLUMNS: ColumnFilterDef[] = [
   { key: 'stemType', labelKey: 'caseEndings.stemType', section: 'stemType', groupLabelKey: 'caseEndings.stemGroup' },
@@ -69,6 +70,9 @@ const CaseEndingsLessonPage = () => {
     <div className="p-4">
       <div className="card mb-3">
         <h1 className="m-0 text-2xl">{t('caseEndings.title')}</h1>
+        <div className="text-sm text-color-secondary m-0 mt-1">
+          <LessonCrossNav currentSlug="case-endings" />
+        </div>
       </div>
 
       {isLoading || !data ? (

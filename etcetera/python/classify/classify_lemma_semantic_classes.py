@@ -1,22 +1,10 @@
 #!/usr/bin/env python3
 
-# напиши python скрипт который
-# читает семантический классификатор из lingua.semantic_class (parent_id != null)
-# читает переводы из currigulum.lemma_translation
-# формирует промпт в облачную llm, которая должна привязать семантическую категорию к переводу
-# результат привязки пишет в таблицу "curriculum"."lemma_semantic_class"
-#
-# подключени к БД и выбор LLM сделай аналогично etcetera/python/classify/classify_nominal_lemmas.py
-
 import argparse
 import json
 import logging
-import os
-import re
 import sys
 import time
-
-import yaml
 
 import psycopg
 from openai import OpenAI
@@ -25,10 +13,9 @@ from openai import OpenAI
 DEFAULT_BATCH_SIZE = 20
 LOG_FILE = r"C:\MyDev\samskrtam\logs/lemma_semantic_class_llm.log"
 
-# Configuration
 LLM_MODEL = "deepseek-v4-flash"
 ENV_FILE_PATH = r"C:\MyDev\samskrtam\.env"
-LLM_CONFIG_PATH = r"C:\MyDev\samskrtam\llm.yaml"
+LLM_BASE_URL = "https://api.aitunnel.ru/v1"
 
 
 SYSTEM_PROMPT = """
@@ -36,18 +23,18 @@ You are an expert in Sanskrit lexicography and semantics.
 
 You are given:
   * a fixed list of available semantic categories (each has an id and a
-    human-readable label in ru / en), and
-  * a batch of lexical translations (each has an id, the lemma in IAST,
-    the language, and the gloss / translation text).
+    human-readable label in ru), and
+  * a batch of lemmas (each has an id, the lemma in IAST, and the Russian
+    gloss / translation text).
 
-For every translation, decide which of the available semantic categories
-it belongs to. A translation may belong to zero, one, or several
+For every lemma, decide which of the available semantic categories
+it belongs to. A lemma may belong to zero, one, or several
 categories. Choose only from the provided category ids; never invent
 new ones. When unsure, prefer the broader / parent category but only if
 it is present in the provided list (note: only leaf categories are
 provided, so pick the closest leaf).
 
-Return exactly one result for every input translation id.
+Return exactly one result for every input lemma id.
 
 Return JSON only.
 
@@ -56,7 +43,7 @@ The JSON response MUST have exactly this structure:
 {
   "results": [
     {
-      "translation_id": "00000000-0000-0000-0000-000000000000",
+      "lemma_id": "00000000-0000-0000-0000-000000000000",
       "semantic_class_ids": [
         "11111111-1111-1111-1111-111111111111"
       ]
@@ -64,9 +51,9 @@ The JSON response MUST have exactly this structure:
   ]
 }
 
-The field names MUST be "translation_id" and "semantic_class_ids".
+The field names MUST be "lemma_id" and "semantic_class_ids".
 Do not rename, omit, or abbreviate any field.
-If a translation matches no category, return an empty array.
+If a lemma matches no category, return an empty array.
 """
 
 
@@ -94,7 +81,6 @@ def setup_logging():
 
 
 def load_env(path):
-    """Minimal .env loader (no python-dotenv dependency)."""
     env = {}
 
     with open(path, "r", encoding="utf-8") as f:
@@ -142,56 +128,14 @@ def create_db_connection(env):
     )
 
 
-def load_llm_config(path, model, env):
-    """
-    Load the selected LLM configuration from llm.yaml.
-    String values may contain ${VAR} placeholders resolved from .env.
-    """
-    with open(path, "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f)
-
-    try:
-        llm_config = config["llm"]["configs"][model]
-    except (TypeError, KeyError):
-        available = sorted(
-            config.get("llm", {}).get("configs", {}).keys()
-            if isinstance(config, dict)
-            else []
-        )
-        raise RuntimeError(
-            f"LLM model {model!r} not found in {path}. "
-            f"Available models: {available}"
-        )
-
-    def resolve(value):
-        if not isinstance(value, str):
-            return value
-
-        def replace_var(match):
-            name = match.group(1)
-            return env.get(name, os.environ.get(name, match.group(0)))
-
-        return re.sub(r"\\$\\{([^}]+)\\}", replace_var, value)
-
-    return {
-        key: resolve(value)
-        for key, value in llm_config.items()
-    }
-
-
-def create_llm_client(llm_config):
+def create_llm_client(env):
     return OpenAI(
-        base_url=required(llm_config, "base-url"),
-        api_key=required(llm_config, "api-key"),
+        base_url=LLM_BASE_URL,
+        api_key=required(env, "LLM_API_KEY"),
     )
 
 
 def load_semantic_classes(conn):
-    """
-    Leaf semantic categories from lingua.semantic_class
-    (parent_id IS NOT NULL). Returns a list of dicts
-    {id, code, name_ru, name_en, label}.
-    """
     sql = """
           SELECT id,
                  code,
@@ -210,7 +154,7 @@ def load_semantic_classes(conn):
 
         for row in cur.fetchall():
             class_id, code, name_ru, name_en, _parent = row
-            label = f"{code}: {name_ru or ''} / {name_en or ''}".strip(" /")
+            label = f"{code}: {name_ru or ''}".strip(" /")
 
             classes.append(
                 {
@@ -225,19 +169,14 @@ def load_semantic_classes(conn):
     return classes
 
 
-def get_unprocessed_translations(conn, limit):
-    """
-    Lemmas from curriculum.lemma that are not yet bound to any semantic class.
-    Uses the en translation gloss as context for the LLM.
-    """
+def get_unprocessed_lemmas(conn, limit):
     sql = """
           SELECT l.id,
                  l.lemma_iast,
-                 'en',
                  lt.gloss
           FROM curriculum.lemma l
           JOIN curriculum.lemma_translation lt ON lt.lemma_id = l.id
-          WHERE lt.language = 'en'
+          WHERE lt.language = 'ru'
             AND NOT EXISTS (
               SELECT 1
               FROM curriculum.lemma_semantic_class lsc
@@ -254,19 +193,16 @@ def get_unprocessed_translations(conn, limit):
             {
                 "id": str(row[0]),
                 "lemma_iast": row[1],
-                "language": row[2],
-                "gloss": row[3],
+                "gloss": row[2],
             }
             for row in cur.fetchall()
         ]
 
 
-def call_llm(client, model, max_completion_tokens, classes, translations, logger):
-    """Send one batch to the LLM and return parsed JSON."""
-
+def call_llm(client, model, classes, lemmas, logger):
     payload = {
         "semantic_classes": classes,
-        "translations": translations,
+        "lemmas": lemmas,
     }
 
     messages = [
@@ -283,12 +219,8 @@ def call_llm(client, model, max_completion_tokens, classes, translations, logger
     logger.debug("=" * 100)
     logger.debug("LLM REQUEST")
     logger.debug("model=%s", model)
-    logger.debug("max_completion_tokens=%s", max_completion_tokens)
-    logger.debug("translation_count=%d", len(translations))
-    logger.debug(
-        "class_count=%d",
-        len(classes),
-    )
+    logger.debug("lemma_count=%d", len(lemmas))
+    logger.debug("class_count=%d", len(classes))
 
     logger.debug(
         "REQUEST MESSAGES:\n%s",
@@ -302,7 +234,7 @@ def call_llm(client, model, max_completion_tokens, classes, translations, logger
             model=model,
             messages=messages,
             temperature=0,
-            max_tokens=max_completion_tokens,
+            max_tokens=128000,
             response_format={"type": "json_object"},
         )
 
@@ -362,71 +294,58 @@ def call_llm(client, model, max_completion_tokens, classes, translations, logger
     return data
 
 
-def validate_results(data, requested_translations, allowed_class_ids, logger):
-    """Strictly validate the LLM response before touching DB."""
-
+def validate_results(data, requested_lemmas, allowed_class_ids, logger):
     if not isinstance(data, dict):
-        raise RuntimeError("LLM response must be a JSON object")
+        logger.error("LLM response must be a JSON object, skipping batch")
+        return {}
 
     results = data.get("results")
 
     if not isinstance(results, list):
-        raise RuntimeError("LLM response must contain a 'results' array")
+        logger.error("LLM response must contain a 'results' array, skipping batch")
+        return {}
 
-    requested = {t["id"] for t in requested_translations}
+    requested = {t["id"] for t in requested_lemmas}
     validated = {}
 
     for item in results:
         if not isinstance(item, dict):
-            raise RuntimeError(f"Invalid result item: {item!r}")
+            logger.warning("Invalid result item: %s", item)
+            continue
 
-        translation_id = item.get("translation_id")
+        lemma_id = item.get("lemma_id")
         class_ids = item.get("semantic_class_ids")
 
-        if translation_id not in requested:
-            raise RuntimeError(
-                f"Unexpected translation_id returned by LLM: {translation_id!r}"
-            )
-
-        if translation_id in validated:
-            raise RuntimeError(
-                f"Duplicate result for translation_id: {translation_id}"
-            )
+        if lemma_id not in requested:
+            logger.warning("Unexpected lemma_id returned by LLM: %s", lemma_id)
+            continue
 
         if not isinstance(class_ids, list):
-            raise RuntimeError(
-                f"semantic_class_ids must be a list for "
-                f"{translation_id!r}"
-            )
+            logger.warning("semantic_class_ids must be a list for %s", lemma_id)
+            continue
 
         for cid in class_ids:
             if cid not in allowed_class_ids:
-                raise RuntimeError(
-                    f"Unknown semantic_class_id {cid!r} for "
-                    f"translation {translation_id!r}"
-                )
+                logger.warning("Unknown semantic_class_id %s for lemma %s", cid, lemma_id)
 
-        validated[translation_id] = class_ids
+        if lemma_id in validated:
+            validated[lemma_id].extend(cid for cid in class_ids if cid in allowed_class_ids and cid not in validated[lemma_id])
+        else:
+            validated[lemma_id] = [cid for cid in class_ids if cid in allowed_class_ids]
 
     missing = requested - set(validated)
 
     if missing:
         examples = sorted(missing)[:20]
-        raise RuntimeError(
-            f"LLM returned only {len(validated)} of "
-            f"{len(requested)} translations.\n"
-            f"Missing: {len(missing)}.\n"
-            f"Examples: {examples}"
+        logger.warning(
+            "LLM returned only %d of %d lemmas. Missing: %d. Examples: %s",
+            len(validated), len(requested), len(missing), examples
         )
 
     return validated
 
 
 def save_results(conn, results, logger):
-    """
-    Insert one row per (translation, class) binding.
-    The composite PK makes this safe to repeat.
-    """
     sql = """
           INSERT INTO curriculum.lemma_semantic_class
                (lemma_id, semantic_class_id)
@@ -451,8 +370,7 @@ def save_results(conn, results, logger):
 def main():
     parser = argparse.ArgumentParser(
         description=(
-            "Bind Sanskrit translations to semantic categories "
-            "using an LLM"
+            "Bind Sanskrit lemmas to semantic categories using an LLM"
         )
     )
 
@@ -461,7 +379,7 @@ def main():
         type=int,
         default=DEFAULT_BATCH_SIZE,
         help=(
-            "Number of translations per LLM request "
+            "Number of lemmas per LLM request "
             f"(default: {DEFAULT_BATCH_SIZE})"
         ),
     )
@@ -474,18 +392,10 @@ def main():
 
     env = load_env(ENV_FILE_PATH)
 
-    model = LLM_MODEL
-    llm_config = load_llm_config(LLM_CONFIG_PATH, model, env)
-
-    max_completion_tokens = int(
-        llm_config.get("max-completion-tokens", "128000")
-    )
-
-    logger.info("Model: %s", model)
+    logger.info("Model: %s", LLM_MODEL)
     logger.info("Batch size: %d", args.batch_size)
-    logger.info("Max completion tokens: %d", max_completion_tokens)
 
-    client = create_llm_client(llm_config)
+    client = create_llm_client(env)
 
     with create_db_connection(env) as conn:
         classes = load_semantic_classes(conn)
@@ -504,21 +414,21 @@ def main():
         batch_number = 0
 
         while True:
-            translations = get_unprocessed_translations(
+            lemmas = get_unprocessed_lemmas(
                 conn,
                 args.batch_size,
             )
 
-            if not translations:
-                logger.info("No more unprocessed translations.")
+            if not lemmas:
+                logger.info("No more unprocessed lemmas.")
                 break
 
             batch_number += 1
 
             logger.info(
-                "START batch=%d translations=%d",
+                "START batch=%d lemmas=%d",
                 batch_number,
-                len(translations),
+                len(lemmas),
             )
 
             started = time.time()
@@ -526,16 +436,15 @@ def main():
             try:
                 raw = call_llm(
                     client=client,
-                    model=model,
-                    max_completion_tokens=max_completion_tokens,
+                    model=LLM_MODEL,
                     classes=classes,
-                    translations=translations,
+                    lemmas=lemmas,
                     logger=logger,
                 )
 
                 results = validate_results(
                     raw,
-                    translations,
+                    lemmas,
                     allowed_class_ids,
                     logger,
                 )
@@ -543,34 +452,37 @@ def main():
                 logger.info(
                     "Validation successful: %d/%d",
                     len(results),
-                    len(translations),
+                    len(lemmas),
                 )
 
-                save_results(
-                    conn=conn,
-                    results=results,
-                    logger=logger,
-                )
+                if results:
+                    save_results(
+                        conn=conn,
+                        results=results,
+                        logger=logger,
+                    )
 
-                elapsed = time.time() - started
+                    elapsed = time.time() - started
 
-                bound = sum(1 for v in results.values() if v)
-                logger.info(
-                    "DONE batch=%d saved=%d translations_with_class=%d "
-                    "elapsed=%.2fs",
-                    batch_number,
-                    len(results),
-                    bound,
-                    elapsed,
-                )
+                    bound = sum(1 for v in results.values() if v)
+                    logger.info(
+                        "DONE batch=%d saved=%d lemmas_with_class=%d "
+                        "elapsed=%.2fs",
+                        batch_number,
+                        len(results),
+                        bound,
+                        elapsed,
+                    )
+                else:
+                    logger.info("SKIP batch=%d — no valid results", batch_number)
 
             except Exception:
                 conn.rollback()
                 logger.exception(
-                    "BATCH %d FAILED — database transaction rolled back",
+                    "BATCH %d FAILED — skipped, continuing to next batch",
                     batch_number,
                 )
-                sys.exit(1)
+                continue
 
     logger.info("Finished successfully.")
 
