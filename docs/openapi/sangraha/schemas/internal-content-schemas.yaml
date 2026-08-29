@@ -5,57 +5,6 @@
 # по VerseWord.stem для регулярных классов; для PRON_* — по фиксированному lemmaIast
 # (см. sangraha-service.md §9).
 
-DeclensionExamplesSearchRequestDto:
-  type: object
-  required: [vowelType, gender, limitPerGroup, cells]
-  properties:
-    vowelType:
-      type: string
-      enum: [A_STEM, AA_STEM, I_STEM, II_STEM, U_STEM, UU_STEM, R_STEM, PRON_AHAM, PRON_TVAM, PRON_TAD, PRON_ETAD, PRON_IDAM, PRON_KIM, PRON_YAD, PRON_REFLEXIVE]
-    gender:
-      type: string
-      enum: [MASCULINE, FEMININE, NEUTER, UNKNOWN, UNSPECIFIED]
-    limitPerGroup:
-      type: integer
-      minimum: 1
-      description: Максимум примеров в каждой возвращаемой группе.
-    cells:
-      type: array
-      minItems: 1
-      items:
-        type: object
-        required: [caseType, numberType]
-        properties:
-          caseType:
-            type: string
-            enum: [NOMINATIVE, ACCUSATIVE, INSTRUMENTAL, DATIVE, ABLATIVE, GENITIVE, LOCATIVE, VOCATIVE]
-          numberType:
-            type: string
-            enum: [SINGULAR, DUAL, PLURAL]
-
-DeclensionExamplesSearchResponseDto:
-  type: object
-  required: [groups]
-  properties:
-    groups:
-      type: array
-      description: Ровно одна группа на каждую запрошенную ячейку (даже с пустым verseIds).
-      items:
-        type: object
-        required: [caseType, numberType, verseIds]
-        properties:
-          caseType:
-            type: string
-            enum: [NOMINATIVE, ACCUSATIVE, INSTRUMENTAL, DATIVE, ABLATIVE, GENITIVE, LOCATIVE, VOCATIVE]
-          numberType:
-            type: string
-            enum: [SINGULAR, DUAL, PLURAL]
-          verseIds:
-            type: array
-            items:
-              type: string
-              format: uuid
-
 VersesBatchRequestDto:
   type: object
   required: [verseIds]
@@ -100,3 +49,103 @@ VersesBatchResponseDto:
             type: string
           verseOrderIndex:
             type: integer
+
+VerseWordExportPageDto:
+  type: object
+  required: [items, nextCursor]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/VerseWordExportItemDto'
+    nextCursor:
+      type: string
+      format: uuid
+      nullable: true
+      description: Последний verseId страницы; null — строк больше нет.
+
+VerseWordExportItemDto:
+  type: object
+  required: [verseId, verseOrderIndex]
+  description: >
+    Одна словоформа одной строкой (lexicon-content-pipeline.md §2). Род и класс
+    основы берутся из verse_word_morphology и могут отсутствовать.
+  properties:
+    verseId:
+      type: string
+      format: uuid
+    workSlug:
+      type: string
+      nullable: true
+    chapterSlug:
+      type: string
+      nullable: true
+    verseOrderIndex:
+      type: integer
+    lemmaIast:
+      type: string
+    stem:
+      type: string
+      nullable: true
+    surfaceIast:
+      type: string
+    surfaceDevanagari:
+      type: string
+    pos:
+      type: string
+      nullable: true
+    lemmaGlossRu:
+      type: string
+      nullable: true
+    lemmaGlossEn:
+      type: string
+      nullable: true
+    gender:
+      type: string
+      enum: [MASCULINE, FEMININE, NEUTER, UNSPECIFIED]
+      nullable: true
+    vowelType:
+      type: string
+      nullable: true
+      description: Класс основы (A_STEM … R_STEM), определённый на лету по stem.
+
+NominalLemmaCandidatesResponseDto:
+  type: object
+  required: [candidates]
+  properties:
+    candidates:
+      type: array
+      items:
+        $ref: '#/NominalLemmaCandidateDto'
+
+NominalLemmaCandidateDto:
+  type: object
+  required: [lemmaIast, lemmaDevanagari, lemmaSlp1, stemIast, stemClass, confidence, frequency]
+  description: >
+    Кандидат на импорт существительного (номинальная лемма) в curriculum-лексикон
+    для бутстрапа квизов/парадигм склонений. Род — самый частый по лемме из
+    verse_word_morphology (может быть null).
+  properties:
+    lemmaIast:
+      type: string
+      description: Словарная форма IAST (ключ, UNIQUE в nominal_lemmas)
+    lemmaDevanagari:
+      type: string
+    lemmaSlp1:
+      type: string
+    stemIast:
+      type: string
+      description: Основа склонения IAST (источник для WordFormBuilder)
+    stemClass:
+      type: string
+      description: Регулярный класс основы (A_STEM … R_STEM)
+    confidence:
+      type: string
+      enum: [HIGH, MEDIUM, LOW]
+    gender:
+      type: string
+      enum: [MASCULINE, FEMININE, NEUTER, UNSPECIFIED]
+      nullable: true
+    frequency:
+      type: integer
+      description: Число вхождений леммы в verse_words (порядок сортировки)

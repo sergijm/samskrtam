@@ -11,13 +11,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import sm.selflearn.samskrtam.content.model.CaseType;
-import sm.selflearn.samskrtam.content.model.NumberType;
-
-import java.util.UUID;
+import sm.selflearn.samskrtam.morphology.NumberType;
+import sm.selflearn.samskrtam.content.model.VowelType;
 
 /**
- * One suppletive paradigm cell (case+number -> form), attached to
- * {@link ParadigmStem}. Mirrors {@code content.declension_forms}.
+ * One paradigm cell (case+number -> form) of a lemma's declension class, keyed by
+ * {@code (lemma_iast, vowel_type, case_type, number_type)}. Serves both the v2
+ * paradigm page and the batch generator.
  */
 @Getter
 @Setter
@@ -28,8 +28,13 @@ import java.util.UUID;
 public class ParadigmForm {
 
     @Id
-    @Column(name = "declension_stem_id", nullable = false)
-    private UUID declensionStemId;
+    @Column(name = "lemma_iast", nullable = false, length = 120)
+    private String lemmaIast;
+
+    @Id
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vowel_type", nullable = false, length = 40)
+    private VowelType vowelType;
 
     @Id
     @Enumerated(EnumType.STRING)

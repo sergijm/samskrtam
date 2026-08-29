@@ -1,11 +1,13 @@
 openapi: "3.1.0"
 info:
-  title: sangraha-service — Internal API (called by content-service)
+  title: sangraha-service — Internal API (строительные блоки агрегации)
   description: |
-    Service-to-service эндпоинты, вызываемые content-service напрямую (env
-    SANGRAHA_SERVICE_URL у content-service, минуя api-gateway, без роли) для вкладки
-    «Примеры» на странице шага склонений. Источник истины — docs/services/sangraha-service.md
-    §9, docs/services/content-service/declension-examples.md.
+    Internal-эндпоинты (не через api-gateway): батч-выдача текста/перевода стихов,
+    экспорт корпуса VerseWord и кандидаты на импорт существительных.
+    Используются curriculum-service и как строительный блок публичного
+    POST /api/v1/sangraha/verses/examples (агрегация происходит в JVM:
+    VerseWordSearchService.searchExamples).
+    Источник истины — docs/services/sangraha-service.md §9.
   version: "1.0.0"
 
 servers:
@@ -13,35 +15,39 @@ servers:
     description: Прямой service-to-service вызов, минуя api-gateway
 
 paths:
-  /sangraha/internal/content/declension-examples:
-    post:
-      operationId: searchDeclensionExamples
-      summary: Find example verses for declension cells, grouped by (caseType, numberType)
-      tags: [declension-examples]
+  /sangraha/internal/content/verse-words/export:
+    get:
+      operationId: exportVerseWords
+      summary: Экспорт корпуса VerseWord для batch-импорта лексики
+      tags: [verse-word-export]
       description: >
-        Возвращает только verseId по группам, не сами цитаты (см.
-        /sangraha/internal/content/verses/batch ниже). Одна группа в ответе на каждую
-        запрошенную ячейку — даже с пустым verseIds (значимый результат «ничего не
-        нашлось», content-service его кэширует).
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: 'schemas/internal-content-schemas.yaml#/DeclensionExamplesSearchRequestDto'
+        Курсорная постраничная выгрузка словоформ корпуса (после
+        GET /sangraha/internal/lexicon/lemmas/export включает lemma_iast и stem
+        для связывания с леммами). Вызывается curriculum-service
+        (lexicon-content-pipeline.md §2). Сортировка и курсор — по verseId
+        (одна страница = одно слово одного стиха).
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          description: Последний verseId из предыдущей страницы; null/отсутствует — первая страница
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          description: Размер страницы (clamp 1..500, default 500)
+          schema:
+            type: integer
+            default: 500
       responses:
         '200':
-          description: По одной группе на каждую запрошенную ячейку
+          description: Страница словоформ
           content:
             application/json:
               schema:
-                $ref: 'schemas/internal-content-schemas.yaml#/DeclensionExamplesSearchResponseDto'
-        '400':
-          description: Invalid payload (например, неизвестный vowelType)
-          content:
-            application/json:
-              schema:
-                $ref: '../common/schemas/common.yaml#/ErrorResponse'
+                $ref: 'schemas/internal-content-schemas.yaml#/VerseWordExportPageDto'
 
   /sangraha/internal/content/verses/batch:
     post:
@@ -50,8 +56,8 @@ paths:
       tags: [declension-examples]
       description: >
         Только status=ANALYZED. verseId, для которого стиха нет / не ANALYZED / мягко
-        удалён — молча отсутствует в ответе, без ошибки (content-service не различает
-        причину, см. content-service/declension-examples.md §12 шаг 4).
+        удалён — молча отсутствует в ответе, без ошибки (потребитель не различает
+        причину, см. sangraha-service.md §9).
       requestBody:
         required: true
         content:
@@ -71,3 +77,36 @@ paths:
             application/json:
               schema:
                 $ref: '../common/schemas/common.yaml#/ErrorResponse'
+
+  /sangraha/internal/content/nominal-lemmas:
+    get:
+      operationId: fetchNominalLemmaCandidates
+      summary: Кандидаты на импорт существительных (бутстрап склонений)
+      tags: [nominal-lemmas]
+      description: >
+        Список существительных из nominal_lemmas (объединение с verse_words по
+        lemma_iast для частотности), кандидаты на импорт в curriculum-лексикон
+        для бутстрапа квизов/парадигм склонений. Вызывается curriculum-service
+        (SangrahaClient). Род — самый частый по лемме из verse_word_morphology
+        (может быть null).
+      parameters:
+        - name: stemClass
+          in: query
+          required: false
+          description: Фильтр по классу основы (A_STEM … R_STEM); не задан — все классы
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Максимум кандидатов (default 100)
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Кандидаты, отсортированные по частоте вхождения убыванию
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/internal-content-schemas.yaml#/NominalLemmaCandidatesResponseDto'

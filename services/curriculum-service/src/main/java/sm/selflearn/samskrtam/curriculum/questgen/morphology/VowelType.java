@@ -3,7 +3,7 @@ package sm.selflearn.samskrtam.curriculum.questgen.morphology;
 /**
  * Vowel-stem types, matching {@code content.case_endings.vowel_type}.
  * Mapped from curriculum {@code morphology_class.code} in
- * {@code DeclensionQuestItemBatchGenerator}.
+ * {@code DeclensionQuizItemGenerator}.
  */
 public enum VowelType {
     A_STEM,

@@ -123,23 +123,15 @@ QuizAnsweredEvent:
 [ ] Endpoint добавлен в таблицу маршрутов api-gateway.md §3
 [ ] OpenAPI YAML обновлён для затронутого сервиса
 [ ] Shared DTO YAML обновлён (если изменились QuizAnsweredEvent, QuizSessionStatusChangedEvent, StatisticEvent, ErrorResponse)
-[ ] Kafka топики соответствуют конвенции: <domain>-<event>-events
 [ ] Breaking Change? → версия API повышена, Агент 2 и 3 уведомлены
 [ ] Фронтенд-типы потребуют обновления? → уведомить Агент 3
 ```
 
-## Именование Kafka топиков (конвенция)
+## События Outbox (quiz-service)
 
 ```
-<domain>-<event>-events
-
-✅ quiz-answered-events
-✅ quiz-session-status-changed-events
-✅ user-quiz-statistics-output   (исключение: output топик Kafka Streams)
-
-❌ quizAnswered
-❌ quiz_events
-❌ QuizAnsweredTopic
+События пишутся в quiz.outbox_events и НЕ публикуются в Kafka (поддержка Kafka удалена).
+Релей OutboxEventPublisherService читает NEW записи и помечает их PROCESSED (вхолостую).
 ```
 
 ## Расхождения спецификации и реализации
@@ -164,9 +156,6 @@ Endpoint: POST /api/v1/quiz/sessions/{id}/answer
 - docs/services/api-gateway.md §3 (добавлен маршрут /api/v1/quiz/sessions/{id}/resume)
 - docs/quest-engine.md (описан endpoint resume)
 - docs/frontend/lesson-openapi.yaml (добавлена схема ResumeSessionResponse)
-
-✅ Kafka:
-- топик quiz-session-status-changed-events: схема не изменилась
 
 ✅ Open Questions:
 - [x] закрыт вопрос про Mail.ru OAuth → см. architecture.md §3.1

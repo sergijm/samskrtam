@@ -1,6 +1,6 @@
 # US-SYNT-04 — Причастный оборот вместо придаточного предложения
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `PARTICIPLE_CLAUSE` (план)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `PARTICIPLE_CLAUSE` (план)
 > Связанные файлы: [quest-types-overview.md, тип №16](../../../services/quest-types-overview.md)
 
 ## История

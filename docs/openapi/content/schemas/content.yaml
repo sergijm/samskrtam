@@ -334,7 +334,7 @@ VocabularyWordDto:
       type:
         - string
         - 'null'
-    explanationRu:
+explanationRu:
       type:
         - string
         - 'null'
@@ -342,48 +342,3 @@ VocabularyWordDto:
       type:
         - string
         - 'null'
-
-DeclensionExamplesResponseDto:
-  type: object
-  description: >
-    Ответ GET /lessons/{slug}/examples (вкладка «Примеры»,
-    см. content-service.md §12, services/content-service/declension-examples.md).
-  required: [groups]
-  properties:
-    groups:
-      type: array
-      items:
-        type: object
-        required: [caseType, numberType, examples]
-        properties:
-          caseType:
-            $ref: '#/CaseType'
-          numberType:
-            $ref: '#/NumberType'
-          examples:
-            type: array
-            items:
-              type: object
-              required: [verseId, textIast, textDevanagari, translationRu, translationEn, workTitleRu, workTitleEn, chapterTitleRu, chapterTitleEn, verseOrderIndex]
-              properties:
-                verseId:
-                  type: string
-                  format: uuid
-                textIast:
-                  type: string
-                textDevanagari:
-                  type: string
-                translationRu:
-                  type: string
-                translationEn:
-                  type: string
-                workTitleRu:
-                  type: string
-                workTitleEn:
-                  type: string
-                chapterTitleRu:
-                  type: string
-                chapterTitleEn:
-                  type: string
-                verseOrderIndex:
-                  type: integer

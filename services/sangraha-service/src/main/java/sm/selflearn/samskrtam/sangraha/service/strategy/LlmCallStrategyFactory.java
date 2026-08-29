@@ -18,26 +18,19 @@ public class LlmCallStrategyFactory {
     private final ObjectMapper objectMapper;
 
     /**
-     * Creates the appropriate strategy based on {@link LlmProperties#isTwoPass()}.
+     * Creates the appropriate strategy. Always single-pass (two-pass removed).
+     *
+     * @param step этап анализа (STEP1 — translation + external sandhi, STEP2 — internal sandhi)
      */
-    public LlmCallStrategy create(OpenAIClient openAIClient) {
-        if (llmProperties.isTwoPass()) {
-            return new TwoPassStrategy(
-                    openAIClient,
-                    promptBuilder,
-                    toolSchemaBuilder,
-                    objectMapper,
-                    llmProperties.getModel(),
-                    llmProperties.getMaxCompletionTokens()
-            );
-        }
+    public LlmCallStrategy create(OpenAIClient openAIClient, LlmStep step) {
         return new SinglePassStrategy(
                 openAIClient,
                 promptBuilder,
                 toolSchemaBuilder,
                 objectMapper,
                 llmProperties.getModel(),
-                llmProperties.getMaxCompletionTokens()
+                llmProperties.getMaxCompletionTokens(),
+                step
         );
     }
 }

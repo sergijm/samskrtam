@@ -10,5 +10,6 @@ public record LemmaRefreshResponse(
         int updatedLemmaCount,
         int statisticsCount,
         int newStatisticsCount,
-        int updatedStatisticsCount) {
+        int updatedStatisticsCount,
+        int verseStatisticsCount) {
 }

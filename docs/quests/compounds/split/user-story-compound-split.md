@@ -1,7 +1,7 @@
 # US-COMP-01 — Разбор сложного слова на члены
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `COMPOUND_SPLIT` (план)
-> Связанные файлы: [quest-catalog.md §7.1](../../../services/quest-catalog.md)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `COMPOUND_SPLIT` (план)
+> Связанные файлы: [quest-catalog.md §7.1](../../../services/curriculum-service/quest-catalog.md)
 
 ## История
 

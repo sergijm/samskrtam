@@ -39,6 +39,29 @@ export type Gender = 'MASCULINE' | 'FEMININE' | 'NEUTER' | 'UNKNOWN' | 'UNSPECIF
 export type VowelType = 'A_STEM' | 'AA_STEM' | 'I_STEM' | 'II_STEM' | 'U_STEM' | 'UU_STEM' | 'R_STEM';
 export type CaseType = 'NOMINATIVE' | 'ACCUSATIVE' | 'INSTRUMENTAL' | 'DATIVE' | 'ABLATIVE' | 'GENITIVE' | 'LOCATIVE' | 'VOCATIVE';
 export type NumberType = 'SINGULAR' | 'DUAL' | 'PLURAL';
+export type Pos = 'NOUN' | 'VERB' | 'ADJECTIVE' | 'PRONOUN' | 'ADVERB' | 'PARTICLE' | 'INDECLINABLE' | 'NUMERAL' | 'CONJUNCTION' | 'INTERJECTION' | 'OTHER';
+export type StemType = 'A_STEM' | 'AA_STEM' | 'I_STEM' | 'II_STEM' | 'U_STEM' | 'UU_STEM' | 'R_STEM' | 'IN_STEM' | 'AN_STEM' | 'AS_STEM' | 'IS_STEM' | 'US_STEM' | 'ANT_STEM' | 'VAT_STEM' | 'ROOT_STEM' | 'O_STEM' | 'AU_STEM' | 'PRON_TAD_MASC' | 'PRON_TAD_NEUT' | 'PRON_TAD_FEM' | 'PRON_IDAM_MASC' | 'PRON_IDAM_NEUT' | 'PRON_IDAM_FEM' | 'PRON_ADAS_MASC' | 'PRON_ADAS_NEUT' | 'PRON_ADAS_FEM' | 'PRON_ASMAD' | 'PRON_YUSMAD' | 'PRON_SARVA_MASC' | 'PRON_SARVA_NEUT' | 'PRON_SARVA_FEM' | 'PRON_PURVA_MASC' | 'PRON_PURVA_NEUT' | 'PRON_PURVA_FEM' | 'PRON_VAT_MASC' | 'PRON_VAT_FEM' | 'PRON_UBHA_MASC' | 'PRON_UBHA_FN' | 'PRON_AN' | 'PRON_KATI';
+
+export interface CaseEndingDto {
+    id: number;
+    stemType: StemType;
+    pos: Pos;
+    gender: Gender;
+    number: NumberType;
+    grammaticalCase: CaseType;
+    caseEnding: string;
+}
+
+export interface VerbalEndingDto {
+    id: number;
+    ending: string;
+    lemmaSuffix: string;
+    hasAugment: boolean;
+    tenseMood: string;
+    personNumber: string;
+    pada: string;
+    notes?: string;
+}
 
 export interface DeclensionFormDto {
     declensionStemId: string;
@@ -66,30 +89,31 @@ export interface DeclensionParadigmPageDto {
 }
 
 // =============================================
-// Declension Examples (grammar-lesson-page §2.2а)
+// Conjugation Paradigms (presence-indicativus carousel)
 // =============================================
 
-export interface DeclensionExamplesResponseDto {
-    groups: Array<{
-        caseType: CaseType;
-        numberType: NumberType;
-        examples: Array<{
-            verseId: string;
-            workSlug: string;
-            textIast: string;
-            textDevanagari: string;
-            translationRu: string;
-            translationEn: string;
-            workTitleRu: string;
-            workTitleEn: string;
-            chapterTitleRu: string;
-            chapterTitleEn: string;
-            verseOrderIndex: number;
-        }>;
-    }>;
-    /** Только для роли ADMIN (см. content-service/declension-examples.md, шаг 4а).
-     *  Для остальных ролей поле отсутствует в JSON — проверять через `?.length > 0`. */
-    missingVerseIds?: string[];
+export type Voice = 'PARASMAIPADA' | 'ATMANEPADA';
+
+export interface ConjugationFormDto {
+    person: number;
+    numberType: NumberType;
+    sentenceIast: string;
+    sentenceDevanagari: string;
+    translationRu: string;
+}
+
+export interface ConjugationParadigmDto {
+    lemmaIast: string;
+    lemmaDevanagari: string;
+    meaningRu: string;
+    voice: Voice;
+    forms: ConjugationFormDto[];
+}
+
+export interface ConjugationParadigmPageDto {
+    index: number;
+    totalCount: number;
+    paradigm: ConjugationParadigmDto;
 }
 
 // =============================================
@@ -103,11 +127,16 @@ export interface SandhiRuleSummaryDto {
     text: string;
     example: string | null;
     reference: string;
+    supersedes?: number[];
+    defaultFor?: number[];
+    appliesWith?: number[];
+    category?: string[];
 }
 
 export interface SandhiRulesResponse {
     topicCode: string;
     title: string;
     rules: SandhiRuleSummaryDto[];
+    categoryGlossary?: Record<string, string>;
 }
 

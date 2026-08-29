@@ -25,6 +25,9 @@ dependencies {
     // Зависимость для Spring Context, чтобы использовать @Configuration и @Bean
     api("org.springframework:spring-context")
 
+    // Jakarta Validation API (аннотации @NotBlank, @Size и т.д.)
+    api("jakarta.validation:jakarta.validation-api")
+
     // Lombok
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)

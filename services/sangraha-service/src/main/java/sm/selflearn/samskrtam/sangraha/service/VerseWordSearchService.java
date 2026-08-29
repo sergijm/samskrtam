@@ -6,32 +6,36 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import sm.selflearn.samskrtam.content.model.VowelType;
+import sm.selflearn.samskrtam.sangraha.dto.ConjugationExamplesResponseDto;
+import sm.selflearn.samskrtam.sangraha.dto.ConjugationExamplesSearchRequestDto;
+import sm.selflearn.samskrtam.sangraha.dto.DeclensionExamplesResponseDto;
 import sm.selflearn.samskrtam.sangraha.dto.DeclensionExamplesSearchRequestDto;
-import sm.selflearn.samskrtam.sangraha.dto.DeclensionExamplesSearchRequestDto.CellDto;
-import sm.selflearn.samskrtam.sangraha.dto.DeclensionExamplesSearchResponseDto;
-import sm.selflearn.samskrtam.sangraha.dto.DeclensionExamplesSearchResponseDto.GroupDto;
-import sm.selflearn.samskrtam.sangraha.model.Gender;
-import sm.selflearn.samskrtam.sangraha.model.GrammaticalCase;
-import sm.selflearn.samskrtam.sangraha.model.NumberType;
-import sm.selflearn.samskrtam.sangraha.model.NominalLemma;
+import sm.selflearn.samskrtam.content.model.CaseType;
+import sm.selflearn.samskrtam.morphology.NumberType;
+import sm.selflearn.samskrtam.morphology.Mood;
+import sm.selflearn.samskrtam.morphology.Tense;
+import sm.selflearn.samskrtam.sangraha.dto.VersesBatchRequestDto;
+import sm.selflearn.samskrtam.sangraha.dto.VersesBatchResponseDto.VerseDto;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
-import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository.VerseWordCount;
+import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository.VerseCellCount;
+import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository.VerseConjugationCellCount;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Поиск примеров словоформ по словоизменительному классу (sangraha-service.md §9) для
- * внутреннего эндпоинта POST /sangraha/internal/content/declension-examples.
+ * Поиск примеров словоформ по словоизменительному классу (sangraha-service.md §9).
  * Поиск не фильтрует по Verse.status — идёт напрямую по наличию подходящей
- * verse_word_morphology (см. §9, B1). Ранжирование — по длине стиха в словах (§9).
+ * verse_word_morphology (см. §9, B1). Ранжирование — по длине стиха в словах (§9),
+ * целиком в SQL (findDeclensionExampleCells), без ранжирования на стороне сервиса:
+ * поиск идёт одним запросом к БД (ячейки (caseType, numberType) со стихами), затем
+ * один батч-запрос текстов/переводов стихов через VerseBatchService.
  */
 @Slf4j
 @Service
@@ -39,202 +43,130 @@ import java.util.stream.Collectors;
 public class VerseWordSearchService {
 
     private final VerseWordRepository verseWordRepository;
+    private final VerseBatchService verseBatchService;
 
     /**
-     * Фиксированное соответствие местоимённых vowelType → lemmaIast (sangraha-service.md §9).
-     * Местоимённые парадигмы супплетивны (например, aham → mayā в творительном), сопоставление
-     * по окончанию основы не работает — поиск идёт по лемме.
+     * Один репозиторный вызов на весь запрос: caseType/numberType опциональны (null —
+     * фильтр по этому значению не применяется), SQL сам раскрывает кортежи в ячейки
+     * парадигмы и обрезает до limitPerGroup на ячейку. Затем тексты стихов добираются
+     * одним батч-запросом VerseBatchService; стих, покрывающий несколько ячеек, попадает
+     * в каждую, в батч идёт один раз (distinct).
      */
-    private static final Map<VowelType, String> PRON_LEMMA_IAST = Map.of(
-            VowelType.PRON_AHAM, "asmad",
-            VowelType.PRON_TVAM, "yuṣmad",
-            VowelType.PRON_TAD, "tad",
-            VowelType.PRON_ETAD, "etad",
-            VowelType.PRON_IDAM, "idam",
-            VowelType.PRON_KIM, "kim",
-            VowelType.PRON_YAD, "yad",
-            VowelType.PRON_REFLEXIVE, "ātman"
-    );
-
-    /**
-     * Возможные последние буквы stem для каждого регулярного класса (fallback в HQL,
-     * sangraha-service.md §9): a→A_STEM, ā→AA_STEM, i→I_STEM, ī→II_STEM, u→U_STEM,
-     * ū→UU_STEM, ṛ/r→R_STEM.
-     */
-    private static final Map<VowelType, Set<String>> REGULAR_LAST_LETTERS = Map.of(
-            VowelType.A_STEM, Set.of("a"),
-            VowelType.AA_STEM, Set.of("ā"),
-            VowelType.I_STEM, Set.of("i"),
-            VowelType.II_STEM, Set.of("ī"),
-            VowelType.U_STEM, Set.of("u"),
-            VowelType.UU_STEM, Set.of("ū"),
-            VowelType.R_STEM, Set.of("ṛ", "r")
-    );
-
-    /**
-     * Все допустимые имена значений VowelType (7 регулярных + 8 местоимённых). В HQL
-     * используется для отделения распознанного stemClass (трактуется как vowelType слова)
-     * от нераспознанного значения (fallback по последней букве stem), см. findVerseWordCountsByVowelType.
-     */
-    private static final Set<String> VOWEL_TYPE_NAMES = Arrays.stream(VowelType.values())
-            .map(Enum::name)
-            .collect(Collectors.toUnmodifiableSet());
-
-    /**
-     * Кандидат на попадание в группу: стих + длина стиха в словах.
-     */
-    public record Candidate(UUID verseId, long wordCount) {}
-
-    /**
-     * Маппинг последней буквы основы → регулярный класс (sangraha-service.md §9):
-     * a→A_STEM, ā→AA_STEM, i→I_STEM, ī→II_STEM, u→U_STEM, ū→UU_STEM, ṛ/r→R_STEM.
-     * Возвращает null, если основа отсутствует или не оканчивается на гласную регулярного класса.
-     */
-    public static VowelType classifyVowelType(String stem) {
-        if (stem == null || stem.isEmpty()) {
-            return null;
-        }
-        char last = stem.charAt(stem.length() - 1);
-        return switch (last) {
-            case 'a' -> VowelType.A_STEM;
-            case 'ā' -> VowelType.AA_STEM;
-            case 'i' -> VowelType.I_STEM;
-            case 'ī' -> VowelType.II_STEM;
-            case 'u' -> VowelType.U_STEM;
-            case 'ū' -> VowelType.UU_STEM;
-            case 'ṛ', 'r' -> VowelType.R_STEM;
-            default -> null;
-        };
-    }
-
-    /**
-     * vowelType слова (sangraha-service.md §9): приоритет nominal_lemmas — stemClass строки
-     * на лемму слова (одна строка на lemma_iast, выбирать не из чего); если леммы нет в
-     * таблице (или stemClass в ней null/не является регулярным классом) — прежняя эвристика
-     * по последней букве stem. stem_class в БД без CHECK — открытый набор значений, поэтому
-     * нераспознанное значение трактуется как отсутствие классификации (fallback).
-     * Чистая функция.
-     */
-    static VowelType resolveVowelType(NominalLemma lemma, String stem) {
-        if (lemma != null && lemma.getStemClass() != null) {
-            try {
-                return VowelType.valueOf(lemma.getStemClass());
-            } catch (IllegalArgumentException e) {
-                return classifyVowelType(stem);
-            }
-        }
-        return classifyVowelType(stem);
-    }
-
     @Transactional(readOnly = true)
-    public DeclensionExamplesSearchResponseDto searchExamples(DeclensionExamplesSearchRequestDto request) {
-        if (request == null || request.vowelType() == null || request.gender() == null
-                || request.cells() == null || request.cells().isEmpty()) {
+    public DeclensionExamplesResponseDto searchDeclensionExamples(DeclensionExamplesSearchRequestDto request) {
+        if (request == null || request.vowelType() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "vowelType, gender and non-empty cells are required");
+                    "vowelType is required");
         }
         if (request.limitPerGroup() < 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "limitPerGroup must be >= 1");
         }
 
-        Gender gender = toSangrahaGender(request.gender());
-        List<GroupDto> groups = new ArrayList<>(request.cells().size());
-        for (CellDto cell : request.cells()) {
-            List<UUID> verseIds = searchForCell(request.vowelType(), gender, cell,
-                    request.limitPerGroup(), request.maxPhraseWords());
-            groups.add(new GroupDto(cell.caseType(), cell.numberType(), verseIds));
-        }
-        return new DeclensionExamplesSearchResponseDto(groups);
-    }
-
-    private List<UUID> searchForCell(VowelType vowelType, Gender gender, CellDto cell,
-                                     int limitPerGroup, int maxPhraseWords) {
-        GrammaticalCase caseType = toSangrahaCase(cell.caseType());
-        NumberType numberType = toSangrahaNumber(cell.numberType());
-        if (gender == null || caseType == null || numberType == null) {
-            return List.of();
+        String caseType = request.caseType() == null ? null : request.caseType().name();
+        String numberType = request.numberType() == null ? null : request.numberType().name();
+        List<VerseCellCount> cells = verseWordRepository.findDeclensionExampleCells(
+                null, caseType, numberType, request.vowelType().name(),
+                request.maxPhraseWords(), request.limitPerGroup());
+        if (cells.isEmpty()) {
+            return new DeclensionExamplesResponseDto(List.of());
         }
 
-        List<VerseWordCount> counts;
-        if (isRegular(vowelType)) {
-            counts = verseWordRepository.findVerseWordCountsByVowelType(
-                    gender, caseType, numberType, vowelType.name(), VOWEL_TYPE_NAMES,
-                    REGULAR_LAST_LETTERS.get(vowelType), maxPhraseWords);
-        } else {
-            String lemmaIast = PRON_LEMMA_IAST.get(vowelType);
-            if (lemmaIast == null) {
-                return List.of();
-            }
-            counts = verseWordRepository.findVerseWordCountsByLemmaIast(
-                    gender, caseType, numberType, lemmaIast, maxPhraseWords);
-        }
-
-        List<Candidate> candidates = counts.stream()
-                .map(count -> new Candidate(count.getVerseId(), count.getWordCount()))
+        List<UUID> verseIds = cells.stream()
+                .map(VerseCellCount::getVerseId)
+                .distinct()
                 .toList();
-        return rankAndSelect(candidates, limitPerGroup);
-    }
+        Map<UUID, VerseDto> verseById = verseBatchService.fetchBatch(
+                        new VersesBatchRequestDto(verseIds))
+                .verses()
+                .stream()
+                .collect(Collectors.toMap(VerseDto::verseId, Function.identity()));
 
-    /**
-     * Ранжирование и отбор ≤ limitPerGroup (sangraha-service.md §9): кандидаты делятся на
-     * основной уровень (wordCount >= 3) и резервный (wordCount < 3); внутри каждого уровня —
-     * сортировка по возрастанию wordCount, при равенстве — по verseId (детерминированно).
-     * Сначала берутся первые limitPerGroup из основного уровня, недостающее добирается
-     * из начала резервного. Чистая функция — тестируется юнитом (B4).
-     */
-    static List<UUID> rankAndSelect(List<Candidate> candidates, int limitPerGroup) {
-        Comparator<Candidate> byWordCountThenVerseId = Comparator
-                .comparingLong(Candidate::wordCount)
-                .thenComparing(Candidate::verseId);
-        List<Candidate> primary = candidates.stream()
-                .filter(candidate -> candidate.wordCount() >= 3)
-                .sorted(byWordCountThenVerseId)
-                .toList();
-        List<Candidate> reserve = candidates.stream()
-                .filter(candidate -> candidate.wordCount() < 3)
-                .sorted(byWordCountThenVerseId)
-                .toList();
-
-        List<UUID> result = new ArrayList<>(Math.min(limitPerGroup, candidates.size()));
-        for (Candidate candidate : primary) {
-            if (result.size() >= limitPerGroup) {
-                break;
+        // TreeMap — ячейки в порядке падежей CaseType, затем чисел NumberType (порядок enum).
+        Map<CellKey, List<DeclensionExamplesResponseDto.ExampleDto>> byCell = new TreeMap<>(
+                Comparator.comparing((CellKey k) -> CaseType.valueOf(k.caseType()))
+                        .thenComparing(k -> NumberType.valueOf(k.numberType())));
+        for (VerseCellCount cell : cells) {
+            VerseDto verse = verseById.get(cell.getVerseId());
+            if (verse == null) {
+                // стих не найден / удалён — батч его не вернул, ячейку не пополняем
+                continue;
             }
-            result.add(candidate.verseId());
+            CellKey key = new CellKey(cell.getCaseType(), cell.getNumberType());
+            byCell.computeIfAbsent(key, k -> new ArrayList<>()).add(toExampleDto(verse));
         }
-        for (Candidate candidate : reserve) {
-            if (result.size() >= limitPerGroup) {
-                break;
+
+        List<DeclensionExamplesResponseDto.GroupDto> groups = byCell.entrySet().stream()
+                .map(e -> new DeclensionExamplesResponseDto.GroupDto(
+                        e.getKey().caseType(), e.getKey().numberType(), e.getValue()))
+                .toList();
+        return new DeclensionExamplesResponseDto(groups);
+    }
+
+    @Transactional(readOnly = true)
+    public ConjugationExamplesResponseDto searchConjugationExamples(ConjugationExamplesSearchRequestDto request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request body is required");
+        }
+        if (request.limitPerGroup() < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "limitPerGroup must be >= 1");
+        }
+
+        String tense = request.tense() == null ? null : request.tense().name();
+        String mood = request.mood() == null ? null : request.mood().name();
+        List<VerseConjugationCellCount> cells = verseWordRepository.findConjugationExampleCells(
+                tense, mood,
+                request.maxPhraseWords(), request.limitPerGroup());
+        if (cells.isEmpty()) {
+            return new ConjugationExamplesResponseDto(List.of());
+        }
+
+        List<UUID> verseIds = cells.stream()
+                .map(VerseConjugationCellCount::getVerseId)
+                .distinct()
+                .toList();
+        Map<UUID, VerseDto> verseById = verseBatchService.fetchBatch(
+                        new VersesBatchRequestDto(verseIds))
+                .verses()
+                .stream()
+                .collect(Collectors.toMap(VerseDto::verseId, Function.identity()));
+
+        // TreeMap — ячейки в порядке перечислений Tense, затем Mood (порядок enum).
+        Map<ConjugationCellKey, List<ConjugationExamplesResponseDto.ExampleDto>> byCell = new TreeMap<>(
+                Comparator.comparing((ConjugationCellKey k) -> Tense.valueOf(k.tense()))
+                        .thenComparing(k -> Mood.valueOf(k.mood())));
+        for (VerseConjugationCellCount cell : cells) {
+            VerseDto verse = verseById.get(cell.getVerseId());
+            if (verse == null) {
+                continue;
             }
-            result.add(candidate.verseId());
+            ConjugationCellKey key = new ConjugationCellKey(cell.getTense(), cell.getMood());
+            byCell.computeIfAbsent(key, k -> new ArrayList<>()).add(toConjugationExampleDto(verse));
         }
-        return result;
+
+        List<ConjugationExamplesResponseDto.GroupDto> groups = byCell.entrySet().stream()
+                .map(e -> new ConjugationExamplesResponseDto.GroupDto(
+                        e.getKey().tense(), e.getKey().mood(), e.getValue()))
+                .toList();
+        return new ConjugationExamplesResponseDto(groups);
     }
 
-    private static boolean isRegular(VowelType vowelType) {
-        return vowelType != null && !vowelType.name().startsWith("PRON_");
+    private static DeclensionExamplesResponseDto.ExampleDto toExampleDto(VerseDto v) {
+        return new DeclensionExamplesResponseDto.ExampleDto(
+                v.verseId(), v.workSlug(), v.textIast(), v.textDevanagari(),
+                v.translationRu(), v.translationEn(),
+                v.workTitleRu(), v.workTitleEn(), v.chapterTitleRu(), v.chapterTitleEn(),
+                v.verseOrderIndex());
     }
 
-    private static Gender toSangrahaGender(sm.selflearn.samskrtam.content.model.Gender gender) {
-        try {
-            return Gender.valueOf(gender.name());
-        } catch (IllegalArgumentException e) {
-            // content.Gender.UNKNOWN отсутствует в sangraha.Gender — такие строки не матчатся
-            return null;
-        }
+    private static ConjugationExamplesResponseDto.ExampleDto toConjugationExampleDto(VerseDto v) {
+        return new ConjugationExamplesResponseDto.ExampleDto(
+                v.verseId(), v.workSlug(), v.textIast(), v.textDevanagari(),
+                v.translationRu(), v.translationEn(),
+                v.workTitleRu(), v.workTitleEn(), v.chapterTitleRu(), v.chapterTitleEn(),
+                v.verseOrderIndex());
     }
 
-    private static GrammaticalCase toSangrahaCase(sm.selflearn.samskrtam.content.model.CaseType caseType) {
-        if (caseType == null) {
-            return null;
-        }
-        return GrammaticalCase.valueOf(caseType.name());
-    }
+    private record CellKey(String caseType, String numberType) {}
 
-    private static NumberType toSangrahaNumber(sm.selflearn.samskrtam.content.model.NumberType numberType) {
-        if (numberType == null) {
-            return null;
-        }
-        return NumberType.valueOf(numberType.name());
-    }
+    private record ConjugationCellKey(String tense, String mood) {}
 }

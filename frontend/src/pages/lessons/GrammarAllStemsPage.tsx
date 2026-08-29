@@ -91,9 +91,7 @@ const GrammarAllStemsPage: React.FC = () => {
       },
       {
         onSuccess: (data: StartOrResumeResponse) => {
-          navigate(`/quiz/grammar/declensions-all/${data.sessionId}`, {
-            state: { sessionData: data },
-          });
+          window.open(`/quiz/grammar/declensions-all/${data.sessionId}`, '_blank');
         },
         onError: (error: any) => {
           const errorCode = error?.response?.data?.code;

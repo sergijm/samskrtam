@@ -2,6 +2,8 @@ package sm.selflearn.samskrtam.curriculum.mapper;
 
 import sm.selflearn.samskrtam.curriculum.dto.TopicTypeGroup;
 
+import sm.selflearn.samskrtam.curriculum.model.TopicDomainType;
+
 import java.util.Locale;
 
 /**
@@ -29,8 +31,9 @@ final class LearnTopicDeriver {
         if (containsAny(c, "stem", "declension", "case", "pronoun", "numeral", "agreement")) {
             return TopicTypeGroup.DECLENSION;
         }
-        if (containsAny(c, "verb", "present", "imperfect", "future", "perfect", "aorist",
-                "imperative", "optative", "participle", "absolutive", "root-class", "conjugation")) {
+        if (containsAny(c, "verb", "present", "indicativus", "imperfect", "future", "perfect",
+                "aorist", "imperative", "imperativus", "optative", "optativus", "participle", "absolutive",
+                "root-class", "conjugation")) {
             return TopicTypeGroup.CONJUGATION;
         }
         if (containsAny(c, "sentence", "construction", "clause", "compound", "karaka", "relative",
@@ -40,8 +43,10 @@ final class LearnTopicDeriver {
         return TopicTypeGroup.OTHER;
     }
 
-    static String resolveRoute(String code) {
-        return code == null ? null : "/lessons/grammar/" + code;
+    static String resolveRoute(String code, TopicDomainType domainType) {
+        if (code == null) return null;
+        boolean isVocabulary = domainType == TopicDomainType.LEXICON || domainType == TopicDomainType.VERSE;
+        return (isVocabulary ? "/lessons/vocabulary/" : "/lessons/grammar/") + code;
     }
 
     private static boolean containsAny(String code, String... keywords) {

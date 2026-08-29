@@ -24,15 +24,15 @@
 
 ## Агент 1 — API Gateway & Infrastructure Agent
 
-**Роль:** Инфраструктурный слой (Gateway, Keycloak, Feature Flags).
+**Роль:** Инфраструктурный слой (Gateway, Keycloak).
 
-**Входные документы:** docs/services/api-gateway.md, docs/infra/keycloak.md, docs/services/feature-flag-service.md, docs/conventions.md
+**Входные документы:** docs/services/api-gateway.md, docs/infra/keycloak.md, docs/conventions.md
 
-**Ответственность:** Spring Cloud Gateway (маршруты, фильтры IdentityHeader/RateLimit/RequestId), OAuth2/OIDC (Authorization Code, ROPC, refresh, logout), JWT-валидация через Keycloak JWKS, rate limiting (Redis + feature-flag), Feature Flag Service (CRUD, Redis), Keycloak realm/clients/providers.
+**Ответственность:** Spring Cloud Gateway (маршруты, фильтры IdentityHeader/RateLimit/RequestId), OAuth2/OIDC (Authorization Code, ROPC, refresh, logout), JWT-валидация через Keycloak JWKS, rate limiting (Redis), Keycloak realm/clients/providers.
 
-**Стек:** Java 21 + WebFlux (Gateway), Java 21 + Virtual Threads (feature-flag-service).
+**Стек:** Java 21 + WebFlux (Gateway).
 
-**Выход:** Gateway с маршрутами, Feature Flag API, realm-export.json.
+**Выход:** Gateway с маршрутами, realm-export.json.
 
 **Ограничения:** Gateway без бизнес-логики, Virtual Threads неприменимы (WebFlux), client_secret только через env.
 
@@ -47,15 +47,15 @@
 - `docs/services/curriculum-service.md`
 - `docs/quest-engine.md`
 - `docs/services/dictionary-service.md`
-- `docs/services/statistics-service.md`
-- `docs/services/leaderboard.md`
 - `docs/services/sangraha-service.md`
 - `docs/quizzes/quest-engine.md`
 - `docs/conventions.md`
 
-**Ответственность:** user-service (8087): регистрация, пароли, SMTP, профили, MinIO, Keycloak Outbox, группы. curriculum-service (8081): CRUD уроков, категории слов, session-data для quiz-service, ADMIN/STUDENT доступ. quiz-service (8082, WebFlux+R2DBC): сессии start→answer→complete, resume, WordAnswerHistory, Outbox→Kafka (QuizAnsweredEvent, QuizSessionStatusChangedEvent), WebClient к curriculum-service. dictionary-service (8085): поиск по slp1Spelling, cache-aside Redis→внешнее API, fallback. sangraha-service (порт из env): иерархия Work→Chapter→Verse, LLM-анализ (OpenAI tool calling), синхронный REST-вызов curriculum-service для синхронизации лексики (см. architecture.md §3.5), write только ADMIN. statistics-service (8086, Kafka Streams): потребление quiz-answered-events/quiz-session-status-changed-events, агрегация, REST API, лидерборд (см. leaderboard.md).
+**Ответственность:** user-service (8087): регистрация, пароли, SMTP, профили, MinIO, Keycloak Outbox, группы. curriculum-service (8081): CRUD уроков, категории слов, session-data для quiz-service, ADMIN/STUDENT доступ. quiz-service (8082, WebFlux+R2DBC): сессии start→answer→complete, resume, WordAnswerHistory, Transactional Outbox (события пишутся в `quiz.outbox_events`, релей читает их вхолостую и помечает `PROCESSED`, публикация в Kafka отключена), WebClient к curriculum-service. dictionary-service (8085): поиск по slp1Spelling, cache-aside Redis→внешнее API, fallback. sangraha-service (порт из env): иерархия Work→Chapter→Verse, LLM-анализ (OpenAI tool calling), синхронный REST-вызов curriculum-service для синхронизации лексики (см. architecture.md §3.5), write только ADMIN.
 
-**Выход:** сервисы с Flyway-миграциями, OpenAPI, Kafka-топики, shared DTO.
+> statistics-service удалён: расчёт статистики/лидерборда и Kafka Streams больше не входят в проект.
+
+**Выход:** сервисы с Flyway-миграциями, OpenAPI, shared DTO.
 
 **Ограничения:** quiz-service только R2DBC, конфигурация через env, пакеты sm.selflearn.samskrtam.<сервис>.
 
@@ -65,7 +65,7 @@
 
 **Роль:** React/TypeScript фронтенд.
 
-**Входные документы:** docs/frontend/frontend-overview.md, user-frontend.md, feature-flags-frontend.md, docs/frontend/pages/lesson-pages-spec.md, docs/openapi/lesson-aggregation-openapi.yaml, sangraha-service.md §7, docs/conventions.md (i18n, git).
+**Входные документы:** docs/frontend/frontend-overview.md, user-frontend.md, docs/frontend/pages/lesson-pages-spec.md, docs/openapi/lesson-aggregation-openapi.yaml, sangraha-service.md §7, docs/conventions.md (i18n, git).
 
 **Ответственность:** роутинг (публичные + защищённые), auth flow (Keycloak Authorization Code через Gateway, authStore, ProtectedRoute), компоненты по доменам, i18n ru/en, темы lara-light-blue/lara-dark-blue, React Query + Zustand, AdminPage.
 

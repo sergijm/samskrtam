@@ -1,6 +1,6 @@
 # US-META-02 — Найти и исправить ошибку в форме
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `ERROR_CORRECTION` (план)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `ERROR_CORRECTION` (план)
 > Связанные файлы: [quest-types-overview.md, тип №31](../../../services/quest-types-overview.md)
 
 ## История

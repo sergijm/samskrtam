@@ -14,6 +14,7 @@ import sm.selflearn.samskrtam.quiz.dto.QuestionDto;
 import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse;
 import sm.selflearn.samskrtam.quiz.event.QuizAnsweredEvent;
 import sm.selflearn.samskrtam.quiz.event.QuizSessionStatusChangedEvent;
+import sm.selflearn.samskrtam.quiz.model.ItemType;
 import sm.selflearn.samskrtam.quiz.model.QuizAnswer;
 import sm.selflearn.samskrtam.quiz.model.QuizSession;
 import sm.selflearn.samskrtam.quiz.model.SessionQuestion;
@@ -21,6 +22,7 @@ import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 import sm.selflearn.samskrtam.quiz.repository.QuizAnswerRepository;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
 import sm.selflearn.samskrtam.quiz.repository.SessionQuestionRepository;
+import sm.selflearn.samskrtam.quest.AnswerMode;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -70,7 +72,7 @@ public class ComposedSessionService {
                         return Mono.error(new SamskrtamException("ALREADY_ANSWERED",
                                 "Question already answered: " + request.getQuestionId()));
                     }
-                    return sessionQuestionRepository.findByQuestionId(request.getQuestionId())
+                    return sessionQuestionRepository.findBySessionIdAndQuestionId(session.getId(), request.getQuestionId())
                             .switchIfEmpty(Mono.error(new SamskrtamException("QUESTION_NOT_FOUND",
                                     "Question not found: " + request.getQuestionId())))
                             .flatMap(stored -> processAnswer(session, userId, request, stored));
@@ -116,7 +118,7 @@ public class ComposedSessionService {
 
     private Mono<AnswerResponse> processAnswer(QuizSession session, UUID userId, AnswerRequest request,
                                                SessionQuestion stored) {
-        if ("MATCHING".equals(stored.getQuestionType())) {
+        if (stored.getAnswerMode() == AnswerMode.MATCHING) {
             return processMatchingAnswer(session, userId, request, stored);
         }
         String correctAnswer = stored.getCorrectAnswer();
@@ -157,9 +159,10 @@ public class ComposedSessionService {
     }
 
     /**
-     * MATCHING verification: the client pairs each word-form row with a case+number label.
-     * Every submitted pair must equal the reference pair from the payload and all rows must
-     * be answered, otherwise the question counts as incorrect.
+     * MATCHING verification: the client pairs each word-form row with a label.
+     * Every submitted pair must equal the reference pair from the payload
+     * (attribute arrays of length 2 for declension, length 3 for conjugation)
+     * and all rows must be answered, otherwise the question counts as incorrect.
      */
     private Mono<AnswerResponse> processMatchingAnswer(QuizSession session, UUID userId, AnswerRequest request,
                                                        SessionQuestion stored) {
@@ -175,11 +178,17 @@ public class ComposedSessionService {
             for (MatchSubmissionDto sub : submissions) {
                 String[] expected = referencePairs.get(sub.rowId());
                 String[] actual = labelMap.get(sub.optionId());
-                if (expected == null || actual == null
-                        || !expected[0].equals(actual[0]) || !expected[1].equals(actual[1])) {
+                if (expected == null || actual == null || expected.length != actual.length) {
                     allMatched = false;
                     break;
                 }
+                for (int i = 0; i < expected.length; i++) {
+                    if (!expected[i].equals(actual[i])) {
+                        allMatched = false;
+                        break;
+                    }
+                }
+                if (!allMatched) break;
                 correctCount++;
             }
             isCorrect = allMatched && correctCount == referencePairs.size();
@@ -217,8 +226,8 @@ public class ComposedSessionService {
     }
 
     /**
-     * Writes progress for an answered quest item: keyed as ({@link QuestProgressTypes
-     * resolved item type}, progress_tag) in {@code quiz_item_score}. The progress tag
+     * Writes progress for an answered quest item: keyed as (resolved item type,
+     * progress_tag) in {@code quiz_item_score}. The progress tag
      * groups all quest items sharing the same morphology attributes (case+number+gender)
      * or vocabulary lemma into a single progress row.
      */
@@ -230,7 +239,18 @@ public class ComposedSessionService {
             return Mono.empty();
         }
         return quizItemScoreService.upsertScore(
-                userId, QuestProgressTypes.resolve(stored.getItemType()), progressTag, isCorrect);
+                userId, resolveProgressItemType(stored.getItemType()), progressTag, isCorrect);
+    }
+
+    private static ItemType resolveProgressItemType(String questItemTypeCode) {
+        if (questItemTypeCode == null) return ItemType.VOCABULARY_WORD;
+        if (questItemTypeCode.startsWith("DECLENSION_") || questItemTypeCode.startsWith("CASE_")) {
+            return ItemType.DECLENSION_FORM;
+        }
+        if (questItemTypeCode.startsWith("CONJUGATION_")) {
+            return ItemType.CONJUGATION_FORM;
+        }
+        return ItemType.VOCABULARY_WORD;
     }
 
     /**

@@ -5,6 +5,7 @@ import { Column } from 'primereact/column';
 import { Skeleton } from 'primereact/skeleton';
 import { Tooltip } from 'primereact/tooltip';
 import { useVersesBatch, useAnalyzeVerses } from '../../hooks/useSangraha';
+import { loadVerseBatchIds } from '../../utils/verseBatchIds';
 import { verseStatusIcon } from '../../utils/verseStatus';
 import { IconButton, PageButton } from '../../components/common/buttons';
 import type { VerseBatchItemDto } from '../../types/sangraha';
@@ -17,7 +18,10 @@ const VersesBatchPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const ids = searchParams.getAll('id');
+  const paramIds = searchParams.getAll('id');
+  // Без query-параметров (переход из кнопки «Открыть все стихи») —
+  // читаем список verseId из localStorage.
+  const ids = paramIds.length > 0 ? paramIds : loadVerseBatchIds();
   const { data, isLoading, isError } = useVersesBatch(ids);
   const analyze = useAnalyzeVerses();
 
@@ -29,6 +33,12 @@ const VersesBatchPage = () => {
 
   const verses = data?.verses ?? [];
 
+  // «Анализировать всё» — только стихи в состоянии черновика (DRAFT).
+  const draftIds = verses
+    .filter((v) => v.status === 'DRAFT')
+    .map((v) => v.id);
+  const draftCount = draftIds.length;
+
   const statusBody = (row: VerseBatchItemDto) => (
     <>
       <i
@@ -37,7 +47,6 @@ const VersesBatchPage = () => {
         data-pr-tooltip={t(`sangraha.status.${row.status}`)}
         data-pr-position="top"
       />
-      <span className="ml-2">{t(`sangraha.status.${row.status}`)}</span>
     </>
   );
 
@@ -54,14 +63,14 @@ const VersesBatchPage = () => {
         <div style={{ flex: 1 }}>
           <h2 className="m-0">{t('sangraha.batchReviewTitle')}</h2>
         </div>
-        {/* Кнопка активна всегда — повторный анализ ANALYZED осмыслен (batch-verse-review.md). */}
+        {/* Кнопка активна только при наличии черновиков. */}
         <PageButton
           variant="cta-primary"
           iconName="pi-sync"
           labelKey="sangraha.action.analyzeAll"
           loading={analyze.isPending}
-          disabled={ids.length === 0 || analyze.isPending}
-          onClick={() => analyze.mutate(ids)}
+          disabled={draftCount === 0 || analyze.isPending}
+          onClick={() => analyze.mutate(draftIds)}
         />
       </div>
 
@@ -103,7 +112,7 @@ const VersesBatchPage = () => {
             style={{ width: '6rem' }}
           />
           <Column field="textIastPreview" header={t('sangraha.fields.versePreview')} />
-          <Column header={t('sangraha.fields.status')} body={statusBody} style={{ width: '12rem' }} />
+          <Column header="" body={statusBody} style={{ width: '2.5rem' }} />
         </DataTable>
       )}
     </div>

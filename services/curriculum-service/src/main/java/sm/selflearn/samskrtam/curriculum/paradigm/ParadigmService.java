@@ -6,130 +6,120 @@ import org.springframework.transaction.annotation.Transactional;
 import sm.selflearn.samskrtam.content.dto.DeclensionFormDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionParadigmDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionParadigmPageDto;
+import sm.selflearn.samskrtam.content.dto.frisch.FrischEntryDto;
+import sm.selflearn.samskrtam.content.dto.frisch.FrischGenderDto;
+import sm.selflearn.samskrtam.content.model.CaseType;
+import sm.selflearn.samskrtam.morphology.Gender;
+import sm.selflearn.samskrtam.morphology.NumberType;
 import sm.selflearn.samskrtam.content.model.VowelType;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.Lexeme;
-import sm.selflearn.samskrtam.curriculum.lexicon.model.LexemeGender;
-import sm.selflearn.samskrtam.curriculum.lexicon.repository.LexemeRepository;
-import sm.selflearn.samskrtam.curriculum.questgen.DeclensionNounParadigmComposer;
-import sm.selflearn.samskrtam.curriculum.questgen.morphology.CaseType;
-import sm.selflearn.samskrtam.curriculum.questgen.morphology.NumberType;
+import sm.selflearn.samskrtam.curriculum.dictionary.DictionaryClient;
+import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
- * Serves the v2 declension-paradigm page. Two sources, selected by {@code Topic.code}
- * (== lesson slug):
+ * Serves the v2 declension-paradigm page.
  *
- * <ol>
- *   <li><b>Regular noun classes</b> (e.g. {@code a-stem-masc}) — the paradigm of each
- *       lexeme bound to the class is composed on the fly from the canonical endings
- *       ({@link DeclensionNounParadigmComposer}), mirroring the batch generator.</li>
- *   <li><b>Suppletive (pronoun) stems</b> (personal/demonstrative/etc.) — stored in the
- *       {@code curriculum} schema (V9 mirror of content.declension_stems/forms).</li>
- * </ol>
+ * <p>Леммы берутся напрямую из {@code curriculum.declension_form} (уникальный
+ * {@code lemma_iast} по теме), сущность {@code Lexeme} не используется. Переводы
+ * и грамматическая информация (род, часть речи и т.п.) подтягиваются из словаря
+ * Фриша через dictionary-service (REST, {@link DictionaryClient}); явная
+ * деванагари-форма леммы транслитерируется из IAST локально. Парадигма собирается
+ * из ячеек {@code declension_form} для выбранной леммы и гласного типа.
  *
  * <p>Indexed carousel semantics match the removed content-service endpoint: items are
- * stably ordered, exactly one paradigm per call.
+ * stably ordered (alphabetically by IAST), exactly one paradigm per call.
  */
 @Service
 @RequiredArgsConstructor
 public class ParadigmService {
 
-    private final ParadigmStemRepository paradigmStemRepository;
     private final ParadigmFormRepository paradigmFormRepository;
-    private final LexemeRepository lexemeRepository;
+    private final DictionaryClient dictionaryClient;
+    private final TransliterationService transliterationService;
+
+    private static final int MAX_LEMMAS = 20;
 
     @Transactional(readOnly = true)
     public DeclensionParadigmPageDto getParadigmPage(String topicCode, int index) {
-        if (DeclensionNounParadigmComposer.isRegularDecensionClass(topicCode)) {
-            return paradigmPageForRegularClass(topicCode, index);
-        }
-        return paradigmPageForSuppletive(topicCode, index);
+        return paradigmPageForRegularClass(topicCode, index);
     }
 
-    /* ─── regular noun classes ─────────────────────────────────────── */
+    /* ─── unified declension_form-driven selection ─────────────────── */
 
     private DeclensionParadigmPageDto paradigmPageForRegularClass(String topicCode, int index) {
-        List<Lexeme> lexemes;
-        if ("a-stem".equals(topicCode)) {
-            lexemes = lexemeRepository.findByMorphologyClasses_CodeIn(List.of("a-stem-masc", "a-stem-neut"));
-        } else {
-            lexemes = lexemeRepository.findByMorphologyClasses_Code(topicCode);
+        List<VowelType> vowelTypes = DeclensionClassMapper.topicToVowelTypes(topicCode);
+        if (vowelTypes.isEmpty()) {
+            return emptyPage(index, 0);
         }
-        lexemes = lexemes.stream()
-                .sorted(Comparator.comparing(Lexeme::getId))
-                .toList();
 
-        int totalCount = lexemes.size();
+        // 1) уникальные леммы из curriculum.declension_form
+        Map<String, VowelType> lemmaVowelType = new HashMap<>();
+        for (ParadigmFormRepository.LemmaVowelType p :
+                paradigmFormRepository.findDistinctLemmaVowelTypeByVowelTypeIn(vowelTypes)) {
+            lemmaVowelType.putIfAbsent(p.getLemmaIast(), p.getVowelType());
+        }
+
+        List<String> lemmas = new ArrayList<>(lemmaVowelType.keySet());
+        lemmas.sort(Comparator.naturalOrder());
+        if (lemmas.size() > MAX_LEMMAS) {
+            lemmas = lemmas.subList(0, MAX_LEMMAS);
+        }
+
+        int totalCount = lemmas.size();
         if (index < 0 || index >= totalCount) {
-            return DeclensionParadigmPageDto.builder()
-                    .index(index).totalCount(totalCount).paradigm(null)
-                    .build();
+            return emptyPage(index, totalCount);
         }
 
-        Lexeme lexeme = lexemes.get(index);
-        List<DeclensionNounParadigmComposer.Cell> cells = DeclensionNounParadigmComposer.compose(
-                topicCode, lexeme.getLemmaIast(), lexeme.getLemmaDevanagari(), lexeme.getGender());
+        String lemma = lemmas.get(index);
+        VowelType vowelType = lemmaVowelType.get(lemma);
+        if (vowelType == null) {
+            return emptyPage(index, totalCount);
+        }
 
-        List<DeclensionFormDto> forms = cells.stream()
-                .map(cell -> DeclensionFormDto.builder()
-                        .declensionStemId(lexeme.getId())
-                        .caseType(toContentCase(cell.caseType()))
-                        .numberType(toContentNumber(cell.numberType()))
-                        .formIast(cell.form().iast())
-                        .formDevanagari(cell.form().devanagari())
-                        .build())
-                .toList();
+        List<ParadigmForm> forms = paradigmFormRepository.findByLemmaIastAndVowelType(lemma, vowelType);
 
-        DeclensionParadigmDto paradigm = DeclensionParadigmDto.builder()
-                .stemId(lexeme.getId())
-                .stemIast(lexeme.getLemmaIast())
-                .stemDevanagari(lexeme.getLemmaDevanagari())
-                .translationRu(lexeme.getGlossRu())
-                .translationEn(lexeme.getGlossEn())
-                .gender(toContentGender(resolveGender(topicCode, lexeme.getGender())))
-                .vowelType(toContentVowel(topicCode))
-                .forms(forms)
-                .build();
+        // 2) переводы и грамматическая информация из словаря Фриша (dictionary-service, REST)
+        List<FrischEntryDto> frischEntries = dictionaryClient.getFrischLemma(lemma);
 
+        // Для местоимений базовая лемма в Фрише часто отсутствует — ищем по форме
+        // именительного падежа единственного числа из declension_form.
+        if (frischEntries.isEmpty() && isPronoun(vowelType)) {
+            String nominativeSingular = nominativeSingularFormIast(forms);
+            if (nominativeSingular != null) {
+                frischEntries = dictionaryClient.getFrischLemma(nominativeSingular);
+            }
+        }
+
+        Gender gender = resolveGender(frischEntries);
+
+        return paradigmPage(index, totalCount, lemma, vowelType, gender, frischEntries, forms);
+    }
+
+    /* ─── shared DTO builder ───────────────────────────────────────── */
+
+    private static DeclensionParadigmPageDto emptyPage(int index, int totalCount) {
         return DeclensionParadigmPageDto.builder()
-                .index(index).totalCount(totalCount).paradigm(paradigm)
+                .index(index).totalCount(totalCount).paradigm(null)
                 .build();
     }
 
-    /* ─── suppletive (pronoun) stems ───────────────────────────────── */
+    private DeclensionParadigmPageDto paradigmPage(int index, int totalCount, String lemma, VowelType vowelType,
+                                                   Gender gender, List<FrischEntryDto> frischEntries,
+                                                   List<ParadigmForm> forms) {
+        UUID stemId = UUID.nameUUIDFromBytes(lemma.getBytes(StandardCharsets.UTF_8));
+        String stemDevanagari = transliterationService.iastToDevanagari(lemma);
 
-    private DeclensionParadigmPageDto paradigmPageForSuppletive(String topicCode, int index) {
-        List<VowelType> vowelTypes = ParadigmTopicCodeToVowelMapper.mapTopicCodeToVowelTypes(topicCode);
-
-        List<ParadigmStem> stems = vowelTypes.isEmpty()
-                ? List.of()
-                : paradigmStemRepository.findByVowelTypeIn(vowelTypes).stream()
-                        .sorted(Comparator.comparing(ParadigmStem::getId))
-                        .toList();
-
-        int totalCount = stems.size();
-        if (index < 0 || index >= totalCount) {
-            return DeclensionParadigmPageDto.builder()
-                    .index(index).totalCount(totalCount).paradigm(null)
-                    .build();
-        }
-
-        ParadigmStem stem = stems.get(index);
-        List<ParadigmForm> forms = paradigmFormRepository.findByDeclensionStemId(stem.getId());
-
-        return DeclensionParadigmPageDto.builder()
-                .index(index)
-                .totalCount(totalCount)
-                .paradigm(toSuppletiveParadigmDto(stem, forms))
-                .build();
-    }
-
-    private DeclensionParadigmDto toSuppletiveParadigmDto(ParadigmStem stem, List<ParadigmForm> forms) {
         List<DeclensionFormDto> formDtos = forms.stream()
                 .map(f -> DeclensionFormDto.builder()
-                        .declensionStemId(stem.getId())
+                        .declensionStemId(stemId)
                         .caseType(f.getCaseType())
                         .numberType(f.getNumberType())
                         .formIast(f.getFormIast())
@@ -137,55 +127,80 @@ public class ParadigmService {
                         .build())
                 .toList();
 
-        return DeclensionParadigmDto.builder()
-                .stemId(stem.getId())
-                .stemIast(stem.getStemIast())
-                .stemDevanagari(stem.getStemDevanagari())
-                .translationRu(stem.getTranslationRu())
-                .translationEn(stem.getTranslationEn())
-                .gender(stem.getGender())
-                .vowelType(stem.getVowelType())
+        DeclensionParadigmDto paradigm = DeclensionParadigmDto.builder()
+                .stemId(stemId)
+                .stemIast(lemma)
+                .stemDevanagari(stemDevanagari)
+                .translationRu(frischTranslationRu(frischEntries))
+                .translationEn(frischTranslationEn(frischEntries))
+                .gender(gender)
+                .vowelType(vowelType)
                 .forms(formDtos)
+                .build();
+
+        return DeclensionParadigmPageDto.builder()
+                .index(index).totalCount(totalCount).paradigm(paradigm)
                 .build();
     }
 
-    /* ─── mapping helpers ─────────────────────────────────────────── */
+    /* ─── Frisch (dictionary-service) integration ──────────────────── */
 
-    private static sm.selflearn.samskrtam.content.model.Gender toContentGender(LexemeGender gender) {
+    /**
+     * Род берётся из словаря Фриша (первый вариант с заполненным {@code genders}),
+     * иначе — {@code UNSPECIFIED}.
+     */
+    private static boolean isPronoun(VowelType vowelType) {
+        return vowelType != null && vowelType.name().startsWith("PRON_");
+    }
+
+    private static String nominativeSingularFormIast(List<ParadigmForm> forms) {
+        return forms.stream()
+                .filter(f -> f.getCaseType() == CaseType.NOMINATIVE && f.getNumberType() == NumberType.SINGULAR)
+                .map(ParadigmForm::getFormIast)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static Gender resolveGender(List<FrischEntryDto> frischEntries) {
+        for (FrischEntryDto entry : frischEntries) {
+            if (entry.genders() != null) {
+                for (FrischGenderDto gender : entry.genders()) {
+                    Gender mapped = mapFrischGender(gender.gender());
+                    if (mapped != null) {
+                        return mapped;
+                    }
+                }
+            }
+        }
+        return Gender.UNSPECIFIED;
+    }
+
+    private static Gender mapFrischGender(String gender) {
+        if (gender == null) {
+            return null;
+        }
         return switch (gender) {
-            case MASCULINE -> sm.selflearn.samskrtam.content.model.Gender.MASCULINE;
-            case FEMININE -> sm.selflearn.samskrtam.content.model.Gender.FEMININE;
-            case NEUTER -> sm.selflearn.samskrtam.content.model.Gender.NEUTER;
-            default -> sm.selflearn.samskrtam.content.model.Gender.UNSPECIFIED;
-        };
-    }
-
-    private static sm.selflearn.samskrtam.content.model.CaseType toContentCase(CaseType caseType) {
-        return sm.selflearn.samskrtam.content.model.CaseType.valueOf(caseType.name());
-    }
-
-    private static sm.selflearn.samskrtam.content.model.NumberType toContentNumber(NumberType numberType) {
-        return sm.selflearn.samskrtam.content.model.NumberType.valueOf(numberType.name());
-    }
-
-    private static VowelType toContentVowel(String classCode) {
-        return switch (classCode) {
-            case "a-stem-masc", "a-stem-neut", "a-stem" -> VowelType.A_STEM;
-            case "a-stem-fem" -> VowelType.AA_STEM;
-            case "i-stem" -> VowelType.I_STEM;
-            case "u-stem" -> VowelType.U_STEM;
-            case "r-stem" -> VowelType.R_STEM;
+            case "MASCULINE" -> Gender.MASCULINE;
+            case "FEMININE" -> Gender.FEMININE;
+            case "NEUTER" -> Gender.NEUTER;
             default -> null;
         };
     }
 
-    private static LexemeGender resolveGender(String classCode, LexemeGender lexemeGender) {
-        return switch (classCode) {
-            case "a-stem-masc" -> LexemeGender.MASCULINE;
-            case "a-stem-neut" -> LexemeGender.NEUTER;
-            case "a-stem-fem" -> LexemeGender.FEMININE;
-            case "a-stem" -> lexemeGender; // merged: use lexeme's own gender
-            default -> lexemeGender;
-        };
+    private static String frischTranslationRu(List<FrischEntryDto> entries) {
+        return entries.stream()
+                .map(FrischEntryDto::glossRu)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static String frischTranslationEn(List<FrischEntryDto> entries) {
+        return entries.stream()
+                .map(FrischEntryDto::glossEn)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 }

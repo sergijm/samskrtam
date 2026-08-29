@@ -1,17 +1,21 @@
 package sm.selflearn.samskrtam.sangraha.service;
 
+import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
 import sm.selflearn.samskrtam.sangraha.model.VerseStatus;
+import sm.selflearn.samskrtam.sangraha.model.VerseWord;
 import sm.selflearn.samskrtam.sangraha.model.Work;
 import sm.selflearn.samskrtam.sangraha.model.Chapter;
 import sm.selflearn.samskrtam.sangraha.repository.ChapterRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
+import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
+import sm.selflearn.samskrtam.sangraha.service.LlmConfigRegistry;
+import sm.selflearn.samskrtam.sangraha.service.LlmConfigFile;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -29,37 +33,66 @@ import static sm.selflearn.samskrtam.sangraha.service.VerseAnalysisSaver.getStri
 public class VerseAnalysisService {
 
     /**
-     * Размер чанка для analyzeVerses (batch-verse-review.md): не больше самой крупной
-     * существующей главы, чтобы не увеличивать LLM-промпт сверх проверенного на практике.
-     * TODO: прикинуть реальный максимум по корпусу (MAX(COUNT(*)) по chapter_id) и
-     * выровнять константу, если он заметно больше/меньше.
+     * Значения по умолчанию для батч-анализа стихов (используются, если в llm.yaml
+     * в секции llm.analysis соответствующие поля не заданы):
+     * {@code max-completion-tokens / tokensPerVerse}, но не больше chunkSizeMax;
+     * при отсутствии max-completion-tokens — chunkSizeDefault.
      */
-    private static final int ANALYSIS_CHUNK_SIZE = 20;
+    private static final int ANALYSIS_CHUNK_SIZE_MAX_DEFAULT = 3;
+    private static final int ANALYSIS_CHUNK_SIZE_DEFAULT_FALLBACK = 3;
+    private static final int ANALYSIS_TOKENS_PER_VERSE_FALLBACK = 3000;
 
     private final VerseRepository verseRepository;
     private final ChapterRepository chapterRepository;
     private final WorkRepository workRepository;
+    private final VerseWordRepository verseWordRepository;
     private final LlmClient llmClient;
+    private final LlmProperties llmProperties;
     private final VerseAnalysisSaver analysisSaver;
     private final VerseAnalysisResponseNormalizer responseNormalizer;
     private final ToolCallValidator toolCallValidator;
     private final JsonSchemas jsonSchemas;
-    private final LlmProperties llmProperties;
-    private final ObjectMapper objectMapper;
+    private final VerseBatchPushService verseBatchPushService;
+    private final TransliterationService transliterationService;
+    private final LlmConfigRegistry llmConfigRegistry;
+
+    /**
+     * Размер батча для анализа стихов: {@code max-completion-tokens / tokensPerVerse},
+     * но не больше chunkSizeMax. Если max-completion-tokens не задан — chunkSizeDefault.
+     * Параметры берутся из секции llm.analysis файла llm.yaml (см. LlmConfigRegistry),
+     * при отсутствии — значения по умолчанию.
+     */
+    private int analysisChunkSize() {
+        LlmConfigFile.Analysis a = llmConfigRegistry.getAnalysis();
+        int chunkSizeMax = a != null && a.chunkSizeMax() != null
+                ? a.chunkSizeMax() : ANALYSIS_CHUNK_SIZE_MAX_DEFAULT;
+        int chunkSizeDefault = a != null && a.chunkSizeDefault() != null
+                ? a.chunkSizeDefault() : ANALYSIS_CHUNK_SIZE_DEFAULT_FALLBACK;
+        int tokensPerVerse = a != null && a.tokensPerVerse() != null
+                ? a.tokensPerVerse() : ANALYSIS_TOKENS_PER_VERSE_FALLBACK;
+
+        Integer maxTokens = llmProperties.getMaxCompletionTokens();
+        if (maxTokens == null || maxTokens <= 0) {
+            return chunkSizeDefault;
+        }
+        int computed = maxTokens / tokensPerVerse;
+        if (computed < 1) {
+            computed = 1;
+        }
+        return Math.min(computed, chunkSizeMax);
+    }
 
     /**
      * Запускает анализ одного стиха LLM.
-     * Сохраняет rawText в стих и делегирует в runAnalysis() с одним элементом.
+     * Поле rawText (исходный текст) изменяется только со стороны фронтэнда вручную —
+     * здесь оно НЕ перезаписывается. Текстовые колонки text_iast/text_devanagari
+     * нормализуются из rawText на этапе runAnalysis.
      */
     public void analyze(UUID verseId, String rawText) {
         Verse verse = verseRepository.findByIdAndDeletedAtIsNull(verseId)
                 .orElseThrow(() -> new IllegalArgumentException("Verse not found: " + verseId));
 
-        if (rawText != null && !rawText.isBlank()) {
-            verse.setRawText(rawText);
-        }
-
-        runAnalysis(List.of(verse));
+        runAnalysis(List.of(verse), false);
     }
 
     /**
@@ -84,7 +117,11 @@ public class VerseAnalysisService {
                     + " (all verses have status different from DRAFT/FAILED)");
         }
 
-        runAnalysis(versesToAnalyze);
+        int chunkSize = analysisChunkSize();
+        for (int i = 0; i < versesToAnalyze.size(); i += chunkSize) {
+            int end = Math.min(i + chunkSize, versesToAnalyze.size());
+            runAnalysis(versesToAnalyze.subList(i, end), true);
+        }
 
         return versesToAnalyze.stream().map(Verse::getId).collect(Collectors.toList());
     }
@@ -117,9 +154,10 @@ public class VerseAnalysisService {
             }
         }
 
-        for (int i = 0; i < ordered.size(); i += ANALYSIS_CHUNK_SIZE) {
-            int end = Math.min(i + ANALYSIS_CHUNK_SIZE, ordered.size());
-            runAnalysis(ordered.subList(i, end));
+        int chunkSize = analysisChunkSize();
+        for (int i = 0; i < ordered.size(); i += chunkSize) {
+            int end = Math.min(i + chunkSize, ordered.size());
+            runAnalysis(ordered.subList(i, end), false);
         }
 
         return ordered.stream().map(Verse::getId).collect(Collectors.toList());
@@ -136,22 +174,24 @@ public class VerseAnalysisService {
      *   <li>Стихи без результата — markFailed</li>
      * </ol>
      */
-    private void runAnalysis(List<Verse> verses) {
-        // 1. Помечаем все ANALYZING
+    private void runAnalysis(List<Verse> verses, boolean sameWork) {
+        // 1. Помечаем все ANALYZING и нормализуем текстовые колонки из rawText
+        //    (детектируем iast|devanagari и заполняем text_iast/text_devanagari).
+        //    Само поле rawText не трогаем — оно меняется только вручную с фронтэнда.
         Instant now = Instant.now();
         for (Verse v : verses) {
-            v.setStatus(VerseStatus.ANALYZING);
-            v.setUpdatedAt(now);
-            verseRepository.save(v);
+            prepareVerseForAnalysis(v, now);
         }
 
-        log.info("Starting batch analysis for {} verses (mode: {})", verses.size(),
-                llmProperties.isTwoPass() ? "two-pass" : "single-pass");
+        log.info("Starting batch analysis for {} verses", verses.size());
 
         // 2. LLM-вызов
         JsonNode llmResponse;
+        String rawPrompt;
         try {
-            llmResponse = llmClient.call(verses);
+            var result = llmClient.callWithResult(verses, sameWork);
+            llmResponse = result == null ? null : result.response();
+            rawPrompt = result == null ? null : result.rawPrompt();
         } catch (Exception e) {
             log.error("LLM batch analysis failed for {} verses", verses.size(), e);
             for (Verse v : verses) {
@@ -216,7 +256,8 @@ public class VerseAnalysisService {
                         verseEntry,
                         llmResponse.toString(),
                         modelName,
-                        analyzerName
+                        analyzerName,
+                        rawPrompt
                 );
             } catch (Exception e) {
                 log.error(
@@ -252,8 +293,37 @@ public class VerseAnalysisService {
     }
 
 
+    /**
+     * Подготавливает стих к анализу: выставляет статус ANALYZING и заполняет
+     * текстовые колонки (text_iast / text_devanagari) на основе исходного rawText.
+     * Письменность определяется по rawText:
+     * <ul>
+     *   <li>деванагари → textDevanagari = rawText, textIast = devanagariToIast(rawText);</li>
+     *   <li>иначе (IAST) → textIast = rawText, textDevanagari = iastToDevanagari(rawText).</li>
+     * </ul>
+     * Поле rawText остаётся нетронутым.
+     */
+    private void prepareVerseForAnalysis(Verse verse, Instant now) {
+        verse.setStatus(VerseStatus.ANALYZING);
+        verse.setUpdatedAt(now);
+
+        String raw = verse.getRawText();
+        if (raw != null && !raw.isBlank()) {
+            if ("devanagari".equals(transliterationService.detectScript(raw))) {
+                verse.setTextDevanagari(raw);
+                verse.setTextIast(transliterationService.devanagariToIast(raw));
+            } else {
+                verse.setTextIast(raw);
+                verse.setTextDevanagari(transliterationService.iastToDevanagari(raw));
+            }
+        }
+
+        verseRepository.save(verse);
+    }
+
     private void saveSingleVerseResult(Verse verse, JsonNode verseEntry,
-                                        String rawResponse, String modelName, String analyzerName) {
+                                        String rawResponse, String modelName, String analyzerName,
+                                        String rawPrompt) {
         // Standalone-стихи (страница /analysis) не привязаны к главе/произведению —
         // контекст work/chapter для них отсутствует и в saveResults передаётся null.
         final Chapter chapter;
@@ -268,14 +338,17 @@ public class VerseAnalysisService {
             work = null;
         }
 
-        String textDevanagari = getString(verseEntry, "textDevanagari");
         String textIast = getString(verseEntry, "textIast");
         String translationRu = getString(verseEntry, "translationRu");
         String translationEn = getString(verseEntry, "translationEn");
         JsonNode sandhiSplitsNode = verseEntry.get("sandhiSplits");
         JsonNode wordsNode = verseEntry.get("words");
 
-        if (textDevanagari == null || textIast == null || translationRu == null || translationEn == null
+        // textIast из ответа LLM НЕ сохраняется в колонку — остаётся только внутри
+        // raw_model_response (JSON). Текстовые колонки text_iast/text_devanagari уже
+        // заполнены из rawText на этапе prepareVerseForAnalysis. Поэтому здесь
+        // достаточно проверить наличие textIast как признак корректного ответа.
+        if (textIast == null || translationRu == null || translationEn == null
                 || sandhiSplitsNode == null || !sandhiSplitsNode.isArray()
                 || wordsNode == null || !wordsNode.isArray()) {
             log.error("Invalid tool call arguments for verse {}: missing required fields", verse.getId());
@@ -285,8 +358,12 @@ public class VerseAnalysisService {
 
         try {
             analysisSaver.saveResults(verse, work, chapter,
-                    textDevanagari, textIast, translationRu, translationEn,
-                    sandhiSplitsNode, wordsNode, rawResponse, modelName, analyzerName);
+                    translationRu, translationEn,
+                    sandhiSplitsNode, wordsNode, rawResponse, modelName, analyzerName, rawPrompt);
+            // Инкрементальная пачка лемм в curriculum-service (lexicon-content-pipeline.md §7).
+            // Вне транзакции: сбой curriculum-service не откатывает анализ (см. VerseBatchPushService).
+            verseBatchPushService.push(verse, work, chapter,
+                    verseWordRepository.findAllByVerse_IdOrderByPositionAsc(verse.getId()));
         } catch (Exception e) {
             log.error("Failed to save analysis results for verse {}, reverting to DRAFT", verse.getId(), e);
             analysisSaver.revertToDraft(verse);

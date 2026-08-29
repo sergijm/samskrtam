@@ -20,18 +20,17 @@
 | api-gateway | Java 21, WebFlux | `sm.selflearn.samskrtam.gateway` | Единая точка входа, аутентификация, маршрутизация |
 | user-service | Java 21, Virtual Threads | `sm.selflearn.samskrtam.user` | Профили, регистрация, Keycloak-прокси |
 | curriculum-service | Java 21, Virtual Threads | `sm.selflearn.samskrtam.content` | Настройки и содержание уроков/квизов |
-| quiz-service | Java 21, WebFlux + R2DBC | `sm.selflearn.samskrtam.quiz` | Прохождение квизов, Outbox → Kafka |
-| statistics-service | Java 21, Kafka Streams | `sm.selflearn.samskrtam.statistics` | Расчёт статистики и лидерборда |
+| quiz-service | Java 21, WebFlux + R2DBC | `sm.selflearn.samskrtam.quiz` | Прохождение квизов; Transactional Outbox (чтение вхолостую, публикация в Kafka отключена) |
 | dictionary-service | Java 21, Virtual Threads | `sm.selflearn.samskrtam.dictionary` | Поиск по словарю, cache-aside |
 | sangraha-service | Java 21, Virtual Threads | `sm.selflearn.samskrtam.sangraha` | Санскритские произведения, LLM-анализ стихов. См. [services/sangraha-service.md](services/sangraha-service.md) |
-| shared/samskrtam-dtos | Java 21 | `sm.selflearn.samskrtam.quiz` | DTO и Kafka-события для квизов, контента, статистики (`QuizAnsweredEvent`, `QuizSessionStatusChangedEvent`, `StatisticEvent`) |
+| shared/samskrtam-dtos | Java 21 | `sm.selflearn.samskrtam.quiz` | DTO и события для квизов, контента (`QuizAnsweredEvent`, `QuizSessionStatusChangedEvent`, `StatisticEvent`) |
 | shared/common-dto | Java 21 | `sm.selflearn.samskrtam.common` | Общие DTO, используемые всеми сервисами |
 
 ---
 
 ## 2. Физическая инфраструктура
 
-Деплой в одно- или мультисерверную среду (Docker Compose / Kubernetes / GitLab CI) отложен до стабилизации первой версии. Локальная разработка ведётся на рабочей машине: каждый сервис запускается из IDEA (Java 21), а PostgreSQL, Redis, Kafka, Keycloak поднимаются как внешние зависимости, сконфигурированные через `.env`.
+Деплой в одно- или мультисерверную среду (Docker Compose / Kubernetes / GitLab CI) отложен до стабилизации первой версии. Локальная разработка ведётся на рабочей машине: каждый сервис запускается из IDEA (Java 21), а PostgreSQL, Redis, Keycloak поднимаются как внешние зависимости, сконфигурированные через `.env`.
 
 ---
 
@@ -45,7 +44,7 @@
 
 ### 3.2 Семантика Quiz / Lesson / Activity
 
-**Lesson** — единица контента (склонение, словарный урок). **Quiz** — выборка вопросов из урока на сессию. **QuizSession** — прохождение квиза пользователем. **Activity** — будущая абстракция для типов активности за пределами квизов (после M5). В коде: `LessonRepository`/`LessonContentService` (а не `QuizRepository`), `lessonId` в статистике (а не `quizId`). Роут `/api/v1/quiz/` и имена Kafka-топиков не связаны с этим переименованием и не меняются.
+**Lesson** — единица контента (склонение, словарный урок). **Quiz** — выборка вопросов из урока на сессию. **QuizSession** — прохождение квиза пользователем. **Activity** — будущая абстракция для типов активности за пределами квизов (после M5). В коде: `LessonRepository`/`LessonContentService` (а не `QuizRepository`), `lessonId` в статистике (а не `quizId`). Роут `/api/v1/quiz/` не связан с этим переименованием и не меняется.
 
 ### 3.3 Хранение окончаний склонений
 
@@ -70,14 +69,13 @@
 
 Сервис `sangraha-service` (Java 21, Virtual Threads, схема `sangraha`) хранит иерархию Work → Chapter → Verse и выполняет LLM-анализ стиха (OpenAI-совместимый) строго через tool calling (`submit_verse_analysis`), без парсинга свободного текста.
 
-Синхронизация лексики с curriculum-service выполняется синхронным REST-вызовом `POST curriculum-service/content/internal/sangraha/vocabulary-quiz` — канал «один producer, один consumer» не требует Kafka. Иерархия `work.slug → chapter.slug` маппится на `VocabularyCategory.code` в curriculum-service для тематической группировки лексики. Слова дедуплицируются по `(wordIast, stem)`; версионирование анализа не хранится (перезапись). Запись — только для роли ADMIN. Порт — из env (см. §6 `services/sangraha-service.md`).
+Синхронизация лексики с curriculum-service выполняется синхронным REST-вызовом `POST sangraha-service → /api/v2/lexicon/import/verse-batch` — канал «один producer, один consumer» не требует Kafka. Слова дедуплицируются по `(lemmaSlp1, gender)`; версионирование анализа не хранится (перезапись). Запись — только для роли ADMIN. Порт — из env (см. §6 `services/sangraha-service.md`).
 
-Синхронизация лексики со стихом инициируется явным действием пользователя, а не автоматически при анализе стиха:
+Синхронизация лексики идёт маленькими пачками по стихам (`curriculum-service/lexicon-content-pipeline.md` §7): разовый первичный импорт остаётся «curriculum тянет весь экспорт», дальше sangraha постит пачку лемм стиха:
 
-- Кнопка «Изучить» на VersePage вызывает `POST /verses/{verseId}/vocabulary-quiz`. Если по стиху уже был клик — возвращается закэшированный `verse.vocabularyQuizSlug` без обращения к curriculum-service; иначе sangraha-service синхронно, в рамках того же HTTP-запроса, вызывает curriculum-service, получает `quizSlug`/`quizId`/`quizStatus` и кэширует их.
-- Квиз создаётся на уровне **стиха**, а не произведения: `Quiz.slug = "{workSlug}.{chapterSlug}.verse-{verseId}"`, slug детерминирован, что даёт идемпотентность без ретраев.
-- `VocabularyCategory` (work → chapter) остаётся общим механизмом тематической классификации лексики и используется независимо от квиза по стиху: слово одновременно входит и в свой квиз-по-стиху (`VocabularyWord` ↔ `Quiz`), и в тематическую категорию произведения/главы (`VocabularyWord` ↔ `VocabularyCategory` через `VocabularyWordCategory`) — это ортогональные связи.
-- `quizStatus` (`CREATED`/`EXISTING`) — единственный сигнал, которым curriculum-service может обозначить, нужен ли фильтр `statusFilter=NEW` при первом старте сессии: `CREATED` → `NEW`, `EXISTING`/кэш-хит → без фильтра. Фронтенд стартует сессию сразу по `quizId` через `POST /quiz/vocabulary/sessions/start-or-resume?lessonId={quizId}&statusFilter=...`.
+- После успешного LLM-анализа стиха sangraha отправляет пачку в `POST /api/v2/lexicon/import/verse-batch` — вне транзакции анализа, сбои только логируются (анализ не откатывается, см. §5.1/§6 `services/sangraha-service.md`).
+- Кнопка «Изучить» на VersePage вызывает `POST /verses/{verseId}/study`: повторный идемпотентный push пачки + возврат `{ verseTopicCode }`, по которому фронтенд переходит на страницу VERSE-урока `/lessons/vocabulary/{code}`.
+- Урок лексики создаётся на уровне пары «произведение, глава»: `Topic domain=VERSE`, `code = "{slp1_work}_{chapterNumber}"`; для standalone-стихов — персональный `user-{ownerId}`. Повторная пачка идемпотентна, связь лексем накапливается по стихам главы.
 - Надёжная доставка обеспечивается на уровне HTTP-запроса, инициированного пользователем: отдельного фонового Outbox/relay для этого потока нет, повтор равен повторному клику.
 
 ### 3.6 Прогресс и повторение — quest-engine

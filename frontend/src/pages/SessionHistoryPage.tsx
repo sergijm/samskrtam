@@ -8,11 +8,15 @@ import { Message } from 'primereact/message';
 import { useSessionHistory } from '../hooks/useSessionHistory';
 import SessionHistoryTable from '../components/quiz/SessionHistoryTable';
 import SessionHistoryActions from '../components/quiz/SessionHistoryActions';
+import { isVocabularyQuiz } from '../types/quizEnums';
+
 const SessionHistoryPage = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const { sessionId } = useParams<{ sessionId: string }>();
   const location = useLocation();
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const stateSlug = (location.state as { slug?: string })?.slug;
+  const stateLessonType = (location.state as { lessonType?: string })?.lessonType;
 
   const {
     answers,
@@ -20,13 +24,21 @@ const SessionHistoryPage = () => {
     isError,
     errorMessage,
     isSessionCompleted,
-    handleResume,
-    handleRetake,
-    handleStartNew,
-    retakeLoading,
-    startNewLoading,
+    sessionSummary,
     completeError,
-  } = useSessionHistory(sessionId || '', null);
+  } = useSessionHistory();
+
+  const handleBackToLesson = () => {
+    const slug = sessionSummary?.slug || stateSlug;
+    const lessonType = sessionSummary?.lessonType || stateLessonType;
+    if (!slug) {
+      navigate('/grammar');
+      return;
+    }
+    const prefix = isVocabularyQuiz(lessonType) ? '/lessons/vocabulary/' : '/lessons/grammar/';
+    navigate(`${prefix}${slug}`);
+  };
+
   if (!sessionId) {
     return (
       <div className="flex justify-content-center align-items-center min-h-screen">
@@ -57,11 +69,7 @@ const SessionHistoryPage = () => {
         <SessionHistoryTable answers={answers || []} />
         <SessionHistoryActions
           isCompleted={isSessionCompleted}
-          onResume={handleResume}
-          onRetake={handleRetake}
-          onStartNew={handleStartNew}
-          retakeLoading={retakeLoading}
-          startNewLoading={startNewLoading}
+          onBackToLesson={handleBackToLesson}
           completeError={completeError}
         />
       </Card>
@@ -70,4 +78,3 @@ const SessionHistoryPage = () => {
 };
 
 export default SessionHistoryPage;
-

@@ -30,7 +30,7 @@ dependencies {
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 
-    implementation(project(":shared:user-dtos"))
+    implementation(project(":shared:common-dtos"))
 
     testImplementation(libs.spring.test)
 }

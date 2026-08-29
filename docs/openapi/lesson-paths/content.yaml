@@ -29,28 +29,5 @@ paths:
         '401':
           $ref: '../lesson-aggregation-openapi.yaml#/components/responses/Unauthorized'
 
-  /lessons/{slug}/examples:
-    get:
-      tags: [lesson-v2]
-      summary: Примеры-цитаты урока (v2, вкладка «Примеры»)
-      description: >
-        Группирует примеры из sangraha-стихов по (caseType, numberType).
-        В v2 база уроков приходит из curriculum-service, у которого ещё нет
-        цитат — groups в ответе пустой (форма сохраняется ради вкладки фронтенда).
-      operationId: getDeclensionExamplesV2
-      parameters:
-        - $ref: '../common/parameters.yaml#/SlugParam'
-      responses:
-        '200':
-          description: Примеры по группам
-          content:
-            application/json:
-              schema:
-                $ref: '../common/schemas/declension-paradigm.yaml#/DeclensionExamplesResponseDto'
-        '404':
-          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/NotFound'
-        '401':
-          $ref: '../lesson-aggregation-openapi.yaml#/components/responses/Unauthorized'
-
 # Components
 

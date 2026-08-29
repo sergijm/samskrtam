@@ -1,7 +1,7 @@
 # US-MORPH-04 — Узнавание и перевод деепричастий (ktvā/lyap)
 
 > Домен: Morphology · Тип: `ABSOLUTIVE_FORM` (план)
-> Связанные файлы: [quest-catalog.md §2.5](../../../services/quest-catalog.md#25-absolutive_form-деепричастие--план)
+> Связанные файлы: [quest-catalog.md §2.5](../../../services/curriculum-service/quest-catalog.md#25-absolutive_form-деепричастие--план)
 
 ## История
 

@@ -3,13 +3,18 @@ package sm.selflearn.samskrtam.sangraha.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sm.selflearn.samskrtam.sangraha.dto.WorkSummaryDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorksClassGroupDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorksClassTreeNodeDto;
 import sm.selflearn.samskrtam.sangraha.model.Work;
+import sm.selflearn.samskrtam.sangraha.model.VerseStatus;
 import sm.selflearn.samskrtam.sangraha.model.WorksClass;
+import sm.selflearn.samskrtam.sangraha.model.Source;
+import sm.selflearn.samskrtam.sangraha.repository.ChapterRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorksClassRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorksWorkClassRepository;
+import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,6 +43,9 @@ public class WorksClassService {
     private final WorksClassRepository worksClassRepository;
     private final WorksWorkClassRepository worksWorkClassRepository;
     private final WorkRepository workRepository;
+    private final SourceService sourceService;
+    private final ChapterRepository chapterRepository;
+    private final VerseRepository verseRepository;
 
     @Transactional(readOnly = true)
     public List<WorksClassGroupDto> getClassGroups() {
@@ -123,25 +131,54 @@ public class WorksClassService {
     }
 
     /**
-     * Фильтрация произведений по выбранным категориям классификатора.
-     * Выбор категории включает все её подкатегории (рекурсивно). Произведение
-     * подходит, если оно привязано хотя бы к одной категории из выбранного набора.
+     * Фильтрация произведений по выбранным категориям классификатора и (опционально)
+     * по источнику. Выбор категории включает все её подкатегории (рекурсивно).
+     * Произведение подходит, если оно привязано хотя бы к одной категории из
+     * выбранного набора И (при заданном sourceCode) относится к этому источнику.
+     * Фильтры комбинируются по И (AND).
      *
-     * @param classIds пустой/null — без фильтра, возвращает все произведения
+     * @param classIds   пустой/null — без фильтра по классификатору
+     * @param sourceCode пустой/null — без фильтра по источнику
      */
     @Transactional(readOnly = true)
-    public List<Work> filterWorks(Collection<UUID> classIds) {
+    public List<WorkSummaryDto> filterWorks(Collection<UUID> classIds, String sourceCode) {
+        List<Work> base;
         if (classIds == null || classIds.isEmpty()) {
-            return workRepository.findAllByDeletedAtIsNullOrderByCreatedAtAsc();
+            base = workRepository.findAllByDeletedAtIsNullOrderByCreatedAtAsc();
+        } else {
+            Set<UUID> expanded = expandWithDescendants(classIds);
+            List<UUID> workIds = worksWorkClassRepository.findWorkIdsByClassIdIn(List.copyOf(expanded));
+            if (workIds.isEmpty()) {
+                return List.of();
+            }
+            base = workRepository.findAllByIdInAndDeletedAtIsNullOrderByCreatedAtAsc(
+                    new HashSet<>(workIds));
         }
 
-        Set<UUID> expanded = expandWithDescendants(classIds);
-        List<UUID> workIds = worksWorkClassRepository.findWorkIdsByClassIdIn(List.copyOf(expanded));
-        if (workIds.isEmpty()) {
-            return List.of();
+        if (sourceCode != null && !sourceCode.isBlank()) {
+            Source source = sourceService.findByCode(sourceCode).orElse(null);
+            if (source == null) {
+                return List.of();
+            }
+            UUID sourceId = source.getId();
+            base = base.stream()
+                    .filter(w -> sourceId.equals(w.getSourceId()))
+                    .toList();
         }
-        return workRepository.findAllByIdInAndDeletedAtIsNullOrderByCreatedAtAsc(
-                new HashSet<>(workIds));
+
+        return base.stream().map(this::toSummary).toList();
+    }
+
+    private WorkSummaryDto toSummary(Work w) {
+        int chapterCount = (int) chapterRepository.countByWorkIdAndDeletedAtIsNull(w.getId());
+        int verseCount = verseRepository.countByWorkIdAndDeletedAtIsNull(w.getId());
+        int analyzedVerseCount = verseRepository.countAnalyzedByWorkIdAndDeletedAtIsNull(
+                w.getId(), VerseStatus.ANALYZED);
+        return new WorkSummaryDto(
+                w.getId(), w.getSlug(), w.getTitleRu(), w.getTitleEn(),
+                w.getTitleSaIast(), w.getTitleSaDevanagari(),
+                w.getDescriptionRu(), w.getDescriptionEn(), w.getAuthor(),
+                w.getCreatedAt(), chapterCount, verseCount, analyzedVerseCount);
     }
 
     private Set<UUID> expandWithDescendants(Collection<UUID> classIds) {

@@ -44,11 +44,12 @@
 - Типы: `feat`/`fix`/`docs`/`refactor`/`test`/`chore`/`perf`
 - Ветки: `main` → `feat/*`/`fix/*`/`chore/*`, PR требует прохождения CI и code review
 
-## 7. Kafka
+## 7. Outbox (без Kafka)
 
-- Топики: `<domain>-<event>-events` (kebab-case)
-- Публикация — только через Transactional Outbox Pattern
-- Синхронные вызовы domain ↔ domain по HTTP допустимы только для узких сценариев «один producer, один consumer» без нужды в асинхронной доставке (пример — синхронизация лексики sangraha-service → curriculum-service, см. [architecture.md §3.5](./architecture.md#35-sangraha-service-произведения-llm-анализ-стихов-синхронизация-лексики-через-rest)); в остальных случаях — Kafka + Outbox
+- Поддержка Kafka полностью удалена из проекта. Сервисы не публикуют и не потребляют Kafka-топики.
+- quiz-service пишет события в Transactional Outbox (`quiz.outbox_events`), но релей `OutboxEventPublisherService` работает вхолостую: периодически читает `NEW` записи и помечает их `PROCESSED`, никуда не отправляя. Это предохраняет таблицу от неограниченного роста.
+- Топики Kafka (`<domain>-<event>-events`) больше не используются.
+- Синхронные вызовы domain ↔ domain по HTTP допустимы только для узких сценариев «один producer, один consumer» без нужды в асинхронной доставке (пример — синхронизация лексики sangraha-service → curriculum-service, см. [architecture.md §3.5](./architecture.md#35-sangraha-service-произведения-llm-анализ-стихов-синхронизация-лексики-через-rest)).
 
 ## 8. Мапперы Entity/DTO
 

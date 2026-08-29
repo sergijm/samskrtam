@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: samcli
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+logging:
+  level:
+    root: WARN
+    sm.selflearn.samskrtam: INFO

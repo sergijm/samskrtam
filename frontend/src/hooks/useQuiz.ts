@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { quizApi, FilterParams } from '../api/quizApi';
-import { StartSessionResponse, AnswerRequest, AnswerResponse, QuizSummaryDto, LessonItemDto, LessonType, ResumeSessionResponse, StartOrResumeResponse } from '../types/quiz';
+import { StartSessionResponse, AnswerRequest, AnswerResponse, QuizSummaryDto, LessonItemDto, LessonType, ResumeSessionResponse, StartOrResumeResponse, ProgressSummaryDto } from '../types/quiz';
 import { ComposeQuizRequest, ComposeQuizResponse } from '../types/quiz';
 import { useLocaleStore } from '../store/localeStore';
 
@@ -18,9 +18,9 @@ export const useQuizList = (category?: string) => {
 export const useDeclensionLessons = () => {
   const { locale } = useLocaleStore();
   return useQuery<LessonItemDto[], Error>({
-    queryKey: ['quizzes', 'list', 'DECLENSIONS', locale],
+    queryKey: ['quizzes', 'list', 'GRAMMAR', locale],
     queryFn: async () => {
-      const response = await quizApi.getQuizList('DECLENSIONS');
+      const response = await quizApi.getQuizList('GRAMMAR');
       return response.data.lessons;
     },
   });
@@ -49,16 +49,27 @@ export const useQuizBySlug = (slug: string) => {
   });
 };
 
+export const useProgressSummary = (scope: string) =>
+  useQuery<ProgressSummaryDto, Error>({
+    queryKey: ['progressSummary', scope],
+    queryFn: async () => {
+      const response = await quizApi.getProgressSummary(scope);
+      return response.data;
+    },
+  });
+
 export const useComposeQuizSession = () => {
   const { locale } = useLocaleStore();
   return useMutation<
     ComposeQuizResponse,
     Error,
-    { topicCode: string; count: number }
+    { topicCode: string; count: number; progressTagSetId?: string }
   >({
-    mutationFn: async ({ topicCode, count }) => {
+    mutationFn: async ({ topicCode, count, progressTagSetId }) => {
       const request: ComposeQuizRequest = {
-        topics: [{ topicCode, count }],
+        topicCode,
+        progressTagSetId,
+        limit: count,
         userLocale: locale,
       };
       const response = await quizApi.composeSession(request);

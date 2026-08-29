@@ -3,7 +3,6 @@ package sm.selflearn.samskrtam.curriculum.questitem.controller;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,8 +10,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
-import sm.selflearn.samskrtam.curriculum.questgen.DeclensionQuestItemBatchGenerator;
+import sm.selflearn.samskrtam.curriculum.questgen.QuizItemGenerationService;
+import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
 import sm.selflearn.samskrtam.curriculum.questitem.dto.QuestItemDto;
+import sm.selflearn.samskrtam.curriculum.questitem.dto.QuestItemSelectionRequest;
 import sm.selflearn.samskrtam.curriculum.questitem.mapper.QuestItemMapper;
 import sm.selflearn.samskrtam.curriculum.questitem.repository.QuestItemRepository;
 import sm.selflearn.samskrtam.curriculum.repository.TopicRepository;
@@ -21,45 +22,100 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Read / regenerate API for materialized quest items (API v2).
+ */
 @RestController
 @RequestMapping("/api/v2/curriculum/quest-items")
 @RequiredArgsConstructor
 public class QuestItemController {
 
     static final int DEFAULT_LIMIT = 20;
-    static final int MAX_LIMIT = 100;
+    static final int MAX_LIMIT = 10_000;
 
     private final QuestItemRepository questItemRepository;
     private final TopicRepository topicRepository;
     private final QuestItemMapper questItemMapper;
-    private final DeclensionQuestItemBatchGenerator generator;
+    private final QuizItemGenerationService generationService;
 
+    /**
+     * Selects one quest item per (progress_tag, item_type, answer_mode) group
+     * using a window function.  Accepts optional filters for progress tags,
+     * item type, answer mode and a limit (0 = no limit).
+     *
+     * <p>The topic can be identified either by {@code topicId} (UUID) or by
+     * {@code slug}/{@code topicCode} (the topic's code).  {@code topicId} takes
+     * precedence when both are supplied.
+     */
+    @PostMapping("/select")
+    public List<QuestItemDto> select(@RequestBody QuestItemSelectionRequest request,
+                                     @RequestParam(required = false) UUID topicId,
+                                     @RequestParam(required = false) String slug,
+                                     @RequestParam(required = false) String topicCode) {
+        Topic topic = resolveTopic(topicId, slug, topicCode);
+
+        List<QuestItem> items;
+        if (request.progressTags() != null && !request.progressTags().isEmpty()) {
+            items = questItemRepository.selectByTopicAndProgressTags(
+                    topic.getId(),
+                    request.progressTags().toArray(String[]::new),
+                    request.itemType(),
+                    request.answerMode(),
+                    request.limit());
+        } else {
+            items = questItemRepository.selectByTopic(
+                    topic.getId(),
+                    request.itemType(),
+                    request.answerMode(),
+                    request.limit());
+        }
+        return items.stream()
+                .map(questItemMapper::toDto)
+                .toList();
+    }
+
+    private Topic resolveTopic(UUID topicId, String slug, String topicCode) {
+        if (topicId != null) {
+            return topicRepository.findById(topicId)
+                    .orElseThrow(() -> new EntityNotFoundException("Topic not found: " + topicId));
+        }
+        String code = slug != null ? slug : topicCode;
+        if (code != null) {
+            return topicRepository.findByCode(code)
+                    .orElseThrow(() -> new EntityNotFoundException("Topic not found: " + code));
+        }
+        throw new IllegalArgumentException("One of topicId, slug or topicCode must be provided");
+    }
+
+    /**
+     * Returns a random sample of ready-made quest items of the requested type for
+     * a topic (random ordering via {@code ORDER BY random()}).
+     */
     @GetMapping
     public List<QuestItemDto> getQuestItems(
             @RequestParam UUID topicId,
-            @RequestParam String itemType,
+            @RequestParam(required = false) String itemType,
             @RequestParam(defaultValue = "20") int limit) {
         if (!topicRepository.existsById(topicId)) {
             throw new EntityNotFoundException("Topic not found: " + topicId);
         }
         int capped = Math.max(1, Math.min(limit, MAX_LIMIT));
-        return questItemRepository.findRandomByTopicIdAndItemType(topicId, itemType, capped)
-                .stream()
+        List<QuestItem> items = itemType != null
+                ? questItemRepository.findRandomByTopicIdAndItemType(topicId, itemType, capped)
+                : questItemRepository.findRandomByTopicId(topicId, capped);
+        return items.stream()
                 .map(questItemMapper::toDto)
                 .toList();
     }
 
+    /**
+     * Clears the whole quest-item table and regenerates it for every topic with
+     * a registered generator (ADMIN-only, see {@link QuizItemGenerationService}).
+     * Returns {@code 202} with per-topic statistics: for each topic, how many
+     * quest items were added and how many distinct progress tags it has.
+     */
     @PostMapping("/regenerate")
-    public ResponseEntity<Map<String, Integer>> regenerate(@RequestBody RegenerateRequest request) {
-        int lexemeLimit = request.lexemeLimit() > 0 ? request.lexemeLimit() : Integer.MAX_VALUE;
-        int total = 0;
-        for (Topic topic : topicRepository.findAll()) {
-            if (topic.isHidden()) {
-                continue;
-            }
-            questItemRepository.deleteByTopicId(topic.getId());
-            total += generator.generateForTopic(topic.getId(), lexemeLimit);
-        }
-        return ResponseEntity.accepted().body(Map.of("generated", total));
+    public ResponseEntity<Map<String, Map<String, Integer>>> regenerate() {
+        return ResponseEntity.accepted().body(generationService.regenerate());
     }
 }

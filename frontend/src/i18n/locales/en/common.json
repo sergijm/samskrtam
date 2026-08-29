@@ -3,8 +3,6 @@
     "dashboard": "Dashboard",
     "quizzes": "Quizzes",
     "dictionary": "Dictionary",
-    "statistics": "Statistics",
-    "leaderboard": "Leaderboard",
     "settings": "Settings",
     "admin": "Administration",
     "grammar": "Grammar",
@@ -42,7 +40,11 @@
     "previous": "Previous",
     "next": "Next",
     "startQuiz": "Start Quiz",
-    "errorLoadingLesson": "Error loading lesson"
+    "errorLoadingLesson": "Error loading lesson",
+    "backToLesson": "Back to Lesson",
+    "loading": "Loading…",
+    "required": "Required field",
+    "saved": "Saved"
   },
   "validation": {
     "usernameRequired": "Email or Username is required.",

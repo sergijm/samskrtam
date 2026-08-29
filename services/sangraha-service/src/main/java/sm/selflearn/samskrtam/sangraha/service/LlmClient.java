@@ -11,8 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
+import sm.selflearn.samskrtam.sangraha.service.strategy.LlmCallResult;
 import sm.selflearn.samskrtam.sangraha.service.strategy.LlmCallStrategy;
 import sm.selflearn.samskrtam.sangraha.service.strategy.LlmCallStrategyFactory;
+import sm.selflearn.samskrtam.sangraha.service.strategy.LlmStep;
 
 import java.util.List;
 
@@ -21,7 +23,7 @@ import java.util.List;
  * Использует официальный OpenAI Java SDK (com.openai:openai-java).
  * Совместим с любым OpenAI-compatible endpoint (ADR-006).
  *
- * Делегирует логику single-pass / two-pass в соответствующие стратегии через
+ * Делегирует вызов LLM через стратегию (single-pass, см. LlmCallStrategy).
  * {@link LlmCallStrategyFactory}.
  */
 @Component
@@ -39,6 +41,8 @@ public class LlmClient {
     private OpenAIClient openAIClient;
 
     private static final String TOOL_NAME = "submit_verse_analyses";
+    private static final String TOOL_NAME_STEP1 = "submit_verse_analyses_step1";
+    private static final String TOOL_NAME_STEP2 = "submit_word_formations";
 
     @PostConstruct
     public void init() {
@@ -46,21 +50,47 @@ public class LlmClient {
                 .baseUrl(llmProperties.getBaseUrl())
                 .apiKey(llmProperties.getApiKey())
                 .build();
-        log.info("LlmClient initialized with baseUrl={}, model={}, twoPass={}, maxCompletionTokens={}",
-                llmProperties.getBaseUrl(), llmProperties.getModel(), llmProperties.isTwoPass(),
+        log.info("LlmClient initialized with baseUrl={}, model={}, maxCompletionTokens={}",
+                llmProperties.getBaseUrl(), llmProperties.getModel(),
                 llmProperties.getMaxCompletionTokens());
     }
 
         /**
      * Вызывает LLM для анализа списка стихов через выбранную стратегию.
+     *
+     * @param sameWork true для SAME_WORK-батча (все стихи одного произведения)
      */
-    public JsonNode call(List<Verse> verses) {
+    public JsonNode call(List<Verse> verses, boolean sameWork) {
+        LlmCallResult result = callWithResult(verses, sameWork);
+        return result == null ? null : result.response();
+    }
+
+    /**
+     * Вызывает LLM и возвращает и ответ, и отправленный промпт (для raw_prompt).
+     *
+     * @param sameWork true для SAME_WORK-батча (все стихи одного произведения)
+     */
+    public LlmCallResult callWithResult(List<Verse> verses, boolean sameWork) {
+        return callStep(verses, sameWork, LlmStep.STEP1);
+    }
+
+    /**
+     * Вызывает LLM для ШАГА 2 (внутренние сандхи) и возвращает ответ и отправленный промпт.
+     * Шаг 2 не запускается автоматически после шага 1 — только по явному запросу.
+     *
+     * @param sameWork true для SAME_WORK-батча (все стихи одного произведения)
+     */
+    public LlmCallResult callStep2(List<Verse> verses, boolean sameWork) {
+        return callStep(verses, sameWork, LlmStep.STEP2);
+    }
+
+    private LlmCallResult callStep(List<Verse> verses, boolean sameWork, LlmStep step) {
         try {
-            LlmCallStrategy strategy = strategyFactory.create(openAIClient);
-            log.debug("Using strategy: {}", strategy.getName());
-            return (JsonNode) strategy.call(verses);
+            LlmCallStrategy strategy = strategyFactory.create(openAIClient, step);
+            log.debug("Using strategy: {} (step={})", strategy.getName(), step);
+            return strategy.call(verses, sameWork);
         } catch (Exception e) {
-            log.error("Failed to call LLM API for {} verses", verses.size(), e);
+            log.error("Failed to call LLM API (step={}) for {} verses", step, verses.size(), e);
             return null;
         }
     }
@@ -85,8 +115,8 @@ public class LlmClient {
             var functionNode = toolCall.path("function");
             var name = functionNode.path("name").asText();
 
-            if (!TOOL_NAME.equals(name)) {
-                log.warn("Unexpected tool name: {}, expected {}", name, TOOL_NAME);
+            if (!TOOL_NAME.equals(name) && !TOOL_NAME_STEP1.equals(name)) {
+                log.warn("Unexpected tool name: {}, expected {} or {}", name, TOOL_NAME, TOOL_NAME_STEP1);
                 return null;
             }
 
@@ -101,6 +131,46 @@ public class LlmClient {
 
         } catch (Exception e) {
             log.error("Failed to extract tool arguments from LLM response", e);
+            return null;
+        }
+    }
+
+    /**
+     * Извлекает аргументы вызова submit_word_formations (ШАГ 2) из полного ответа LLM
+     * и возвращает объект arguments целиком (содержит массив words), либо null.
+     * Объект arguments используется для валидации по JSON Schema и для извлечения words[].
+     */
+    public JsonNode extractStep2Arguments(JsonNode response) {
+        try {
+            var toolCallsNode = response.path("choices")
+                    .path(0)
+                    .path("message")
+                    .path("tool_calls");
+
+            if (toolCallsNode.isMissingNode() || toolCallsNode.isEmpty()) {
+                log.warn("No tool_calls in response");
+                return null;
+            }
+
+            var toolCall = toolCallsNode.get(0);
+            var functionNode = toolCall.path("function");
+            var name = functionNode.path("name").asText();
+
+            if (!TOOL_NAME_STEP2.equals(name)) {
+                log.warn("Unexpected tool name: {}, expected {}", name, TOOL_NAME_STEP2);
+                return null;
+            }
+
+            String argsJson = functionNode.path("arguments").asText();
+            if (argsJson == null || argsJson.isEmpty()) {
+                log.warn("Empty arguments in tool_call");
+                return null;
+            }
+
+            return objectMapper.readTree(argsJson);
+
+        } catch (Exception e) {
+            log.error("Failed to extract STEP 2 tool arguments from LLM response", e);
             return null;
         }
     }

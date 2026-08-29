@@ -10,7 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "curriculum.quest-items.declension-match")
 public class DeclensionMatchProperties {
 
-    private int pairsPerItem = 5;
+    private int pairsPerItem = 6;
 
     public int getPairsPerItem() {
         return pairsPerItem;

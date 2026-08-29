@@ -1,6 +1,5 @@
 package sm.selflearn.samskrtam.sangraha.service.strategy;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.models.FunctionDefinition;
@@ -21,7 +20,8 @@ import java.util.List;
 @Slf4j
 public class SinglePassStrategy implements LlmCallStrategy {
 
-        private static final String TOOL_NAME = "submit_verse_analyses";
+    private static final String TOOL_NAME_STEP1 = "submit_verse_analyses_step1";
+    private static final String TOOL_NAME_STEP2 = "submit_word_formations";
 
     private final OpenAIClient openAIClient;
     private final LlmPromptBuilder promptBuilder;
@@ -29,6 +29,7 @@ public class SinglePassStrategy implements LlmCallStrategy {
     private final ObjectMapper objectMapper;
     private final String model;
     private final Integer maxCompletionTokens;
+    private final LlmStep step;
 
     @Override
     public String getName() {
@@ -36,17 +37,33 @@ public class SinglePassStrategy implements LlmCallStrategy {
     }
 
     @Override
-    public JsonNode call(List<Verse> verses) throws Exception {
-        String systemPrompt = promptBuilder.extractSystemPrompt();
-        String userPrompt = promptBuilder.buildBatchUserPrompt(verses);
+    public LlmCallResult call(List<Verse> verses, boolean sameWork) throws Exception {
+        String toolName;
+        String systemPrompt;
+        String userPrompt;
+        String schemaJson;
 
-        String schemaJson = objectMapper.writeValueAsString(
-                toolSchemaBuilder.buildBatchFunctionDefinitionSchema());
+        if (step == LlmStep.STEP2) {
+            toolName = TOOL_NAME_STEP2;
+            systemPrompt = promptBuilder.buildStep2SystemPrompt();
+            userPrompt = promptBuilder.buildStep2BatchUserPrompt(verses);
+            schemaJson = objectMapper.writeValueAsString(
+                    toolSchemaBuilder.buildStep2FunctionDefinitionSchema());
+        } else {
+            toolName = TOOL_NAME_STEP1;
+            systemPrompt = promptBuilder.buildStep1SystemPrompt(verses, sameWork);
+            userPrompt = promptBuilder.buildStep1BatchUserPrompt(verses, sameWork);
+            schemaJson = objectMapper.writeValueAsString(
+                    toolSchemaBuilder.buildStep1FunctionDefinitionSchema());
+        }
+
         FunctionParameters functionParameters = objectMapper.readValue(schemaJson, FunctionParameters.class);
 
         var functionDefinition = FunctionDefinition.builder()
-                .name(TOOL_NAME)
-                .description("Submit complete verse analyses: transcription, translation, sandhi splits, and per-word grammar for one or more verses.")
+                .name(toolName)
+                .description(step == LlmStep.STEP2
+                        ? "Submit STEP 2 internal sandhi (word formation) analyses: for each STEP 1 word, the internal sandhi rule numbers (1–40) and optionally refined derivation fields."
+                        : "Submit STEP 1 verse analyses: translation, external sandhi splits, and per-word lexical/morphological analysis (without internal sandhi formationRuleNumbers).")
                 .parameters(functionParameters)
                 .build();
 
@@ -64,7 +81,7 @@ public class SinglePassStrategy implements LlmCallStrategy {
                 .toolChoice(ChatCompletionToolChoiceOption.ofNamedToolChoice(
                         ChatCompletionNamedToolChoice.builder()
                                 .function(ChatCompletionNamedToolChoice.Function.builder()
-                                        .name(TOOL_NAME)
+                                        .name(toolName)
                                         .build())
                                 .build()
                 ));
@@ -73,9 +90,9 @@ public class SinglePassStrategy implements LlmCallStrategy {
         }
 
         ChatCompletionCreateParams params = builder.build();
+        String rawPrompt = objectMapper.writeValueAsString(params._body());
         if (log.isDebugEnabled()) {
-            var rawString = objectMapper.writeValueAsString(params._body());
-            log.debug("Single-pass request: {}", rawString);
+            log.debug("Single-pass request: {}", rawPrompt);
         }
 
         ChatCompletion response = openAIClient.chat().completions().create(params);
@@ -88,6 +105,6 @@ public class SinglePassStrategy implements LlmCallStrategy {
             log.debug("Single-pass response: {}", rawString);
         }
 
-        return objectMapper.valueToTree(response);
+        return new LlmCallResult(objectMapper.valueToTree(response), rawPrompt);
     }
 }

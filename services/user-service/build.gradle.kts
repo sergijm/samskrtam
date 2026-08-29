@@ -30,7 +30,7 @@ dependencies {
     implementation(libs.postgresql.jdbc)
     implementation(libs.springdoc.openapi.webmvc.ui)
     implementation(project(":shared:common-dtos"))
-    implementation(project(":shared:user-dtos"))
+
 
     // Keycloak Admin Client
     implementation(libs.keycloak.admin.client)

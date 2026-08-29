@@ -1,51 +1,6 @@
 {
-  "section": {
-    "grammar": "Грамматика",
-    "nouns": "Существительные (склонение)",
-    "adjectives": "Прилагательные",
-    "pronouns": "Местоимения",
-    "numerals": "Числительные",
-    "verbs_present": "Глагол: настоящее время",
-    "verbs_other": "Глагол: остальные системы",
-    "verb_nominals": "Именные формы глагола",
-    "sandhi": "Сандхи",
-    "syntax": "Синтаксис",
-    "writing": "Письмо и произношение",
-    "vocabulary": "Лексика"
-  },
-  "nouns": {
-    "a_masc": "основы на -a",
-    "all_stems": "Все основы (Квиз)",
-    "aa_fem": "основы на -ā",
-    "i_u_stems": "основы на -i и -u",
-    "ii_uu_stems": "основы на -ī и -ū",
-    "r_stems": "основы на -ṛ",
-    "cons_an": "Согласные: -an",
-    "cons_in_vant_mant": "Согласные: -in/-vant/-mant",
-    "cons_as_is_us": "Согласные: -as/-is/-us",
-    "cons_at_ant": "Согласные: -at/-ant",
-    "cons_simple_final": "Согласные: простые конечные",
-        "irregular": "Нерегулярные основы"
-  },
-  "pronouns": {
-    "personal": "Личные",
-    "demonstrative": "Указательные",
-    "interrogative": "Вопросительные",
-    "relative": "Относительные",
-    "reflexive": "Возвратное"
-  },
-  "vocabulary": {
-    "sangraha_quizzes": "VOCABULARY-квизы (sangraha)",
-    "thematic": "Тематические группы",
-    "frequency": "Частотная лексика",
-    "basic": "Базовая лексика",
-    "lists": "Списки"
-  },
   "writing": {
-    "alphabet": "Деванагари: алфавит",
-    "ligatures": "Лигатуры",
-    "transliteration": "Транслитерация IAST↔Деванагари",
-    "prosody": "Долгота гласных и просодия"
+    "transliteration": "Транслитерация IAST↔Деванагари"
   },
   "transliteration": {
     "title": "Транслитерация IAST ↔ Деванагари",
@@ -77,15 +32,9 @@
     "vargaLabial": "Губные (oṣṭhya)",
     "tooltipIast": "IAST: {{iast}}"
   },
-  "catalog": {
-    "texts": "Тексты"
-  },
-  "status": {
-    "planned": "скоро"
-  },
   "learnGraph": {
     "title": "Карта обучения",
-    "subtitle": "Рекомендуемый путь изучения. Ничего не блокируется — темы доступны всегда, связи лишь подсказки.",
+    "subtitle": "",
     "filterTitle": "Тип:",
     "dependsOn": "зависит от",
     "continueTitle": "Продолжить обучение",
@@ -154,7 +103,7 @@
     "topicDescs": {
       "basicVocabulary": "Частотная лексика",
       "sandhiVowels": "Слияние гласных на стыке",
-      "declensionAStems": "Мужской · средний · женский род",
+      "declensionAStems": "Мужской · средний · женский",
       "sandhiConsonants": "Слияние согласных и висарги",
       "declensionIU": "i · u · ṛ основы",
       "pronounsPersonal": "Я · ты · он/она",
@@ -183,4 +132,3 @@
     }
   }
 }
-

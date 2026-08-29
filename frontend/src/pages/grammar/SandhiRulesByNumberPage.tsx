@@ -69,9 +69,9 @@ const SandhiRulesByNumberPage = () => {
                     <span className="text-sm text-color-secondary">
                       {rule.reference}
                     </span>
-                    {rule.dependson && rule.dependson.length > 0 && (
+                    {rule.dependsOn && rule.dependsOn.length > 0 && (
                       <span className="ml-auto text-xs text-color-secondary">
-                        {dependsOnLabel}: № {rule.dependson.join(', ')}
+                        {dependsOnLabel}: № {rule.dependsOn.join(', ')}
                       </span>
                     )}
                   </div>

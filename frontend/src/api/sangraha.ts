@@ -2,23 +2,38 @@ import api from './axios';
 import type {
   WorkSummaryDto,
   WorkTreeDto,
+  ChapterSummaryDto,
   ChapterVersesDto,
   VerseDetailDto,
   VerseBatchResponseDto,
+  VerseTreeDto,
   WorksClassGroupDto,
   StandaloneVerseItemDto,
+  VerseWordExamplesResponseDto,
+  LemmaExamplesResponseDto,
+  DeclensionExamplesResponseDto,
+  ConjugationExamplesResponseDto,
+  SourceDto,
 } from '../types/sangraha';
 
 const BASE = '/api/v1/sangraha';
 
 export const sangrahaApi = {
-// Works (read-only, отфильтрованные по классификатору)
-  getAllWorks: (classIds?: string[]) =>
-    api.get<WorkSummaryDto[]>(
-      classIds && classIds.length > 0
-        ? `${BASE}/works?${classIds.map((id) => `classId=${encodeURIComponent(id)}`).join('&')}`
-        : `${BASE}/works`,
-    ),
+// Works (read-only, отфильтрованные по классификатору и источнику)
+  getAllWorks: (classIds?: string[], sourceCode?: string) => {
+    const params: string[] = [];
+    if (classIds && classIds.length > 0) {
+      classIds.forEach((id) => params.push(`classId=${encodeURIComponent(id)}`));
+    }
+    if (sourceCode) {
+      params.push(`sourceCode=${encodeURIComponent(sourceCode)}`);
+    }
+    const qs = params.length > 0 ? `?${params.join('&')}` : '';
+    return api.get<WorkSummaryDto[]>(`${BASE}/works${qs}`);
+  },
+
+  // Источники произведений (для фильтра слева)
+  getSources: () => api.get<SourceDto[]>(`${BASE}/sources`),
 
   // Классификатор произведений: дерево по classification (для дропдаунов)
   getWorksClasses: () => api.get<WorksClassGroupDto[]>(`${BASE}/works/classes`),
@@ -40,17 +55,49 @@ export const sangrahaApi = {
   analyzeAllVerses: (chapterId: string) =>
     api.post<{ chapterId: string; verseIds: string[] }>(`${BASE}/chapters/${chapterId}/verses/analyze-all`),
 
-    getOrCreateVocabularyQuiz: (verseId: string) =>
-    api.post<{ quizSlug: string; quizId: string; quizStatus: string }>(`${BASE}/verses/${verseId}/vocabulary-quiz`),
+  // Кнопка «Изучить»: экспорт пачки лемм стиха в curriculum-service + код урока
+  studyVerse: (verseId: string) =>
+    api.post<{ verseTopicCode: string }>(`${BASE}/verses/${verseId}/study`),
 
   // Batch verse review (sangraha-service/batch-verse-review.md)
-  // Axios сериализует массивы как `id[]=...`, а бэкенд ждёт повторяющийся `id=...` —
-  // query-строку собираем вручную.
   getVersesBatch: (ids: string[]) =>
-    api.get<VerseBatchResponseDto>(`${BASE}/verse?${ids.map((id) => `id=${encodeURIComponent(id)}`).join('&')}`),
+    api.post<VerseBatchResponseDto>(`${BASE}/verse`, { verseIds: ids }),
+
+  // Примеры стихов по точным словоформам (урок склонений)
+  getWordExamples: (surfaceIasts: string[]) =>
+    api.post<VerseWordExamplesResponseDto>(`${BASE}/words/examples`, {
+      surfaceIasts,
+    }),
+
+  // Примеры стихов по леммам (раскрываемые строки урока лексики)
+  getLemmaExamples: (lemmas: string[], limitPerLemma = 5) =>
+    api.post<LemmaExamplesResponseDto>(`${BASE}/words/examples-by-lemma`, {
+      lemmas,
+      limitPerLemma,
+    }),
+
+  // Примеры склонений по словоизменительному классу — вкладка «Примеры» урока
+  // (один запрос на весь урок; caseType/numberType в теле не передаются)
+  getDeclensionExamples: (vowelType: string, limitPerGroup = 5) =>
+    api.post<DeclensionExamplesResponseDto>(`${BASE}/verses/examples/declensions`, {
+      vowelType,
+      limitPerGroup,
+    }),
+
+  // Примеры спряжений — вкладка «Примеры» урока спряжений
+  getConjugationExamples: (limitPerGroup = 5, tense?: string, mood?: string) =>
+    api.post<ConjugationExamplesResponseDto>(`${BASE}/verses/examples/conjugations`, {
+      tense,
+      mood,
+      limitPerGroup,
+    }),
 
   analyzeVerses: (verseIds: string[]) =>
     api.post<{ verseIds: string[] }>(`${BASE}/verse/analysis`, { verseIds }),
+
+  // ШАГ 2 (внутренние сандхи / морфология) — отдельный, не-автоматический вызов
+  analyzeVerseInternalSandhi: (verseId: string) =>
+    api.post(`${BASE}/verses/${verseId}/internal-sandhi`),
 
   // ── Standalone анализ (страница /analysis, verse.chapter_id = null) ──
   // Каждое нажатие «Анализировать» создаёт новую запись в verses и запускает анализ.
@@ -63,6 +110,50 @@ export const sangrahaApi = {
 
   deleteStandaloneVerse: (verseId: string) =>
     api.delete<void>(`${BASE}/analysis/${verseId}`),
+
+  // ── Write: произведения / главы / стихи (ADMIN) ──
+
+  createWork: (data: {
+    titleRu: string;
+    titleEn?: string;
+    titleSaIast?: string;
+    titleSaDevanagari?: string;
+    sourceCode?: string;
+  }) => api.post<WorkSummaryDto>(`${BASE}/works`, data),
+
+  updateWork: (
+    workSlug: string,
+    data: {
+      titleRu?: string;
+      titleEn?: string;
+      titleSaIast?: string;
+      titleSaDevanagari?: string;
+      author?: string;
+    },
+  ) => api.put<WorkSummaryDto>(`${BASE}/works/${workSlug}`, data),
+
+  createChapter: (
+    workSlug: string,
+    data: {
+      titleRu: string;
+      titleEn?: string;
+      titleSaIast?: string;
+      titleSaDevanagari?: string;
+    },
+  ) => api.post<ChapterSummaryDto>(`${BASE}/works/${workSlug}/chapters`, data),
+
+  updateChapter: (
+    chapterId: string,
+    data: {
+      titleRu?: string;
+      titleEn?: string;
+      titleSaIast?: string;
+      titleSaDevanagari?: string;
+    },
+  ) => api.put<ChapterSummaryDto>(`${BASE}/chapters/${chapterId}`, data),
+
+  createVerse: (chapterId: string, data: { text: string }) =>
+    api.post<VerseTreeDto>(`${BASE}/chapters/${chapterId}/verses`, data),
 };
 
 

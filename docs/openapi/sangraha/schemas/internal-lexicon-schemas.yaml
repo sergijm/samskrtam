@@ -1,45 +1,8 @@
 # Schemas for docs/openapi/sangraha/internal-lexicon-api.yaml (LexiconController in sangraha-service).
 
-ClassificationRunStatus:
-  type: string
-  enum: [RUNNING, COMPLETED, COMPLETED_WITH_ERRORS]
-  description: Прочие значения enum допустимы, но перечислены основные.
-
 ClassificationStatus:
   type: string
   enum: [CANDIDATE, APPROVED, REJECTED]
-
-StartClassificationRunRequest:
-  type: object
-  required: [schemeCode, batchCount]
-  properties:
-    schemeCode:
-      type: string
-      description: Код схемы классификации (обязателен, иначе 400).
-    batchSize:
-      type:
-        - integer
-        - 'null'
-      description: Размер батча (default 50 в сервисе).
-    batchCount:
-      type: integer
-      description: Количество батчей; должно быть > 0, иначе 400.
-    llmModel:
-      type:
-        - string
-        - 'null'
-      description: Имя модели из llm.yaml. Если не указан — глобальный SANGRAHA_LLM_MODEL.
-
-ClassificationRunResponse:
-  type: object
-  required: [succeededBatchCount, failedBatchCount, classifiedLemmaCount]
-  properties:
-    succeededBatchCount:
-      type: integer
-    failedBatchCount:
-      type: integer
-    classifiedLemmaCount:
-      type: integer
 
 LemmaClassificationItemDto:
   type: object
@@ -136,7 +99,7 @@ LemmaClassificationReviewRequest:
 
 LemmaRefreshResponse:
   type: object
-  required: [lemmaCount, newLemmaCount, updatedLemmaCount, statisticsCount, newStatisticsCount, updatedStatisticsCount]
+  required: [lemmaCount, newLemmaCount, updatedLemmaCount, statisticsCount, newStatisticsCount, updatedStatisticsCount, verseStatisticsCount]
   properties:
     lemmaCount:
       type: integer
@@ -150,6 +113,9 @@ LemmaRefreshResponse:
       type: integer
     updatedStatisticsCount:
       type: integer
+    verseStatisticsCount:
+      type: integer
+      description: Число строк verse_statistics (длина стихов в словах), пересчитанных при refresh.
 
 LemmaExportItemDto:
   type: object

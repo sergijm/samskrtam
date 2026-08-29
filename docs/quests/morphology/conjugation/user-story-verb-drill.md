@@ -1,7 +1,7 @@
 # US-MORPH-02 — Тренировка личных форм глагола (laṭ-lakāra)
 
 > Домен: Morphology · Тип: `CONJUGATION_FORM` (план)
-> Связанные файлы: [quest-catalog.md §2.3](../../../services/quest-catalog.md#23-conjugation_form--план) · [quest-item-model.md §2](../../../services/quest-item-model.md#2-curriculum-service--генерация-smselflearnsamskrtamcontentquest)
+> Связанные файлы: [quest-catalog.md §2.3](../../../services/curriculum-service/quest-catalog.md#23-conjugation_form--план) · [quest-item-model.md §2](../../../services/quest-item-model.md#2-curriculum-service--генерация-smselflearnsamskrtamcontentquest)
 
 ## История
 
@@ -20,7 +20,7 @@
 ## Критерии приёмки
 
 - [ ] Единица прогресса — комбинация (dhatu, lakara, purusha, vacana, pada), отдельная от declension-прогресса того же пользователя (см. [quest-item-model.md §4](../../../services/quest-item-model.md#4-quiz-service--прохождение-и-прогресс-smselflearnsamskrtamquizprogress) — прогресс типо-агностичен, но `itemId` уникален на комбинацию).
-- [ ] Первая версия урока покрывает только parasmaipada, только I класс, только laṭ и loṭ (см. [quest-catalog.md §2.3](../../../services/quest-catalog.md#23-conjugation_form--план)) — ātmanepada и остальные lakāra не входят в эту историю.
+- [ ] Первая версия урока покрывает только parasmaipada, только I класс, только laṭ и loṭ (см. [quest-catalog.md §2.3](../../../services/curriculum-service/quest-catalog.md#23-conjugation_form--план)) — ātmanepada и остальные lakāra не входят в эту историю.
 - [ ] Дистракторы (если задание — выбор варианта) — формы того же корня в других лицах/числах, а не случайные слова, чтобы тренировать именно узнавание окончания, а не значения корня.
 - [ ] Статус урока на LessonPage считается по тем же правилам NEW/LEARNING/DUE/MASTERED, что и для declension.
 

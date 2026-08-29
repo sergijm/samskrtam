@@ -13,8 +13,11 @@ public class GrammarLesson {
     private int learnedQuestions;
     private float progressPercent;
     private LessonStatusSummary statusSummary;
-    private List<GrammarQuestionProgress> items;
-    private List<TagSetProgress> tagSetProgress;
+    private List<GrammarCaseAggregation> caseAggregations;
+    private List<GrammarNumberAggregation> numberAggregations;
+    private List<GrammarGridCellAggregation> grid;
+    private List<GrammarPairAggregation> pairAggregations;
+    private List<ConjugationCellProgress> conjugationProgress;
 
     // Getters and setters
     public UUID getLessonId() {
@@ -89,19 +92,43 @@ public class GrammarLesson {
         this.statusSummary = statusSummary;
     }
 
-    public List<GrammarQuestionProgress> getItems() {
-        return items;
+    public List<GrammarCaseAggregation> getCaseAggregations() {
+        return caseAggregations;
     }
 
-    public void setItems(List<GrammarQuestionProgress> items) {
-        this.items = items;
+    public void setCaseAggregations(List<GrammarCaseAggregation> caseAggregations) {
+        this.caseAggregations = caseAggregations;
     }
 
-    public List<TagSetProgress> getTagSetProgress() {
-        return tagSetProgress;
+    public List<GrammarNumberAggregation> getNumberAggregations() {
+        return numberAggregations;
     }
 
-    public void setTagSetProgress(List<TagSetProgress> tagSetProgress) {
-        this.tagSetProgress = tagSetProgress;
+    public void setNumberAggregations(List<GrammarNumberAggregation> numberAggregations) {
+        this.numberAggregations = numberAggregations;
+    }
+
+    public List<GrammarGridCellAggregation> getGrid() {
+        return grid;
+    }
+
+    public void setGrid(List<GrammarGridCellAggregation> grid) {
+        this.grid = grid;
+    }
+
+    public List<GrammarPairAggregation> getPairAggregations() {
+        return pairAggregations;
+    }
+
+    public void setPairAggregations(List<GrammarPairAggregation> pairAggregations) {
+        this.pairAggregations = pairAggregations;
+    }
+
+    public List<ConjugationCellProgress> getConjugationProgress() {
+        return conjugationProgress;
+    }
+
+    public void setConjugationProgress(List<ConjugationCellProgress> conjugationProgress) {
+        this.conjugationProgress = conjugationProgress;
     }
 }

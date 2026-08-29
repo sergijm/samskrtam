@@ -3,8 +3,6 @@
     "dashboard": "Главная",
     "quizzes": "Квизы",
     "dictionary": "Словари",
-    "statistics": "Статистика",
-    "leaderboard": "Рейтинг",
     "settings": "Настройки",
     "admin": "Администрирование",
     "grammar": "Грамматика",
@@ -42,7 +40,11 @@
     "previous": "Назад",
     "next": "Вперед",
     "startQuiz": "Начать квиз",
-    "errorLoadingLesson": "Ошибка загрузки урока"
+    "errorLoadingLesson": "Ошибка загрузки урока",
+    "backToLesson": "Вернуться к уроку",
+    "loading": "Загрузка…",
+    "required": "Обязательное поле",
+    "saved": "Сохранено"
   },
   "validation": {
     "usernameRequired": "Требуется Email или логин.",

@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
+import sm.selflearn.samskrtam.quest.AnswerMode;
 
 import java.util.UUID;
 
@@ -19,6 +20,7 @@ public class SessionQuestion {
     private UUID questionId;
     private int questionNumber;
     private String text;
+    private String textRu;
     private String explanationRu;
     private String explanationEn;
     private UUID declensionStemId;
@@ -62,7 +64,7 @@ public class SessionQuestion {
      * Curriculum answer mode (FREE_TEXT | SINGLE_CHOICE | MATCHING).
      * Non-null only for questions composed from curriculum.quest_item.
      */
-    private String answerMode;
+    private AnswerMode answerMode;
 
     /**
      * Canonical answer text for curriculum questions; NULL for MATCHING.

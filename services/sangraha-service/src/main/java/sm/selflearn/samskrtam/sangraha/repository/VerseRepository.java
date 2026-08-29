@@ -1,6 +1,7 @@
 package sm.selflearn.samskrtam.sangraha.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -20,6 +21,31 @@ public interface VerseRepository extends JpaRepository<Verse, UUID> {
     Optional<Verse> findByIdAndDeletedAtIsNull(UUID id);
 
     int countByChapterIdAndDeletedAtIsNull(UUID chapterId);
+
+    /**
+     * Число проанализированных (status = ANALYZED) не удалённых стихов произведения
+     * (по всем его не удалённым главам). Используется для подписи плитки произведения.
+     */
+    @Query("""
+            SELECT COUNT(v) FROM Verse v
+            WHERE v.chapterId IN (
+                SELECT c.id FROM Chapter c WHERE c.workId = :workId AND c.deletedAt IS NULL
+            )
+            AND v.status = :status AND v.deletedAt IS NULL
+            """)
+    int countAnalyzedByWorkIdAndDeletedAtIsNull(@Param("workId") UUID workId, @Param("status") VerseStatus status);
+
+    /**
+     * Общее число не удалённых стихов произведения (по всем его не удалённым главам).
+     */
+    @Query("""
+            SELECT COUNT(v) FROM Verse v
+            WHERE v.chapterId IN (
+                SELECT c.id FROM Chapter c WHERE c.workId = :workId AND c.deletedAt IS NULL
+            )
+            AND v.deletedAt IS NULL
+            """)
+    int countByWorkIdAndDeletedAtIsNull(@Param("workId") UUID workId);
 
     /**
      * Пакетный поиск стихов по списку ID: только ANALYZED, не удалённые.
@@ -85,7 +111,14 @@ public interface VerseRepository extends JpaRepository<Verse, UUID> {
               AND v.deletedAt IS NULL
             ORDER BY v.createdAt DESC
             """)
-    List<Verse> findAllByChapterIdIsNullAndOwnerIdAndDeletedAtIsNullOrderByCreatedAtDesc(
+List<Verse> findAllByChapterIdIsNullAndOwnerIdAndDeletedAtIsNullOrderByCreatedAtDesc(
             @Param("ownerId") UUID ownerId);
 
+    /**
+     * Сбрасывает стихи, зависшие в ANALYZING после аварийной остановки,
+     * обратно в DRAFT при старте (sangraha-service startup).
+     */
+    @Modifying
+    @Query("UPDATE Verse v SET v.status = :newStatus, v.updatedAt = CURRENT_TIMESTAMP WHERE v.status = :oldStatus")
+    int resetStatusByCurrentStatus(@Param("oldStatus") VerseStatus oldStatus, @Param("newStatus") VerseStatus newStatus);
 }

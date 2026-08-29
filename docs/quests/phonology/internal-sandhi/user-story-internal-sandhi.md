@@ -1,7 +1,7 @@
 # US-PHON-03 — Внутреннее сандхи при словообразовании
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `SANDHI_SPLIT (внутреннее)` (план)
-> Связанные файлы: [quest-catalog.md §3.1](../../../services/quest-catalog.md)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `SANDHI_SPLIT (внутреннее)` (план)
+> Связанные файлы: [quest-catalog.md §3.1](../../../services/curriculum-service/quest-catalog.md)
 
 ## История
 

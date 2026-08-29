@@ -1,76 +1,103 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { ProgressBar } from 'primereact/progressbar';
 import { Button } from 'primereact/button';
-
-interface TagSetProgressItem {
-  setId: string;
-  labelRu: string;
-  labelEn: string;
-  aggregatedProgress: number;
-  totalCombinations: number;
-  learnedCombinations: number;
-  status: string;
-}
+import { MiniProgressBar } from '../common/MiniProgressBar';
+import type {
+  CaseAggregation,
+  NumberAggregation,
+  PairAggregation,
+  WordStatus,
+} from '../../types/lesson';
 
 interface Props {
-  tagSets: TagSetProgressItem[];
-  quizSlug: string;
+  cases: CaseAggregation[];
+  numbers: NumberAggregation[];
+  pairs: PairAggregation[];
+  /** Колбэк для старта квиза по прогресс-тегу (setId) */
+  onStartQuiz: (progressTagSetId: string) => void;
 }
 
-const GrammarProgressTagSets: React.FC<Props> = ({ tagSets, quizSlug }) => {
+interface RowProgress {
+  aggregatedProgress: number;
+  status: WordStatus;
+}
+
+const GrammarProgressTagSets: React.FC<Props> = ({ cases, numbers, pairs, onStartQuiz }) => {
   const { i18n } = useTranslation();
-  const navigate = useNavigate();
 
-  const color = (status: string) => {
-    switch (status) {
-      case 'MASTERED': return 'var(--green-500)';
-      case 'LEARNING': return 'var(--blue-500)';
-      default: return 'var(--gray-400)';
-    }
-  };
+  if (cases.length === 0 && numbers.length === 0 && pairs.length === 0) return null;
 
-  if (tagSets.length === 0) return null;
+  const lang = i18n.language;
 
   return (
-    <div className="mt-4">
-      <h4 className="mb-3">
-        {i18n.language === 'ru' ? 'Дополнительные разрезы' : 'Additional slices'}
-      </h4>
-      <div className="grid">
-        {tagSets.map(ts => (
-          <div key={ts.setId} className="col-12 md:col-6 lg:col-4">
-            <div className="card p-3 flex align-items-center gap-3">
-              <div className="flex-1">
-                <div className="text-sm font-medium mb-2">
-                  {i18n.language === 'ru' ? ts.labelRu : ts.labelEn}
-                </div>
-                <ProgressBar
-                  value={ts.aggregatedProgress}
-                  color={color(ts.status)}
-                  style={{ height: '6px' }}
-                  showValue={false}
-                />
-                <div className="text-xs text-color-secondary mt-1">
-                  {ts.learnedCombinations}/{ts.totalCombinations}
-                </div>
-              </div>
-              <Button
-                icon="pi pi-angle-double-right"
-                severity="secondary"
-                text
-                rounded
-                tooltip={i18n.language === 'ru' ? 'Квиз' : 'Quiz'}
-                tooltipOptions={{ position: 'top' }}
-                onClick={() => navigate(`/quiz/grammar/${quizSlug}?progressTagSetId=${ts.setId}`)}
+    <div className="mt-4 pt-3 border-top-1 border-200">
+      <div className="grid pl-2">
+        <div className="col-12 md:col-6">
+          <div className="flex flex-column gap-1">
+            {cases.map(agg => (
+              <Row
+                key={agg.caseType}
+                id={agg.caseType}
+                name={lang === 'ru' ? agg.caseRu : agg.caseEn}
+                progress={agg}
+                lang={lang}
+                onStart={onStartQuiz}
               />
-            </div>
+            ))}
           </div>
-        ))}
+          <div className="flex flex-column gap-1 mt-3">
+            {numbers.map(agg => (
+              <Row
+                key={agg.numberType}
+                id={agg.numberType}
+                name={lang === 'ru' ? agg.numberRu : agg.numberEn}
+                progress={agg}
+                lang={lang}
+                onStart={onStartQuiz}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="col-12 md:col-6 md:pl-6">
+          <div className="flex flex-column gap-1">
+            {pairs.map(agg => (
+              <Row
+                key={agg.setId}
+                id={agg.setId}
+                name={lang === 'ru' ? `${agg.caseRuA} ↔ ${agg.caseRuB}` : `${agg.caseEnA} ↔ ${agg.caseEnB}`}
+                progress={agg}
+                lang={lang}
+                onStart={onStartQuiz}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
 };
+
+const Row: React.FC<{
+  id: string;
+  name: string;
+  progress: RowProgress;
+  lang: string;
+  onStart: (setId: string) => void;
+}> = ({ id, name, progress, lang, onStart }) => (
+  <div className="flex align-items-center gap-4" style={{ minHeight: 0 }}>
+    <span className="flex-1 text-sm" style={{ lineHeight: '1.25rem' }}>{name}</span>
+    <MiniProgressBar value={progress.aggregatedProgress} status={progress.status} />
+    <Button
+      icon="pi pi-angle-double-right"
+      severity="secondary"
+      text
+      rounded
+      style={{ width: '1.5rem', height: '1.5rem', padding: 0 }}
+      tooltip={lang === 'ru' ? 'Квиз' : 'Quiz'}
+      tooltipOptions={{ position: 'top' }}
+      onClick={() => onStart(id)}
+    />
+  </div>
+);
 
 export default GrammarProgressTagSets;

@@ -8,8 +8,8 @@ import sm.selflearn.samskrtam.curriculum.lexicon.dto.LexiconDashboardResponse;
 import sm.selflearn.samskrtam.curriculum.lexicon.service.LexiconDashboardService;
 
 /**
- * Lexicon home page (the "Лексика" dashboard). Returns the real lexicon
- * taxonomy with (currently random) per-user progress.
+ * Лендинг раздела «Лексика» (новая модель: lemma_translation +
+ * lemma_lexical_topic). Без привязки к {@code Lexeme}.
  */
 @RestController
 @RequestMapping("/api/v2/curriculum/lexicon")

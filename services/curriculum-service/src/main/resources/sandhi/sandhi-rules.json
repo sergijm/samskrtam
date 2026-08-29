@@ -1,4 +1,4 @@
-﻿{
+{
   "source": "М. Эмено, правила сандхи (нумерация правил 1–71); в скобках — номера Уитни (W) и, для внешних сандхи, дополнительно Панини (P)",
   "note_applicability": "internal — правило действует внутри словоформы (корень/основа + суффикс), результат уже 'зашит' в готовое слово, которое видно в тексте; для sandhiSplits (границы между словами в стихе) НЕ применяется, но нужно для объяснения формы слова в грамматическом разборе (words[]). external — правило действует на стыке слов во фразе (а также между членами сложного слова); именно эти правила (41–71) нужно цитировать в sandhiSplits.",
   "sections": {
@@ -16,7 +16,7 @@
     "полугласная": "y, v, r, l.",
     "носовая": "n, m, ṅ, ñ, ṇ (а также анусвара как назализация).",
     "взрывная (смычная)": "k, kh, g, gh; c, ch, j, jh; ṭ, ṭh, ḍ, ḍh; t, th, d, dh; p, ph, b, bh.",
-    "звонкая / глухая": "voiced/voiceless: g, gh, j, jh, ḍ, ḍh, d, dh, b, bh, а также все гласные и сонанты — звонкие; k, kh, c, ch, ṭ, ṭh, t, th, p, ph,ś, ṣ, s — глухие.",
+    "звонкая / глухая": "voiced/voiceless: g, gh, j, jh, ḍ, ḍh, d, dh, b, bh, а также все гласные и сонанты — звонкие; k, kh, c, ch, ṭ, ṭh, t, th, p, ph, ś, ṣ, s — глухие.",
     "придыхательная / непридыхательная": "aspirated/unaspirated: kh, gh, ch, jh, ṭh, ḍh, th, dh, ph, bh — придыхательные; их пары без придыхания (k, g, c, j...) — непридыхательные.",
     "сибилянт": "ś, ṣ, s (шипящие/свистящие).",
     "простая гласная (монофтонг)": "a, ā, i, ī, u, ū, ṛ, ṝ, ḷ (не дифтонг).",
@@ -25,7 +25,36 @@
     "гуна (guṇa)": "Определённая ступень чередования гласного: a не меняется; i/ī ⇒ e; u/ū ⇒ o; ṛ/ṝ ⇒ ar; ḷ ⇒ al. Используется, например, в правилах 2 и 43.",
     "морфофонема": "Абстрактная промежуточная единица описания (не звук сам по себе), которая при реализации даёт конкретный звук по контексту; в правилах используется как способ компактно описать результат слияния (например, 'a+a ⇒ морфофонема ā' означает, что результат — обычная долгая ā).",
     "анусвара": "Назализация гласного перед согласной, на письме — ṃ.",
-    "висарга": "Глухой придыхательный звук в конце слова, на письме — ḥ; исторически восходит к финальным -s, -r (см. правило 57)."
+    "висарга": "Глухой придыхательный звук в конце слова, на письме — ḥ; исторически восходит к финальным -s, -r (см. правило 57).",
+    "supersedes": "Список правил, которые данное правило ЗАМЕНЯЕТ...",
+    "default_for": "Список правил, для которых данное правило является ОБЩИМ СЛУЧАЕМ...",
+    "applies_with": "Список правил, которые применяются ОДНОВРЕМЕННО с данным правилом..."
+  },
+  "category_glossary": {
+    "vowel": "Гласные",
+    "short_vowel": "Краткие",
+    "long_vowel": "Долгие",
+    "diphthong": "Дифтонги",
+    "consonant": "Согласные",
+    "visarga": "Висарга",
+    "nasal": "Носовые",
+    "plosive": "Взрывные",
+    "sibilant": "Сибилянты",
+    "semivowel": "Полугласные",
+    "voicing": "Оглушение/озвончение",
+    "aspiration": "Придыхательность",
+    "homorganic": "Гоморганность",
+    "cluster": "Кластеры согласных",
+    "vowel_fusion": "Слияние гласных",
+    "vowel_semivowel": "Гласной->полугласная",
+    "final": "Абсолютный исход",
+    "external": "Внешнее",
+    "internal": "Внутреннее",
+    "guttural": "Заднеязычные",
+    "palatal": "Палатальные",
+    "cerebral": "Церебральные",
+    "dental": "Зубные",
+    "labial": "Губные"
   },
   "rules": [
     {
@@ -34,7 +63,11 @@
       "applicability": "internal",
       "text": "Гласная a или ā вместе со следующим дифтонгом заменяются одной морфофонемой — соответствующим долгим дифтонгом.",
       "example": "deva- 'бог' + -āu (им. п. дв. ч.) ⇒ devāu 'два бога'.",
-      "reference": "W 127"
+      "reference": "W 127",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [42],
+      "category": ["vowel", "diphthong", "long_vowel", "vowel_fusion", "internal"]
     },
     {
       "number": 2,
@@ -42,7 +75,11 @@
       "applicability": "internal",
       "text": "Гласная a или ā вместе со следующей неоднородной простой гласной заменяются гуной второй гласной.",
       "example": "bhava- 'быть' + -ī- (оптатив) + -t (3 л. ед. ч.) ⇒ bhavet 'он-она-оно да будет'.",
-      "reference": "W 127"
+      "reference": "W 127",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [43],
+      "category": ["vowel", "diphthong", "vowel_fusion", "internal"]
     },
     {
       "number": 3,
@@ -50,7 +87,11 @@
       "applicability": "internal",
       "text": "Дифтонг перед гласной заменяется сочетанием краткой или долгой a (в зависимости от долготы дифтонга) с соответствующей полугласной.",
       "example": "agni- 'огонь' + гуна + -as (им. п. мн. ч.) ⇒ agneas ⇒ agnayas 'огни'; nāu- 'корабль' + -ā (тв. п. ед. ч.) ⇒ nāvā 'кораблём'.",
-      "reference": "W 131"
+      "reference": "W 131",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [47, 48],
+      "category": ["vowel", "diphthong", "semivowel", "vowel_semivowel", "internal"]
     },
     {
       "number": 4,
@@ -58,7 +99,11 @@
       "applicability": "internal",
       "text": "Конечные краткие или долгие i, u односложного корня или основы перед гласной заменяются на iy, uv соответственно; правило применимо и к суффиксу о.н.в. -nu-. Основы перфекта от корней на -u/-ū (кроме bhū-) и от i- 'идти' следуют этому правилу; остальные корни на -i/-ī подчиняются правилу 6.",
       "example": "strī- 'женщина' + -ā ⇒ striyā 'женщиной'; bhū- 'земля' + -ā ⇒ bhuvā 'землёй'.",
-      "reference": "W 129a"
+      "reference": "W 129a",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [6],
+      "category": ["vowel", "short_vowel", "long_vowel", "semivowel", "vowel_semivowel", "final", "palatal", "labial", "internal"]
     },
     {
       "number": 5,
@@ -66,7 +111,11 @@
       "applicability": "internal",
       "text": "Конечная ṝ корня или односложной именной основы (кроме форм от nṛ- 'человек'): после губной согласной перед гласной ⇒ ur, не перед гласной ⇒ ūr; после негубной согласной перед гласной ⇒ ir, не перед гласной ⇒ īr.",
       "example": "pṝ- 'город' + -ā ⇒ purā 'городом'; pṝ- + -bhyām ⇒ pūrbhyām 'двумя городами'; kṝ- 'рассыпать' + -ati ⇒ kirati 'он рассыпает'; + -yate ⇒ kīryate 'оно рассыпается'.",
-      "reference": "W 242"
+      "reference": "W 242",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [],
+      "category": ["vowel", "long_vowel", "semivowel", "vowel_semivowel", "final", "labial", "internal"]
     },
     {
       "number": 6,
@@ -74,7 +123,11 @@
       "applicability": "internal",
       "text": "Краткая ṛ, а также краткие и долгие i, u в случаях, не подпадающих под правило 4, перед любой неоднородной гласной заменяются соответствующими полугласными.",
       "example": "pitṛ- 'отец' + -os (род. п. дв. ч.) ⇒ pitros 'двух отцов'; juhu- 'жертвовать' + -ati ⇒ juhvati 'они совершают жертвоприношение'.",
-      "reference": "W 129"
+      "reference": "W 129",
+      "supersedes": [],
+      "default_for": [4],
+      "applies_with": [45],
+      "category": ["vowel", "short_vowel", "long_vowel", "semivowel", "vowel_semivowel", "internal"]
     },
     {
       "number": 7,
@@ -82,7 +135,11 @@
       "applicability": "internal",
       "text": "Последовательность двух однородных простых гласных заменяется одной морфофонемой — соответствующей долгой гласной.",
       "example": "a- (аугмент) + as- 'быть' + -īt (3 л. ед. ч. имперфекта) ⇒ āsīt 'он был'; u- + ucus ⇒ ūcus 'они сказали'.",
-      "reference": "W 126"
+      "reference": "W 126",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [44],
+      "category": ["vowel", "short_vowel", "long_vowel", "vowel_fusion", "internal"]
     },
     {
       "number": 8,
@@ -90,7 +147,11 @@
       "applicability": "internal",
       "text": "На конце слова сочетание r + взрывная не подвергается действию правила 9, если взрывная — часть основы.",
       "example": "suhārd- 'друг' + -s (им. п. ед. ч.) ⇒ suhārd ⇒ suhārt (см. прав. 31).",
-      "reference": "W 150b"
+      "reference": "W 150b",
+      "supersedes": [9],
+      "default_for": [],
+      "applies_with": [31],
+      "category": ["consonant", "semivowel", "plosive", "cluster", "final", "cerebral", "internal"]
     },
     {
       "number": 9,
@@ -98,7 +159,11 @@
       "applicability": "internal",
       "text": "На конце слова из сочетания согласных исчезают все, кроме первой (которая затем подвергается внешним сандхи).",
       "example": "bharant- 'несущий' + -s ⇒ bharan 'несущий'.",
-      "reference": "W 150"
+      "reference": "W 150",
+      "supersedes": [],
+      "default_for": [8],
+      "applies_with": [33],
+      "category": ["consonant", "cluster", "final", "internal"]
     },
     {
       "number": 10,
@@ -106,7 +171,11 @@
       "applicability": "internal",
       "text": "После гласной ch заменяется на cch (т.е. ch количественно эквивалентна сочетанию согласных).",
       "example": "gach- 'идти' + -ati ⇒ gacchati 'он идёт'.",
-      "reference": "W 227"
+      "reference": "W 227",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [49],
+      "category": ["consonant", "cluster", "palatal", "internal"]
     },
     {
       "number": 11,
@@ -114,7 +183,11 @@
       "applicability": "internal",
       "text": "m перед v или m заменяется на n.",
       "example": "agam- 'пошёл' + -va 'мы двое' ⇒ aganva 'мы двое пошли'; + -ma ⇒ aganma 'мы пошли'.",
-      "reference": "W 212a"
+      "reference": "W 212a",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [],
+      "category": ["consonant", "nasal", "homorganic", "labial", "dental", "internal"]
     },
     {
       "number": 12,
@@ -122,7 +195,11 @@
       "applicability": "internal",
       "text": "s между взрывными исчезает.",
       "example": "acchid- 'рассёк' + -s-ta (3 л. ед. ч. аориста) ⇒ acchitta 'он рассёк' (см. прав. 31).",
-      "reference": "W 233c-f"
+      "reference": "W 233c-f",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [31],
+      "category": ["consonant", "sibilant", "plosive", "cluster", "dental", "internal"]
     },
     {
       "number": 13,
@@ -130,7 +207,11 @@
       "applicability": "internal",
       "text": "s перед падежным окончанием, начинающимся с согласной, заменяется на ḥ.",
       "example": "havis- 'подношение' + -su (местн. п. мн. ч.) ⇒ haviḥ- + -su ⇒ haviḥṣu 'среди подношений' (см. прав. 36).",
-      "reference": "W 111a"
+      "reference": "W 111a",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [36, 53],
+      "category": ["consonant", "sibilant", "visarga", "dental", "internal"]
     },
     {
       "number": 14,
@@ -138,7 +219,11 @@
       "applicability": "internal",
       "text": "В некоторых формах s перед s заменяется на t.",
       "example": "vas- 'обитать' + -syati (3 л. ед. ч. будущего времени) ⇒ vatsyati 'он будет обитать'.",
-      "reference": "W 167"
+      "reference": "W 167",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [],
+      "category": ["consonant", "sibilant", "plosive", "cluster", "dental", "internal"]
     },
     {
       "number": 15,
@@ -146,7 +231,11 @@
       "applicability": "internal",
       "text": "s перед dh утрачивается.",
       "example": "śās- 'обучать' + -dhi (2 л. ед. ч. повел. накл.) ⇒ śādhi 'обучи'.",
-      "reference": "W 166"
+      "reference": "W 166",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [],
+      "category": ["consonant", "sibilant", "plosive", "cluster", "dental", "internal"]
     },
     {
       "number": 16,
@@ -154,7 +243,11 @@
       "applicability": "internal",
       "text": "h в корне han- 'убивать' заменяется на gh, если гласная корня исчезает по морфологическому правилу.",
       "example": "han- + -anti ⇒ ghnanti 'они убивают'.",
-      "reference": "W 216l"
+      "reference": "W 216l",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [],
+      "category": ["consonant", "plosive", "aspiration", "voicing", "guttural", "internal"]
     },
     {
       "number": 17,
@@ -163,7 +256,11 @@
       "text": "h в nah- 'связывать' трактуется как dh.",
       "example": "nah- + -syati ⇒ nadh- + -syati ⇒ natsyati 'он свяжет' (см. прав. 31, 33).",
       "reference": "W 223g",
-      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.)."
+      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.).",
+      "supersedes": [19],
+      "default_for": [],
+      "applies_with": [31, 33],
+      "category": ["consonant", "plosive", "aspiration", "dental", "final", "internal"]
     },
     {
       "number": 18,
@@ -172,7 +269,11 @@
       "text": "h в корнях с начальной d, в uṣṇih- (стихотворный размер) и факультативно в druh- 'вредить', snih- 'быть мокрым', muh- 'смущаться' трактуется как gh.",
       "example": "duh- 'доить' + -syati ⇒ dhokṣyati 'он будет доить' (см. прав. 31, 33, 34, 36); + -dhi ⇒ dugdhi 'дои'; + -ta- ⇒ dugdha- 'подоенная'.",
       "reference": "W 222a",
-      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.)."
+      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.).",
+      "supersedes": [19],
+      "default_for": [],
+      "applies_with": [31, 33, 34, 36],
+      "category": ["consonant", "plosive", "aspiration", "voicing", "guttural", "final", "internal"]
     },
     {
       "number": 19,
@@ -181,7 +282,11 @@
       "text": "В остальных случаях: (а) h + любая из t/th/dh ⇒ ḍh, с удлинением предшествующих a/i/u (у vah-, sah- вместо удлинения — o); (б) h перед другой из допустимых согласных или в абсолютном исходе ⇒ k (в глагольных формах) или ṭ (в именных).",
       "example": "lih- 'лизать' + -ta ⇒ līḍha- 'слизанный'; vah- ⇒ voḍha- 'привезённый'; lih- + -syati ⇒ lekṣyati 'он будет лизать'; madhulih- 'пчела' + -su ⇒ madhuliṭsu 'среди пчёл'.",
       "reference": "W 222b",
-      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.)."
+      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.).",
+      "supersedes": [],
+      "default_for": [17, 18],
+      "applies_with": [33, 36],
+      "category": ["consonant", "plosive", "aspiration", "voicing", "final", "homorganic", "dental", "cerebral", "guttural", "internal"]
     },
     {
       "number": 20,
@@ -190,7 +295,11 @@
       "text": "kṣ в jakṣ- 'есть' трактуется как gh.",
       "example": "jakṣ- + -ta ⇒ jagdha- 'съеденный' (см. прав. 30, 33).",
       "reference": "W 221a, W 233f",
-      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.)."
+      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.).",
+      "supersedes": [21],
+      "default_for": [],
+      "applies_with": [30, 33],
+      "category": ["consonant", "cluster", "plosive", "aspiration", "voicing", "final", "guttural", "internal"]
     },
     {
       "number": 21,
@@ -199,7 +308,11 @@
       "text": "В остальных случаях kṣ: (a) в абсолютном исходе/перед s в глагольных формах ⇒ k; (б) то же в именных формах ⇒ ṭ; (в) перед t ⇒ ṣ; (г) перед другими допустимыми согласными ⇒ ṭ.",
       "example": "takṣ- 'тесать' + -syati ⇒ takṣyati 'он будет тесать' (см. прав. 36); + -ta ⇒ taṣṭa- 'стёсанный' (см. прав. 38).",
       "reference": "W 221",
-      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.)."
+      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.).",
+      "supersedes": [],
+      "default_for": [20],
+      "applies_with": [36, 38],
+      "category": ["consonant", "cluster", "plosive", "sibilant", "final", "homorganic", "guttural", "cerebral", "dental", "internal"]
     },
     {
       "number": 22,
@@ -209,9 +322,11 @@
       "example": "prakṣyati 'он будет спрашивать' (см. прав. 36); pṛṣṭvā 'спросив' (см. прав. 38).",
       "reference": "W 220",
       "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.).",
-      "see_also": [
-        21
-      ]
+      "see_also": [21],
+      "supersedes": [21],
+      "default_for": [],
+      "applies_with": [36, 38],
+      "category": ["consonant", "cluster", "plosive", "aspiration", "final", "homorganic", "palatal", "guttural", "cerebral", "dental", "internal"]
     },
     {
       "number": 23,
@@ -221,9 +336,11 @@
       "example": "vrakṣyati 'он будет рубить' (см. прав. 36); vṛṣṭvā 'срубив' (см. прав. 38).",
       "reference": "W 221b",
       "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.).",
-      "see_also": [
-        21
-      ]
+      "see_also": [21],
+      "supersedes": [21],
+      "default_for": [],
+      "applies_with": [36, 38],
+      "category": ["consonant", "cluster", "plosive", "sibilant", "final", "homorganic", "palatal", "guttural", "cerebral", "dental", "internal"]
     },
     {
       "number": 24,
@@ -233,9 +350,11 @@
       "example": "dviṣ- 'ненавидеть': dvekṣyati 'он будет ненавидеть' (см. прав. 36); dviṭ 'враг' (им. п. ед. ч.); dviṣṭa- 'ненавистный' (см. прав. 38).",
       "reference": "W 226",
       "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.).",
-      "see_also": [
-        21
-      ]
+      "see_also": [21],
+      "supersedes": [],
+      "default_for": [21],
+      "applies_with": [36, 38],
+      "category": ["consonant", "sibilant", "final", "homorganic", "cerebral", "guttural", "dental", "internal"]
     },
     {
       "number": 25,
@@ -245,9 +364,11 @@
       "example": "viś- 'племя', viṭsu 'среди племён'; но diś- 'направление', dikṣu 'в направлениях' (см. прав. 36).",
       "reference": "W 218a",
       "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.).",
-      "see_also": [
-        21
-      ]
+      "see_also": [21],
+      "supersedes": [21, 22, 23, 24],
+      "default_for": [],
+      "applies_with": [36],
+      "category": ["consonant", "sibilant", "final", "palatal", "guttural", "internal"]
     },
     {
       "number": 26,
@@ -257,9 +378,11 @@
       "example": "yakṣyati 'он будет совершать жертвоприношение' (см. прав. 36); parivrāṭ 'монах'; mṛṣṭvā 'вытерев' (см. прав. 38); но ṛtvikṣu 'среди жрецов'.",
       "reference": "W 219b-c",
       "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.).",
-      "see_also": [
-        21
-      ]
+      "see_also": [21],
+      "supersedes": [21],
+      "default_for": [],
+      "applies_with": [36, 38],
+      "category": ["consonant", "plosive", "voicing", "final", "homorganic", "palatal", "guttural", "cerebral", "internal"]
     },
     {
       "number": 27,
@@ -268,7 +391,11 @@
       "text": "jh трактуется как k. Правило грамматистов, не имеющее засвидетельствованного употребления.",
       "example": null,
       "reference": "W 220b",
-      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.)."
+      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.).",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [28],
+      "category": ["consonant", "plosive", "aspiration", "voicing", "final", "palatal", "guttural", "internal"]
     },
     {
       "number": 28,
@@ -277,7 +404,11 @@
       "text": "c трактуется как k.",
       "example": "vac- 'говорить', vakṣyati 'он скажет' (см. прав. 36); ukta- 'сказанный'.",
       "reference": "W 217",
-      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.)."
+      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.).",
+      "supersedes": [],
+      "default_for": [27],
+      "applies_with": [36],
+      "category": ["consonant", "plosive", "final", "homorganic", "palatal", "guttural", "internal"]
     },
     {
       "number": 29,
@@ -286,7 +417,11 @@
       "text": "j обычно (кроме случаев правила 26) трактуется как g, в том числе перед некоторыми носовыми суффиксами.",
       "example": "yuj- 'соединять', yokṣyati 'он соединит' (см. прав. 31, 36); yukta- 'соединённый' (см. прав. 31).",
       "reference": "W 219a",
-      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.)."
+      "context": "Условие применения (общее для правил 17–29): действует в абсолютном исходе слова или перед любой согласной, КРОМЕ полугласной (y, v, r, l) или носовой (n, m и т.п.).",
+      "supersedes": [],
+      "default_for": [26],
+      "applies_with": [31, 36],
+      "category": ["consonant", "plosive", "voicing", "final", "homorganic", "palatal", "guttural", "internal"]
     },
     {
       "number": 30,
@@ -294,7 +429,11 @@
       "applicability": "internal",
       "text": "t, th заменяются звонкой придыхательной зубной взрывной (dh) после любой звонкой придыхательной взрывной. Не применяется к о.н.в. dadh- и к дезидеративу от dhā- 'класть'.",
       "example": "budh- 'бодрствовать' + -ta- ⇒ buddha- 'пробуждённый' (см. прав. 33); labh- 'получать' + -tṛ ⇒ labdhṛ- 'получатель'.",
-      "reference": "W 160"
+      "reference": "W 160",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [33],
+      "category": ["consonant", "plosive", "aspiration", "voicing", "homorganic", "dental", "internal"]
     },
     {
       "number": 31,
@@ -302,7 +441,11 @@
       "applicability": "internal",
       "text": "Звонкая взрывная заменяется соответствующей глухой перед глухой согласной или в абсолютном исходе.",
       "example": "vid- 'знать': vetsi 'ты знаешь'; budh- + -syate ⇒ bhotsyate 'он будет бодрствовать' (см. прав. 33, 34).",
-      "reference": "W 141, W 159"
+      "reference": "W 141, W 159",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [33, 34],
+      "category": ["consonant", "plosive", "voicing", "final", "homorganic", "internal"]
     },
     {
       "number": 32,
@@ -310,7 +453,11 @@
       "applicability": "internal",
       "text": "Глухая взрывная заменяется соответствующей звонкой перед звонкой взрывной.",
       "example": "śak- 'мочь' + -dhi ⇒ śagdhi 'помоги'; diś- 'место' + -bhyas ⇒ digbhyas 'из мест' (см. прав. 25).",
-      "reference": "W 159"
+      "reference": "W 159",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [25, 71],
+      "category": ["consonant", "plosive", "voicing", "homorganic", "internal"]
     },
     {
       "number": 33,
@@ -318,7 +465,11 @@
       "applicability": "internal",
       "text": "Придыхательная взрывная перед взрывной, сибилянтом или в абсолютном исходе заменяется соответствующей непридыхательной.",
       "example": "likh- 'писать', citralikh- + -s ⇒ citralik 'живописец' (см. прав. 9); budh- + -syate ⇒ bhotsyate 'он будет бодрствовать' (см. прав. 34).",
-      "reference": "W 141, W 153"
+      "reference": "W 141, W 153",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [9, 34],
+      "category": ["consonant", "plosive", "aspiration", "final", "internal"]
     },
     {
       "number": 34,
@@ -326,7 +477,11 @@
       "applicability": "internal",
       "text": "В ряде корней (dah-, dih-, duh-, druh-, dṛṃh-, guh-, bandh-, bādh-, budh- и др.), когда конечная h/звонкая придыхательная заменяется непридыхательной (по правилам 19, 33), начальная звонкая непридыхательная корня заменяется придыхательной — если это не приводит по более раннему правилу (19, 30) к сочетанию, оканчивающемуся звонкой придыхательной.",
       "example": "adhok 'он доил'; bhotsyate 'он будет бодрствовать'; но dogdhi 'он доит'. Отдельно: 2 л. мн. ч. со звонкими окончаниями сред. залога может сохранять две придыхательные — dhugdhve 'вы доите', adhugdhvam 'вы доили'; тв. п. мн. ч. bhudbhis 'бодрствующими' (от budh-).",
-      "reference": "W 155"
+      "reference": "W 155",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [19, 30, 33],
+      "category": ["consonant", "plosive", "aspiration", "voicing", "internal"]
     },
     {
       "number": 35,
@@ -334,7 +489,11 @@
       "applicability": "internal",
       "text": "Носовая перед сибилянтом заменяется анусварой.",
       "example": "man- 'думать': maṃsyate 'он будет думать'.",
-      "reference": "W 204"
+      "reference": "W 204",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [60],
+      "category": ["consonant", "nasal", "homorganic", "internal"]
     },
     {
       "number": 36,
@@ -342,7 +501,11 @@
       "applicability": "internal",
       "text": "s после гласной (кроме краткой/долгой a) или после k/r/l заменяется на ṣ — если не на конце слова и не перед r; анусвара/висарга между гласной и s не мешает замене, кроме puṃs- 'человек', hiṃs- 'вредить' и нескольких других слов.",
       "example": "agni- 'огонь' + -su ⇒ agniṣu 'в огнях'; vāk- 'голос' + -su ⇒ vākṣu 'среди голосов'.",
-      "reference": "W 180-183"
+      "reference": "W 180-183",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [13, 35],
+      "category": ["consonant", "sibilant", "homorganic", "dental", "cerebral", "internal"]
     },
     {
       "number": 37,
@@ -350,7 +513,11 @@
       "applicability": "internal",
       "text": "n, стоящая непосредственно перед гласной/полугласной/носовой и после ṣ, r, ṛ, ṝ (на любом расстоянии в том же слове, без промежуточных палатальных кроме y, церебральных или зубных), заменяется на ṇ. В некоторых словах ṇ возникает независимо от этого правила.",
       "example": "nara- 'человек' + -nām ⇒ narāṇām 'людей'; nṛ- 'человек' + -nām ⇒ nṝṇām 'людей'; brahman- 'жрец' + -ya ⇒ brahmaṇya- 'благочестивый'.",
-      "reference": "W 189"
+      "reference": "W 189",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [36],
+      "category": ["consonant", "nasal", "homorganic", "dental", "cerebral", "internal"]
     },
     {
       "number": 38,
@@ -358,7 +525,11 @@
       "applicability": "internal",
       "text": "После церебральной согласной зубная взрывная или носовая (но не взрывная после r-) заменяется соответствующей церебральной.",
       "example": "dviṣ- 'ненавидеть' + -ta ⇒ dviṣṭa- 'ненавистный'; īḍ- 'молить' + -te ⇒ īṭṭe- 'он молит' (см. прав. 31).",
-      "reference": "W 197-198"
+      "reference": "W 197-198",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [36],
+      "category": ["consonant", "plosive", "nasal", "homorganic", "dental", "cerebral", "internal"]
     },
     {
       "number": 39,
@@ -366,7 +537,11 @@
       "applicability": "internal",
       "text": "Носовая перед взрывной заменяется носовой, соответствующей этой взрывной (по месту образования).",
       "example": "yuj- 'соединять' + носовой инфикс -n-: yu-n-j- + -mas ⇒ yuñjmas 'мы соединяем'; yu-n-gdhi ⇒ yuṅgdhi 'соедини'.",
-      "reference": "W 212"
+      "reference": "W 212",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [],
+      "category": ["consonant", "nasal", "plosive", "homorganic", "internal"]
     },
     {
       "number": 40,
@@ -374,7 +549,11 @@
       "applicability": "internal",
       "text": "n после палатальной взрывной заменяется палатальной носовой.",
       "example": "yaj- 'жертвовать' + -na- (суффикс действия) ⇒ yajña- 'жертвоприношение'.",
-      "reference": "W 201"
+      "reference": "W 201",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [],
+      "category": ["consonant", "nasal", "plosive", "homorganic", "palatal", "dental", "internal"]
     },
     {
       "number": 41,
@@ -382,7 +561,11 @@
       "applicability": "external",
       "text": "После форм дв. ч. на -ī/-ū/-e, после местоимения amī (им. п. мн. ч. м. р.), или после междометия из одной гласной (напр. ā), сандхи не действует (pragṛhya).",
       "example": "yajete ubhāu 'оба совершают жертвоприношение' (без сандхи).",
-      "reference": "W 138; P 1.1.11-19"
+      "reference": "W 138; P 1.1.11-19",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [],
+      "category": ["vowel", "long_vowel", "diphthong", "external"]
     },
     {
       "number": 42,
@@ -390,7 +573,11 @@
       "applicability": "external",
       "text": "Гласная a/ā вместе со следующим дифтонгом заменяются долгим дифтонгом (ср. правило 1).",
       "example": "tatra eti ⇒ tatrāi 'ti 'там он идёт'.",
-      "reference": "W 127; P 6.1.88"
+      "reference": "W 127; P 6.1.88",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [1],
+      "category": ["vowel", "diphthong", "long_vowel", "vowel_fusion", "external"]
     },
     {
       "number": 43,
@@ -398,7 +585,11 @@
       "applicability": "external",
       "text": "Гласная a/ā вместе со следующей неоднородной простой гласной заменяются гуной второй гласной (ср. правило 2).",
       "example": "tatra īhate ⇒ tatre 'hate 'там он жаждет'; tathā uktam ⇒ tatho 'ktam 'сказано так'; brahma- + ṛṣi- ⇒ brahmarṣi- 'брахман-провидец'.",
-      "reference": "W 127; P 6.1.87"
+      "reference": "W 127; P 6.1.87",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [2],
+      "category": ["vowel", "diphthong", "vowel_fusion", "external"]
     },
     {
       "number": 44,
@@ -406,7 +597,11 @@
       "applicability": "external",
       "text": "Последовательность однородных простых гласных заменяется долгой гласной (ср. правило 7).",
       "example": "tatra asti ⇒ tatrā 'sti 'там он есть'; tathā āste ⇒ tathā 'ste 'так он сидит'; asti iha ⇒ astī 'ha 'он есть здесь'.",
-      "reference": "W 126; P 6.1.101"
+      "reference": "W 126; P 6.1.101",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [7],
+      "category": ["vowel", "short_vowel", "long_vowel", "vowel_fusion", "external"]
     },
     {
       "number": 45,
@@ -414,7 +609,11 @@
       "applicability": "external",
       "text": "В остальных случаях простая гласная перед любой неоднородной гласной заменяется соответствующей полугласной.",
       "example": "asti atra ⇒ asty atra 'он есть здесь'; iti uktam ⇒ ity uktam 'сказано так'.",
-      "reference": "W 129; P 6.1.77"
+      "reference": "W 129; P 6.1.77",
+      "supersedes": [],
+      "default_for": [43, 44],
+      "applies_with": [4, 6],
+      "category": ["vowel", "short_vowel", "long_vowel", "semivowel", "vowel_semivowel", "external"]
     },
     {
       "number": 46,
@@ -422,7 +621,11 @@
       "applicability": "external",
       "text": "После краткого дифтонга начальная a- утрачивается.",
       "example": "vane asti ⇒ vane 'sti 'он есть в лесу'.",
-      "reference": "W 135; P 6.1.109"
+      "reference": "W 135; P 6.1.109",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [47, 48],
+      "category": ["vowel", "diphthong", "vowel_fusion", "external"]
     },
     {
       "number": 47,
@@ -430,7 +633,11 @@
       "applicability": "external",
       "text": "-e перед любой гласной, кроме a-, и -āi перед любой гласной заменяются на -a, -ā соответственно.",
       "example": "vane iha ⇒ vana iha 'здесь в лесу'; tasmāi atra ⇒ tasmā atra 'ему здесь'.",
-      "reference": "W 133; P 6.1.78, P 8.3.19"
+      "reference": "W 133; P 6.1.78, P 8.3.19",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [3, 45],
+      "category": ["vowel", "diphthong", "long_vowel", "vowel_semivowel", "external"]
     },
     {
       "number": 48,
@@ -438,7 +645,11 @@
       "applicability": "external",
       "text": "-o перед любой гласной, кроме a-, и -āu перед любой гласной заменяются на -av, -āv соответственно.",
       "example": "tāu atra ⇒ tāv atra 'они (двое) здесь'.",
-      "reference": "W 134b"
+      "reference": "W 134b",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [3, 45],
+      "category": ["vowel", "diphthong", "long_vowel", "vowel_semivowel", "labial", "external"]
     },
     {
       "number": 49,
@@ -446,7 +657,11 @@
       "applicability": "external",
       "text": "После краткой гласной, предлога ā и наречия mā происходит замена ch на cch (ср. правило 10); факультативно — и после долгих гласных.",
       "example": "tava chāyā ⇒ tava cchāyā 'твоя тень'.",
-      "reference": "P 6.1.74"
+      "reference": "P 6.1.74",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [10],
+      "category": ["consonant", "plosive", "aspiration", "cluster", "palatal", "external"]
     },
     {
       "number": 50,
@@ -454,7 +669,11 @@
       "applicability": "external",
       "text": "Последовательность -as и начальной a- заменяется морфофонемой -o.",
       "example": "devas asti ⇒ devo 'sti 'бог есть'.",
-      "reference": "W 175a; P 6.1.113"
+      "reference": "W 175a; P 6.1.113",
+      "supersedes": [53],
+      "default_for": [],
+      "applies_with": [],
+      "category": ["vowel", "visarga", "vowel_fusion", "external"]
     },
     {
       "number": 51,
@@ -462,7 +681,11 @@
       "applicability": "external",
       "text": "-s в -as исчезает перед любой гласной, кроме a-.",
       "example": "devas āste ⇒ deva āste 'бог сидит'; devas iha ⇒ deva iha 'бог здесь'.",
-      "reference": "W 175c; P 8.3.17"
+      "reference": "W 175c; P 8.3.17",
+      "supersedes": [53],
+      "default_for": [],
+      "applies_with": [55],
+      "category": ["consonant", "sibilant", "visarga", "external"]
     },
     {
       "number": 52,
@@ -470,7 +693,11 @@
       "applicability": "external",
       "text": "Конечная -s в sas 'он, тот' и eṣas 'этот' (им. п. ед. ч.) исчезает перед любой согласной.",
       "example": "sas gacchati ⇒ sa gacchati 'он идёт'; eṣas brāhmaṇas ⇒ eṣa brāhmaṇaḥ 'этот брахман'.",
-      "reference": "W 176a; P 6.1.132"
+      "reference": "W 176a; P 6.1.132",
+      "supersedes": [53],
+      "default_for": [],
+      "applies_with": [57],
+      "category": ["consonant", "sibilant", "visarga", "final", "external"]
     },
     {
       "number": 53,
@@ -478,7 +705,11 @@
       "applicability": "external",
       "text": "В остальных случаях -as/-aḥ (см. правило 13) перед звонкой согласной заменяется на -o.",
       "example": "devas gacchati ⇒ devo gacchati 'бог идёт'; manaḥ + bhis ⇒ manobhis 'умами'.",
-      "reference": "W 175a; P 6.1.114"
+      "reference": "W 175a; P 6.1.114",
+      "supersedes": [],
+      "default_for": [50, 51, 52],
+      "applies_with": [13, 57],
+      "category": ["vowel", "visarga", "vowel_fusion", "external"]
     },
     {
       "number": 54,
@@ -486,7 +717,11 @@
       "applicability": "external",
       "text": "-s в bhos 'о господин!' исчезает перед звонкой.",
       "example": "bhos bhos deva ⇒ bho bho deva 'эй! эй! бог!'.",
-      "reference": "W 174b; P 8.3.17, P 8.3.19-22"
+      "reference": "W 174b; P 8.3.17, P 8.3.19-22",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [53, 55],
+      "category": ["consonant", "sibilant", "visarga", "external"]
     },
     {
       "number": 55,
@@ -494,7 +729,11 @@
       "applicability": "external",
       "text": "-s в -ās перед звонкой исчезает.",
       "example": "devās gacchanti ⇒ devā gacchanti 'боги идут'; devās āsate ⇒ devā āsate 'боги сидят'.",
-      "reference": "W 177"
+      "reference": "W 177",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [51],
+      "category": ["consonant", "sibilant", "visarga", "external"]
     },
     {
       "number": 56,
@@ -502,7 +741,11 @@
       "applicability": "external",
       "text": "Конечные -s и -r исчезают перед r-; если предшествующая гласная простая и краткая — она удлиняется.",
       "example": "agnis rocate ⇒ agnī rocate 'огонь сверкает'; punar rocate ⇒ punā rocate 'снова сверкает'.",
-      "reference": "W 179; P 8.3.14, P 6.3.111"
+      "reference": "W 179; P 8.3.14, P 6.3.111",
+      "supersedes": [57],
+      "default_for": [],
+      "applies_with": [],
+      "category": ["vowel", "consonant", "sibilant", "semivowel", "short_vowel", "long_vowel", "visarga", "final", "external"]
     },
     {
       "number": 57,
@@ -510,7 +753,11 @@
       "applicability": "external",
       "text": "В остальных случаях конечные -s и -r после гласной заменяются висаргой, после чего применяются правила 58-59.",
       "example": "agnis ⇒ agniḥ 'огонь' (им. п. ед. ч.); punar ⇒ punaḥ 'снова'.",
-      "reference": "W 170a, W 178a; P 8.3.15"
+      "reference": "W 170a, W 178a; P 8.3.15",
+      "supersedes": [],
+      "default_for": [56],
+      "applies_with": [],
+      "category": ["consonant", "sibilant", "semivowel", "visarga", "final", "external"]
     },
     {
       "number": 58,
@@ -518,7 +765,11 @@
       "applicability": "external",
       "text": "Висарга перед любой звонкой заменяется на -r.",
       "example": "agniḥ asti ⇒ agnir asti 'есть огонь'; punaḥ gacchati ⇒ punar gacchati 'он снова идёт'.",
-      "reference": "W 174; P 8.2.66"
+      "reference": "W 174; P 8.2.66",
+      "supersedes": [],
+      "default_for": [59],
+      "applies_with": [57],
+      "category": ["visarga", "semivowel", "cerebral", "external"]
     },
     {
       "number": 59,
@@ -526,7 +777,11 @@
       "applicability": "external",
       "text": "Висарга перед глухой палатальной, церебральной или зубной взрывной заменяется соответствующим этой взрывной сибилянтом.",
       "example": "tataḥ ca ⇒ tataś ca 'и тогда'; cakṣuḥ te ⇒ cakṣus te 'твой глаз'; punaḥ ca ⇒ punaś ca 'и снова'.",
-      "reference": "W 170c, W 178a; P 8.3.34, P 8.4.40, P 8.4.41"
+      "reference": "W 170c, W 178a; P 8.3.34, P 8.4.40, P 8.4.41",
+      "supersedes": [],
+      "default_for": [58],
+      "applies_with": [57],
+      "category": ["visarga", "sibilant", "plosive", "homorganic", "palatal", "cerebral", "dental", "external"]
     },
     {
       "number": 60,
@@ -534,7 +789,11 @@
       "applicability": "external",
       "text": "-m перед согласной заменяется анусварой.",
       "example": "devam paśyati ⇒ devaṃ paśyati 'он видит бога'.",
-      "reference": "W 213i; P 8.3.23"
+      "reference": "W 213i; P 8.3.23",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [35],
+      "category": ["consonant", "nasal", "visarga", "labial", "external"]
     },
     {
       "number": 61,
@@ -542,7 +801,11 @@
       "applicability": "external",
       "text": "После краткой простой гласной конечная заднеязычная, церебральная или зубная носовая удваивается, если за ней следует гласная.",
       "example": "hasan agacchat ⇒ hasann agacchat 'улыбающийся он шёл'.",
-      "reference": "W 210; P 8.3.32"
+      "reference": "W 210; P 8.3.32",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [],
+      "category": ["consonant", "nasal", "short_vowel", "guttural", "cerebral", "dental", "external"]
     },
     {
       "number": 62,
@@ -550,7 +813,11 @@
       "applicability": "external",
       "text": "Конечная -n перед глухой палатальной, церебральной или зубной взрывной заменяется сочетанием анусвары и соответствующего взрывной сибилянта.",
       "example": "aśvān corayati ⇒ aśvāṃś corayati 'он крадёт коней'; bhavān tvarati ⇒ bhavāṃs tvarati 'господин спешит'.",
-      "reference": "W 208; P 8.3.7"
+      "reference": "W 208; P 8.3.7",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [59],
+      "category": ["consonant", "nasal", "sibilant", "plosive", "homorganic", "palatal", "cerebral", "dental", "external"]
     },
     {
       "number": 63,
@@ -558,7 +825,11 @@
       "applicability": "external",
       "text": "Конечная -n перед звонкой палатальной или церебральной взрывной заменяется соответствующей носовой (ñ, ṇ).",
       "example": "devān jayati ⇒ devāñ jayati 'он побеждает богов'.",
-      "reference": "W 202b, W 205b; P 8.3.24, P 8.4.58, P 8.4.59"
+      "reference": "W 202b, W 205b; P 8.3.24, P 8.4.58, P 8.4.59",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [],
+      "category": ["consonant", "nasal", "plosive", "homorganic", "palatal", "cerebral", "dental", "external"]
     },
     {
       "number": 64,
@@ -566,7 +837,11 @@
       "applicability": "external",
       "text": "Последовательность -n ś- заменяется на -ñ ch-.",
       "example": "devān śṛṇoti ⇒ devāñ chṛṇoti 'он слышит богов'.",
-      "reference": "W 203; P 8.3.31 и др."
+      "reference": "W 203; P 8.3.31 и др.",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [66],
+      "category": ["consonant", "nasal", "sibilant", "plosive", "aspiration", "homorganic", "palatal", "dental", "external"]
     },
     {
       "number": 65,
@@ -574,7 +849,11 @@
       "applicability": "external",
       "text": "Конечная -n заменяется на -ṃl перед l-.",
       "example": "aśvān labhate ⇒ aśvāṃl labhate 'он получает коней'.",
-      "reference": "W 206"
+      "reference": "W 206",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [68],
+      "category": ["consonant", "nasal", "semivowel", "dental", "external"]
     },
     {
       "number": 66,
@@ -582,7 +861,11 @@
       "applicability": "external",
       "text": "ś- после -t заменяется на ch-.",
       "example": "tat śṛṇoti ⇒ tat chṛṇoti ⇒ tac chṛṇoti 'он слышит это' (см. прав. 67).",
-      "reference": "W 203; P 8.4.63 и др."
+      "reference": "W 203; P 8.4.63 и др.",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [67],
+      "category": ["consonant", "sibilant", "plosive", "aspiration", "palatal", "dental", "external"]
     },
     {
       "number": 67,
@@ -590,7 +873,11 @@
       "applicability": "external",
       "text": "-t перед палатальной или церебральной взрывной заменяется соответствующей глухой непридыхательной взрывной (c или ṭ).",
       "example": "tat ca ⇒ tac ca 'и то'; tat + ṭīkā ⇒ taṭṭīkā- 'комментарий к тому'; tat jalam ⇒ taj jalam 'та вода' (см. прав. 71).",
-      "reference": "W 202a, W 199a; P 8.4.40, P 8.4.41"
+      "reference": "W 202a, W 199a; P 8.4.40, P 8.4.41",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [66, 71],
+      "category": ["consonant", "plosive", "homorganic", "palatal", "cerebral", "dental", "external"]
     },
     {
       "number": 68,
@@ -598,7 +885,11 @@
       "applicability": "external",
       "text": "-t перед l- заменяется на -l.",
       "example": "tat labhate ⇒ tal labhate 'он получает то'.",
-      "reference": "W 162; P 8.4.60"
+      "reference": "W 162; P 8.4.60",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [65],
+      "category": ["consonant", "plosive", "semivowel", "homorganic", "dental", "external"]
     },
     {
       "number": 69,
@@ -606,7 +897,11 @@
       "applicability": "external",
       "text": "Взрывная перед носовой заменяется носовой того же ряда, что и взрывная.",
       "example": "vāk mama ⇒ vāṅ mama 'мой голос'; tat mitram ⇒ tan mitram 'тот друг'.",
-      "reference": "W 161; P 8.4.45"
+      "reference": "W 161; P 8.4.45",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [39],
+      "category": ["consonant", "plosive", "nasal", "homorganic", "external"]
     },
     {
       "number": 70,
@@ -614,7 +909,11 @@
       "applicability": "external",
       "text": "После взрывной происходит замена h- соответствующей этой взрывной звонкой придыхательной.",
       "example": "tat hiraṇyam ⇒ tat dhiraṇyam ⇒ tad dhiraṇyam 'то золото' (см. прав. 71).",
-      "reference": "W 163; P 8.4.62"
+      "reference": "W 163; P 8.4.62",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [71],
+      "category": ["consonant", "plosive", "aspiration", "voicing", "homorganic", "external"]
     },
     {
       "number": 71,
@@ -622,7 +921,11 @@
       "applicability": "external",
       "text": "Любая глухая взрывная перед звонкой заменяется соответствующей непридыхательной звонкой взрывной. Правило применяется также после правил 67 и 70.",
       "example": "vāk asti ⇒ vāg asti 'есть голос'; ap- 'воды' + ja- 'рождённый' ⇒ abja- 'рождённый из вод, лотос'.",
-      "reference": "W 157c, W 159; P 8.2.39"
+      "reference": "W 157c, W 159; P 8.2.39",
+      "supersedes": [],
+      "default_for": [],
+      "applies_with": [32, 67, 70],
+      "category": ["consonant", "plosive", "voicing", "homorganic", "external"]
     }
   ]
 }

@@ -9,7 +9,7 @@
 
 ## 1. Архитектура и стек
 
-Единый сервис для прохождения квизов всех типов (склонения, спряжения, лексика). Использует реактивный стек (WebFlux, R2DBC, ReactiveKafkaProducerTemplate) из-за интенсивного I/O.
+Единый сервис для прохождения квизов всех типов (склонения, спряжения, лексика). Использует реактивный стек (WebFlux, R2DBC) из-за интенсивного I/O.
 
 Подробнее: [quiz-service-architecture.md](quiz-service/quiz-service-architecture.md)
 ### Хранение данных
@@ -44,7 +44,7 @@ enum `ItemType` не расширялся (решение 2026-08). Quest-еди
 `QuestProgressTypes`; ref-id пространства не пересекаются, scoped-агрегации легаси не затронуты.
 Отбор на compose — `QuizGenerator` по пулу топика + `QuestSelectionPlanner.takeRoundRobin`
 (смешивание типов), затем compose по `itemIds`. Опция «чистого» ключа с кодами `QuestItemType`
-(`itemType`→String) — отложена, см. §6 [curriculum-session-composition.md](curriculum-session-composition.md).
+(`itemType`→String) — отложена, см. §6 [curriculum-session-composition.md](curriculum-service/curriculum-session-composition.md).
 
 Параметр `statusFilter` (`start`/`start-or-resume`, бакетный отбор NEW/LEARNING/REVIEW для LessonPage) **реализован**: `@RequestParam statusFilter` в `QuizSessionController`, ветка в `QuizSessionService.startOrResumeSession`, отбор — `QuizStatusFilteredGenerator`, запросы `findInProgressByStatusFilter`/`findLearningItems`/`findReviewItems`, колонка `quiz_session.status_filter` (миграция V10). См. [quiz-generator-spec.md §3](quiz-service/quiz-generator-spec.md#3-quizgeneratorconfig--параметры-отбора) и §7 п.5.
 
@@ -56,11 +56,9 @@ enum `ItemType` не расширялся (решение 2026-08). Quest-еди
 
 Подробнее (включая дистракторы и word score): [quiz-service-repositories.md](quiz-service/quiz-service-repositories.md)
 
-## 4. Kafka и Outbox Pattern
+## 4. Outbox Pattern (без Kafka)
 
-Публикация только через Transactional Outbox Pattern. События: QuizAnsweredEvent, QuizSessionStatusChangedEvent.
-
-Подробнее: [quiz-service-kafka.md](quiz-service/quiz-service-kafka.md)
+События пишутся в Transactional Outbox (`quiz.outbox_events`): QuizAnsweredEvent, QuizSessionStatusChangedEvent. Поддержка Kafka полностью удалена — релей `OutboxEventPublisherService` работает вхолостую: периодически читает `NEW` записи и помечает их `PROCESSED`, никуда не отправляя. Это предохраняет таблицу от неограниченного роста.
 
 ## 5. Миграции БД
 
@@ -76,4 +74,4 @@ WebClient с методами generateQuizData, getDeclensionForms, getVocabular
 
 ## 7. Зависимости (build.gradle.kts)
 
-spring-boot-webflux, spring-boot-r2dbc, r2dbc-postgresql, spring-kafka, flyway-core, postgresql (для Flyway), samskrtam-dtos(shared).
+spring-boot-webflux, spring-boot-r2dbc, r2dbc-postgresql, flyway-core, postgresql (для Flyway), samskrtam-dtos(shared).

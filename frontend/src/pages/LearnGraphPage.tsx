@@ -5,6 +5,7 @@ import { ProgressBar } from 'primereact/progressbar';
 import { Card } from 'primereact/card';
 import { useLearnGraph } from '../hooks/useLearnGraph';
 import { useLocaleStore } from '../store/localeStore';
+import ProgressSummaryPanel from '../components/dashboard/ProgressSummaryPanel';
 import type { LearnGraphTopic, LearnLayerDto, TopicStatus, TopicTypeGroup } from '../types/learnGraph';
 
 const TYPE_ICONS: Record<TopicTypeGroup, string> = {
@@ -274,6 +275,10 @@ const LearnGraphPage: React.FC = () => {
   return (
     <div className="learn-graph-page p-3 md:p-4">
       {header}
+
+      <div className="mb-4">
+        <ProgressSummaryPanel scope="learn-graph" />
+      </div>
 
       <Card className="learn-graph-summary mb-4 fade-in">
         <div className="flex flex-column gap-2">

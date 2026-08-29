@@ -16,17 +16,18 @@ import java.util.UUID;
 @Repository
 public interface QuizSessionRepository extends ReactiveCrudRepository<QuizSession, UUID> {
     Flux<QuizSession> findByUserIdAndStatus(UUID userId, SessionStatus status);
+
     Mono<QuizSession> findByIdAndUserId(UUID id, UUID userId);
 
     @Query("SELECT * FROM quiz.quiz_session " +
-            "WHERE user_id = :userId " +
+            "WHERE user_id = CAST(:userId AS uuid) " +
             "AND (:lessonType IS NULL OR lesson_type = :lessonType) " +
             "AND (:status IS NULL OR status = :status) " +
             "LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}")
     Flux<QuizSession> findUserSessions(UUID userId, LessonType lessonType, SessionStatus status, Pageable pageable);
 
     @Query("SELECT COUNT(*) FROM quiz.quiz_session " +
-            "WHERE user_id = :userId " +
+            "WHERE user_id = CAST(:userId AS uuid) " +
             "AND (:lessonType IS NULL OR lesson_type = :lessonType) " +
             "AND (:status IS NULL OR status = :status)")
     Mono<Long> countUserSessions(UUID userId, LessonType lessonType, SessionStatus status);
@@ -34,90 +35,27 @@ public interface QuizSessionRepository extends ReactiveCrudRepository<QuizSessio
     Mono<QuizSession> findTopByUserIdAndLessonTypeAndStatusOrderByStartedAtDesc(UUID userId, LessonType lessonType, SessionStatus status);
 
     @Query("SELECT * FROM quiz.quiz_session " +
-            "WHERE user_id = :userId " +
-            "AND lesson_id = :lessonId " +
+            "WHERE user_id = CAST(:userId AS uuid) " +
+            "AND lesson_id = CAST(:lessonId AS uuid) " +
             "AND status = 'IN_PROGRESS' " +
-            "AND filter_scope IS NULL " +
-            "AND status_filter IS NULL " +
+            "AND progress_tag_set_id IS NULL " +
             "ORDER BY started_at DESC LIMIT 1")
-    Mono<QuizSession> findTopByUserIdAndLessonIdAndStatusOrderByStartedAtDesc(UUID userId, UUID lessonId, SessionStatus status);
+    Mono<QuizSession> findTopByUserIdAndLessonIdAndStatusOrderByStartedAtDesc(UUID userId, UUID lessonId);
 
     @Modifying
-    @Query("UPDATE quiz.quiz_session SET answered_questions = answered_questions + 1, score = CASE WHEN :isCorrect THEN score + 1 ELSE score END WHERE id = :sessionId")
+    @Query("UPDATE quiz.quiz_session SET answered_questions = answered_questions + 1, score = CASE WHEN :isCorrect THEN score + 1 ELSE score END WHERE id = CAST(:sessionId AS uuid)")
     Mono<Void> incrementAnsweredQuestionsAndScore(UUID sessionId, boolean isCorrect);
-    /**
-     * Find an in-progress session matching the given filter scope and JSONB set.
-     * The JSON strings must be canonical (sorted) for equality comparison.
-     *
-     * @param filterCaseTypes JSONB array string for CASE_ONLY, null otherwise
-     * @param filterNumberTypes JSONB array string for NUMBER_ONLY, null otherwise
-     * @param filterCombinations JSONB array string for CASE_NUMBER_GENDER, null otherwise
-     */
-        @Query("SELECT * FROM quiz.quiz_session " +
-            "WHERE user_id = :userId " +
-            "AND lesson_id = :lessonId " +
-            "AND status = 'IN_PROGRESS' " +
-            "AND status_filter IS NULL " +
-            "AND filter_scope = CAST(:filterScope AS VARCHAR) " +
-            "AND (:filterCaseTypes IS NULL OR filter_case_types = CAST(:filterCaseTypes AS JSONB)) " +
-            "AND (:filterNumberTypes IS NULL OR filter_number_types = CAST(:filterNumberTypes AS JSONB)) " +
-            "AND (:filterCombinations IS NULL OR filter_combinations = CAST(:filterCombinations AS JSONB)) " +
-            "ORDER BY started_at DESC LIMIT 1")
-    Mono<QuizSession> findInProgressByFilter(UUID userId, UUID lessonId, String filterScope,
-                                              String filterCaseTypes, String filterNumberTypes,
-                                              String filterCombinations);
 
-    /**
-     * Find an in-progress session matching the given statusFilter.
-     * Sessions without statusFilter (null) or with a different statusFilter are excluded.
-     *
-     * @param statusFilter NEW|LEARNING|REVIEW
-     */
-        @Query("SELECT * FROM quiz.quiz_session " +
-            "WHERE user_id = :userId " +
-            "AND lesson_id = :lessonId " +
-            "AND status = 'IN_PROGRESS' " +
-            "AND filter_scope IS NULL " +
-            "AND status_filter = CAST(:statusFilter AS VARCHAR) " +
-            "ORDER BY started_at DESC LIMIT 1")
-    Mono<QuizSession> findInProgressByStatusFilter(UUID userId, UUID lessonId, String statusFilter);
-
-        /**
-     * Find an in-progress ALL_STEMS session matching filterVowelTypes, filterGenders, filterNumberTypes and filterCaseTypes.
-     * Uses JSONB equality for set comparison. All canonical JSON arrays must be compared as JSONB.
-     *
-     * @param filterVowelTypes  JSONB array string for ALL_STEMS, or null
-     * @param filterGenders     JSONB array string for ALL_STEMS, or null
-     * @param filterNumberTypes JSONB array string, or null
-     * @param filterCaseTypes   JSONB array string, or null
-     */
     @Query("SELECT * FROM quiz.quiz_session " +
-            "WHERE user_id = :userId " +
-            "AND lesson_id = :lessonId " +
-            "AND status = 'IN_PROGRESS' " +
-            "AND status_filter IS NULL " +
-            "AND filter_scope = CAST(:filterScope AS VARCHAR) " +
-            "AND (:filterVowelTypes IS NULL OR filter_vowel_types::jsonb = CAST(:filterVowelTypes AS JSONB)) " +
-            "AND (:filterGenders IS NULL OR filter_genders::jsonb = CAST(:filterGenders AS JSONB)) " +
-            "AND (:filterNumberTypes IS NULL OR filter_number_types::jsonb = CAST(:filterNumberTypes AS JSONB)) " +
-            "AND (:filterCaseTypes IS NULL OR filter_case_types::jsonb = CAST(:filterCaseTypes AS JSONB)) " +
-            "ORDER BY started_at DESC LIMIT 1")
-    Mono<QuizSession> findInProgressByAllStemsFilter(UUID userId, UUID lessonId, String filterScope,
-                                                      String filterVowelTypes, String filterGenders,
-                                                      String filterNumberTypes, String filterCaseTypes);
-
-    /** Paginated sessions filtered by quizId (lessonId). */
-    @Query("SELECT * FROM quiz.quiz_session " +
-            "WHERE user_id = :userId " +
-            "AND lesson_id = :quizId " +
+            "WHERE user_id = CAST(:userId AS uuid) " +
+            "AND lesson_id = CAST(:quizId AS uuid) " +
             "AND (:status IS NULL OR status = :status) " +
             "LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}")
     Flux<QuizSession> findUserSessionsByQuizId(UUID userId, UUID quizId, SessionStatus status, Pageable pageable);
 
     @Query("SELECT COUNT(*) FROM quiz.quiz_session " +
-            "WHERE user_id = :userId " +
-            "AND lesson_id = :quizId " +
+            "WHERE user_id = CAST(:userId AS uuid) " +
+            "AND lesson_id = CAST(:quizId AS uuid) " +
             "AND (:status IS NULL OR status = :status)")
     Mono<Long> countUserSessionsByQuizId(UUID userId, UUID quizId, SessionStatus status);
 }
-

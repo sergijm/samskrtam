@@ -15,5 +15,5 @@ public record VerseDetailDto(
     VerseStatus status,
     VerseAnalysisDto analysis,
     List<VerseWordDto> words,
-    String vocabularyQuizSlug
+    String verseTopicCode
 ) {}

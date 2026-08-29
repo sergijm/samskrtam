@@ -1,6 +1,6 @@
 # US-SYNT-03 — Корреляты yad…tad в сложном предложении
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `RELATIVE_CLAUSE` (план)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `RELATIVE_CLAUSE` (план)
 > Связанные файлы: [quest-types-overview.md, тип №15](../../../services/quest-types-overview.md)
 
 ## История

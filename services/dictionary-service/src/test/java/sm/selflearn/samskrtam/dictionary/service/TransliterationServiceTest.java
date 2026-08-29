@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.dictionary.service;
 
+import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;

@@ -1,17 +1,28 @@
 package sm.selflearn.samskrtam.sangraha.service;
 
+import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import sm.selflearn.samskrtam.morphology.FormType;
+import sm.selflearn.samskrtam.morphology.Gender;
+import sm.selflearn.samskrtam.morphology.GrammaticalCase;
+import sm.selflearn.samskrtam.morphology.Mood;
+import sm.selflearn.samskrtam.morphology.NumberType;
+import sm.selflearn.samskrtam.morphology.PartOfSpeech;
+import sm.selflearn.samskrtam.morphology.Person;
+import sm.selflearn.samskrtam.morphology.Tense;
+import sm.selflearn.samskrtam.morphology.Voice;
 import sm.selflearn.samskrtam.sangraha.model.*;
 import sm.selflearn.samskrtam.sangraha.repository.*;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -22,6 +33,7 @@ public class VerseAnalysisSaver {
     private final VerseAnalysisRepository verseAnalysisRepository;
     private final VerseWordRepository verseWordRepository;
     private final ObjectMapper objectMapper;
+    private final TransliterationService transliterationService;
 
     /**
      * Единственная транзакция анализа стиха. Порядок операций:
@@ -34,18 +46,15 @@ public class VerseAnalysisSaver {
         @Transactional
     public void saveResults(
             Verse verse, Work work, Chapter chapter,
-            String textDevanagari, String textIast,
             String translationRu, String translationEn,
             JsonNode sandhiSplitsNode, JsonNode wordsNode,
-            String rawResponse, String modelName, String analyzerName
+            String rawResponse, String modelName, String analyzerName,
+            String rawPrompt
     ) {
-        // 1. Заполняем текст стиха, если не был введён вручную
-        if (verse.getTextDevanagari() == null || verse.getTextDevanagari().isBlank()) {
-            verse.setTextDevanagari(textDevanagari);
-        }
-        if (verse.getTextIast() == null || verse.getTextIast().isBlank()) {
-            verse.setTextIast(textIast);
-        }
+        // 1. Текстовые колонки text_iast / text_devanagari уже заполнены из rawText
+        //    на этапе подготовки анализа (VerseAnalysisService.prepareVerseForAnalysis).
+        //    Ответ LLM содержит textIast, но НЕ сохраняется в колонку — он остаётся
+        //    только внутри raw_model_response (JSON). Поэтому здесь колонки не трогаем.
 
         // 2. Перезаписываем VerseAnalysis
         verseAnalysisRepository.deleteByVerseId(verse.getId());
@@ -56,6 +65,7 @@ public class VerseAnalysisSaver {
                 .translationEn(translationEn)
                 .sandhiSplits(sandhiSplitsNode.toString())
                 .rawModelResponse(rawResponse)
+                .rawPrompt(rawPrompt)
                 .modelName(modelName)
                 .analyzerName(analyzerName)
                 .analyzedAt(Instant.now())
@@ -94,6 +104,89 @@ public class VerseAnalysisSaver {
         verseRepository.save(verse);
     }
 
+    /**
+     * ШАГ 2: сохраняет внутренние сандхи (formationRuleNumbers) и при необходимости
+     * уточняет словообразование (derivationalBase/derivationalSuffix/derivationType),
+     * возвращённые tool submit_word_formations. Джойн к слову — по паре
+     * verseIndex (позиция стиха в батче) + position внутри стиха.
+     * <p>
+     * formationRuleNumbers пишется дословно как JSON-массив (включая пустой {@code []}),
+     * чтобы отличать «ШАГ 2 выполнен, внутренних сандхи нет» от «ШАГ 2 ещё не запускался»
+     * (для последнего поле остаётся NULL после ШАГА 1).
+     */
+    @Transactional
+    public void saveFormations(List<Verse> verses, JsonNode wordsArray) {
+        Map<Integer, Verse> verseByIndex = new java.util.HashMap<>();
+        for (int i = 0; i < verses.size(); i++) {
+            verseByIndex.put(i, verses.get(i));
+        }
+
+        for (JsonNode entry : wordsArray) {
+            if (entry == null || !entry.isObject()) {
+                continue;
+            }
+            int verseIndex = entry.path("verseIndex").asInt(-1);
+            int position = entry.path("position").asInt(-1);
+            Verse verse = verseByIndex.get(verseIndex);
+            if (verse == null || position < 0) {
+                log.warn("STEP 2: unmatched verseIndex={}, position={}, skipping", verseIndex, position);
+                continue;
+            }
+
+            VerseWord word = verseWordRepository.findByVerseIdAndPosition(verse.getId(), position);
+            if (word == null) {
+                log.warn("STEP 2: no VerseWord for verseIndex={}, position={}, skipping", verseIndex, position);
+                continue;
+            }
+
+            JsonNode frn = entry.get("formationRuleNumbers");
+            if (frn != null && frn.isArray()) {
+                word.setFormationRuleNumbers(frn.toString());
+            }
+
+            // Уточняем словообразование, только если STEP 1 оставил поля null.
+            String base = getStringOrNull(entry, "derivationalBase");
+            String suffix = getStringOrNull(entry, "derivationalSuffix");
+            String typeStr = getStringOrNull(entry, "derivationType");
+            String formationExplanation = getStringOrNull(entry, "formationExplanation");
+            if (base != null || suffix != null || typeStr != null || formationExplanation != null) {
+                VerseWordDerivation derivation = word.getDerivation();
+                boolean changed = false;
+                if (derivation == null) {
+                    derivation = VerseWordDerivation.builder().verseWord(word).build();
+                    word.setDerivation(derivation);
+                    changed = true;
+                }
+                if (base != null && derivation.getDerivationalBase() == null) {
+                    derivation.setDerivationalBase(base);
+                    changed = true;
+                }
+                if (suffix != null && derivation.getDerivationalSuffix() == null) {
+                    derivation.setDerivationalSuffix(suffix);
+                    changed = true;
+                }
+                if (typeStr != null && derivation.getDerivationType() == null) {
+                    derivation.setDerivationType(safeEnum(DerivationType.class, typeStr));
+                    changed = true;
+                }
+                // formationExplanation (пояснение внутренних сандхи) — в description
+                // деривации; только если STEP 1 его не заполнил.
+                if (formationExplanation != null
+                        && (derivation.getDescription() == null || derivation.getDescription().isBlank())) {
+                    derivation.setDescription(formationExplanation);
+                    changed = true;
+                }
+                if (changed) {
+                    log.debug("STEP 2: refined derivation for verseIndex={}, position={}", verseIndex, position);
+                }
+            }
+
+            verseWordRepository.save(word);
+            log.info("STEP 2: formation saved for verse {} position {}: {}",
+                    verse.getId(), position, word.getFormationRuleNumbers());
+        }
+    }
+
         private List<VerseWord> buildWords(Verse verse, JsonNode wordsNode) {
         var words = new ArrayList<VerseWord>();
         for (var w : wordsNode) {
@@ -101,7 +194,7 @@ public class VerseAnalysisSaver {
                     .verse(verse)
                     .position(w.get("position").asInt())
                     .surfaceIast(getString(w, "surfaceIast"))
-                    .surfaceDevanagari(getString(w, "surfaceDevanagari"))
+                    .surfaceDevanagari(deriveSurfaceDevanagari(w))
                     .lemmaIast(getString(w, "lemmaIast"))
                     .stem(getStringOrNull(w, "stem"))
                     .root(getStringOrNull(w, "root"))
@@ -158,6 +251,22 @@ public class VerseAnalysisSaver {
             words.add(word);
         }
         return words;
+    }
+
+    /**
+     * Поверхностная форма в деванагари. Модель возвращает только IAST
+     * (surfaceIast), поэтому деванагари восстанавливается серверно при необходимости.
+     */
+    private String deriveSurfaceDevanagari(JsonNode w) {
+        String devanagari = getString(w, "surfaceDevanagari");
+        if (devanagari != null && !devanagari.isBlank()) {
+            return devanagari;
+        }
+        String iast = getString(w, "surfaceIast");
+        if (iast != null && !iast.isBlank()) {
+            return transliterationService.iastToDevanagari(iast);
+        }
+        return null;
     }
 
     private static boolean hasAnyNonNull(JsonNode node) {

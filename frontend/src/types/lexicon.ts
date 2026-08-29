@@ -39,22 +39,21 @@ export interface LexicalTopic {
   masteredCount: number;
 }
 
+/** Семантическая тема (привязка леммы к топику через семантические классы) */
+export interface SemanticTopic {
+  id: string;
+  nameRu: string;
+  nameEn: string;
+  wordCount: number;
+  masteredCount: number;
+}
+
 /** Часть речи */
 export interface LexiconPos {
   id: string;
   nameRu: string;
   nameEn: string;
   wordCount: number;
-}
-
-/** Произведение / источник лексики */
-export interface LexicalSource {
-  id: string;
-  titleRu: string;
-  titleEn: string;
-  devanagari?: string;
-  wordCount: number;
-  masteredCount: number;
 }
 
 /** Пользовательский список */
@@ -79,8 +78,8 @@ export interface LexiconDashboardData {
   today: LexiconToday;
   frequencyBands: FrequencyBand[];
   topics: LexicalTopic[];
+  semanticTopics: SemanticTopic[];
   pos: LexiconPos[];
-  sources: LexicalSource[];
   collections: UserCollection[];
   quickStart: QuickStartPreset[];
 }

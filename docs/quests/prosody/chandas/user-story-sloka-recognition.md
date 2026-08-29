@@ -1,7 +1,7 @@
 # US-PROS-01 — Различение шлоки (śloka) от других размеров по счёту слогов
 
 > Домен: Prosody · Тип: `CHANDAS_IDENTIFICATION` (план, первая итерация)
-> Связанные файлы: [quest-catalog.md §6.1](../../../services/quest-catalog.md#61-chandas_identification--план)
+> Связанные файлы: [quest-catalog.md §6.1](../../../services/curriculum-service/quest-catalog.md#61-chandas_identification--план)
 
 ## История
 

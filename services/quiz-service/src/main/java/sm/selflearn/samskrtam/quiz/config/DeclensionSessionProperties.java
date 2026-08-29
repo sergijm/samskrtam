@@ -13,10 +13,10 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "quiz.declension-session")
 public class DeclensionSessionProperties {
 
-    private int singleChoiceCount = 5;
-    private int freeTextCount = 5;
-    private int caseRecognitionCount = 3;
-    private int matchCount = 2;
+    private int singleChoiceCount = 4;
+    private int freeTextCount = 1;
+    private int caseRecognitionCount = 4;
+    private int matchCount = 1;
 
     public int getSingleChoiceCount() {
         return singleChoiceCount;

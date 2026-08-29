@@ -1,2 +1,0 @@
-ALTER TABLE statistics.user_quiz_session_statistics
-ADD COLUMN answer_history_json TEXT;

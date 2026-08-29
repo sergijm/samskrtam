@@ -28,6 +28,15 @@ export interface QuizListItem {
 export type AnswerMode = 'FREE_TEXT' | 'SINGLE_CHOICE' | 'MULTI_SELECT' | 'SPAN_SELECT' | 'MATCHING';
 
 /**
+ * Слово для подсветки внутри промпта вопроса (двуязычное: английский/русский
+ * вариант). Фронт сплитит промпт по токену и делает совпадения жирными.
+ */
+export interface HighlightToken {
+    text: string;
+    textRu?: string;
+}
+
+/**
  * Расширение SessionQuestion под 4 типа declension-квестов (frontend-state §5а).
  * `answerMode` приходит от quiz-service как есть из QuestItem.answerMode.
  */
@@ -35,6 +44,7 @@ export interface SessionQuestion {
     id: string;
     questionNumber: number;
     text: string;
+    textRu?: string;
     options: QuestionOption[];
     stem: string;
     caseType: string;
@@ -56,14 +66,18 @@ export interface SessionQuestion {
     answerMode?: AnswerMode;
     /** Непусто только при answerMode === 'MATCHING'. */
     matching?: MatchingPayload;
+    /** Слова промпта для подсветки (жирным) — из curriculum payload. */
+    highlights?: HighlightToken[];
 }
 
 export interface QuestionMatchRow {
     id: string;
     wordFormIast: string;
     wordFormDevanagari?: string;
-    caseType: string;
+    caseType?: string;
     numberType: string;
+    person?: number;
+    voice?: string;
 }
 
 /**
@@ -151,13 +165,13 @@ export interface StartOrResumeResponse {
     slug: string;
 }
 
-export interface ComposeTopic {
-    topicCode: string;
-    count: number;
-}
-
 export interface ComposeQuizRequest {
-    topics: ComposeTopic[];
+    topicCode: string;
+    /** Optional progress-tag slice: e.g. NOMINATIVE, DUAL, GEN_ABL. */
+    progressTagSetId?: string;
+    itemType?: string;
+    answerMode?: string;
+    limit?: number;
     userLocale: string;
 }
 
@@ -175,6 +189,7 @@ export interface SessionQuestion {
     id: string;
     questionNumber: number;
     text: string;
+    textRu?: string;
     options: QuestionOption[];
     stem: string;
     caseType: string;
@@ -188,6 +203,8 @@ export interface SessionQuestion {
     formIast?: string;
     formDevanagari?: string;
     caseEnding?: string;
+    /** Sentence translation shown as context for CASE_MEANING (syntax) questions. */
+    translation?: string;
     /** MATCHING questions from the v2 compose flow: left-side rows (word forms). */
     matchRows?: QuestionMatchRow[];
 }
@@ -196,13 +213,17 @@ export interface QuestionMatchRow {
     id: string;
     wordFormIast: string;
     wordFormDevanagari?: string;
-    caseType: string;
+    caseType?: string;
     numberType: string;
+    person?: number;
+    voice?: string;
 }
 
 export interface QuestionOption {
     id: string;
     formIast: string;
+    /** Russian variant of the option text (bilingual curriculum options); absent → render `formIast`. */
+    textRu?: string;
     formDevanagari: string;
     optionType?: string;
     caseType?: string;
@@ -214,6 +235,8 @@ export interface QuestionOption {
     gender?: string;
     genderRu?: string;
     genderEn?: string;
+    person?: number;
+    voice?: string;
 }
 
 export interface MatchSubmission {
@@ -256,8 +279,22 @@ export interface LessonListResponse {
 }
 
 export interface LessonItemDto extends QuizListItem {
-        totalWordsOwn: number;
+    totalWordsOwn: number;
     learnedWords: number;
+    domain?: string;
+    domainType?: string;
+}
+
+/**
+ * Реальная сводка прогресса по области (scope), вычисляется в quiz-service
+ * по таблице quiz_item_score. Всегда идёт через quiz-service.
+ */
+export interface ProgressSummaryDto {
+    scope: 'learn-graph' | 'grammar' | 'lexicon' | string;
+    totalProgressTags: number;
+    masteredProgressTags: number;
+    learnedProgressTags: number;
+    percent: number;
 }
 
 

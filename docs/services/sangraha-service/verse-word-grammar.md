@@ -60,20 +60,19 @@ description — человекочитаемое пояснение словоо
 JSONB для этого домена (разграничение ответственности, индексируемость
 обычными btree-индексами, типобезопасность через JPA-энумы).
 
-## 1а. NounStem (таблица noun_stems) — DEPRECATED, заменена NominalLemma
+## 1а. NounStem (таблица noun_stems) — УДАЛЕНА, заменена NominalLemma
 
-**Статус: deprecated.** Реализована (миграция + JPA), но выявлен недостаток
-дизайна: `stem_iast`/`stem_class`/`confidence` — свойства **леммы**, а не
-конкретного вхождения слова в стих, поэтому хранение по `verse_word_id`
-дублирует одну и ту же классификацию на каждое вхождение (например, `rāma`
-может встречаться в корпусе сотни раз — и все сотни строк `noun_stems` несли
-бы одинаковые `stem_iast`/`stem_class`). Заменена таблицей `nominal_lemmas`
-(см. §1б ниже), где классификация хранится один раз на лемму. Таблица
-`noun_stems` **не удаляется** в миграции — оставлена для отката/сверки, но
-поиск (`sangraha-service.md` §9) больше её не использует. JPA-сущность
-`NounStem`/поле `VerseWord.nounStems` из кода не удаляются в рамках текущей
-задачи — отдельное решение об удалении принимается позже, после проверки
-`nominal_lemmas` на реальных данных.
+**Статус: удалена.** Выявлен недостаток дизайна: `stem_iast`/`stem_class`/`confidence`
+— свойства **леммы**, а не конкретного вхождения слова в стих, поэтому
+хранение по `verse_word_id` дублирует одну и ту же классификацию на каждое
+вхождение (например, `rāma` может встречаться в корпусе сотни раз — и все
+сотни строк `noun_stems` несли бы одинаковые `stem_iast`/`stem_class`).
+Заменена таблицей `nominal_lemmas` (см. §1б ниже), где классификация
+хранится один раз на лемму. Таблица создавалась миграцией V4, данные
+переносились в `nominal_lemmas` миграцией V5, удалена миграцией V17
+(`V17__drop_noun_stems.sql`). JPA-сущность `NounStem`, репозиторий
+`NounStemRepository`, enum `StemClass` и поле `VerseWord.nounStems` удалены
+из кода.
 
 ## 1б. NominalLemma (таблица nominal_lemmas)
 
@@ -86,9 +85,7 @@ JSONB для этого домена (разграничение ответст�
 остальные используют UUID; сознательное отклонение по присланному SQL,
 пересмотр — по решению Агента 2/оркестратора отдельным тикетом, не блокирует
 эту задачу), lemmaIast (TEXT, NOT NULL, UNIQUE), stemIast (TEXT, nullable),
-stemClass (TEXT, nullable, без CHECK-constraint — намеренно, набор значений
-не ограничивается текущими 7 regular-classes ради будущего расширения на
-другие части речи), confidence (TEXT, nullable, CHECK-constraint HIGH|MEDIUM|
+stemClass (TEXT, nullable, в JPA — enum `VowelType` из shared `samskrtam-dtos`, `@Enumerated(STRING)`; без CHECK-constraint в БД — намеренно, набор значений в БД не ограничивается значениями enum ради гибкого бутстрапа), confidence (TEXT, nullable, CHECK-constraint HIGH|MEDIUM|
 LOW — тот же паттерн, что у `analysisConfidence`), model (TEXT, nullable),
 createdAt/updatedAt (TIMESTAMPTZ, NOT NULL, DEFAULT now()).
 

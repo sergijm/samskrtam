@@ -25,16 +25,17 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     implementation(project(":shared:common-dtos"))
+    implementation(project(":shared:samskrtam-dtos"))
+    implementation(project(":shared:samskrtam-commons"))
 
     implementation("org.apache.commons:commons-text:1.15.0")
 
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 
-    // =====================================================
-    // Sanscript.java для транслитерации санскрита
-    // =====================================================
-    implementation("com.github.sanskrit:sanscript.java:0.1")
-
     testImplementation(libs.spring.test)
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }

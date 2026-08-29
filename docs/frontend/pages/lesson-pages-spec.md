@@ -2,7 +2,7 @@
 
 > ⚠️ **Требует согласования:** этот документ описывает UI-контракт (`filterScope`, `statusFilter=REVIEW`, `lessonId`) в терминах старой модели прогресса quiz-service. Модель прогресса и API сессий переработаны — см. [services/quest-engine.md](../../services/quest-engine.md). Детали фронтенд-контракта в этом файле нуждаются в пересмотре под новый API (`questId`, статусы NEW/LEARNING/DUE/MASTERED, без ручного `filterScope`).
 
-> Связанные файлы: [frontend-overview.md](../frontend-overview.md) · [curriculum-service.md](../../services/curriculum-service.md) · [quest-engine.md](../../services/quest-engine.md) · [statistics-service.md](../../services/statistics-service.md)
+> Связанные файлы: [frontend-overview.md](../frontend-overview.md) · [curriculum-service.md](../../services/curriculum-service.md) · [quest-engine.md](../../services/quest-engine.md)
 > Status: **DRAFT**
 
 ---
@@ -198,25 +198,51 @@ export interface VocabularyWordProgress {
   status:       WordStatus;
 }
 
-export interface GrammarQuestionProgress {
-  questionId:     string;
-  textRu:         string;
-  textEn:         string;
-  correctAnswerRu: string;
-  correctAnswerEn: string;
-  nSuccess:       number;
-  nAll:           number;
-  score:          number;
-  status:         WordStatus;
-  caseType:       string;
-  caseRu:         string;
-  caseEn:         string;
-  numberType:     string;
-  numberRu:       string;
-  numberEn:       string;
-  gender:         string;
-  genderRu:       string;
-  genderEn:       string;
+// GrammarQuestionProgress — УДАЛЁН из типов клиента: вопросы больше не
+// отдаются в GrammarLesson, агрегация прогресса выполняется на бэкенде
+// (GrammarProgressAggregationService). Вместо него — агрегаты ниже.
+
+export interface CaseAggregation {
+  caseType:             string;
+  caseRu:               string;
+  caseEn:               string;
+  aggregatedProgress:   number;   // round(avg(score)) по вопросам падежа
+  totalCombinations:    number;
+  learnedCombinations:  number;   // score >= MASTERY_THRESHOLD (90)
+  status:               WordStatus; // NEW / LEARNING / MASTERED (без REVIEW)
+}
+
+export interface NumberAggregation {
+  numberType:           string;
+  numberRu:             string;
+  numberEn:             string;
+  aggregatedProgress:   number;
+  totalCombinations:    number;
+  learnedCombinations:  number;
+  status:               WordStatus;
+}
+
+export interface CaseNumberAggregation {
+  caseType:             string;
+  numberType:           string;
+  aggregatedProgress:   number;   // ячейка падеж × число
+  totalCombinations:    number;
+  learnedCombinations:  number;
+  status:               WordStatus;
+}
+
+export interface PairAggregation {
+  setId:                string;   // progressTagSetId (пара падежей, напр. GEN_LOC)
+  caseTypeA:            string;
+  caseTypeB:            string;
+  caseRuA:              string;
+  caseRuB:              string;
+  caseEnA:              string;
+  caseEnB:              string;
+  aggregatedProgress:   number;
+  totalCombinations:    number;
+  learnedCombinations:  number;
+  status:               WordStatus;
 }
 
 export interface LessonStatusSummary {
@@ -241,16 +267,19 @@ export interface VocabularyLesson {
 }
 
 export interface GrammarLesson {
-  quizId:           string;
-  type:             string;
-  titleRu:          string;
-  titleEn:          string;
-  difficulty:       string;
-  totalQuestions:   number;
-  learnedQuestions: number;
-  progressPercent:  number;
-  statusSummary:    LessonStatusSummary;
-  questions:        GrammarQuestionProgress[];
+  lessonId:           string;
+  type:               string;
+  titleRu:            string;
+  titleEn:            string;
+  difficulty:         string;
+  totalQuestions:     number;
+  learnedQuestions:   number;
+  progressPercent:    number;
+  statusSummary:      LessonStatusSummary;
+  caseAggregations?:  CaseAggregation[];
+  numberAggregations?: NumberAggregation[];
+  grid?:              CaseNumberAggregation[];
+  pairAggregations?:  PairAggregation[];
 }
 
 export interface AnswerHistoryEntry {
@@ -283,7 +312,7 @@ export interface WordAnswerHistory {
 - [ ] Кнопка/бейдж с нулевым значением недоступны для клика, но остаются видимыми
 - [ ] Иконки статуса корректно отображаются для всех трёх состояний
 - [ ] На GrammarLessonPage порядок вкладок: 1) Статистика, 2) Парадигмы, 3) По падежам, 4) Подробно
-- [ ] Вкладка «Парадигмы» строит таблицу падеж(строки, 8 шт.)×число(столбцы) из `lesson.questions`, без дополнительного запроса к API
+- [ ] Вкладка «Парадигмы» строит таблицу падеж(строки, 8 шт.)×число(столбцы) из `GET /content/public/lessons/{slug}/declension-paradigms` (см. grammar-lesson-page.md §2.2); прогресс вкладки «Прогресс» строится из серверных `caseAggregations`/`numberAggregations`/`grid`/`pairAggregations` (`lesson.questions` удалён)
 - [ ] Если урок покрывает несколько родов — на вкладке «Парадигмы» отдельная таблица на каждый род с подзаголовком, формы разных родов не смешиваются в одной ячейке
 - [ ] Ячейка без формы в уроке отображается как «—», не как ошибка/пустой крэш
 - [ ] Клик по заполненной ячейке «Парадигм» стартует/резюмирует квиз с `filterScope=CASE_NUMBER_GENDER&filterCombinations=<caseType>:<numberType>:<gender>` и переходит на страницу квиза

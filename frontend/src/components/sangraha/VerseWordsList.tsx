@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { MiniProgressBar } from '../common/MiniProgressBar';
 import type { VerseWordMorphologyDto, VerseWordDerivationDto } from '../../types/sangraha';
-import type { VocabularyWordProgress } from '../../types/lesson';
 
 // ── Label maps ──
 
@@ -82,7 +80,6 @@ interface Word {
 interface VerseWordsListProps {
   words: Word[];
   headerActions?: React.ReactNode;
-  wordProgressMap?: Record<string, VocabularyWordProgress> | null;
 }
 
 // ── Helper: render non-null fields from a record ──
@@ -105,7 +102,7 @@ function nonNullEntries<T extends Record<string, string | null | undefined>>(
 
 // ── Component ──
 
-const VerseWordsList = ({ words, headerActions, wordProgressMap }: VerseWordsListProps) => {
+const VerseWordsList = ({ words, headerActions }: VerseWordsListProps) => {
   const { t, i18n } = useTranslation();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
 
@@ -115,7 +112,6 @@ const VerseWordsList = ({ words, headerActions, wordProgressMap }: VerseWordsLis
     .flatMap(w => w.formationRuleNumbers ?? [])
     .filter((v, i, a) => a.indexOf(v) === i);
 
-  const showProgress = wordProgressMap != null;
   const lang = i18n.language;
 
   const toggleExpand = (id: string) => {
@@ -162,9 +158,6 @@ const VerseWordsList = ({ words, headerActions, wordProgressMap }: VerseWordsLis
       </label>
       <div className="p-3 border-1 border-round surface-border surface-ground">
         {words.map((w) => {
-          const progress = showProgress && w.vocabularyWordId
-            ? wordProgressMap[w.vocabularyWordId]
-            : undefined;
           const isExpanded = expandedIds.has(w.id);
 
           // Short gloss for row (use contextGlossRu/En)
@@ -216,22 +209,6 @@ const VerseWordsList = ({ words, headerActions, wordProgressMap }: VerseWordsLis
                   <span className="text-sm text-color-secondary">
                     [{w.formationRuleNumbers.join(', ')}]
                   </span>
-                )}
-    
-                {/* Progress column */}
-                {showProgress && (
-                  <div className="ml-auto" style={{ minWidth: '80px', maxWidth: '100px' }}>
-                    {progress ? (
-                      <MiniProgressBar
-                        value={progress.score ?? 0}
-                        status={progress.status}
-                        showValue={false}
-                        height="8px"
-                      />
-                    ) : (
-                      <span className="text-xs text-color-secondary">—</span>
-                    )}
-                  </div>
                 )}
               </div>
 
@@ -305,9 +282,14 @@ const VerseWordsList = ({ words, headerActions, wordProgressMap }: VerseWordsLis
                           {t('sangraha.fields.base')}: {w.derivation.derivationalBase}{' '}
                         </span>
                       )}
-                      {w.derivation.description && (
-                        <span className="text-color-secondary">({w.derivation.description})</span>
-                      )}
+                    </div>
+                  )}
+
+                  {/* Formation explanation (STEP 2 internal sandhi reasoning) */}
+                  {w.derivation?.description && (
+                    <div className="mb-2 text-sm">
+                      <span className="font-semibold">{t('sangraha.fields.formationExplanation')}: </span>
+                      <span className="text-color-secondary">{w.derivation.description}</span>
                     </div>
                   )}
 

@@ -1,12 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { MiniProgressBar } from '../common/MiniProgressBar';
 import type {
   CaseAggregation,
   CaseNumberAggregation,
   NumberAggregation,
-} from '../../utils/grammarAggregation';
+} from '../../types/lesson';
 
 interface GrammarProgressGridProps {
   aggregations: CaseNumberAggregation[];
@@ -22,7 +21,6 @@ const GrammarProgressGrid: React.FC<GrammarProgressGridProps> = ({
   quizSlug,
 }) => {
   const { i18n } = useTranslation();
-  const navigate = useNavigate();
 
   if (caseNames.length === 0 && numberNames.length === 0) {
     return (
@@ -40,11 +38,11 @@ const GrammarProgressGrid: React.FC<GrammarProgressGridProps> = ({
   }
 
   const handleCaseClick = (caseType: string) => {
-    navigate(`/quiz/grammar/${quizSlug}?filterScope=CASE_ONLY&filterCaseType=${caseType}`);
+    window.open(`/quiz/grammar/${quizSlug}?filterScope=CASE_ONLY&filterCaseType=${caseType}`, '_blank');
   };
 
   const handleNumberClick = (numberType: string) => {
-    navigate(`/quiz/grammar/${quizSlug}?filterScope=NUMBER_ONLY&filterNumberTypes=${numberType}`);
+    window.open(`/quiz/grammar/${quizSlug}?filterScope=NUMBER_ONLY&filterNumberTypes=${numberType}`, '_blank');
   };
 
   return (
@@ -72,7 +70,7 @@ const GrammarProgressGrid: React.FC<GrammarProgressGridProps> = ({
           {caseNames.map(caseItem => (
             <tr key={caseItem.caseType}>
               <td
-                className="p-2 border-bottom-1 border-100 cursor-pointer hover:surface-100 transition-colors"
+                className="px-2 py-1 cursor-pointer hover:surface-100 transition-colors"
                 onClick={() => handleCaseClick(caseItem.caseType)}
                 title={i18n.language === 'ru' ? 'Начать квиз по этому падежу' : 'Start quiz for this case'}
               >
@@ -84,15 +82,20 @@ const GrammarProgressGrid: React.FC<GrammarProgressGridProps> = ({
                   return (
                     <td
                       key={num.numberType}
-                      className="text-center p-2 border-bottom-1 border-100 text-color-secondary"
+                      className="text-center px-2 py-1 text-color-secondary"
                     >
                       —
                     </td>
                   );
                 }
                 return (
-                  <td key={num.numberType} className="text-center p-2 border-bottom-1 border-100">
-                    <MiniProgressBar value={agg.aggregatedProgress} status={agg.status} />
+                  <td key={num.numberType} className="text-center px-2 py-1">
+                    <MiniProgressBar
+                      value={agg.aggregatedProgress}
+                      status={agg.status}
+                      width="110px"
+                      className="justify-content-center"
+                    />
                   </td>
                 );
               })}

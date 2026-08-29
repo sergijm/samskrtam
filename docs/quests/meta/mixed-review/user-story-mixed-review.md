@@ -1,6 +1,6 @@
 # US-META-01 — Сессия смешанного повторения по нескольким типам сразу
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `MIXED_REVIEW` (план)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `MIXED_REVIEW` (план)
 > Связанные файлы: [quest-item-model.md §4](../../../services/quest-item-model.md)
 
 ## История

@@ -2,8 +2,8 @@ package sm.selflearn.samskrtam.sangraha.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import sm.selflearn.samskrtam.sangraha.model.CurriculumSemanticTopic;
-import sm.selflearn.samskrtam.sangraha.repository.CurriculumSemanticTopicRepository;
+import sm.selflearn.samskrtam.sangraha.model.CurriculumSemanticClass;
+import sm.selflearn.samskrtam.sangraha.repository.CurriculumSemanticClassRepository;
 
 import java.util.List;
 
@@ -17,8 +17,8 @@ class LemmaClassificationValidatorTest {
 
     @BeforeEach
     void setUp() {
-        CurriculumSemanticTopicRepository repo = mock(CurriculumSemanticTopicRepository.class);
-        CurriculumSemanticTopic animals = CurriculumSemanticTopic.builder().code("animals").build();
+        CurriculumSemanticClassRepository repo = mock(CurriculumSemanticClassRepository.class);
+        CurriculumSemanticClass animals = CurriculumSemanticClass.builder().code("animals").build();
         when(repo.findAll()).thenReturn(List.of(animals));
         validator = new LemmaClassificationValidator(repo);
     }

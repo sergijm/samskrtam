@@ -22,6 +22,8 @@ import sm.selflearn.samskrtam.curriculum.dto.TopicGraphResponse;
 import sm.selflearn.samskrtam.curriculum.dto.TopicPrerequisiteDto;
 import sm.selflearn.samskrtam.curriculum.dto.UpdateTopicRequest;
 import sm.selflearn.samskrtam.curriculum.model.LearningLevel;
+import sm.selflearn.samskrtam.curriculum.model.TopicDomain;
+import sm.selflearn.samskrtam.curriculum.model.TopicDomainType;
 import sm.selflearn.samskrtam.curriculum.service.TopicService;
 
 import java.util.List;
@@ -36,13 +38,20 @@ public class TopicController {
 
     @GetMapping("/topics")
     public List<TopicDto> listTopics(
-            @RequestParam(defaultValue = "true") boolean includeEvergreen) {
-        return topicService.listTopics(includeEvergreen);
+            @RequestParam(defaultValue = "true") boolean includeEvergreen,
+            @RequestParam(required = false) TopicDomain domain,
+            @RequestParam(required = false) TopicDomainType domainType) {
+        return topicService.listTopics(includeEvergreen, domain, domainType);
     }
 
     @GetMapping("/topics/{id}")
     public TopicDetailDto getTopic(@PathVariable UUID id) {
         return topicService.getTopic(id);
+    }
+
+    @GetMapping("/topics/by-code/{code}")
+    public TopicDto getTopicByCode(@PathVariable String code) {
+        return topicService.getTopicByCode(code);
     }
 
     @PostMapping("/topics")

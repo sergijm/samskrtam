@@ -93,7 +93,7 @@ dictionary (unique by `lemma_slp1`), per-gender corpus stats move to a new
 - `service/LemmaRefreshService.java` — dictionary upsert by lemmaSlp1 + stats
   per (lemma, gender), stale stats pruned, lemmaId linked.
 - `dto/LemmaRefreshResponse.java` — {lemmaCount, newLemmaCount, updatedLemmaCount,
-  statisticsCount, newStatisticsCount, updatedStatisticsCount}.
+  statisticsCount, newStatisticsCount, updatedStatisticsCount, verseStatisticsCount}.
 - `service/LemmaClassificationRunService.java` — candidates by total occurrence
   sum; batch item = dominant (gender, dominantPosCode) from stats; upsert via
   (lemmaId, gender, schemeCode).

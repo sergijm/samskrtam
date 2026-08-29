@@ -23,8 +23,11 @@ dependencies {
     implementation(libs.postgresql.jdbc)
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
-    // Sanscript.java для транслитерации санскрита (IAST → SLP1 для lemmaSlp1)
-    implementation("com.github.sanskrit:sanscript.java:0.1")
+    // Транслитерация санскрита (TransliterationService) — в shared:samskrtam-commons
+    implementation(project(":shared:samskrtam-commons"))
+
+    // Levenshtein distance for distractor selection
+    implementation("org.apache.commons:commons-text:1.15.0")
 
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)

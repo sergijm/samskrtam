@@ -1,7 +1,9 @@
 import { useQuery, keepPreviousData, useQueries } from '@tanstack/react-query';
 import { lessonApi } from '../api/lessonApi';
+import { sangrahaApi } from '../api/sangraha';
 import { sandhiApi } from '../api/sandhiApi';
-import type { DeclensionParadigmPageDto } from '../types/content-dtos';
+import { contentApi } from '../api/contentApi';
+import type { DeclensionParadigmPageDto, ConjugationParadigmPageDto } from '../types/content-dtos';
 
 export const useVocabularyLesson = (slug: string) =>
   useQuery({
@@ -74,13 +76,51 @@ export const useAllDeclensionParadigms = (slug: string, totalCount: number, enab
 };
 
 /**
- * Examples for the declension lesson — one request per entire lesson, no index.
- * Lazy: fires only when enabled (active tab === 'examples').
+ * Lazy: fires only when enabled (active tab === 'examples') and the lesson's
+ * stem class (vowelType) is already known from the paradigm page.
  */
-export const useDeclensionExamples = (slug: string, enabled: boolean) =>
+export const useDeclensionExamples = (
+  slug: string,
+  vowelType: string,
+  enabled: boolean,
+) =>
   useQuery({
-    queryKey: ['declension-examples', slug],
-    queryFn: () => lessonApi.getDeclensionExamples(slug).then(res => res.data),
+    queryKey: ['declension-examples', slug, vowelType],
+    queryFn: () => sangrahaApi.getDeclensionExamples(vowelType).then(res => res.data),
+    enabled: !!slug && !!vowelType && enabled,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+/**
+ * One conjugation paradigm page by index — lazy, loaded when the "Paradigms" tab is opened.
+ */
+export const useConjugationParadigm = (slug: string, index: number, voice: string | null, enabled: boolean) =>
+  useQuery({
+    queryKey: ['conjugation-paradigm', slug, index, voice],
+    queryFn: () => lessonApi.getConjugationParadigm(slug, index, voice).then(res => res.data),
+    enabled: !!slug && enabled,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    placeholderData: keepPreviousData,
+  });
+
+/**
+ * Examples for the conjugation lesson — one request to sangraha-service per lesson.
+ */
+export const useConjugationExamples = (
+  slug: string,
+  tense: string | null,
+  mood: string | null,
+  enabled: boolean,
+) =>
+  useQuery({
+    queryKey: ['conjugation-examples', slug, tense, mood],
+    queryFn: () => sangrahaApi.getConjugationExamples(undefined, tense ?? undefined, mood ?? undefined).then(res => res.data),
     enabled: !!slug && enabled,
     staleTime: Infinity,
     refetchOnMount: false,
@@ -93,5 +133,47 @@ export const useSandhiRules = (topicCode: string) =>
     queryKey: ['sandhi-rules', topicCode],
     queryFn: () => sandhiApi.getRules(topicCode).then(res => res.data),
     enabled: !!topicCode,
+  });
+
+export const useWordLemmaExamples = (lemma: string | null, enabled: boolean) =>
+  useQuery({
+    queryKey: ['word-lemma-examples', lemma],
+    queryFn: () => sangrahaApi.getLemmaExamples([lemma ?? ''], 5).then(res => res.data),
+    enabled: !!lemma && enabled,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+export const useSandhiRulesByNumbers = (ruleNumbers: number[]) =>
+  useQuery({
+    queryKey: ['sandhi-rules-by-numbers', ruleNumbers],
+    queryFn: async () => {
+      const res = await contentApi.getAllSandhiRules();
+      const all = res.data.rules;
+      const byNumber = new Map(all.map(r => [r.number, r]));
+
+      const selected = new Set<number>();
+      const requested = new Set(ruleNumbers);
+      const stack = [...ruleNumbers];
+      while (stack.length) {
+        const n = stack.pop()!;
+        if (selected.has(n)) continue;
+        selected.add(n);
+        const rule = byNumber.get(n);
+        rule?.dependsOn?.forEach(d => stack.push(d));
+      }
+
+      const requestedRules = ruleNumbers
+        .filter(n => byNumber.has(n))
+        .map(n => byNumber.get(n)!);
+      const dependencyRules = all
+        .filter(r => selected.has(r.number) && !requested.has(r.number))
+        .sort((a, b) => a.number - b.number);
+
+      return { topicCode: res.data.topicCode, title: res.data.title, rules: [...requestedRules, ...dependencyRules] };
+    },
+    enabled: ruleNumbers.length > 0,
   });
 

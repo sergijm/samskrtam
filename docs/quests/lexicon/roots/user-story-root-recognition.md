@@ -1,7 +1,7 @@
 # US-LEX-03 — Определение корня, от которого образовано слово
 
 > Домен: Lexicon · Тип: `VOCABULARY_ROOT` (план)
-> Связанные файлы: [quest-catalog.md §5](../../../services/quest-catalog.md#5-лексика)
+> Связанные файлы: [quest-catalog.md §5](../../../services/curriculum-service/quest-catalog.md#5-лексика)
 
 ## История
 

@@ -54,8 +54,10 @@ paths:
       tags: [grammar-lesson]
       summary: Получить грамматический урок с прогрессом пользователя
       description: >
-        Возвращает список вопросов урока с правильными ответами и
-        индивидуальной статистикой каждого вопроса для текущего пользователя.
+        Возвращает урок с агрегированным прогрессом пользователя
+        (caseAggregations, numberAggregations, grid, pairAggregations),
+        вычисляемым на бэкенде. Индивидуальные вопросы (GrammarQuestionProgress)
+        больше в ответ не входят.
       operationId: getGrammarLesson
       parameters:
         - $ref: 'parameters.yaml#/QuizTypeParam'

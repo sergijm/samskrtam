@@ -1,7 +1,7 @@
 # US-LEX-05 — Подбор антонима к слову
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `VOCABULARY_ANTONYM` (план)
-> Связанные файлы: [quest-catalog.md §5](../../../services/quest-catalog.md)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `VOCABULARY_ANTONYM` (план)
+> Связанные файлы: [quest-catalog.md §5](../../../services/curriculum-service/quest-catalog.md)
 
 ## История
 

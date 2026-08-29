@@ -1,7 +1,7 @@
 # US-COMP-02 — Определение типа сложного слова (самасы)
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `COMPOUND_TYPE` (план)
-> Связанные файлы: [quest-catalog.md §7.1](../../../services/quest-catalog.md)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `COMPOUND_TYPE` (план)
+> Связанные файлы: [quest-catalog.md §7.1](../../../services/curriculum-service/quest-catalog.md)
 
 ## История
 

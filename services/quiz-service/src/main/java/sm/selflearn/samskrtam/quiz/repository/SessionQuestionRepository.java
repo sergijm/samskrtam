@@ -13,7 +13,7 @@ public interface SessionQuestionRepository extends ReactiveCrudRepository<Sessio
 
     Flux<SessionQuestion> findBySessionId(UUID sessionId);
 
-    Mono<SessionQuestion> findByQuestionId(UUID questionId);
+    Mono<SessionQuestion> findBySessionIdAndQuestionId(UUID sessionId, UUID questionId);
 
     Mono<Void> deleteBySessionId(UUID sessionId);
 }

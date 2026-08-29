@@ -17,7 +17,7 @@ import java.util.List;
 public interface LearnTopicMapper {
 
     @Mapping(target = "typeGroup", expression = "java(sm.selflearn.samskrtam.curriculum.mapper.LearnTopicDeriver.classifyTypeGroup(topic.getCode()))")
-    @Mapping(target = "route", expression = "java(sm.selflearn.samskrtam.curriculum.mapper.LearnTopicDeriver.resolveRoute(topic.getCode()))")
+    @Mapping(target = "route", expression = "java(sm.selflearn.samskrtam.curriculum.mapper.LearnTopicDeriver.resolveRoute(topic.getCode(), topic.getDomainType()))")
     @Mapping(target = "status", source = "status")
     @Mapping(target = "progressPercent", source = "progressPercent")
     @Mapping(target = "prerequisites", source = "prerequisites")

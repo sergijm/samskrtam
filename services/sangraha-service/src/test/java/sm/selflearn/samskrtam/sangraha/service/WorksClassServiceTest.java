@@ -2,18 +2,23 @@ package sm.selflearn.samskrtam.sangraha.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import sm.selflearn.samskrtam.sangraha.dto.WorkSummaryDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorksClassGroupDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorksClassTreeNodeDto;
 import sm.selflearn.samskrtam.sangraha.model.Work;
 import sm.selflearn.samskrtam.sangraha.model.WorksClass;
+import sm.selflearn.samskrtam.sangraha.repository.ChapterRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorkRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorksClassRepository;
 import sm.selflearn.samskrtam.sangraha.repository.WorksWorkClassRepository;
+import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
+import sm.selflearn.samskrtam.sangraha.service.SourceService;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -27,6 +32,9 @@ class WorksClassServiceTest {
     private WorksClassRepository classRepository;
     private WorksWorkClassRepository linkRepository;
     private WorkRepository workRepository;
+    private SourceService sourceService;
+    private ChapterRepository chapterRepository;
+    private VerseRepository verseRepository;
     private WorksClassService service;
 
     private static UUID uuid(String suffix) {
@@ -38,7 +46,11 @@ class WorksClassServiceTest {
         classRepository = mock(WorksClassRepository.class);
         linkRepository = mock(WorksWorkClassRepository.class);
         workRepository = mock(WorkRepository.class);
-        service = new WorksClassService(classRepository, linkRepository, workRepository);
+        sourceService = mock(SourceService.class);
+        chapterRepository = mock(ChapterRepository.class);
+        verseRepository = mock(VerseRepository.class);
+        service = new WorksClassService(classRepository, linkRepository, workRepository,
+                sourceService, chapterRepository, verseRepository);
     }
 
     private static WorksClass buildClass(UUID id, UUID parentId, String classification,
@@ -110,11 +122,13 @@ class WorksClassServiceTest {
                 .id(uuid("000000000020"))
                 .slug("gita").titleRu("Гита").titleEn("Gita").build());
         when(workRepository.findAllByDeletedAtIsNullOrderByCreatedAtAsc()).thenReturn(all);
+        when(chapterRepository.countByWorkIdAndDeletedAtIsNull(any())).thenReturn(0L);
+        when(verseRepository.countByWorkIdAndDeletedAtIsNull(any())).thenReturn(0);
 
-        List<Work> result = service.filterWorks(List.of());
+        List<WorkSummaryDto> result = service.filterWorks(List.of(), null);
 
-        assertThat(result).isEqualTo(all);
         assertThat(result).hasSize(1);
+        assertThat(result.get(0).slug()).isEqualTo("gita");
     }
 
     @Test
@@ -123,8 +137,10 @@ class WorksClassServiceTest {
                 .id(uuid("000000000021"))
                 .slug("gita").titleRu("Гита").titleEn("Gita").build());
         when(workRepository.findAllByDeletedAtIsNullOrderByCreatedAtAsc()).thenReturn(all);
+        when(chapterRepository.countByWorkIdAndDeletedAtIsNull(any())).thenReturn(0L);
+        when(verseRepository.countByWorkIdAndDeletedAtIsNull(any())).thenReturn(0);
 
-        assertThat(service.filterWorks(null)).isEqualTo(all);
+        assertThat(service.filterWorks(null, null)).hasSize(1);
     }
 
     @Test
@@ -143,11 +159,15 @@ class WorksClassServiceTest {
                 .thenReturn(List.of(workId));
         when(workRepository.findAllByIdInAndDeletedAtIsNullOrderByCreatedAtAsc(anyCollection()))
                 .thenReturn(List.of(Work.builder().id(workId).slug("ram").titleRu("Р").titleEn("R").build()));
+        when(chapterRepository.countByWorkIdAndDeletedAtIsNull(workId)).thenReturn(2L);
+        when(verseRepository.countByWorkIdAndDeletedAtIsNull(workId)).thenReturn(24);
 
-        List<Work> works = service.filterWorks(List.of(genre));
+        List<WorkSummaryDto> works = service.filterWorks(List.of(genre), null);
 
         assertThat(works).hasSize(1);
-        assertThat(works.get(0).getId()).isEqualTo(workId);
+        assertThat(works.get(0).id()).isEqualTo(workId);
+        assertThat(works.get(0).chapterCount()).isEqualTo(2);
+        assertThat(works.get(0).verseCount()).isEqualTo(24);
     }
 
     @Test
@@ -157,6 +177,6 @@ class WorksClassServiceTest {
                 buildClass(genre, null, "GENRE", "genre", "Жанр", 0)));
         when(linkRepository.findWorkIdsByClassIdIn(List.of(genre))).thenReturn(List.of());
 
-        assertThat(service.filterWorks(List.of(genre))).isEmpty();
+        assertThat(service.filterWorks(List.of(genre), null)).isEmpty();
     }
 }

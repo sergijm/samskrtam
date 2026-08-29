@@ -1,7 +1,7 @@
 # US-MORPH-05 — Склонение числительных 1–4
 
 > Домен: Morphology · Тип: `NUMERAL_FORM` (план)
-> Связанные файлы: [quest-catalog.md §2.2](../../../services/quest-catalog.md#22-numeral_form--план)
+> Связанные файлы: [quest-catalog.md §2.2](../../../services/curriculum-service/quest-catalog.md#22-numeral_form--план)
 
 ## История
 

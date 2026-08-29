@@ -32,23 +32,6 @@ spring:
       host: ${REDIS_HOST}
       port: 6379
 
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: sm.selflearn.samskrtam.kafka.serialization.SamskrtamJsonSerializer
-      properties:
-        spring.json.add.type.headers: true # Добавляем информацию о типе в заголовки
-        security.protocol: PLAINTEXT
-        listener.name: EXTERNAL
-    consumer: # Добавляем конфигурацию потребителя для консистентности
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: sm.selflearn.samskrtam.kafka.serialization.SamskrtamJsonDeserializer
-      properties:
-        spring.json.use.type.headers: true
-        security.protocol: PLAINTEXT
-        listener.name: EXTERNAL
-
 content:
   service:
     url: ${CONTENT_SERVICE_URL}
@@ -64,18 +47,16 @@ quiz:
   # Количество вопросов каждого типа declension-семейства за сессию,
   # источник пула кандидатов — curriculum-service (API v2), см. curriculum-quest-items.md §5.
   declension-session:
-    single-choice-count: 10
-    free-text-count: 4
-    case-recognition-count: 2
-    match-count: 4
+    single-choice-count: 4
+    free-text-count: 1
+    case-recognition-count: 4
+    match-count: 1
 
 logging:
   level:
     root: WARN
     sm.selflearn.samskrtam: DEBUG
     sm.selflearn.samskrtam.quiz.scheduler: WARN
-    org.springframework.kafka: DEBUG
-    org.apache.kafka: DEBUG
 
     org.springframework.web: WARN
     org.springframework.web.HttpLogging: DEBUG

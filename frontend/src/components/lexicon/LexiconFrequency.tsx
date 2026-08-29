@@ -1,10 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProgressBar } from 'primereact/progressbar';
-import { Toast } from 'primereact/toast';
+import { useNavigate } from 'react-router-dom';
 import { FrequencyBand } from '../../types/lexicon';
 import { LexiconSectionHeader } from './LexiconSectionHeader';
-import { useLexiconToast } from './useLexiconToast';
 
 interface LexiconFrequencyProps {
   bands: FrequencyBand[];
@@ -13,7 +12,9 @@ interface LexiconFrequencyProps {
 /** «Частотность» — компактные диапазоны от самого употребительного к редкому. */
 const LexiconFrequency: React.FC<LexiconFrequencyProps> = ({ bands }) => {
   const { t } = useTranslation();
-  const { toast, showComingSoon } = useLexiconToast();
+  const navigate = useNavigate();
+
+  const openLesson = (slug: string) => navigate(`/lessons/vocabulary/${slug}`);
 
   const overview = bands.slice(0, 3).reduce(
     (acc, band) => ({
@@ -33,16 +34,14 @@ const LexiconFrequency: React.FC<LexiconFrequencyProps> = ({ bands }) => {
 
   return (
     <>
-      <Toast ref={toast} />
       <section className="mb-5">
         <LexiconSectionHeader
           titleKey="lexicon.frequencyTitle"
-          subtitleKey="lexicon.frequencySubtitle"
           icon="pi-chart-line"
         />
 
         {/* Обзорный компактный блок */}
-        <div className="lexicon-card lexicon-band-overview mb-3" onClick={() => showComingSoon()}>
+        <div className="lexicon-card lexicon-band-overview mb-3" onClick={() => openLesson('lex-frequency-top500')}>
           <div className="flex align-items-center justify-content-between gap-3">
             <div className="flex flex-column gap-1">
               <span className="font-bold">{t('lexicon.frequencyOverview')}</span>
@@ -62,7 +61,7 @@ const LexiconFrequency: React.FC<LexiconFrequencyProps> = ({ bands }) => {
             <div key={band.id} className="col-12 md:col-6 xl:col-4">
               <div
                 className="lexicon-card lexicon-band-card h-full cursor-pointer"
-                onClick={() => showComingSoon()}
+                onClick={() => openLesson(`lex-frequency-${band.id.toLowerCase()}`)}
               >
                 <div className="flex align-items-center justify-content-between mb-1">
                   <span className="font-semibold">{bandLabel(band)}</span>

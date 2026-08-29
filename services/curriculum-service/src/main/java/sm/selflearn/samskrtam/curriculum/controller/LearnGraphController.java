@@ -2,14 +2,17 @@ package sm.selflearn.samskrtam.curriculum.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import sm.selflearn.samskrtam.curriculum.dto.LearnGraphResponse;
 import sm.selflearn.samskrtam.curriculum.service.LearnGraphService;
 
+import java.util.UUID;
+
 /**
  * Learning map page — the dashboard curriculum view. Returns real curriculum
- * topics grouped into layers with (currently random) per-user progress.
+ * topics grouped into layers with per-user progress sourced from quiz-service.
  */
 @RestController
 @RequestMapping("/api/v2/curriculum/learn-graph")
@@ -19,7 +22,8 @@ public class LearnGraphController {
     private final LearnGraphService learnGraphService;
 
     @GetMapping
-    public LearnGraphResponse getLearnGraph() {
-        return learnGraphService.getLearnGraph();
+    public LearnGraphResponse getLearnGraph(
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId) {
+        return learnGraphService.getLearnGraph(userId);
     }
 }

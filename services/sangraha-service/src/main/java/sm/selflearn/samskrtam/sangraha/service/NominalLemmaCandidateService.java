@@ -1,12 +1,14 @@
 package sm.selflearn.samskrtam.sangraha.service;
 
+import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sm.selflearn.samskrtam.content.model.VowelType;
 import sm.selflearn.samskrtam.sangraha.dto.NominalLemmaCandidateDto;
 import sm.selflearn.samskrtam.sangraha.dto.NominalLemmaCandidatesResponseDto;
-import sm.selflearn.samskrtam.sangraha.model.Gender;
+import sm.selflearn.samskrtam.morphology.Gender;
 import sm.selflearn.samskrtam.sangraha.repository.NominalLemmaRepository;
 import sm.selflearn.samskrtam.sangraha.repository.NominalLemmaRepository.CandidateRow;
 import sm.selflearn.samskrtam.sangraha.repository.NominalLemmaRepository.LemmaGenderCount;
@@ -41,10 +43,18 @@ public class NominalLemmaCandidateService {
     public NominalLemmaCandidatesResponseDto findCandidates(String stemClass, int limit) {
         int safeLimit = Math.max(0, limit);
         PageRequest pageRequest = PageRequest.of(0, safeLimit);
-        List<CandidateRow> rows =
-                (stemClass == null || stemClass.isBlank())
-                        ? nominalLemmaRepository.findAllCandidates(pageRequest)
-                        : nominalLemmaRepository.findCandidatesByStemClass(stemClass, pageRequest);
+        List<CandidateRow> rows;
+        if (stemClass == null || stemClass.isBlank()) {
+            rows = nominalLemmaRepository.findAllCandidates(pageRequest);
+        } else {
+            VowelType type;
+            try {
+                type = VowelType.valueOf(stemClass);
+            } catch (IllegalArgumentException e) {
+                return new NominalLemmaCandidatesResponseDto(List.of());
+            }
+            rows = nominalLemmaRepository.findCandidatesByStemClass(type, pageRequest);
+        }
         Map<String, Gender> genders = mostFrequentGenders(rows);
         List<NominalLemmaCandidateDto> candidates = rows.stream()
                 .map(row -> new NominalLemmaCandidateDto(

@@ -29,10 +29,13 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
     /** Найти все записи пользователя для данного itemType. */
     Flux<QuizItemScore> findByUserIdAndItemType(UUID userId, ItemType itemType);
 
+    /** Найти все записи пользователя для набора itemType (срез области прогресса). */
+    Flux<QuizItemScore> findByUserIdAndItemTypeIn(UUID userId, List<ItemType> itemTypes);
+
     /** Найти все записи пользователя для нескольких progressTag данного itemType. */
     @Query("""
             SELECT * FROM quiz.quiz_item_score
-            WHERE user_id = :userId
+            WHERE user_id = CAST(:userId AS uuid)
               AND item_type = :itemType
               AND progress_tag IN (:progressTags)
             """)
@@ -42,7 +45,7 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
     /** Найти просроченные записи (next_review_at <= now) для пользователя и itemType. */
     @Query("""
             SELECT * FROM quiz.quiz_item_score
-            WHERE user_id = :userId
+            WHERE user_id = CAST(:userId AS uuid)
               AND item_type = :itemType
               AND next_review_at <= :now
             ORDER BY next_review_at ASC
@@ -57,7 +60,7 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
                  last_answered_at, last_mistake_at, consecutive_mistakes,
                  next_review_at, updated_at)
             VALUES
-                (:id, :userId, :itemType::text, :progressTag, :score, :stability,
+                (CAST(:id AS uuid), CAST(:userId AS uuid), :itemType::text, :progressTag, :score, :stability,
                  :lastAnsweredAt, :lastMistakeAt, :consecutiveMistakes,
                  :nextReviewAt, NOW())
             ON CONFLICT (user_id, item_type, progress_tag)
@@ -79,7 +82,7 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
     /** Подсчёт записей с score >= порога (для статистики MASTERED). */
     @Query("""
             SELECT COUNT(*) FROM quiz.quiz_item_score
-            WHERE user_id = :userId
+            WHERE user_id = CAST(:userId AS uuid)
               AND item_type = :itemType
               AND score >= :minScore
             """)
@@ -88,7 +91,7 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
     /** Найти записи LEARNING/DIFFICULT (score &lt; masteredLowerThreshold) — для statusFilter=LEARNING. */
     @Query("""
             SELECT * FROM quiz.quiz_item_score
-            WHERE user_id = :userId
+            WHERE user_id = CAST(:userId AS uuid)
               AND item_type = :itemType
               AND progress_tag IN (:progressTags)
               AND score < :masteredLowerThreshold
@@ -99,7 +102,7 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
     /** Найти записи REVIEW (score &gt;= masteredLowerThreshold AND next_review_at &lt;= now) — для statusFilter=REVIEW. */
     @Query("""
             SELECT * FROM quiz.quiz_item_score
-            WHERE user_id = :userId
+            WHERE user_id = CAST(:userId AS uuid)
               AND item_type = :itemType
               AND progress_tag IN (:progressTags)
               AND score >= :masteredLowerThreshold
@@ -108,25 +111,4 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
             """)
     Flux<QuizItemScore> findReviewItems(
             UUID userId, ItemType itemType, List<String> progressTags, int masteredLowerThreshold, Instant now);
-
-    /** Найти записи DIFFICULT (score &lt;= difficultUpperThreshold) с гистерезисом выхода. */
-    @Query("""
-            SELECT * FROM quiz.quiz_item_score
-            WHERE user_id = :userId
-              AND item_type = :itemType
-              AND progress_tag IN (:progressTags)
-              AND (consecutive_mistakes >= 2 OR score <= :difficultUpperThreshold)
-              AND (score <= :difficultUpperThreshold + :exitMargin)
-            """)
-    Flux<QuizItemScore> findDifficultItems(
-            UUID userId, ItemType itemType, List<String> progressTags,
-            int difficultUpperThreshold, int exitMargin);
-
-    /** Найти все записи пользователя — для получения списка уже существующих тегов. */
-    @Query("""
-            SELECT progress_tag FROM quiz.quiz_item_score
-            WHERE user_id = :userId
-              AND item_type = :itemType
-            """)
-    Flux<String> findExistingProgressTags(UUID userId, ItemType itemType);
 }

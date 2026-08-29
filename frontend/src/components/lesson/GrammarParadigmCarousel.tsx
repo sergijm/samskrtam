@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from 'primereact/button';
 import { Skeleton } from 'primereact/skeleton';
 import { useDeclensionParadigm } from '../../hooks/useLessons';
-import { lookup, ABBR_CASE, ABBR_CASE_RU } from '../../utils/grammarTerms';
+import { lookup, FULL_CASE, FULL_CASE_RU } from '../../utils/grammarTerms';
 import { CASE_TYPES } from '../../utils/grammarAggregation';
 import type { DeclensionFormDto, DeclensionParadigmDto } from '../../types/content-dtos';
 
@@ -65,10 +65,10 @@ const renderTable = (
 
       {/* Paradigm table */}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full border-collapse text-sm" style={{ tableLayout: 'fixed' }}>
           <thead>
             <tr>
-              <th className="text-left p-2 border-bottom-1 border-200 font-semibold" style={{ width: '25%' }}>
+              <th className="text-left p-2 border-bottom-1 border-200 font-semibold">
                 {i18n.language === 'ru' ? 'Падеж' : 'Case'}
               </th>
               {columns.map(num => (
@@ -84,7 +84,7 @@ const renderTable = (
             {CASE_TYPES.map(caseType => (
               <tr key={caseType}>
                 <td className="p-2 border-bottom-1 border-100 text-color-secondary">
-                  {lookup(caseType, i18n.language === 'ru' ? ABBR_CASE_RU : ABBR_CASE)}
+                  {lookup(caseType, i18n.language === 'ru' ? FULL_CASE_RU : FULL_CASE)}
                 </td>
                 {columns.map(num => {
                   const form = findForm(paradigm.forms, caseType, num);

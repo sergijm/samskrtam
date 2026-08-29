@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Value;
-import sm.selflearn.samskrtam.content.model.Gender;
+import sm.selflearn.samskrtam.morphology.Gender;
 import sm.selflearn.samskrtam.content.model.VowelType;
 
 import java.util.List;

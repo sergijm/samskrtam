@@ -14,7 +14,9 @@ import sm.selflearn.samskrtam.curriculum.questitem.dto.QuestItemDto;
 public interface QuestItemMapper {
 
     @Mapping(target = "distractors", source = "distractors", qualifiedByName = "jsonList")
+    @Mapping(target = "distractorsRu", source = "distractorsRu", qualifiedByName = "jsonList")
     @Mapping(target = "payload", source = "payload", qualifiedByName = "jsonObject")
     @Mapping(target = "correctAnswer", expression = "java(questItemJsonSupport.correctAnswer(questItem))")
+    @Mapping(target = "correctAnswerRu", expression = "java(questItemJsonSupport.correctAnswerRu(questItem))")
     QuestItemDto toDto(QuestItem questItem);
 }

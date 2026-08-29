@@ -1,5 +1,6 @@
 package sm.selflearn.samskrtam.sangraha.service;
 
+import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import sm.selflearn.samskrtam.sangraha.dto.LemmaRefreshResponse;
 import sm.selflearn.samskrtam.sangraha.model.Lemma;
 import sm.selflearn.samskrtam.sangraha.repository.LemmaRepository;
 import sm.selflearn.samskrtam.sangraha.repository.LemmaStatisticsRepository;
+import sm.selflearn.samskrtam.sangraha.repository.VerseStatisticsRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
 
 import java.util.ArrayList;
@@ -24,6 +26,8 @@ import java.util.List;
  * <p>2) Статистика пересчитывается нативной функцией
  * {@code sangraha.compute_lemma_statistics} (upsert по (lemma_id, gender)) — вызов
  * {@link LemmaStatisticsRepository#refreshStatistics} со всеми леммами (null).
+ * <p>3) Длина стихов ({@code verse_statistics}) пересчитывается upsert'ом по
+ * verse_id — {@link VerseStatisticsRepository#refreshStatistics} (sangraha-service.md §9).
  */
 @Slf4j
 @Service
@@ -33,24 +37,28 @@ public class LemmaRefreshService {
     private final VerseWordRepository verseWordRepository;
     private final LemmaRepository lemmaRepository;
     private final LemmaStatisticsRepository statisticsRepository;
+    private final VerseStatisticsRepository verseStatisticsRepository;
     private final TransliterationService transliterationService;
 
     /**
-     * @return счётчики словаря и статистики. Идемпотентен: повторный вызов на
-     * тех же данных не создаёт дублей Lemma/статистики.
+     * @return счётчики словаря, статистики лемм и статистики стихов. Идемпотентен:
+     * повторный вызов на тех же данных не создаёт дублей Lemma/статистики.
      */
     @Transactional
     public LemmaRefreshResponse refresh() {
         LemmaDictionarySummary dictionary = refreshDictionary();
         int statisticsTotal = statisticsRepository.refreshStatistics(null);
+        int verseStatisticsTotal = verseStatisticsRepository.refreshStatistics();
 
-        log.info("Lemma refresh done: lemmas={}, newLemmas={}, updatedLemmas={}, stats={}",
-                dictionary.total, dictionary.newCount, dictionary.updatedCount, statisticsTotal);
+        log.info("Lemma refresh done: lemmas={}, newLemmas={}, updatedLemmas={}, stats={}, verseStats={}",
+                dictionary.total, dictionary.newCount, dictionary.updatedCount, statisticsTotal,
+                verseStatisticsTotal);
         return new LemmaRefreshResponse(
                 dictionary.total,
                 dictionary.newCount,
                 dictionary.updatedCount,
-                statisticsTotal, 0, 0);
+                statisticsTotal, 0, 0,
+                verseStatisticsTotal);
     }
 
     /** Добавление в словарь новых лемм: DISTINCT новых lemma_iast → saveAll. */

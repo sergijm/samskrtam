@@ -1,7 +1,7 @@
 # US-MORPH-09 — Образование каузативной основы
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `SECONDARY_STEM_FORM (каузатив)` (план)
-> Связанные файлы: [quest-catalog.md (перечень SECONDARY_STEM_FORM)](../../../services/quest-catalog.md)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `SECONDARY_STEM_FORM (каузатив)` (план)
+> Связанные файлы: [quest-catalog.md (перечень SECONDARY_STEM_FORM)](../../../services/curriculum-service/quest-catalog.md)
 
 ## История
 

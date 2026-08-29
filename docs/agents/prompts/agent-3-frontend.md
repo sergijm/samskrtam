@@ -22,7 +22,6 @@
 
 - `docs/frontend/frontend-overview.md` — стек, роуты, компоненты, темы, i18n
 - `docs/frontend/user-frontend.md` — профили, группы, настройки
-- `docs/frontend/feature-flags-frontend.md` — AdminPage feature flags
 - `docs/frontend/pages/lesson-pages-spec.md` — VocabularyLessonPage, GrammarLessonPage
 - `docs/openapi/lesson-aggregation-openapi.yaml` — контракт API для lesson-страниц
 

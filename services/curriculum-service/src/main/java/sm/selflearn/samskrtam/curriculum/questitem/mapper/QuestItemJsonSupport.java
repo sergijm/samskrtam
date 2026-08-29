@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mapstruct.Named;
 import org.springframework.stereotype.Component;
 import sm.selflearn.samskrtam.curriculum.questitem.QuestItem;
+import sm.selflearn.samskrtam.quest.AnswerMode;
 
 import java.util.List;
 
@@ -49,6 +50,11 @@ public class QuestItemJsonSupport {
 
     /** Exposes no correct answer for MATCHING items — verification happens on the backend. */
     public String correctAnswer(QuestItem item) {
-        return "MATCHING".equals(item.getAnswerMode()) ? null : item.getCorrectAnswer();
+        return item.getAnswerMode() == AnswerMode.MATCHING ? null : item.getCorrectAnswer();
+    }
+
+    /** Same MATCHING rule as {@link #correctAnswer} applied to the Russian variant. */
+    public String correctAnswerRu(QuestItem item) {
+        return item.getAnswerMode() == AnswerMode.MATCHING ? null : item.getCorrectAnswerRu();
     }
 }

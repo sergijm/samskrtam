@@ -1,6 +1,9 @@
 package sm.selflearn.samskrtam.quest.declension;
 
+import sm.selflearn.samskrtam.quest.HighlightToken;
 import sm.selflearn.samskrtam.quest.QuestItemPayload;
+
+import java.util.List;
 
 /**
  * Shared payload for DECLENSION_FORM and DECLENSION_FORM_CHOICE.
@@ -14,6 +17,7 @@ public record DeclensionFormPayload(
         String caseType,
         String numberType,
         String correctFormIast,
-        String correctFormDevanagari
+        String correctFormDevanagari,
+        List<HighlightToken> highlights
 ) implements QuestItemPayload {
 }

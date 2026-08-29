@@ -2,9 +2,9 @@ package sm.selflearn.samskrtam.sangraha.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import sm.selflearn.samskrtam.sangraha.model.CurriculumSemanticTopic;
+import sm.selflearn.samskrtam.sangraha.model.CurriculumSemanticClass;
 import sm.selflearn.samskrtam.sangraha.model.Lemma;
-import sm.selflearn.samskrtam.sangraha.repository.CurriculumSemanticTopicRepository;
+import sm.selflearn.samskrtam.sangraha.repository.CurriculumSemanticClassRepository;
 
 import java.util.List;
 import java.util.Map;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class LemmaClassificationPromptBuilder {
 
     private final PromptLoader promptLoader;
-    private final CurriculumSemanticTopicRepository topicRepository;
+    private final CurriculumSemanticClassRepository topicRepository;
 
     /**
      * Секция ## system из шаблона + полный список категорий CURRICULUM.
@@ -67,17 +67,17 @@ public class LemmaClassificationPromptBuilder {
         }
     }
 
-    private String renderCategories(List<CurriculumSemanticTopic> topics) {
-        Map<String, List<CurriculumSemanticTopic>> byParent = topics.stream()
+    private String renderCategories(List<CurriculumSemanticClass> topics) {
+        Map<String, List<CurriculumSemanticClass>> byParent = topics.stream()
                 .collect(Collectors.groupingBy(
                         t -> t.getParent() == null ? "" : t.getParent().getCode()));
         StringBuilder sb = new StringBuilder();
-        for (CurriculumSemanticTopic root : byParent.getOrDefault("", List.of())) {
+        for (CurriculumSemanticClass root : byParent.getOrDefault("", List.of())) {
             sb.append("- ").append(root.getCode())
                     .append(" [").append(root.getLabelRu()).append(" / ").append(root.getLabelEn()).append("]")
                     .append(root.getDescription() == null ? "" : " — " + root.getDescription())
                     .append("\n");
-            for (CurriculumSemanticTopic leaf : byParent.getOrDefault(root.getCode(), List.of())) {
+            for (CurriculumSemanticClass leaf : byParent.getOrDefault(root.getCode(), List.of())) {
                 sb.append("    - ").append(leaf.getCode())
                         .append(" [").append(leaf.getLabelRu()).append(" / ").append(leaf.getLabelEn()).append("]")
                         .append(leaf.getDescription() == null ? "" : " — " + leaf.getDescription())

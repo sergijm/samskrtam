@@ -5,7 +5,6 @@ import io.minio.MinioClient;
 import io.minio.StatObjectArgs;
 import io.minio.errors.MinioException;
 import io.minio.http.Method;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;

@@ -19,7 +19,6 @@
 | HTTP-контракты (servlet) | MockMvc |
 | HTTP-контракты (reactive) | WebTestClient |
 | БД в тестах | Embedded/локальная PostgreSQL |
-| Kafka в тестах | EmbeddedKafka |
 | Redis в тестах | Embedded/локальный Redis |
 | Архитектурные тесты | ArchUnit |
 | Покрытие | JaCoCo |
@@ -97,14 +96,6 @@ forgotPassword_existingEmail_sendsEmailAndSavesOutboxEvent()
 forgotPassword_unknownEmail_returns200()  // не раскрывать существование аккаунта
 ```
 
-### statistics-service
-```java
-// Kafka Streams тесты — используй TopologyTestDriver
-consumeQuizAnsweredEvent_validEvent_aggregatesScore()
-consumeQuizAnsweredEvent_multipleEvents_accumulatesCorrectly()
-consumeSessionStatusChanged_completed_updatesSessionCount()
-```
-
 ### dictionary-service (Java + JUnit 5 + Mockito)
 ```java
 // JUnit 5 стиль
@@ -129,7 +120,6 @@ requestWithoutJwt_toProtectedEndpoint_returns401()
 requestWithStudentRole_toAdminEndpoint_returns403()
 requestExceedingRateLimit_returns429()
 requestWithValidJwt_addsIdentityHeaders()
-rateLimitDisabledByFeatureFlag_requestNotLimited()
 ```
 
 ## JaCoCo — конфигурация (добавлять в каждый build.gradle.kts сервиса)

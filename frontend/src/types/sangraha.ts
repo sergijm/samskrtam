@@ -11,6 +11,16 @@ export interface WorkSummaryDto {
   descriptionEn?: string | null;
   author?: string | null;
   createdAt: string;
+  chapterCount: number;
+  verseCount: number;
+  analyzedVerseCount: number;
+}
+
+export interface SourceDto {
+  id: string;
+  code: string;
+  titleEn: string;
+  titleRu: string;
 }
 
 export interface ChapterSummaryDto {
@@ -124,8 +134,7 @@ export interface VerseDetailDto {
   status: VerseStatus;
   analysis?: VerseAnalysisDto | null;
   words: VerseWordDto[];
-        vocabularyQuizSlug?: string | null;
-  vocabularyQuizId?: string | null;
+  verseTopicCode?: string | null;
 }
 
 // ── Standalone анализ (страница /analysis, verse.chapter_id = null) ──
@@ -174,5 +183,68 @@ export interface WorksClassTreeNodeDto {
 export interface WorksClassGroupDto {
   classification: string;
   classes: WorksClassTreeNodeDto[];
+}
+
+// ── Поиск примеров стихов по точной словоформе (урок склонений) ──
+
+export interface VerseWordExamplesResponseDto {
+  results: VerseWordExamplesResultDto[];
+}
+
+export interface VerseWordExamplesResultDto {
+  surfaceIast: string;
+  verses: VerseWordExampleItemDto[];
+}
+
+export interface VerseWordExampleItemDto {
+  verseId: string;
+  workSlug: string;
+  textIast: string;
+  textDevanagari: string;
+  translationRu: string | null;
+  translationEn: string | null;
+  workTitleRu: string;
+  workTitleEn: string;
+  chapterTitleRu: string;
+  chapterTitleEn: string;
+  verseOrderIndex: number;
+}
+
+// ── Примеры стихов по лемме (раскрываемые строки урока лексики) ──
+// POST /api/v1/sangraha/words/examples-by-lemma — на вход (lemmas, limitPerLemma);
+// для каждой леммы возвращается до limitPerLemma стихов, содержащих эту лемму.
+
+export interface LemmaExamplesResponseDto {
+  results: LemmaExamplesResultDto[];
+}
+
+export interface LemmaExamplesResultDto {
+  lemmaIast: string;
+  verses: VerseWordExampleItemDto[];
+}
+
+// ── Примеры склонений по словоизменительному классу (вкладка «Примеры» урока) ──
+// POST /api/v1/sangraha/verses/examples/declensions — один запрос на урок, на вход
+// (vowelType, limitPerGroup); caseType/numberType опциональны
+// (фильтр по падежу/числу), фронтендом не передаются.
+
+export interface DeclensionExamplesResponseDto {
+  groups: Array<{
+    caseType: string;
+    numberType: string;
+    examples: VerseWordExampleItemDto[];
+  }>;
+}
+
+// ── Примеры спряжений (вкладка «Примеры» урока спряжений) ──
+// POST /api/v1/sangraha/verses/examples/conjugations — один запрос на урок,
+// на вход (tense, mood, limitPerGroup); tense/mood опциональны.
+
+export interface ConjugationExamplesResponseDto {
+  groups: Array<{
+    tense: string;
+    mood: string;
+    examples: VerseWordExampleItemDto[];
+  }>;
 }
 

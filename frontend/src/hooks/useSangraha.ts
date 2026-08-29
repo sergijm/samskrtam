@@ -9,13 +9,15 @@ import type {
   VerseBatchResponseDto,
   WorksClassGroupDto,
   StandaloneVerseItemDto,
+  VerseWordExamplesResponseDto,
+  SourceDto,
 } from '../types/sangraha';
 
-export const useWorks = (classIds?: string[]) =>
+export const useWorks = (classIds?: string[], sourceCode?: string) =>
   useQuery<WorkSummaryDto[], Error>({
-    queryKey: ['sangraha', 'works', classIds ?? []],
+    queryKey: ['sangraha', 'works', classIds ?? [], sourceCode ?? null],
     queryFn: async () => {
-      const res = await sangrahaApi.getAllWorks(classIds);
+      const res = await sangrahaApi.getAllWorks(classIds, sourceCode);
       return res.data;
     },
   });
@@ -25,6 +27,15 @@ export const useWorksClasses = () =>
     queryKey: ['sangraha', 'works', 'classes'],
     queryFn: async () => {
       const res = await sangrahaApi.getWorksClasses();
+      return res.data;
+    },
+  });
+
+export const useSources = () =>
+  useQuery<SourceDto[], Error>({
+    queryKey: ['sangraha', 'sources'],
+    queryFn: async () => {
+      const res = await sangrahaApi.getSources();
       return res.data;
     },
   });
@@ -72,16 +83,6 @@ export const useAnalyzeVerse = () => {
   });
 };
 
-export const useGetOrCreateVocabularyQuiz = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (verseId: string) => sangrahaApi.getOrCreateVocabularyQuiz(verseId),
-    onSuccess: (_data, verseId) => {
-      qc.invalidateQueries({ queryKey: ['sangraha', 'verse', verseId] });
-    },
-  });
-};
-
 export const useAnalyzeAllVerses = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -103,6 +104,18 @@ export const useVersesBatch = (ids: string[]) =>
       return res.data;
     },
     enabled: ids.length > 0,
+  });
+
+// ── Примеры стихов по точным словоформам (урок склонений) ──
+
+export const useWordExamples = (surfaceIasts: string[], enabled: boolean) =>
+  useQuery<VerseWordExamplesResponseDto, Error>({
+    queryKey: ['sangraha', 'word-examples', surfaceIasts],
+    queryFn: async () => {
+      const res = await sangrahaApi.getWordExamples(surfaceIasts);
+      return res.data;
+    },
+    enabled: enabled && surfaceIasts.length > 0,
   });
 
 export const useAnalyzeVerses = () => {
@@ -145,6 +158,64 @@ export const useDeleteStandaloneVerse = () => {
     onSuccess: (_data, verseId) => {
       qc.invalidateQueries({ queryKey: ['sangraha', 'analysis', 'list'] });
       qc.invalidateQueries({ queryKey: ['sangraha', 'verse', verseId] });
+    },
+  });
+};
+
+// ── Write: произведения / главы / стихи (ADMIN) ──
+
+export const useCreateWork = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof sangrahaApi.createWork>[0]) =>
+      sangrahaApi.createWork(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'works'] });
+    },
+  });
+};
+
+export const useUpdateWork = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ workSlug, data }: { workSlug: string; data: Parameters<typeof sangrahaApi.updateWork>[1] }) =>
+      sangrahaApi.updateWork(workSlug, data),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'works'] });
+      qc.invalidateQueries({ queryKey: ['sangraha', 'work', vars.workSlug] });
+    },
+  });
+};
+
+export const useCreateChapter = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ workSlug, data }: { workSlug: string; data: Parameters<typeof sangrahaApi.createChapter>[1] }) =>
+      sangrahaApi.createChapter(workSlug, data),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'work', vars.workSlug] });
+    },
+  });
+};
+
+export const useUpdateChapter = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ chapterId, data }: { chapterId: string; data: Parameters<typeof sangrahaApi.updateChapter>[1] }) =>
+      sangrahaApi.updateChapter(chapterId, data),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'chapter', vars.chapterId] });
+    },
+  });
+};
+
+export const useCreateVerse = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ chapterId, text }: { chapterId: string; text: string }) =>
+      sangrahaApi.createVerse(chapterId, { text }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'chapter', vars.chapterId] });
     },
   });
 };

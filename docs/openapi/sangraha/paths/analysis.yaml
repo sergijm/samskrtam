@@ -1,7 +1,0 @@
-# Пути из sangraha-service.yaml → analysis.yaml
-paths:
-  /analysis:
-    $ref: 'paths/analysis.yaml#/paths/~1~1analysis'
-  /analysis/{verseId}:
-    $ref: 'paths/analysis.yaml#/paths/~1~1analysis~1{verseId}'
-

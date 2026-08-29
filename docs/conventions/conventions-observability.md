@@ -12,15 +12,15 @@
 - Логи только в **JSON** формате через logstash-logback-encoder — для интеграции с Loki.
 - Sensitive данные (email, пароли, токены, userId в URL) **не логируются ни на каком уровне**.
 - В реактивном стеке (quiz-service, api-gateway) использовать doOnError для логирования с **сохранением** ошибки в pipeline, onErrorResume — только для обработки с подменой.
-- Ошибки публикации в Kafka через Outbox Pattern должны логироваться с уровнем ERROR или WARN в зависимости от возможности повторной обработки.
+- Ошибки дрейна Outbox (чтение вхолостую, без публикации в Kafka) должны логироваться с уровнем ERROR или WARN в зависимости от возможности повторной обработки.
 
 ### Уровни логирования
 
 - TRACE: вход в сервисные методы
 - DEBUG: бизнес-решения (кэш-промах, выбор ветки)
-- INFO: старт/стоп, миграции, Kafka
+- INFO: старт/стоп, миграции
 - WARN: 4xx downstream, retry, деградация
-- ERROR: 5xx/timeout, необработанные исключения, ошибки Kafka после всех попыток
+- ERROR: 5xx/timeout, необработанные исключения, ошибки дрейна Outbox после всех попыток
 
 ## 2. Сквозная трассировка (Micrometer Tracing)
 
@@ -46,21 +46,18 @@ Propagation: WebClient автоматически добавляет traceparent
 | Сервис | Env переменная | Порт по умолчанию |
 |---|---|---|
 | api-gateway | GATEWAY_MANAGEMENT_PORT | 9090 |
-| feature-flag-service | FEATURE_FLAG_SERVICE_PORT | 9091 |
 | user-service | USER_MANAGEMENT_PORT | 9092 |
 | curriculum-service | CONTENT_MANAGEMENT_PORT | 9093 |
 | quiz-service | QUIZ_MANAGEMENT_PORT | 9094 |
 | dictionary-service | DICTIONARY_MANAGEMENT_PORT | 9095 |
-| statistics-service | STATISTICS_MANAGEMENT_PORT | 9096 |
 
 ### Health Groups
 
 - Liveness (/actuator/health/liveness): JVM alive + disk space
-- Readiness (/actuator/health/readiness): DB, Redis, Kafka
+- Readiness (/actuator/health/readiness): DB, Redis
 - Liveness не включает внешние зависимости
 
 ### Кастомные метрики
 
-- quiz-service: quiz.answers.total (Counter, tags: lessonType/correct), quiz.session.duration (Timer, lessonType), quiz.cache.miss (Counter)
-- statistics-service: kafka.events.processed (Counter, topic)
+- quiz-service: quiz.answers.total (Counter, tags: lessonType/correct), quiz.session.duration (Timer, lessonType), quiz.cache.miss (Counter), quiz.outbox.drained (Counter)
 - dictionary-service: dictionary.cache.hit (Counter)

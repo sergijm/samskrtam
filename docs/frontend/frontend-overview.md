@@ -20,11 +20,8 @@
 
 Связанные спецификации:
 - [user-frontend.md](user-frontend.md) — пользователи, группы, настройки
-- [feature-flags-frontend.md](feature-flags-frontend.md) — UI управления feature flags (ADMIN)
 - [lesson-pages-spec.md](lesson-pages-spec.md) — страницы уроков (VocabularyLessonPage, GrammarLessonPage)
 - [lesson-aggregation-openapi.yaml](../openapi/lesson-aggregation-openapi.yaml) — OpenAPI для lesson-страниц
-- [information-architecture.md](information-architecture.md) — UX и IA платформы: дерево курикулума
-  в боковом меню, каталог (словарь/тексты), онбординг, Dashboard, карта прогресса, источники текстов
 ---
 
 ## 1. Стек и структура проекта

@@ -2,7 +2,15 @@ import { useTranslation } from 'react-i18next';
 import { Button } from 'primereact/button';
 import { LessonType } from '../../types/quiz';
 import type { SessionQuestion } from '../../types/quiz';
-import { lookup, FULL_CASE, FULL_NUMBER } from '../../utils/grammarTerms';
+import {
+  lookup,
+  FULL_CASE,
+  FULL_CASE_RU,
+  FULL_NUMBER,
+  FULL_NUMBER_RU,
+  optionText as localizedOptionText,
+} from '../../utils/grammarTerms';
+import HighlightedPrompt from './HighlightedPrompt';
 
 interface QuizQuestionPanelProps {
   question: SessionQuestion;
@@ -30,8 +38,10 @@ export default function QuizQuestionPanel({
   const showStemDetails = lessonType === LessonType.DECLENSIONS || lessonType === LessonType.CONJUGATIONS;
   const stemTranslation = i18n.language === 'ru' ? question.stemTranslationRu : question.stemTranslationEn;
 
-  const caseFull = lookup(question.caseType, FULL_CASE);
-  const numberFull = lookup(question.numberType, FULL_NUMBER);
+  const isRu = i18n.language === 'ru';
+
+  const caseFull = lookup(question.caseType, isRu ? FULL_CASE_RU : FULL_CASE);
+  const numberFull = lookup(question.numberType, isRu ? FULL_NUMBER_RU : FULL_NUMBER);
 
   return (
     <>
@@ -41,15 +51,33 @@ export default function QuizQuestionPanel({
 
       {(!question.questionType || question.questionType === 'FORM_BY_CASE' || question.questionType === 'MULTIPLE_CHOICE') && (
         <>
+          {question.itemType === 'CASE_MEANING' && (question.formDevanagari || question.formIast || question.translation) && (
+            <div className="flex flex-column align-items-center mb-4">
+              {question.formDevanagari && (
+                <span
+                  className="text-3xl font-bold"
+                  style={{ fontFamily: '"Noto Sans Devanagari", sans-serif' }}
+                >
+                  {question.formDevanagari}
+                </span>
+              )}
+              {question.formIast && (
+                <span className="text-color-secondary italic mt-1">{question.formIast}</span>
+              )}
+              {question.translation && (
+                <span className="text-color-secondary mt-1">«{question.translation}»</span>
+              )}
+            </div>
+          )}
           <div className="text-2xl font-bold text-center mb-5">
             {lessonType === LessonType.VOCABULARY ? (
               <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>
-                {question.text}
+                <HighlightedPrompt question={question} lang={i18n.language} />
               </span>
             ) : (
               <>
                 <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>
-                  {question.text}
+                  <HighlightedPrompt question={question} lang={i18n.language} />
                 </span>
                 <br style={{ lineHeight: '1.5' }} />
                 {(caseFull || numberFull) && (
@@ -79,7 +107,7 @@ export default function QuizQuestionPanel({
             {question.options.map((option) => (
               <div key={option.id} className="col-12 md:col-6">
                 <Button
-                  label={option.formIast}
+                  label={localizedOptionText(option, i18n.language)}
                   className={`w-full text-xl p-3 mb-3 ${
                     selectedOptionId === option.id ? 'p-button-primary' : 'p-button-outlined'
                   } ${

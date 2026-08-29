@@ -1,12 +1,12 @@
 package sm.selflearn.samskrtam.sangraha.service;
 
+import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import sm.selflearn.samskrtam.content.dto.SangrahaVocabularyResponse;
+import sm.selflearn.samskrtam.sangraha.dto.CreateVerseRequest;
 import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
-import sm.selflearn.samskrtam.sangraha.dto.VocabularyQuizResponse;
-import sm.selflearn.samskrtam.sangraha.event.SangrahaVocabularyEvent;
+import sm.selflearn.samskrtam.sangraha.dto.VerseTreeDto;
 import sm.selflearn.samskrtam.sangraha.mapper.VerseMapper;
 import sm.selflearn.samskrtam.sangraha.model.Chapter;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
@@ -20,10 +20,7 @@ import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -38,7 +35,8 @@ public class VerseService {
     private final ChapterService chapterService;
     private final VerseMapper verseMapper;
     private final WorkService workService;
-    private final ContentServiceVocabularyClient contentServiceVocabularyClient;
+    private final TransliterationService transliterationService;
+    private final VerseBatchPushService verseBatchPushService;
 
     @Transactional(readOnly = true)
     public List<Verse> getVersesByChapterId(UUID chapterId) {
@@ -46,21 +44,75 @@ public class VerseService {
         return verseRepository.findAllByChapterIdAndDeletedAtIsNullOrderByOrderIndexAsc(chapterId);
     }
 
-        @Transactional(readOnly = true)
-        public VerseDetailDto getVerseDetail(UUID id) {
-            Verse verse = getVerseById(id);
-            Optional<VerseAnalysis> analysis = verseAnalysisRepository.findByVerseId(id);
-            List<VerseWord> words = verseWordRepository.findAllByVerse_IdOrderByPositionAsc(id);
+    @Transactional(readOnly = true)
+    public VerseDetailDto getVerseDetail(UUID id) {
+        Verse verse = getVerseById(id);
+        Optional<VerseAnalysis> analysis = verseAnalysisRepository.findByVerseId(id);
+        List<VerseWord> words = verseWordRepository.findAllByVerse_IdOrderByPositionAsc(id);
 
-            return verseMapper.toDetailDto(verse, analysis.orElse(null),
-                    words.isEmpty() ? null : words,
-                    verse.getVocabularyQuizSlug());
+        return verseMapper.toDetailDto(verse, analysis.orElse(null),
+                words.isEmpty() ? null : words,
+                resolveVerseTopicCode(verse));
+    }
+
+    /**
+     * Код VERSE-урока (lexicon-content-pipeline.md §7). Для стиха в главе —
+     * {@code "{workSlp1}_{chapterNumber}"}, для standalone-стиха (без главы) —
+     * персональный {@code "user-{ownerId}"} (совпадает с VerseBatchPushService).
+     */
+    private String resolveVerseTopicCode(Verse verse) {
+        if (verse.getChapterId() == null) {
+            return verse.getOwnerId() == null ? null : "user-" + verse.getOwnerId();
         }
+        Chapter chapter = chapterRepository.findById(verse.getChapterId()).orElse(null);
+        if (chapter == null) {
+            return null;
+        }
+        Work work = workService.getWorkById(chapter.getWorkId());
+        String workSlp1 = transliterationService.iastToSlp1(work.getSlug());
+        String base = workSlp1 == null || workSlp1.isBlank() ? "verse" : workSlp1;
+        int chapterNumber = chapter.getOrderIndex() == null ? 0 : chapter.getOrderIndex();
+        return base + "_" + chapterNumber;
+    }
 
     @Transactional(readOnly = true)
     public Verse getVerseById(UUID id) {
         return verseRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Verse not found: " + id));
+    }
+
+    // ── Write: создание стиха (DRAFT + rawText, ADMIN, см. §4/§5.2) ──
+
+    @Transactional
+    public VerseTreeDto createVerse(UUID chapterId, CreateVerseRequest req) {
+        if (req.text() == null || req.text().isBlank()) {
+            throw new IllegalArgumentException("Verse text must not be blank");
+        }
+        chapterService.getChapterById(chapterId);
+        int orderIndex = verseRepository.countByChapterIdAndDeletedAtIsNull(chapterId) + 1;
+        Instant now = Instant.now();
+        Verse verse = Verse.builder()
+                .chapterId(chapterId)
+                .orderIndex(orderIndex)
+                .rawText(req.text())
+                .status(VerseStatus.DRAFT)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        verse = verseRepository.save(verse);
+        return toTreeDto(verse);
+    }
+
+    public static VerseTreeDto toTreeDto(Verse v) {
+        return new VerseTreeDto(
+                v.getId(),
+                v.getOrderIndex(),
+                ChapterService.preview(v.getRawText(), 80),
+                v.getRawText(),
+                null,
+                null,
+                null,
+                v.getStatus());
     }
 
     @Transactional(readOnly = true)
@@ -69,137 +121,36 @@ public class VerseService {
                 .orElseThrow(() -> new RuntimeException("Verse analysis not found: " + verseId));
     }
 
-    @Transactional(readOnly = true)
-    public List<VerseWord> getVerseWords(UUID verseId) {
-        return verseWordRepository.findAllByVerse_IdOrderByPositionAsc(verseId);
-    }
-
-        /**
-     * Кнопка «Изучить» на VersePage — POST /verses/{verseId}/vocabulary-quiz.
-     * Если у стиха уже есть закэшированный vocabularyQuizSlug — возвращает его сразу.
-     * Иначе синхронно вызывает content-service, кэширует результат и возвращает.
-     */
     /**
-     * Кнопка «Изучить» на VersePage — POST /verses/{verseId}/vocabulary-quiz.
-     * Если у стиха уже есть закэшированный vocabularyQuizSlug — возвращает его сразу.
-     * Иначе синхронно вызывает content-service, кэширует результат и возвращает.
+     * On-demand экспорт пачки лемм стиха в curriculum-service (кнопка «Изучить»).
+     * Идемпотентен — повторный вызов не создаёт дублей (см. VerseBatchPushService).
+     * Возвращает код VERSE-урока, на который ведёт кнопка.
      */
-    @Transactional
-    public VocabularyQuizResponse getOrCreateVocabularyQuiz(UUID verseId) {
+    public String triggerStudyExport(UUID verseId) {
         Verse verse = getVerseById(verseId);
-
-        boolean quizAlreadyExists = verse.getVocabularyQuizSlug() != null
-                && !verse.getVocabularyQuizSlug().isBlank()
-                && verse.getVocabularyQuizId() != null;
-
-        List<VerseWord> words = verseWordRepository.findAllByVerse_IdOrderByPositionAsc(verseId);
-
-        if (quizAlreadyExists) {
-            boolean allMapped = words.stream().allMatch(w -> w.getVocabularyWordId() != null);
-            if (allMapped) {
-                return new VocabularyQuizResponse(
-                        verse.getVocabularyQuizSlug(),
-                        verse.getVocabularyQuizId(),
-                        "EXISTING");
-            }
-            // Некоторые слова не имеют vocabularyWordId — проваливаемся дальше для дозаполнения
-        } else {
-            if (verse.getStatus() != VerseStatus.ANALYZED) {
-                throw new RuntimeException("Verse is not analyzed yet: " + verseId);
-            }
-            if (words.isEmpty()) {
-                throw new RuntimeException("Verse has no words: " + verseId);
-            }
+        if (verse.getStatus() != VerseStatus.ANALYZED) {
+            throw new RuntimeException("Verse is not analyzed yet: " + verseId);
         }
-
-        // Standalone-стихи (страница /analysis) не привязаны к главе/произведению —
-        // контекст work/chapter в событии для content-service остаётся null.
         Chapter chapter = null;
         Work work = null;
         if (verse.getChapterId() != null) {
-            chapter = chapterRepository.findById(verse.getChapterId())
-                    .orElseThrow(() -> new RuntimeException("Chapter not found: " + verse.getChapterId()));
-            work = workService.getWorkById(chapter.getWorkId());
-        }
-
-        final Chapter finalChapter = chapter;
-        final Work finalWork = work;
-
-        // Дедуп слов стиха по (lemmaIast, stem) перед отправкой
-        Map<String, VerseWord> deduped = new LinkedHashMap<>();
-        for (VerseWord w : words) {
-            String key = w.getLemmaIast() + "|" + w.getStem();
-            deduped.putIfAbsent(key, w);
-        }
-
-        List<SangrahaVocabularyEvent.SangrahaVocabularyWord> vocabWords = deduped.values().stream()
-                .map(w -> SangrahaVocabularyEvent.SangrahaVocabularyWord.builder()
-                        .verseWordId(w.getId())
-                        .wordIast(w.getLemmaIast())
-                        .wordDevanagari(w.getSurfaceDevanagari())
-                                                .stem(w.getStem())
-                        .root(w.getRoot())
-                        .gender(w.getMorphology() != null && w.getMorphology().getGender() != null
-                                ? w.getMorphology().getGender().name() : null)
-                                                .translationRu(w.getLemmaGlossRu())
-                        .translationEn(w.getLemmaGlossEn())
-                        .build())
-                .toList();
-
-        SangrahaVocabularyEvent request = SangrahaVocabularyEvent.builder()
-                .verseId(verseId)
-                .workSlug(finalWork == null ? null : finalWork.getSlug())
-                .workTitleRu(finalWork == null ? null : finalWork.getTitleRu())
-                .workTitleEn(finalWork == null ? null : finalWork.getTitleEn())
-                .chapterSlug(finalChapter == null ? null : finalChapter.getSlug())
-                .chapterTitleRu(finalChapter == null ? null : finalChapter.getTitleRu())
-                .chapterTitleEn(finalChapter == null ? null : finalChapter.getTitleEn())
-                .verseOrderIndex(verse.getOrderIndex())
-                .words(vocabWords)
-                .build();
-
-        SangrahaVocabularyResponse response = contentServiceVocabularyClient.requestVocabularyQuiz(request);
-
-        if (!quizAlreadyExists) {
-            verse.setVocabularyQuizSlug(response.getQuizSlug());
-            verse.setVocabularyQuizId(response.getQuizId());
-            verse.setUpdatedAt(Instant.now());
-            verseRepository.save(verse);
-        }
-
-        // Сохранить маппинг verseWordId → vocabularyWordId в verse_words
-        // Используем ключ lemmaIast|stem, чтобы корректно обработать слова-дубли
-        if (response.getWordMappings() != null && !response.getWordMappings().isEmpty()) {
-            // verseWordId → lemmaIast|stem (из дедуплицированных представителей)
-            Map<UUID, String> verseWordIdToKey = new HashMap<>();
-            for (var entry : deduped.entrySet()) {
-                verseWordIdToKey.put(entry.getValue().getId(), entry.getKey());
+            chapter = chapterRepository.findByIdAndDeletedAtIsNull(verse.getChapterId()).orElse(null);
+            if (chapter != null) {
+                work = workService.getWorkById(chapter.getWorkId());
             }
-
-            // lemmaIast|stem → vocabularyWordId
-            Map<String, UUID> lemmaStemToVocabId = new HashMap<>();
-            for (var m : response.getWordMappings()) {
-                String key = verseWordIdToKey.get(m.getVerseWordId());
-                if (key != null) {
-                    lemmaStemToVocabId.put(key, m.getVocabularyWordId());
-                }
-            }
-
-            for (VerseWord w : words) {
-                String key = w.getLemmaIast() + "|" + w.getStem();
-                UUID vocabId = lemmaStemToVocabId.get(key);
-                if (vocabId != null) {
-                    w.setVocabularyWordId(vocabId);
-                }
-            }
-            verseWordRepository.saveAll(words);
         }
+        List<VerseWord> words = verseWordRepository.findAllByVerse_IdOrderByPositionAsc(verseId);
+        verseBatchPushService.push(verse, work, chapter, words);
+        String code = resolveVerseTopicCode(verse);
+        if (code == null) {
+            throw new RuntimeException("Cannot resolve lesson code for verse: " + verseId);
+        }
+        return code;
+    }
 
-        String status = quizAlreadyExists ? "EXISTING" : response.getQuizStatus();
-        return new VocabularyQuizResponse(
-                quizAlreadyExists ? verse.getVocabularyQuizSlug() : response.getQuizSlug(),
-                quizAlreadyExists ? verse.getVocabularyQuizId() : response.getQuizId(),
-                status);
+    @Transactional(readOnly = true)
+    public List<VerseWord> getVerseWords(UUID verseId) {
+        return verseWordRepository.findAllByVerse_IdOrderByPositionAsc(verseId);
     }
 }
 

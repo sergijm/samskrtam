@@ -16,7 +16,6 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import sm.selflearn.samskrtam.curriculum.model.ComplexQuiz;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
 
 import java.time.Instant;
@@ -46,19 +45,8 @@ public class VocabularyQuizDefinition {
     @JoinColumn(name = "topic_id")
     private Topic topic;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "complex_quiz_id")
-    private ComplexQuiz complexQuiz;
-
     @Column(name = "frequency_rank_max")
     private Integer frequencyRankMax;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_id")
-    private Source source;
-
-    @Column(name = "source_location_prefix", length = 100)
-    private String sourceLocationPrefix;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

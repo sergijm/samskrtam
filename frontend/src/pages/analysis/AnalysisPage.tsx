@@ -2,32 +2,25 @@ import { useTranslation } from 'react-i18next';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Tag } from 'primereact/tag';
-import { Toast } from 'primereact/toast';
-import { Skeleton } from 'primereact/skeleton';
-import { InputTextarea } from 'primereact/inputtextarea';
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { Tooltip } from 'primereact/tooltip';
 import {
   useStandaloneVerses,
   useCreateStandaloneAnalysis,
   useDeleteStandaloneVerse,
   useVerseDetail,
-  useGetOrCreateVocabularyQuiz,
 } from '../../hooks/useSangraha';
-import { useVocabularyLesson } from '../../hooks/useLessons';
 import { sangrahaApi } from '../../api/sangraha';
-import { quizApi } from '../../api/quizApi';
-import { useLocaleStore } from '../../store/localeStore';
-import { LessonType } from '../../types/quiz';
+import { VerseStatus, StandaloneVerseItemDto } from '../../types/sangraha';
 import { verseStatusIcon } from '../../utils/verseStatus';
-import type { VerseStatus } from '../../types/sangraha';
-import type { StandaloneVerseItemDto } from '../../types/sangraha';
-import type { VocabularyWordProgress } from '../../types/lesson';
 import VerseWordsList from '../../components/sangraha/VerseWordsList';
 import SandhiSplitsList from '../../components/sangraha/SandhiSplitsList';
 import { IconButton, CtaButton } from '../../components/common/buttons';
+import { Tag } from 'primereact/tag';
+import { Toast } from 'primereact/toast';
+import { Tooltip } from 'primereact/tooltip';
+import { Skeleton } from 'primereact/skeleton';
+import { InputTextarea } from 'primereact/inputtextarea';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 
 /**
  * Страница /analysis — разбор произвольного предложения (standalone-стих,
@@ -52,21 +45,10 @@ const AnalysisPage = () => {
   // Детальный просмотр выбранного standalone-стиха
   const { data: verse, isLoading: verseLoading } = useVerseDetail(selectedId || '');
 
-  const study = useGetOrCreateVocabularyQuiz();
-  const vocabSlug = verse?.vocabularyQuizSlug;
-  const { data: vocabularyLesson } = useVocabularyLesson(vocabSlug || '');
-
-  const wordProgressMap = useMemo<Record<string, VocabularyWordProgress> | null>(() => {
-    if (!vocabularyLesson?.words) return null;
-    const map: Record<string, VocabularyWordProgress> = {};
-    for (const wp of vocabularyLesson.words) {
-      map[wp.wordId] = wp;
-    }
-    return map;
-  }, [vocabularyLesson]);
-
   const [editText, setEditText] = useState('');
   const [analyzePending, setAnalyzePending] = useState(false);
+  const [analyzeMorphologyPending, setAnalyzeMorphologyPending] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   // При выборе нового стиха сбрасываем поле редактирования текста
   const selectVerse = useCallback(
@@ -95,7 +77,7 @@ const AnalysisPage = () => {
     }
   }, [newText, create, selectVerse, t]);
 
-  // ── Повторный анализ (DRAFT/FAILED) ──
+  // ── Повторный анализ (DRAFT/FAILED/повторное редактирование) ──
   const handleAnalyze = useCallback(async () => {
     if (!selectedId) return;
     setAnalyzePending(true);
@@ -108,34 +90,36 @@ const AnalysisPage = () => {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     } finally {
       setAnalyzePending(false);
+      setIsEditing(false);
     }
   }, [selectedId, editText, queryClient, t]);
 
-  // ── «Изучить» — vocabulary quiz по словам стиха ──
+  // ── «Анализировать морфологию» — шаг 2: пословный разбор слов (ADMIN) ──
+  const handleAnalyzeMorphology = useCallback(async () => {
+    if (!selectedId) return;
+    setAnalyzeMorphologyPending(true);
+    try {
+      await sangrahaApi.analyzeVerseInternalSandhi(selectedId);
+      queryClient.invalidateQueries({ queryKey: ['sangraha', 'verse', selectedId] });
+      toast.current?.show({ severity: 'success', summary: t('sangraha.action.analyzeMorphology') });
+    } catch {
+      toast.current?.show({ severity: 'error', summary: t('common.error') });
+    } finally {
+      setAnalyzeMorphologyPending(false);
+    }
+  }, [selectedId, queryClient, t]);
+
+  // ── «Изучить» — экспорт пачки лемм стиха и переход на урок ──
   const handleStudy = useCallback(async () => {
     if (!selectedId) return;
     try {
-      const quizRes = await study.mutateAsync(selectedId);
-      const { quizSlug, quizId } = quizRes.data;
-
-      queryClient.invalidateQueries({ queryKey: ['lesson', 'vocabulary', quizSlug] });
-
-      const locale = useLocaleStore.getState().locale;
-      const sessionRes = await quizApi.startOrResumeWithStatusFilter(
-        quizId,
-        LessonType.VOCABULARY,
-        locale,
-        'NEW',
-      );
-      const sessionData = sessionRes.data;
-
-      navigate(`/quiz/vocabulary/${quizSlug}/${sessionData.sessionId}`, {
-        state: { sessionData },
-      });
+      const res = await sangrahaApi.studyVerse(selectedId);
+      const { verseTopicCode: code } = res.data;
+      navigate(`/lessons/vocabulary/${code}`);
     } catch {
       toast.current?.show({ severity: 'error', summary: t('common.error') });
     }
-  }, [selectedId, study, navigate, t, queryClient]);
+  }, [selectedId, navigate, t]);
 
   const handleDelete = useCallback(
     async (item: StandaloneVerseItemDto) => {
@@ -162,13 +146,7 @@ const AnalysisPage = () => {
   const tagSeverityFor = (s: VerseStatus | undefined): 'success' | 'info' | 'warning' | 'danger' =>
     s === 'ANALYZED' ? 'success' : s === 'FAILED' ? 'danger' : s === 'ANALYZING' ? 'info' : 'warning';
 
-  const studyIcon = useMemo(() => {
-    if (!vocabularyLesson?.statusSummary) return 'pi-book';
-    const { total, mastered, learning, reviewDue } = vocabularyLesson.statusSummary;
-    if (mastered === total) return 'pi-check-circle';
-    if (learning > 0 || reviewDue > 0) return 'pi-caret-right';
-    return 'pi-book';
-  }, [vocabularyLesson]);
+  const studyIcon = useMemo(() => 'pi-book', []);
 
   const rows = items ?? [];
   const selectedCreatedAt = rows.find((i) => i.id === selectedId)?.createdAt;
@@ -198,6 +176,26 @@ const AnalysisPage = () => {
                 className="ml-2"
               />
             )}
+            {isAnalyzed && (
+              <div className="flex align-items-center gap-2 ml-auto">
+                <CtaButton
+                  labelKey="sangraha.action.analyze"
+                  iconName="pi-robot"
+                  className="p-button-text"
+                  onClick={handleAnalyze}
+                  loading={analyzePending}
+                />
+                <CtaButton
+                  labelKey="common.edit"
+                  iconName="pi-pencil"
+                  className="p-button-text"
+                  onClick={() => {
+                    setEditText(verse?.rawText ?? verse?.textDevanagari ?? verse?.textIast ?? '');
+                    setIsEditing(true);
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           {verseLoading ? (
@@ -217,8 +215,8 @@ const AnalysisPage = () => {
                 </div>
               )}
 
-              {/* DRAFT/FAILED: ввод текста + анализ */}
-              {isDraftOrFailed && !isAnalyzing && (
+              {/* DRAFT/FAILED or editing: input + Analyze button */}
+              {(isDraftOrFailed || isEditing) && !isAnalyzing && (
                 <div className="mb-4">
                   <div className="mb-3">
                     <label className="block mb-1 font-semibold">{t('sangraha.fields.text')}</label>
@@ -230,13 +228,23 @@ const AnalysisPage = () => {
                       placeholder={t('sangraha.placeholder.text')}
                     />
                   </div>
-                  <CtaButton
-                    labelKey="sangraha.action.analyze"
-                    iconName="pi-robot"
-                    className="p-button-success"
-                    onClick={handleAnalyze}
-                    loading={analyzePending}
-                  />
+                  <div className="flex align-items-center gap-2">
+                    <CtaButton
+                      labelKey="sangraha.action.analyze"
+                      iconName="pi-robot"
+                      className="p-button-success"
+                      onClick={handleAnalyze}
+                      loading={analyzePending}
+                    />
+                    {isEditing && (
+                      <CtaButton
+                        labelKey="common.cancel"
+                        iconName="pi-times"
+                        className="p-button-text"
+                        onClick={() => setIsEditing(false)}
+                      />
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -275,17 +283,24 @@ const AnalysisPage = () => {
                   )}
 
                   {verse.words && verse.words.length > 0 && (
-                    <VerseWordsList
-                      words={verse.words}
-                      wordProgressMap={wordProgressMap}
-                      headerActions={
-                        <CtaButton
-                          labelKey="sangraha.action.study"
-                          iconName={studyIcon}
-                          className="p-button-text"
-                          onClick={handleStudy}
-                          loading={study.isPending}
-                        />
+<VerseWordsList
+                        words={verse.words}
+                        headerActions={
+                        <>
+                          <CtaButton
+                            labelKey="sangraha.action.analyzeMorphology"
+                            iconName="pi-sitemap"
+                            className="p-button-text"
+                            onClick={handleAnalyzeMorphology}
+                            loading={analyzeMorphologyPending}
+                          />
+                          <CtaButton
+                            labelKey="sangraha.action.study"
+                            iconName={studyIcon}
+                            className="p-button-text"
+                            onClick={handleStudy}
+                          />
+                        </>
                       }
                     />
                   )}

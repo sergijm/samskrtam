@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { ProgressBar } from 'primereact/progressbar';
 import { Toast } from 'primereact/toast';
 import { LexicalTopic } from '../../types/lexicon';
@@ -12,13 +13,25 @@ interface LexiconTopicsProps {
 }
 
 const INITIAL_VISIBLE = 9;
+const EXPANDED_STORAGE_KEY = 'lexicon_topics_expanded';
 
 /** «Темы» — семантические группы слов. Показываем 9, остальные по «Все темы →». */
 const LexiconTopics: React.FC<LexiconTopicsProps> = ({ topics }) => {
   const { t } = useTranslation();
-  const { toast, showComingSoon } = useLexiconToast();
+  const navigate = useNavigate();
+  const { toast } = useLexiconToast();
   const locale = useLexiconLocale();
-  const [showAll, setShowAll] = useState(false);
+  const [showAll, setShowAll] = useState(
+    () => localStorage.getItem(EXPANDED_STORAGE_KEY) === '1',
+  );
+
+  const toggleAll = () => {
+    setShowAll((prev) => {
+      const next = !prev;
+      localStorage.setItem(EXPANDED_STORAGE_KEY, next ? '1' : '0');
+      return next;
+    });
+  };
 
   const visible = showAll ? topics : topics.slice(0, INITIAL_VISIBLE);
 
@@ -31,7 +44,6 @@ const LexiconTopics: React.FC<LexiconTopicsProps> = ({ topics }) => {
       <section className="mb-5">
         <LexiconSectionHeader
           titleKey="lexicon.topicsTitle"
-          subtitleKey="lexicon.topicsSubtitle"
           icon="pi-th-large"
         />
 
@@ -40,7 +52,7 @@ const LexiconTopics: React.FC<LexiconTopicsProps> = ({ topics }) => {
             <div key={topic.id} className="col-12 sm:col-6 lg:col-4 xl:col-3">
               <div
                 className="lexicon-card lexicon-topic-card h-full cursor-pointer"
-                onClick={() => showComingSoon()}
+                onClick={() => navigate(`/lessons/vocabulary/${topic.id}`)}
               >
                 <div className="flex align-items-center justify-content-between gap-2">
                   <span className="font-semibold">{locale({ ru: topic.nameRu, en: topic.nameEn })}</span>
@@ -61,7 +73,7 @@ const LexiconTopics: React.FC<LexiconTopicsProps> = ({ topics }) => {
           <button
             type="button"
             className="lexicon-link-btn"
-            onClick={() => setShowAll((prev) => !prev)}
+            onClick={toggleAll}
           >
             {showAll ? t('lexicon.showLessCta') : t('lexicon.allTopicsCta')}
             <i className={`pi ${showAll ? 'pi-chevron-up' : 'pi-chevron-down'}`} />

@@ -1,7 +1,7 @@
 # US-MORPH-07 — Спряжение в прошедшем и будущем времени (imperfect, future)
 
-> Домен: см. [quest-catalog.md](../../../services/quest-catalog.md) · Тип: `CONJUGATION_FORM (laṅ, lṛṭ)` (план)
-> Связанные файлы: [quest-catalog.md §2.3](../../../services/quest-catalog.md)
+> Домен: см. [quest-catalog.md](../../../services/curriculum-service/quest-catalog.md) · Тип: `CONJUGATION_FORM (laṅ, lṛṭ)` (план)
+> Связанные файлы: [quest-catalog.md §2.3](../../../services/curriculum-service/quest-catalog.md)
 
 ## История
 

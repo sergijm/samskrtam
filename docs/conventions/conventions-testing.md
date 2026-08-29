@@ -38,6 +38,5 @@ src/test/java/sm/selflearn/samskrtam/{service}/:
 | quiz-service | старт сессии, верный/неверный ответ, fallback Redis→Postgres, дубликат ответа, сохранение события в Outbox-таблицу |
 | curriculum-service | CRUD квиза, session-data, STUDENT получает 403 на write, генерация VOCABULARY квизов по иерархии категорий |
 | user-service | логин (успех/неверный пароль), регистрация (дубликат email) |
-| statistics-service | агрегация статистики из Kafka-событий с помощью Kafka Streams |
 | dictionary-service | cache hit, cache miss + внешний запрос, внешний API недоступен |
 | api-gateway | нет JWT → 401, STUDENT на /content → 403, rate limit → 429 |

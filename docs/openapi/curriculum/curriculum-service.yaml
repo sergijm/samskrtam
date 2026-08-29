@@ -7,8 +7,7 @@ info:
     docs/services/curriculum.md and docs/services/curriculum-service.md.
     Model: ~70 atomic Topic + three independent classifications — TopicPrerequisite
     (soft dependency graph), LearningLevel L0-L6 (authored first-introduction level,
-    NOT derived from the graph), and ComplexQuiz (curated 2-7 topic compositions:
-    Mixed Practice / Level Assessment). Scope of v2: structure only — no content,
+    NOT derived from the graph). Scope of v2: structure only — no content,
     no quizzes, no actual question generation or storage.
     LearningMaterial (theory/media per topic) is a separate 1:N entity owned by
     content-service (see docs/services/learning-materials.md) that references
@@ -30,10 +29,24 @@ tags:
     description: Soft prerequisite relations between topics
   - name: levels
     description: LearningLevel (L0-L6) navigation — the primary UI hierarchy
-  - name: complex-quizzes
-    description: Curated multi-topic Mixed Practice / Level Assessment compositions
   - name: graph
     description: Computed prerequisite layers — diagnostic tool, not the primary UI hierarchy (see curriculum-service.md §6)
+  - name: sandhi
+    description: Sandhi rule reference (read-only)
+  - name: quest-items
+    description: Materialized quest-item read / regenerate API
+  - name: lexicon
+    description: Lexicon dashboard landing payload
+  - name: lingua
+    description: Linguistic reference data (case endings, etc.)
+  - name: lexicon-references
+    description: Admin CRUD for lexicon reference classifications (semantic classes, POS, morphology, frequency bands)
+  - name: lexicon-import
+    description: Incremental verse-lemma batch ingestion from sangraha-service
+  - name: vocabulary-quiz-definitions
+    description: Vocabulary quiz definitions (ADMIN write, public read)
+  - name: paradigms
+    description: Declension / conjugation paradigm carousels per topic
 
 paths:
   /curriculum/topics:
@@ -43,6 +56,18 @@ paths:
       operationId: listTopics
       parameters:
         - $ref: 'parameters.yaml#/IncludeEvergreenParam'
+        - name: domain
+          in: query
+          required: false
+          description: Filter by fine-grained topic domain.
+          schema:
+            $ref: '#/components/schemas/TopicDomain'
+        - name: domainType
+          in: query
+          required: false
+          description: Filter by coarse top-level topic classifier (GRAMMAR / LEXICON / VERSE).
+          schema:
+            $ref: '#/components/schemas/TopicDomainType'
       responses:
         '200':
           description: List of topics
@@ -272,130 +297,6 @@ paths:
                 items:
                   $ref: 'schemas/curriculum.yaml#/TopicDto'
 
-  /curriculum/complex-quizzes:
-    get:
-      tags: [complex-quizzes]
-      summary: List complex quizzes (Mixed Practice / Level Assessment)
-      operationId: listComplexQuizzes
-      parameters:
-        - $ref: 'parameters.yaml#/LearningLevelQueryParam'
-        - $ref: 'parameters.yaml#/ComplexQuizTypeQueryParam'
-      responses:
-        '200':
-          description: List of complex quizzes (lightweight, topics not resolved)
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: 'schemas/curriculum.yaml#/ComplexQuizSummaryDto'
-    post:
-      tags: [complex-quizzes]
-      summary: Create a complex quiz
-      description: >
-        ADMIN only. Validates topicIds count against type (2-4 for MIXED_PRACTICE,
-        5-7 for LEVEL_ASSESSMENT) and that all topicIds exist and are unique.
-      operationId: createComplexQuiz
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: 'schemas/curriculum.yaml#/UpsertComplexQuizRequest'
-      responses:
-        '201':
-          description: Complex quiz created
-          content:
-            application/json:
-              schema:
-                $ref: 'schemas/curriculum.yaml#/ComplexQuizDto'
-        '403':
-          description: Forbidden — not ADMIN
-        '404':
-          description: One of topicIds does not exist
-          content:
-            application/json:
-              schema:
-                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
-        '422':
-          description: topicIds count out of range for the given type, or duplicate ids
-          content:
-            application/json:
-              schema:
-                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
-
-  /curriculum/complex-quizzes/{id}:
-    get:
-      tags: [complex-quizzes]
-      summary: Get a complex quiz with resolved topics
-      operationId: getComplexQuiz
-      parameters:
-        - $ref: 'parameters.yaml#/ComplexQuizIdParam'
-      responses:
-        '200':
-          description: Complex quiz details
-          content:
-            application/json:
-              schema:
-                $ref: 'schemas/curriculum.yaml#/ComplexQuizDto'
-        '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
-    put:
-      tags: [complex-quizzes]
-      summary: Update a complex quiz (metadata and/or topic composition)
-      description: ADMIN only. Same topicIds-count validation as create.
-      operationId: updateComplexQuiz
-      parameters:
-        - $ref: 'parameters.yaml#/ComplexQuizIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: 'schemas/curriculum.yaml#/UpsertComplexQuizRequest'
-      responses:
-        '200':
-          description: Complex quiz updated
-          content:
-            application/json:
-              schema:
-                $ref: 'schemas/curriculum.yaml#/ComplexQuizDto'
-        '403':
-          description: Forbidden — not ADMIN
-        '404':
-          description: Not found, or one of topicIds does not exist
-          content:
-            application/json:
-              schema:
-                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
-        '422':
-          description: topicIds count out of range for the given type, or duplicate ids
-          content:
-            application/json:
-              schema:
-                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
-    delete:
-      tags: [complex-quizzes]
-      summary: Delete a complex quiz
-      operationId: deleteComplexQuiz
-      parameters:
-        - $ref: 'parameters.yaml#/ComplexQuizIdParam'
-      responses:
-        '204':
-          description: Deleted
-        '403':
-          description: Forbidden — not ADMIN
-        '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
-
   /curriculum/learn-graph:
     get:
       tags: [levels]
@@ -407,6 +308,13 @@ paths:
         randomly per request — real progress tracking is an open question
         (see curriculum-service.md §8).
       operationId: getLearnGraph
+      parameters:
+        - name: X-User-Id
+          in: header
+          required: false
+          description: Optional user id for personalized progress (currently generated randomly per request).
+          schema:
+            type: string
       responses:
         '200':
           description: Layered learning map with per-topic progress
@@ -435,12 +343,897 @@ paths:
               schema:
                 $ref: 'schemas/curriculum.yaml#/TopicGraphResponse'
 
+  /curriculum/topics/by-code/{code}:
+    get:
+      tags: [topics]
+      summary: Get a topic by its stable code
+      operationId: getTopicByCode
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: Stable topic slug (TopicDto.code)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Topic
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/TopicDto'
+        '404':
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+
+  /curriculum/sandhi-rules:
+    get:
+      tags: [sandhi]
+      summary: Get all sandhi rules
+      operationId: getAllSandhiRules
+      responses:
+        '200':
+          description: All sandhi rules
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/quest.yaml#/SandhiRulesResponse'
+  /curriculum/sandhi-rules/{topicCode}:
+    get:
+      tags: [sandhi]
+      summary: Get sandhi rules for a topic
+      operationId: getSandhiRulesByTopic
+      parameters:
+        - name: topicCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sandhi rules for the topic
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/quest.yaml#/SandhiRulesResponse'
+
+  /curriculum/quest-items/select:
+    post:
+      tags: [quest-items]
+      summary: Select one quest item per (progress_tag, item_type, answer_mode) group
+      operationId: selectQuestItems
+      parameters:
+        - name: topicCode
+          in: query
+          required: true
+          description: Topic code the items belong to
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestItemSelectionRequest'
+      responses:
+        '200':
+          description: Selected quest items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/quest.yaml#/QuestItemDto'
+        '404':
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+
+  /curriculum/quest-items:
+    get:
+      tags: [quest-items]
+      summary: Get a random sample of ready-made quest items for a topic
+      operationId: getQuestItems
+      parameters:
+        - name: topicId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: itemType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Quest items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/quest.yaml#/QuestItemDto'
+        '404':
+          description: Topic not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+    post:
+      tags: [quest-items]
+      summary: Regenerate all quest items for every topic with a registered generator
+      description: ADMIN only. Clears the quest-item table and regenerates it for every topic.
+      operationId: regenerateQuestItems
+      responses:
+        '202':
+          description: Accepted; per-topic statistics (topic -> {progressTag -> count}).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    type: integer
+        '403':
+          description: Forbidden — not ADMIN
+
+  /curriculum/lexicon:
+    get:
+      tags: [lexicon]
+      summary: Lexicon dashboard landing payload
+      operationId: getLexiconDashboard
+      responses:
+        '200':
+          description: Lexicon dashboard
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/lexicon.yaml#/LexiconDashboardResponse'
+
+  /curriculum/lingua/case-endings:
+    get:
+      tags: [lingua]
+      summary: List case endings
+      operationId: getCaseEndings
+      responses:
+        '200':
+          description: Case endings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CaseEndingDto'
+
+  /lexicon/semantic-classes/tree:
+    get:
+      tags: [lexicon-references]
+      summary: Semantic class tree
+      operationId: semanticClassTree
+      responses:
+        '200':
+          description: Semantic class tree
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/lexicon.yaml#/SemanticClassNodeDto'
+
+  /lexicon/semantic-classes:
+    post:
+      tags: [lexicon-references]
+      summary: Create a semantic class
+      description: ADMIN only.
+      operationId: createSemanticClass
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/lexicon.yaml#/SemanticClassUpsertRequest'
+      responses:
+        '201':
+          description: Created semantic class
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/lexicon.yaml#/SemanticClassNodeDto'
+        '403':
+          description: Forbidden — not ADMIN
+
+  /lexicon/semantic-classes/{id}:
+    put:
+      tags: [lexicon-references]
+      summary: Update a semantic class
+      description: ADMIN only.
+      operationId: updateSemanticClass
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/lexicon.yaml#/SemanticClassUpsertRequest'
+      responses:
+        '200':
+          description: Updated semantic class
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/lexicon.yaml#/SemanticClassNodeDto'
+        '403':
+          description: Forbidden — not ADMIN
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+    delete:
+      tags: [lexicon-references]
+      summary: Delete a semantic class
+      description: ADMIN only.
+      operationId: deleteSemanticClass
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Forbidden — not ADMIN
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+
+  /lexicon/pos:
+    get:
+      tags: [lexicon-references]
+      summary: List part-of-speech reference classes
+      operationId: listPos
+      responses:
+        '200':
+          description: POS reference classes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/lexicon.yaml#/ReferenceClassDto'
+    put:
+      tags: [lexicon-references]
+      summary: Upsert a part-of-speech reference class
+      description: ADMIN only.
+      operationId: upsertPos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/lexicon.yaml#/ReferenceClassDto'
+      responses:
+        '200':
+          description: Upserted POS reference class
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/lexicon.yaml#/ReferenceClassDto'
+        '403':
+          description: Forbidden — not ADMIN
+
+  /lexicon/pos/{code}:
+    delete:
+      tags: [lexicon-references]
+      summary: Delete a part-of-speech reference class
+      description: ADMIN only.
+      operationId: deletePos
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Forbidden — not ADMIN
+
+  /lexicon/morphology-classes:
+    get:
+      tags: [lexicon-references]
+      summary: List morphology reference classes
+      operationId: listMorphologyClasses
+      responses:
+        '200':
+          description: Morphology reference classes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/lexicon.yaml#/ReferenceClassDto'
+    put:
+      tags: [lexicon-references]
+      summary: Upsert a morphology reference class
+      description: ADMIN only.
+      operationId: upsertMorphologyClass
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/lexicon.yaml#/ReferenceClassDto'
+      responses:
+        '200':
+          description: Upserted morphology reference class
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/lexicon.yaml#/ReferenceClassDto'
+        '403':
+          description: Forbidden — not ADMIN
+
+  /lexicon/morphology-classes/{code}:
+    delete:
+      tags: [lexicon-references]
+      summary: Delete a morphology reference class
+      description: ADMIN only.
+      operationId: deleteMorphologyClass
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Forbidden — not ADMIN
+
+  /lexicon/frequency-bands:
+    get:
+      tags: [lexicon-references]
+      summary: List frequency bands
+      operationId: listFrequencyBands
+      responses:
+        '200':
+          description: Frequency bands
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/lexicon.yaml#/FrequencyBand'
+    put:
+      tags: [lexicon-references]
+      summary: Upsert a frequency band
+      description: ADMIN only.
+      operationId: upsertFrequencyBand
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/lexicon.yaml#/FrequencyBand'
+      responses:
+        '200':
+          description: Upserted frequency band
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/lexicon.yaml#/FrequencyBand'
+        '403':
+          description: Forbidden — not ADMIN
+
+  /lexicon/frequency-bands/{code}:
+    delete:
+      tags: [lexicon-references]
+      summary: Delete a frequency band
+      description: ADMIN only.
+      operationId: deleteFrequencyBand
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Forbidden — not ADMIN
+
+  /lexicon/import/verse-batch:
+    post:
+      tags: [lexicon-import]
+      summary: Import a batch of verse lemmas from sangraha-service
+      operationId: importVerseBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerseLemmaBatchRequest'
+      responses:
+        '200':
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerseBatchImportResult'
+
+  /lexicon/vocabulary-quiz-definitions:
+    get:
+      tags: [vocabulary-quiz-definitions]
+      summary: List vocabulary quiz definitions
+      operationId: listVocabularyQuizDefinitions
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          schema:
+            $ref: 'schemas/lexicon.yaml#/VocabularyQuizKind'
+      responses:
+        '200':
+          description: Vocabulary quiz definitions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: 'schemas/lexicon.yaml#/VocabularyQuizDefinition'
+    post:
+      tags: [vocabulary-quiz-definitions]
+      summary: Create a vocabulary quiz definition
+      description: ADMIN only.
+      operationId: createVocabularyQuizDefinition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/lexicon.yaml#/VocabularyQuizDefinitionUpsertRequest'
+      responses:
+        '201':
+          description: Created vocabulary quiz definition
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/lexicon.yaml#/VocabularyQuizDefinition'
+        '403':
+          description: Forbidden — not ADMIN
+
+  /lexicon/vocabulary-quiz-definitions/{id}:
+    get:
+      tags: [vocabulary-quiz-definitions]
+      summary: Get a vocabulary quiz definition
+      operationId: getVocabularyQuizDefinition
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Vocabulary quiz definition
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/lexicon.yaml#/VocabularyQuizDefinition'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+    put:
+      tags: [vocabulary-quiz-definitions]
+      summary: Update a vocabulary quiz definition
+      description: ADMIN only.
+      operationId: updateVocabularyQuizDefinition
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/lexicon.yaml#/VocabularyQuizDefinitionUpsertRequest'
+      responses:
+        '200':
+          description: Updated vocabulary quiz definition
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/lexicon.yaml#/VocabularyQuizDefinition'
+        '403':
+          description: Forbidden — not ADMIN
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+    delete:
+      tags: [vocabulary-quiz-definitions]
+      summary: Delete a vocabulary quiz definition
+      description: ADMIN only.
+      operationId: deleteVocabularyQuizDefinition
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Forbidden — not ADMIN
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas/curriculum.yaml#/ErrorResponse'
+
+  /curriculum/topics/{topicCode}/declension-paradigms:
+    get:
+      tags: [paradigms]
+      summary: Get a declension paradigm page by index
+      operationId: getDeclensionParadigmPage
+      parameters:
+        - name: topicCode
+          in: path
+          required: true
+          description: Curriculum topic code
+          schema:
+            type: string
+        - name: index
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Declension paradigm page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeclensionParadigmPageDto'
+
+  /curriculum/topics/{topicCode}/conjugation-paradigms:
+    get:
+      tags: [paradigms]
+      summary: Get a conjugation paradigm page by index
+      operationId: getConjugationParadigmPage
+      parameters:
+        - name: topicCode
+          in: path
+          required: true
+          description: Curriculum topic code
+          schema:
+            type: string
+        - name: index
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: voice
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Voice'
+      responses:
+        '200':
+          description: Conjugation paradigm page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConjugationParadigmPageDto'
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  schemas:
+    TopicDomain:
+      type: string
+      enum: [GRAMMAR, LEXICON, VERSE, CONJUNCTION, PHONOLOGY_SCRIPT, SANDHI, GRAMMAR_FOUNDATIONS, NOMINAL_MORPHOLOGY, PRONOUNS, VERBAL_MORPHOLOGY, NONFINITE_FORMS, NUMERALS, CASE_SYNTAX, SYNTAX, WORD_FORMATION, ADVANCED_READING]
+      description: Coarse topic domain classifier used as a list filter (see TopicDomain.java).
+
+    TopicDomainType:
+      type: string
+      enum: [GRAMMAR, LEXICON, VERSE]
+      description: Coarse top-level topic classifier — every Topic belongs to exactly one (see TopicDomainType.java).
+
+    QuestItemSelectionRequest:
+      type: object
+      description: Request for selecting one quest item per (progress_tag, item_type, answer_mode) group.
+      properties:
+        progressTags:
+          type: array
+          nullable: true
+          items:
+            type: string
+          description: Optional list of tags to filter by; null or empty = all tags.
+        itemType:
+          type: string
+          nullable: true
+          description: Optional item type filter (e.g. "DECLENSION_FORM"); null = all types.
+        answerMode:
+          type: string
+          nullable: true
+          enum: [FREE_TEXT, SINGLE_CHOICE, MULTI_SELECT, SPAN_SELECT, MATCHING]
+          description: Optional answer mode filter; null = all modes.
+        limit:
+          type: integer
+          description: Max items to return; 0 = no limit.
+
+    CaseEndingDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          nullable: true
+        stemType:
+          type: string
+          nullable: true
+          enum: [A_STEM, AA_STEM, I_STEM, II_STEM, U_STEM, UU_STEM, R_STEM, IN_STEM, AN_STEM, AS_STEM, IS_STEM, US_STEM, ANT_STEM, VAT_STEM, ROOT_STEM, O_STEM, AU_STEM, PRON_TAD_MASC, PRON_TAD_NEUT, PRON_TAD_FEM, PRON_IDAM_MASC, PRON_IDAM_NEUT, PRON_IDAM_FEM, PRON_ADAS_MASC, PRON_ADAS_NEUT, PRON_ADAS_FEM, PRON_ASMAD, PRON_YUSMAD, PRON_SARVA_MASC, PRON_SARVA_NEUT, PRON_SARVA_FEM, PRON_PURVA_MASC, PRON_PURVA_NEUT, PRON_PURVA_FEM, PRON_VAT_MASC, PRON_VAT_FEM, PRON_UBHA_MASC, PRON_UBHA_FN, PRON_AN, PRON_KATI]
+        pos:
+          type: string
+          nullable: true
+          enum: [NOUN, VERB, ADJECTIVE, PRONOUN, ADVERB, PARTICLE, INDECLINABLE, NUMERAL, CONJUNCTION, INTERJECTION, OTHER]
+        gender:
+          type: string
+          nullable: true
+          enum: [MASCULINE, FEMININE, NEUTER, UNSPECIFIED]
+        number:
+          type: string
+          nullable: true
+          enum: [SINGULAR, DUAL, PLURAL]
+        grammaticalCase:
+          type: string
+          nullable: true
+          enum: [NOMINATIVE, ACCUSATIVE, INSTRUMENTAL, DATIVE, ABLATIVE, GENITIVE, LOCATIVE, VOCATIVE]
+        caseEnding:
+          type: string
+          nullable: true
+
+    VerseLemmaBatchRequest:
+      type: object
+      required: [verseId, ownerId, workSlug, workSlp1, chapterNumber, chapterSlug, workTitleRu, workTitleEn, words]
+      properties:
+        verseId:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        workSlug:
+          type: string
+        workSlp1:
+          type: string
+        chapterNumber:
+          type: integer
+        chapterSlug:
+          type: string
+        workTitleRu:
+          type: string
+        workTitleEn:
+          type: string
+        words:
+          type: array
+          items:
+            $ref: '#/components/schemas/LemmaExportItem'
+
+    LemmaExportItem:
+      type: object
+      required: [id, lemmaSlp1, lemmaIast, lemmaDevanagari, gender, dominantPosCode, occurrences, categoryCodes, glossRu, glossEn, vowelType]
+      properties:
+        id:
+          type: string
+          format: uuid
+        lemmaSlp1:
+          type: string
+        lemmaIast:
+          type: string
+        lemmaDevanagari:
+          type: string
+        gender:
+          type: string
+          nullable: true
+        dominantPosCode:
+          type: string
+          nullable: true
+        occurrences:
+          type: integer
+        categoryCodes:
+          type: array
+          items:
+            type: string
+        glossRu:
+          type: string
+        glossEn:
+          type: string
+        vowelType:
+          type: string
+          nullable: true
+
+    VerseBatchImportResult:
+      type: object
+      required: [importedCount, updatedCount, topicId, topicCode]
+      properties:
+        importedCount:
+          type: integer
+        updatedCount:
+          type: integer
+        topicId:
+          type: string
+          format: uuid
+        topicCode:
+          type: string
+
+    DeclensionParadigmPageDto:
+      type: object
+      required: [index, totalCount, paradigm]
+      properties:
+        index:
+          type: integer
+          description: 0-based position of the returned paradigm in the sorted stem list.
+        totalCount:
+          type: integer
+          description: Total number of stems for this lesson.
+        paradigm:
+          $ref: '#/components/schemas/DeclensionParadigmDto'
+
+    DeclensionParadigmDto:
+      type: object
+      required: [stemId, stemIast, stemDevanagari, translationRu, translationEn, gender, vowelType, forms]
+      properties:
+        stemId:
+          type: string
+          format: uuid
+        stemIast:
+          type: string
+        stemDevanagari:
+          type: string
+        translationRu:
+          type: string
+        translationEn:
+          type: string
+        gender:
+          $ref: '#/components/schemas/Gender'
+        vowelType:
+          $ref: '#/components/schemas/VowelType'
+        forms:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeclensionFormDto'
+
+    DeclensionFormDto:
+      type: object
+      required: [declensionStemId, caseType, numberType, formIast, formDevanagari]
+      properties:
+        declensionStemId:
+          type: string
+          format: uuid
+        caseType:
+          $ref: '#/components/schemas/CaseTypeEnum'
+        numberType:
+          $ref: '#/components/schemas/NumberTypeEnum'
+        formIast:
+          type: string
+        formDevanagari:
+          type: string
+
+    ConjugationParadigmPageDto:
+      type: object
+      required: [index, totalCount, paradigm]
+      properties:
+        index:
+          type: integer
+          description: 0-based position of the returned verb in the sorted lemma list.
+        totalCount:
+          type: integer
+          description: Total number of verb lemmas for this lesson.
+        paradigm:
+          $ref: '#/components/schemas/ConjugationParadigmDto'
+
+    ConjugationParadigmDto:
+      type: object
+      required: [lemmaIast, lemmaDevanagari, meaningRu, voice, forms]
+      properties:
+        lemmaIast:
+          type: string
+        lemmaDevanagari:
+          type: string
+        meaningRu:
+          type: string
+        voice:
+          $ref: '#/components/schemas/Voice'
+        forms:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConjugationFormDto'
+
+    ConjugationFormDto:
+      type: object
+      required: [person, numberType, sentenceIast, sentenceDevanagari, translationRu]
+      properties:
+        person:
+          type: integer
+        numberType:
+          $ref: '#/components/schemas/NumberTypeEnum'
+        sentenceIast:
+          type: string
+        sentenceDevanagari:
+          type: string
+        translationRu:
+          type: string
+
+    Gender:
+      type: string
+      enum: [MASCULINE, FEMININE, NEUTER, UNKNOWN, UNSPECIFIED]
+
+    VowelType:
+      type: string
+      enum: [A_STEM, AA_STEM, I_STEM, II_STEM, U_STEM, UU_STEM, R_STEM, IN_STEM, AN_STEM, AS_STEM, IS_STEM, US_STEM, ANT_STEM, VAT_STEM, ROOT_STEM, O_STEM, AU_STEM, PRON_TAD_MASC, PRON_TAD_NEUT, PRON_TAD_FEM, PRON_IDAM_MASC, PRON_IDAM_NEUT, PRON_IDAM_FEM, PRON_ADAS_MASC, PRON_ADAS_NEUT, PRON_ADAS_FEM, PRON_ASMAD, PRON_YUSMAD, PRON_SARVA_MASC, PRON_SARVA_NEUT, PRON_SARVA_FEM, PRON_PURVA_MASC, PRON_PURVA_NEUT, PRON_PURVA_FEM, PRON_VAT_MASC, PRON_VAT_FEM, PRON_UBHA_MASC, PRON_UBHA_FN, PRON_AN, PRON_KATI]
+
+    CaseTypeEnum:
+      type: string
+      enum: [NOMINATIVE, ACCUSATIVE, INSTRUMENTAL, DATIVE, ABLATIVE, GENITIVE, LOCATIVE, VOCATIVE]
+
+    NumberTypeEnum:
+      type: string
+      enum: [SINGULAR, DUAL, PLURAL]
+
+    Voice:
+      type: string
+      enum: [PARASMAIPADA, ATMANEPADA]
 
 security:
   - bearerAuth: []
