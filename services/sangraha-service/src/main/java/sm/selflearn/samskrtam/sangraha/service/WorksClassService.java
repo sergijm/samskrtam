@@ -7,6 +7,7 @@ import sm.selflearn.samskrtam.sangraha.dto.WorkSummaryDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorksClassGroupDto;
 import sm.selflearn.samskrtam.sangraha.dto.WorksClassTreeNodeDto;
 import sm.selflearn.samskrtam.sangraha.model.Work;
+import sm.selflearn.samskrtam.sangraha.model.VerseStatus;
 import sm.selflearn.samskrtam.sangraha.model.WorksClass;
 import sm.selflearn.samskrtam.sangraha.model.Source;
 import sm.selflearn.samskrtam.sangraha.repository.ChapterRepository;
@@ -171,11 +172,13 @@ public class WorksClassService {
     private WorkSummaryDto toSummary(Work w) {
         int chapterCount = (int) chapterRepository.countByWorkIdAndDeletedAtIsNull(w.getId());
         int verseCount = verseRepository.countByWorkIdAndDeletedAtIsNull(w.getId());
+        int analyzedVerseCount = verseRepository.countAnalyzedByWorkIdAndDeletedAtIsNull(
+                w.getId(), VerseStatus.ANALYZED);
         return new WorkSummaryDto(
                 w.getId(), w.getSlug(), w.getTitleRu(), w.getTitleEn(),
                 w.getTitleSaIast(), w.getTitleSaDevanagari(),
                 w.getDescriptionRu(), w.getDescriptionEn(), w.getAuthor(),
-                w.getCreatedAt(), chapterCount, verseCount);
+                w.getCreatedAt(), chapterCount, verseCount, analyzedVerseCount);
     }
 
     private Set<UUID> expandWithDescendants(Collection<UUID> classIds) {

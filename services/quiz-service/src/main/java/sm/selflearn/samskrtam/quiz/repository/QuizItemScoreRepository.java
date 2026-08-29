@@ -35,7 +35,7 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
     /** Найти все записи пользователя для нескольких progressTag данного itemType. */
     @Query("""
             SELECT * FROM quiz.quiz_item_score
-            WHERE user_id = :userId
+            WHERE user_id = CAST(:userId AS uuid)
               AND item_type = :itemType
               AND progress_tag IN (:progressTags)
             """)
@@ -45,7 +45,7 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
     /** Найти просроченные записи (next_review_at <= now) для пользователя и itemType. */
     @Query("""
             SELECT * FROM quiz.quiz_item_score
-            WHERE user_id = :userId
+            WHERE user_id = CAST(:userId AS uuid)
               AND item_type = :itemType
               AND next_review_at <= :now
             ORDER BY next_review_at ASC
@@ -60,7 +60,7 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
                  last_answered_at, last_mistake_at, consecutive_mistakes,
                  next_review_at, updated_at)
             VALUES
-                (:id, :userId, :itemType::text, :progressTag, :score, :stability,
+                (CAST(:id AS uuid), CAST(:userId AS uuid), :itemType::text, :progressTag, :score, :stability,
                  :lastAnsweredAt, :lastMistakeAt, :consecutiveMistakes,
                  :nextReviewAt, NOW())
             ON CONFLICT (user_id, item_type, progress_tag)
@@ -82,7 +82,7 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
     /** Подсчёт записей с score >= порога (для статистики MASTERED). */
     @Query("""
             SELECT COUNT(*) FROM quiz.quiz_item_score
-            WHERE user_id = :userId
+            WHERE user_id = CAST(:userId AS uuid)
               AND item_type = :itemType
               AND score >= :minScore
             """)
@@ -91,7 +91,7 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
     /** Найти записи LEARNING/DIFFICULT (score &lt; masteredLowerThreshold) — для statusFilter=LEARNING. */
     @Query("""
             SELECT * FROM quiz.quiz_item_score
-            WHERE user_id = :userId
+            WHERE user_id = CAST(:userId AS uuid)
               AND item_type = :itemType
               AND progress_tag IN (:progressTags)
               AND score < :masteredLowerThreshold
@@ -102,7 +102,7 @@ public interface QuizItemScoreRepository extends ReactiveCrudRepository<QuizItem
     /** Найти записи REVIEW (score &gt;= masteredLowerThreshold AND next_review_at &lt;= now) — для statusFilter=REVIEW. */
     @Query("""
             SELECT * FROM quiz.quiz_item_score
-            WHERE user_id = :userId
+            WHERE user_id = CAST(:userId AS uuid)
               AND item_type = :itemType
               AND progress_tag IN (:progressTags)
               AND score >= :masteredLowerThreshold

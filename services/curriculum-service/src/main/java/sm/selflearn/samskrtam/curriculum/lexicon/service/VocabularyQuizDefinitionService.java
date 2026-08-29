@@ -8,16 +8,14 @@ import org.springframework.web.server.ResponseStatusException;
 import sm.selflearn.samskrtam.curriculum.lexicon.dto.VocabularyQuizDefinitionUpsertRequest;
 import sm.selflearn.samskrtam.curriculum.lexicon.model.VocabularyQuizDefinition;
 import sm.selflearn.samskrtam.curriculum.lexicon.repository.VocabularyQuizDefinitionRepository;
-import sm.selflearn.samskrtam.curriculum.model.ComplexQuiz;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
-import sm.selflearn.samskrtam.curriculum.repository.ComplexQuizRepository;
 import sm.selflearn.samskrtam.curriculum.repository.TopicRepository;
 
 import java.util.UUID;
 
 /**
  * CRUD определений вок. викторин (task-curriculum-16 §10): ровно одно из
- * четырёх взаимоисключающих полей (topic/complexQuiz/source/frequencyRankMax).
+ * трёх взаимоисключающих полей (topic/source/frequencyRankMax).
  */
 @Service
 @RequiredArgsConstructor
@@ -25,7 +23,6 @@ public class VocabularyQuizDefinitionService {
 
     private final VocabularyQuizDefinitionRepository definitionRepository;
     private final TopicRepository topicRepository;
-    private final ComplexQuizRepository complexQuizRepository;
 
     @Transactional(readOnly = true)
     public VocabularyQuizDefinition get(UUID id) {
@@ -63,19 +60,16 @@ public class VocabularyQuizDefinitionService {
         definition.setTitleRu(request.titleRu());
         definition.setTitleEn(request.titleEn());
         definition.setTopic(resolve(request.topicId(), Topic.class, topicRepository::findById));
-        definition.setComplexQuiz(resolve(request.complexQuizId(), ComplexQuiz.class,
-                complexQuizRepository::findById));
         definition.setFrequencyRankMax(request.frequencyRankMax());
     }
 
     private void validateExclusiveFields(VocabularyQuizDefinitionUpsertRequest request) {
         int filled = 0;
         if (request.topicId() != null) filled++;
-        if (request.complexQuizId() != null) filled++;
         if (request.frequencyRankMax() != null) filled++;
         if (filled != 1) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Exactly one of topicId/complexQuizId/frequencyRankMax must be set");
+                    "Exactly one of topicId/frequencyRankMax must be set");
         }
     }
 

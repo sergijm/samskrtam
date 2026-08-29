@@ -53,6 +53,12 @@ public class QuestionDto {
     /** Prompt form (Devanagari) for CASE_BY_FORM / MULTIPLE_CHOICE. */
     String formDevanagari;
 
+    /**
+     * Sentence translation (Russian) for syntax/case-meaning questions, shown as the
+     * context sentence the question is about. Null for non-syntax questions.
+     */
+    String translation;
+
     /** Case ending string for reference display. */
     String caseEnding;
 

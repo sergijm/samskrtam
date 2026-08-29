@@ -10,13 +10,7 @@ LearningLevel:
   enum: [L0, L1, L2, L3, L4, L5, L6]
   description: Authored first-introduction level. Independent from the prerequisite DAG — not derived, not a computed graph layer (see curriculum-service.md §2/§6).
 
-ComplexQuizType:
-  type: string
-  enum: [MIXED_PRACTICE, LEVEL_ASSESSMENT]
-  description: MIXED_PRACTICE composes 2-4 topics, LEVEL_ASSESSMENT composes 5-7 topics (validated server-side, not by the schema).
-
 TopicDto:
-  type: object
   required: [id, code, titleRu, titleEn, learningLevel, isEvergreen, createdAt, updatedAt]
   properties:
     id:
@@ -47,9 +41,9 @@ TopicDto:
       items:
         $ref: '#/LearningLevel'
       description: >
-        Derived, read-only. Distinct learningLevel values of every ComplexQuiz that
-        includes this topic, plus the topic's own learningLevel first. Only populated
-        by GET /topics/{id}, omitted (null) in list responses for cost reasons.
+        Derived, read-only. The topic's own learningLevel. In earlier
+        iterations this was a join with ComplexQuiz to detect additional
+        practice levels; ComplexQuiz has been removed.
     createdAt:
       type: string
       format: date-time
@@ -131,89 +125,6 @@ LevelSummary:
       $ref: '#/LearningLevel'
     topicCount:
       type: integer
-
-ComplexQuizDto:
-  type: object
-  required: [id, type, learningLevel, titleRu, titleEn, topics, createdAt, updatedAt]
-  properties:
-    id:
-      type: string
-      format: uuid
-    type:
-      $ref: '#/ComplexQuizType'
-    learningLevel:
-      $ref: '#/LearningLevel'
-    titleRu:
-      type: string
-    titleEn:
-      type: string
-    questionCountHint:
-      type: integer
-      nullable: true
-      description: Decorative UI hint only (e.g. "15 questions"), not a real generated count.
-    topics:
-      type: array
-      items:
-        $ref: '#/TopicDto'
-      description: Resolved topics composing this quiz (2-4 for MIXED_PRACTICE, 5-7 for LEVEL_ASSESSMENT).
-    createdAt:
-      type: string
-      format: date-time
-    updatedAt:
-      type: string
-      format: date-time
-
-ComplexQuizSummaryDto:
-  type: object
-  required: [id, type, learningLevel, titleRu, titleEn, topicCount]
-  description: Lightweight variant for list endpoints — topics are not resolved, only counted.
-  properties:
-    id:
-      type: string
-      format: uuid
-    type:
-      $ref: '#/ComplexQuizType'
-    learningLevel:
-      $ref: '#/LearningLevel'
-    titleRu:
-      type: string
-    titleEn:
-      type: string
-    questionCountHint:
-      type: integer
-      nullable: true
-    topicCount:
-      type: integer
-
-UpsertComplexQuizRequest:
-  type: object
-  required: [type, learningLevel, titleRu, titleEn, topicIds]
-  properties:
-    type:
-      $ref: '#/ComplexQuizType'
-    learningLevel:
-      $ref: '#/LearningLevel'
-    titleRu:
-      type: string
-      minLength: 1
-      maxLength: 200
-    titleEn:
-      type: string
-      minLength: 1
-      maxLength: 200
-    questionCountHint:
-      type: integer
-      nullable: true
-    topicIds:
-      type: array
-      minItems: 2
-      maxItems: 7
-      items:
-        type: string
-        format: uuid
-      description: >
-        Must contain 2-4 unique ids when type=MIXED_PRACTICE, or 5-7 unique ids
-        when type=LEVEL_ASSESSMENT. Violation -> 422.
 
 GraphLayer:
   type: object

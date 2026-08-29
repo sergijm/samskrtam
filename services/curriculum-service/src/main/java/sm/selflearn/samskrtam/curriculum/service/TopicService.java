@@ -42,7 +42,6 @@ public class TopicService {
     private final TopicRepository topicRepository;
     private final TopicPrerequisiteRepository topicPrerequisiteRepository;
     private final TopicGraphService topicGraphService;
-    private final ComplexQuizService complexQuizService;
     private final TopicMapper topicMapper;
 
     public List<TopicDto> listTopics(boolean includeEvergreen, TopicDomain domain, TopicDomainType domainType) {
@@ -183,7 +182,7 @@ public class TopicService {
                 base.id(), base.code(), base.titleRu(), base.titleEn(), base.learningLevel(),
                 base.domain(), base.domainType(),
                 base.isEvergreen(), base.displayOrder(),
-                complexQuizService.resolveAppearsInLevels(topic.getId(), topic.getLearningLevel()),
+                List.of(topic.getLearningLevel()),
                 base.createdAt(), base.updatedAt());
     }
 

@@ -16,7 +16,6 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import sm.selflearn.samskrtam.curriculum.model.ComplexQuiz;
 import sm.selflearn.samskrtam.curriculum.model.Topic;
 
 import java.time.Instant;
@@ -45,10 +44,6 @@ public class VocabularyQuizDefinition {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "topic_id")
     private Topic topic;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "complex_quiz_id")
-    private ComplexQuiz complexQuiz;
 
     @Column(name = "frequency_rank_max")
     private Integer frequencyRankMax;

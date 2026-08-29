@@ -28,6 +28,22 @@ export default function SingleChoiceQuestion({
 
   return (
     <>
+      {question.formDevanagari && (
+        <div className="text-center mb-2">
+          <div
+            className="text-2xl"
+            style={{ fontFamily: '"Noto Sans Devanagari", sans-serif' }}
+          >
+            {question.formDevanagari}
+          </div>
+          <div className="text-sm text-color-secondary" style={{ fontStyle: 'italic' }}>
+            {question.formIast}
+          </div>
+          {question.translation && (
+            <div className="text-sm text-color-secondary mt-1">«{question.translation}»</div>
+          )}
+        </div>
+      )}
       <h3 className="text-center mb-3">
         <HighlightedPrompt question={question} lang={i18n.language} />
       </h3>

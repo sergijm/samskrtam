@@ -38,12 +38,6 @@ public class GlobalExceptionHandler {
         return new ErrorResponseDto(HttpStatus.CONFLICT.value(), "Conflict", e.getMessage());
     }
 
-    @ExceptionHandler(InvalidComplexQuizCompositionException.class)
-    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    public ErrorResponseDto handleInvalidComposition(InvalidComplexQuizCompositionException e) {
-        return new ErrorResponseDto(HttpStatus.UNPROCESSABLE_ENTITY.value(), "Unprocessable Entity", e.getMessage());
-    }
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponseDto handleValidation(MethodArgumentNotValidException e) {

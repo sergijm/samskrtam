@@ -11,6 +11,7 @@ import sm.selflearn.samskrtam.common.SamskrtamException;
 import sm.selflearn.samskrtam.content.dto.ConjugationParadigmPageDto;
 import sm.selflearn.samskrtam.content.dto.DeclensionParadigmPageDto;
 import sm.selflearn.samskrtam.quiz.dto.QuestItemDto;
+import sm.selflearn.samskrtam.quiz.dto.TopicDetailDto;
 import sm.selflearn.samskrtam.quiz.dto.TopicDto;
 
 import java.util.LinkedHashMap;
@@ -69,6 +70,34 @@ public class CurriculumClient {
     }
 
     /**
+     * Select quest items for a topic identified by its {@code topicId} (UUID).
+     * Mirrors {@link #selectQuestItems(String, List, String, String, int)} but
+     * resolves the topic by id instead of code (lessonId is the topicId).
+     */
+    public Mono<List<QuestItemDto>> selectQuestItemsByTopicId(
+            UUID topicId,
+            List<String> progressTags,
+            String itemType,
+            String answerMode,
+            int limit) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("progressTags", progressTags);
+        body.put("itemType", itemType);
+        body.put("answerMode", answerMode);
+        body.put("limit", limit);
+
+        return webClient.post()
+                .uri("/api/v2/curriculum/quest-items/select?topicId={id}", topicId)
+                .bodyValue(body)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("SELECT_FAILED",
+                                "Quest item selection failed for topicId=" + topicId)))
+                .bodyToFlux(QuestItemDto.class)
+                .collectList();
+    }
+
+    /**
      * Fetch a single topic by its code (v2).
      */
     public Mono<TopicDto> fetchTopicByCode(String topicCode) {
@@ -79,6 +108,21 @@ public class CurriculumClient {
                         r -> Mono.error(new SamskrtamException("TOPIC_NOT_FOUND",
                                 "Topic not found in curriculum-service for code=" + topicCode)))
                 .bodyToMono(TopicDto.class);
+    }
+
+    /**
+     * Fetch a single topic by its id (v2). Used when only the topic UUID
+     * (e.g. a lessonId that is actually a topicId) is known.
+     */
+    public Mono<TopicDto> fetchTopicById(UUID topicId) {
+        return webClient.get()
+                .uri("/api/v2/curriculum/topics/{id}", topicId)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,
+                        r -> Mono.error(new SamskrtamException("TOPIC_NOT_FOUND",
+                                "Topic not found in curriculum-service for id=" + topicId)))
+                .bodyToMono(TopicDetailDto.class)
+                .map(TopicDetailDto::topic);
     }
 
     /**

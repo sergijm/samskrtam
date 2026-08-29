@@ -51,6 +51,24 @@ export default function QuizQuestionPanel({
 
       {(!question.questionType || question.questionType === 'FORM_BY_CASE' || question.questionType === 'MULTIPLE_CHOICE') && (
         <>
+          {question.itemType === 'CASE_MEANING' && (question.formDevanagari || question.formIast || question.translation) && (
+            <div className="flex flex-column align-items-center mb-4">
+              {question.formDevanagari && (
+                <span
+                  className="text-3xl font-bold"
+                  style={{ fontFamily: '"Noto Sans Devanagari", sans-serif' }}
+                >
+                  {question.formDevanagari}
+                </span>
+              )}
+              {question.formIast && (
+                <span className="text-color-secondary italic mt-1">{question.formIast}</span>
+              )}
+              {question.translation && (
+                <span className="text-color-secondary mt-1">«{question.translation}»</span>
+              )}
+            </div>
+          )}
           <div className="text-2xl font-bold text-center mb-5">
             {lessonType === LessonType.VOCABULARY ? (
               <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '2.5rem' }}>

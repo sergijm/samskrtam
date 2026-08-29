@@ -23,6 +23,19 @@ public interface VerseRepository extends JpaRepository<Verse, UUID> {
     int countByChapterIdAndDeletedAtIsNull(UUID chapterId);
 
     /**
+     * Число проанализированных (status = ANALYZED) не удалённых стихов произведения
+     * (по всем его не удалённым главам). Используется для подписи плитки произведения.
+     */
+    @Query("""
+            SELECT COUNT(v) FROM Verse v
+            WHERE v.chapterId IN (
+                SELECT c.id FROM Chapter c WHERE c.workId = :workId AND c.deletedAt IS NULL
+            )
+            AND v.status = :status AND v.deletedAt IS NULL
+            """)
+    int countAnalyzedByWorkIdAndDeletedAtIsNull(@Param("workId") UUID workId, @Param("status") VerseStatus status);
+
+    /**
      * Общее число не удалённых стихов произведения (по всем его не удалённым главам).
      */
     @Query("""

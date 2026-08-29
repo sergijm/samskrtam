@@ -162,3 +162,61 @@ export const useDeleteStandaloneVerse = () => {
   });
 };
 
+// ── Write: произведения / главы / стихи (ADMIN) ──
+
+export const useCreateWork = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof sangrahaApi.createWork>[0]) =>
+      sangrahaApi.createWork(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'works'] });
+    },
+  });
+};
+
+export const useUpdateWork = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ workSlug, data }: { workSlug: string; data: Parameters<typeof sangrahaApi.updateWork>[1] }) =>
+      sangrahaApi.updateWork(workSlug, data),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'works'] });
+      qc.invalidateQueries({ queryKey: ['sangraha', 'work', vars.workSlug] });
+    },
+  });
+};
+
+export const useCreateChapter = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ workSlug, data }: { workSlug: string; data: Parameters<typeof sangrahaApi.createChapter>[1] }) =>
+      sangrahaApi.createChapter(workSlug, data),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'work', vars.workSlug] });
+    },
+  });
+};
+
+export const useUpdateChapter = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ chapterId, data }: { chapterId: string; data: Parameters<typeof sangrahaApi.updateChapter>[1] }) =>
+      sangrahaApi.updateChapter(chapterId, data),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'chapter', vars.chapterId] });
+    },
+  });
+};
+
+export const useCreateVerse = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ chapterId, text }: { chapterId: string; text: string }) =>
+      sangrahaApi.createVerse(chapterId, { text }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['sangraha', 'chapter', vars.chapterId] });
+    },
+  });
+};
+

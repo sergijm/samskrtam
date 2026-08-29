@@ -270,7 +270,30 @@ public class ComposedQuestionMapper {
         if (q.getAnswerMode() == AnswerMode.MATCHING) {
             builder.matchRows(parseMatchRows(q));
         }
+        parseSanskritForm(q.getPayload(), builder);
         return builder.build();
+    }
+
+    /**
+     * Extracts {@code formIast} (IAST) and {@code formDevanagari} from the
+     * payload when it carries a {@code CaseMeaningPayload}-compatible shape.
+     */
+    private void parseSanskritForm(Json payload,
+                                   QuestionDto.QuestionDtoBuilder builder) {
+        if (payload == null || payload.asString() == null) return;
+        try {
+            var node = objectMapper.readTree(payload.asString());
+            if (node.has("transliteration") && node.get("transliteration").isTextual()) {
+                builder.formIast(node.get("transliteration").asText());
+            }
+            if (node.has("sanskritExample") && node.get("sanskritExample").isTextual()) {
+                builder.formDevanagari(node.get("sanskritExample").asText());
+            }
+            if (node.has("translation") && node.get("translation").isTextual()) {
+                builder.translation(node.get("translation").asText());
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     /**

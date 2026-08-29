@@ -42,7 +42,9 @@
     "startQuiz": "Start Quiz",
     "errorLoadingLesson": "Error loading lesson",
     "backToLesson": "Back to Lesson",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "required": "Required field",
+    "saved": "Saved"
   },
   "validation": {
     "usernameRequired": "Email or Username is required.",

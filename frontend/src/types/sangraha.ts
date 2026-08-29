@@ -13,6 +13,7 @@ export interface WorkSummaryDto {
   createdAt: string;
   chapterCount: number;
   verseCount: number;
+  analyzedVerseCount: number;
 }
 
 export interface SourceDto {

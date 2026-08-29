@@ -7,6 +7,11 @@
     "filterBySource": "Filter by source",
     "work": "Work",
     "workNotFound": "Work not found",
+    "createWork": "New work",
+    "editWork": "Edit work",
+    "saveWorkFirst": "Save the work first to add chapters",
+    "noChaptersYet": "No chapters yet. Add the first one.",
+    "addVerseHint": "Add a verse to save it as a draft.",
     "chapters": "Chapters",
     "chapterNotFound": "Chapter not found",
     "chapter": "Chapter",
@@ -27,7 +32,10 @@
       "analyzeAll": "Analyze all",
       "analyzeMorphology": "Analyze morphology",
       "study": "Study",
-      "resetFilter": "Reset filter"
+      "resetFilter": "Reset filter",
+      "addWork": "Add work",
+      "addChapter": "Add chapter",
+      "addVerse": "Add verse"
     },
     "fields": {
       "title": "Title",
@@ -69,7 +77,10 @@
     "placeholder": {
       "textDevanagari": "Enter text in Devanagari...",
       "textIast": "Enter text in IAST transliteration...",
-      "text": "Enter verse text in Devanagari or IAST..."
+      "text": "Enter verse text in Devanagari or IAST...",
+      "workTitle": "Work title",
+      "chapterTitle": "Chapter title",
+      "verseText": "Verse text (Devanagari or IAST)"
     },
     "translation": {
       "ru": "Translation (Russian)",

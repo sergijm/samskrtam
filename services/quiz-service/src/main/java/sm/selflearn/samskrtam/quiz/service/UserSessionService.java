@@ -73,7 +73,7 @@ public class UserSessionService {
 
     public Mono<QuizProgressDto> getLatestUnfinishedQuizProgress(UUID userId, UUID lessonId) {
         return quizSessionRepository
-                .findTopByUserIdAndLessonIdAndStatusOrderByStartedAtDesc(userId, lessonId, SessionStatus.IN_PROGRESS)
+                .findTopByUserIdAndLessonIdAndStatusOrderByStartedAtDesc(userId, lessonId)
                 .map(session -> new QuizProgressDto(session.getId(), session.getAnsweredQuestions(),
                         session.getTotalQuestions(), true))
                 .defaultIfEmpty(new QuizProgressDto(null, 0, 0, false));

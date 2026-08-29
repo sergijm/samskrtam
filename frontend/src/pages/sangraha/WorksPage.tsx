@@ -1,14 +1,44 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Skeleton } from 'primereact/skeleton';
 import { Dropdown } from 'primereact/dropdown';
 import { useNavigate } from 'react-router-dom';
 
 import { useWorks, useWorksClasses, useSources } from '../../hooks/useSangraha';
+import { useAuthStore } from '../../store/authStore';
+import { CreateButton } from '../../components/common/buttons';
 import type { WorksClassTreeNodeDto, SourceDto } from '../../types/sangraha';
 import './WorkPage.css';
 
 const FILTER_GROUPS = ['tradition', 'genre', 'school'];
+
+/** Ключ классификации (works_class) привязан к корпусу с этим источником. */
+const CLASSIFIED_SOURCE = 'dcs';
+
+/** Ключ localStorage для сохранения состояния фильтров между перезагрузками. */
+const FILTER_STORAGE_KEY = 'sangraha.workFilters';
+
+interface SavedFilters {
+  sourceCode?: string;
+  classId: string | null;
+}
+
+function loadFilters(): SavedFilters {
+  try {
+    const raw = localStorage.getItem(FILTER_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as SavedFilters;
+      const sourceCode =
+        typeof parsed.sourceCode === 'string' ? parsed.sourceCode : undefined;
+      const classId =
+        typeof parsed.classId === 'string' ? parsed.classId : null;
+      return { sourceCode, classId };
+    }
+  } catch {
+    /* игнорируем повреждённое значение */
+  }
+  return { sourceCode: undefined, classId: null };
+}
 
 interface ClassItemProps {
   node: WorksClassTreeNodeDto;
@@ -33,15 +63,29 @@ const WorksPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const lang = i18n.language;
+  const isAdmin = useAuthStore((s) => s.user?.roles?.includes('ADMIN') ?? false);
 
   const { data: classes, isLoading: classesLoading } = useWorksClasses();
   const { data: sources } = useSources();
-  const [activeClassId, setActiveClassId] = useState<string | null>(null);
-  const [activeSourceCode, setActiveSourceCode] = useState<string | undefined>(undefined);
+  const initialFilters = loadFilters();
+  const [activeClassId, setActiveClassId] = useState<string | null>(initialFilters.classId ?? null);
+  const [activeSourceCode, setActiveSourceCode] = useState<string | undefined>(initialFilters.sourceCode);
+
+  // Сохраняем состояние фильтров при перезагрузке страницы
+  useEffect(() => {
+    localStorage.setItem(
+      FILTER_STORAGE_KEY,
+      JSON.stringify({ sourceCode: activeSourceCode, classId: activeClassId }),
+    );
+  }, [activeSourceCode, activeClassId]);
+
+  // Классификации показываем для «Все» (источник не выбран) и для корпуса DCS
+  const showClassifications =
+    !activeSourceCode || activeSourceCode.toLowerCase() === CLASSIFIED_SOURCE;
 
   const selectedIds = useMemo(
-    () => (activeClassId ? [activeClassId] : []),
-    [activeClassId],
+    () => (showClassifications && activeClassId ? [activeClassId] : []),
+    [showClassifications, activeClassId],
   );
 
   const { data: works, isLoading, isError } = useWorks(selectedIds, activeSourceCode);
@@ -74,39 +118,23 @@ const WorksPage = () => {
 
   return (
     <div className="p-4">
-      <h1 className="mb-3">{t('sangraha.works')}</h1>
+      <div className="flex align-items-center justify-content-between mb-3">
+        <h1 className="m-0">{t('sangraha.works')}</h1>
+        {isAdmin && (
+          <CreateButton labelKey="sangraha.action.addWork" onClick={() => navigate('/sangraha/new')} />
+        )}
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '1.5rem', alignItems: 'start' }}>
         {/* Left column: filters */}
         <div>
-          {classesLoading ? (
-            <Skeleton width="100%" height="200px" />
-          ) : filterGroups.length > 0 ? (
-            <div className="flex flex-column gap-3">
-              {filterGroups.map((group) => (
-                <div key={group.classification} className="border-1 border-200 border-round-lg surface-card p-2">
-                  <ul className="list-none p-0 m-0 flex flex-column gap-0">
-                    {group.classes.map((node) => (
-                      <ClassItem
-                        key={node.id}
-                        node={node}
-                        isSelected={activeClassId === node.id}
-                        lang={lang}
-                        onClick={handleClassClick}
-                      />
-                    ))}
-                  </ul>
-                </div>
-               ))}
-             </div>
-           ) : null}
-
-          {/* Source filter (bottom of left column, AND with the rest) */}
-          <div className="border-1 border-200 border-round-lg surface-card p-1 mt-2">
+          {/* Source filter (top of left column) */}
+          <div className="border-1 border-200 border-round-lg surface-card p-1">
             <div className="text-xs font-semibold mb-1 px-1">{t('sangraha.source')}</div>
             <Dropdown
               value={activeSourceCode}
               options={sourceOptions}
+              optionValue="value"
               onChange={(e) => setActiveSourceCode(e.value)}
               placeholder={t('sangraha.filterBySource')}
               className="w-full"
@@ -118,6 +146,31 @@ const WorksPage = () => {
               }}
             />
           </div>
+
+          {/* Классификации — только для корпуса с источником CLASSIFIED_SOURCE */}
+          {showClassifications && (
+            classesLoading ? (
+              <Skeleton width="100%" height="200px" className="mt-2" />
+            ) : filterGroups.length > 0 ? (
+              <div className="flex flex-column gap-3 mt-2">
+                {filterGroups.map((group) => (
+                  <div key={group.classification} className="border-1 border-200 border-round-lg surface-card p-2">
+                    <ul className="list-none p-0 m-0 flex flex-column gap-0">
+                      {group.classes.map((node) => (
+                        <ClassItem
+                          key={node.id}
+                          node={node}
+                          isSelected={activeClassId === node.id}
+                          lang={lang}
+                          onClick={handleClassClick}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ) : null
+          )}
         </div>
 
         {/* Right column: works */}
@@ -167,7 +220,13 @@ const WorksPage = () => {
                     <span className="text-sm text-color-secondary ml-3 white-space-nowrap">
                       {t('sangraha.chaptersCount', { count: work.chapterCount })}
                       {' · '}
-                      {t('sangraha.versesCount', { count: work.verseCount })}
+                      {work.verseCount}
+                      {' / '}
+                      <span style={{ color: 'var(--green-500)', fontWeight: 600 }}>
+                        {work.analyzedVerseCount}
+                      </span>
+                      {' '}
+                      {t('sangraha.verses')}
                     </span>
                     <i className="pi pi-chevron-right text-color-secondary ml-2" />
                   </div>

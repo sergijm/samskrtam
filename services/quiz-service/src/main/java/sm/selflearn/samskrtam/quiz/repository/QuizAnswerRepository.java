@@ -18,10 +18,10 @@ public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer,
     Mono<Boolean> existsBySessionIdAndQuestionId(UUID sessionId, UUID questionId);
     Mono<Void> deleteBySessionId(UUID sessionId);
 
-    @Query("SELECT * FROM quiz.quiz_answers WHERE session_id = :sessionId LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}")
+    @Query("SELECT * FROM quiz.quiz_answers WHERE session_id = CAST(:sessionId AS uuid) LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}")
     Flux<QuizAnswer> findSessionAnswers(UUID sessionId, Pageable pageable);
 
-        @Query("SELECT COUNT(*) FROM quiz.quiz_answers WHERE session_id = :sessionId")
+        @Query("SELECT COUNT(*) FROM quiz.quiz_answers WHERE session_id = CAST(:sessionId AS uuid)")
     Mono<Long> countBySessionId(UUID sessionId);
 
     // ... existing code for findByWordIdAndUserIdAndLessonId ...
@@ -30,9 +30,9 @@ public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer,
             FROM quiz.quiz_answers qa
             JOIN quiz.session_questions sq ON sq.question_id = qa.question_id
             JOIN quiz.quiz_session qs ON qs.id = qa.session_id
-            WHERE sq.vocabulary_word_id = :wordId
-              AND qs.user_id = :userId
-              AND qs.lesson_id = :lessonId
+            WHERE sq.vocabulary_word_id = CAST(:wordId AS uuid)
+              AND qs.user_id = CAST(:userId AS uuid)
+              AND qs.lesson_id = CAST(:lessonId AS uuid)
             ORDER BY qa.answered_at DESC
             """)
     Flux<QuizAnswer> findByWordIdAndUserIdAndLessonId(UUID wordId, UUID userId, UUID lessonId);
@@ -42,9 +42,9 @@ public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer,
             FROM quiz.quiz_answers qa
             JOIN quiz.session_questions sq ON sq.question_id = qa.question_id
             JOIN quiz.quiz_session qs ON qs.id = qa.session_id
-            WHERE sq.vocabulary_word_id = :wordId
-              AND qs.user_id = :userId
-              AND qs.lesson_id = :lessonId
+            WHERE sq.vocabulary_word_id = CAST(:wordId AS uuid)
+              AND qs.user_id = CAST(:userId AS uuid)
+              AND qs.lesson_id = CAST(:lessonId AS uuid)
             """)
     Mono<Long> countByWordIdAndUserIdAndLessonId(UUID wordId, UUID userId, UUID lessonId);
 
@@ -56,9 +56,9 @@ public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer,
             FROM quiz.quiz_answers qa
             JOIN quiz.quiz_session qs ON qa.session_id = qs.id
             JOIN quiz.session_questions sq ON qa.question_id = sq.id
-            WHERE qs.user_id = :userId
-              AND qs.lesson_id = :lessonId
-              AND sq.vocabulary_word_id = :wordId
+            WHERE qs.user_id = CAST(:userId AS uuid)
+              AND qs.lesson_id = CAST(:lessonId AS uuid)
+              AND sq.vocabulary_word_id = CAST(:wordId AS uuid)
             """)
     Mono<WordScoreDto> calculateWordScore(UUID userId, UUID lessonId, UUID wordId);
 
@@ -72,8 +72,8 @@ public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer,
             WHERE sq.target_case = :caseType
               AND sq.target_number = :numberType
               AND sq.target_gender = :gender
-              AND qs.user_id = :userId
-              AND qs.lesson_id = :lessonId
+              AND qs.user_id = CAST(:userId AS uuid)
+              AND qs.lesson_id = CAST(:lessonId AS uuid)
             ORDER BY qa.answered_at DESC
             LIMIT :size OFFSET :offset
             """)
@@ -88,14 +88,14 @@ public interface QuizAnswerRepository extends ReactiveCrudRepository<QuizAnswer,
             WHERE sq.target_case = :caseType
               AND sq.target_number = :numberType
               AND sq.target_gender = :gender
-              AND qs.user_id = :userId
-              AND qs.lesson_id = :lessonId
+              AND qs.user_id = CAST(:userId AS uuid)
+              AND qs.lesson_id = CAST(:lessonId AS uuid)
             """)
         Mono<Long> countGrammarHistory(
             String caseType, String numberType, String gender, UUID userId, UUID lessonId);
 
     /** Count correct answers for a specific session. */
-    @Query("SELECT CAST(COUNT(*) AS BIGINT) FROM quiz.quiz_answers WHERE session_id = :sessionId AND is_correct = true")
+    @Query("SELECT CAST(COUNT(*) AS BIGINT) FROM quiz.quiz_answers WHERE session_id = CAST(:sessionId AS uuid) AND is_correct = true")
     Mono<Long> countCorrectAnswersBySessionId(UUID sessionId);
 }
 

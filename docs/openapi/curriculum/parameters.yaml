@@ -46,21 +46,3 @@ LearningLevelQueryParam:
   schema:
     type: string
     enum: [L0, L1, L2, L3, L4, L5, L6]
-
-ComplexQuizTypeQueryParam:
-  name: type
-  in: query
-  required: false
-  description: Filter by complex quiz type
-  schema:
-    type: string
-    enum: [MIXED_PRACTICE, LEVEL_ASSESSMENT]
-
-ComplexQuizIdParam:
-  name: id
-  in: path
-  required: true
-  description: UUID of the complex quiz
-  schema:
-    type: string
-    format: uuid

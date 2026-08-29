@@ -19,7 +19,7 @@ SourceKind:
 
 VocabularyQuizKind:
   type: string
-  enum: [TOPIC, MIXED_TOPIC, FREQUENCY_BAND, SOURCE]
+  enum: [TOPIC, FREQUENCY_BAND, SOURCE]
 
 # ---------- Dashboard ----------
 
@@ -487,7 +487,7 @@ FrequencyBand:
 VocabularyQuizDefinitionUpsertRequest:
   type: object
   required: [kind, titleRu, titleEn]
-  description: Exactly one of topicId/complexQuizId/sourceId/frequencyRankMax must be filled.
+  description: Exactly one of topicId/sourceId/frequencyRankMax must be filled.
   properties:
     kind:
       $ref: '#/VocabularyQuizKind'
@@ -496,11 +496,6 @@ VocabularyQuizDefinitionUpsertRequest:
     titleEn:
       type: string
     topicId:
-      type:
-        - string
-        - 'null'
-      format: uuid
-    complexQuizId:
       type:
         - string
         - 'null'
@@ -516,7 +511,7 @@ VocabularyQuizDefinitionUpsertRequest:
       type:
         - integer
         - 'null'
-
+ 
 VocabularyQuizDefinition:
   type: object
   required: [id, kind, titleRu, titleEn]
@@ -531,11 +526,6 @@ VocabularyQuizDefinition:
     titleEn:
       type: string
     topicId:
-      type:
-        - string
-        - 'null'
-      format: uuid
-    complexQuizId:
       type:
         - string
         - 'null'

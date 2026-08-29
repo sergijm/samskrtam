@@ -12,7 +12,6 @@ import sm.selflearn.samskrtam.quiz.dto.ComposeQuizResponse;
 import sm.selflearn.samskrtam.quiz.dto.StartOrResumeResponse;
 import sm.selflearn.samskrtam.quiz.model.ProgressTagSetId;
 import sm.selflearn.samskrtam.quiz.model.QuizSession;
-import sm.selflearn.samskrtam.quiz.model.SessionStatus;
 import sm.selflearn.samskrtam.quiz.repository.QuizSessionRepository;
 
 import java.util.UUID;
@@ -37,12 +36,14 @@ public class QuizSessionService {
         return session.getLessonId() == null;
     }
 
-    /** Plain start-or-resume (no filters) — legacy lesson-based branch. */
+    /**
+     * Plain start-or-resume. The legacy content-service lesson flow is retired:
+     * {@code lessonId} is in fact the curriculum {@code topicId}, so the request
+     * is composed through the topic engine (CurriculumClient, port 8091).
+     */
     public Mono<StartOrResumeResponse> startOrResumeSession(UUID lessonId, UUID userId, String userLocale) {
-        return quizSessionRepository
-                .findTopByUserIdAndLessonIdAndStatusOrderByStartedAtDesc(userId, lessonId, SessionStatus.IN_PROGRESS)
-                .flatMap(session -> sessionOperationsService.resume(session, userLocale))
-                .switchIfEmpty(Mono.defer(() -> sessionCreationService.createNewSession(lessonId, userId, userLocale)));
+        return quizComposeService.composeByTopicId(userId, lessonId, null, null, null, 0)
+                .map(QuizSessionService::toStartOrResumeResponse);
     }
 
     /**

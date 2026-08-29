@@ -42,7 +42,9 @@
     "startQuiz": "Начать квиз",
     "errorLoadingLesson": "Ошибка загрузки урока",
     "backToLesson": "Вернуться к уроку",
-    "loading": "Загрузка…"
+    "loading": "Загрузка…",
+    "required": "Обязательное поле",
+    "saved": "Сохранено"
   },
   "validation": {
     "usernameRequired": "Требуется Email или логин.",

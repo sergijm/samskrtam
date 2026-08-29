@@ -69,19 +69,16 @@ flashcards:
 (резолвятся по параметрам прямо при старте сессии, см. §5).
 
 Таблица `curriculum.vocabulary_quiz_definition`:
-id (UUID, PK), kind (VARCHAR 20, NOT NULL — `TOPIC`|`MIXED_TOPIC`|`FREQUENCY_BAND`|`SOURCE`),
+id (UUID, PK), kind (VARCHAR 20, NOT NULL — `TOPIC`|`FREQUENCY_BAND`|`SOURCE`),
 titleRu / titleEn (VARCHAR 200, NOT NULL),
 topicId (UUID, NULL — для `kind=TOPIC`, значение `curriculum.topic.id`),
-complexQuizId (UUID, NULL — для `kind=MIXED_TOPIC`, значение `curriculum.complex_quiz.id`,
-переиспользует `ComplexQuiz` из `curriculum-service` целиком, включая уже готовую
-валидацию 2–4/5–7 тем, см. `lexical-curriculum.md` §1),
 frequencyRankMax (INTEGER, NULL — для `kind=FREQUENCY_BAND`, кумулятивно `rank <= N`, см. `lexical-curriculum.md` §2),
 sourceId (UUID, NULL — для `kind=SOURCE`, FK → lexicon.source.id),
 sourceLocationPrefix (VARCHAR 100, NULL — опционально, для «Chapter/section vocabulary», §15 задачи: фильтр `source_occurrence.locationRef LIKE prefix || '%'`),
 createdAt / updatedAt
 
-Ровно один из `topicId`/`complexQuizId`/`frequencyRankMax`/`sourceId` заполнен, в
-зависимости от `kind` — проверяется в сервисном слое (CHECK-констрейнт на 4
+Ровно один из `topicId`/`frequencyRankMax`/`sourceId` заполнен, в
+зависимости от `kind` — проверяется в сервисном слое (CHECK-констрейнт на 3
 взаимоисключающих nullable-поля средствами БД неудобен и не даёт понятной
 ошибки — валидация на уровне Java).
 

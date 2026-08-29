@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sm.selflearn.samskrtam.sangraha.dto.ChapterSummaryDto;
 import sm.selflearn.samskrtam.sangraha.dto.ChapterVersesDto;
+import sm.selflearn.samskrtam.sangraha.dto.CreateChapterRequest;
+import sm.selflearn.samskrtam.sangraha.dto.UpdateChapterRequest;
 import sm.selflearn.samskrtam.sangraha.dto.VerseTreeDto;
 import sm.selflearn.samskrtam.sangraha.model.Chapter;
 import sm.selflearn.samskrtam.sangraha.model.VerseAnalysis;
@@ -35,6 +37,71 @@ public class ChapterService {
     public Chapter getChapterById(UUID id) {
         return chapterRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Chapter not found: " + id));
+    }
+
+    // ── Write: создание/обновление главы (ADMIN, см. §4/§5.2) ──
+
+    @Transactional
+    public Chapter createChapter(UUID workId, CreateChapterRequest req) {
+        if (req.titleRu() == null || req.titleRu().isBlank()) {
+            throw new IllegalArgumentException("titleRu must not be blank");
+        }
+        workService.getWorkById(workId);
+        String slug = SlugUtils.uniqueSlug(
+                req.titleRu(),
+                candidate -> chapterRepository.existsByWorkIdAndSlug(workId, candidate));
+        int orderIndex = nextOrderIndex(workId);
+        Chapter chapter = Chapter.builder()
+                .workId(workId)
+                .slug(slug)
+                .orderIndex(orderIndex)
+                .titleRu(req.titleRu())
+                .titleEn(req.titleEn() == null ? req.titleRu() : req.titleEn())
+                .titleSaIast(req.titleSaIast())
+                .titleSaDevanagari(req.titleSaDevanagari())
+                .build();
+        return chapterRepository.save(chapter);
+    }
+
+    @Transactional
+    public Chapter updateChapter(UUID chapterId, UpdateChapterRequest req) {
+        Chapter chapter = getChapterById(chapterId);
+        if (req.titleRu() != null) {
+            chapter.setTitleRu(req.titleRu());
+        }
+        if (req.titleEn() != null) {
+            chapter.setTitleEn(req.titleEn());
+        }
+        if (req.titleSaIast() != null) {
+            chapter.setTitleSaIast(req.titleSaIast());
+        }
+        if (req.titleSaDevanagari() != null) {
+            chapter.setTitleSaDevanagari(req.titleSaDevanagari());
+        }
+        return chapterRepository.save(chapter);
+    }
+
+    private int nextOrderIndex(UUID workId) {
+        return getChaptersByWorkId(workId).stream()
+                .map(Chapter::getOrderIndex)
+                .filter(o -> o != null)
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0) + 1;
+    }
+
+    public static ChapterSummaryDto toSummary(Chapter ch, int verseCount) {
+        return new ChapterSummaryDto(
+                ch.getId(),
+                ch.getSlug(),
+                ch.getTitleRu(),
+                ch.getTitleEn(),
+                ch.getTitleSaIast(),
+                ch.getTitleSaDevanagari(),
+                ch.getOrderIndex() == null ? 0 : ch.getOrderIndex(),
+                ch.getSlug(),
+                verseCount
+        );
     }
 
     // ── NEW: chapter summaries without verses (for WorkPage tree) ──

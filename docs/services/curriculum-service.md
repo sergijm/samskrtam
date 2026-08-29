@@ -2,7 +2,7 @@
 
 > Домен: Учебный план — атомарные темы (`Topic`, ~70 шт.), мягкие зависимости
 > между ними (`TopicPrerequisite`), рекомендуемый уровень освоения
-> (`LearningLevel` L0–L6) и комплексные подборки тем (`ComplexQuiz`)
+> (`LearningLevel` L0–L6) и учебные темы
 > Язык: **Java 21 + Virtual Threads**
 > Модуль: `services/curriculum-service`
 > Порт: `8091`
@@ -11,7 +11,7 @@
 > Status: **DRAFT**
 
 > Источник требований: [curriculum.md](curriculum-service/curriculum.md) §1–§2 + пересмотр модели
-> (70 атомарных Topic, L0–L6, ComplexQuiz — см. историю обсуждения ниже, §8).
+> (70 атомарных Topic, L0–L6 — см. историю обсуждения ниже, §8).
 > Связанные файлы: [quest-catalog.md](curriculum-service/quest-catalog.md), [learning-materials.md](learning-materials.md),
 > [curriculum-session-composition.md](curriculum-service/curriculum-session-composition.md), [conventions.md](../conventions.md).
 
@@ -19,17 +19,15 @@
 
 ## 1. Описание
 
-Независимый сервис учебного плана. Хранит **три независимые классификации**
+Независимый сервис учебного плана. Хранит **две независимые классификации**
 одного и того же набора атомарных тем — без наполнения (текста теории,
 вопросов, квизов):
 
 1. **Topic graph** — зависимости знаний (`TopicPrerequisite`, мягкие, не блокирующие);
 2. **Learning Level** (`L0`…`L6`) — рекомендуемый уровень первого знакомства с темой, хранимое поле, не вычисляемое;
-3. **ComplexQuiz** — произвольная комбинация 2–7 тем для интегрированной практики (`Mixed Practice` / `Level Assessment`), не привязанная жёстко к одному уровню темы.
 
 **Явно вне периметра этой версии:**
 - наполнение тем (`LearningMaterial` — текст теории, живёт в **content-service**, см. §5);
-- состав `ComplexQuiz` (сервис хранит только *состав* — какие Topic входят и сколько вопросов ожидается) — сами задания внутри подборки по-прежнему не генерируются здесь;
 - проверка prerequisite перед стартом занятия — её нет и не будет на уровне API (curriculum.md §1, «Принципиально»);
 - пересчёт «next recommended topic» по прогрессу пользователя — open question, отдельная задача Dashboard.
 
@@ -40,7 +38,7 @@
 
 ---
 
-## 2. Почему три независимые классификации, а не одна иерархия
+## 2. Почему две независимые классификации, а не одна иерархия
 
 _Архитектурное решение вынесено в единый раздел «Архитектурные решения (ADR)» файла curriculum-service.md (ADR-1)._
 
@@ -71,38 +69,7 @@ createdAt / updatedAt (TIMESTAMPTZ, NOT NULL)
 
 ---
 
-## 4. Сущности: ComplexQuiz / ComplexQuizTopic
-
-**ComplexQuiz** (таблица `curriculum.complex_quiz`):
-id (UUID, PK)
-type (VARCHAR 20, NOT NULL — `MIXED_PRACTICE` | `LEVEL_ASSESSMENT`)
-learningLevel (VARCHAR 2, NOT NULL — `L0`…`L6`, уровень, к которому привязана подборка на UI, независимо от `learningLevel` входящих в неё Topic)
-titleRu / titleEn (VARCHAR 200, NOT NULL)
-questionCountHint (SMALLINT, NULL — ориентировочное число заданий для отображения на карточке, например «15 questions»; это **не** реальное число сгенерированных вопросов — квесты этот сервис не хранит и не генерирует, поле чисто информационное, проставляется вручную ADMIN)
-createdAt / updatedAt (TIMESTAMPTZ, NOT NULL)
-
-**ComplexQuizTopic** (таблица `curriculum.complex_quiz_topic`, join-таблица):
-complexQuizId (UUID, FK → complex_quiz.id, ON DELETE CASCADE)
-topicId (UUID, FK → topic.id, ON DELETE CASCADE)
-PRIMARY KEY (complexQuizId, topicId)
-
-**Ограничение по количеству тем (валидируется в сервисном слое, не в БД):**
-- `MIXED_PRACTICE` — от 2 до 4 `Topic`;
-- `LEVEL_ASSESSMENT` — от 5 до 7 `Topic`.
-
-Попытка создать/обновить `ComplexQuiz` с числом тем вне диапазона своего типа —
-`422 Unprocessable Entity`.
-
-`Topic.appearsInLevels` (производное, вычисляемое поле в `TopicDto`, не
-колонка БД) — отсортированный список различных `ComplexQuiz.learningLevel`,
-в подборки которых входит эта тема (плюс её собственный `learningLevel`,
-всегда первым). Вычисляется одним JOIN-запросом при чтении конкретной темы
-(`GET /topics/{id}`), не при листинге (дорого при большом каталоге ComplexQuiz
-— для списка тем `appearsInLevels` не возвращается).
-
----
-
-## 5. LearningMaterial — принадлежит content-service
+## 4. LearningMaterial — принадлежит content-service
 
 Как и в первой версии: `LearningMaterial` — 1:N от материала к теме
 (`LearningMaterial.topicId → Topic.id` по значению, без физического FK между
@@ -113,7 +80,7 @@ PRIMARY KEY (complexQuizId, topicId)
 
 ---
 
-## 6. Бизнес-логика графа prerequisite (без изменений)
+## 5. Бизнес-логика графа prerequisite (без изменений)
 
 Проверка циклов при добавлении `TopicPrerequisite` и вычисление топологических
 слоёв для `/graph` — как в первой версии (DFS-проверка на запись, Кан-алгоритм
@@ -128,7 +95,7 @@ PRIMARY KEY (complexQuizId, topicId)
 
 ---
 
-## 7. API (OpenAPI v2)
+## 6. API (OpenAPI v2)
 
 Полная спецификация: [openapi/api/v2/curriculum/curriculum-service.yaml](../openapi/api/v2/curriculum/curriculum-service.yaml).
 
@@ -137,7 +104,7 @@ GET /api/v2/curriculum/topics — плоский список (без appearsInL
 GET /api/v2/curriculum/topics/{id} — тема + прямые prerequisite + appearsInLevels
 POST /api/v2/curriculum/topics — создать (ADMIN)
 PUT /api/v2/curriculum/topics/{id} — обновить (ADMIN)
-DELETE /api/v2/curriculum/topics/{id} — удалить, каскад по prerequisite и complex_quiz_topic (ADMIN)
+DELETE /api/v2/curriculum/topics/{id} — удалить, каскад по prerequisite (ADMIN)
 GET/POST/DELETE /api/v2/curriculum/topics/{id}/prerequisites... — как в первой версии
 
 Уровни:
@@ -146,16 +113,6 @@ GET /api/v2/curriculum/levels/{level}/topics — темы конкретного
 
 Граф (диагностика, не основная навигация — см. §6):
 GET /api/v2/curriculum/graph
-
-Комплексные подборки:
-GET /api/v2/curriculum/complex-quizzes?level=&type= — список с фильтрами
-GET /api/v2/curriculum/complex-quizzes/{id} — подборка + резолвленные Topic
-POST /api/v2/curriculum/complex-quizzes — создать (ADMIN, 422 при неверном числе тем для типа)
-PUT /api/v2/curriculum/complex-quizzes/{id} — обновить состав/метаданные (ADMIN, та же валидация)
-DELETE /api/v2/curriculum/complex-quizzes/{id} — удалить (ADMIN)
-
-Доступ: чтение — любой аутентифицированный пользователь; запись — `ADMIN`
-(проверка на Gateway по JWT, как у curriculum-service).
 
 ### Прочие группы эндпоинтов v2 (кратко)
 
@@ -191,16 +148,15 @@ DELETE /api/v2/curriculum/complex-quizzes/{id} — удалить (ADMIN)
 
 ---
 
-## 8. Открытые вопросы / follow-up
+## 7. Открытые вопросы / follow-up
 
 - Gateway-маршрут `/api/v2/curriculum/**` и NetworkPolicy — задача Агента 1, не выполнялась.
 - Наполнение конкретных 70 Topic реальными `code`/`titleRu`/`titleEn`/`learningLevel` из предложенной раскладки (L0–L6) — это данные, а не схема; загружаются либо seed-миграцией, либо через `POST /topics` вручную ADMIN — решение о способе загрузки не принято, вне периметра этой итерации.
-- Реальная генерация вопросов внутри `ComplexQuiz` (quiz-service должен уметь взять `ComplexQuiz.topics`, найти относящиеся к ним Quest в curriculum-service через будущее поле `topicId` там, и собрать сессию) — отдельная будущая интеграционная задача, вне curriculum-service.
 - `questionCountHint` — чисто декоративное поле; если позже появится реальный подсчёт вопросов по темам в curriculum-service, имеет смысл сделать его вычисляемым на уровне API-агрегации, а не хранимым — сейчас осознанно упрощено до ручного числа.
 
 ---
 
-## 9. Модуль lexicon — учебная лексика (NEW)
+## 8. Модуль lexicon — учебная лексика (NEW)
 
 _Архитектурное решение вынесено в единый раздел «Архитектурные решения (ADR)» файла curriculum-service.md (ADR-2)._
 
@@ -224,17 +180,15 @@ ADMIN-review; точечная догрузка экзотических лем�
 Консолидированный раздел ключевых архитектурных решений curriculum-service. Ранее
 эти блоки были разбросаны по отдельным документам; здесь собраны все в одном месте.
 
-**ADR-1 — Три независимые классификации вместо одной иерархии.** Topic graph (DAG
-prerequisite), Learning Level (L0…L6, авторская классификация первого введения) и
-ComplexQuiz (повторное появление темы в интегрированной практике) отвечают на разные
-вопросы и не обязаны совпадать. `appearsInLevels` — производное поле (JOIN по
-`complex_quiz_topic`), не хранимое. Обоснование — §2.
+**ADR-1 — Две независимые классификации вместо одной иерархии.** Topic graph (DAG
+prerequisite) и Learning Level (L0…L6, авторская классификация первого введения)
+отвечают на разные вопросы и не обязаны совпадать. Обоснование — §2.
 
 **ADR-2 — Lexicon живёт в curriculum-service как компромисс.** Учебная лексика (~2000
 базовых лемм + таксономии frequency/semantic/POS/morphology + прогресс) хранится в той
 же схеме `curriculum` тем же сервисом — решение принято против выделения отдельного
 `lexicon-service` (обоснование — `lexicon.md` §0 п.3). Домен независим от
-`Topic`/`ComplexQuiz` по данным, но переиспользует `Topic.domain=LEXICON` и `ComplexQuiz`.
+`Topic` по данным, но переиспользует `Topic.domain=LEXICON`.
 Явно не заменяет per-verse поток `content.vocabulary_words`.
 
 **ADR-3 — Исключение из правила «curriculum-service без квестов» (версионное).**
@@ -262,9 +216,8 @@ compose/lifecycle реализованы в quiz-service (`POST /api/v2/quiz/com
 `itemType`→String (curriculum-session-composition.md §4/§6).
 
 **ADR-7 — LexicalTopic не заводит свою таблицу.** Регистрируется как обычная строка
-`curriculum.topic` с дискриминатором `domain=LEXICON`, переиспользует graph/`learningLevel`/
-`ComplexQuiz`. Композиция Lexeme↔LexicalTopic — отдельная таблица `curriculum.lexeme_lexical_topic`
-(lexical-curriculum.md §1).
+`curriculum.topic` с дискриминатором `domain=LEXICON`, переиспользует graph/`learningLevel`.
+Композиция Lexeme↔LexicalTopic — отдельная таблица `curriculum.lexeme_lexical_topic`
 
 **ADR-8 — Импорт лексики: объём корпуса и разметка.** Достаточность объёма корпуса
 sangraha-service для ~2000 лемм откладывается (решается по факту). Ручная разметка

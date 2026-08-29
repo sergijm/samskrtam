@@ -4,7 +4,9 @@ import sm.selflearn.samskrtam.common.transliteration.TransliterationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sm.selflearn.samskrtam.sangraha.dto.CreateVerseRequest;
 import sm.selflearn.samskrtam.sangraha.dto.VerseDetailDto;
+import sm.selflearn.samskrtam.sangraha.dto.VerseTreeDto;
 import sm.selflearn.samskrtam.sangraha.mapper.VerseMapper;
 import sm.selflearn.samskrtam.sangraha.model.Chapter;
 import sm.selflearn.samskrtam.sangraha.model.Verse;
@@ -17,6 +19,7 @@ import sm.selflearn.samskrtam.sangraha.repository.VerseAnalysisRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseRepository;
 import sm.selflearn.samskrtam.sangraha.repository.VerseWordRepository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -76,6 +79,40 @@ public class VerseService {
     public Verse getVerseById(UUID id) {
         return verseRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Verse not found: " + id));
+    }
+
+    // ── Write: создание стиха (DRAFT + rawText, ADMIN, см. §4/§5.2) ──
+
+    @Transactional
+    public VerseTreeDto createVerse(UUID chapterId, CreateVerseRequest req) {
+        if (req.text() == null || req.text().isBlank()) {
+            throw new IllegalArgumentException("Verse text must not be blank");
+        }
+        chapterService.getChapterById(chapterId);
+        int orderIndex = verseRepository.countByChapterIdAndDeletedAtIsNull(chapterId) + 1;
+        Instant now = Instant.now();
+        Verse verse = Verse.builder()
+                .chapterId(chapterId)
+                .orderIndex(orderIndex)
+                .rawText(req.text())
+                .status(VerseStatus.DRAFT)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        verse = verseRepository.save(verse);
+        return toTreeDto(verse);
+    }
+
+    public static VerseTreeDto toTreeDto(Verse v) {
+        return new VerseTreeDto(
+                v.getId(),
+                v.getOrderIndex(),
+                ChapterService.preview(v.getRawText(), 80),
+                v.getRawText(),
+                null,
+                null,
+                null,
+                v.getStatus());
     }
 
     @Transactional(readOnly = true)

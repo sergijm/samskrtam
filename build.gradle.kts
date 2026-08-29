@@ -21,5 +21,10 @@ allprojects {
 subprojects {
     tasks.withType<JavaCompile>().configureEach {
         options.encoding = "UTF-8"
+        // Сохранять имена параметров методов в байткоде. Без этого Spring Data R2DBC
+        // не может сопоставить именованные параметры (@Query("... :userId ...")) с
+        // реальными именами аргументов и откатывается на позиционную привязку,
+        // из-за чего значения привязываются не к тем плейсхолдерам.
+        options.compilerArgs.add("-parameters")
     }
 }

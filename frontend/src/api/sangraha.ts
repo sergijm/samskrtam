@@ -2,9 +2,11 @@ import api from './axios';
 import type {
   WorkSummaryDto,
   WorkTreeDto,
+  ChapterSummaryDto,
   ChapterVersesDto,
   VerseDetailDto,
   VerseBatchResponseDto,
+  VerseTreeDto,
   WorksClassGroupDto,
   StandaloneVerseItemDto,
   VerseWordExamplesResponseDto,
@@ -108,6 +110,50 @@ export const sangrahaApi = {
 
   deleteStandaloneVerse: (verseId: string) =>
     api.delete<void>(`${BASE}/analysis/${verseId}`),
+
+  // ── Write: произведения / главы / стихи (ADMIN) ──
+
+  createWork: (data: {
+    titleRu: string;
+    titleEn?: string;
+    titleSaIast?: string;
+    titleSaDevanagari?: string;
+    sourceCode?: string;
+  }) => api.post<WorkSummaryDto>(`${BASE}/works`, data),
+
+  updateWork: (
+    workSlug: string,
+    data: {
+      titleRu?: string;
+      titleEn?: string;
+      titleSaIast?: string;
+      titleSaDevanagari?: string;
+      author?: string;
+    },
+  ) => api.put<WorkSummaryDto>(`${BASE}/works/${workSlug}`, data),
+
+  createChapter: (
+    workSlug: string,
+    data: {
+      titleRu: string;
+      titleEn?: string;
+      titleSaIast?: string;
+      titleSaDevanagari?: string;
+    },
+  ) => api.post<ChapterSummaryDto>(`${BASE}/works/${workSlug}/chapters`, data),
+
+  updateChapter: (
+    chapterId: string,
+    data: {
+      titleRu?: string;
+      titleEn?: string;
+      titleSaIast?: string;
+      titleSaDevanagari?: string;
+    },
+  ) => api.put<ChapterSummaryDto>(`${BASE}/chapters/${chapterId}`, data),
+
+  createVerse: (chapterId: string, data: { text: string }) =>
+    api.post<VerseTreeDto>(`${BASE}/chapters/${chapterId}/verses`, data),
 };
 
 

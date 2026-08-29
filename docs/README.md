@@ -114,7 +114,7 @@ graph TD
 | [services/quest-catalog.md](services/curriculum-service/quest-catalog.md) | — | Каталог типов квестов по разделам грамматики и лексики (реализованные и план) |
 | [services/quest-types-overview.md](./services/quest-types-overview.md) | — | Полная инвентаризация типов квестов: вариации, оценка объёма, приоритет по milestone |
 | [services/curriculum.md](services/curriculum-service/curriculum.md) | — | Учебный план: темы, мягкие зависимости между ними, граф по слоям, соответствие Milestones |
-| [services/curriculum-service.md](services/curriculum-service.md) | Java 21 + VT | Независимый сервис: ~70 Topic, TopicPrerequisite, LearningLevel (L0–L6), ComplexQuiz (Mixed Practice/Level Assessment) — без наполнения/квизов, OpenAPI v2 |
+| [services/curriculum-service.md](services/curriculum-service.md) | Java 21 + VT | Независимый сервис: ~70 Topic, TopicPrerequisite, LearningLevel (L0–L6) — без наполнения/квизов, OpenAPI v2 |
 | [services/learning-materials.md](./services/learning-materials.md) | Java 21 | Теория, литература, сканы, видео — привязка к темам, вне модели квестов |
 | [services/quest-item-model.md](./services/quest-item-model.md) | Java 21 | Базовые интерфейсы/абстрактные классы модели квестов (curriculum-service + quiz-service) |
 | [quests/](./quests/README.md) | — | Юзер-стори по типам квестов, разложенные по доменам грамматики и лексики |

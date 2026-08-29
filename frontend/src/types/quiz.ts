@@ -203,6 +203,8 @@ export interface SessionQuestion {
     formIast?: string;
     formDevanagari?: string;
     caseEnding?: string;
+    /** Sentence translation shown as context for CASE_MEANING (syntax) questions. */
+    translation?: string;
     /** MATCHING questions from the v2 compose flow: left-side rows (word forms). */
     matchRows?: QuestionMatchRow[];
 }

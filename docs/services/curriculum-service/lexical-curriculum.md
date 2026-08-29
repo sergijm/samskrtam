@@ -1,7 +1,7 @@
 # Lexical Curriculum — таксономии наполнения и учебные Lexical Topics
 
 > Связанные файлы: [lexicon.md](../lexicon.md) (домен), [lexical-quizzes.md](../lexical-quizzes.md)
-> (типы квизов), [curriculum-service.md](../curriculum-service.md) (Topic/LearningLevel/ComplexQuiz —
+> (типы квизов), [curriculum-service.md](../curriculum-service.md) (Topic/LearningLevel —
 > переиспользуются, не дублируются), [curriculum.md](./curriculum.md) (grammar-curriculum).
 
 ---
@@ -22,17 +22,8 @@ _Архитектурное решение вынесено в единый ра
   между grammar-темами, без каких-либо кросс-сервисных допущений);
 - `learningLevel` (`L0`…`L6`) — та же шкала, что и у grammar-тем, физически одна
   шкала на весь учебный план, не две параллельных;
-- участие в `ComplexQuiz` (`curriculum-service.md` §4) — **важно:** `ComplexQuiz`
-  остаётся общим механизмом «2–7 тем любого домена»; для чисто лексических
-  интегрированных квизов (§13 задачи, «Mixed Vocabulary Practice») она тоже
-  подходит **как структура-контейнер** (какие Topic входят), но фактические
-  слова внутри резолвятся отдельным модулем lexicon (§2 `lexical-quizzes.md`),
-  не общей бизнес-логикой Topic/ComplexQuiz — вот она, «интеграция без слияния
-  моделей», требуемая задачей: один сервис и одна БД, но `Topic`-механика и
-  `Lexeme`-механика остаются разным кодом/разными таблицами, соединёнными
-  явными, узкими связями, а не одной моделью.
 
-**Что не смешивается с механикой Topic/ComplexQuiz:** сама композиция «какие
+**Что не смешивается с механикой Topic:** сама композиция «какие
 Lexeme входят в эту Topic» — это `curriculum.lexeme_lexical_topic`:
 
 lexicalTopicId (UUID, FK → curriculum.topic.id, ON DELETE CASCADE — теперь

@@ -41,6 +41,7 @@ const SandhiLessonPage = lazy(() => import('../pages/lessons/SandhiLessonPage'))
 const GrammarAllStemsPage = lazy(() => import('../pages/lessons/GrammarAllStemsPage'));
 const WorksPage = lazy(() => import('../pages/sangraha/WorksPage'));
 const WorkPage = lazy(() => import('../pages/sangraha/WorkPage'));
+const WorkEditorPage = lazy(() => import('../pages/sangraha/WorkEditorPage'));
 const ChapterPage = lazy(() => import('../pages/sangraha/ChapterPage'));
 const VersePage = lazy(() => import('../pages/sangraha/VersePage'));
 const VersesBatchPage = lazy(() => import('../pages/sangraha/VersesBatchPage'));
@@ -130,6 +131,8 @@ export default function AppRoutes() {
 
             {/* Sangraha routes */}
       <Route path="/sangraha" element={<ProtectedLayoutRoute><WorksPage /></ProtectedLayoutRoute>} />
+      <Route path="/sangraha/new" element={<RoleLayoutRoute role="ADMIN"><WorkEditorPage /></RoleLayoutRoute>} />
+      <Route path="/sangraha/:workSlug/edit" element={<RoleLayoutRoute role="ADMIN"><WorkEditorPage /></RoleLayoutRoute>} />
       <Route path="/sangraha/verses" element={<RoleLayoutRoute role="ADMIN"><VersesBatchPage /></RoleLayoutRoute>} />
       <Route path="/sangraha/:workSlug" element={<ProtectedLayoutRoute><WorkPage /></ProtectedLayoutRoute>} />
       <Route path="/sangraha/:workSlug/chapters/:chapterId" element={<ProtectedLayoutRoute><ChapterPage /></ProtectedLayoutRoute>} />

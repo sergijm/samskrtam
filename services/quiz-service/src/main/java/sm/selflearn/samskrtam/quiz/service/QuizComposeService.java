@@ -101,10 +101,28 @@ List<SessionQuestion> questions = new ArrayList<>();
                 });
     }
 
+    /**
+     * Variant of {@link #compose(UUID, String, ProgressTagSetId, String, String, int)}
+     * that identifies the topic by its {@code topicId} (UUID) rather than its code.
+     * The legacy lesson-based flow passes the lessonId, which is in fact the
+     * curriculum topicId, so the topic code is resolved first and then the normal
+     * compose pipeline runs.
+     */
+    @Transactional
+    public Mono<ComposeQuizResponse> composeByTopicId(
+            UUID userId,
+            UUID topicId,
+            ProgressTagSetId progressTagSetId,
+            String itemType,
+            String answerMode,
+            int limit) {
+        return curriculumClient.fetchTopicById(topicId)
+                .flatMap(topic -> compose(userId, topic.code(), progressTagSetId, itemType, answerMode, limit));
+    }
+
     private Mono<List<QuestItemDto>> selectItems(
             UUID userId, String topicCode, ProgressTagSetId setId,
             String itemType, String answerMode, int limit) {
-
         int sessionSize = limit > 0 ? limit : config.getSessionSize().getSessionSize();
 
         if (setId == null) {
@@ -205,6 +223,10 @@ List<SessionQuestion> questions = new ArrayList<>();
         return "VERBAL_MORPHOLOGY".equals(domain);
     }
 
+    private static boolean isCaseSyntaxTopic(String domain) {
+        return "CASE_SYNTAX".equals(domain);
+    }
+
     /** NEW: fetch full lesson, then remove items whose progress_tag already has a score. */
     private Mono<List<QuestItemDto>> selectNewItems(
             UUID userId, String topicCode, String itemType, String answerMode, int sessionSize) {
@@ -270,9 +292,22 @@ List<SessionQuestion> questions = new ArrayList<>();
     private Mono<List<QuestItemDto>> selectGrammarItems(
             String topicCode, ProgressTagSetId setId, String itemType,
             String answerMode, int sessionSize) {
-        List<String> tags = hardcodeTags(setId);
-        return curriculumClient.selectQuestItems(topicCode, tags, itemType, answerMode, 0)
-                .map(list -> cap(list, sessionSize));
+        return curriculumClient.fetchTopicByCode(topicCode)
+                .flatMap(topic -> {
+                    if (isCaseSyntaxTopic(topic.domain())) {
+                        return curriculumClient.selectQuestItems(
+                                topicCode, List.of(setId.name()), itemType, answerMode, 0)
+                                .map(list -> cap(list, sessionSize));
+                    }
+                    List<String> tags = hardcodeTags(setId);
+                    return curriculumClient.selectQuestItems(topicCode, tags, itemType, answerMode, 0)
+                            .map(list -> cap(list, sessionSize));
+                })
+                .switchIfEmpty(Mono.defer(() -> {
+                    List<String> tags = hardcodeTags(setId);
+                    return curriculumClient.selectQuestItems(topicCode, tags, itemType, answerMode, 0)
+                            .map(list -> cap(list, sessionSize));
+                }));
     }
 
     // ---- helpers ----

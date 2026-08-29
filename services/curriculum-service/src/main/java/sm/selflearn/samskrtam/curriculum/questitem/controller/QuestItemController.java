@@ -42,12 +42,17 @@ public class QuestItemController {
      * Selects one quest item per (progress_tag, item_type, answer_mode) group
      * using a window function.  Accepts optional filters for progress tags,
      * item type, answer mode and a limit (0 = no limit).
+     *
+     * <p>The topic can be identified either by {@code topicId} (UUID) or by
+     * {@code slug}/{@code topicCode} (the topic's code).  {@code topicId} takes
+     * precedence when both are supplied.
      */
     @PostMapping("/select")
     public List<QuestItemDto> select(@RequestBody QuestItemSelectionRequest request,
-                                     @RequestParam String topicCode) {
-        Topic topic = topicRepository.findByCode(topicCode)
-                .orElseThrow(() -> new EntityNotFoundException("Topic not found: " + topicCode));
+                                     @RequestParam(required = false) UUID topicId,
+                                     @RequestParam(required = false) String slug,
+                                     @RequestParam(required = false) String topicCode) {
+        Topic topic = resolveTopic(topicId, slug, topicCode);
 
         List<QuestItem> items;
         if (request.progressTags() != null && !request.progressTags().isEmpty()) {
@@ -67,6 +72,19 @@ public class QuestItemController {
         return items.stream()
                 .map(questItemMapper::toDto)
                 .toList();
+    }
+
+    private Topic resolveTopic(UUID topicId, String slug, String topicCode) {
+        if (topicId != null) {
+            return topicRepository.findById(topicId)
+                    .orElseThrow(() -> new EntityNotFoundException("Topic not found: " + topicId));
+        }
+        String code = slug != null ? slug : topicCode;
+        if (code != null) {
+            return topicRepository.findByCode(code)
+                    .orElseThrow(() -> new EntityNotFoundException("Topic not found: " + code));
+        }
+        throw new IllegalArgumentException("One of topicId, slug or topicCode must be provided");
     }
 
     /**

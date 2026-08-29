@@ -15,5 +15,6 @@ public record WorkSummaryDto(
     String author,
     Instant createdAt,
     int chapterCount,
-    int verseCount
+    int verseCount,
+    int analyzedVerseCount
 ) {}

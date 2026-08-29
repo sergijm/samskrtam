@@ -118,10 +118,53 @@ POST   /api/v1/sangraha/words/examples                           → приме�
                                                                        (translationRu/En) может отсутствовать, форма без совпадений —
                                                                        пустой verses (колонка «примеры из санграхи» урока склонений)
 POST   /api/v1/sangraha/words/examples-by-lemma                   → примеры стихов по лемме (словарной форме, lemmaIast); тело —
-                                                                       { lemmas, limitPerLemma? } (по умолчанию 5 стихов на лемму);
-                                                                       раскрываемые строки таблицы слов лексического урока, лемма без
-                                                                       совпадений — пустой verses
+                                                                        { lemmas, limitPerLemma? } (по умолчанию 5 стихов на лемму);
+                                                                        раскрываемые строки таблицы слов лексического урока, лемма без
+                                                                        совпадений — пустой verses
+
+### 4.1 Write-контур: создание/редактирование произведений, глав, стихов (ADMIN)
+
+Весь write-контур — только `ADMIN` (см. §4, права доступа). Фактическая
+проверка роли выполняется на API Gateway (IdentityHeader + роль из токена
+Keycloak); sangraha-service доверяет проброшенному заголовку и не дублирует
+SecurityFilterChain. Эндпоинты реализованы в `SangrahaWriteController`.
+
 ```
+POST   /api/v1/sangraha/works                                      → создать произведение.
+                                                                        Тело CreateWorkRequest:
+                                                                        titleRu (обязательно), titleEn?,
+                                                                        titleSaIast?, titleSaDevanagari?,
+                                                                        sourceCode? (при отсутствии берётся
+                                                                        первый доступный источник).
+                                                                        Slug генерируется из titleRu и
+                                                                        делается уникальным. Возврат WorkSummaryDto.
+PUT    /api/v1/sangraha/works/{workSlug}                           → обновить метаданные произведения
+                                                                        (UpdateWorkRequest: titleRu?, titleEn?,
+                                                                        titleSaIast?, titleSaDevanagari?, author?;
+                                                                        обновляются только не-null поля).
+POST   /api/v1/sangraha/works/{workSlug}/chapters                  → создать главу в произведении.
+                                                                        Тело CreateChapterRequest:
+                                                                        titleRu (обязательно), titleEn?,
+                                                                        titleSaIast?, titleSaDevanagari?.
+                                                                        Slug + orderIndex вычисляются
+                                                                        автоматически (уникальны в рамках work).
+                                                                        Возврат ChapterSummaryDto.
+PUT    /api/v1/sangraha/chapters/{chapterId}                       → обновить метаданные главы
+                                                                        (UpdateChapterRequest: те же поля,
+                                                                        что у CreateChapterRequest).
+POST   /api/v1/sangraha/chapters/{chapterId}/verses                → создать стих (DRAFT) в главе.
+                                                                        Тело CreateVerseRequest: text (обязательно,
+                                                                        сырой ввод пользователя). Статус DRAFT,
+                                                                        orderIndex = max+1. Дальнейший анализ —
+                                                                        существующая кнопка «Анализ»
+                                                                        (POST /verses/{verseId}/analyze, см. §5.1).
+                                                                        Возврат VerseTreeDto.
+```
+
+> Примечание по slug: полноценная таблица IAST↔SLP1 (§8, открытый вопрос)
+> для slug выбирается отдельно; текущая реализация — прагматичный slugify
+> (нормализация Unicode, lower-case, не-буквы/цифры → дефис), гарантирующий
+> непустой ASCII-slug.
 
 Ответ `GET /works/{workSlug}` (и `GET /works?id={workId}`) — двухуровневое дерево для TreeGrid:
 Ответ — двухуровневое дерево: { id, slug, titleRu, chapters[] { id, slug, titleRu, orderIndex, categoryCode, verses[] { id, orderIndex, textIastPreview, status } } }
@@ -222,12 +265,18 @@ on-demand (идемпотентно) и возвращает код VERSE-уро
 Если пользователь ввёл текст только в одном представлении (только devanagari или только
 iast) — второе представление также генерирует модель, и backend сохраняет оба.
 
-### 5.2 Удалённые операции
+### 5.2 Операции создания/редактирования
 
-Work/Chapter CRUD удалён. Произведения и главы создаются через импорт
-(см. §1). Соответствующие эндпоинты и Java-сервисы удалены:
-- `POST /works`, `PUT /works/{workSlug}`, `DELETE /works/{workSlug}`
-- `POST /works/{workSlug}/chapters`, `PUT /chapters/{chapterId}`, `DELETE /chapters/{chapterId}`
+Work/Chapter CRUD **восстановлен** (см. §4.1) — произведения, главы и стихи
+создаются/редактируются через UI (страница `/sangraha`, редактор произведения
+`/sangraha/:workSlug/edit`, страница главы `/sangraha/:workSlug/chapters/:chapterId`).
+Весь контур — ADMIN. Эндпоинты и сервисы:
+- `POST /works`, `PUT /works/{workSlug}` (см. §4.1)
+- `POST /works/{workSlug}/chapters`, `PUT /chapters/{chapterId}` (см. §4.1)
+- `POST /chapters/{chapterId}/verses` (создание стиха как DRAFT, см. §4.1)
+
+Удаление (DELETE) произведений/глав/стихов по-прежнему отсутствует (soft-delete
+через `deletedAt` применяется только к стихам страницы анализа и при импорте).
 
 ---
 
@@ -281,7 +330,8 @@ Work/Chapter CRUD удалён. Произведения и главы созд�
 
 ## 7. Frontend (эскиз, детализирует Агент 3)
 
-- **Страница произведений** (`/sangraha`) — плитки (`WorkCard`) со списком работ.
+- **Страница произведений** (`/sangraha`) — плитки (`WorkCard`) со списком работ. Для ADMIN — кнопка «Добавить произведение» → редактор произведения.
+- **Редактор произведения** (`/sangraha/new` и `/sangraha/{workSlug}/edit`, ADMIN) — поле названия + кнопка сохранить/редактировать, список глав с inline-редактированием названия и кнопкой «Добавить главу»; клик по главе открывает страницу главы.
 - **Страница произведения** (`/sangraha/{workSlug}`) — дерево глав/стихов. Read-only: без кнопок добавления/удаления.
 - **Страница массового просмотра/анализа** (`/sangraha/verses`, ADMIN-only, `id` из query-параметров либо из localStorage `sangraha.verseBatchIds`) — см. `sangraha-service/batch-verse-review.md`.
 - **Страница стиха** (`/sangraha/{workSlug}/verses/{verseId}`):
